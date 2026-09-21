@@ -46,7 +46,16 @@ Checked with `scripts/verify-ci-token.ts` from GitHub Actions (run 35596608538),
 - The staging Access service token gets through Access (200). Without it, staging redirects to the Access login. Production is public (200) and holds no Access secrets.
 - Getting there took two fixes: turning off Bot Fight Mode, which challenged all traffic from GitHub, and re-copying the Access client ID with its `.access` suffix.
 
-### Still open for M1
+### The pipeline, end to end
 
-1. Merge PR #1. `deploy-staging` then runs end to end with the staging token and the Access service token.
-2. Run `deploy-production` for the merge commit. This is the first run of the real workflow: canary, smoke, promotion, with rollback on failure.
+M1 merged in PR #1 and PR #2. The merge commit `357c26f` then went out through the workflows alone:
+
+- `deploy-staging`, run 35596946792: every PR check, then migrations (none pending), the database identity check, both Workers at 100%, and the smoke suite through Access against tag `357c26f`. Passed.
+- `deploy-production`, run 35597160973. Every step passed and the rollback step was skipped:
+  1. Confirmed the commit is on `main` and passed staging.
+  2. Uploaded mm-api `67abefa7…` and split traffic 10/90 against the previous version.
+  3. Ran the smoke suite pinned to the new version, let it serve 5 minutes, and ran it again.
+  4. Promoted to 100% and ran the smoke suite.
+  5. Deployed mm-site and ran the final smoke suite.
+
+M1 is done. The exceptions are required checks on `main` and required reviewers on `production`, which the owner deferred to the paid GitHub plan (ADR 0008).
