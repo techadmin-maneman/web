@@ -38,8 +38,15 @@ My network's DNS resolver still cached GoDaddy's old addresses for `maneman.in` 
 - `staging.maneman.in` resolves to Cloudflare. Without an Access session, `/`, `/api/health` and `/robots.txt` all redirect (302) to `summer-math-0275.cloudflareaccess.com`. Production answers 200.
 - R2 buckets `mm-{staging,prod}-tryon-{uploads,results}` exist, each with `expire-after-30-days` (expire objects after 30 days; abort incomplete multipart uploads after 1 day), per `wrangler r2 bucket lifecycle list`.
 
+### CI secrets
+
+Checked with `scripts/verify-ci-token.ts` from GitHub Actions (run 35596608538), using the secrets as stored in the GitHub environments. All checks pass in both environments:
+
+- Each Cloudflare token is account-owned and reaches its own two Workers and its own database. It is denied the other environment's Workers, the zone's routes, R2 and Queues. It can read the other environment's database, as accepted in ADR 0008.
+- The staging Access service token gets through Access (200). Without it, staging redirects to the Access login. Production is public (200) and holds no Access secrets.
+- Getting there took two fixes: turning off Bot Fight Mode, which challenged all traffic from GitHub, and re-copying the Access client ID with its `.access` suffix.
+
 ### Still open for M1
 
-1. Check the CI tokens and the Access service token with `scripts/verify-ci-token.ts`, then load them into the GitHub environments (runbook, step 6).
-2. Merge PR #1. `deploy-staging` then runs end to end with the staging token and the Access service token.
-3. Run `deploy-production` for the merge commit. This is the first run of the real workflow: canary, smoke, promotion, with rollback on failure.
+1. Merge PR #1. `deploy-staging` then runs end to end with the staging token and the Access service token.
+2. Run `deploy-production` for the merge commit. This is the first run of the real workflow: canary, smoke, promotion, with rollback on failure.
