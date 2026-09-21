@@ -157,6 +157,19 @@ describe("smoke suite", () => {
     );
   });
 
+  it("says so when Cloudflare challenges the request instead of the Worker answering", async () => {
+    const challenged = (() =>
+      Promise.resolve(
+        new Response("Just a moment...", {
+          status: 403,
+          headers: { "cf-mitigated": "challenge", "cf-ray": "a3e8cd28094115c2-SJC" },
+        }),
+      )) as unknown as typeof fetch;
+    expect(await firstFailure({ ...smokeOptions("production"), fetch: challenged })).toContain(
+      "Cloudflare challenged the request before it reached the Worker (Ray ID a3e8cd28094115c2-SJC)",
+    );
+  });
+
   it("sends the configured headers on every request", async () => {
     const fake = fakeDeployment("staging");
     await runSmoke({ ...smokeOptions("staging"), fetch: fake.fetch, headers: { "CF-Access-Client-Id": "id" } });
