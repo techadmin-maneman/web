@@ -18,6 +18,21 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     ipHashSalt: "",
     alertWebhookUrl: null,
     zoho: null,
+    tryon: {
+      uploadIpHourlyLimit: 0,
+      generateIpHourlyLimit: 0,
+      claimMobileDailyLimit: 0,
+      resultMessageMobileDailyLimit: 0,
+      renderDailyCeiling: 0,
+      uploadDailyCeiling: 0,
+      resultReadDailyCeiling: 0,
+      resultRetentionDays: 30,
+      unknownColorRoute: "premium_original",
+      creditFloor: 0,
+      linkSigningKey: "",
+      ailabApiKey: null,
+    },
+    messaging: { enabled: false, resultTemplate: "", allowlist: [], evolution: null },
   },
 };
 

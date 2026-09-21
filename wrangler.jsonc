@@ -32,13 +32,27 @@
       { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-local" },
       { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" }
     ],
-    // One batch at a time, so two syncs for the same person never race.
+    // crm-sync asks for one batch at a time; Queues does not guarantee it (docs/decisions/0012-zoho-sync.md).
     "consumers": [
       {
         "queue": "mm-crm-sync-local",
         "max_batch_size": 10,
         "max_batch_timeout": 5,
         "max_retries": 2,
+        "max_concurrency": 1
+      },
+      {
+        "queue": "mm-render-local",
+        "max_batch_size": 5,
+        "max_batch_timeout": 1,
+        // Polling a render is a delayed retry, so this allows 180 s of polls with room to spare.
+        "max_retries": 100
+      },
+      {
+        "queue": "mm-messaging-local",
+        "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
         "max_concurrency": 1
       }
     ]
@@ -51,7 +65,20 @@
     "MESSAGING_PROVIDER": "stub",
     "VISIT_LEAD_DAYS": "2",
     "LEAD_MOBILE_DAILY_LIMIT": "5",
-    "LEAD_IP_DAILY_LIMIT": "20"
+    "LEAD_IP_DAILY_LIMIT": "20",
+    "TRYON_UPLOAD_IP_HOURLY_LIMIT": "5",
+    "TRYON_GENERATE_IP_HOURLY_LIMIT": "5",
+    "TRYON_CLAIM_MOBILE_DAILY_LIMIT": "3",
+    "RESULT_MESSAGE_MOBILE_DAILY_LIMIT": "3",
+    // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
+    "RENDER_DAILY_CEILING": "20",
+    "UPLOAD_DAILY_CEILING": "40",
+    "RESULT_READ_DAILY_CEILING": "400",
+    "RESULT_RETENTION_DAYS": "3",
+    "UNKNOWN_COLOR_ROUTE": "premium_original",
+    "AILAB_CREDIT_FLOOR": "200",
+    "MESSAGING_ENABLED": "true",
+    "WA_RESULT_TEMPLATE": "tryon_result_v1"
   },
   "env": {
     "staging": {
@@ -88,6 +115,20 @@
             "max_batch_timeout": 5,
             "max_retries": 2,
             "max_concurrency": 1
+          },
+          {
+            "queue": "mm-render-staging",
+            "max_batch_size": 5,
+            "max_batch_timeout": 1,
+            // Polling a render is a delayed retry, so this allows 180 s of polls with room to spare.
+            "max_retries": 100
+          },
+          {
+            "queue": "mm-messaging-staging",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 5,
+            "max_concurrency": 1
           }
         ]
       },
@@ -96,10 +137,23 @@
         "TURNSTILE_ACCEPT_TEST_TOKEN": "true",
         "IMAGE_PROVIDER": "ailabtools",
         "CRM_PROVIDER": "zoho",
-        "MESSAGING_PROVIDER": "bsp",
+        "MESSAGING_PROVIDER": "evolution",
         "VISIT_LEAD_DAYS": "2",
         "LEAD_MOBILE_DAILY_LIMIT": "5",
-        "LEAD_IP_DAILY_LIMIT": "20"
+        "LEAD_IP_DAILY_LIMIT": "20",
+        "TRYON_UPLOAD_IP_HOURLY_LIMIT": "5",
+        "TRYON_GENERATE_IP_HOURLY_LIMIT": "5",
+        "TRYON_CLAIM_MOBILE_DAILY_LIMIT": "3",
+        "RESULT_MESSAGE_MOBILE_DAILY_LIMIT": "3",
+        // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
+        "RENDER_DAILY_CEILING": "20",
+        "UPLOAD_DAILY_CEILING": "40",
+        "RESULT_READ_DAILY_CEILING": "400",
+        "RESULT_RETENTION_DAYS": "3",
+        "UNKNOWN_COLOR_ROUTE": "premium_original",
+        "AILAB_CREDIT_FLOOR": "200",
+        "MESSAGING_ENABLED": "true",
+        "WA_RESULT_TEMPLATE": "tryon_result_v1"
       }
     },
     "production": {
@@ -136,6 +190,20 @@
             "max_batch_timeout": 5,
             "max_retries": 2,
             "max_concurrency": 1
+          },
+          {
+            "queue": "mm-render-prod",
+            "max_batch_size": 5,
+            "max_batch_timeout": 1,
+            // Polling a render is a delayed retry, so this allows 180 s of polls with room to spare.
+            "max_retries": 100
+          },
+          {
+            "queue": "mm-messaging-prod",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 5,
+            "max_concurrency": 1
           }
         ]
       },
@@ -144,10 +212,23 @@
         "TURNSTILE_ACCEPT_TEST_TOKEN": "false",
         "IMAGE_PROVIDER": "ailabtools",
         "CRM_PROVIDER": "zoho",
-        "MESSAGING_PROVIDER": "bsp",
+        "MESSAGING_PROVIDER": "evolution",
         "VISIT_LEAD_DAYS": "2",
         "LEAD_MOBILE_DAILY_LIMIT": "5",
-        "LEAD_IP_DAILY_LIMIT": "20"
+        "LEAD_IP_DAILY_LIMIT": "20",
+        "TRYON_UPLOAD_IP_HOURLY_LIMIT": "5",
+        "TRYON_GENERATE_IP_HOURLY_LIMIT": "5",
+        "TRYON_CLAIM_MOBILE_DAILY_LIMIT": "3",
+        "RESULT_MESSAGE_MOBILE_DAILY_LIMIT": "3",
+        // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
+        "RENDER_DAILY_CEILING": "40",
+        "UPLOAD_DAILY_CEILING": "80",
+        "RESULT_READ_DAILY_CEILING": "800",
+        "RESULT_RETENTION_DAYS": "30",
+        "UNKNOWN_COLOR_ROUTE": "premium_original",
+        "AILAB_CREDIT_FLOOR": "200",
+        "MESSAGING_ENABLED": "false",
+        "WA_RESULT_TEMPLATE": "tryon_result_v1"
       }
     }
   }

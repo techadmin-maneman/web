@@ -4,6 +4,8 @@ import { productionDependencies } from "./dependencies.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { createLogger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
+import { handleMessagingBatch } from "./queues/messaging.ts";
+import { handleRenderBatch } from "./queues/render.ts";
 import { sweep } from "./scheduled/sweeper.ts";
 
 // Runs at module load. A Worker without a valid ENVIRONMENT, missing a secret
@@ -34,6 +36,16 @@ export default {
       await handleCrmSyncBatch(batch, workerEnv.DB, deps, log);
       return;
     }
+    if (batch.queue.startsWith("mm-render-")) {
+      await handleRenderBatch(batch, workerEnv, deps, log, {
+        resultRetentionDays: config.settings.tryon.resultRetentionDays,
+      });
+      return;
+    }
+    if (batch.queue.startsWith("mm-messaging-")) {
+      await handleMessagingBatch(batch, workerEnv.DB, config, deps, log);
+      return;
+    }
     log.error("unknown_queue", { queue: batch.queue });
     batch.retryAll();
   },
@@ -41,6 +53,6 @@ export default {
   async scheduled(_controller, workerEnv) {
     const log = baseLog.child({ job: "sweeper" });
     await assertOwnDatabase(workerEnv.DB);
-    await sweep(workerEnv.DB, workerEnv.CRM_QUEUE, makeDependencies(workerEnv, log), log);
+    await sweep(workerEnv, makeDependencies(workerEnv, log), log, { creditFloor: config.settings.tryon.creditFloor });
   },
 } satisfies ExportedHandler<Env>;

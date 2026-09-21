@@ -40,3 +40,8 @@ On Workers Free every product except R2 fails closed, which is an outage rather 
 
 - An outage at a free limit is possible and accepted; a charge is not. Alerts (M2/M3) report when a ceiling trips.
 - Production's render ceiling is set by the smaller of the AILabTools budget and the R2 and Queues budgets. M3 records the arithmetic.
+
+## Update, 21 September 2026 (M3)
+
+- **Presigned uploads replaced.** The prompt's presigned R2 upload link could be replayed until it expired, each replay a billed write that no ceiling could count. Photos now come through the API, which writes each once (docs/decisions/0014-try-on-api.md).
+- **The arithmetic, and the test that enforces it.** Both are in docs/decisions/0015-render-pipeline.md; `test/node/free-tier-budget.test.ts` enforces them. R2 storage is the binding limit: it holds production to 40 renders a day while results are kept 30 days at up to 6 MB each.

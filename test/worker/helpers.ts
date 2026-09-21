@@ -7,6 +7,8 @@ import type { Dependencies } from "../../src/dependencies.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
+import { createImageProvider } from "../../src/providers/image.ts";
+import { createStubMessaging } from "../../src/providers/messaging.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
 
@@ -19,6 +21,21 @@ export const LOCAL_SETTINGS: Settings = {
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
   zoho: null,
+  tryon: {
+    uploadIpHourlyLimit: 5,
+    generateIpHourlyLimit: 5,
+    claimMobileDailyLimit: 3,
+    resultMessageMobileDailyLimit: 3,
+    renderDailyCeiling: 20,
+    uploadDailyCeiling: 40,
+    resultReadDailyCeiling: 400,
+    resultRetentionDays: 30,
+    unknownColorRoute: "premium_original",
+    creditFloor: 200,
+    linkSigningKey: "test-link-signing-key-that-is-long-enough",
+    ailabApiKey: null,
+  },
+  messaging: { enabled: true, resultTemplate: "tryon_result_v1", allowlist: [], evolution: null },
 };
 
 export const LOCAL_CONFIG: StaticConfig = {
@@ -87,10 +104,13 @@ export interface TestDependencies extends Dependencies {
 
 export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDependencies {
   const alerts: string[] = [];
+  const now = overrides.now ?? (() => NOW);
   return {
     fetch: fakeFetch({ [TURNSTILE_URL]: turnstilePasses }).fetch,
-    now: () => NOW,
+    now,
     crm: createStubCrm(createLogger()),
+    image: createImageProvider(null, { fetch, now }),
+    messaging: createStubMessaging(createLogger()),
     alert: (message) => {
       alerts.push(message);
       return Promise.resolve();

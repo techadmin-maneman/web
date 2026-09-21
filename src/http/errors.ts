@@ -13,6 +13,13 @@ export const ERROR_CODES = [
   "environment_mismatch",
   "unavailable",
   "internal_error",
+  // Try-on (docs/decisions/0014-try-on-api.md).
+  "busy",
+  "photo_invalid_file",
+  "upload_already_received",
+  "upload_missing",
+  "session_required",
+  "job_not_claimable",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

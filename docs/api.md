@@ -128,6 +128,302 @@ Request body:
 }
 ```
 
+### POST /api/tryon/upload-url
+
+Record the photo consent and get a link to upload one photo
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/UploadUrlRequest"
+}
+```
+
+**201**: Created
+
+```json
+{
+  "$ref": "#/components/schemas/UploadUrlResponse"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many uploads from this address this hour
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PUT /api/tryon/upload/{job_id}
+
+Upload the photo: a JPEG or PNG, at most 5 MB and 200 to 4090 px a side
+
+**204**: Received
+
+**404**: not_found: no such job, or the link has expired
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: upload_already_received
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: photo_invalid_file: not a JPEG or PNG, over 5 MB, or the wrong size
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/tryon/generate
+
+Render a look: the first for an upload, or another look for the same photo
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/GenerateRequest"
+}
+```
+
+**202**: Queued, or an identical job already exists. job_id may differ from the one sent.
+
+```json
+{
+  "$ref": "#/components/schemas/JobStatus"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: session_required: another look needs the session the gate set
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: upload_missing: the photo has not been uploaded, or has been deleted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many renders from this address this hour
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: today's render ceiling is reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/tryon/status/{job_id}
+
+Where a job stands
+
+**200**: The job's state
+
+```json
+{
+  "$ref": "#/components/schemas/JobStatus"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/tryon/claim
+
+The gate: save the lead and start a session, whether or not the result is ready
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClaimRequest"
+}
+```
+
+**201**: Saved. Sets the mm_tryon cookie.
+
+```json
+{
+  "$ref": "#/components/schemas/ClaimResponse"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: job_not_claimable: no render was started, it failed, or it is another number's; idempotency_in_progress
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: idempotency_key_reused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many claims from this number today
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/tryon/result/{job_id}
+
+The result, for the session the gate set. Also serves every further look
+
+**200**: Ready
+
+```json
+{
+  "$ref": "#/components/schemas/ResultReady"
+}
+```
+
+**202**: Still rendering
+
+```json
+{
+  "$ref": "#/components/schemas/ResultPending"
+}
+```
+
+**403**: session_required: no session, or not this job's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such job, or its result has been deleted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: Failed
+
+```json
+{
+  "$ref": "#/components/schemas/ResultFailed"
+}
+```
+
+### GET /api/result/{token}
+
+A result image, behind a signed link that expires
+
+**200**: The image
+
+**404**: not_found: the link is invalid or expired, or the result was deleted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: today's result-read ceiling is reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -150,7 +446,13 @@ Request body:
             "idempotency_key_reused",
             "environment_mismatch",
             "unavailable",
-            "internal_error"
+            "internal_error",
+            "busy",
+            "photo_invalid_file",
+            "upload_already_received",
+            "upload_missing",
+            "session_required",
+            "job_not_claimable"
           ]
         },
         "request_id": {
@@ -398,5 +700,298 @@ Request body:
   },
   "additionalProperties": false,
   "description": "Where the visitor came from, as the page saw it. All optional."
+}
+```
+
+### UploadUrlResponse
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "upload_url": {
+      "type": "string",
+      "description": "A path on this host. PUT the photo there within five minutes, as image/jpeg or image/png."
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "job_id",
+    "upload_url",
+    "expires_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### UploadUrlRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "photo_consent": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "The photo notice was agreed to."
+    },
+    "notice_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "example": "photo-v1",
+      "description": "The photo notice shown."
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    }
+  },
+  "required": [
+    "photo_consent",
+    "notice_version",
+    "turnstile_token"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobStatus
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "awaiting_upload",
+        "queued",
+        "rendering",
+        "downloading",
+        "ready",
+        "failed",
+        "expired"
+      ]
+    },
+    "failure_code": {
+      "type": "string",
+      "enum": [
+        "photo_unreadable",
+        "photo_invalid_file",
+        "render_failed",
+        "busy"
+      ],
+      "description": "Only when state is failed."
+    }
+  },
+  "required": [
+    "job_id",
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+### GenerateRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "crown",
+        "receding",
+        "advanced"
+      ],
+      "description": "The hair-loss stage the visitor picked."
+    },
+    "preset": {
+      "type": "string",
+      "enum": [
+        "full-natural-short",
+        "full-straight-medium",
+        "medium-natural-short",
+        "medium-receded-medium",
+        "light-natural-short",
+        "light-receded-cropped"
+      ]
+    },
+    "hair_color": {
+      "type": "string",
+      "enum": [
+        "black",
+        "brown",
+        "lightBrown",
+        "grey",
+        "silver",
+        "white",
+        "unknown"
+      ],
+      "description": "From the browser's detector; unknown if it could not tell."
+    }
+  },
+  "required": [
+    "job_id",
+    "stage",
+    "preset",
+    "hair_color"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClaimResponse
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lead_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "whatsapp_copy": {
+      "type": "boolean",
+      "description": "True only if messaging is on: the page may then say a copy is on its way."
+    }
+  },
+  "required": [
+    "lead_id",
+    "whatsapp_copy"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClaimRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "example": "98100 00000"
+    },
+    "attribution": {
+      "$ref": "#/components/schemas/Attribution"
+    }
+  },
+  "required": [
+    "job_id",
+    "name",
+    "mobile"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ResultReady
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "A path on this host that serves the image for fifteen minutes."
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "url",
+    "expires_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ResultPending
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "awaiting_upload",
+        "queued",
+        "rendering",
+        "downloading",
+        "ready",
+        "failed",
+        "expired"
+      ]
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ResultFailed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "failed"
+      ]
+    },
+    "failure_code": {
+      "type": "string",
+      "enum": [
+        "photo_unreadable",
+        "photo_invalid_file",
+        "render_failed",
+        "busy"
+      ]
+    }
+  },
+  "required": [
+    "state",
+    "failure_code"
+  ],
+  "additionalProperties": false
 }
 ```

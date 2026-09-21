@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, validateStaticConfig } from "../../src/guard.ts";
 
-const REAL = { IMAGE_PROVIDER: "ailabtools", CRM_PROVIDER: "zoho", MESSAGING_PROVIDER: "bsp" };
+const REAL = { IMAGE_PROVIDER: "ailabtools", CRM_PROVIDER: "zoho", MESSAGING_PROVIDER: "evolution" };
 const STUBS = { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub" };
 
 /** Vars and secrets every environment needs, with valid values. */
@@ -12,6 +12,25 @@ const SETTINGS = {
   TURNSTILE_SECRET: "0x4AAAAAAAreal-looking-secret",
   TURNSTILE_ACCEPT_TEST_TOKEN: "false",
   IP_HASH_SALT: "a-salt-of-at-least-thirty-two-characters",
+  TRYON_UPLOAD_IP_HOURLY_LIMIT: "5",
+  TRYON_GENERATE_IP_HOURLY_LIMIT: "5",
+  TRYON_CLAIM_MOBILE_DAILY_LIMIT: "3",
+  RESULT_MESSAGE_MOBILE_DAILY_LIMIT: "3",
+  RENDER_DAILY_CEILING: "20",
+  UPLOAD_DAILY_CEILING: "40",
+  RESULT_READ_DAILY_CEILING: "400",
+  RESULT_RETENTION_DAYS: "30",
+  UNKNOWN_COLOR_ROUTE: "premium_original",
+  AILAB_CREDIT_FLOOR: "200",
+  RESULT_SIGNING_KEY: "a-signing-key-of-at-least-thirty-two-characters",
+  MESSAGING_ENABLED: "false",
+  WA_RESULT_TEMPLATE: "tryon_result_v1",
+};
+const IMAGE = { AILAB_API_KEY: "ailab-key" };
+const EVOLUTION = {
+  EVOLUTION_API_URL: "https://bridge.example/",
+  EVOLUTION_API_KEY: "evolution-key",
+  EVOLUTION_INSTANCE_NAME: "maneman",
 };
 const ALERTS = { ALERT_WEBHOOK_URL: "https://chat.example/hook" };
 const ZOHO = {
@@ -23,7 +42,7 @@ const ZOHO = {
   ZOHO_LAR_ID: "4876876000000123",
 };
 
-const production = { ENVIRONMENT: "production", ...REAL, ...SETTINGS, ...ALERTS, ...ZOHO };
+const production = { ENVIRONMENT: "production", ...REAL, ...SETTINGS, ...ALERTS, ...ZOHO, ...IMAGE, ...EVOLUTION };
 
 function problemsOf(env: Record<string, unknown>): readonly string[] {
   try {
@@ -145,6 +164,60 @@ describe("validateStaticConfig: settings and secrets", () => {
     expect(problemsOf({ ...production, LEAD_MOBILE_DAILY_LIMIT: "five", VISIT_LEAD_DAYS: "-1" })).toEqual([
       "VISIT_LEAD_DAYS must be a whole number",
       "LEAD_MOBILE_DAILY_LIMIT must be a whole number",
+    ]);
+  });
+});
+
+describe("validateStaticConfig: try-on and messaging", () => {
+  const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS };
+
+  it("needs the AILabTools key only for the real image provider", () => {
+    const { AILAB_API_KEY: _omitted, ...withoutKey } = production;
+    expect(problemsOf(withoutKey)).toEqual(["AILAB_API_KEY is not set"]);
+    expect(validateStaticConfig(production).settings.tryon.ailabApiKey).toBe("ailab-key");
+    expect(validateStaticConfig(local).settings.tryon.ailabApiKey).toBeNull();
+  });
+
+  it("needs every Evolution setting for Evolution, over https, and trims the URL", () => {
+    const { EVOLUTION_INSTANCE_NAME: _omitted, ...withoutInstance } = production;
+    expect(problemsOf(withoutInstance)).toEqual(["EVOLUTION_INSTANCE_NAME is not set"]);
+    expect(problemsOf({ ...production, EVOLUTION_API_URL: "http://bridge.example" })).toEqual([
+      "EVOLUTION_API_URL must be an https:// URL",
+    ]);
+    expect(validateStaticConfig(production).settings.messaging.evolution).toEqual({
+      baseUrl: "https://bridge.example",
+      apiKey: "evolution-key",
+      instance: "maneman",
+    });
+  });
+
+  it("refuses a short signing key, an unknown colour route, template or retention", () => {
+    expect(
+      problemsOf({
+        ...local,
+        RESULT_SIGNING_KEY: "short",
+        UNKNOWN_COLOR_ROUTE: "premium",
+        WA_RESULT_TEMPLATE: "nope",
+        RESULT_RETENTION_DAYS: "45",
+      }),
+    ).toEqual([
+      "UNKNOWN_COLOR_ROUTE must be one of premium_original, pro_black",
+      "RESULT_SIGNING_KEY must be at least 32 characters",
+      "RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days",
+      "WA_RESULT_TEMPLATE names no template in src/config/message-templates.ts",
+    ]);
+  });
+
+  it("insists on an allowlist while staging messaging is on, and reads it as E.164", () => {
+    const staging = { ...production, ENVIRONMENT: "staging", MESSAGING_ENABLED: "true" };
+    expect(problemsOf(staging)).toEqual([
+      "MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging",
+    ]);
+    const allowed = validateStaticConfig({ ...staging, MESSAGING_ALLOWLIST: "98100 00001, +91 98100-00002" });
+    expect(allowed.settings.messaging.allowlist).toEqual(["+919810000001", "+919810000002"]);
+    expect(problemsOf({ ...staging, MESSAGING_ALLOWLIST: "12345" })).toEqual([
+      "MESSAGING_ALLOWLIST has an entry that is not an Indian mobile number",
+      "MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging",
     ]);
   });
 });

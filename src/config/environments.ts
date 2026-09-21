@@ -35,6 +35,13 @@ export const HOSTNAME: Readonly<Record<RemoteEnvironmentName, string>> = {
   production: "maneman.in",
 };
 
+/** Where links in messages point, e.g. a WhatsApp copy's result link. */
+export const PUBLIC_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
+  local: "http://localhost:8787",
+  staging: "https://staging.maneman.in",
+  production: "https://maneman.in",
+};
+
 export const ZONE_NAME = "maneman.in";
 export const ZONE_ID = "d33891be281c088bf3e0e927d7ed20f9";
 
@@ -42,6 +49,7 @@ export const ZONE_ID = "d33891be281c088bf3e0e927d7ed20f9";
 export const PROVIDER_VARS = {
   IMAGE_PROVIDER: ["ailabtools", "stub"],
   CRM_PROVIDER: ["zoho", "stub"],
-  MESSAGING_PROVIDER: ["bsp", "stub"],
+  // Evolution for now; an official BSP later (docs/decisions/0016-whatsapp-through-evolution.md).
+  MESSAGING_PROVIDER: ["evolution", "stub"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;

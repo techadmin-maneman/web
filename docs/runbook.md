@@ -6,7 +6,7 @@ Everything lives in the Cloudflare account `Tech@maneman.in's Account` (`a2e1850
 
 To run SQL against an environment's database: `W d1 execute maneman-<env> --env <env> --remote --command "<sql>"`, where `maneman-<env>` is `maneman-staging` or `maneman-prod`.
 
-Sections still to come: AILabTools or the BSP down (M3), ceiling tripped (M3), replaying a failed message (M3), erasure within the day (M4).
+Section still to come: erasure within the day (M4).
 
 ---
 
@@ -16,19 +16,22 @@ Sections still to come: AILabTools or the BSP down (M3), ceiling tripped (M3), r
 
 ### State on 21 September 2026
 
-| Step                                          | staging                 | production                        |
-| --------------------------------------------- | ----------------------- | --------------------------------- |
-| 1. D1 database, queues                        | done                    | done                              |
-| 1. R2 buckets, 30-day expiry                  | done                    | done                              |
-| 2. DNS record                                 | done                    | exists (the apex record)          |
-| 3. Access application and service token       | done                    | not applicable                    |
-| 4. Migrations and identity mark               | done                    | done                              |
-| 5. Bootstrap deploy of both Workers           | done                    | done                              |
-| 6. CI tokens and GitHub secrets, checked      | done                    | done                              |
-| 7. Worker secrets: Turnstile, IP salt         | done                    | done                              |
-| 7. Worker secrets: alert webhook              | done (Google Chat)      | **to do** (owner)                 |
-| 8. Zoho org, fields, secrets                  | done: Developer Edition | **to do** (owner): production org |
-| 9. Triggers (sweeper cron, crm-sync consumer) | done                    | after M2 is released              |
+| Step                                        | staging                                      | production                        |
+| ------------------------------------------- | -------------------------------------------- | --------------------------------- |
+| 1. D1 database, queues                      | done                                         | done                              |
+| 1. R2 buckets, 30-day expiry                | done                                         | done                              |
+| 2. DNS record                               | done                                         | exists (the apex record)          |
+| 3. Access application and service token     | done                                         | not applicable                    |
+| 4. Migrations and identity mark             | done                                         | done                              |
+| 5. Bootstrap deploy of both Workers         | done                                         | done                              |
+| 6. CI tokens and GitHub secrets, checked    | done                                         | done                              |
+| 7. Worker secrets: Turnstile, IP salt       | done                                         | done                              |
+| 7. Worker secrets: alert webhook            | done (Google Chat)                           | **to do** (owner)                 |
+| 7. Worker secrets: AILabTools, link signing | **to do** (M3)                               | **to do** (before the release)    |
+| 7. Worker secrets: Evolution, allowlist     | **to do** (owner, M3)                        | not until messaging is enabled    |
+| 8. Zoho org, fields, secrets                | done: Developer Edition                      | **to do** (owner): production org |
+| 9. Triggers (cron and all three consumers)  | crm-sync done; M3's two after M3 is deployed | after the release                 |
+| 10. Access bypass for result links          | **to do** (owner, M3)                        | not applicable                    |
 
 ### 1. Resources
 
@@ -137,6 +140,10 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                                   |
 | `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                                |
 | `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | India data centre: `accounts.zoho.in`, and for the API `www.zohoapis.in` (production org) or `developer.zohoapis.in` (Developer Edition org, staging). |
+| `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                       |
+| `RESULT_SIGNING_KEY`                                                        | 32 or more random characters, generated like `IP_HASH_SALT`. Signs upload and result links; changing it invalidates links already handed out.          |
+| `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`         | The Evolution API bridge (`docs/decisions/0016-whatsapp-through-evolution.md`). The URL must be public `https://`, reachable from Cloudflare.          |
+| `MESSAGING_ALLOWLIST`                                                       | Staging: the founders' mobile numbers, comma-separated. Only these receive messages. A secret, so the numbers stay out of git.                         |
 
 To set several at once without typing them into a terminal, put them in a git-ignored file at the repository root, such as `.env.worker-staging`, with one `NAME="value"` per line. Then:
 
@@ -218,6 +225,15 @@ npm run apply-triggers -- --env <env>
 
 `deploy-staging` prints a warning when a merge changed the staging triggers.
 
+### 10. Result links through Access (staging only)
+
+A WhatsApp copy carries a link to `/api/result/…`, which the Evolution bridge fetches. On staging, Cloudflare Access would stop it. Each link is signed and expires, so the path can bypass Access:
+
+1. Zero Trust → Access → Applications → Add → Self-hosted. Domain `staging.maneman.in`, path `api/result/`.
+2. Policy: action **Bypass**, include **Everyone**.
+
+Access applies the most specific path, so the rest of staging stays behind the founders' login.
+
 ---
 
 ## Staying on the free tier
@@ -230,7 +246,7 @@ Once, in the Cloudflare dashboard:
 2. Notifications → Add → Usage-based billing: one notification each for R2 storage (5 GB), R2 Class A operations (500,000) and R2 Class B operations (5,000,000). That is half of each monthly allowance.
 3. Billing → Subscriptions should list only free plans. Never upgrade Workers to Paid without a new ADR.
 
-If an R2 alert fires: set the render ceiling to 0 (M3 adds the variable) and redeploy, which stops new uploads and renders. Then find the cause before raising it again.
+If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/free-tier-budget.test.ts` refuses any ceiling that could take R2 or Queues past 80% of the free allowance (`docs/decisions/0015-render-pipeline.md`).
 
 ---
 
@@ -279,6 +295,66 @@ UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
 ```
 
 The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
+
+---
+
+## Try-on and WhatsApp
+
+The render consumer is the only caller of AILabTools and the messaging consumer the only caller of WhatsApp (`docs/decisions/0015-render-pipeline.md`). D1 records where every job and message stands:
+
+```sql
+SELECT state, failure_code, COUNT(*) AS jobs FROM tryon_jobs GROUP BY state, failure_code;
+SELECT id, state, endpoint, latency_ms, provider_error_detail FROM tryon_jobs ORDER BY created_at DESC LIMIT 10;
+SELECT state, COUNT(*) AS messages FROM outbound_messages GROUP BY state;
+SELECT id, attempts, last_error FROM outbound_messages WHERE state = 'failed' ORDER BY created_at DESC LIMIT 10;
+```
+
+`provider_error_detail` holds AILabTools' status and message, with the key scrubbed out. `last_error` holds the WhatsApp provider's status and code, never the number.
+
+### AILabTools is down, or refuses the key
+
+Symptoms: jobs fail as `render_failed`. A refused key (401 or 403), a retired endpoint (404) or an empty balance also raise an alert naming the job.
+
+- **Down (5xx, timeouts).** Nothing to do. Each submit is tried three times, and failed calls bill nothing. Customers see "failed" and can try again later.
+- **Refused key.** Put a working key in place with `W secret put AILAB_API_KEY --env <env>`. New jobs use it at once.
+
+### Credits are low
+
+The sweeper reads the balance once an hour and alerts below `AILAB_CREDIT_FLOOR`. Top up in the AILabTools dashboard. At zero, every render fails.
+
+### A ceiling was reached
+
+The alert names the ceiling (`upload`, `render` or `result_read`). Try-ons answer `503 busy` until midnight IST, and the alert fires at most once a day per ceiling.
+
+- If the traffic is real, raise the ceiling in `wrangler.jsonc` and deploy. The free-tier budget test refuses any value that could take the account past 80% of a free allowance.
+- If the traffic is abuse, leave the ceiling: it is doing its job.
+
+### A billed image was lost
+
+Alert: "its result was billed but never downloaded, and its URL has expired". The download was retried for 24 hours. The customer's job is `failed`, and nothing can recover the image. Check whether the result host (`ailab-outputs.oss-accelerate.aliyuncs.com`) is reachable at all.
+
+### WhatsApp (Evolution) is down
+
+Symptoms: messages fail with `HTTP 5xx`, `unreachable` or `Connection Closed`, and an alert names each after four attempts.
+
+1. Check the bridge. `GET {EVOLUTION_API_URL}/instance/connectionState/{instance}` with the `apikey` header should say `"state": "open"`.
+2. If the WhatsApp session dropped, reconnect it in the bridge (scan the QR code again).
+3. Replay the messages that failed (below).
+
+To turn WhatsApp copies off, set `MESSAGING_ENABLED` to `"false"` and deploy. The gate then stops promising a copy, and queued messages are skipped.
+
+### Replaying a failed message
+
+```sql
+UPDATE outbound_messages SET state = 'queued', attempts = 0, queued_at = '2000-01-01T00:00:00Z'
+WHERE state = 'failed' AND created_at > '<since, e.g. 2026-09-21>';
+```
+
+The sweeper sends them within five minutes. Every attempt mints a fresh link, so an old failure is not a problem, as long as the result has not been deleted.
+
+### Stuck jobs
+
+The sweeper re-enqueues renders whose queue message was lost, and fails a submit that died part-way after 10 minutes, because submitting again could bill twice. Nothing to do by hand.
 
 ---
 
