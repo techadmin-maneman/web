@@ -123,6 +123,20 @@ When the GitHub plan allows (0008): require every job in `.github/workflows/ci.y
 
 ---
 
+## Staying on the free tier
+
+The rules are in `docs/decisions/0009-stay-inside-cloudflare-free-tier.md`. The account is on Workers Free, where everything except R2 stops at its limit instead of billing.
+
+Once, in the Cloudflare dashboard:
+
+1. Billing → Budget alerts: create an alert at the lowest amount offered. Any usage-based charge then emails the billing address.
+2. Notifications → Add → Usage-based billing: one notification each for R2 storage (5 GB), R2 Class A operations (500,000) and R2 Class B operations (5,000,000). That is half of each monthly allowance.
+3. Billing → Subscriptions should list only free plans. Never upgrade Workers to Paid without a new ADR.
+
+If an R2 alert fires: set the render ceiling to 0 (M3 adds the variable) and redeploy, which stops new uploads and renders. Then find the cause before raising it again.
+
+---
+
 ## Rolling back a Worker version
 
 A production release rolls itself back when a smoke check fails. To roll back by hand:

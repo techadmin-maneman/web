@@ -149,6 +149,23 @@ describe("mm-api wrangler config", () => {
     expect(api(edit)).toContain(problem);
   });
 
+  it.each<[string, Edit, string]>([
+    ["local adds Workers AI", ["ai", { binding: "AI" }], "top level (local): ai is not on the free-tier allowlist"],
+    [
+      "production adds Browser Rendering",
+      ["env.production.browser", { binding: "BROWSER" }],
+      "env.production: browser is not on the free-tier allowlist",
+    ],
+    [
+      "staging adds a KV namespace",
+      ["env.staging.kv_namespaces", [{ binding: "KV", id: "x" }]],
+      "env.staging: kv_namespaces is not on the free-tier allowlist",
+    ],
+    ["production sets a CPU limit", ["env.production.limits", { cpu_ms: 50 }], "env.production: limits is not allowed"],
+  ])("fails when %s, which can bill or needs a paid plan", (_label, edit, problem) => {
+    expect(api(edit)).toContain(problem);
+  });
+
   it("at deploy time, requires real database IDs", () => {
     expect(checkApiConfig(realApi, { requireProvisioned: true })).toEqual([]);
 

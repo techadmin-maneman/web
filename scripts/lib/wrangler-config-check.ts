@@ -58,6 +58,23 @@ const NON_INHERITABLE_KEYS: readonly BindingKey[] = [
 ];
 
 /**
+ * The only binding kinds mm-api may use: those that are free, or fail rather
+ * than bill, on the Workers Free plan. See docs/decisions/0009-stay-inside-cloudflare-free-tier.md.
+ */
+const FREE_TIER_KEYS: ReadonlySet<string> = new Set([
+  "vars",
+  "define",
+  "d1_databases",
+  "r2_buckets",
+  "queues.producers",
+  "queues.consumers",
+  "version_metadata",
+]);
+
+/** Config keys that only exist on paid plans, or that bypass wrangler's binding types. */
+const PAID_OR_UNCHECKED_KEYS = ["limits", "unsafe"] as const;
+
+/**
  * Config keys that wrangler DOES copy into every environment. For a remote
  * environment each must be set in its own block, or it could inherit a route
  * or an account meant for local.
@@ -271,6 +288,21 @@ function checkRoutes(block: JsonObject, expectedPattern: string, label: string):
   return ok ? [] : [`${label}: routes must be exactly [{ pattern: "${expectedPattern}", zone_name: "${ZONE_NAME}" }]`];
 }
 
+/** Only binding kinds that cannot bill on the Workers Free plan. */
+function checkFreeTier(block: JsonObject, label: string): string[] {
+  const problems: string[] = [];
+  for (const { key } of NON_INHERITABLE_KEYS) {
+    if (!FREE_TIER_KEYS.has(key) && read(block, key) !== undefined) {
+      problems.push(`${label}: ${key} is not on the free-tier allowlist (docs/decisions/0009)`);
+    }
+  }
+  for (const key of PAID_OR_UNCHECKED_KEYS) {
+    if (block[key] !== undefined)
+      problems.push(`${label}: ${key} is not allowed on the free tier (docs/decisions/0009)`);
+  }
+  return problems;
+}
+
 /** No bucket, queue, database name or database ID appears in two environments. */
 function checkNoSharedResources(config: JsonObject): string[] {
   const blocks: [string, JsonObject][] = [["top level (local)", config]];
@@ -308,6 +340,7 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
     );
   }
   problems.push(...checkOwnResources(config, "local", "top level (local)"));
+  problems.push(...checkFreeTier(config, "top level (local)"));
 
   const localBindings = NON_INHERITABLE_KEYS.flatMap((bindingKey) => namesUnder(config, bindingKey) ?? []);
   for (const binding of REQUIRED_API_BINDINGS) {
@@ -325,6 +358,7 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
     problems.push(...checkRoutes(block, `${HOSTNAME[environment]}/api/*`, label));
     problems.push(...checkRedeclared(config, block, label));
     problems.push(...checkOwnResources(block, environment, label));
+    problems.push(...checkFreeTier(block, label));
     if (options.requireProvisioned === true && databaseIds(block).includes(PLACEHOLDER_DATABASE_ID)) {
       problems.push(`${label}: D1 database_id is a placeholder; provision it first`);
     }
