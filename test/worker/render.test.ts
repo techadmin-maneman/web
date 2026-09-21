@@ -202,6 +202,46 @@ describe("render: never billed twice", () => {
   });
 });
 
+describe("render: a result that arrives after its job moved on", () => {
+  /** The stub provider, running `during` while the result downloads. */
+  function imageThat(during: () => Promise<unknown>, now: () => Date): ImageProvider {
+    const image = createImageProvider(null, { fetch, now });
+    return {
+      ...image,
+      download: async (url) => {
+        await during();
+        return image.download(url);
+      },
+    };
+  }
+
+  async function renderWhile(id: string, during: () => Promise<unknown>): Promise<void> {
+    const time = clock();
+    const deps = fakeDependencies({ now: time.now, image: imageThat(during, time.now) });
+    await queuedJob(id);
+    await advanceJob(renderEnv(), deps, log, id, OPTIONS);
+    time.advance(STUB_RENDER_MS.pro);
+    expect(await advanceJob(renderEnv(), deps, log, id, OPTIONS)).toEqual({});
+  }
+
+  it("deletes the result when its person was erased during the download", async () => {
+    await renderWhile("erased", () =>
+      env.DB.prepare("UPDATE tryon_jobs SET state = 'expired', result_key = NULL WHERE id = 'erased'").run(),
+    );
+    expect(await job("erased")).toMatchObject({ state: "expired", result_key: null });
+    expect(await env.RESULTS.head("results/erased.png")).toBeNull();
+  });
+
+  it("keeps the result a parallel run stored first", async () => {
+    await renderWhile("parallel", () =>
+      env.DB.prepare(
+        "UPDATE tryon_jobs SET state = 'ready', result_key = 'results/parallel.png' WHERE id = 'parallel'",
+      ).run(),
+    );
+    expect(await env.RESULTS.head("results/parallel.png")).not.toBeNull();
+  });
+});
+
 describe("render: failures", () => {
   it("classifies Premium's 502 file-type trap as photo_invalid_file", async () => {
     const time = clock();

@@ -250,3 +250,26 @@ describe("sweeper: AILabTools credits", () => {
     expect(deps.alerts).toEqual([]);
   });
 });
+
+describe("sweeper: erasures", () => {
+  it("re-enqueues erased people whose CRM record is not yet blanked, after two minutes, until the last attempt", async () => {
+    const people = [
+      { id: "pending", erasedAt: minutesAgo(3), crmErasedAt: null, attempts: 1 },
+      { id: "just-erased", erasedAt: minutesAgo(1), crmErasedAt: null, attempts: 0 },
+      { id: "done", erasedAt: minutesAgo(30), crmErasedAt: minutesAgo(29), attempts: 1 },
+      { id: "given-up", erasedAt: minutesAgo(90), crmErasedAt: null, attempts: MAX_SYNC_ATTEMPTS },
+    ];
+    for (const person of people) {
+      await insertPerson(person.id, `erased:${person.id}`);
+      await env.DB.prepare("UPDATE people SET erased_at = ?, crm_erased_at = ?, crm_erasure_attempts = ? WHERE id = ?")
+        .bind(person.erasedAt, person.crmErasedAt, person.attempts, person.id)
+        .run();
+    }
+    const { bindings, queues } = sweepEnv();
+
+    const summary = await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect(summary.erasuresRequeued).toBe(1);
+    expect(queues.crm.sent).toEqual([{ erase_person_id: "pending", request_id: "sweeper" }]);
+  });
+});

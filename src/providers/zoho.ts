@@ -78,8 +78,26 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
       await api.addNote(existingId, noteFor(lead));
       return { crmLeadId: existingId, created: false };
     },
+
+    async erasePerson(personId, knownCrmLeadId) {
+      const api = createZohoApi(settings, { ...deps, log: deps.log.child({ person_id: personId }) });
+      const id = knownCrmLeadId ?? (await api.findLeadByPersonId(personId));
+      if (id === null) return { found: false };
+      // Workflows off: nothing should chase, or e-mail about, an erased person.
+      await api.updateLead(id, ERASED_RECORD, { runWorkflows: false });
+      await api.addNote(id, { title: "Personal data erased", content: "Erased at the person's request." });
+      return { found: true };
+    },
   };
 }
+
+/** What an erased person's record keeps: the lead history, without who it was. */
+export const ERASED_RECORD: Readonly<Record<string, unknown>> = {
+  Last_Name: "Erased",
+  Mobile: null,
+  Email: null,
+  Contact_Consent: false,
+};
 
 /** The Zoho Leads fields for this lead. See docs/runbook.md, "Setting up Zoho", for the custom fields. */
 export function recordFor(lead: CrmLead, status: LeadStatus | null, isNew: boolean): Record<string, unknown> {

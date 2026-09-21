@@ -8,6 +8,7 @@ import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { registerCities } from "./routes/cities.ts";
+import { registerErasure } from "./routes/erasure.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
 import { registerTryonClaim } from "./routes/tryon-claim.ts";
@@ -56,6 +57,7 @@ export function createApp(config: StaticConfig, makeDependencies?: DependencyFac
   registerTryonGenerate(app);
   registerTryonClaim(app);
   registerTryonResult(app);
+  registerErasure(app);
 
   app.notFound((c) => c.json(errorBody("not_found", c.var.requestId), 404));
   app.onError((error, c) => {

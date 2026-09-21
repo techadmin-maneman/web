@@ -424,6 +424,50 @@ A result image, behind a signed link that expires
 }
 ```
 
+### POST /api/erasure
+
+Operators only: erase a person's photos, results and details, found by their number
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ErasureRequest"
+}
+```
+
+**200**: Erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErasureResponse"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: unauthorized
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no one with this number, or already erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -453,7 +497,8 @@ A result image, behind a signed link that expires
             "upload_missing",
             "session_required",
             "job_not_claimable",
-            "look_limit_reached"
+            "look_limit_reached",
+            "unauthorized"
           ]
         },
         "request_id": {
@@ -992,6 +1037,68 @@ A result image, behind a signed link that expires
   "required": [
     "state",
     "failure_code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ErasureResponse
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "person_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "erased_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "photos_deleted": {
+      "type": "integer"
+    },
+    "results_deleted": {
+      "type": "integer"
+    },
+    "messages_cancelled": {
+      "type": "integer"
+    },
+    "crm": {
+      "type": "string",
+      "enum": [
+        "queued"
+      ],
+      "description": "The CRM record is blanked by the crm-sync queue, retried until done."
+    }
+  },
+  "required": [
+    "person_id",
+    "erased_at",
+    "photos_deleted",
+    "results_deleted",
+    "messages_cancelled",
+    "crm"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ErasureRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "example": "98100 00000"
+    }
+  },
+  "required": [
+    "mobile"
   ],
   "additionalProperties": false
 }

@@ -19,3 +19,16 @@ export async function saltedHash(salt: string, value: string): Promise<string> {
   ]);
   return toHex(await crypto.subtle.sign("HMAC", key, encoder.encode(value)));
 }
+
+/**
+ * Whether a secret someone sent matches ours, in constant time: both are
+ * hashed first, so neither their length nor their content leaks through timing.
+ * An unset secret matches nothing.
+ */
+export async function secretsMatch(given: string, expected: string): Promise<boolean> {
+  if (expected === "") return false;
+  const [a, b] = await Promise.all(
+    [given, expected].map((value) => crypto.subtle.digest("SHA-256", encoder.encode(value))),
+  );
+  return a !== undefined && b !== undefined && crypto.subtle.timingSafeEqual(a, b);
+}
