@@ -38,7 +38,8 @@ if (values.photo === undefined) {
 }
 
 const POLL_EVERY_MS = 3_000;
-const GIVE_UP_AFTER_MS = 300_000;
+// The render consumer follows a render for 15 minutes (src/config/pipeline.ts).
+const GIVE_UP_AFTER_MS = 16 * 60 * 1000;
 const started = Date.now();
 const elapsed = () => `${((Date.now() - started) / 1000).toFixed(1)} s`;
 const mobile = process.env.STAGING_TEST_MOBILE ?? `9${String(Math.floor(Math.random() * 1e9)).padStart(9, "0")}`;

@@ -81,6 +81,8 @@ export async function syncLead(
     )
     .bind(leadId)
     .first<LeadRow>();
+  // Timed, with the Zoho calls, to find where a stalled run spends its time (docs/decisions/0012).
+  const readMs = Date.now() - started;
 
   if (row === null) {
     log.error("crm_sync_unknown_lead", { lead_id: leadId });
@@ -93,6 +95,7 @@ export async function syncLead(
     .bind(leadId)
     .first<{ sync_attempts: number }>();
   const attempts = attempt?.sync_attempts ?? 1;
+  const timings = { read_ms: readMs, claim_ms: Date.now() - started - readMs };
 
   try {
     const result = await deps.crm.syncLead(toCrmLead(row), row.zoho_lead_id);
@@ -108,7 +111,13 @@ export async function syncLead(
         )
         .bind(crypto.randomUUID(), at, leadId, JSON.stringify({ attempts, created: result.created })),
     ]);
-    log.info("crm_synced", { lead_id: leadId, attempts, created: result.created, duration_ms: Date.now() - started });
+    log.info("crm_synced", {
+      lead_id: leadId,
+      attempts,
+      created: result.created,
+      duration_ms: Date.now() - started,
+      ...timings,
+    });
     return { retrySoon: false };
   } catch (error) {
     const description = describe(error);
@@ -116,7 +125,7 @@ export async function syncLead(
       .prepare("UPDATE leads SET sync_state = 'failed', last_sync_error = ?1 WHERE id = ?2")
       .bind(description, leadId)
       .run();
-    log.error("crm_sync_failed", { lead_id: leadId, attempts, error, duration_ms: Date.now() - started });
+    log.error("crm_sync_failed", { lead_id: leadId, attempts, error, duration_ms: Date.now() - started, ...timings });
     if (attempts >= MAX_SYNC_ATTEMPTS) {
       await deps.alert(`Lead ${leadId} did not reach the CRM after ${String(attempts)} attempts: ${description}`);
     }
