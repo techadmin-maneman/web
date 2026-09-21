@@ -25,6 +25,14 @@ The owner chose, on 21 September 2026, to use **Evolution API** for now. The sam
 - Staging sends only to the numbers in `MESSAGING_ALLOWLIST`. It is a secret, so the founders' numbers are not in git, and staging refuses to start with messaging on and the list empty.
 - Production keeps `MESSAGING_ENABLED = "false"`. The gate then promises no WhatsApp copy and every result message is skipped.
 
+## Update, 21 September 2026: timeouts
+
+On staging, the first two sends of the first result timed out at 20 seconds and were retried. Before each timeout the bridge had already fetched the image, so it was probably sending while we gave up; the third attempt succeeded. The bridge answers a media send only after uploading the image to WhatsApp.
+
+- **More time.** The bridge now has 60 seconds to answer.
+- **No retry after a timeout.** A timeout is never retried: the message may already be on the phone. It fails with "delivery unconfirmed" and an alert.
+- **Still retried:** a failure to connect, a 429 and a 5xx.
+
 ## Consequences
 
 - **Evolution is not an official provider.** It drives a WhatsApp account the way WhatsApp Web does. The sending number can be banned for automated sending, and there is no Meta template approval, delivery webhook or opt-out handling.

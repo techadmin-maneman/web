@@ -267,4 +267,18 @@ describe("Evolution API", () => {
       detail: "unreachable: TypeError",
     });
   });
+
+  it("never retries a send that timed out, because it may already have been delivered", async () => {
+    const http = fakeFetch({
+      [SEND_MEDIA]: () => {
+        throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+      },
+    });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    expect(await evolution.sendTemplate("+919810000001", "tryon_result_v1", ["A"], "https://x.test/r.png")).toEqual({
+      ok: false,
+      transient: false,
+      detail: "no reply within 60 s: delivery unconfirmed",
+    });
+  });
 });

@@ -19,7 +19,12 @@ export interface EvolutionSettings {
   readonly instance: string;
 }
 
-const TIMEOUT_MS = 20_000;
+/**
+ * The bridge answers a media send only after it has fetched the image and
+ * uploaded it to WhatsApp. On staging a send that outlived a 20 s limit had
+ * already fetched the image, so the limit is generous.
+ */
+const TIMEOUT_MS = 60_000;
 
 export function createEvolutionMessaging(
   settings: EvolutionSettings,
@@ -55,7 +60,17 @@ export function createEvolutionMessaging(
           signal: AbortSignal.timeout(TIMEOUT_MS),
         });
       } catch (error) {
-        return { ok: false, transient: true, detail: `unreachable: ${error instanceof Error ? error.name : "error"}` };
+        const name = error instanceof Error ? error.name : "error";
+        // A timeout means the bridge took the request and did not answer: the message may be on the
+        // phone already, and sending again would duplicate it. Only a failure to connect is retried.
+        if (name === "TimeoutError") {
+          return {
+            ok: false,
+            transient: false,
+            detail: `no reply within ${String(TIMEOUT_MS / 1000)} s: delivery unconfirmed`,
+          };
+        }
+        return { ok: false, transient: true, detail: `unreachable: ${name}` };
       }
 
       const reply = await response.text();
