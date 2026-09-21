@@ -535,6 +535,10 @@
   color: var(--error-on-ink);
   margin-top: var(--sp-8);
 }
+.gateFailure {
+  margin-top: var(--sp-20);
+  max-width: var(--measure-form);
+}
 .gateSubmit {
   width: 100%;
   max-width: var(--measure-form);
@@ -555,6 +559,20 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-mid)), 1fr));
   gap: var(--result-gap);
   align-items: start;
+}
+/* The after side while the render is still running, in the gate's colours. */
+.pending {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-14);
+  background: var(--ink-raised);
+  color: var(--ink-muted);
+  font-size: var(--fs-15);
+  letter-spacing: var(--tracking-12);
 }
 .chosen {
   letter-spacing: var(--tracking-16);
@@ -640,4 +658,12 @@
   flex-direction: column;
   gap: var(--sp-13);
   max-width: var(--measure-button-column);
+}
+
+/* Turnstile shows only if Cloudflare needs the visitor to act. */
+.turnstile {
+  margin-top: var(--sp-16);
+}
+.turnstile:empty {
+  display: none;
 }

@@ -64,3 +64,35 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 ## Tooling
 
 17. **`openapi-typescript` and TypeScript 6.** The prompt generates the API types with `openapi-typescript`. Its latest release (7.13) declares a peer dependency on TypeScript 5, and the repository uses 6. A `package.json` override points it at the repository's TypeScript. It generates correctly, and `test/node/site-booking.test.ts` fails if the committed types drift from `docs/openapi.json`.
+
+## The try-on (F3)
+
+18. **The error screen.** v2 has one error screen, for a photograph that cannot be read. The prompt has `render_failed` and `busy` replace only its heading and body, and the site does the same for four kinds of error:
+    - a photograph the browser, the API or the renderer cannot use: v2's words;
+    - a failed render;
+    - a busy service, which also covers the rate limits, a failed Turnstile check and an API that cannot be reached;
+    - one look per visitor (`look_limit_reached`).
+
+    v2's frame label ("Cannot read the photograph") and step label ("Cannot use this photograph") stay for every kind, though they blame the photograph for errors that are not its fault. **Raised for a design pass.** The one-look screen hides _Choose another_, since there is no second photograph to choose, and keeps _Book a visit instead_. The text is in `site.ts`.
+
+19. **When an error shows.** A refused upload shows as soon as it happens, while the visitor is still choosing a stage or a look, rather than after Generate. A failed render shows during processing, on the gate, or on the result screen.
+
+20. **The claim carries no Turnstile token.** The prompt puts Turnstile on every call that changes something, but the contract's `ClaimRequest` has no token field and the API would refuse one. The upload link, which starts every try-on, carries the token.
+
+21. **The gate while it saves.** v2's gate has no sending state. The claim waits for the render to have started, which on a slow connection means waiting for the upload to finish, so the button reads _Saving_, with the booking form's sending icon, and ignores a second press. A refusal shows one line above the button, in the gate's error style:
+    - a number that has had too many results today;
+    - a result already saved to another number;
+    - anything else.
+
+22. **The result before the render is ready.** The gate opens at 20 seconds, and renders take 30 to 180, so the result screen often opens first. The after side then reads "Still working on it", in the gate's colours, and _Download_ and _WhatsApp_ wait until the image arrives. After five minutes the page gives up and shows the busy error. "A copy is on its way…" shows only when the API says messaging is on (`whatsapp_copy`).
+
+23. **Download and WhatsApp.** _Download_ saves the result as a file. _WhatsApp_ shares the image through the phone's share sheet where the browser can share files. Elsewhere it opens WhatsApp with one line of text and no image: the result's link is private and expires, so it never goes in a URL.
+
+24. **Back after Generate.** v2's back control from processing leads to the looks. With one look per visitor, Generate for the same look returns the render already running, and a different look is refused as `look_limit_reached`.
+
+25. **The photograph.** It is prepared as the AILabTools harness prepares it:
+    - fitted within 4090 px;
+    - re-encoded as JPEG at 0.92, which drops its EXIF, the location included;
+    - shrunk by 15% at a time until it is under 5 MB.
+
+    A file the browser cannot read, or one under 200 px on a side, goes straight to the error screen, and nothing is sent. The hair colour comes from the harness's detector, run in the browser. A shade the API does not accept, such as blonde or red, is sent as `unknown`.
