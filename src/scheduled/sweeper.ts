@@ -3,12 +3,12 @@
 //
 //   leads       pending over 2 minutes, or failed under 10 attempts   -> crm-sync
 //   messages    queued but unsent for over 5 minutes                  -> messaging
-//   renders     queued but never started, or rendering past the deadline -> render
+//   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
 //   hourly      the AILabTools balance, against AILAB_CREDIT_FLOOR
 //   expiry      abandoned uploads after an hour, results after 30 days, photos once their jobs are done
 
-import { DOWNLOAD_QUEUE_RETRIES, RENDER_DEADLINE_MS } from "../config/pipeline.ts";
+import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { failJob } from "../domain/tryon.ts";
@@ -87,7 +87,7 @@ export async function sweep(
     messages.map((id) => ({ message_id: id, request_id: "sweeper" }) satisfies MessagingMessage),
   );
 
-  // Renders whose queue message was lost: never started, or silent past the deadline.
+  // Renders whose queue message was lost: never started, or silent past the give-up time.
   const renders = await ids(
     db
       .prepare(
@@ -96,7 +96,7 @@ export async function sweep(
           OR (state = 'rendering' AND submitted_at < ?2)
        ORDER BY created_at LIMIT ?3`,
       )
-      .bind(before(PENDING_GRACE_MS), before(RENDER_DEADLINE_MS + PENDING_GRACE_MS), BATCH_LIMIT),
+      .bind(before(PENDING_GRACE_MS), before(RENDER_GIVE_UP_MS + PENDING_GRACE_MS), BATCH_LIMIT),
   );
 
   // A submit that started and never finished cannot be resumed: we do not know whether AILabTools took it.

@@ -5,7 +5,7 @@ import { STUB_RENDER_MS, STUB_STALL_MS } from "../../src/providers/ailabtools-st
 import { createImageProvider, type ImageProvider } from "../../src/providers/image.ts";
 import {
   POLL_DELAY_SECONDS,
-  RENDER_DEADLINE_MS,
+  RENDER_GIVE_UP_MS,
   RESULT_URL_LIFETIME_MS,
   SUBMIT_ATTEMPTS,
 } from "../../src/config/pipeline.ts";
@@ -255,7 +255,24 @@ describe("render: failures", () => {
     expect(await job("flaky")).toMatchObject({ state: "failed", failure_code: "render_failed" });
   });
 
-  it("fails a render still running 180 s after submitting", async () => {
+  it("keeps polling a render past 3 minutes, once a minute, because it is billed all the same", async () => {
+    const time = clock();
+    const slow: ImageProvider = {
+      ...countingImage(time.now).image,
+      poll: () => Promise.resolve({ state: "running" }),
+    };
+    const deps = fakeDependencies({ now: time.now, image: slow });
+    await queuedJob("slow-premium");
+    await advanceJob(renderEnv(), deps, log, "slow-premium", OPTIONS);
+
+    time.advance(6 * 60_000);
+    expect(await advanceJob(renderEnv(), deps, log, "slow-premium", OPTIONS)).toEqual({
+      retryAfterSeconds: POLL_DELAY_SECONDS.slow,
+    });
+    expect(await job("slow-premium")).toMatchObject({ state: "rendering" });
+  });
+
+  it("gives up 15 minutes after submitting, with an alert naming the task", async () => {
     const time = clock();
     const stuck: ImageProvider = {
       ...countingImage(time.now).image,
@@ -265,9 +282,10 @@ describe("render: failures", () => {
     await queuedJob("stuck");
     await advanceJob(renderEnv(), deps, log, "stuck", OPTIONS);
 
-    time.advance(RENDER_DEADLINE_MS + 1);
+    time.advance(RENDER_GIVE_UP_MS + 1);
     expect(await advanceJob(renderEnv(), deps, log, "stuck", OPTIONS)).toEqual({});
     expect(await job("stuck")).toMatchObject({ state: "failed", failure_code: "render_failed" });
+    expect(deps.alerts).toEqual([expect.stringMatching(/no result 15 min after submitting; task stub\./) as string]);
   });
 
   it("alerts on a refused API key, and fails when the photo is gone", async () => {

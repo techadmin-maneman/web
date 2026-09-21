@@ -3,7 +3,7 @@
 // again later. Nothing waits inside the Worker for a render to finish.
 //
 //   queued       read the photo, submit it              -> rendering
-//   rendering    poll once; not done: retry in 5-10 s   -> downloading
+//   rendering    poll once; not done: retry in 5-60 s   -> downloading
 //   downloading  keep the result URL, then download it  -> ready
 //
 // The API bills on generation, not delivery (API notes, 7.10). So a job is
@@ -15,7 +15,8 @@ import {
   DOWNLOAD_QUEUE_RETRIES,
   POLL_DELAY_SECONDS,
   POLL_SLOWDOWN_AFTER_MS,
-  RENDER_DEADLINE_MS,
+  POLL_SLOW_AFTER_MS,
+  RENDER_GIVE_UP_MS,
   RESULT_URL_LIFETIME_MS,
   SUBMIT_ATTEMPTS,
 } from "../config/pipeline.ts";
@@ -214,15 +215,23 @@ async function poll(
     );
   }
 
-  const withinDeadline = elapsed <= RENDER_DEADLINE_MS;
+  const withinDeadline = elapsed <= RENDER_GIVE_UP_MS;
   if (result.state === "failed" && !(result.failure.transient && withinDeadline)) {
     return fail(env, deps, log, job, result.failure);
   }
   if (!withinDeadline) {
-    const detail = `no result ${String(Math.round(elapsed / 1000))} s after submitting`;
-    return fail(env, deps, log, job, { code: "render_failed", transient: false, alert: false, detail });
+    // Probably billed already: Premium bills while it renders. The task can still be polled by hand.
+    const detail = `no result ${String(Math.round(elapsed / 60_000))} min after submitting; task ${job.provider_task_id}`;
+    return fail(env, deps, log, job, { code: "render_failed", transient: false, alert: true, detail });
   }
-  return { retryAfterSeconds: elapsed < POLL_SLOWDOWN_AFTER_MS ? POLL_DELAY_SECONDS.early : POLL_DELAY_SECONDS.late };
+  return { retryAfterSeconds: pollDelay(elapsed) };
+}
+
+/** 5 s at first, 10 s after 30 s, once a minute after 3 minutes. */
+function pollDelay(elapsed: number): number {
+  if (elapsed < POLL_SLOWDOWN_AFTER_MS) return POLL_DELAY_SECONDS.early;
+  if (elapsed < POLL_SLOW_AFTER_MS) return POLL_DELAY_SECONDS.late;
+  return POLL_DELAY_SECONDS.slow;
 }
 
 async function download(

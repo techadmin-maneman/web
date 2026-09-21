@@ -3,6 +3,7 @@
 // never printed.
 //
 //   node --env-file=.env.worker-staging scripts/ailabtools-probe.ts credits
+//   node --env-file=.env.worker-staging scripts/ailabtools-probe.ts poll <task_id> pro|premium
 //   node --env-file=.env.worker-staging scripts/ailabtools-probe.ts wrong-extension <photo.jpg>
 //   node --env-file=.env.worker-staging scripts/ailabtools-probe.ts rejected <photo> [<photo> …]
 //
@@ -65,6 +66,12 @@ const image = createAilabtoolsProvider({ apiKey, fetch });
 
 if (command === "credits") {
   console.log(`balance: ${String(await credits(image))} credits`);
+} else if (command === "poll" && (paths[1] === "pro" || paths[1] === "premium")) {
+  // A task by its ID, e.g. one the render consumer gave up on (tryon_jobs.provider_task_id).
+  const result = await image.poll(paths[0] ?? "", paths[1]);
+  const detail =
+    result.state === "done" ? "a result URL is waiting" : result.state === "failed" ? result.failure.detail : "";
+  console.log(`task: ${result.state} ${detail}`);
 } else if (command === "wrong-extension" && paths[0] !== undefined) {
   const photo = new Uint8Array(readFileSync(paths[0]));
   const renamed = createAilabtoolsProvider({ apiKey, fetch: renamingFetch("portrait.avif") });
@@ -101,6 +108,8 @@ if (command === "credits") {
   const after = await credits(image);
   console.log(`credits: ${String(before)} before, ${String(after)} after: ${String(before - after)} spent`);
 } else {
-  console.error("usage: ailabtools-probe.ts credits | wrong-extension <photo> | rejected <photo> [<photo> …]");
+  console.error(
+    "usage: ailabtools-probe.ts credits | poll <task_id> pro|premium | wrong-extension <photo> | rejected <photo> [<photo> …]",
+  );
   process.exit(2);
 }

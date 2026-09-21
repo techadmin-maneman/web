@@ -97,8 +97,8 @@ describe("sweeper: try-on", () => {
   it("re-enqueues renders whose message was lost, and fails a submit that died part-way", async () => {
     await insertJob({ id: "lost-queued", state: "queued", created_at: minutesAgo(3) });
     await insertJob({ id: "fresh-queued", state: "queued", created_at: minutesAgo(1) });
-    await insertJob({ id: "silent-render", state: "rendering", submitted_at: minutesAgo(6), provider_task_id: "t" });
-    await insertJob({ id: "live-render", state: "rendering", submitted_at: minutesAgo(1), provider_task_id: "t" });
+    await insertJob({ id: "silent-render", state: "rendering", submitted_at: minutesAgo(18), provider_task_id: "t" });
+    await insertJob({ id: "live-render", state: "rendering", submitted_at: minutesAgo(6), provider_task_id: "t" });
     await insertJob({
       id: "dead-submit",
       state: "queued",
