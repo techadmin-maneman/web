@@ -1,6 +1,6 @@
 # 0004. Routing and hostnames
 
-- Status: accepted (deploy blocked on 0007)
+- Status: accepted
 - Date: 2026-09-21
 
 ## Context

@@ -1,6 +1,6 @@
 # 0006. Deployment pipeline
 
-- Status: accepted (enforcement blocked on 0007)
+- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008)
 - Date: 2026-09-21
 
 ## Decision

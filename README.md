@@ -2,7 +2,7 @@
 
 Two Cloudflare Workers on one origin:
 
-- **`mm-api`** (repository root): `https://{host}/api/*`. Owns every binding and secret: D1, R2, Queues.
+- **`mm-api`** (repository root): `https://{host}/api/*`. Owns every binding and secret: D1 and Queues now, R2 from M3.
 - **`mm-site`** (`site/`): everything else. Static assets only. Today a placeholder page per environment; the front-end task replaces it with the Astro build and must keep the `mm-worker` and `mm-environment` meta tags the smoke suite looks for.
 
 |           | local                        | staging                                            | production                   |
@@ -11,7 +11,9 @@ Two Cloudflare Workers on one origin:
 | D1        | local SQLite                 | `maneman-staging`                                  | `maneman-prod`               |
 | Providers | stubs                        | real                                               | real (stubs refuse to start) |
 
-Staging and production are **not provisioned yet**. See `docs/decisions/0007-platform-constraints.md`.
+Both environments are deployed in the Cloudflare account that holds `maneman.in`. The steps still owed are in `docs/runbook.md`, "Provisioning an environment".
+
+Deploys: a merge to `main` deploys staging (`.github/workflows/deploy-staging.yml`). Production is released by hand with `deploy-production.yml`, for a commit that passed staging.
 
 ## Working locally
 
