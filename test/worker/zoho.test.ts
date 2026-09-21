@@ -262,3 +262,41 @@ describe("Zoho record and note contents", () => {
     }
   });
 });
+
+describe("Zoho: erasing a person", () => {
+  it("blanks the known record with workflows off and notes why, without searching", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [LEADS_URL]: () => updated("zoho-9") });
+
+    expect(await crm.erasePerson("person-1", "zoho-9")).toEqual({ found: true });
+
+    expect(calls.map((call) => `${call.method} ${new URL(call.url).pathname}`)).toEqual([
+      "POST /oauth/v2/token",
+      "PUT /crm/v8/Leads/zoho-9",
+      "POST /crm/v8/Leads/zoho-9/Notes",
+    ]);
+    expect(bodyOf(calls[1])).toEqual({
+      data: [{ Last_Name: "Erased", Mobile: null, Email: null, Contact_Consent: false }],
+      trigger: [],
+    });
+    expect(bodyOf(calls[2]).data).toEqual([
+      { Note_Title: "Personal data erased", Note_Content: "Erased at the person's request." },
+    ]);
+  });
+
+  it("finds the record by the person's ID when D1 never stored it", async () => {
+    const { crm, calls } = zoho({
+      [TOKEN_URL]: () => tokenIssued(),
+      [SEARCH_URL]: () => json({ data: [{ id: "zoho-existing" }], info: { count: 1 } }),
+      [LEADS_URL]: () => updated("zoho-existing"),
+    });
+    expect(await crm.erasePerson("person-1", null)).toEqual({ found: true });
+    expect(decodeURIComponent(calls[1]?.url ?? "")).toContain("criteria=(D1_Person_ID:equals:person-1)");
+    expect(calls[2]?.url).toBe(`${LEADS_URL}/zoho-existing`);
+  });
+
+  it("changes nothing when the CRM never had the person", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [SEARCH_URL]: noMatch });
+    expect(await crm.erasePerson("person-1", null)).toEqual({ found: false });
+    expect(calls).toHaveLength(2);
+  });
+});

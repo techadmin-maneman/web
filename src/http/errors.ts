@@ -21,6 +21,8 @@ export const ERROR_CODES = [
   "session_required",
   "job_not_claimable",
   "look_limit_reached",
+  // Erasure (docs/decisions/0019-erasure.md).
+  "unauthorized",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

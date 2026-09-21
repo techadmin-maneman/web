@@ -275,7 +275,7 @@ async function download(
 
   const readyAt = deps.now();
   const latencyMs = readyAt.getTime() - Date.parse(job.submitted_at ?? job.created_at);
-  const [, queued] = await db.batch([
+  const [stored, queued] = await db.batch([
     db
       .prepare(
         `UPDATE tryon_jobs SET state = 'ready', result_key = ?2, expires_at = ?3, latency_ms = ?4
@@ -295,6 +295,16 @@ async function download(
       )
       .bind(job.id, readyAt.toISOString()),
   ]);
+  if (stored?.meta.changes === 0) {
+    // The job moved on while this ran: the person was erased, or a parallel run stored the result first.
+    const current = await db
+      .prepare("SELECT result_key FROM tryon_jobs WHERE id = ?1")
+      .bind(job.id)
+      .first<{ result_key: string | null }>();
+    if (current?.result_key !== resultKey) await env.RESULTS.delete(resultKey);
+    log.info("render_result_discarded", { attempts });
+    return DONE;
+  }
   log.info("render_ready", { endpoint: job.endpoint, latency_ms: latencyMs, bytes: result.bytes.byteLength, attempts });
 
   for (const row of (queued?.results ?? []) as { id: string }[]) {

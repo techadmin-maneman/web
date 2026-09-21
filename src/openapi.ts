@@ -18,6 +18,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     ipHashSalt: "",
     alertWebhookUrl: null,
     leadWebhookUrl: null,
+    erasureSecret: "",
     zoho: null,
     tryon: {
       uploadIpHourlyLimit: 0,

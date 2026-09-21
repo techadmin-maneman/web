@@ -40,6 +40,11 @@ export interface CrmSyncResult {
 export interface CrmProvider {
   /** Creates the person's CRM record, or updates it and adds a note. */
   syncLead(lead: CrmLead, knownCrmLeadId: string | null): Promise<CrmSyncResult>;
+  /**
+   * Blanks an erased person's record: name, number and e-mail, and the consent
+   * to contact them. `found` is false when the CRM never had them.
+   */
+  erasePerson(personId: string, knownCrmLeadId: string | null): Promise<{ found: boolean }>;
 }
 
 export function createCrmProvider(
@@ -58,6 +63,10 @@ export function createStubCrm(log: Logger): CrmProvider {
       assertStatusAllowed(lead, status);
       log.info("crm_stub_sync", { lead_id: lead.leadId, status, created });
       return Promise.resolve({ crmLeadId: knownCrmLeadId ?? `stub-${lead.personId}`, created });
+    },
+    erasePerson: (personId, knownCrmLeadId) => {
+      log.info("crm_stub_erase", { person_id: personId });
+      return Promise.resolve({ found: knownCrmLeadId !== null });
     },
   };
 }

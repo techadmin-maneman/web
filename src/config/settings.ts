@@ -72,6 +72,8 @@ export interface Settings {
   readonly alertWebhookUrl: string | null;
   /** Where new-lead notices are posted: LEAD_WEBHOOK_URL, or else the alert webhook. */
   readonly leadWebhookUrl: string | null;
+  /** The operators' secret for POST /api/erasure (docs/decisions/0019-erasure.md). */
+  readonly erasureSecret: string;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
   readonly tryon: TryonSettings;
@@ -264,6 +266,7 @@ export function readSettings(
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
+    erasureSecret: read.key("ERASURE_SECRET"),
     zoho,
     tryon,
     messaging,

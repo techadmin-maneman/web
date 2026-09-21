@@ -2,6 +2,7 @@
 // moved on and has not is put back on its queue from here.
 //
 //   leads       pending over 2 minutes, or failed under 10 attempts   -> crm-sync
+//   erasures    a person erased whose CRM record is not yet blanked     -> crm-sync
 //   messages    queued but unsent for over 5 minutes                  -> messaging
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
@@ -38,6 +39,7 @@ export type SweepEnv = Pick<Env, "DB" | "CRM_QUEUE" | "RENDER_QUEUE" | "MESSAGE_
 
 export interface SweepSummary {
   readonly leadsRequeued: number;
+  readonly erasuresRequeued: number;
   readonly messagesRequeued: number;
   readonly rendersRequeued: number;
   readonly downloadsRequeued: number;
@@ -70,6 +72,21 @@ export async function sweep(
   await sendAll(
     env.CRM_QUEUE,
     leads.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
+  );
+
+  // Erased people whose CRM record is still to be blanked.
+  const erasures = await ids(
+    db
+      .prepare(
+        `SELECT id FROM people
+       WHERE erased_at < ?1 AND crm_erased_at IS NULL AND crm_erasure_attempts < ?2
+       ORDER BY erased_at LIMIT ?3`,
+      )
+      .bind(before(PENDING_GRACE_MS), MAX_SYNC_ATTEMPTS, BATCH_LIMIT),
+  );
+  await sendAll(
+    env.CRM_QUEUE,
+    erasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
   );
 
   // Result messages that were queued and never sent.
@@ -166,6 +183,7 @@ export async function sweep(
 
   const summary: SweepSummary = {
     leadsRequeued: leads.length,
+    erasuresRequeued: erasures.length,
     messagesRequeued: messages.length,
     rendersRequeued: renders.length,
     downloadsRequeued: downloads.length,
@@ -175,6 +193,7 @@ export async function sweep(
   };
   log.info("sweep", {
     leads_requeued: summary.leadsRequeued,
+    erasures_requeued: summary.erasuresRequeued,
     messages_requeued: summary.messagesRequeued,
     renders_requeued: summary.rendersRequeued,
     downloads_requeued: summary.downloadsRequeued,

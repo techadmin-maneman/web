@@ -41,7 +41,8 @@
                   "upload_missing",
                   "session_required",
                   "job_not_claimable",
-                  "look_limit_reached"
+                  "look_limit_reached",
+                  "unauthorized"
                 ]
               },
               "request_id": {
@@ -510,6 +511,58 @@
         "required": [
           "state",
           "failure_code"
+        ],
+        "additionalProperties": false
+      },
+      "ErasureResponse": {
+        "type": "object",
+        "properties": {
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "erased_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "photos_deleted": {
+            "type": "integer"
+          },
+          "results_deleted": {
+            "type": "integer"
+          },
+          "messages_cancelled": {
+            "type": "integer"
+          },
+          "crm": {
+            "type": "string",
+            "enum": [
+              "queued"
+            ],
+            "description": "The CRM record is blanked by the crm-sync queue, retried until done."
+          }
+        },
+        "required": [
+          "person_id",
+          "erased_at",
+          "photos_deleted",
+          "results_deleted",
+          "messages_cancelled",
+          "crm"
+        ],
+        "additionalProperties": false
+      },
+      "ErasureRequest": {
+        "type": "object",
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+            "example": "98100 00000"
+          }
+        },
+        "required": [
+          "mobile"
         ],
         "additionalProperties": false
       }
@@ -1128,6 +1181,74 @@
           },
           "503": {
             "description": "busy: today's result-read ceiling is reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/erasure": {
+      "post": {
+        "summary": "Operators only: erase a person's photos, results and details, found by their number",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "Bearer <ERASURE_SECRET>"
+            },
+            "required": false,
+            "name": "authorization",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErasureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: see error.fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no one with this number, or already erased",
             "content": {
               "application/json": {
                 "schema": {

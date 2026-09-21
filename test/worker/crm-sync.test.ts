@@ -3,12 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   MAX_SYNC_ATTEMPTS,
   QUICK_RETRY_DELAY_SECONDS,
+  eraseInCrm,
   handleCrmSyncBatch,
   syncLead,
 } from "../../src/queues/crm-sync.ts";
+import { erasePerson } from "../../src/domain/erasure.ts";
 import { createLogger } from "../../src/log.ts";
 import type { CrmLead, CrmProvider } from "../../src/providers/crm.ts";
 import {
+  NOW,
   appFor,
   captureLogs,
   fakeDependencies,
@@ -43,13 +46,22 @@ async function bookLead(city = "Gurgaon", mobile = "9810000001"): Promise<string
 }
 
 /** A CRM that remembers what it was asked. */
-function recordingCrm(): CrmProvider & { calls: { lead: CrmLead; knownId: string | null }[] } {
+function recordingCrm(): CrmProvider & {
+  calls: { lead: CrmLead; knownId: string | null }[];
+  erasures: { personId: string; knownId: string | null }[];
+} {
   const calls: { lead: CrmLead; knownId: string | null }[] = [];
+  const erasures: { personId: string; knownId: string | null }[] = [];
   return {
     calls,
+    erasures,
     syncLead: (lead, knownId) => {
       calls.push({ lead, knownId });
       return Promise.resolve({ crmLeadId: knownId ?? "zoho-1", created: knownId === null });
+    },
+    erasePerson: (personId, knownId) => {
+      erasures.push({ personId, knownId });
+      return Promise.resolve({ found: knownId !== null });
     },
   };
 }
@@ -194,6 +206,7 @@ describe("crm-sync: the queue batch", () => {
     const crm: CrmProvider = {
       syncLead: () =>
         ++call === 1 ? Promise.resolve({ crmLeadId: "z", created: true }) : Promise.reject(new Error("down")),
+      erasePerson: () => Promise.resolve({ found: false }),
     };
     const batch = batchOf([
       { lead_id: ok, request_id: "r1" },
@@ -226,9 +239,101 @@ describe("crm-sync: the queue batch", () => {
     expect(batch.messages[0]?.retry).not.toHaveBeenCalled();
   });
 
+  it("acknowledges an erasure once the CRM record is blanked", async () => {
+    await bookLead();
+    const summary = await erasePerson(env, "+919810000001", NOW);
+    const personId = summary?.personId ?? "";
+    const crm = recordingCrm();
+    const batch = batchOf([{ erase_person_id: personId, request_id: "r1" }]);
+
+    await handleCrmSyncBatch(batch as unknown as MessageBatch, env.DB, fakeDependencies({ crm }), log);
+
+    expect(crm.erasures).toEqual([{ personId, knownId: null }]);
+    expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
+  });
+
   it("drops a malformed message instead of retrying it forever", async () => {
     const batch = batchOf([{ lead: "nope" }]);
     await handleCrmSyncBatch(batch as unknown as MessageBatch, env.DB, fakeDependencies(), log);
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
+  });
+});
+
+describe("crm-sync: erasing a person", () => {
+  /** A person whose lead reached the CRM as zoho-1, then erased. */
+  async function erasedPerson(): Promise<string> {
+    const leadId = await bookLead();
+    await syncLead(env.DB, fakeDependencies({ crm: recordingCrm() }), log, leadId);
+    return (await erasePerson(env, "+919810000001", NOW))?.personId ?? "";
+  }
+
+  function erasure(personId: string) {
+    return env.DB.prepare("SELECT crm_erased_at, crm_erasure_attempts, crm_erasure_error FROM people WHERE id = ?")
+      .bind(personId)
+      .first();
+  }
+
+  it("blanks the CRM record it knows, once, however often the message comes", async () => {
+    const personId = await erasedPerson();
+    const crm = recordingCrm();
+    const deps = fakeDependencies({ crm });
+
+    expect(await eraseInCrm(env.DB, deps, log, personId)).toEqual({ retrySoon: false });
+    await eraseInCrm(env.DB, deps, log, personId); // a duplicate message
+
+    expect(crm.erasures).toEqual([{ personId, knownId: "zoho-1" }]);
+    expect(await erasure(personId)).toEqual({
+      crm_erased_at: NOW.toISOString(),
+      crm_erasure_attempts: 1,
+      crm_erasure_error: null,
+    });
+  });
+
+  it("keeps a scrubbed error, retries the first failure soon, and alerts at the last attempt", async () => {
+    const personId = await erasedPerson();
+    const deps = fakeDependencies({ crm: stubCrmThatFails("Zoho 500 INTERNAL_ERROR: rejected +91 98100 00001") });
+
+    expect(await eraseInCrm(env.DB, deps, log, personId)).toEqual({ retrySoon: true });
+    expect(await erasure(personId)).toEqual({
+      crm_erased_at: null,
+      crm_erasure_attempts: 1,
+      crm_erasure_error: "Zoho 500 INTERNAL_ERROR: rejected [redacted]",
+    });
+    expect(await eraseInCrm(env.DB, deps, log, personId)).toEqual({ retrySoon: false });
+    expect(deps.alerts).toEqual([]);
+
+    await env.DB.prepare("UPDATE people SET crm_erasure_attempts = ? WHERE id = ?")
+      .bind(MAX_SYNC_ATTEMPTS - 1, personId)
+      .run();
+    await eraseInCrm(env.DB, deps, log, personId);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining(`Erasing person ${personId} in the CRM failed 10 times`) as string,
+    ]);
+  });
+
+  it("does nothing for a person who was never erased", async () => {
+    await bookLead();
+    const person = await env.DB.prepare("SELECT id FROM people").first<{ id: string }>();
+    const crm = recordingCrm();
+
+    expect(await eraseInCrm(env.DB, fakeDependencies({ crm }), log, person?.id ?? "")).toEqual({ retrySoon: false });
+
+    expect(crm.erasures).toEqual([]);
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "crm_erasure_unknown_person" }));
+  });
+
+  it("never sends an erased person's lead to the CRM, and gives it up at once", async () => {
+    const leadId = await bookLead();
+    await erasePerson(env, "+919810000001", NOW);
+    const crm = recordingCrm();
+
+    expect(await syncLead(env.DB, fakeDependencies({ crm }), log, leadId)).toEqual({ retrySoon: false });
+
+    expect(crm.calls).toEqual([]);
+    expect(await leadRow(leadId)).toMatchObject({
+      sync_state: "failed",
+      sync_attempts: MAX_SYNC_ATTEMPTS,
+      last_sync_error: "person erased",
+    });
   });
 });

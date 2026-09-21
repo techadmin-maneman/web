@@ -21,6 +21,7 @@ export const LOCAL_SETTINGS: Settings = {
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
   leadWebhookUrl: null,
+  erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   tryon: {
     uploadIpHourlyLimit: 5,
@@ -158,7 +159,7 @@ export function fakeQueue(): Queue & { sent: unknown[] } {
 }
 
 export function stubCrmThatFails(message: string): CrmProvider {
-  return { syncLead: () => Promise.reject(new Error(message)) };
+  return { syncLead: () => Promise.reject(new Error(message)), erasePerson: () => Promise.reject(new Error(message)) };
 }
 
 /** Captures every JSON log line written through console.*. */

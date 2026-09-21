@@ -6,8 +6,6 @@ Everything lives in the Cloudflare account `Tech@maneman.in's Account` (`a2e1850
 
 To run SQL against an environment's database: `W d1 execute maneman-<env> --env <env> --remote --command "<sql>"`, where `maneman-<env>` is `maneman-staging` or `maneman-prod`.
 
-Section still to come: erasure within the day (M4).
-
 ---
 
 ## Provisioning an environment
@@ -144,6 +142,7 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                                                                                                                                                                                                    |
 | `RESULT_SIGNING_KEY`                                                        | 32 or more random characters, generated like `IP_HASH_SALT`. Signs upload and result links; changing it invalidates links already handed out.                                                                                                                                                                                       |
 | `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`         | The Evolution API bridge (`docs/decisions/0016-whatsapp-through-evolution.md`). The URL must be public `https://`, reachable from Cloudflare, and include the port if it is not 443: staging's ends in `ts.net:8443`, because port 443 on that host serves another app. `GET /` there should answer "Welcome to the Evolution API". |
+| `ERASURE_SECRET`                                                            | 32 or more random characters, generated like `IP_HASH_SALT`. Authorises `POST /api/erasure`. Keep one copy, in the git-ignored `.env.erasure-<env>` file that ops use for erasures ("Erasure within the day").                                                                                                                      |
 | `MESSAGING_ALLOWLIST`                                                       | Staging: the founders' mobile numbers, comma-separated. Only these receive messages. A secret, so the numbers stay out of git.                                                                                                                                                                                                      |
 
 To set several at once without typing them into a terminal, put them in a git-ignored file at the repository root, such as `.env.worker-staging`, with one `NAME="value"` per line. Then:
@@ -360,6 +359,36 @@ The sweeper re-enqueues renders whose queue message was lost, and fails a submit
 
 ---
 
+## Erasure within the day
+
+The photo notice promises that a person's data is deleted the same day they ask. Whoever takes the request erases it before the end of that day. What is erased, and what is not, is in `docs/decisions/0019-erasure.md`.
+
+1. **Check the request comes from the number's owner.** Reply to that number on WhatsApp, or call it.
+2. **Erase.** With the environment's secret in a git-ignored file, `.env.erasure-production`, holding `ERASURE_SECRET="…"` (for staging, also `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`):
+
+   ```sh
+   node --env-file=.env.erasure-production scripts/erase-person.ts --environment production
+   ```
+
+   The script asks for the number and for a confirmation, then prints the person's ID and what it deleted: photos, results, and messages not yet sent. It keeps the number out of shell history. Without the script, the call is `POST /api/erasure` with `Authorization: Bearer <ERASURE_SECRET>` and the body `{ "mobile": "98100 00000" }`.
+
+3. **Check Zoho within a few minutes.** The crm-sync queue blanks the record: the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked.
+
+   ```sql
+   SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error FROM people WHERE id = '<person_id>';
+   ```
+
+   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts. To finish it by hand, find the record in Zoho by `D1_Person_ID` and blank those fields. Then run `UPDATE people SET crm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`.
+
+4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one.
+5. **Tell the person** it is done.
+
+`404` means no one has that number, or the person was erased already; check the number for typos. Someone who used the try-on but never passed the gate never gave a number, and their photo is deleted within the hour anyway.
+
+**Zoho's history.** Blanking the fields may leave the old values in the record's timeline. If the person or legal asks for full removal, delete the record in Zoho, then delete it from the recycle bin as well. D1's lead history is unaffected.
+
+---
+
 ## Cities and visit days
 
 Opening a city is a data change, not a deploy. The booking form reads `GET /api/cities`, which may be cached for five minutes.
@@ -388,7 +417,7 @@ A blackout changes only proposals made after it is added.
 
 ## Restoring D1 to a point in time
 
-D1 Time Travel restores a database to any minute in the last 30 days. **It rolls back everything written since**, including leads that are already in Zoho. Prefer fixing rows by hand when you can.
+D1 Time Travel restores a database to any minute in the last 7 days (the Workers Free plan's window; 30 on Paid). **It rolls back everything written since**, including leads that are already in Zoho. Prefer fixing rows by hand when you can.
 
 ```sh
 W d1 time-travel info maneman-<env> --env <env> --timestamp 2026-09-21T10:00:00Z   # the bookmark for that moment
@@ -399,7 +428,8 @@ The restore prints a bookmark for the state it replaced, so the restore itself c
 
 - run `node scripts/mark-database.ts <env>`; the identity row is older than any restore point, so it should still match;
 - run the smoke suite;
-- replay any leads that were in flight.
+- replay any leads that were in flight;
+- **repeat any erasure made after the restore point.** A restore brings erased people back. Before restoring, list them: `SELECT id FROM people WHERE erased_at >= '<restore timestamp>';`. After it, look up each one's number (`SELECT mobile_e164 FROM people WHERE id = '<id>';`) and erase it again.
 
 ---
 
