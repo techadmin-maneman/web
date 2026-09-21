@@ -14,22 +14,23 @@ To run SQL against an environment's database: `W d1 execute maneman-<env> --env 
 
 ### State on 21 September 2026
 
-| Step                                        | staging                               | production                        |
-| ------------------------------------------- | ------------------------------------- | --------------------------------- |
-| 1. D1 database, queues                      | done                                  | done                              |
-| 1. R2 buckets, 30-day expiry                | done                                  | done                              |
-| 2. DNS record                               | done                                  | exists (the apex record)          |
-| 3. Access application and service token     | done                                  | not applicable                    |
-| 4. Migrations and identity mark             | done                                  | done                              |
-| 5. Bootstrap deploy of both Workers         | done                                  | done                              |
-| 6. CI tokens and GitHub secrets, checked    | done                                  | done                              |
-| 7. Worker secrets: Turnstile, IP salt       | done                                  | done                              |
-| 7. Worker secrets: alert webhook            | done (Google Chat)                    | **to do** (owner)                 |
-| 7. Worker secrets: AILabTools, link signing | done                                  | **to do** (before the release)    |
-| 7. Worker secrets: Evolution, allowlist     | done (poker-settle's bridge, for now) | not until messaging is enabled    |
-| 8. Zoho org, fields, secrets                | done: Developer Edition               | **to do** (owner): production org |
-| 9. Triggers (cron and all three consumers)  | done                                  | after the release                 |
-| 10. Access bypass for result links          | done                                  | not applicable                    |
+| Step                                        | staging                               | production                                      |
+| ------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
+| 1. D1 database, queues                      | done                                  | done                                            |
+| 1. R2 buckets, 30-day expiry                | done                                  | done                                            |
+| 2. DNS record                               | done                                  | exists (the apex record)                        |
+| 3. Access application and service token     | done                                  | not applicable                                  |
+| 4. Migrations and identity mark             | done                                  | done                                            |
+| 5. Bootstrap deploy of both Workers         | done                                  | done                                            |
+| 6. CI tokens and GitHub secrets, checked    | done                                  | done                                            |
+| 7. Worker secrets: Turnstile, IP salt       | done                                  | done                                            |
+| 7. Worker secrets: alert webhook            | done (Google Chat)                    | done (the same Google Chat space)               |
+| 7. Worker secrets: AILabTools, link signing | done                                  | done (staging's AILabTools key, for now)        |
+| 7. Worker secrets: Evolution, allowlist     | done (poker-settle's bridge, for now) | Evolution done (the same bridge; messaging off) |
+| 7. Worker secrets: erasure                  | done                                  | done                                            |
+| 8. Zoho org, fields, secrets                | done: Developer Edition               | done: staging's org, for now (ADR 0020)         |
+| 9. Triggers (cron and all three consumers)  | done                                  | done                                            |
+| 10. Access bypass for result links          | done                                  | not applicable                                  |
 
 ### 1. Resources
 
@@ -168,7 +169,7 @@ The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-p
 
 ### 8. Zoho
 
-Staging uses a Zoho CRM **Developer Edition** org, production the real org. Do this once per org.
+Staging uses a Zoho CRM **Developer Edition** org, production the real org. Do this once per org. For now production shares staging's org; `docs/decisions/0020-production-on-the-zoho-test-org.md` says how to move it to its own.
 
 1. **Fields.** Setup → Customization → Modules and Fields → Leads → Standard layout. Add these fields; their API names must match exactly:
 

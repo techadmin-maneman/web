@@ -171,7 +171,7 @@ Their licences are unknown; the owner chose to use them for this internal test.
 | 50 concurrent lead submissions      | `scripts/load-test-leads.ts` on staging (below)                                                                                                                                                                                                                                                                                                                                   | **pass**                     |
 | `docs/api.md` generated             | `npm run openapi` writes `docs/openapi.json` and `docs/api.md` from the zod schemas; `test/worker/contract.test.ts` fails if either is out of date                                                                                                                                                                                                                                | **pass**                     |
 | Runbook                             | `docs/runbook.md`: provisioning, secrets, free tier, replaying leads and messages, D1 point-in-time restore, erasure within the day, cities and blackout dates, rolling back a Worker version                                                                                                                                                                                     | **pass**                     |
-| One production release              | To come, once the owner has supplied production's secrets                                                                                                                                                                                                                                                                                                                         | pending                      |
+| One production release              | `deploy-production` released `268eaa4` on 21 September 2026 (below)                                                                                                                                                                                                                                                                                                               | **pass**                     |
 
 ### Load test, 21 September 2026
 
@@ -202,3 +202,18 @@ Run through Cloudflare Access with `scripts/staging-tryon.ts` and `scripts/erase
 **What the proof found:** B's lead sync wrote the person's details to Zoho at 17:17:05.36, 0.2 s before the erasure; the erasure's blanking landed 9 s later. Had the two run the other way round, the details would have been back in Zoho with D1 saying they were erased. A sync now blanks the record again if the person was erased while it ran (docs/decisions/0019-erasure.md).
 
 **The staging deploy of the erasure code** failed its first smoke check: for 12 s after the deploy, the edge still served the previous version. The job was re-run and passed, and the smoke check now allows a minute.
+
+### Production release, 21 September 2026
+
+Production had run the M1 skeleton until now. Its secrets were set first. Zoho is staging's test org for now, at the owner's request (docs/decisions/0020-production-on-the-zoho-test-org.md). `scripts/check-zoho-setup.ts` passed with production's values.
+
+`deploy-production` released `268eaa4` (PR #13's merge), which had passed staging:
+
+1. Migrations 0002 to 0004 were applied to `maneman-prod`, and its identity mark checked.
+2. The new `mm-api` version (`b12f0181`) served 10% of traffic for 300 s. It was smoke-tested before and after, pinned to the new version.
+3. It took all traffic and passed the smoke again. Then `mm-site` was deployed, and the final smoke passed. No rollback.
+4. `npm run apply-triggers -- --env production` attached the 5-minute cron and the three queue consumers.
+
+`GET https://maneman.in/api/health` reports production, version `b12f0181`, tag `268eaa4`, D1 ok. The first cron sweep ran at 17:45:57 and found nothing to do.
+
+Messaging is off in production (`MESSAGING_ENABLED=false`), and the site is still the placeholder.
