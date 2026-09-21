@@ -335,7 +335,7 @@ Alert: "its result was billed but never downloaded, and its URL has expired". Th
 
 ### WhatsApp (Evolution) is down
 
-Symptoms: messages fail with `HTTP 5xx`, `unreachable` or `Connection Closed`, and an alert names each after four attempts.
+Symptoms: messages fail with `HTTP 5xx`, `unreachable` or `Connection Closed`, and an alert names each after four attempts. A message that failed with `delivery unconfirmed` is different: the bridge did not answer within 60 s, and the message may have arrived. It is never retried automatically.
 
 1. Check the bridge. `GET {EVOLUTION_API_URL}/instance/connectionState/{instance}` with the `apikey` header should say `"state": "open"`.
 2. If the WhatsApp session dropped, reconnect it in the bridge (scan the QR code again).
@@ -347,10 +347,11 @@ To turn WhatsApp copies off, set `MESSAGING_ENABLED` to `"false"` and deploy. Th
 
 ```sql
 UPDATE outbound_messages SET state = 'queued', attempts = 0, queued_at = '2000-01-01T00:00:00Z'
-WHERE state = 'failed' AND created_at > '<since, e.g. 2026-09-21>';
+WHERE state = 'failed' AND created_at > '<since, e.g. 2026-09-21>'
+  AND last_error NOT LIKE '%delivery unconfirmed%';
 ```
 
-The sweeper sends them within five minutes. Every attempt mints a fresh link, so an old failure is not a problem, as long as the result has not been deleted.
+The sweeper sends them within five minutes. Every attempt mints a fresh link, so an old failure is not a problem, as long as the result has not been deleted. Replay a `delivery unconfirmed` message only once you know it did not arrive; otherwise the person gets it twice.
 
 ### Stuck jobs
 
