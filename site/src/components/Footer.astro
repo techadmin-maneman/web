@@ -1,12 +1,13 @@
 ---
 // The footer, on the home page only (as v2). The wordmark here is 132 px wide,
 // so it is the display cut (design/brand/README.md); v2 drew the small cut.
-import { contact, footer } from "../content/site.ts";
+import { footer, phone, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { whatsappLink } from "../lib/icons.ts";
 
 const { service, reach, legal } = footer.columns;
-const showContact = isShown(contact);
+const showWhatsapp = isShown(whatsapp);
+const showPhone = isShown(phone);
 ---
 
 <footer class="footer on-ink">
@@ -29,15 +30,19 @@ const showContact = isShown(contact);
             </a>
           ))}
         </div>
-        {showContact && (
+        {(showWhatsapp || showPhone) && (
           <div class="column">
             <span class="title caps">{reach.title}</span>
-            <a class="item number" href={whatsappLink(contact.whatsapp.number)}>
-              {contact.whatsapp.label}
-            </a>
-            <a class="item number" href={`tel:${contact.phone.number}`}>
-              {contact.phone.label}
-            </a>
+            {showWhatsapp && (
+              <a class="item number" href={whatsappLink(whatsapp.number)}>
+                {whatsapp.label}
+              </a>
+            )}
+            {showPhone && (
+              <a class="item number" href={`tel:${phone.number}`}>
+                {phone.label}
+              </a>
+            )}
           </div>
         )}
         <div class="column">

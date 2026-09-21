@@ -1,37 +1,19 @@
 ---
 import { booking, pageTitles } from "../content/site.ts";
-import Booking, { type City } from "../islands/Booking.tsx";
+import Booking from "../islands/Booking.tsx";
 import Site from "../layouts/Site.astro";
-import { IS_PRODUCTION } from "../lib/build.ts";
-
-// F1's stand-in for GET /api/cities, in the order the API returns them. F2
-// reads the real list, so opening a city stays a data change.
-const STAND_IN_CITIES: City[] = [
-  { name: "Gurgaon", served: true },
-  { name: "Delhi", served: true },
-  { name: "Noida", served: true },
-  { name: "Faridabad", served: true },
-  { name: "Ghaziabad", served: true },
-  { name: "Mumbai", served: false },
-  { name: "Bengaluru", served: false },
-];
+import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
+import { TURNSTILE_SITE_KEYS } from "../lib/turnstile.ts";
 ---
 
 <Site title={pageTitles.book} description={booking.intro}>
   <div class="page">
-    <div class="inner">
-      <Booking client:load cities={STAND_IN_CITIES} allowStateSwitch={!IS_PRODUCTION} />
-    </div>
+    <Booking client:load turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
   </div>
 </Site>
 
 <style>
   .page {
     min-height: calc(100vh - var(--header-h));
-  }
-  .inner {
-    max-width: var(--page-max);
-    margin: 0 auto;
-    padding: var(--book-pad-top) var(--gutter) var(--section-gap);
   }
 </style>

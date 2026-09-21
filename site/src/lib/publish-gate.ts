@@ -9,7 +9,8 @@ type Block = { readonly publish: boolean };
 
 /** Each placeholder block in site.ts, by the name design-placeholders.ts knows it by. */
 const BLOCKS: Record<PlaceholderBlockName, Block> = {
-  contact: site.contact,
+  whatsapp: site.whatsapp,
+  phone: site.phone,
   heroFootage: site.heroFootage,
   whatPlate: site.whatPlate,
   norwoodPhotos: site.norwoodPhotos,

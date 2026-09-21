@@ -46,5 +46,10 @@ const { title, description, home = false } = Astro.props;
     </main>
     {home && <Footer />}
     {home && <StickyBar />}
+    <script>
+      // Where this visit came from, kept for the booking or the try-on to send.
+      import { captureAttribution } from "../lib/visit.ts";
+      captureAttribution();
+    </script>
   </body>
 </html>

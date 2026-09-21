@@ -43,22 +43,29 @@ function notice(version: string, approved: boolean): Notice {
 
 export const notices = {
   /** The booking form's consent checkbox. */
-  booking: notice(CURRENT_NOTICE.contact, false),
-  /** The try-on consent screen. Counsel is reviewing its "Shared with" row. */
-  photo: notice(CURRENT_NOTICE.tryon_photo, false),
+  booking: notice(CURRENT_NOTICE.contact, true),
+  /** The try-on consent screen. The owner approved it on 22 September 2026. */
+  photo: notice(CURRENT_NOTICE.tryon_photo, true),
   /** The try-on gate. */
-  gate: notice(CURRENT_NOTICE.result_delivery, false),
+  gate: notice(CURRENT_NOTICE.result_delivery, true),
 } as const;
 
 // ---------------------------------------------------------------------------
 // Placeholder blocks
 // ---------------------------------------------------------------------------
 
-/** Reach us. The footer's two numbers; the WhatsApp one is every wa.me link. */
-export const contact = {
+/** The business WhatsApp number: the footer's, and every wa.me link. */
+export const whatsapp = {
+  publish: true,
+  number: "919007973247",
+  label: "WhatsApp · +91 90079 73247",
+};
+
+/** The footer's phone number, still v2's placeholder. */
+export const phone = {
   publish: false,
-  whatsapp: { number: "919810040200", label: "WhatsApp · +91 98100 40200" },
-  phone: { number: "+911244002200", label: "Phone · +91 124 400 2200" },
+  number: "+911244002200",
+  label: "Phone · +91 124 400 2200",
 };
 
 export const heroFootage = {
@@ -199,9 +206,12 @@ export const founderNote = {
 /** The two long-form pages. Their text is supplied later. */
 export const legalPages = {
   privacy: {
-    publish: false,
+    publish: true,
     title: "Privacy",
-    paragraphs: ["Placeholder. The privacy notice is supplied later."],
+    paragraphs: [
+      "Mane Man Grooming Services Private Limited collects only what it needs to arrange your visit and your simulation. When you book, we keep your name, mobile number, city, preferred visit time and the extent of your hair loss, with how you reached this site. They are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM, and we use them to arrange and confirm the visit and for nothing else; we never sell them. If you use the try-on, your photograph is used only to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour; the simulation itself is kept for thirty days. If you give your number at the end of the try-on, we use it to send you the result on WhatsApp and for nothing else.",
+      "The site sets two cookies of its own, both for the try-on: one keeps your session for thirty minutes, the other remembers for thirty days that you have had your one look. We count visits with Cloudflare Web Analytics, and measure our advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse. Under India's Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased: message us on WhatsApp at +91 90079 73247 and we erase it the same day.",
+    ],
   },
   terms: {
     publish: false,
@@ -387,7 +397,7 @@ export const comparison = {
 export const tryOnTeaser = {
   eyebrow: "Try-on",
   title: "See yourself with hair before anyone comes to your home.",
-  body: "One photograph, six looks. What you get back is a simulation, not a photograph of a result. Your photograph is deleted after thirty days.",
+  body: "One photograph, one look from six. What you get back is a simulation, not a photograph of a result. Your photograph is deleted after thirty days.",
   start: "Start the try-on",
   before: "Before",
   after: "After",
@@ -676,7 +686,7 @@ export const tryOn = {
   },
   looks: {
     title: "Choose a look.",
-    body: "Six to choose from. You can try the others afterwards.",
+    body: "Six to choose from, and one simulation each, so choose the one you would wear.",
     preview: "Preview",
     choose: "Choose one to continue",
     generate: "Generate the simulation",
@@ -717,7 +727,6 @@ export const tryOn = {
     book: "Book a free measurement",
     download: "Download",
     whatsapp: "WhatsApp",
-    another: "Try another look",
     copy: { before: "A copy is on its way to ", after: ". Deleted after thirty days." },
   },
   error: {
@@ -767,7 +776,19 @@ export const booking = {
   submit: "Request a visit",
   sending: "Sending",
   reply: "We reply on WhatsApp inside a working day.",
+  /**
+   * When the API refuses a booking. v2 has no words for these (ADR 0022); they
+   * show above the button, in the form's error style.
+   */
+  errors: {
+    rateLimited: "This number has asked for a visit several times today. We will reply on WhatsApp.",
+    turnstile: "We could not check this browser. Please try again.",
+    other: "That did not go through. Please try again in a minute.",
+    cities: "The list of cities did not load. Please reload the page.",
+  },
   booked: {
+    /** When every day in reach is blacked out, the API proposes none. */
+    noDate: "Your measurement is booked.",
     confirmation: "He will confirm the hour on WhatsApp by tomorrow evening.",
     rows: {
       what: { k: "What happens", v: "Measurement, not a fitting" },

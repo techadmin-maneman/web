@@ -10,6 +10,7 @@ src/worker-configuration.d.ts
 # The design export: read-only reference (docs/frontend.md).
 design/
 # Built and generated.
+site/src/lib/api-schema.ts
 site/.astro/
 docs/fidelity/
 test-results/
