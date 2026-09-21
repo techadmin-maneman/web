@@ -66,6 +66,8 @@ const MUST_BE_EXPLICIT = ["name", "account_id", "workers_dev", "preview_urls", "
 
 export const REQUIRED_API_BINDINGS = [
   "DB",
+  "UPLOADS",
+  "RESULTS",
   "RENDER_QUEUE",
   "CRM_QUEUE",
   "MESSAGE_QUEUE",

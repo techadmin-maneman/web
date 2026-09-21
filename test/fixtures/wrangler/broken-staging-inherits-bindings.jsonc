@@ -23,6 +23,16 @@
       "migrations_dir": "migrations"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "mm-local-tryon-uploads"
+    },
+    {
+      "binding": "RESULTS",
+      "bucket_name": "mm-local-tryon-results"
+    }
+  ],
   "queues": {
     "producers": [
       {
@@ -71,6 +81,16 @@
           "migrations_dir": "migrations"
         }
       ],
+      "r2_buckets": [
+        {
+          "binding": "UPLOADS",
+          "bucket_name": "mm-staging-tryon-uploads"
+        },
+        {
+          "binding": "RESULTS",
+          "bucket_name": "mm-staging-tryon-results"
+        }
+      ],
       "vars": {
         "ENVIRONMENT": "staging",
         "IMAGE_PROVIDER": "ailabtools",
@@ -101,6 +121,16 @@
           "database_name": "maneman-prod",
           "database_id": "4917e9e0-7bf4-4116-9894-369d490f0ea2",
           "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "UPLOADS",
+          "bucket_name": "mm-prod-tryon-uploads"
+        },
+        {
+          "binding": "RESULTS",
+          "bucket_name": "mm-prod-tryon-results"
         }
       ],
       "queues": {

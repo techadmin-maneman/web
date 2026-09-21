@@ -36,6 +36,7 @@ export const HOSTNAME: Readonly<Record<RemoteEnvironmentName, string>> = {
 };
 
 export const ZONE_NAME = "maneman.in";
+export const ZONE_ID = "d33891be281c088bf3e0e927d7ed20f9";
 
 /** Provider implementations selectable per environment. Production may not hold a stub. */
 export const PROVIDER_VARS = {

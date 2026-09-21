@@ -28,9 +28,9 @@ describe("mm-api wrangler config", () => {
   it.each<[string, Edit, string]>([
     ["staging drops its database", ["env.staging.d1_databases", DELETE], "env.staging: d1_databases is not redeclared"],
     [
-      "the top level adds buckets staging lacks",
-      ["r2_buckets", [{ binding: "UPLOADS", bucket_name: "mm-local-tryon-uploads" }]],
-      "env.staging: r2_buckets is not redeclared (the top level declares UPLOADS)",
+      "staging drops its buckets",
+      ["env.staging.r2_buckets", DELETE],
+      "env.staging: r2_buckets is not redeclared (the top level declares UPLOADS, RESULTS)",
     ],
     ["production drops its vars", ["env.production.vars", DELETE], "env.production: vars is not redeclared"],
     [
@@ -71,13 +71,7 @@ describe("mm-api wrangler config", () => {
   });
 
   it("fails when staging names a production bucket", () => {
-    const bucket = [{ binding: "UPLOADS", bucket_name: "mm-prod-tryon-uploads" }];
-    const local = [{ binding: "UPLOADS", bucket_name: "mm-local-tryon-uploads" }];
-    const problems = api(
-      ["r2_buckets", local],
-      ["env.staging.r2_buckets", bucket],
-      ["env.production.r2_buckets", bucket],
-    );
+    const problems = api(["env.staging.r2_buckets.0.bucket_name", "mm-prod-tryon-uploads"]);
     expect(problems).toContain(
       'env.staging: R2 bucket "mm-prod-tryon-uploads" is named for another environment ("prod")',
     );
