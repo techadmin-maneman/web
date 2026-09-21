@@ -23,7 +23,8 @@ The `crm-sync` consumer is the only caller of Zoho. The prompt asks that the `la
 
 - A person's first lead inserts the record.
 - Later leads update it and add a note giving the city, window and proposed date. Notes carry no name or number.
-- Before inserting, the sync searches by `D1_Person_ID`. So a retry after Zoho accepted the insert, but before D1 recorded the ID, updates the record instead of duplicating it.
+- Before inserting, the sync searches by `D1_Person_ID`. So a retry after Zoho accepted the insert, but before D1 recorded the ID, usually updates the record instead of inserting again.
+- **`D1_Person_ID` is unique in Zoho** ("Do not allow duplicate values"). This is the real guarantee against duplicates. The search is not enough on its own: on staging, Zoho's search did not find a new record 25 seconds after it was created, and did by two minutes. An insert that races or repeats is refused with `DUPLICATE_DATA`, the lead is marked failed, and the next attempt finds the record and updates it. `scripts/check-zoho-setup.ts` fails if the field allows duplicates.
 
 **Consent rules** live in `src/providers/crm-rules.ts`, outside the Zoho code, so they hold for any CRM:
 
@@ -57,11 +58,13 @@ Every implementation calls `assertStatusAllowed` before writing. It throws if a 
 - The consumer marks the lead `failed` and stores `Zoho {status} {code}: {message}`, scrubbed of numbers and e-mails. It never stores record data. A timeout is `Zoho 0 TIMEOUT: {step} got no answer within 20 s`.
 - A lead's first failure goes back on the queue with a 30-second delay (`message.retry`), so a passing slowdown still lands the lead within about a minute.
 - After that, the sweeper re-enqueues failed leads every five minutes until 10 attempts. The tenth failure raises an alert.
-- The consumer runs one batch at a time (`max_concurrency: 1`), so two messages for the same person never race.
+- The consumer asks for one batch at a time (`max_concurrency: 1`). That is not a guarantee: on staging, Queues started a second invocation while the first was still running (below). The unique `D1_Person_ID` keeps a race harmless. The worst outcome is an extra update and note on the same record, and a later `synced_at`.
 
 **Timeouts and timing:** each Zoho request has 20 seconds. Every request is logged as `zoho_call` with its step, status and duration, never its URL (the token URL carries the client secret).
 
 On staging on 21 September 2026, the first synced lead's token refresh timed out at the original 10-second limit. The sweeper delivered it five minutes later. The next two consumer runs took 16 and 18 seconds for three Zoho calls, though the same calls from Cloudflare's Delhi edge and from a laptop in India answered in under 200 ms. The consumer does not report where it runs, so the per-step timing is there to find out whether the time goes to Zoho or to D1.
+
+With the timing in place, a normal sync took 2.4 seconds: about 0.9 s for the search, 0.4 s for the insert, and the rest in D1. One run then spent 8 min 40 s before its first Zoho call, which puts the time in its first D1 queries or in the platform. While it waited, Queues ran the next sweep's message in a second invocation (`docs/verification.md`, drill 1). The cause is not known. From inside the Worker, a slow D1 query and a paused invocation look the same. If it recurs, it goes to Cloudflare support with the invocation's time and version. Meanwhile the sweeper, the quick retry and the unique `D1_Person_ID` keep a stalled run from losing or duplicating a lead. It only delays one.
 
 A longer timeout also matters for duplicates. If an insert times out after Zoho saved the record, the retry searches by `D1_Person_ID`, and Zoho's search index may not show the new record yet.
 
