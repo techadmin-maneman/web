@@ -1,0 +1,282 @@
+/*
+ * Every colour, size and space on the site, taken from the design
+ * (design/Mane Man Site v2.dc.html) and design/brand/README.md. Components use
+ * these through var(); test/node/site-tokens.test.ts fails on a raw colour,
+ * px or vw value anywhere else, and on a token that is not defined here.
+ *
+ * Fluid values are the design's own clamp() expressions, named for what they
+ * size. Fixed spaces are named for their value (--sp-14 is 14px).
+ */
+
+:root {
+  /* ---- Colour: the brand ------------------------------------------------ */
+  --ink: #16233a; /* ink navy */
+  --gilt: #c9a363; /* on ink only: the mark, one rule */
+  --brass: #b98b45; /* on paper only */
+  --paper: #e9e4d8;
+  --text: #1a1714;
+
+  /* ---- Colour: ink grounds, darkest first -------------------------------- */
+  --ink-night: #0b1220; /* labels on images, the discretion band */
+  --ink-deep: #0e1728; /* the hero, the teaser band, the try-on, the sticky bar */
+  --ink-frame: #131c2e; /* empty image frames on ink */
+  --ink-raised: #1a2740; /* a chosen look, the gate's blurred half */
+  --ink-rule: #1e2e49; /* rules on ink */
+  --ink-disabled: #2a3a56; /* a button not yet usable; the countdown */
+  --ink-line: #3a4a64; /* borders on ink */
+  --ink-line-strong: #6b7b95; /* the hero's outline button */
+  --ink-muted: #8c96a8; /* small text on ink */
+  --ink-soft: #a8b2c2; /* body text on ink */
+  --ink-tag: #c5cdd9; /* label text; the hero's sub-line */
+
+  /* ---- Colour: paper grounds --------------------------------------------- */
+  --paper-light: #f4f1e9; /* the Norwood band, the booking card */
+  --paper-line: #cec6b4; /* rules and borders on paper */
+  --paper-placeholder: #9a9284; /* placeholder text in fields */
+  --text-soft: #3a352e;
+  --text-muted: #5f5851;
+  --white: #ffffff;
+
+  /* ---- Colour: errors ---------------------------------------------------- */
+  --error-on-ink: #e0917f;
+  --error-on-paper: #8a3a2e;
+
+  /* ---- Colour: the hero's scrims, from --ink-night ----------------------- */
+  --hero-scrim: rgba(11, 18, 32, 0.3);
+  --hero-scrim-up: linear-gradient(to top, #0b1220 0%, rgba(11, 18, 32, 0.68) 50%, rgba(11, 18, 32, 0.1) 100%);
+  --hero-scrim-side: linear-gradient(
+    to right,
+    rgba(11, 18, 32, 0.78) 0%,
+    rgba(11, 18, 32, 0.5) 42%,
+    rgba(11, 18, 32, 0) 72%
+  );
+
+  /* ---- Type -------------------------------------------------------------- */
+  --font-serif: "EB Garamond", serif;
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+
+  --tracking-12: 0.12em;
+  --tracking-14: 0.14em;
+  --tracking-16: 0.16em;
+  --tracking-18: 0.18em;
+  --tracking-display: -0.02em;
+  --tracking-title: -0.015em;
+  --tracking-heading: -0.01em;
+
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-15: 15px;
+  --fs-16: 16px;
+  --fs-17: 17px;
+  --fs-18: 18px;
+  --fs-22: 22px;
+  --fs-24: 24px;
+
+  --fs-hero: clamp(42px, 7.4vw, 96px);
+  --fs-hero-body: clamp(17px, 1.5vw, 21px);
+  --fs-h2: clamp(30px, 4vw, 54px);
+  --fs-lead: clamp(17px, 1.4vw, 19px);
+  --fs-body: clamp(16px, 1.3vw, 18px);
+  --fs-reading: clamp(17px, 1.4vw, 20px);
+  --fs-reading-serif: clamp(22px, 2.4vw, 30px);
+  --fs-card-title: clamp(17px, 1.6vw, 21px);
+  --fs-column-head: clamp(17px, 2vw, 28px);
+  --fs-teaser-title: clamp(32px, 4.6vw, 62px);
+  --fs-band: clamp(34px, 6.4vw, 84px);
+  --fs-step-number: clamp(40px, 5vw, 72px);
+  --fs-step-title: clamp(24px, 2.6vw, 36px);
+  --fs-person: clamp(20px, 1.9vw, 26px);
+  --fs-base-name: clamp(26px, 2.4vw, 34px);
+  --fs-base-price: clamp(22px, 2vw, 26px);
+  --fs-price-head: clamp(18px, 2vw, 28px);
+  --fs-price: clamp(24px, 3vw, 40px);
+  --fs-quote: clamp(19px, 1.8vw, 23px);
+  --fs-guarantee: clamp(26px, 3.2vw, 40px);
+  --fs-closing: clamp(28px, 3.4vw, 44px); /* also the try-on result's title */
+  --fs-flow-title: clamp(30px, 4vw, 52px);
+  --fs-upload-title: clamp(32px, 4.6vw, 60px);
+  --fs-countdown: clamp(44px, 6vw, 64px);
+  --fs-error-title: clamp(28px, 3.6vw, 44px);
+  --fs-book-title: clamp(32px, 4.6vw, 56px);
+  --fs-booked-title: clamp(32px, 4.4vw, 52px);
+
+  /* ---- Fixed spaces ------------------------------------------------------ */
+  --sp-2: 2px;
+  --sp-3: 3px;
+  --sp-4: 4px;
+  --sp-5: 5px;
+  --sp-6: 6px;
+  --sp-7: 7px;
+  --sp-8: 8px;
+  --sp-9: 9px;
+  --sp-10: 10px;
+  --sp-11: 11px;
+  --sp-12: 12px;
+  --sp-13: 13px;
+  --sp-14: 14px;
+  --sp-15: 15px;
+  --sp-16: 16px;
+  --sp-18: 18px;
+  --sp-20: 20px;
+  --sp-22: 22px;
+  --sp-24: 24px;
+  --sp-26: 26px;
+  --sp-28: 28px;
+  --sp-30: 30px;
+  --sp-32: 32px;
+  --sp-36: 36px;
+  --sp-48: 48px;
+
+  /* ---- Lines, controls and motion ---------------------------------------- */
+  --hairline: 1px;
+  --rule-strong: 2px;
+  --sr-only-size: 1px;
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --tap: 44px; /* the smallest touch target; also the small button's height */
+  --btn-lg: 56px;
+  --btn-md: 48px;
+  --btn-result: 52px;
+  --field-h: 52px;
+  --ease: 300ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-progress: 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* ---- Page frame -------------------------------------------------------- */
+  --page-max: 1440px;
+  --gutter: clamp(20px, 4vw, 48px);
+  --header-h: 56px;
+  --header-gap: clamp(16px, 2.5vw, 34px);
+  --bar-h: 64px;
+  --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
+  --section-gap: clamp(56px, 8vw, 112px);
+  --section-gap-lg: clamp(64px, 10vw, 160px);
+  --section-gap-xl: clamp(72px, 12vw, 180px);
+  --band-pad: clamp(48px, 7vw, 96px);
+  --intro-gap: clamp(28px, 4vw, 48px);
+  --three-up-gap: 20px;
+  --split-min: 300px;
+  --split-min-mid: 340px;
+  --split-min-wide: 360px;
+  --split-gap: clamp(32px, 5vw, 64px);
+
+  /* ---- Line lengths ------------------------------------------------------ */
+  --measure-hero: 900px;
+  --measure-column: 660px;
+  --measure-lead: 620px;
+  --measure-hero-body: 600px;
+  --measure-note: 560px;
+  --measure-done-note: 540px;
+  --measure-closing: 520px;
+  --measure-upload-title: 520px;
+  --measure-error: 520px;
+  --measure-short: 480px;
+  --measure-book-title: 480px;
+  --measure-book-intro: 460px;
+  --measure-form: 440px;
+  --measure-button-column: 360px;
+
+  /* ---- Home ---------------------------------------------------------------- */
+  --hero-min-h: clamp(520px, 82vh, 780px);
+  --hero-tag-top: clamp(16px, 2.4vw, 26px);
+  --hero-pad-bottom: clamp(36px, 5vw, 64px);
+  --hero-body-gap: clamp(18px, 2.4vw, 28px);
+  --hero-actions-gap: clamp(26px, 3.4vw, 40px);
+
+  --what-plate-h: clamp(320px, 52vw, 620px);
+  --what-pad-top: clamp(48px, 7vw, 104px);
+
+  --norwood-intro-gap: clamp(32px, 4vw, 48px);
+  --norwood-early-min: 240px;
+  --norwood-early-max: 760px;
+  --norwood-gap: clamp(12px, 1.6vw, 20px);
+  --norwood-flow-basis: 150px;
+  --norwood-flow-max: 210px;
+  --norwood-card-pad: clamp(14px, 1.6vw, 20px);
+  --norwood-late-gap: clamp(40px, 5vw, 64px);
+  --norwood-late-pad: clamp(32px, 4vw, 48px);
+  --norwood-actions-gap: clamp(28px, 3vw, 40px);
+
+  --comparison-label-w: 260px;
+  --comparison-head-pad-top: clamp(14px, 2vw, 22px);
+  --comparison-head-pad-bottom: clamp(14px, 2vw, 20px);
+  --comparison-cell-pad: clamp(8px, 1.2vw, 24px);
+
+  --teaser-frame-h: clamp(280px, 42vw, 420px);
+  --teaser-handle: 46px;
+  --teaser-start-gap: clamp(28px, 4vw, 40px);
+
+  --band-max: 1100px;
+  --discretion-pad-y: clamp(120px, 20vw, 280px);
+  --discretion-pad-x: clamp(24px, 5vw, 64px);
+
+  --how-title-gap: clamp(28px, 4vw, 56px);
+  --how-gap: clamp(24px, 4vw, 64px);
+  --how-step-pad: clamp(28px, 4vw, 52px);
+  --how-number-gap: clamp(20px, 2.6vw, 36px);
+  --how-photo-h: clamp(200px, 26vw, 320px);
+
+  --technician-pad: clamp(18px, 2vw, 26px);
+
+  --base-pad-y: clamp(26px, 3vw, 40px);
+  --base-pad-x: clamp(0px, 2vw, 40px);
+  --base-photo-h: clamp(200px, 24vw, 300px);
+  --base-drawing-max: 200px;
+
+  --prices-pad-top: clamp(36px, 5vw, 64px);
+  --price-column: clamp(96px, 16vw, 240px);
+  --price-cell-pad: clamp(8px, 1.5vw, 28px);
+  --price-row-pad: clamp(20px, 3vw, 32px);
+
+  --testimonials-intro-gap: clamp(32px, 4vw, 56px);
+  --testimonial-pad: clamp(20px, 2.2vw, 28px);
+
+  --founder-gap: clamp(48px, 7vw, 88px);
+
+  --faq-pad-top: clamp(64px, 10vw, 144px);
+  --faq-gap: clamp(28px, 4vw, 64px);
+  --faq-intro-max: 380px;
+
+  --closing-pad-y: clamp(40px, 6vw, 72px);
+  --closing-pad-x: clamp(24px, 4vw, 56px);
+
+  --footer-pad-top: clamp(40px, 5vw, 64px);
+  --footer-pad-bottom: 96px;
+  --footer-gap: clamp(28px, 4vw, 48px);
+  --footer-rule-gap: clamp(28px, 4vw, 40px);
+  --footer-columns-gap: clamp(28px, 4vw, 56px);
+
+  /* ---- Try-on ------------------------------------------------------------ */
+  --flow-pad-top: clamp(28px, 4vw, 56px);
+  --flow-pad-bottom: clamp(48px, 6vw, 72px);
+  --flow-topline-gap: clamp(24px, 3vw, 40px);
+  --flow-split-gap: clamp(32px, 5vw, 72px);
+  --flow-guidelines-gap: clamp(28px, 4vw, 40px);
+  --flow-actions-gap: clamp(28px, 4vw, 44px);
+  --flow-rows-gap: clamp(24px, 3vw, 36px);
+  --flow-choices-gap: clamp(24px, 3vw, 32px);
+  --flow-button-max: 320px;
+  --flow-medium-max: 720px;
+  --preview-h: clamp(340px, 56vw, 520px);
+  --oval-max: 300px;
+  --consent-key-w: 116px;
+  --stage-min: 220px;
+  --look-min: 200px;
+  --processing-pad: clamp(24px, 5vw, 64px);
+  --processing-gap: clamp(32px, 4vw, 48px);
+  --gate-frame-h: clamp(300px, 44vw, 420px);
+  --gate-blur: 7px;
+  --result-gap: clamp(28px, 4vw, 56px);
+  --result-frame-h: clamp(340px, 52vw, 520px);
+  --result-handle: 48px;
+  --error-frame-h: clamp(200px, 28vw, 260px);
+  --error-title-gap: clamp(24px, 3vw, 36px);
+
+  /* ---- Booking ----------------------------------------------------------- */
+  --book-pad-top: clamp(40px, 6vw, 88px);
+  --book-gap: clamp(32px, 5vw, 80px);
+  --book-card-pad: clamp(22px, 3vw, 40px);
+  --field-min: 200px;
+  --booked-title-gap: clamp(22px, 3vw, 32px);
+  --booked-rows-gap: clamp(28px, 3vw, 40px);
+  --booked-actions-gap: clamp(28px, 4vw, 40px);
+}

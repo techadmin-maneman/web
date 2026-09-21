@@ -6,6 +6,8 @@ Everything lives in the Cloudflare account `Tech@maneman.in's Account` (`a2e1850
 
 To run SQL against an environment's database: `W d1 execute maneman-<env> --env <env> --remote --command "<sql>"`, where `maneman-<env>` is `maneman-staging` or `maneman-prod`.
 
+The public site (`mm-site`) is built, edited and published as `docs/frontend.md` describes. Staging serves the site; production serves a placeholder page until the site goes live.
+
 ---
 
 ## Provisioning an environment

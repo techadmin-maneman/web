@@ -1,0 +1,73 @@
+---
+// The guarantee, then the founder's note with the mark, in a narrow column.
+import { founderNote, guarantee } from "../../content/site.ts";
+import { isShown } from "../../lib/build.ts";
+---
+
+<section class="column" data-section="guarantee">
+  <h2 class="label-title caps">{guarantee.label}</h2>
+  <p class="guarantee">{guarantee.text}</p>
+  {isShown(founderNote) && (
+    <div data-section="founder">
+      <h2 class="label-title caps founder">{founderNote.label}</h2>
+      {founderNote.paragraphs.map((paragraph) => (
+        <p class="note">{paragraph}</p>
+      ))}
+      <div class="signature">
+        <svg class="mark" viewBox="0 0 200 217.4" width="30" height="33" aria-hidden="true">
+          <use href="#mm" />
+        </svg>
+        <span>{founderNote.signature}</span>
+      </div>
+    </div>
+  )}
+</section>
+
+<style>
+  .column {
+    max-width: var(--measure-column);
+    margin: 0 auto;
+    padding: var(--section-gap-xl) var(--gutter) 0;
+  }
+  .label-title {
+    margin: 0;
+    font-weight: 400;
+    font-size: var(--fs-16);
+    color: var(--text-muted);
+  }
+  .guarantee {
+    margin: var(--sp-20) 0 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-guarantee);
+    line-height: 1.25;
+    letter-spacing: var(--tracking-heading);
+    text-wrap: pretty;
+  }
+  .founder {
+    margin-top: var(--founder-gap);
+  }
+  .note {
+    margin: var(--sp-18) 0 0;
+    font-size: var(--fs-lead);
+    line-height: 1.8;
+    color: var(--text);
+    text-wrap: pretty;
+  }
+  .founder + .note {
+    margin-top: var(--sp-20);
+  }
+  .signature {
+    margin-top: var(--sp-32);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-15);
+  }
+  .mark {
+    fill: var(--ink);
+  }
+  span {
+    font-family: var(--font-serif);
+    font-size: var(--fs-18);
+    color: var(--text-muted);
+  }
+</style>

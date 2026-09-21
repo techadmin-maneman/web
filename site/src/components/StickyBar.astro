@@ -1,0 +1,54 @@
+---
+// The bar fixed to the bottom of the home page, at every width, as v2 shows it.
+import { contact, stickyBar } from "../content/site.ts";
+import { isShown } from "../lib/build.ts";
+import { whatsappLink } from "../lib/icons.ts";
+import Icon from "./Icon.astro";
+---
+
+<div class="bar on-ink">
+  {isShown(contact) && (
+    <a class="whatsapp" href={whatsappLink(contact.whatsapp.number)} aria-label={stickyBar.whatsappLabel}>
+      <Icon name="whatsapp" size={22} />
+    </a>
+  )}
+  <a class="btn book" href="/book">
+    {stickyBar.book}
+  </a>
+</div>
+
+<style>
+  .bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    height: var(--bar-h);
+    background: var(--ink-deep);
+    border-top: var(--hairline) solid var(--ink-rule);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-12);
+    padding: 0 var(--sp-16);
+  }
+  .whatsapp,
+  .whatsapp:hover {
+    width: var(--btn-md);
+    height: var(--btn-md);
+    border: var(--hairline) solid var(--ink-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--paper);
+  }
+  .book,
+  .book:hover {
+    flex: 1;
+    height: var(--btn-md);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: var(--fs-15);
+  }
+</style>

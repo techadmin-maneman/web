@@ -1,0 +1,29 @@
+---
+// A line icon from src/lib/icons.ts, drawn in the surrounding text colour.
+import { ICONS } from "../lib/icons.ts";
+
+interface Props {
+  name: keyof typeof ICONS;
+  size: number;
+  /** The design's stroke width for this use. */
+  stroke?: number;
+  class?: string;
+}
+
+const { name, size, stroke = 1.6, class: className } = Astro.props;
+---
+
+<svg
+  class={className}
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  fill="none"
+  stroke="currentColor"
+  stroke-width={stroke}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <path d={ICONS[name]}></path>
+</svg>

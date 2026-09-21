@@ -7,8 +7,13 @@ package-lock.json
 docs/openapi.json
 docs/api.md
 src/worker-configuration.d.ts
-# Design export; not part of this build.
-Design/
+# The design export: read-only reference (docs/frontend.md).
+design/
+# Built and generated.
+site/.astro/
+docs/fidelity/
+test-results/
+playwright-report/
 
 # Verbatim copies from the AILabTools harness; see docs/reference/README.md.
 docs/reference/ailabtools-api-notes.md

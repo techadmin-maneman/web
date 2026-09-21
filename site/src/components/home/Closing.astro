@@ -1,0 +1,41 @@
+---
+// The closing band.
+import { closing } from "../../content/site.ts";
+---
+
+<section class="container closing" data-section="closing">
+  <div class="box on-ink">
+    <h2>{closing.title}</h2>
+    <a class="btn btn--lg btn--paper book" href="/book">
+      {closing.book}
+    </a>
+  </div>
+</section>
+
+<style>
+  .closing {
+    margin-top: var(--section-gap);
+  }
+  .box {
+    background: var(--ink);
+    padding: var(--closing-pad-y) var(--closing-pad-x);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-32);
+    align-items: center;
+    justify-content: space-between;
+  }
+  h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--fs-closing);
+    line-height: 1.1;
+    color: var(--paper);
+    max-width: var(--measure-closing);
+    text-wrap: balance;
+  }
+  .book {
+    flex-shrink: 0;
+  }
+</style>

@@ -1,0 +1,122 @@
+---
+// Who comes to your home: three technician cards. Placeholder people until
+// the block is published; in production an unpublished block shows nothing.
+import { placeholderTag, technicians } from "../../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import DesignPicture from "../DesignPicture.astro";
+---
+
+{isShown(technicians) && (
+  <section class="container technicians" data-section="technicians">
+    <h2 class="section-title">{technicians.title}</h2>
+    <p class="lead intro">{technicians.intro}</p>
+    <ul class="three-up cards">
+      {technicians.people.map((person) => (
+        <li class="card">
+          <div class="frame photo">
+            <DesignPicture
+              file={person.photo.file}
+              alt={person.photo.alt}
+              sizes="(min-width: 700px) 33vw, 100vw"
+              widths={[390, 780]}
+              class="focus-technician"
+            />
+            {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+          </div>
+          <div class="body">
+            <h3>{person.name}</h3>
+            <dl class="stats">
+              <div>
+                <dt>{technicians.yearsLabel}</dt>
+                <dd>{person.years}</dd>
+              </div>
+              <div>
+                <dt>{technicians.fitsLabel}</dt>
+                <dd>{person.fits}</dd>
+              </div>
+            </dl>
+            <p class="note">{person.note}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .technicians {
+    padding-top: var(--section-gap);
+  }
+  .section-title {
+    margin-bottom: var(--sp-12);
+  }
+  .intro {
+    margin: 0 0 var(--intro-gap);
+  }
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .card {
+    border: var(--hairline) solid var(--paper-line);
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+  }
+  .photo {
+    aspect-ratio: 1 / 1;
+  }
+  .tag {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: var(--fs-14);
+  }
+  .body {
+    padding: var(--technician-pad);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-12);
+    flex: 1;
+  }
+  h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--fs-person);
+    line-height: 1.2;
+  }
+  .stats {
+    display: flex;
+    gap: var(--sp-20);
+    margin: 0;
+    padding: var(--sp-12) 0;
+    border-top: var(--hairline) solid var(--paper-line);
+    border-bottom: var(--hairline) solid var(--paper-line);
+  }
+  /* The number reads first, as in v2; the term follows it. */
+  .stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  dd {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-24);
+    line-height: 1;
+    font-variant-numeric: lining-nums;
+  }
+  dt {
+    font-size: var(--fs-13);
+    color: var(--text-muted);
+    margin-top: var(--sp-5);
+  }
+  .note {
+    margin: 0;
+    font-size: var(--fs-15);
+    line-height: 1.6;
+    color: var(--text-soft);
+    text-wrap: pretty;
+  }
+</style>

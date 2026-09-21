@@ -1,0 +1,11 @@
+{
+  // The browser tests (e2e/) and the fidelity harness: Node code whose callbacks
+  // run in a page, so they need the DOM's types, which clash with the Workers
+  // types in tsconfig.node.json.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["e2e/**/*.ts", "playwright.config.ts", "scripts/fidelity.ts", "scripts/serve-site.ts"]
+}

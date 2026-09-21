@@ -1,0 +1,26 @@
+---
+import { notFound, pageTitles } from "../content/site.ts";
+import Site from "../layouts/Site.astro";
+---
+
+<Site title={pageTitles.notFound}>
+  <section class="page">
+    <h1 class="section-title">{notFound.title}</h1>
+    <p class="lead">{notFound.body}</p>
+    <a class="btn btn--lg btn--ink" href="/">
+      {notFound.home}
+    </a>
+  </section>
+</Site>
+
+<style>
+  .page {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: var(--book-pad-top) var(--gutter) var(--section-gap);
+    min-height: calc(100vh - var(--header-h));
+  }
+  .lead {
+    margin: var(--sp-22) 0 var(--sp-32);
+  }
+</style>

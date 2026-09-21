@@ -116,6 +116,27 @@ jobs:
       - name: Bundle both Workers for every environment (dry run)
         run: npm run build
 
+  site:
+    name: site (browser tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Build the site (local)
+        run: npm run build:site -- --env local
+      - name: Browser tests at 390 and 1440 px
+        run: npm run test:e2e
+      - name: Traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
+
   smoke-local:
     name: smoke (local)
     runs-on: ubuntu-latest
@@ -138,6 +159,8 @@ jobs:
           done
           cat api.log
           exit 1
+      - name: Build the site (local)
+        run: npm run build:site -- --env local
       - name: Start mm-site under wrangler dev
         run: |
           node node_modules/wrangler/bin/wrangler.js dev --config site/wrangler.jsonc --env="" --port 8788 --inspector-port 9231 > site.log 2>&1 &

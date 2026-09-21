@@ -1,0 +1,101 @@
+---
+// Questions: ten disclosures, the first open, one open at a time. <details>
+// sharing a `name` behave as one group, so this needs no script.
+import { contact, faq } from "../../content/site.ts";
+import { isShown } from "../../lib/build.ts";
+import { ICONS, whatsappLink } from "../../lib/icons.ts";
+
+// One expression, so no line break can put a space before the full stop.
+const link = isShown(contact) ? whatsappLink(contact.whatsapp.number) : null;
+---
+
+<section id="faq" class="container faq" data-section="faq">
+  <div class="intro">
+    <h2 class="section-title">{faq.title}</h2>
+    <p>{[faq.intro.before, link === null ? faq.intro.link : <a href={link}>{faq.intro.link}</a>, faq.intro.after]}</p>
+  </div>
+  <div class="list">
+    {faq.items.map((item, index) => (
+      <details name="faq" open={index === 0}>
+        <summary>
+          <span>{item.q}</span>
+          <svg
+            viewBox="0 0 24 24"
+            width="17"
+            height="17"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d={ICONS.minus} />
+            <path class="vertical" d="M12 6 V18" />
+          </svg>
+        </summary>
+        <p>{item.a}</p>
+      </details>
+    ))}
+  </div>
+</section>
+
+<style>
+  .faq {
+    padding-top: var(--faq-pad-top);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min)), 1fr));
+    gap: var(--faq-gap);
+    align-items: start;
+  }
+  .intro {
+    max-width: var(--faq-intro-max);
+  }
+  .intro p {
+    margin: var(--sp-22) 0 0;
+    font-size: var(--fs-17);
+    line-height: 1.7;
+    color: var(--text-muted);
+    text-wrap: pretty;
+  }
+  .intro a {
+    color: inherit;
+  }
+  .list {
+    border-top: var(--hairline) solid var(--text);
+  }
+  details {
+    border-bottom: var(--hairline) solid var(--paper-line);
+  }
+  summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--sp-20);
+    padding: var(--sp-22) 0;
+    cursor: pointer;
+    font-size: var(--fs-lead);
+    line-height: 1.4;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary svg {
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+  details[open] summary svg {
+    color: var(--text);
+  }
+  details[open] .vertical {
+    display: none;
+  }
+  details p {
+    margin: 0 0 var(--sp-24);
+    font-size: var(--fs-17);
+    line-height: 1.7;
+    color: var(--text-soft);
+    max-width: var(--measure-note);
+    text-wrap: pretty;
+  }
+</style>

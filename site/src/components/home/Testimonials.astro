@@ -1,0 +1,111 @@
+---
+// What clients say: three cards on ink. Placeholder quotes until published.
+import { placeholderTag, testimonials } from "../../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import DesignPicture from "../DesignPicture.astro";
+---
+
+{isShown(testimonials) && (
+  <section class="testimonials on-ink" data-section="testimonials">
+    <div class="container inner">
+      <h2 class="section-title">{testimonials.title}</h2>
+      <p class="lead intro">{testimonials.intro}</p>
+      <ul class="three-up cards">
+        {testimonials.quotes.map((item) => (
+          <li class="card">
+            <div class="frame photo">
+              <DesignPicture
+                file={item.photo.file}
+                alt={item.photo.alt}
+                sizes="(min-width: 700px) 33vw, 100vw"
+                widths={[390, 780]}
+                class="focus-client"
+              />
+              {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+            </div>
+            <figure class="body">
+              <blockquote>
+                <p>{item.quote}</p>
+              </blockquote>
+              <figcaption>
+                <div class="name">{item.name}</div>
+                <div class="meta">{item.meta}</div>
+              </figcaption>
+            </figure>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .testimonials {
+    margin-top: var(--section-gap-xl);
+    background: var(--ink);
+  }
+  .inner {
+    padding-block: var(--band-pad);
+  }
+  .section-title {
+    margin-bottom: var(--sp-12);
+    color: var(--paper);
+  }
+  .intro {
+    margin: 0 0 var(--testimonials-intro-gap);
+    color: var(--ink-soft);
+    max-width: var(--measure-note);
+  }
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .card {
+    border: var(--hairline) solid var(--ink-line);
+    display: flex;
+    flex-direction: column;
+  }
+  .photo {
+    aspect-ratio: 3 / 4;
+    background: var(--ink-frame);
+  }
+  .tag {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .body {
+    margin: 0;
+    padding: var(--testimonial-pad);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-18);
+    flex: 1;
+  }
+  blockquote {
+    margin: 0;
+  }
+  blockquote p {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-quote);
+    line-height: 1.4;
+    color: var(--paper);
+    text-wrap: pretty;
+  }
+  figcaption {
+    margin-top: auto;
+    border-top: var(--hairline) solid var(--ink-rule);
+    padding-top: var(--sp-16);
+  }
+  .name {
+    font-size: var(--fs-16);
+    color: var(--paper);
+  }
+  .meta {
+    font-size: var(--fs-14);
+    color: var(--ink-muted);
+    margin-top: var(--sp-4);
+  }
+</style>

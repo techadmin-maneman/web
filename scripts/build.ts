@@ -1,6 +1,7 @@
-// Bundles both Workers for every environment without deploying (wrangler
-// deploy --dry-run), so a config or bundling error fails the pull request
-// rather than the deploy.
+// Builds the site for local and staging, then bundles both Workers for every
+// environment without deploying (wrangler deploy --dry-run), so a config or
+// bundling error fails the pull request rather than the deploy. Production's
+// site is still its placeholder (site/wrangler.jsonc), so it is not built here.
 //   npm run build
 
 import { execFileSync } from "node:child_process";
@@ -11,6 +12,10 @@ const WORKERS = [
 ] as const;
 // "" is wrangler's name for the top level (local); always name the target.
 const ENVIRONMENTS = ["", "staging", "production"] as const;
+
+for (const environment of ["local", "staging"]) {
+  execFileSync(process.execPath, ["scripts/build-site.ts", "--env", environment], { stdio: "inherit" });
+}
 
 for (const worker of WORKERS) {
   for (const environment of ENVIRONMENTS) {
