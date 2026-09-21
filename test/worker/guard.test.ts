@@ -10,6 +10,7 @@ const SETTINGS = {
   LEAD_MOBILE_DAILY_LIMIT: "5",
   LEAD_IP_DAILY_LIMIT: "20",
   TURNSTILE_SECRET: "0x4AAAAAAAreal-looking-secret",
+  TURNSTILE_ACCEPT_TEST_TOKEN: "false",
   IP_HASH_SALT: "a-salt-of-at-least-thirty-two-characters",
 };
 const ALERTS = { ALERT_WEBHOOK_URL: "https://chat.example/hook" };
@@ -107,6 +108,17 @@ describe("validateStaticConfig: settings and secrets", () => {
       ]);
     },
   );
+
+  it("refuses the Turnstile test-token switch in production, and any value but true or false", () => {
+    expect(problemsOf({ ...production, TURNSTILE_ACCEPT_TEST_TOKEN: "true" })).toEqual([
+      "TURNSTILE_ACCEPT_TEST_TOKEN is on in production",
+    ]);
+    expect(problemsOf({ ...production, TURNSTILE_ACCEPT_TEST_TOKEN: "yes" })).toEqual([
+      'TURNSTILE_ACCEPT_TEST_TOKEN must be "true" or "false"',
+    ]);
+    const staging = { ...production, ENVIRONMENT: "staging", TURNSTILE_ACCEPT_TEST_TOKEN: "true" };
+    expect(validateStaticConfig(staging).settings.acceptTurnstileTestToken).toBe(true);
+  });
 
   it("requires an https alert webhook in remote environments, and not locally", () => {
     const { ALERT_WEBHOOK_URL: _omitted, ...withoutAlerts } = production;

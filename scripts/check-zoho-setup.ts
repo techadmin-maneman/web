@@ -77,7 +77,10 @@ async function get(token: string, path: string): Promise<unknown> {
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const code = (body as { code?: string } | null)?.code ?? String(response.status);
-    throw new Error(`${path}: ${code}. Does the token's scope include the settings READ scopes?`);
+    throw new Error(
+      `${path}: ${code}. Check the token's scope includes the settings READ scopes, and that ZOHO_API_HOST ` +
+        "matches the org: developer.zohoapis.<dc> for a Developer Edition org, www.zohoapis.<dc> for production.",
+    );
   }
   return body;
 }

@@ -15,7 +15,7 @@ import { abandonIdempotent, finishIdempotent, startIdempotent, type IdempotencyR
 import { saltedHash, sha256Hex } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { verifyTurnstile } from "../providers/turnstile.ts";
+import { TURNSTILE_ALWAYS_PASS_SECRET, TURNSTILE_TEST_TOKEN, verifyTurnstile } from "../providers/turnstile.ts";
 
 const AttributionSchema = z
   .object({
@@ -138,8 +138,10 @@ async function createLead(c: Context<AppEnv>, request: LeadRequest): Promise<Out
   const ip = c.req.header("CF-Connecting-IP") ?? null;
   const ipHash = await saltedHash(settings.ipHashSalt, ip ?? "unknown");
 
+  // Staging also accepts Cloudflare's dummy token (docs/decisions/0011-lead-api.md).
+  const isTestToken = settings.acceptTurnstileTestToken && request.turnstile_token === TURNSTILE_TEST_TOKEN;
   const turnstile = await verifyTurnstile({
-    secret: settings.turnstileSecret,
+    secret: isTestToken ? TURNSTILE_ALWAYS_PASS_SECRET : settings.turnstileSecret,
     token: request.turnstile_token,
     ip,
     fetch: deps.fetch,

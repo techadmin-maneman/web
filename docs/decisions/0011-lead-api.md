@@ -50,3 +50,13 @@ Any other field is rejected.
 - a limit is not a whole number.
 
 Cloudflare evaluates module load with the Worker's secrets during upload. A probe on 21 September 2026 showed this: a version that throws unless a secret is present was accepted when the secret existed. So a misconfigured deploy is rejected at upload, before it takes any traffic.
+
+## Staging accepts Cloudflare's dummy Turnstile token
+
+Added on 21 September 2026, for the M2 staging proof.
+
+No page on staging renders the Turnstile widget yet (that is front-end work), so nothing can produce a real staging token. With `TURNSTILE_ACCEPT_TEST_TOKEN = "true"`, the Worker checks Cloudflare's published dummy token, `XXXX.DUMMY.TOKEN.XXXX`, against Cloudflare's always-pass test secret; every other token is still checked against the real widget secret.
+
+- On in local and staging, off in production. The startup guard refuses to start production with it on.
+- Staging is behind Cloudflare Access, so only the founders and CI can reach it anyway.
+- It lets the `staging-lead` workflow create test leads to check the Zoho path, now and after later changes.

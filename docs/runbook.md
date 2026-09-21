@@ -130,13 +130,13 @@ When the GitHub plan allows (0008): require every job in `.github/workflows/ci.y
 
 Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the value. Set them **before** deploying code that needs them: the Worker refuses to start without them (`docs/decisions/0011-lead-api.md`).
 
-| Secret                                                                      | Value                                                                                                                                            |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `TURNSTILE_SECRET`                                                          | The secret of the environment's Turnstile widget (Cloudflare dashboard → Turnstile).                                                             |
-| `IP_HASH_SALT`                                                              | 32 or more random characters: `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`. Changing it resets the rate-limit counters. |
-| `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                             |
-| `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                          |
-| `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | For Zoho's India data centre: `accounts.zoho.in` and `www.zohoapis.in`.                                                                          |
+| Secret                                                                      | Value                                                                                                                                                  |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `TURNSTILE_SECRET`                                                          | The secret of the environment's Turnstile widget (Cloudflare dashboard → Turnstile).                                                                   |
+| `IP_HASH_SALT`                                                              | 32 or more random characters: `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`. Changing it resets the rate-limit counters.       |
+| `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                                   |
+| `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                                |
+| `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | India data centre: `accounts.zoho.in`, and for the API `www.zohoapis.in` (production org) or `developer.zohoapis.in` (Developer Edition org, staging). |
 
 To set several at once without typing them into a terminal, put them in a git-ignored file at the repository root, such as `.env.worker-staging`, with one `NAME="value"` per line. Then:
 
@@ -182,7 +182,7 @@ Staging uses a Zoho CRM **Developer Edition** org, production the real org. Do t
    - on create, when Lead Status is New: notify the assigned technician and ops;
    - on edit, when Contact Consent becomes true: assign an owner. This covers a try-on customer who later books; Zoho has no assignment rule on update.
    - Nothing may fire for Lead Status "Try-on — delivery only". The sync also sends those with workflows switched off.
-5. **API client.** The data centre is in the address you log in at: `crm.zoho.in` is India, `crm.zoho.com` the US, and so on. Use the matching API console, for example `https://api-console.zoho.in`.
+5. **API client.** The data centre is in the address you log in at: `crm.zoho.in` is India, `crm.zoho.com` the US, and so on. Use the matching API console, for example `https://api-console.zoho.in`. A Developer Edition org answers on `developer.zohoapis.<dc>`, not `www.zohoapis.<dc>`, even though the token reply names `www` (ADR 0012).
    1. **Add Client** → **Self Client** → **Create Now** → **OK**. The **Client Secret** tab shows the client ID and secret.
    2. **Generate Code** tab. Scope, exactly:
 
@@ -235,6 +235,16 @@ If an R2 alert fires: set the render ceiling to 0 (M3 adds the variable) and red
 ---
 
 ## Leads and Zoho
+
+### Checking the lead path on staging
+
+Actions → **staging-lead** → Run workflow, with a city and window. It books a test lead through the real API. The name is "Staging test" and the mobile number is random. Within a minute the lead should be in the Zoho Developer Edition org: assigned, with its proposed date, or as Waitlist for Mumbai and Bengaluru. In D1:
+
+```sql
+SELECT id, sync_state, sync_attempts, last_sync_error, created_at, synced_at FROM leads ORDER BY created_at DESC LIMIT 5;
+```
+
+If it stays `pending` with no attempts, the `crm-sync` consumer is not attached: run `npm run apply-triggers -- --env staging`.
 
 A booking is saved in D1 before Zoho hears of it, so a customer never sees a Zoho problem. Where each lead stands:
 

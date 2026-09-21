@@ -15,6 +15,7 @@ export const LOCAL_SETTINGS: Settings = {
   leadMobileDailyLimit: 5,
   leadIpDailyLimit: 20,
   turnstileSecret: TURNSTILE_TEST_SECRET,
+  acceptTurnstileTestToken: false,
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
   zoho: null,

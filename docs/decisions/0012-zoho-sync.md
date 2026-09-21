@@ -58,7 +58,7 @@ Every implementation calls `assertStatusAllowed` before writing. It throws if a 
 - The sweeper re-enqueues failed leads every five minutes until 10 attempts. The tenth failure raises an alert.
 - The consumer runs one batch at a time (`max_concurrency: 1`), so two messages for the same person never race.
 
-**Hosts** are secrets (`ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`); for Zoho's India data centre they are `accounts.zoho.in` and `www.zohoapis.in`.
+**Hosts** are secrets (`ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`). For Zoho's India data centre the accounts host is `accounts.zoho.in`. The API host depends on the environment of the org: `www.zohoapis.in` for a production org, `developer.zohoapis.in` for a Developer Edition org, `sandbox.zohoapis.in` for a sandbox. The `api_domain` in a token response always names the production host, so it cannot be trusted for the other two; a token used on the wrong host gets a bare 401.
 
 **Scopes:** `ZohoCRM.modules.leads.ALL`, `ZohoCRM.modules.notes.CREATE` and `ZohoSearch.securesearch.READ` for the sync. Plus `ZohoCRM.settings.fields.READ` and `ZohoCRM.settings.assignment_rules.READ`, read-only, so `scripts/check-zoho-setup.ts` can confirm the org is set up as the sync expects.
 

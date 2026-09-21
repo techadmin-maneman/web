@@ -14,6 +14,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     leadMobileDailyLimit: 5,
     leadIpDailyLimit: 20,
     turnstileSecret: "",
+    acceptTurnstileTestToken: false,
     ipHashSalt: "",
     alertWebhookUrl: null,
     zoho: null,

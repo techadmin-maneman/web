@@ -22,6 +22,11 @@ export interface Settings {
   readonly leadMobileDailyLimit: number;
   readonly leadIpDailyLimit: number;
   readonly turnstileSecret: string;
+  /**
+   * Also accept Cloudflare's dummy test token. Staging only, which is behind
+   * Access, so it can be tested before any page renders the real widget.
+   */
+  readonly acceptTurnstileTestToken: boolean;
   readonly ipHashSalt: string;
   /** Where alerts are posted. Optional locally only. */
   readonly alertWebhookUrl: string | null;
@@ -65,6 +70,16 @@ class Reader {
     return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
   }
 
+  /** "true" or "false"; vars arrive as strings. */
+  flag(name: string): boolean {
+    const value = this.text(name);
+    if (value !== "true" && value !== "false") {
+      this.problems.push(`${name} must be "true" or "false"`);
+      return false;
+    }
+    return value === "true";
+  }
+
   /** A whole number from 0 up; vars arrive as strings. */
   count(name: string): number {
     const value = Number(this.text(name));
@@ -87,6 +102,10 @@ export function readSettings(
   const turnstileSecret = read.text("TURNSTILE_SECRET");
   if (environment === "production" && TURNSTILE_TEST_SECRETS.has(turnstileSecret)) {
     read.problems.push("TURNSTILE_SECRET is a Cloudflare test secret in production");
+  }
+  const acceptTurnstileTestToken = read.flag("TURNSTILE_ACCEPT_TEST_TOKEN");
+  if (environment === "production" && acceptTurnstileTestToken) {
+    read.problems.push("TURNSTILE_ACCEPT_TEST_TOKEN is on in production");
   }
 
   const ipHashSalt = read.text("IP_HASH_SALT");
@@ -120,6 +139,7 @@ export function readSettings(
     leadMobileDailyLimit: read.count("LEAD_MOBILE_DAILY_LIMIT"),
     leadIpDailyLimit: read.count("LEAD_IP_DAILY_LIMIT"),
     turnstileSecret,
+    acceptTurnstileTestToken,
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     zoho,

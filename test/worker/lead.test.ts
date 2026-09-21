@@ -240,6 +240,39 @@ describe("POST /api/lead: Turnstile", () => {
   });
 });
 
+describe("POST /api/lead: the staging test token", () => {
+  const REAL_SECRET = "0x4AAAAAAA-the-real-widget-secret";
+  const TEST_SECRET = "1x0000000000000000000000000000000AA";
+
+  /** The body of the siteverify request the Worker sent for this token. */
+  async function siteverifyBody(token: string, acceptTurnstileTestToken: boolean): Promise<string> {
+    const turnstile = fakeFetch({ [TURNSTILE_URL]: turnstilePasses });
+    const app = appFor("local", fakeDependencies({ fetch: turnstile.fetch }), {
+      turnstileSecret: REAL_SECRET,
+      acceptTurnstileTestToken,
+    });
+    await request(app, "/api/lead", post({ ...BOOKING, turnstile_token: token }), { CRM_QUEUE: fakeQueue() });
+    return turnstile.calls[0]?.body ?? "";
+  }
+
+  it("checks Cloudflare's dummy token against the always-pass test secret when the switch is on", async () => {
+    const body = await siteverifyBody("XXXX.DUMMY.TOKEN.XXXX", true);
+    expect(body).toContain(TEST_SECRET);
+    expect(body).not.toContain(REAL_SECRET);
+  });
+
+  it("checks every other token, and the dummy token when the switch is off, against the real secret", async () => {
+    for (const [token, switchOn] of [
+      ["a-real-widget-token", true],
+      ["XXXX.DUMMY.TOKEN.XXXX", false],
+    ] as const) {
+      const body = await siteverifyBody(token, switchOn);
+      expect(body).toContain(REAL_SECRET);
+      expect(body).not.toContain(TEST_SECRET);
+    }
+  });
+});
+
 describe("POST /api/lead: rate limits", () => {
   it("allows five leads a day per mobile number, then answers rate_limited", async () => {
     const app = appFor();

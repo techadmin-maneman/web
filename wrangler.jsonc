@@ -45,6 +45,7 @@
   },
   "vars": {
     "ENVIRONMENT": "local",
+    "TURNSTILE_ACCEPT_TEST_TOKEN": "true",
     "IMAGE_PROVIDER": "stub",
     "CRM_PROVIDER": "stub",
     "MESSAGING_PROVIDER": "stub",
@@ -92,6 +93,7 @@
       },
       "vars": {
         "ENVIRONMENT": "staging",
+        "TURNSTILE_ACCEPT_TEST_TOKEN": "true",
         "IMAGE_PROVIDER": "ailabtools",
         "CRM_PROVIDER": "zoho",
         "MESSAGING_PROVIDER": "bsp",
@@ -139,6 +141,7 @@
       },
       "vars": {
         "ENVIRONMENT": "production",
+        "TURNSTILE_ACCEPT_TEST_TOKEN": "false",
         "IMAGE_PROVIDER": "ailabtools",
         "CRM_PROVIDER": "zoho",
         "MESSAGING_PROVIDER": "bsp",
