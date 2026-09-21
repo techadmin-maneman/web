@@ -32,18 +32,18 @@ Staging also sits behind Cloudflare Access, so a call there needs the service-to
 
 ### What is erased
 
-| Where               | What happens                                                                                                                                                                                                                                    |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R2 `UPLOADS`        | Every photo not already deleted.                                                                                                                                                                                                                |
-| R2 `RESULTS`        | Every result, and after the D1 batch, both possible result keys of any job that was still running (below).                                                                                                                                      |
-| `people`            | Name becomes "Erased". E-mail becomes empty. The number becomes `erased:<id>`. `contactable` becomes 0, and `erased_at` is set. The row stays, so leads, consents and events still join to it.                                                  |
-| `tryon_jobs`        | Each job becomes `expired`, apart from a failed one, which keeps its state for the failure figures. `result_key` is cleared and `upload_deleted_at` set.                                                                                        |
-| `tryon_sessions`    | Deleted, so an open try-on session ends.                                                                                                                                                                                                        |
-| `outbound_messages` | `waiting` and `queued` become `skipped`, "person erased". The messaging consumer also refuses anyone erased.                                                                                                                                    |
-| `consents`          | Append-only, so one withdrawal row per purpose previously granted: `notice_version 'withdrawal'`, `granted 0`. The original rows stay. They are the record that consent was given, and hold no name or number.                                  |
-| `leads`             | Kept. They hold city, window, loss extent, dates and campaign tags, not who the person is. A lead not yet in the CRM is never sent: crm-sync gives it up at once (`failed`, "person erased", attempts at the maximum so the sweeper leaves it). |
-| `events`            | A `person_erased` event with counts only.                                                                                                                                                                                                       |
-| Zoho                | The record is updated with workflows off: `Last_Name` "Erased", `Mobile` and `Email` empty, `Contact_Consent` false. A note "Personal data erased" is added. The record is found by the stored ID, or by `D1_Person_ID`.                        |
+| Where               | What happens                                                                                                                                                                                                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R2 `UPLOADS`        | Every photo not already deleted.                                                                                                                                                                                                                                                                                 |
+| R2 `RESULTS`        | Every result, and after the D1 batch, both possible result keys of any job that was still running (below).                                                                                                                                                                                                       |
+| `people`            | Name becomes "Erased". E-mail becomes empty. The number becomes `erased:<id>`. `contactable` becomes 0, and `erased_at` is set. The row stays, so leads, consents and events still join to it.                                                                                                                   |
+| `tryon_jobs`        | Each job becomes `expired`, apart from a failed one, which keeps its state for the failure figures. `result_key` is cleared and `upload_deleted_at` set.                                                                                                                                                         |
+| `tryon_sessions`    | Deleted, so an open try-on session ends.                                                                                                                                                                                                                                                                         |
+| `outbound_messages` | `waiting` and `queued` become `skipped`, "person erased". The messaging consumer also refuses anyone erased.                                                                                                                                                                                                     |
+| `consents`          | Append-only, so one withdrawal row per purpose previously granted: `notice_version 'withdrawal'`, `granted 0`. The original rows stay. They are the record that consent was given, and hold no name or number.                                                                                                   |
+| `leads`             | Kept. They hold city, window, loss extent, dates and campaign tags, not who the person is. A lead not yet in the CRM is never sent: crm-sync gives it up at once (`failed`, "person erased", attempts at the maximum so the sweeper leaves it). One already on its way is followed by a second blanking (below). |
+| `events`            | A `person_erased` event with counts only.                                                                                                                                                                                                                                                                        |
+| Zoho                | The record is updated with workflows off: `Last_Name` "Erased", `Mobile` and `Email` empty, `Contact_Consent` false. A note "Personal data erased" is added. The record is found by the stored ID, or by `D1_Person_ID`.                                                                                         |
 
 The Zoho update goes through the crm-sync queue, because Zoho may be down. It is retried like a lead sync: once after 30 seconds, then by the sweeper every five minutes until 10 attempts, then an alert asks for it by hand. Migration 0004 adds `crm_erased_at`, `crm_erasure_attempts` and `crm_erasure_error` to `people` to track it.
 
@@ -57,12 +57,16 @@ The Zoho update goes through the crm-sync queue, because Zoho may be down. It is
 - D1 is one batch, so the person is either erased or not.
 - The CRM goes last, through the queue.
 
-### A render still running
+### Work already in flight
 
 A render can finish after the person is erased. Two changes stop its result surviving:
 
 - The render consumer marks a job `ready` only while it is still `downloading`. If that update matches nothing, the consumer deletes the result it just stored, unless a parallel run already stored that same key.
 - Erasure deletes both possible result keys (`.png`, `.jpg`) of every job that was running when it read them. This covers a result stored between erasure's read and its batch.
+
+A render already submitted is still billed. Its result is never fetched.
+
+A lead sync can also be in flight. It read the person before the erasure, and its write to Zoho can land after the erasure's blanking, putting the details back. Queues can run two consumer invocations at once (docs/decisions/0012), so the order is not guaranteed. The staging proof caught one such sync landing 0.2 s before an erasure. So when a sync marks its lead `synced`, it also reads `erased_at`. If the person was erased meanwhile, it blanks the record again after its own write. If that fails, it clears `crm_erased_at`, and the sweeper retries the erasure.
 
 ## What erasure does not reach
 

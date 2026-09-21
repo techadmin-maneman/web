@@ -336,4 +336,44 @@ describe("crm-sync: erasing a person", () => {
       last_sync_error: "person erased",
     });
   });
+
+  /** A CRM that syncs the lead, but the person is erased while it does. */
+  function crmErasingDuringSync(erase: CrmProvider["erasePerson"]) {
+    const crm = recordingCrm();
+    return {
+      ...crm,
+      syncLead: async (lead: CrmLead, knownId: string | null) => {
+        await erasePerson(env, "+919810000001", NOW);
+        return crm.syncLead(lead, knownId);
+      },
+      erasePerson: erase,
+    };
+  }
+
+  it("blanks the record again when the person is erased while their lead is on its way", async () => {
+    const leadId = await bookLead();
+    const erasures: (string | null)[] = [];
+    const crm = crmErasingDuringSync((_personId, knownId) => {
+      erasures.push(knownId);
+      return Promise.resolve({ found: true });
+    });
+    const deps = fakeDependencies({ crm });
+
+    expect(await syncLead(env.DB, deps, log, leadId)).toEqual({ retrySoon: false });
+
+    expect(erasures).toEqual(["zoho-1"]);
+    expect((await leadRow(leadId))?.sync_state).toBe("synced");
+    expect(deps.leadNotices).toEqual([]);
+  });
+
+  it("leaves the sweeper to blank it when that second erasure fails", async () => {
+    const leadId = await bookLead();
+    const crm = crmErasingDuringSync(() => Promise.reject(new Error("Zoho 503 down")));
+
+    await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);
+
+    const person = await env.DB.prepare("SELECT crm_erased_at, crm_erasure_error FROM people").first();
+    expect(person).toEqual({ crm_erased_at: null, crm_erasure_error: "Zoho 503 down" });
+    expect((await leadRow(leadId))?.sync_state).toBe("synced");
+  });
 });

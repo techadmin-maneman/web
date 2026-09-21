@@ -39,6 +39,13 @@ function assert(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
+/**
+ * A new version usually serves everywhere within seconds, but on 21 September
+ * 2026 staging served the previous one for over 12 s. Allow a minute.
+ */
+const HEALTH_ATTEMPTS = 12;
+const HEALTH_RETRY_DELAY_MS = 5_000;
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -57,7 +64,7 @@ async function readJsonObject(response: Response): Promise<Record<string, unknow
 
 /** The right environment, version and database. Retried: a deploy takes a moment to reach every edge. */
 const health: Check = async ({ options, api }) => {
-  const attempts = options.healthAttempts ?? 5;
+  const attempts = options.healthAttempts ?? HEALTH_ATTEMPTS;
   let lastFailure = "";
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
@@ -87,7 +94,7 @@ const health: Check = async ({ options, api }) => {
       return `${options.environment}, version ${String(body.version_id)}, d1 ok`;
     } catch (error) {
       lastFailure = error instanceof Error ? error.message : String(error);
-      if (attempt < attempts) await sleep(options.retryDelayMs ?? 3000);
+      if (attempt < attempts) await sleep(options.retryDelayMs ?? HEALTH_RETRY_DELAY_MS);
     }
   }
   throw new Error(`after ${String(attempts)} attempt(s): ${lastFailure}`);

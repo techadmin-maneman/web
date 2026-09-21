@@ -116,8 +116,10 @@ export async function syncLead(
   try {
     const result = await deps.crm.syncLead(toCrmLead(row), row.zoho_lead_id);
     const at = deps.now().toISOString();
-    await db.batch([
-      db.prepare("UPDATE people SET zoho_lead_id = ?1 WHERE id = ?2").bind(result.crmLeadId, row.person_id),
+    const [person] = await db.batch([
+      db
+        .prepare("UPDATE people SET zoho_lead_id = ?1 WHERE id = ?2 RETURNING erased_at")
+        .bind(result.crmLeadId, row.person_id),
       db
         .prepare("UPDATE leads SET sync_state = 'synced', synced_at = ?1, last_sync_error = NULL WHERE id = ?2")
         .bind(at, leadId),
@@ -134,6 +136,11 @@ export async function syncLead(
       duration_ms: Date.now() - started,
       ...timings,
     });
+    const erasedAt = (person?.results[0] as { erased_at: string | null } | undefined)?.erased_at ?? null;
+    if (erasedAt !== null) {
+      await eraseAgain(db, deps, log, row.person_id, result.crmLeadId);
+      return { retrySoon: false };
+    }
     await deps.notifyLead(leadNotice(row));
     return { retrySoon: false };
   } catch (error) {
@@ -215,6 +222,30 @@ export async function eraseInCrm(
       );
     }
     return { retrySoon: attempts === 1 };
+  }
+}
+
+/**
+ * The person was erased while their lead was being written to the CRM, so that
+ * write may have landed after the erasure's and put their details back. The
+ * record is blanked again; if that fails, the sweeper retries the erasure.
+ */
+async function eraseAgain(
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+  personId: string,
+  crmLeadId: string,
+): Promise<void> {
+  try {
+    await deps.crm.erasePerson(personId, crmLeadId);
+    log.info("crm_erased_after_sync", { person_id: personId });
+  } catch (error) {
+    await db
+      .prepare("UPDATE people SET crm_erased_at = NULL, crm_erasure_error = ?2 WHERE id = ?1")
+      .bind(personId, describe(error))
+      .run();
+    log.error("crm_erasure_failed", { person_id: personId, error });
   }
 }
 
