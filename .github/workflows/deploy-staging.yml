@@ -1,0 +1,74 @@
+# Merge to main: every PR check again, then migrate staging D1, deploy both
+# Workers to staging and run the smoke suite against staging.maneman.in.
+#
+# Secrets live on the GitHub Environment "staging" and belong to staging only:
+#   CLOUDFLARE_API_TOKEN     scoped to staging resources (docs/decisions/0007-platform-constraints.md)
+#   CLOUDFLARE_ACCOUNT_ID
+#   CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET   Access service token for the smoke suite
+name: deploy-staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: deploy staging
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://staging.maneman.in
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+
+      - name: Staging is provisioned
+        run: |
+          missing=""
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::GitHub Environment 'staging' is missing:$missing. See docs/runbook.md, 'Provisioning an environment'."
+            exit 1
+          fi
+          npm run check:config -- --require-provisioned
+
+      - name: Apply D1 migrations to staging
+        run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-staging --env staging --remote
+
+      - name: Database identity is staging
+        run: node scripts/mark-database.ts staging
+
+      - name: Deploy mm-api
+        run: |
+          id=$(node scripts/release.ts upload --worker mm-api --env staging --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-api --env staging --split "$id@100" --message "staging $SHA"
+
+      - name: Deploy mm-site
+        run: |
+          id=$(node scripts/release.ts upload --worker mm-site --env staging --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-site --env staging --split "$id@100" --message "staging $SHA"
+
+      - name: Smoke staging
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run smoke -- --base https://staging.maneman.in --environment staging --version-tag "$SHA"
