@@ -1,0 +1,2 @@
+# LF everywhere, so Prettier and the contract test see the same bytes on every OS.
+* text=auto eol=lf
