@@ -70,6 +70,8 @@ export interface Settings {
   readonly ipHashSalt: string;
   /** Where alerts are posted. Optional locally only. */
   readonly alertWebhookUrl: string | null;
+  /** Where new-lead notices are posted: LEAD_WEBHOOK_URL, or else the alert webhook. */
+  readonly leadWebhookUrl: string | null;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
   readonly tryon: TryonSettings;
@@ -186,6 +188,10 @@ export function readSettings(
   if (alertWebhookUrl !== null && alertWebhookUrl !== "" && !alertWebhookUrl.startsWith("https://")) {
     read.problems.push("ALERT_WEBHOOK_URL must be an https:// URL");
   }
+  const leadWebhookUrl = read.optionalText("LEAD_WEBHOOK_URL");
+  if (leadWebhookUrl !== null && !leadWebhookUrl.startsWith("https://")) {
+    read.problems.push("LEAD_WEBHOOK_URL must be an https:// URL");
+  }
 
   let zoho: ZohoSettings | null = null;
   if (crmProvider === "zoho") {
@@ -257,6 +263,7 @@ export function readSettings(
     acceptTurnstileTestToken,
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
+    leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
     zoho,
     tryon,
     messaging,

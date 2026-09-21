@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import catalog from "../../data/ailabtools-catalog.json";
 import { renderMessage } from "../../src/config/message-templates.ts";
+import { leadNotice } from "../../src/domain/lead-notice.ts";
 import { PRESETS, findPreset } from "../../src/config/presets.ts";
 import { MAX_UPLOAD_BYTES } from "../../src/config/tryon.ts";
 import { checkPhoto } from "../../src/domain/photo.ts";
@@ -129,5 +130,36 @@ describe("message templates", () => {
     expect(renderMessage("tryon_result_v1", ["Arjun"])).toMatch(/^Hello Arjun, here is your Mane Man try-on\./);
     expect(renderMessage("tryon_result_v1", [])).toBeNull();
     expect(renderMessage("nope", ["Arjun"])).toBeNull();
+  });
+});
+
+describe("lead notices", () => {
+  const lead = {
+    lead_id: "0b9f1a52-7c0b-4f5b-9a0e-2f4f6f2b1a01",
+    city: "Gurgaon",
+    first_choice_window: "weekday_am" as const,
+    proposed_visit_date: "2026-09-23",
+    contactable: 1,
+  };
+
+  it("names the city, window and proposed day of a booking, and never the person", () => {
+    expect(leadNotice({ ...lead, source: "form" })).toBe(
+      "New booking: Gurgaon, weekday morning, proposed Wed 23 Sep. Lead 0b9f1a52.",
+    );
+    expect(leadNotice({ ...lead, source: "form", proposed_visit_date: null })).toBe(
+      "New booking: Gurgaon, weekday morning. Lead 0b9f1a52.",
+    );
+  });
+
+  it("names a waitlist's city, and says whether a try-on lead may be chased", () => {
+    expect(leadNotice({ ...lead, source: "waitlist", city: "Mumbai" })).toBe(
+      "New waitlist sign-up: Mumbai. Lead 0b9f1a52.",
+    );
+    expect(leadNotice({ ...lead, source: "tryon", city: null, contactable: 0 })).toBe(
+      "New try-on lead: WhatsApp copy only, not to be chased. Lead 0b9f1a52.",
+    );
+    expect(leadNotice({ ...lead, source: "tryon", city: null })).toBe(
+      "New try-on lead, from someone who has booked before. Lead 0b9f1a52.",
+    );
   });
 });

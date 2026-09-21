@@ -75,7 +75,7 @@
     "UPLOAD_DAILY_CEILING": "40",
     "RESULT_READ_DAILY_CEILING": "400",
     "RESULT_RETENTION_DAYS": "3",
-    "UNKNOWN_COLOR_ROUTE": "premium_original",
+    "UNKNOWN_COLOR_ROUTE": "pro_black",
     "AILAB_CREDIT_FLOOR": "200",
     "MESSAGING_ENABLED": "true",
     "WA_RESULT_TEMPLATE": "tryon_result_v1"
@@ -150,7 +150,7 @@
         "UPLOAD_DAILY_CEILING": "40",
         "RESULT_READ_DAILY_CEILING": "400",
         "RESULT_RETENTION_DAYS": "3",
-        "UNKNOWN_COLOR_ROUTE": "premium_original",
+        "UNKNOWN_COLOR_ROUTE": "pro_black",
         "AILAB_CREDIT_FLOOR": "200",
         "MESSAGING_ENABLED": "true",
         "WA_RESULT_TEMPLATE": "tryon_result_v1"
@@ -225,7 +225,7 @@
         "UPLOAD_DAILY_CEILING": "80",
         "RESULT_READ_DAILY_CEILING": "800",
         "RESULT_RETENTION_DAYS": "30",
-        "UNKNOWN_COLOR_ROUTE": "premium_original",
+        "UNKNOWN_COLOR_ROUTE": "pro_black",
         "AILAB_CREDIT_FLOOR": "200",
         "MESSAGING_ENABLED": "false",
         "WA_RESULT_TEMPLATE": "tryon_result_v1"

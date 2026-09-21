@@ -13,7 +13,7 @@ import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { currentSession } from "../http/session.ts";
+import { lookCookieJob } from "../http/session.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { checkPhoto } from "../domain/photo.ts";
 import { indiaHour } from "../lib/india-time.ts";
@@ -47,7 +47,7 @@ export const uploadUrlRoute = createRoute({
   responses: {
     201: { description: "Created", content: { "application/json": { schema: UploadUrlResponseSchema } } },
     400: errorResponse("invalid_request: see error.fields"),
-    403: errorResponse("turnstile_failed"),
+    403: errorResponse("turnstile_failed; look_limit_reached: this browser already has its look"),
     429: errorResponse("rate_limited: too many uploads from this address this hour"),
     503: errorResponse("busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached"),
   },
@@ -81,6 +81,11 @@ export function registerTryonUpload(app: App): void {
       return c.json(errorBody("invalid_request", requestId, ["notice_version"]), 400);
     }
 
+    // One look per visitor: a browser whose last render did not fail gets no second photo.
+    const lastJobId = lookCookieJob(c);
+    const lastJob = lastJobId === null ? null : await loadJob(db, lastJobId);
+    if (lastJob !== null && lastJob.state !== "failed") return c.json(errorBody("look_limit_reached", requestId), 403);
+
     const visitor = await visitorOf(c);
     const turnstile = await checkTurnstile(c, request.turnstile_token, visitor);
     if (turnstile === "rejected") return c.json(errorBody("turnstile_failed", requestId), 403);
@@ -100,30 +105,19 @@ export function registerTryonUpload(app: App): void {
       return c.json(errorBody("busy", requestId), 503);
     }
 
-    // A visitor who already passed the gate keeps their session for a new photo.
-    const session = await currentSession(c);
     const jobId = crypto.randomUUID();
     await db
       .prepare(
-        `INSERT INTO tryon_jobs (id, created_at, upload_key, state, person_id, session_id,
-           photo_consent_version, photo_consent_at, ip_hash, request_id)
-         VALUES (?1, ?2, ?3, 'awaiting_upload', ?4, ?5, ?6, ?2, ?7, ?8)`,
+        `INSERT INTO tryon_jobs (id, created_at, upload_key, state, photo_consent_version, photo_consent_at,
+           ip_hash, request_id)
+         VALUES (?1, ?2, ?3, 'awaiting_upload', ?4, ?2, ?5, ?6)`,
       )
-      .bind(
-        jobId,
-        now.toISOString(),
-        `uploads/${jobId}`,
-        session?.person_id ?? null,
-        session?.id ?? null,
-        request.notice_version,
-        visitor.ipHash,
-        requestId,
-      )
+      .bind(jobId, now.toISOString(), `uploads/${jobId}`, request.notice_version, visitor.ipHash, requestId)
       .run();
 
     const expiresAt = new Date(now.getTime() + UPLOAD_LINK_TTL_MS);
     const token = await signToken(tryon.linkSigningKey, "upload", jobId, expiresAt);
-    c.var.log.info("tryon_upload_link", { job_id: jobId, session: session !== null });
+    c.var.log.info("tryon_upload_link", { job_id: jobId });
     return c.json(
       { job_id: jobId, upload_url: `/api/tryon/upload/${jobId}?token=${token}`, expires_at: expiresAt.toISOString() },
       201,

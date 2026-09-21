@@ -3,7 +3,7 @@
 // Accepted while the render is still running, not only once it is ready: the
 // design shows the gate after 20 seconds, and renders take 30 to 180, so the
 // lead is captured the moment the gate is submitted. The person gets a
-// session (the mm_tryon cookie) to see the result and ask for more looks.
+// session (the mm_tryon cookie) to see the result.
 //
 // A try-on lead does not make the person contactable: the gate's consent
 // permits sending this result and nothing else (docs/decisions/0012-zoho-sync.md).

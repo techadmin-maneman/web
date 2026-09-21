@@ -32,7 +32,7 @@ export const ResultFailedSchema = z
 export const resultRoute = createRoute({
   method: "get",
   path: "/api/tryon/result/{job_id}",
-  summary: "The result, for the session the gate set. Also serves every further look",
+  summary: "The result, for the session the gate set",
   request: { params: z.object({ job_id: z.uuid() }) },
   responses: {
     200: { description: "Ready", content: { "application/json": { schema: ResultReadySchema } } },

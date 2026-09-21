@@ -12,6 +12,7 @@ import type { LossExtent, VisitWindow } from "../config/booking.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { CrmLead, LeadSource } from "../providers/crm.ts";
+import { leadNotice } from "../domain/lead-notice.ts";
 
 export const MAX_SYNC_ATTEMPTS = 10;
 export const QUICK_RETRY_DELAY_SECONDS = 30;
@@ -118,6 +119,7 @@ export async function syncLead(
       duration_ms: Date.now() - started,
       ...timings,
     });
+    await deps.notifyLead(leadNotice(row));
     return { retrySoon: false };
   } catch (error) {
     const description = describe(error);

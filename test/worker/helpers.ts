@@ -20,6 +20,7 @@ export const LOCAL_SETTINGS: Settings = {
   acceptTurnstileTestToken: false,
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
+  leadWebhookUrl: null,
   zoho: null,
   tryon: {
     uploadIpHourlyLimit: 5,
@@ -100,10 +101,12 @@ export const NOW = new Date("2026-09-21T06:30:00Z"); // 12:00 on Monday 21 Septe
 
 export interface TestDependencies extends Dependencies {
   readonly alerts: string[];
+  readonly leadNotices: string[];
 }
 
 export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDependencies {
   const alerts: string[] = [];
+  const leadNotices: string[] = [];
   const now = overrides.now ?? (() => NOW);
   return {
     fetch: fakeFetch({ [TURNSTILE_URL]: turnstilePasses }).fetch,
@@ -116,6 +119,11 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
       return Promise.resolve();
     },
     alerts,
+    notifyLead: (message) => {
+      leadNotices.push(message);
+      return Promise.resolve();
+    },
+    leadNotices,
     ...overrides,
   };
 }

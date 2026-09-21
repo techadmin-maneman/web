@@ -145,9 +145,9 @@ Their licences are unknown; the owner chose to use them for this internal test.
 - [x] **A gate submitted while the render is still running creates the lead at once, and the result appears when ready.**
   - The gate was submitted 5 s in, with the job still `queued`. It returned 201 with the lead, `whatsapp_copy: true` and the session cookie. D1 held both consents (`gate-v1`, `photo-v1`) and a `tryon` lead with the stage as its loss extent.
   - The result was ready at 59 s, and the session fetched it.
-- [x] **A second look releases without a second gate or a second lead.** A different look on the same job returned a new job with the same photo, person and session, and no lead of its own. D1 held one lead and one `try_on_additional_look` event; the session fetched the second result.
-- [ ] **The WhatsApp copy arrives on a test handset**: the owner to confirm.
-  - The first result's message was `sent` on its third attempt. The first two timed out after the bridge had already fetched the image, so the handset probably received it more than once. A timeout is no longer retried (PR #7, docs/decisions/0016).
+- [x] **A second look releases without a second gate or a second lead.** Proven on staging as written. Then superseded by the owner's decision of one look per visitor (docs/decisions/0018): a second look is now refused.
+- [x] **The WhatsApp copy arrives on a test handset**: confirmed by the owner, who received it three times.
+  - The first result's message was `sent` on its third attempt. The first two timed out after the bridge had already fetched the image, and all three reached the handset. A timeout is no longer retried (PR #7, docs/decisions/0016).
   - The bridge is the Evolution API on port 8443 of the owner's Tailscale Funnel host; port 443 there serves another app.
 - [x] **With `MESSAGING_ENABLED=false`, the claim returns `whatsapp_copy: false` and nothing is sent.** A staging version with messaging off was deployed for the test. The claim returned `whatsapp_copy: false`. When the render was ready, its message went from `queued` to `skipped` ("messaging is off") with no attempt.
 - [ ] **A try-on-only lead is in Zoho as `Try-on — delivery only`, and is not assigned**: the owner to confirm in Zoho, record `32619000000175412`. In D1 the person is not contactable, and the sync inserted a new record, which the rules make `Try-on — delivery only` with no assignment rule.

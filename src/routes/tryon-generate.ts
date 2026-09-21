@@ -1,21 +1,21 @@
 // POST /api/tryon/generate and GET /api/tryon/status/:job_id.
 //
-// The first generate for an upload renders it. A later one with a different
-// look is "try another look": it needs the session the gate set, and renders
-// the same photo again as a new job, without a second gate or a second lead.
-// An identical request returns the job that already exists.
+// One look per visitor (the owner's decision, docs/decisions/0014-try-on-api.md):
+// the first generate for an upload renders it; the same look asked for again
+// returns that job; any other look is refused, before or after the gate. The
+// mm_look cookie then keeps the browser from starting another photo.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../app.ts";
 import { PRESET_IDS, findPreset } from "../config/presets.ts";
-import { FAILURE_CODES, HAIR_COLORS, JOB_STATES, TRYON_STAGES, type JobState } from "../config/tryon.ts";
+import { FAILURE_CODES, HAIR_COLORS, JOB_STATES, TRYON_STAGES } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { chooseRender } from "../domain/render-choice.ts";
-import { failJob, loadJob, recordEvent, type JobRow, type RenderChoice } from "../domain/tryon.ts";
+import { failJob, loadJob, type JobRow, type RenderChoice } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { currentSession } from "../http/session.ts";
+import { setLookCookie } from "../http/session.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaHour } from "../lib/india-time.ts";
 import type { RenderMessage } from "../queues/render.ts";
@@ -44,7 +44,7 @@ export const JobStatusSchema = z
 export const generateRoute = createRoute({
   method: "post",
   path: "/api/tryon/generate",
-  summary: "Render a look: the first for an upload, or another look for the same photo",
+  summary: "Render the look for an uploaded photo: one look per visitor",
   request: { body: { required: true, content: { "application/json": { schema: GenerateRequestSchema } } } },
   responses: {
     202: {
@@ -52,7 +52,7 @@ export const generateRoute = createRoute({
       content: { "application/json": { schema: JobStatusSchema } },
     },
     400: errorResponse("invalid_request: see error.fields"),
-    403: errorResponse("session_required: another look needs the session the gate set"),
+    403: errorResponse("look_limit_reached: this photo already has its look"),
     404: errorResponse("not_found"),
     409: errorResponse("upload_missing: the photo has not been uploaded, or has been deleted"),
     429: errorResponse("rate_limited: too many renders from this address this hour"),
@@ -96,10 +96,7 @@ export function registerTryonGenerate(app: App): void {
     if (preset === undefined) return c.json(errorBody("invalid_request", requestId, ["preset"]), 400);
 
     const choice = chooseRender(request.stage, preset, request.hair_color, settings.tryon.unknownColorRoute);
-    const outcome =
-      job.state === "awaiting_upload"
-        ? await startFirstLook(c, job, choice)
-        : await startAnotherLook(c, job, choice, visitor.ipHash);
+    const outcome = job.state === "awaiting_upload" ? await startFirstLook(c, job, choice) : sameLookAgain(job, choice);
 
     if ("error" in outcome) return c.json(errorBody(outcome.error, requestId), outcome.status);
     return c.json(outcome, 202);
@@ -119,7 +116,7 @@ export function statusOf(job: Pick<JobRow, "id" | "state" | "failure_code">): Jo
 }
 
 type Outcome =
-  JobStatus | { readonly error: "upload_missing" | "session_required" | "busy"; readonly status: 403 | 409 | 503 };
+  JobStatus | { readonly error: "upload_missing" | "look_limit_reached" | "busy"; readonly status: 403 | 409 | 503 };
 
 async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderChoice): Promise<Outcome> {
   const db = c.env.DB;
@@ -149,75 +146,15 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
   }
 
   await enqueueRender(c, job.id);
+  setLookCookie(c, job.id);
   c.var.log.info("tryon_render_queued", { job_id: job.id, endpoint: choice.endpoint, color_route: choice.colorRoute });
   return { job_id: job.id, state: "queued" };
 }
 
-async function startAnotherLook(
-  c: Context<AppEnv>,
-  job: JobRow,
-  choice: RenderChoice,
-  ipHash: string,
-): Promise<Outcome> {
-  const db = c.env.DB;
-  const now = c.var.deps.now();
-
-  // The same look again: the job already covers it.
+/** A job already asked for: the same look returns it; any other is refused. */
+function sameLookAgain(job: JobRow, choice: RenderChoice): Outcome {
   const sameLook = job.preset === choice.preset && job.hair_color === choice.hairColor;
-  if (sameLook && job.state !== "failed" && job.state !== "expired") return statusOf(job);
-
-  const session = await currentSession(c);
-  const ownsJob = session !== null && job.session_id === session.id;
-  if (!ownsJob) return { error: "session_required", status: 403 };
-  if (job.uploaded_at === null || job.upload_deleted_at !== null) return { error: "upload_missing", status: 409 };
-
-  const existing = await db
-    .prepare(
-      `SELECT id, state, failure_code FROM tryon_jobs
-       WHERE upload_key = ?1 AND preset = ?2 AND hair_color = ?3
-         AND state IN ('queued', 'rendering', 'downloading', 'ready')
-       ORDER BY created_at DESC LIMIT 1`,
-    )
-    .bind(job.upload_key, choice.preset, choice.hairColor)
-    .first<{ id: string; state: JobState; failure_code: null }>();
-  if (existing !== null) return statusOf(existing);
-
-  const ceiling = c.var.config.settings.tryon.renderDailyCeiling;
-  if (!(await takeFromCeiling(db, "render", ceiling, now))) {
-    await alertCeilingReached(db, c.var.deps.alert, "render", ceiling, now);
-    return { error: "busy", status: 503 };
-  }
-
-  const lookId = crypto.randomUUID();
-  const firstLookId = job.parent_job_id ?? job.id;
-  await db.batch([
-    db
-      .prepare(
-        `INSERT INTO tryon_jobs (id, created_at, upload_key, uploaded_at, parent_job_id, stage, preset, hair_color,
-           endpoint, provider_color, color_route, state, person_id, session_id, photo_consent_version,
-           photo_consent_at, ip_hash, request_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 'queued', ?12, ?13, ?14, ?15, ?16, ?17)`,
-      )
-      .bind(
-        lookId,
-        now.toISOString(),
-        job.upload_key,
-        job.uploaded_at,
-        firstLookId,
-        ...choiceValues(choice),
-        session.person_id,
-        session.id,
-        job.photo_consent_version,
-        job.photo_consent_at,
-        ipHash,
-        c.var.requestId,
-      ),
-    recordEvent(db, "try_on_additional_look", session.person_id, { job_id: lookId, first_job_id: firstLookId }, now),
-  ]);
-
-  await enqueueRender(c, lookId);
-  c.var.log.info("try_on_additional_look", { job_id: lookId, first_job_id: firstLookId });
-  return { job_id: lookId, state: "queued" };
+  return sameLook ? statusOf(job) : { error: "look_limit_reached", status: 403 };
 }
 
 function choiceValues(choice: RenderChoice): string[] {

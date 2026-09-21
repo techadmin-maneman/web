@@ -40,7 +40,8 @@
                   "upload_already_received",
                   "upload_missing",
                   "session_required",
-                  "job_not_claimable"
+                  "job_not_claimable",
+                  "look_limit_reached"
                 ]
               },
               "request_id": {
@@ -707,7 +708,7 @@
             }
           },
           "403": {
-            "description": "turnstile_failed",
+            "description": "turnstile_failed; look_limit_reached: this browser already has its look",
             "content": {
               "application/json": {
                 "schema": {
@@ -802,7 +803,7 @@
     },
     "/api/tryon/generate": {
       "post": {
-        "summary": "Render a look: the first for an upload, or another look for the same photo",
+        "summary": "Render the look for an uploaded photo: one look per visitor",
         "requestBody": {
           "required": true,
           "content": {
@@ -835,7 +836,7 @@
             }
           },
           "403": {
-            "description": "session_required: another look needs the session the gate set",
+            "description": "look_limit_reached: this photo already has its look",
             "content": {
               "application/json": {
                 "schema": {
@@ -1016,7 +1017,7 @@
     },
     "/api/tryon/result/{job_id}": {
       "get": {
-        "summary": "The result, for the session the gate set. Also serves every further look",
+        "summary": "The result, for the session the gate set",
         "parameters": [
           {
             "schema": {
