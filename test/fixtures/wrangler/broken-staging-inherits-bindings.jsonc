@@ -1,0 +1,73 @@
+// DELIBERATELY BROKEN. CI runs the config check against this file and requires
+// it to fail. Staging declares its database but not its buckets or queues, so
+// it would run without them; that is the mistake the check exists to catch.
+{
+  "name": "mm-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-15",
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "maneman-local", "database_id": "00000000-0000-0000-0000-000000000000" }
+  ],
+  "r2_buckets": [
+    { "binding": "UPLOADS", "bucket_name": "mm-local-tryon-uploads" },
+    { "binding": "RESULTS", "bucket_name": "mm-local-tryon-results" }
+  ],
+  "queues": {
+    "producers": [
+      { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
+      { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-local" },
+      { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" }
+    ]
+  },
+  "vars": { "ENVIRONMENT": "local", "IMAGE_PROVIDER": "stub", "CRM_PROVIDER": "stub", "MESSAGING_PROVIDER": "stub" },
+  "env": {
+    "staging": {
+      "name": "mm-api-staging",
+      "account_id": "72edc81c65cb5830f76c57e841831d7d",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "routes": [{ "pattern": "staging.maneman.in/api/*", "zone_name": "maneman.in" }],
+      "d1_databases": [
+        { "binding": "DB", "database_name": "maneman-staging", "database_id": "00000000-0000-0000-0000-000000000000" }
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "IMAGE_PROVIDER": "ailabtools",
+        "CRM_PROVIDER": "zoho",
+        "MESSAGING_PROVIDER": "bsp"
+      }
+    },
+    "production": {
+      "name": "mm-api-production",
+      "account_id": "72edc81c65cb5830f76c57e841831d7d",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "routes": [{ "pattern": "maneman.in/api/*", "zone_name": "maneman.in" }],
+      "d1_databases": [
+        { "binding": "DB", "database_name": "maneman-prod", "database_id": "00000000-0000-0000-0000-000000000000" }
+      ],
+      "r2_buckets": [
+        { "binding": "UPLOADS", "bucket_name": "mm-prod-tryon-uploads" },
+        { "binding": "RESULTS", "bucket_name": "mm-prod-tryon-results" }
+      ],
+      "queues": {
+        "producers": [
+          { "binding": "RENDER_QUEUE", "queue": "mm-render-prod" },
+          { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-prod" },
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" }
+        ]
+      },
+      "vars": {
+        "ENVIRONMENT": "production",
+        "IMAGE_PROVIDER": "ailabtools",
+        "CRM_PROVIDER": "zoho",
+        "MESSAGING_PROVIDER": "bsp"
+      }
+    }
+  }
+}
