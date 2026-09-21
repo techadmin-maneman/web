@@ -35,6 +35,8 @@ jobs:
       SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the triggers check compares with the previous commit
       - uses: ./.github/actions/setup
 
       - name: Staging is set up
@@ -66,3 +68,11 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run smoke -- --base https://staging.maneman.in --environment staging --version-tag "$SHA"
+
+      - name: Remind if triggers changed (CI cannot apply them)
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            node scripts/triggers-changed.ts --base "$BEFORE" --env staging
+          fi
