@@ -163,6 +163,20 @@ try {
 }
 
 // Access: staging needs the service token; production must stay public.
+
+/** Who answered: the Worker, the Access login, or a Cloudflare challenge in front of both. */
+function describe(response: Response): string {
+  const status = `HTTP ${String(response.status)}`;
+  if (response.headers.get("cf-mitigated") === "challenge") {
+    const ray = response.headers.get("cf-ray") ?? "unknown";
+    return `${status}, a Cloudflare challenge answered before Access or the Worker (Ray ID ${ray})`;
+  }
+  if ((response.headers.get("location") ?? "").includes("cloudflareaccess.com")) {
+    return `${status}, redirected to the Access login`;
+  }
+  return status;
+}
+
 const healthUrl = `https://${HOSTNAME[environment]}/api/health`;
 if (environment === "staging") {
   const accessId = process.env.CF_ACCESS_CLIENT_ID ?? "";
@@ -174,22 +188,15 @@ if (environment === "staging") {
       headers: { "CF-Access-Client-Id": accessId, "CF-Access-Client-Secret": accessSecret },
       redirect: "manual",
     });
-    const passed = withToken.status === 200;
-    report(
-      passed ? "PASS" : "FAIL",
-      "Access service token",
-      passed ? "reaches /api/health" : `blocked (HTTP ${String(withToken.status)})`,
-    );
+    report(withToken.status === 200 ? "PASS" : "FAIL", "Access service token", describe(withToken));
   }
+
   const withoutToken = await fetch(healthUrl, { redirect: "manual" });
-  report(
-    withoutToken.status === 200 ? "FAIL" : "PASS",
-    "Access without a token",
-    withoutToken.status === 200 ? "staging is open to anyone" : `blocked (HTTP ${String(withoutToken.status)})`,
-  );
+  const sentToLogin = (withoutToken.headers.get("location") ?? "").includes("cloudflareaccess.com");
+  report(sentToLogin ? "PASS" : "FAIL", "Access without a token", describe(withoutToken));
 } else {
   const response = await fetch(healthUrl, { redirect: "manual" });
-  report(response.status === 200 ? "PASS" : "FAIL", "public health check", `HTTP ${String(response.status)}`);
+  report(response.status === 200 ? "PASS" : "FAIL", "public health check", describe(response));
 }
 
 const failed = outcomes.filter((outcome) => outcome === "FAIL").length;

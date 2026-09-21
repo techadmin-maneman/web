@@ -144,10 +144,21 @@ export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
 export async function runSmoke(options: SmokeOptions): Promise<SmokeResult[]> {
   const doFetch = options.fetch ?? fetch;
   const headers = { ...options.headers };
+
+  async function get(url: string): Promise<Response> {
+    const response = await doFetch(url, { headers });
+    // Cloudflare's bot protection or a WAF rule answered; the Worker never saw the request.
+    if (response.headers.get("cf-mitigated") === "challenge") {
+      const ray = response.headers.get("cf-ray") ?? "unknown";
+      throw new Error(`Cloudflare challenged the request before it reached the Worker (Ray ID ${ray})`);
+    }
+    return response;
+  }
+
   const target: Target = {
     options,
-    api: (path) => doFetch(`${options.apiBase}${path}`, { headers }),
-    site: (path) => doFetch(`${options.siteBase}${path}`, { headers }),
+    api: (path) => get(`${options.apiBase}${path}`),
+    site: (path) => get(`${options.siteBase}${path}`),
   };
 
   const results: SmokeResult[] = [];
