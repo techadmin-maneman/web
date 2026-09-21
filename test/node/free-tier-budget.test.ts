@@ -34,9 +34,9 @@ describe("free-tier budget", () => {
     expect(overBudget(worstCaseUsage(committed))).toEqual([]);
   });
 
-  it("counts a render polled to the deadline, its download retries, its message and its CRM sync", () => {
-    // 3 + 6 early polls + 15 late polls + 1 final + 3 download retries; 3 + 3 for the message; 3 + 1 for the CRM.
-    expect(queueOperationsPerRender()).toBe(38);
+  it("counts a render polled to the give-up time, its download retries, its message and its CRM sync", () => {
+    // 3 + 6 early polls + 15 late + 12 slow + 1 final + 3 download retries; 3 + 3 for the message; 3 + 1 for the CRM.
+    expect(queueOperationsPerRender()).toBe(50);
   });
 
   it("fails when a ceiling is raised past the free tier", () => {

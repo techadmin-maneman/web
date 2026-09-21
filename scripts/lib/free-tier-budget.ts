@@ -10,7 +10,8 @@ import {
   MAX_SEND_ATTEMPTS,
   POLL_DELAY_SECONDS,
   POLL_SLOWDOWN_AFTER_MS,
-  RENDER_DEADLINE_MS,
+  POLL_SLOW_AFTER_MS,
+  RENDER_GIVE_UP_MS,
 } from "../../src/config/pipeline.ts";
 import { MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
 
@@ -51,8 +52,9 @@ export interface Ceilings {
  */
 export function queueOperationsPerRender(): number {
   const earlyPolls = Math.ceil(POLL_SLOWDOWN_AFTER_MS / 1000 / POLL_DELAY_SECONDS.early);
-  const latePolls = Math.ceil((RENDER_DEADLINE_MS - POLL_SLOWDOWN_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.late);
-  const render = 3 + earlyPolls + latePolls + 1 + DOWNLOAD_QUEUE_RETRIES; // + the final poll past the deadline
+  const latePolls = Math.ceil((POLL_SLOW_AFTER_MS - POLL_SLOWDOWN_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.late);
+  const slowPolls = Math.ceil((RENDER_GIVE_UP_MS - POLL_SLOW_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.slow);
+  const render = 3 + earlyPolls + latePolls + slowPolls + 1 + DOWNLOAD_QUEUE_RETRIES; // + the final poll past the give-up
   const message = 3 + (MAX_SEND_ATTEMPTS - 1);
   const crmSync = 3 + 1; // one quick retry
   return render + message + crmSync;
