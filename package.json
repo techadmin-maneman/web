@@ -20,7 +20,7 @@
     "check:migrations": "node scripts/check-migrations.ts",
     "types": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example",
     "build": "node scripts/build.ts",
-    "openapi": "node scripts/generate-openapi.ts",
+    "openapi": "node scripts/generate-openapi.ts && openapi-typescript docs/openapi.json --output site/src/lib/api-schema.ts",
     "smoke": "node scripts/smoke.ts",
     "types:check": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example --check",
     "apply-triggers": "wrangler triggers deploy",
@@ -50,6 +50,7 @@
     "eslint": "10.11.0",
     "jiti": "2.7.0",
     "jsonc-parser": "3.3.1",
+    "openapi-typescript": "7.13.0",
     "preact": "10.29.8",
     "prettier": "3.9.8",
     "prettier-plugin-astro": "1.0.1",
@@ -62,7 +63,10 @@
     "wrangler": "4.135.0"
   },
   "overrides": {
-    "sharp": "0.35.4"
+    "sharp": "0.35.4",
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
   },
   "allowScripts": {
     "esbuild@0.28.1": true,

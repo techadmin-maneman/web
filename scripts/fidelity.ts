@@ -32,6 +32,17 @@ const LIBRARIES: Readonly<Record<string, string>> = {
   "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js": "node_modules/@babel/standalone/babel.min.js",
 };
 
+/** v2's city list, as GET /api/cities answers it. */
+const CITIES = [
+  { name: "Gurgaon", served: true },
+  { name: "Delhi", served: true },
+  { name: "Noida", served: true },
+  { name: "Faridabad", served: true },
+  { name: "Ghaziabad", served: true },
+  { name: "Mumbai", served: false },
+  { name: "Bengaluru", served: false },
+];
+
 /** The home page's sections, in order: v2's top-level blocks pair with these. */
 const HOME_SECTIONS = [
   "hero",
@@ -56,6 +67,11 @@ const STILL =
 async function preparePage(browser: Browser, width: number): Promise<Page> {
   const page = await browser.newPage({ viewport: { width, height: 900 } });
   await page.route("**/*.mp4", (route) => route.abort());
+  // The build's pages call the API; here they get v2's cities and a Turnstile that passes.
+  await page.route("**/api/cities", (route) => route.fulfill({ json: CITIES }));
+  await page.route("https://challenges.cloudflare.com/turnstile/**", (route) =>
+    route.fulfill({ contentType: "text/javascript", body: 'window.turnstile = { render: () => "fake", reset() {} };' }),
+  );
   await page.route("https://unpkg.com/**", async (route) => {
     const file = LIBRARIES[route.request().url()];
     if (file === undefined) return route.abort();

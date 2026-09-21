@@ -77,7 +77,7 @@ test.describe("WhatsApp", () => {
     const links = page.locator('a[href^="https://wa.me/"]');
     await expect(links).toHaveCount(3); // the sticky bar, the footer, the FAQ intro
     for (const href of await links.evaluateAll((all) => all.map((link) => link.getAttribute("href")))) {
-      expect(href).toBe("https://wa.me/919810040200");
+      expect(href).toBe("https://wa.me/919007973247");
     }
   });
 });
@@ -232,11 +232,12 @@ test.describe("other pages", () => {
     await expect(page.locator("header")).toBeVisible();
   });
 
-  test("privacy and terms show a visible placeholder outside production", async ({ page }) => {
-    for (const path of ["/privacy", "/terms"]) {
-      await page.goto(path);
-      await expect(page.locator(".label", { hasText: "Placeholder" })).toBeVisible();
-    }
+  test("privacy has its two paragraphs; terms still shows a visible placeholder", async ({ page }) => {
+    await page.goto("/privacy");
+    await expect(page.locator("article p")).toHaveCount(2);
+    await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
+    await page.goto("/terms");
+    await expect(page.locator(".label", { hasText: "Placeholder" })).toBeVisible();
   });
 
   test("every page says it is mm-site, and is not indexed outside production", async ({ page }) => {

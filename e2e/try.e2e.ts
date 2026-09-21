@@ -178,7 +178,7 @@ test.describe("gate", () => {
 });
 
 test.describe("result", () => {
-  test("a slider from 50%, the look, the disclaimer and the four actions", async ({ page }) => {
+  test("a slider from 50%, the look, the disclaimer and three actions: one look per visitor", async ({ page }) => {
     await open(page, "result");
     await expect(page.getByRole("slider")).toHaveValue("50");
     await expect(page.getByText("Full density · Natural hairline · short")).toBeVisible();
@@ -189,8 +189,7 @@ test.describe("result", () => {
     await expect(page.getByRole("button", { name: "Download" })).toBeVisible();
     await expect(page.getByRole("button", { name: "WhatsApp" })).toBeVisible();
     await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after thirty days.")).toBeVisible();
-    await page.getByRole("button", { name: "Try another look" }).click();
-    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "looks");
+    await expect(page.getByText("Try another look")).toHaveCount(0);
   });
 });
 

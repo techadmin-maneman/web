@@ -13,7 +13,8 @@ import { fill } from "../../site/src/lib/text.ts";
 import { PRESETS } from "../../src/config/presets.ts";
 
 const BLOCKS: Record<PlaceholderBlockName, { publish: boolean }> = {
-  contact: site.contact,
+  whatsapp: site.whatsapp,
+  phone: site.phone,
   heroFootage: site.heroFootage,
   whatPlate: site.whatPlate,
   norwoodPhotos: site.norwoodPhotos,
@@ -64,27 +65,30 @@ describe("content", () => {
     expect(site.booking.consent).toBe("I agree to be contacted about this visit. I have read how my details are used.");
   });
 
-  it("holds today every placeholder value the gate knows, so the gate list stays accurate", () => {
+  it("holds every placeholder value the gate knows in each unpublished block, so the gate list stays accurate", () => {
     for (const [name, values] of Object.entries(DESIGN_PLACEHOLDERS) as [PlaceholderBlockName, readonly string[]][]) {
+      if (BLOCKS[name].publish) continue;
       const text = JSON.stringify(BLOCKS[name]);
       for (const value of values) expect(text, `${name}: ${value}`).toContain(JSON.stringify(value).slice(1, -1));
     }
   });
 
-  it("keeps every placeholder block unpublished until real material replaces it", () => {
-    for (const [name, block] of Object.entries(BLOCKS)) expect(block.publish, name).toBe(false);
+  it("publishes only blocks whose material is real: the WhatsApp number and the privacy notice", () => {
+    const published = Object.entries(BLOCKS)
+      .filter(([, block]) => block.publish)
+      .map(([name]) => name);
+    expect(published).toEqual(["whatsapp", "privacy"]);
   });
 });
 
 describe("the publish gate", () => {
-  it("blocks production today: unapproved notices and the missing legal pages", () => {
-    expect(publishProblems()).toEqual([
-      "the privacy page is not published: production needs its text",
-      "the terms page is not published: production needs its text",
-      "the booking notice (booking-v1) is not approved",
-      "the photo notice (photo-v1) is not approved",
-      "the gate notice (gate-v1) is not approved",
-    ]);
+  it("blocks production today only for the terms text", () => {
+    expect(publishProblems()).toEqual(["the terms page is not published: production needs its text"]);
+  });
+
+  it("stops a notice that is not approved", () => {
+    const notices = { ...site.notices, photo: { ...site.notices.photo, approved: false } };
+    expect(publishProblems(undefined, notices)).toContain("the photo notice (photo-v1) is not approved");
   });
 
   it("stops a published block that still holds the design's placeholder material", () => {

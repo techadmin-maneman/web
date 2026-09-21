@@ -125,9 +125,13 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Chromium for Playwright
         run: npx playwright install --with-deps chromium
+      - name: Local secrets and database for mm-api
+        run: |
+          node scripts/ensure-dev-vars.ts
+          npm run db:local
       - name: Build the site (local)
         run: npm run build:site -- --env local
-      - name: Browser tests at 390 and 1440 px
+      - name: Browser tests at 390 and 1440 px, against a local mm-api with stub providers
         run: npm run test:e2e
       - name: Traces of failed tests
         if: failure()

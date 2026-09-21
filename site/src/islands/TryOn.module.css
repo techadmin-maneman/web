@@ -591,17 +591,6 @@
   font-size: var(--fs-15);
   gap: var(--sp-9);
 }
-.another {
-  background: transparent;
-  border: 0;
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
-  cursor: pointer;
-  min-height: var(--tap);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .copy {
   margin-top: var(--sp-22);
   font-size: var(--fs-14);

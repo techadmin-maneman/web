@@ -1,12 +1,12 @@
 ---
 // Questions: ten disclosures, the first open, one open at a time. <details>
 // sharing a `name` behave as one group, so this needs no script.
-import { contact, faq } from "../../content/site.ts";
+import { faq, whatsapp } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 import { ICONS, whatsappLink } from "../../lib/icons.ts";
 
 // One expression, so no line break can put a space before the full stop.
-const link = isShown(contact) ? whatsappLink(contact.whatsapp.number) : null;
+const link = isShown(whatsapp) ? whatsappLink(whatsapp.number) : null;
 ---
 
 <section id="faq" class="container faq" data-section="faq">

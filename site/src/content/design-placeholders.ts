@@ -6,7 +6,8 @@
 // published block in site.ts still contains any of these values.
 
 export const DESIGN_PLACEHOLDERS = {
-  contact: ["919810040200", "+911244002200", "WhatsApp · +91 98100 40200", "Phone · +91 124 400 2200"],
+  whatsapp: ["919810040200", "WhatsApp · +91 98100 40200"],
+  phone: ["+911244002200", "Phone · +91 124 400 2200"],
   heroFootage: ["hero.mp4", "hero-poster.jpg"],
   whatPlate: ["membrane-on-skin.jpg"],
   norwoodPhotos: ["nw-1.jpg", "nw-2.jpg", "nw-3.jpg", "nw-4.jpg", "nw-5.jpg", "nw-6.jpg", "nw-7.jpg"],

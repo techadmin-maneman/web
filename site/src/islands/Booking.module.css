@@ -1,10 +1,11 @@
 /* ---- The form ------------------------------------------------------------ */
 
-.layout {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-wide)), 1fr));
-  gap: var(--book-gap);
-  align-items: start;
+/* v2 renders the intro and the card one above the other, inside the page's
+   padding, and the booked and waitlist screens after it (ADR 0022). */
+.container {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--book-pad-top) var(--gutter) var(--section-gap);
 }
 .title {
   margin: 0;
@@ -229,6 +230,17 @@
 }
 .consentError {
   margin-top: var(--sp-8);
+}
+.failure {
+  margin-top: var(--sp-16);
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+.turnstile:empty {
+  display: none;
+}
+.turnstile {
+  margin-top: var(--sp-16);
 }
 .submit {
   height: var(--btn-lg);

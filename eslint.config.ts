@@ -18,6 +18,7 @@ export default defineConfig(
       "test-results/",
       "playwright-report/",
       "src/worker-configuration.d.ts",
+      "site/src/lib/api-schema.ts",
     ],
   },
   eslint.configs.recommended,

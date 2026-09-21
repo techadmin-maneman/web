@@ -453,15 +453,6 @@ export default function TryOn(props: Props) {
                     {tryOn.result.whatsapp}
                   </button>
                 </div>
-                <button
-                  type="button"
-                  class={styles.another}
-                  onClick={() => {
-                    setScreen("looks");
-                  }}
-                >
-                  {tryOn.result.another}
-                </button>
               </div>
               <div class={styles.copy}>
                 {tryOn.result.copy.before}

@@ -55,6 +55,16 @@ The three consent notices (booking, photo, gate) are the backend's, in `src/conf
 
 The six looks are the backend's presets, in `src/config/presets.ts`, in its order. The page shows each label split at its first " · ": "Full density · Natural hairline · short" becomes "Full density" over "Natural hairline · short". Change the label there. The API works on the preset's `id`, so a label change is safe.
 
+## Talking to the API
+
+The site calls `mm-api` on its own host, `/api/*`. The request and response types in `site/src/lib/api-schema.ts` are generated from `docs/openapi.json` by `npm run openapi`; never edit them by hand. `site/src/lib/api.ts` holds the calls.
+
+- **Turnstile.** Every mutating call carries a Turnstile token. The widget is managed, rendered invisibly, and appears only if Cloudflare needs the visitor to act (`site/src/lib/turnstile.ts`, site keys in `docs/turnstile.md`).
+- **Idempotency.** Each submission attempt sends a new `Idempotency-Key`.
+- **Attribution.** The first page of a visit stores its campaign tags, referring site and landing path in `sessionStorage` (`site/src/lib/attribution.ts`). Never a query string.
+
+The browser tests run the site against a local `mm-api` with stub providers (`playwright.config.ts`). Run `node scripts/ensure-dev-vars.ts && npm run db:local` once first.
+
 ## Rules the tests enforce
 
 - **Tokens.** Every colour, size and space comes from `tokens.css`, and `test/node/site-tokens.test.ts` fails on a raw value. Media query conditions keep their pixels, since CSS custom properties cannot be used there.
