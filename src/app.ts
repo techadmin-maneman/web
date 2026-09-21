@@ -10,6 +10,10 @@ import { createLogger, type Logger } from "./log.ts";
 import { registerCities } from "./routes/cities.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
+import { registerTryonClaim } from "./routes/tryon-claim.ts";
+import { registerTryonGenerate } from "./routes/tryon-generate.ts";
+import { registerTryonResult } from "./routes/tryon-result.ts";
+import { registerTryonUpload } from "./routes/tryon-upload.ts";
 
 /** What every handler can read from `c.env` and `c.var`. */
 export type AppEnv = {
@@ -48,6 +52,10 @@ export function createApp(config: StaticConfig, makeDependencies?: DependencyFac
   registerHealth(app);
   registerCities(app);
   registerLead(app);
+  registerTryonUpload(app);
+  registerTryonGenerate(app);
+  registerTryonClaim(app);
+  registerTryonResult(app);
 
   app.notFound((c) => c.json(errorBody("not_found", c.var.requestId), 404));
   app.onError((error, c) => {

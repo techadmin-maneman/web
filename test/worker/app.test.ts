@@ -125,13 +125,10 @@ describe("access log", () => {
   it("logs the route pattern, never the raw path, which can carry tokens", async () => {
     await markDatabase();
     const logs = captureLogs();
-    const app = appFor();
-    app.get("/api/result/:token", (c) => c.text("ok"));
-
-    await request(app, "/api/result/tok_supersecret");
+    await request(appFor(), "/api/result/tok_supersecret");
 
     const access = logs.lines().find((line) => line.event === "request");
-    expect(access).toMatchObject({ method: "GET", route: "/api/result/:token", status: 200 });
+    expect(access).toMatchObject({ method: "GET", route: "/api/result/:token", status: 404 });
     expect(typeof access?.request_id).toBe("string");
     expect(JSON.stringify(logs.lines())).not.toContain("tok_supersecret");
   });

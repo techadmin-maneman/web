@@ -34,7 +34,13 @@
                   "idempotency_key_reused",
                   "environment_mismatch",
                   "unavailable",
-                  "internal_error"
+                  "internal_error",
+                  "busy",
+                  "photo_invalid_file",
+                  "upload_already_received",
+                  "upload_missing",
+                  "session_required",
+                  "job_not_claimable"
                 ]
               },
               "request_id": {
@@ -257,6 +263,254 @@
         },
         "additionalProperties": false,
         "description": "Where the visitor came from, as the page saw it. All optional."
+      },
+      "UploadUrlResponse": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "upload_url": {
+            "type": "string",
+            "description": "A path on this host. PUT the photo there within five minutes, as image/jpeg or image/png."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "job_id",
+          "upload_url",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "UploadUrlRequest": {
+        "type": "object",
+        "properties": {
+          "photo_consent": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The photo notice was agreed to."
+          },
+          "notice_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "example": "photo-v1",
+            "description": "The photo notice shown."
+          },
+          "turnstile_token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "photo_consent",
+          "notice_version",
+          "turnstile_token"
+        ],
+        "additionalProperties": false
+      },
+      "JobStatus": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "awaiting_upload",
+              "queued",
+              "rendering",
+              "downloading",
+              "ready",
+              "failed",
+              "expired"
+            ]
+          },
+          "failure_code": {
+            "type": "string",
+            "enum": [
+              "photo_unreadable",
+              "photo_invalid_file",
+              "render_failed",
+              "busy"
+            ],
+            "description": "Only when state is failed."
+          }
+        },
+        "required": [
+          "job_id",
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "GenerateRequest": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "crown",
+              "receding",
+              "advanced"
+            ],
+            "description": "The hair-loss stage the visitor picked."
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "full-natural-short",
+              "full-straight-medium",
+              "medium-natural-short",
+              "medium-receded-medium",
+              "light-natural-short",
+              "light-receded-cropped"
+            ]
+          },
+          "hair_color": {
+            "type": "string",
+            "enum": [
+              "black",
+              "brown",
+              "lightBrown",
+              "grey",
+              "silver",
+              "white",
+              "unknown"
+            ],
+            "description": "From the browser's detector; unknown if it could not tell."
+          }
+        },
+        "required": [
+          "job_id",
+          "stage",
+          "preset",
+          "hair_color"
+        ],
+        "additionalProperties": false
+      },
+      "ClaimResponse": {
+        "type": "object",
+        "properties": {
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "whatsapp_copy": {
+            "type": "boolean",
+            "description": "True only if messaging is on: the page may then say a copy is on its way."
+          }
+        },
+        "required": [
+          "lead_id",
+          "whatsapp_copy"
+        ],
+        "additionalProperties": false
+      },
+      "ClaimRequest": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "mobile": {
+            "type": "string",
+            "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+            "example": "98100 00000"
+          },
+          "attribution": {
+            "$ref": "#/components/schemas/Attribution"
+          }
+        },
+        "required": [
+          "job_id",
+          "name",
+          "mobile"
+        ],
+        "additionalProperties": false
+      },
+      "ResultReady": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "A path on this host that serves the image for fifteen minutes."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "ResultPending": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "awaiting_upload",
+              "queued",
+              "rendering",
+              "downloading",
+              "ready",
+              "failed",
+              "expired"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "ResultFailed": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "failed"
+            ]
+          },
+          "failure_code": {
+            "type": "string",
+            "enum": [
+              "photo_unreadable",
+              "photo_invalid_file",
+              "render_failed",
+              "busy"
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "failure_code"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -407,6 +661,472 @@
           },
           "503": {
             "description": "unavailable: Turnstile or the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tryon/upload-url": {
+      "post": {
+        "summary": "Record the photo consent and get a link to upload one photo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadUrlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: see error.fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "turnstile_failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: too many uploads from this address this hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tryon/upload/{job_id}": {
+      "put": {
+        "summary": "Upload the photo: a JPEG or PNG, at most 5 MB and 200 to 4090 px a side",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "job_id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "required": true,
+            "name": "token",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Received"
+          },
+          "404": {
+            "description": "not_found: no such job, or the link has expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "upload_already_received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "photo_invalid_file: not a JPEG or PNG, over 5 MB, or the wrong size",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tryon/generate": {
+      "post": {
+        "summary": "Render a look: the first for an upload, or another look for the same photo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Queued, or an identical job already exists. job_id may differ from the one sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: see error.fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "session_required: another look needs the session the gate set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "upload_missing: the photo has not been uploaded, or has been deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: too many renders from this address this hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: today's render ceiling is reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tryon/status/{job_id}": {
+      "get": {
+        "summary": "Where a job stands",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "job_id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The job's state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tryon/claim": {
+      "post": {
+        "summary": "The gate: save the lead and start a session, whether or not the result is ready",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved. Sets the mm_tryon cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: see error.fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "job_not_claimable: no render was started, it failed, or it is another number's; idempotency_in_progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "idempotency_key_reused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: too many claims from this number today",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tryon/result/{job_id}": {
+      "get": {
+        "summary": "The result, for the session the gate set. Also serves every further look",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "job_id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultReady"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Still rendering",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPending"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "session_required: no session, or not this job's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such job, or its result has been deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultFailed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/result/{token}": {
+      "get": {
+        "summary": "A result image, behind a signed link that expires",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 600
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: the link is invalid or expired, or the result was deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: today's result-read ceiling is reached",
             "content": {
               "application/json": {
                 "schema": {

@@ -12,12 +12,12 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { candidateRange, proposeVisitDate } from "../domain/visit-date.ts";
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
 import { abandonIdempotent, finishIdempotent, startIdempotent, type IdempotencyRecord } from "../http/idempotency.ts";
+import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { saltedHash, sha256Hex } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { TURNSTILE_ALWAYS_PASS_SECRET, TURNSTILE_TEST_TOKEN, verifyTurnstile } from "../providers/turnstile.ts";
 
-const AttributionSchema = z
+export const AttributionSchema = z
   .object({
     utm_source: z.string().max(200).optional(),
     utm_medium: z.string().max(200).optional(),
@@ -135,17 +135,10 @@ async function createLead(c: Context<AppEnv>, request: LeadRequest): Promise<Out
   const mobileE164 = toE164(request.mobile);
   if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request", fields: ["mobile"] };
 
-  const ip = c.req.header("CF-Connecting-IP") ?? null;
-  const ipHash = await saltedHash(settings.ipHashSalt, ip ?? "unknown");
+  const visitor = await visitorOf(c);
+  const { ipHash } = visitor;
 
-  // Staging also accepts Cloudflare's dummy token (docs/decisions/0011-lead-api.md).
-  const isTestToken = settings.acceptTurnstileTestToken && request.turnstile_token === TURNSTILE_TEST_TOKEN;
-  const turnstile = await verifyTurnstile({
-    secret: isTestToken ? TURNSTILE_ALWAYS_PASS_SECRET : settings.turnstileSecret,
-    token: request.turnstile_token,
-    ip,
-    fetch: deps.fetch,
-  });
+  const turnstile = await checkTurnstile(c, request.turnstile_token, visitor);
   if (turnstile === "rejected") return { ok: false, status: 403, code: "turnstile_failed" };
   if (turnstile === "unavailable") return { ok: false, status: 503, code: "unavailable" };
 

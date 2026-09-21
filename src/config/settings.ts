@@ -3,7 +3,47 @@
 // refuses to run while any problem remains; see
 // docs/decisions/0003-environment-identity-guard.md.
 
-import type { EnvironmentName } from "./environments.ts";
+import { toE164 } from "../lib/mobile.ts";
+import type { EvolutionSettings } from "../providers/evolution.ts";
+import { isKnownTemplate } from "./message-templates.ts";
+import type { EnvironmentName, ProviderVar } from "./environments.ts";
+import { UNKNOWN_COLOR_ROUTES, type UnknownColorRoute } from "./tryon.ts";
+
+export interface TryonSettings {
+  /** Per salted IP hash, per India clock hour. */
+  readonly uploadIpHourlyLimit: number;
+  readonly generateIpHourlyLimit: number;
+  /** Per mobile number, per India day. */
+  readonly claimMobileDailyLimit: number;
+  readonly resultMessageMobileDailyLimit: number;
+  /**
+   * Global ceilings per India day. The render ceiling caps AILabTools spend;
+   * all three cap R2 use (docs/decisions/0009-stay-inside-cloudflare-free-tier.md).
+   */
+  readonly renderDailyCeiling: number;
+  readonly uploadDailyCeiling: number;
+  readonly resultReadDailyCeiling: number;
+  /** Days a result is kept once ready: 30 in production, as the photo notice promises; less on staging. */
+  readonly resultRetentionDays: number;
+  readonly unknownColorRoute: UnknownColorRoute;
+  /** Alert when the AILabTools balance falls below this many credits. */
+  readonly creditFloor: number;
+  /** Signs upload and result links. */
+  readonly linkSigningKey: string;
+  /** Present when IMAGE_PROVIDER is "ailabtools". */
+  readonly ailabApiKey: string | null;
+}
+
+export interface MessagingSettings {
+  /** Off: every result message is skipped and the gate promises no WhatsApp copy. */
+  readonly enabled: boolean;
+  /** The approved WhatsApp template that carries a result. */
+  readonly resultTemplate: string;
+  /** When not empty, only these E.164 numbers receive messages (staging: the founders' handsets). */
+  readonly allowlist: readonly string[];
+  /** Present when MESSAGING_PROVIDER is "evolution". */
+  readonly evolution: EvolutionSettings | null;
+}
 
 export interface ZohoSettings {
   readonly clientId: string;
@@ -32,6 +72,8 @@ export interface Settings {
   readonly alertWebhookUrl: string | null;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
+  readonly tryon: TryonSettings;
+  readonly messaging: MessagingSettings;
 }
 
 /**
@@ -89,15 +131,44 @@ class Reader {
     }
     return value;
   }
+
+  /** A secret long enough to sign with. */
+  key(name: string): string {
+    const value = this.text(name);
+    if (value !== "" && value.length < 32) this.problems.push(`${name} must be at least 32 characters`);
+    return value;
+  }
+
+  /** One of `allowed`; the first stands in while a problem is reported. */
+  oneOf<T extends string>(name: string, allowed: readonly [T, ...T[]]): T {
+    const value = this.text(name);
+    const match = allowed.find((option) => option === value);
+    if (match !== undefined) return match;
+    this.problems.push(`${name} must be one of ${allowed.join(", ")}`);
+    return allowed[0];
+  }
+
+  /** Comma-separated Indian mobile numbers, as E.164; empty when unset. */
+  mobiles(name: string): string[] {
+    const entries = (this.optionalText(name) ?? "").split(",").map((entry) => entry.trim());
+    const numbers: string[] = [];
+    for (const entry of entries.filter((item) => item !== "")) {
+      const number = toE164(entry);
+      if (number === null) this.problems.push(`${name} has an entry that is not an Indian mobile number`);
+      else numbers.push(number);
+    }
+    return numbers;
+  }
 }
 
 export function readSettings(
   env: Env,
   environment: EnvironmentName | undefined,
-  crmProvider: string | undefined,
+  providers: Partial<Record<ProviderVar, string>>,
 ): { settings: Settings; problems: string[] } {
   const read = new Reader(env);
   const isRemote = environment === "staging" || environment === "production";
+  const crmProvider = providers.CRM_PROVIDER;
 
   const turnstileSecret = read.text("TURNSTILE_SECRET");
   if (environment === "production" && TURNSTILE_TEST_SECRETS.has(turnstileSecret)) {
@@ -134,6 +205,50 @@ export function readSettings(
     }
   }
 
+  const tryon: TryonSettings = {
+    uploadIpHourlyLimit: read.count("TRYON_UPLOAD_IP_HOURLY_LIMIT"),
+    generateIpHourlyLimit: read.count("TRYON_GENERATE_IP_HOURLY_LIMIT"),
+    claimMobileDailyLimit: read.count("TRYON_CLAIM_MOBILE_DAILY_LIMIT"),
+    resultMessageMobileDailyLimit: read.count("RESULT_MESSAGE_MOBILE_DAILY_LIMIT"),
+    renderDailyCeiling: read.count("RENDER_DAILY_CEILING"),
+    uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
+    resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
+    resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
+    unknownColorRoute: read.oneOf("UNKNOWN_COLOR_ROUTE", UNKNOWN_COLOR_ROUTES),
+    creditFloor: read.count("AILAB_CREDIT_FLOOR"),
+    linkSigningKey: read.key("RESULT_SIGNING_KEY"),
+    ailabApiKey: providers.IMAGE_PROVIDER === "ailabtools" ? read.text("AILAB_API_KEY") : null,
+  };
+
+  if (tryon.resultRetentionDays < 1 || tryon.resultRetentionDays > 30) {
+    read.problems.push("RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days");
+  }
+
+  let evolution: EvolutionSettings | null = null;
+  if (providers.MESSAGING_PROVIDER === "evolution") {
+    evolution = {
+      baseUrl: read.text("EVOLUTION_API_URL").replace(/\/+$/, ""),
+      apiKey: read.text("EVOLUTION_API_KEY"),
+      instance: read.text("EVOLUTION_INSTANCE_NAME"),
+    };
+    if (evolution.baseUrl !== "" && !evolution.baseUrl.startsWith("https://")) {
+      read.problems.push("EVOLUTION_API_URL must be an https:// URL");
+    }
+  }
+
+  const messaging: MessagingSettings = {
+    enabled: read.flag("MESSAGING_ENABLED"),
+    resultTemplate: read.text("WA_RESULT_TEMPLATE"),
+    allowlist: read.mobiles("MESSAGING_ALLOWLIST"),
+    evolution,
+  };
+  if (messaging.resultTemplate !== "" && !isKnownTemplate(messaging.resultTemplate)) {
+    read.problems.push("WA_RESULT_TEMPLATE names no template in src/config/message-templates.ts");
+  }
+  if (environment === "staging" && messaging.enabled && messaging.allowlist.length === 0) {
+    read.problems.push("MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging");
+  }
+
   const settings: Settings = {
     visitLeadDays: read.count("VISIT_LEAD_DAYS"),
     leadMobileDailyLimit: read.count("LEAD_MOBILE_DAILY_LIMIT"),
@@ -143,6 +258,8 @@ export function readSettings(
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     zoho,
+    tryon,
+    messaging,
   };
   return { settings, problems: read.problems };
 }

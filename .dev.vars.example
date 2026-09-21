@@ -1,10 +1,11 @@
 # Local secrets for wrangler dev and the types generator. Copy to .dev.vars
 # (git ignores it). Nothing here is real: the Turnstile value is Cloudflare's
-# always-pass test secret, and local runs use stub providers, so the Zoho and
-# alert values stay empty. Staging and production get theirs from
-# `wrangler secret put` (docs/runbook.md).
+# always-pass test secret, the signing key is a placeholder, and local runs use
+# stub providers, so the provider values stay empty. Staging and production get
+# theirs from `wrangler secret put` (docs/runbook.md).
 TURNSTILE_SECRET=1x0000000000000000000000000000000AA
 IP_HASH_SALT=local-development-salt-not-a-real-secret
+RESULT_SIGNING_KEY=local-link-signing-key-not-a-real-secret
 ALERT_WEBHOOK_URL=
 ZOHO_CLIENT_ID=
 ZOHO_CLIENT_SECRET=
@@ -12,3 +13,8 @@ ZOHO_REFRESH_TOKEN=
 ZOHO_ACCOUNTS_HOST=
 ZOHO_API_HOST=
 ZOHO_LAR_ID=
+AILAB_API_KEY=
+EVOLUTION_API_URL=
+EVOLUTION_API_KEY=
+EVOLUTION_INSTANCE_NAME=
+MESSAGING_ALLOWLIST=

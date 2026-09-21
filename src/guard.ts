@@ -59,7 +59,7 @@ export function validateStaticConfig(env: Readonly<Record<string, unknown>>): St
     providers[variable] = value;
   }
 
-  const { settings, problems: settingProblems } = readSettings(env, environment, providers.CRM_PROVIDER);
+  const { settings, problems: settingProblems } = readSettings(env, environment, providers);
   problems.push(...settingProblems);
 
   if (environment === undefined || problems.length > 0) throw new ConfigError(problems);

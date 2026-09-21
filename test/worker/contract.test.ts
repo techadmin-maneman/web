@@ -15,11 +15,13 @@ describe("generated API documentation", () => {
     expect(renderApiMarkdown(buildOpenApiDocument())).toBe(committedMarkdown.replace(/\r\n/g, "\n"));
   });
 
-  it("documents every route with a JSON response schema", () => {
+  it("documents every GET response with a JSON schema, or as an image", () => {
     const document = buildOpenApiDocument();
     for (const [path, item] of Object.entries(document.paths ?? {})) {
       for (const [status, response] of Object.entries(item.get?.responses ?? {}) as [string, unknown][]) {
-        expect(readResponse(response).jsonSchema, `${path} ${status}`).toBeDefined();
+        const types = Object.keys((response as { content?: Record<string, unknown> }).content ?? {});
+        const isImage = types.length > 0 && types.every((type) => type.startsWith("image/"));
+        if (!isImage) expect(readResponse(response).jsonSchema, `${path} ${status}`).toBeDefined();
       }
     }
     expect(Object.keys(document.components?.schemas ?? {})).toEqual(

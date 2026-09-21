@@ -9,3 +9,7 @@ docs/api.md
 src/worker-configuration.d.ts
 # Design export; not part of this build.
 Design/
+
+# Verbatim copies from the AILabTools harness; see docs/reference/README.md.
+docs/reference/ailabtools-api-notes.md
+data/ailabtools-catalog.json

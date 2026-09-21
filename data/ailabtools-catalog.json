@@ -1,0 +1,1318 @@
+{
+ "_source": "https://www.ailabtools.com/docs/ai-portrait/effects/hairstyle-editor-pro/api",
+ "_read": "2026-09-19",
+ "_note": "Catalog for endpoint B (hairstyle-editor-pro). Verified live: Pro accepts the full 101-id male list including numbered presets, so the old /doc/ page's 22-id list is stale.",
+ "styles": {
+  "male": [
+   {
+    "id": "Afro",
+    "file": "Afro.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Afro.webp"
+   },
+   {
+    "id": "BluntBowlCut",
+    "file": "BluntBowlCut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/BluntBowlCut.webp"
+   },
+   {
+    "id": "BuzzCut",
+    "file": "BuzzCut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/BuzzCut.webp"
+   },
+   {
+    "id": "Chestnut",
+    "file": "Chestnut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Chestnut.webp"
+   },
+   {
+    "id": "ChoppyBangs",
+    "file": "ChoppyBangs.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/ChoppyBangs.webp"
+   },
+   {
+    "id": "CombOver",
+    "file": "CombOver.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/CombOver.webp"
+   },
+   {
+    "id": "Comma_Hair",
+    "file": "Comma_Hair.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Comma_Hair.webp"
+   },
+   {
+    "id": "CornrowBraids",
+    "file": "CornrowBraids.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/CornrowBraids.webp"
+   },
+   {
+    "id": "CurlyShag",
+    "file": "CurlyShag.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/CurlyShag.webp"
+   },
+   {
+    "id": "FauxHawk",
+    "file": "FauxHawk.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/FauxHawk.webp"
+   },
+   {
+    "id": "FluffyMiddlePart",
+    "file": "FluffyMiddlePart.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/FluffyMiddlePart.webp"
+   },
+   {
+    "id": "FreshSide-Parted",
+    "file": "FreshSide-Parted.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/FreshSide-Parted.webp"
+   },
+   {
+    "id": "HighTightFade",
+    "file": "HighTightFade.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/HighTightFade.webp"
+   },
+   {
+    "id": "Korean_Wavy_Crop",
+    "file": "Korean_Wavy_Crop.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Korean_Wavy_Crop.webp"
+   },
+   {
+    "id": "LongHairTiedUp",
+    "file": "LongHairTiedUp.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/LongHairTiedUp.webp"
+   },
+   {
+    "id": "LongWavyCurtainBangs",
+    "file": "LongWavyCurtainBangs.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/LongWavyCurtainBangs.webp"
+   },
+   {
+    "id": "LowFade",
+    "file": "LowFade.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/LowFade.webp"
+   },
+   {
+    "id": "ManBun",
+    "file": "ManBun.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/ManBun.webp"
+   },
+   {
+    "id": "ManGreased",
+    "file": "ManGreased.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/ManGreased.webp"
+   },
+   {
+    "id": "MessyTousled",
+    "file": "MessyTousled.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/MessyTousled.webp"
+   },
+   {
+    "id": "Middle-parted",
+    "file": "Middle-parted.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Middle-parted.webp"
+   },
+   {
+    "id": "Natural_Middle_Part",
+    "file": "Natural_Middle_Part.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Natural_Middle_Part.webp"
+   },
+   {
+    "id": "Natural_Side-Part",
+    "file": "Natural_Side-Part.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Natural_Side-Part.webp"
+   },
+   {
+    "id": "Pompadour",
+    "file": "Pompadour.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Pompadour.webp"
+   },
+   {
+    "id": "Side-Part_Crop",
+    "file": "Side-Part_Crop.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Side-Part_Crop.webp"
+   },
+   {
+    "id": "Side-Parted_Textured",
+    "file": "Side-Parted_Textured.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Side-Parted_Textured.webp"
+   },
+   {
+    "id": "SlickBack",
+    "file": "SlickBack.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/SlickBack.webp"
+   },
+   {
+    "id": "Smooth_Crop",
+    "file": "Smooth_Crop.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Smooth_Crop.webp"
+   },
+   {
+    "id": "Spiky",
+    "file": "Spiky.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Spiky.webp"
+   },
+   {
+    "id": "StructuredWavyShag",
+    "file": "StructuredWavyShag.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/StructuredWavyShag.webp"
+   },
+   {
+    "id": "TexturedFringe",
+    "file": "TexturedFringe.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/TexturedFringe.webp"
+   },
+   {
+    "id": "TinfoilPerm",
+    "file": "TinfoilPerm.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/TinfoilPerm.webp"
+   },
+   {
+    "id": "TwoBlockHaircut",
+    "file": "TwoBlockHaircut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/TwoBlockHaircut.webp"
+   },
+   {
+    "id": "UnderCut",
+    "file": "UnderCut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/UnderCut.webp"
+   },
+   {
+    "id": "UndercutLongHair",
+    "file": "UndercutLongHair.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/UndercutLongHair.webp"
+   },
+   {
+    "id": "WavyMiddlePart",
+    "file": "WavyMiddlePart.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/WavyMiddlePart.webp"
+   },
+   {
+    "id": "WavyShag",
+    "file": "WavyShag.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/WavyShag.webp"
+   },
+   {
+    "id": "Wind-Tousled_Crop",
+    "file": "Wind-Tousled_Crop.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Wind-Tousled_Crop.webp"
+   },
+   {
+    "id": "Wolf_Crop",
+    "file": "Wolf_Crop.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/Wolf_Crop.webp"
+   },
+   {
+    "id": "male_hairstyle_0001",
+    "file": "male_hairstyle_0001.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0001.webp"
+   },
+   {
+    "id": "male_hairstyle_0002",
+    "file": "male_hairstyle_0002.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0002.webp"
+   },
+   {
+    "id": "male_hairstyle_0003",
+    "file": "male_hairstyle_0003.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0003.webp"
+   },
+   {
+    "id": "male_hairstyle_0004",
+    "file": "male_hairstyle_0004.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0004.webp"
+   },
+   {
+    "id": "male_hairstyle_0005",
+    "file": "male_hairstyle_0005.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0005.webp"
+   },
+   {
+    "id": "male_hairstyle_0006",
+    "file": "male_hairstyle_0006.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0006.webp"
+   },
+   {
+    "id": "male_hairstyle_0007",
+    "file": "male_hairstyle_0007.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0007.webp"
+   },
+   {
+    "id": "male_hairstyle_0008",
+    "file": "male_hairstyle_0008.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0008.webp"
+   },
+   {
+    "id": "male_hairstyle_0009",
+    "file": "male_hairstyle_0009.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0009.webp"
+   },
+   {
+    "id": "male_hairstyle_0010",
+    "file": "male_hairstyle_0010.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0010.webp"
+   },
+   {
+    "id": "male_hairstyle_0011",
+    "file": "male_hairstyle_0011.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0011.webp"
+   },
+   {
+    "id": "male_hairstyle_0012",
+    "file": "male_hairstyle_0012.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0012.webp"
+   },
+   {
+    "id": "male_hairstyle_0013",
+    "file": "male_hairstyle_0013.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0013.webp"
+   },
+   {
+    "id": "male_hairstyle_0014",
+    "file": "male_hairstyle_0014.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0014.webp"
+   },
+   {
+    "id": "male_hairstyle_0015",
+    "file": "male_hairstyle_0015.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0015.webp"
+   },
+   {
+    "id": "male_hairstyle_0016",
+    "file": "male_hairstyle_0016.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0016.webp"
+   },
+   {
+    "id": "male_hairstyle_0017",
+    "file": "male_hairstyle_0017.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0017.webp"
+   },
+   {
+    "id": "male_hairstyle_0018",
+    "file": "male_hairstyle_0018.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0018.webp"
+   },
+   {
+    "id": "male_hairstyle_0019",
+    "file": "male_hairstyle_0019.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0019.webp"
+   },
+   {
+    "id": "male_hairstyle_0020",
+    "file": "male_hairstyle_0020.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0020.webp"
+   },
+   {
+    "id": "male_hairstyle_0021",
+    "file": "male_hairstyle_0021.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0021.webp"
+   },
+   {
+    "id": "male_hairstyle_0022",
+    "file": "male_hairstyle_0022.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0022.webp"
+   },
+   {
+    "id": "male_hairstyle_0023",
+    "file": "male_hairstyle_0023.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0023.webp"
+   },
+   {
+    "id": "male_hairstyle_0024",
+    "file": "male_hairstyle_0024.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0024.webp"
+   },
+   {
+    "id": "male_hairstyle_0025",
+    "file": "male_hairstyle_0025.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0025.webp"
+   },
+   {
+    "id": "male_hairstyle_0026",
+    "file": "male_hairstyle_0026.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0026.webp"
+   },
+   {
+    "id": "male_hairstyle_0027",
+    "file": "male_hairstyle_0027.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0027.webp"
+   },
+   {
+    "id": "male_hairstyle_0028",
+    "file": "male_hairstyle_0028.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0028.webp"
+   },
+   {
+    "id": "male_hairstyle_0029",
+    "file": "male_hairstyle_0029.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0029.webp"
+   },
+   {
+    "id": "male_hairstyle_0030",
+    "file": "male_hairstyle_0030.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0030.webp"
+   },
+   {
+    "id": "male_hairstyle_0031",
+    "file": "male_hairstyle_0031.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0031.webp"
+   },
+   {
+    "id": "male_hairstyle_0032",
+    "file": "male_hairstyle_0032.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0032.webp"
+   },
+   {
+    "id": "male_hairstyle_0033",
+    "file": "male_hairstyle_0033.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0033.webp"
+   },
+   {
+    "id": "male_hairstyle_0034",
+    "file": "male_hairstyle_0034.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0034.webp"
+   },
+   {
+    "id": "male_hairstyle_0035",
+    "file": "male_hairstyle_0035.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0035.webp"
+   },
+   {
+    "id": "male_hairstyle_0036",
+    "file": "male_hairstyle_0036.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0036.webp"
+   },
+   {
+    "id": "male_hairstyle_0037",
+    "file": "male_hairstyle_0037.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0037.webp"
+   },
+   {
+    "id": "male_hairstyle_0038",
+    "file": "male_hairstyle_0038.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0038.webp"
+   },
+   {
+    "id": "male_hairstyle_0039",
+    "file": "male_hairstyle_0039.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0039.webp"
+   },
+   {
+    "id": "male_hairstyle_0040",
+    "file": "male_hairstyle_0040.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0040.webp"
+   },
+   {
+    "id": "male_hairstyle_0041",
+    "file": "male_hairstyle_0041.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0041.webp"
+   },
+   {
+    "id": "male_hairstyle_0042",
+    "file": "male_hairstyle_0042.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0042.webp"
+   },
+   {
+    "id": "male_hairstyle_0043",
+    "file": "male_hairstyle_0043.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0043.webp"
+   },
+   {
+    "id": "male_hairstyle_0044",
+    "file": "male_hairstyle_0044.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0044.webp"
+   },
+   {
+    "id": "male_hairstyle_0045",
+    "file": "male_hairstyle_0045.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0045.webp"
+   },
+   {
+    "id": "male_hairstyle_0046",
+    "file": "male_hairstyle_0046.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0046.webp"
+   },
+   {
+    "id": "male_hairstyle_0047",
+    "file": "male_hairstyle_0047.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0047.webp"
+   },
+   {
+    "id": "male_hairstyle_0048",
+    "file": "male_hairstyle_0048.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0048.webp"
+   },
+   {
+    "id": "male_hairstyle_0049",
+    "file": "male_hairstyle_0049.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0049.webp"
+   },
+   {
+    "id": "male_hairstyle_0050",
+    "file": "male_hairstyle_0050.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0050.webp"
+   },
+   {
+    "id": "male_hairstyle_0051",
+    "file": "male_hairstyle_0051.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0051.webp"
+   },
+   {
+    "id": "male_hairstyle_0052",
+    "file": "male_hairstyle_0052.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0052.webp"
+   },
+   {
+    "id": "male_hairstyle_0053",
+    "file": "male_hairstyle_0053.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0053.webp"
+   },
+   {
+    "id": "male_hairstyle_0054",
+    "file": "male_hairstyle_0054.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0054.webp"
+   },
+   {
+    "id": "male_hairstyle_0055",
+    "file": "male_hairstyle_0055.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0055.webp"
+   },
+   {
+    "id": "male_hairstyle_0056",
+    "file": "male_hairstyle_0056.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0056.webp"
+   },
+   {
+    "id": "male_hairstyle_0057",
+    "file": "male_hairstyle_0057.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0057.webp"
+   },
+   {
+    "id": "male_hairstyle_0058",
+    "file": "male_hairstyle_0058.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0058.webp"
+   },
+   {
+    "id": "male_hairstyle_0059",
+    "file": "male_hairstyle_0059.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0059.webp"
+   },
+   {
+    "id": "male_hairstyle_0060",
+    "file": "male_hairstyle_0060.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0060.webp"
+   },
+   {
+    "id": "male_hairstyle_0061",
+    "file": "male_hairstyle_0061.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0061.webp"
+   },
+   {
+    "id": "male_hairstyle_0062",
+    "file": "male_hairstyle_0062.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/mens-hairstyles/male_hairstyle_0062.webp"
+   }
+  ],
+  "female": [
+   {
+    "id": "Airy_Short_Curls",
+    "file": "Airy_Short_Curls.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Airy_Short_Curls.webp"
+   },
+   {
+    "id": "BobCut",
+    "file": "BobCut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/BobCut.webp"
+   },
+   {
+    "id": "BoxBraids",
+    "file": "BoxBraids.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/BoxBraids.webp"
+   },
+   {
+    "id": "Chic_Tapered_Bob",
+    "file": "Chic_Tapered_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Chic_Tapered_Bob.webp"
+   },
+   {
+    "id": "Chic_Wavy_Pixie",
+    "file": "Chic_Wavy_Pixie.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Chic_Wavy_Pixie.webp"
+   },
+   {
+    "id": "Chignon",
+    "file": "Chignon.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Chignon.webp"
+   },
+   {
+    "id": "ClassicWavyBob",
+    "file": "ClassicWavyBob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/ClassicWavyBob.webp"
+   },
+   {
+    "id": "Cornrows",
+    "file": "Cornrows.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Cornrows.webp"
+   },
+   {
+    "id": "CurlyBob",
+    "file": "CurlyBob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/CurlyBob.webp"
+   },
+   {
+    "id": "Curved_Chic_Bob",
+    "file": "Curved_Chic_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Curved_Chic_Bob.webp"
+   },
+   {
+    "id": "DoubleBun",
+    "file": "DoubleBun.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/DoubleBun.webp"
+   },
+   {
+    "id": "Dreadlocks",
+    "file": "Dreadlocks.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Dreadlocks.webp"
+   },
+   {
+    "id": "Edgy_Textured_Pixie",
+    "file": "Edgy_Textured_Pixie.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Edgy_Textured_Pixie.webp"
+   },
+   {
+    "id": "Elegant_Side_Flow",
+    "file": "Elegant_Side_Flow.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Elegant_Side_Flow.webp"
+   },
+   {
+    "id": "Elegant_Side_Wave",
+    "file": "Elegant_Side_Wave.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Elegant_Side_Wave.webp"
+   },
+   {
+    "id": "Elegant_Smooth_Bob",
+    "file": "Elegant_Smooth_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Elegant_Smooth_Bob.webp"
+   },
+   {
+    "id": "Elegant_Soft_Curl",
+    "file": "Elegant_Soft_Curl.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Elegant_Soft_Curl.webp"
+   },
+   {
+    "id": "Elegant_Volumized_Bob",
+    "file": "Elegant_Volumized_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Elegant_Volumized_Bob.webp"
+   },
+   {
+    "id": "Elegant_Wavy_Crop",
+    "file": "Elegant_Wavy_Crop.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Elegant_Wavy_Crop.webp"
+   },
+   {
+    "id": "Executive_Pixie",
+    "file": "Executive_Pixie.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Executive_Pixie.webp"
+   },
+   {
+    "id": "FishtailBraid",
+    "file": "FishtailBraid.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/FishtailBraid.webp"
+   },
+   {
+    "id": "Fluffy_Pixie_Cut",
+    "file": "Fluffy_Pixie_Cut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Fluffy_Pixie_Cut.webp"
+   },
+   {
+    "id": "Fluffy_Short",
+    "file": "Fluffy_Short.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Fluffy_Short.webp"
+   },
+   {
+    "id": "FrenchBangs",
+    "file": "FrenchBangs.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/FrenchBangs.webp"
+   },
+   {
+    "id": "JapaneseShort",
+    "file": "JapaneseShort.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/JapaneseShort.webp"
+   },
+   {
+    "id": "Layered_Waves",
+    "file": "Layered_Waves.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Layered_Waves.webp"
+   },
+   {
+    "id": "Light_Inward_Bob",
+    "file": "Light_Inward_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Light_Inward_Bob.webp"
+   },
+   {
+    "id": "LongCurly",
+    "file": "LongCurly.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/LongCurly.webp"
+   },
+   {
+    "id": "LongHimeCut",
+    "file": "LongHimeCut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/LongHimeCut.webp"
+   },
+   {
+    "id": "LongStraight",
+    "file": "LongStraight.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/LongStraight.webp"
+   },
+   {
+    "id": "LongTwintails",
+    "file": "LongTwintails.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/LongTwintails.webp"
+   },
+   {
+    "id": "LongWavy",
+    "file": "LongWavy.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/LongWavy.webp"
+   },
+   {
+    "id": "LooseCurlyAfro",
+    "file": "LooseCurlyAfro.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/LooseCurlyAfro.webp"
+   },
+   {
+    "id": "Magic_Perm",
+    "file": "Magic_Perm.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Magic_Perm.webp"
+   },
+   {
+    "id": "MediumLongLayered",
+    "file": "MediumLongLayered.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/MediumLongLayered.webp"
+   },
+   {
+    "id": "Mocha_Volume_Pixie",
+    "file": "Mocha_Volume_Pixie.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Mocha_Volume_Pixie.webp"
+   },
+   {
+    "id": "Modern_Curls_Chic",
+    "file": "Modern_Curls_Chic.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Modern_Curls_Chic.webp"
+   },
+   {
+    "id": "Mushroom_Curl",
+    "file": "Mushroom_Curl.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Mushroom_Curl.webp"
+   },
+   {
+    "id": "Natural_Short",
+    "file": "Natural_Short.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Natural_Short.webp"
+   },
+   {
+    "id": "Neat_Curly_Crop_Cut",
+    "file": "Neat_Curly_Crop_Cut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Neat_Curly_Crop_Cut.webp"
+   },
+   {
+    "id": "Neat_Short",
+    "file": "Neat_Short.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Neat_Short.webp"
+   },
+   {
+    "id": "PixieCut",
+    "file": "PixieCut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/PixieCut.webp"
+   },
+   {
+    "id": "Playful_Curly_Bob",
+    "file": "Playful_Curly_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Playful_Curly_Bob.webp"
+   },
+   {
+    "id": "Playful_Wavy_Bob",
+    "file": "Playful_Wavy_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Playful_Wavy_Bob.webp"
+   },
+   {
+    "id": "Ponytail",
+    "file": "Ponytail.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Ponytail.webp"
+   },
+   {
+    "id": "Retro_Airy_Curl",
+    "file": "Retro_Airy_Curl.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Retro_Airy_Curl.webp"
+   },
+   {
+    "id": "ShortCurlyPixie",
+    "file": "ShortCurlyPixie.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/ShortCurlyPixie.webp"
+   },
+   {
+    "id": "ShortNeatBob",
+    "file": "ShortNeatBob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/ShortNeatBob.webp"
+   },
+   {
+    "id": "ShortPixieWithShavedSides",
+    "file": "ShortPixieWithShavedSides.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/ShortPixieWithShavedSides.webp"
+   },
+   {
+    "id": "ShortTwintails",
+    "file": "ShortTwintails.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/ShortTwintails.webp"
+   },
+   {
+    "id": "ShoulderLengthHair",
+    "file": "ShoulderLengthHair.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/ShoulderLengthHair.webp"
+   },
+   {
+    "id": "Side-Parted_Waves",
+    "file": "Side-Parted_Waves.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Side-Parted_Waves.webp"
+   },
+   {
+    "id": "SidePartCombOverHairstyleWithHighFade",
+    "file": "SidePartCombOverHairstyleWithHighFade.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/SidePartCombOverHairstyleWithHighFade.webp"
+   },
+   {
+    "id": "Side_Flip_Perm",
+    "file": "Side_Flip_Perm.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Side_Flip_Perm.webp"
+   },
+   {
+    "id": "SlickedBack",
+    "file": "SlickedBack.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/SlickedBack.webp"
+   },
+   {
+    "id": "Smooth_Inward_Bob",
+    "file": "Smooth_Inward_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Smooth_Inward_Bob.webp"
+   },
+   {
+    "id": "Soft_Layered_Curl",
+    "file": "Soft_Layered_Curl.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Soft_Layered_Curl.webp"
+   },
+   {
+    "id": "Soft_Wavy_Bob",
+    "file": "Soft_Wavy_Bob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Soft_Wavy_Bob.webp"
+   },
+   {
+    "id": "Spiked",
+    "file": "Spiked.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Spiked.webp"
+   },
+   {
+    "id": "StackedCurlsInShortBob",
+    "file": "StackedCurlsInShortBob.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/StackedCurlsInShortBob.webp"
+   },
+   {
+    "id": "Textured_Crop",
+    "file": "Textured_Crop.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Textured_Crop.webp"
+   },
+   {
+    "id": "TwinBraids",
+    "file": "TwinBraids.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/TwinBraids.webp"
+   },
+   {
+    "id": "Updo",
+    "file": "Updo.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Updo.webp"
+   },
+   {
+    "id": "Vintage_Curls",
+    "file": "Vintage_Curls.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/Vintage_Curls.webp"
+   },
+   {
+    "id": "WavyFrenchBobVibesfrom1920",
+    "file": "WavyFrenchBobVibesfrom1920.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/WavyFrenchBobVibesfrom1920.webp"
+   },
+   {
+    "id": "bowlCut",
+    "file": "bowlCut.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/bowlCut.webp"
+   },
+   {
+    "id": "female_hairstyle_0001",
+    "file": "female_hairstyle_0001.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0001.webp"
+   },
+   {
+    "id": "female_hairstyle_0002",
+    "file": "female_hairstyle_0002.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0002.webp"
+   },
+   {
+    "id": "female_hairstyle_0003",
+    "file": "female_hairstyle_0003.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0003.webp"
+   },
+   {
+    "id": "female_hairstyle_0004",
+    "file": "female_hairstyle_0004.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0004.webp"
+   },
+   {
+    "id": "female_hairstyle_0005",
+    "file": "female_hairstyle_0005.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0005.webp"
+   },
+   {
+    "id": "female_hairstyle_0006",
+    "file": "female_hairstyle_0006.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0006.webp"
+   },
+   {
+    "id": "female_hairstyle_0007",
+    "file": "female_hairstyle_0007.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0007.webp"
+   },
+   {
+    "id": "female_hairstyle_0008",
+    "file": "female_hairstyle_0008.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0008.webp"
+   },
+   {
+    "id": "female_hairstyle_0009",
+    "file": "female_hairstyle_0009.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0009.webp"
+   },
+   {
+    "id": "female_hairstyle_0010",
+    "file": "female_hairstyle_0010.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0010.webp"
+   },
+   {
+    "id": "female_hairstyle_0011",
+    "file": "female_hairstyle_0011.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0011.webp"
+   },
+   {
+    "id": "female_hairstyle_0012",
+    "file": "female_hairstyle_0012.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0012.webp"
+   },
+   {
+    "id": "female_hairstyle_0013",
+    "file": "female_hairstyle_0013.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0013.webp"
+   },
+   {
+    "id": "female_hairstyle_0014",
+    "file": "female_hairstyle_0014.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0014.webp"
+   },
+   {
+    "id": "female_hairstyle_0015",
+    "file": "female_hairstyle_0015.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0015.webp"
+   },
+   {
+    "id": "female_hairstyle_0016",
+    "file": "female_hairstyle_0016.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0016.webp"
+   },
+   {
+    "id": "female_hairstyle_0017",
+    "file": "female_hairstyle_0017.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0017.webp"
+   },
+   {
+    "id": "female_hairstyle_0018",
+    "file": "female_hairstyle_0018.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0018.webp"
+   },
+   {
+    "id": "female_hairstyle_0019",
+    "file": "female_hairstyle_0019.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0019.webp"
+   },
+   {
+    "id": "female_hairstyle_0020",
+    "file": "female_hairstyle_0020.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0020.webp"
+   },
+   {
+    "id": "female_hairstyle_0021",
+    "file": "female_hairstyle_0021.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0021.webp"
+   },
+   {
+    "id": "female_hairstyle_0022",
+    "file": "female_hairstyle_0022.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0022.webp"
+   },
+   {
+    "id": "female_hairstyle_0023",
+    "file": "female_hairstyle_0023.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0023.webp"
+   },
+   {
+    "id": "female_hairstyle_0024",
+    "file": "female_hairstyle_0024.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0024.webp"
+   },
+   {
+    "id": "female_hairstyle_0025",
+    "file": "female_hairstyle_0025.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0025.webp"
+   },
+   {
+    "id": "female_hairstyle_0026",
+    "file": "female_hairstyle_0026.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0026.webp"
+   },
+   {
+    "id": "female_hairstyle_0027",
+    "file": "female_hairstyle_0027.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0027.webp"
+   },
+   {
+    "id": "female_hairstyle_0028",
+    "file": "female_hairstyle_0028.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0028.webp"
+   },
+   {
+    "id": "female_hairstyle_0029",
+    "file": "female_hairstyle_0029.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0029.webp"
+   },
+   {
+    "id": "female_hairstyle_0030",
+    "file": "female_hairstyle_0030.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0030.webp"
+   },
+   {
+    "id": "female_hairstyle_0031",
+    "file": "female_hairstyle_0031.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0031.webp"
+   },
+   {
+    "id": "female_hairstyle_0032",
+    "file": "female_hairstyle_0032.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0032.webp"
+   },
+   {
+    "id": "female_hairstyle_0033",
+    "file": "female_hairstyle_0033.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0033.webp"
+   },
+   {
+    "id": "female_hairstyle_0034",
+    "file": "female_hairstyle_0034.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0034.webp"
+   },
+   {
+    "id": "female_hairstyle_0035",
+    "file": "female_hairstyle_0035.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0035.webp"
+   },
+   {
+    "id": "female_hairstyle_0036",
+    "file": "female_hairstyle_0036.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0036.webp"
+   },
+   {
+    "id": "female_hairstyle_0037",
+    "file": "female_hairstyle_0037.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0037.webp"
+   },
+   {
+    "id": "female_hairstyle_0038",
+    "file": "female_hairstyle_0038.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0038.webp"
+   },
+   {
+    "id": "female_hairstyle_0039",
+    "file": "female_hairstyle_0039.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0039.webp"
+   },
+   {
+    "id": "female_hairstyle_0040",
+    "file": "female_hairstyle_0040.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0040.webp"
+   },
+   {
+    "id": "female_hairstyle_0041",
+    "file": "female_hairstyle_0041.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0041.webp"
+   },
+   {
+    "id": "female_hairstyle_0042",
+    "file": "female_hairstyle_0042.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0042.webp"
+   },
+   {
+    "id": "female_hairstyle_0043",
+    "file": "female_hairstyle_0043.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0043.webp"
+   },
+   {
+    "id": "female_hairstyle_0044",
+    "file": "female_hairstyle_0044.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0044.webp"
+   },
+   {
+    "id": "female_hairstyle_0045",
+    "file": "female_hairstyle_0045.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0045.webp"
+   },
+   {
+    "id": "female_hairstyle_0046",
+    "file": "female_hairstyle_0046.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0046.webp"
+   },
+   {
+    "id": "female_hairstyle_0047",
+    "file": "female_hairstyle_0047.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0047.webp"
+   },
+   {
+    "id": "female_hairstyle_0048",
+    "file": "female_hairstyle_0048.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0048.webp"
+   },
+   {
+    "id": "female_hairstyle_0049",
+    "file": "female_hairstyle_0049.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0049.webp"
+   },
+   {
+    "id": "female_hairstyle_0050",
+    "file": "female_hairstyle_0050.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0050.webp"
+   },
+   {
+    "id": "female_hairstyle_0051",
+    "file": "female_hairstyle_0051.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0051.webp"
+   },
+   {
+    "id": "female_hairstyle_0052",
+    "file": "female_hairstyle_0052.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0052.webp"
+   },
+   {
+    "id": "female_hairstyle_0053",
+    "file": "female_hairstyle_0053.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0053.webp"
+   },
+   {
+    "id": "female_hairstyle_0054",
+    "file": "female_hairstyle_0054.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0054.webp"
+   },
+   {
+    "id": "female_hairstyle_0055",
+    "file": "female_hairstyle_0055.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0055.webp"
+   },
+   {
+    "id": "female_hairstyle_0056",
+    "file": "female_hairstyle_0056.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0056.webp"
+   },
+   {
+    "id": "female_hairstyle_0057",
+    "file": "female_hairstyle_0057.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0057.webp"
+   },
+   {
+    "id": "female_hairstyle_0058",
+    "file": "female_hairstyle_0058.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0058.webp"
+   },
+   {
+    "id": "female_hairstyle_0059",
+    "file": "female_hairstyle_0059.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0059.webp"
+   },
+   {
+    "id": "female_hairstyle_0060",
+    "file": "female_hairstyle_0060.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0060.webp"
+   },
+   {
+    "id": "female_hairstyle_0061",
+    "file": "female_hairstyle_0061.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0061.webp"
+   },
+   {
+    "id": "female_hairstyle_0062",
+    "file": "female_hairstyle_0062.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0062.webp"
+   },
+   {
+    "id": "female_hairstyle_0063",
+    "file": "female_hairstyle_0063.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0063.webp"
+   },
+   {
+    "id": "female_hairstyle_0064",
+    "file": "female_hairstyle_0064.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0064.webp"
+   },
+   {
+    "id": "female_hairstyle_0065",
+    "file": "female_hairstyle_0065.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0065.webp"
+   },
+   {
+    "id": "female_hairstyle_0066",
+    "file": "female_hairstyle_0066.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0066.webp"
+   },
+   {
+    "id": "female_hairstyle_0067",
+    "file": "female_hairstyle_0067.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0067.webp"
+   },
+   {
+    "id": "female_hairstyle_0068",
+    "file": "female_hairstyle_0068.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0068.webp"
+   },
+   {
+    "id": "female_hairstyle_0069",
+    "file": "female_hairstyle_0069.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0069.webp"
+   },
+   {
+    "id": "female_hairstyle_0070",
+    "file": "female_hairstyle_0070.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0070.webp"
+   },
+   {
+    "id": "female_hairstyle_0071",
+    "file": "female_hairstyle_0071.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0071.webp"
+   },
+   {
+    "id": "female_hairstyle_0072",
+    "file": "female_hairstyle_0072.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0072.webp"
+   },
+   {
+    "id": "female_hairstyle_0073",
+    "file": "female_hairstyle_0073.webp",
+    "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/womens-hairstyles/female_hairstyle_0073.webp"
+   }
+  ]
+ },
+ "colors": [
+  {
+   "id": "black",
+   "file": "black.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/black.webp"
+  },
+  {
+   "id": "blonde",
+   "file": "blonde.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/blonde.webp"
+  },
+  {
+   "id": "blue",
+   "file": "blue.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/blue.webp"
+  },
+  {
+   "id": "brown",
+   "file": "brown.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/brown.webp"
+  },
+  {
+   "id": "burgundy",
+   "file": "burgundy.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/burgundy.webp"
+  },
+  {
+   "id": "darkBlue",
+   "file": "darkBlue.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/darkBlue.webp"
+  },
+  {
+   "id": "darkGreen",
+   "file": "darkGreen.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/darkGreen.webp"
+  },
+  {
+   "id": "gradient",
+   "file": "gradient.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/gradient.webp"
+  },
+  {
+   "id": "green",
+   "file": "green.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/green.webp"
+  },
+  {
+   "id": "grey",
+   "file": "grey.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/grey.webp"
+  },
+  {
+   "id": "lightBlue",
+   "file": "lightBlue.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/lightBlue.webp"
+  },
+  {
+   "id": "lightBrown",
+   "file": "lightBrown.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/lightBrown.webp"
+  },
+  {
+   "id": "lightPurple",
+   "file": "lightPurple.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/lightPurple.webp"
+  },
+  {
+   "id": "multicolored",
+   "file": "multicolored.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/multicolored.webp"
+  },
+  {
+   "id": "orange",
+   "file": "orange.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/orange.webp"
+  },
+  {
+   "id": "pink",
+   "file": "pink.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/pink.webp"
+  },
+  {
+   "id": "platinumBlonde",
+   "file": "platinumBlonde.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/platinumBlonde.webp"
+  },
+  {
+   "id": "purple",
+   "file": "purple.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/purple.webp"
+  },
+  {
+   "id": "red",
+   "file": "red.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/red.webp"
+  },
+  {
+   "id": "silver",
+   "file": "silver.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/silver.webp"
+  },
+  {
+   "id": "white",
+   "file": "white.webp",
+   "url": "https://ai-resource.ailabtools.com/hairstyle-changer-premium/doc/colors/white.webp"
+  }
+ ]
+}

@@ -50,20 +50,22 @@ After changing a route schema, run `npm run openapi` to regenerate `docs/openapi
 
 ```
 src/                  mm-api
-  config/             environments, settings, booking choices, consent notices
-  domain/             leads, cities, visit dates, rate limits
-  providers/          CRM (Zoho and stub), Turnstile, alerts
-  queues/             queue consumers (crm-sync)
+  config/             environments, settings, booking choices, notices, try-on presets and limits
+  domain/             leads, cities, visit dates, rate limits, ceilings, try-on jobs
+  providers/          CRM (Zoho), images (AILabTools), WhatsApp (Evolution), each with a stub; Turnstile, alerts
+  queues/             queue consumers: crm-sync, render, messaging
   scheduled/          the sweeper
   guard.ts            startup and database-identity guard
   log.ts              the only logger; redacts personal data
   routes/             one module per route, zod schemas included
 migrations/           D1, numbered, forward-only
+data/                 the AILabTools style catalog (verbatim)
 site/                 mm-site placeholder
-scripts/              build, checks, release, smoke
+scripts/              build, checks, release, smoke, the free-tier budget
 test/worker/          tests inside workerd
-test/node/            tests of the scripts
+test/node/            tests of the scripts, and the free-tier budget
 docs/decisions/       ADRs
+docs/reference/       AILabTools API notes (verbatim), and where the browser-side code lives
 ```
 
 ## Documents
