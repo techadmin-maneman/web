@@ -1,16 +1,17 @@
-# Production release. Manual, behind the GitHub Environment "production"
-# (required reviewers), and only for a commit on main that passed staging.
+# Production release, started by hand for a commit on main that passed staging.
 #
-#   migrate prod D1 -> upload mm-api version -> canary split -> smoke the canary
-#   -> soak -> smoke again -> 100% -> smoke -> mm-site -> smoke
+#   migrate -> upload the new mm-api version -> send it 10% of traffic -> smoke it
+#   -> wait -> smoke it again -> 100% -> smoke -> deploy mm-site -> smoke
 #
-# Any failure after the first traffic change puts both Workers back on the
-# versions that were serving before the release. Migrations are not rolled
-# back: they are backward-compatible with the running code by rule
-# (docs/decisions/0006-deployment-pipeline.md).
+# If anything fails after traffic starts moving, both Workers go back to the
+# versions that were serving before. Migrations are not rolled back; every
+# migration works with the previous code (docs/decisions/0006-deployment-pipeline.md).
 #
-# Secrets live on the GitHub Environment "production" and belong to production only:
-#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+# Runs in the GitHub Environment "production". Required reviewers get added
+# there when the GitHub plan allows it (docs/decisions/0007-platform-constraints.md).
+#
+# Secret, on the GitHub Environment "production":
+#   CLOUDFLARE_API_TOKEN    production's deploy token (docs/runbook.md)
 name: deploy-production
 
 on:
@@ -21,7 +22,7 @@ on:
         required: true
         type: string
       canary_percent:
-        description: Share of traffic the new mm-api version takes first.
+        description: Share of traffic the new mm-api version gets first (1-50).
         default: "10"
         type: string
       soak_seconds:
@@ -46,16 +47,27 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       SHA: ${{ inputs.sha }}
     steps:
-      - name: On main
+      - name: The commit is on main
         run: |
-          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be a full 40-character commit SHA"; exit 1; }
+          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::sha must be a full 40-character commit SHA"
+            exit 1
+          fi
+          # "ahead" or "identical" means main contains the commit.
           status=$(gh api "repos/${{ github.repository }}/compare/$SHA...main" --jq .status)
-          [ "$status" = "identical" ] || [ "$status" = "ahead" ] || { echo "::error::$SHA is not on main ($status)"; exit 1; }
-      - name: Passed staging
+          if [ "$status" != "ahead" ] && [ "$status" != "identical" ]; then
+            echo "::error::$SHA is not on main (compare status: $status)"
+            exit 1
+          fi
+
+      - name: The commit passed staging
         run: |
-          passed=$(gh run list --repo "${{ github.repository }}" --workflow deploy-staging.yml --commit "$SHA" \
-            --status success --json databaseId --jq length)
-          [ "$passed" -gt 0 ] || { echo "::error::$SHA has no successful deploy-staging run"; exit 1; }
+          passed=$(gh run list --repo "${{ github.repository }}" --workflow deploy-staging.yml \
+            --commit "$SHA" --status success --json databaseId --jq length)
+          if [ "$passed" -eq 0 ]; then
+            echo "::error::$SHA has no successful deploy-staging run"
+            exit 1
+          fi
 
   release:
     name: release production
@@ -67,7 +79,6 @@ jobs:
       url: https://maneman.in
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       SHA: ${{ inputs.sha }}
       CANARY: ${{ inputs.canary_percent }}
       SOAK: ${{ inputs.soak_seconds }}
@@ -77,11 +88,20 @@ jobs:
           ref: ${{ inputs.sha }}
       - uses: ./.github/actions/setup
 
-      - name: Production is provisioned
+      - name: Check the inputs and setup
         run: |
-          [[ "$CANARY" =~ ^[0-9]+$ ]] && [ "$CANARY" -ge 1 ] && [ "$CANARY" -le 50 ] || { echo "::error::canary_percent must be 1-50"; exit 1; }
-          [[ "$SOAK" =~ ^[0-9]+$ ]] || { echo "::error::soak_seconds must be a number"; exit 1; }
-          [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::GitHub Environment 'production' is missing Cloudflare secrets"; exit 1; }
+          if ! [[ "$CANARY" =~ ^[0-9]+$ ]] || [ "$CANARY" -lt 1 ] || [ "$CANARY" -gt 50 ]; then
+            echo "::error::canary_percent must be a number from 1 to 50"
+            exit 1
+          fi
+          if ! [[ "$SOAK" =~ ^[0-9]+$ ]]; then
+            echo "::error::soak_seconds must be a number"
+            exit 1
+          fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::The GitHub Environment 'production' has no CLOUDFLARE_API_TOKEN. See docs/runbook.md."
+            exit 1
+          fi
           npm run check:config -- --require-provisioned
 
       - name: Record the versions serving now
@@ -90,61 +110,61 @@ jobs:
           api=$(node scripts/release.ts current --worker mm-api --env production)
           site=$(node scripts/release.ts current --worker mm-site --env production)
           if [ -z "$api" ] || [ -z "$site" ]; then
-            echo "::error::Production has no current deployment to roll back to. Bootstrap it first: docs/runbook.md, 'Provisioning an environment'."
+            echo "::error::Production has never been deployed, so there is nothing to roll back to. Bootstrap it first (docs/runbook.md)."
             exit 1
           fi
           echo "api=$api" >> "$GITHUB_OUTPUT"
           echo "site=$site" >> "$GITHUB_OUTPUT"
 
-      - name: Apply D1 migrations to production
+      - name: Migrate the production database
         run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-prod --env production --remote
 
-      - name: Database identity is production
+      - name: Check the database is production's
         run: node scripts/mark-database.ts production
 
-      - name: Upload mm-api version (no traffic yet)
+      - name: Upload the new mm-api version (no traffic yet)
         id: api
-        run: echo "id=$(node scripts/release.ts upload --worker mm-api --env production --tag "$SHA")" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node scripts/release.ts upload --worker mm-api --env production --tag "$SHA")" >> "$GITHUB_OUTPUT"
 
-      - name: Canary
+      - name: Send the new version ${{ inputs.canary_percent }}% of traffic
         id: canary
         run: >-
           node scripts/release.ts deploy --worker mm-api --env production
-          --split "${{ steps.api.outputs.id }}@$CANARY"
+          --split "${{ steps.api.outputs.version }}@$CANARY"
           --split "${{ steps.before.outputs.api }}@$((100 - CANARY))"
           --message "canary $SHA"
 
-      - name: Smoke the canary
+      # --override pins these requests to the new version, whatever the split.
+      - name: Smoke the new version
         run: >-
           npm run smoke -- --base https://maneman.in --environment production
-          --override "mm-api-production=${{ steps.api.outputs.id }}"
-          --version-id "${{ steps.api.outputs.id }}" --version-tag "$SHA"
+          --override "mm-api-production=${{ steps.api.outputs.version }}"
+          --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
-      - name: Soak
+      - name: Let it serve for a while
         run: sleep "$SOAK"
 
-      - name: Smoke the canary after the soak
+      - name: Smoke the new version again
         run: >-
           npm run smoke -- --base https://maneman.in --environment production
-          --override "mm-api-production=${{ steps.api.outputs.id }}"
-          --version-id "${{ steps.api.outputs.id }}" --version-tag "$SHA"
+          --override "mm-api-production=${{ steps.api.outputs.version }}"
+          --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
-      - name: Promote mm-api to 100%
+      - name: Send the new version all traffic
         run: >-
           node scripts/release.ts deploy --worker mm-api --env production
-          --split "${{ steps.api.outputs.id }}@100" --message "release $SHA"
+          --split "${{ steps.api.outputs.version }}@100" --message "release $SHA"
 
       - name: Smoke mm-api at 100%
         run: >-
           npm run smoke -- --base https://maneman.in --environment production
-          --version-id "${{ steps.api.outputs.id }}" --version-tag "$SHA"
+          --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
       - name: Deploy mm-site
         id: site
         run: |
-          id=$(node scripts/release.ts upload --worker mm-site --env production --tag "$SHA")
-          echo "id=$id" >> "$GITHUB_OUTPUT"
-          node scripts/release.ts deploy --worker mm-site --env production --split "$id@100" --message "release $SHA"
+          version=$(node scripts/release.ts upload --worker mm-site --env production --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-site --env production --split "$version@100" --message "release $SHA"
 
       - name: Final smoke
         run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"
@@ -152,7 +172,7 @@ jobs:
       - name: Roll back
         if: failure() && steps.canary.outcome != 'skipped' && steps.before.outputs.api != ''
         run: |
-          echo "::error::Release $SHA failed; restoring the versions that were serving before it."
+          echo "::error::Release $SHA failed. Restoring the versions that were serving before it."
           node scripts/release.ts deploy --worker mm-api --env production \
             --split "${{ steps.before.outputs.api }}@100" --message "rollback of $SHA"
           if [ "${{ steps.site.outcome }}" != "skipped" ]; then

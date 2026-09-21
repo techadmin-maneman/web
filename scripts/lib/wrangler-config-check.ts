@@ -1,6 +1,6 @@
-// Rules that keep staging and production isolated in the wrangler config.
-// Pure functions over parsed config, so the tests can break a real config one
-// rule at a time. See docs/decisions/0005-environment-isolation-in-wrangler-config.md.
+// Rules that keep staging and production isolated in the wrangler configs.
+// Each check returns a list of problems; an empty list means the config is
+// fine. See docs/decisions/0005-environment-isolation-in-wrangler-config.md.
 
 import {
   EXPECTED_DATABASE_NAME,
@@ -16,85 +16,81 @@ export type Json = null | boolean | number | string | Json[] | { [key: string]: 
 export type JsonObject = Record<string, Json>;
 
 /**
- * Keys wrangler does NOT inherit from the top level into an environment. A key
- * present at the top level and missing from an environment leaves that
- * environment without the binding. Each maps to the binding names it declares.
+ * How to find binding names under a config key:
+ * "list": an array of bindings, each named by `nameField`.
+ * "one":  a single binding object, named by `nameField`.
+ * "map":  an object whose keys are the names, like `vars`.
  */
-const NON_INHERITABLE: Readonly<Record<string, (value: Json) => string[]>> = {
-  vars: (v) => (isObject(v) ? Object.keys(v) : []),
-  define: (v) => (isObject(v) ? Object.keys(v) : []),
-  d1_databases: (v) => field(v, "binding"),
-  r2_buckets: (v) => field(v, "binding"),
-  kv_namespaces: (v) => field(v, "binding"),
-  services: (v) => field(v, "binding"),
-  hyperdrive: (v) => field(v, "binding"),
-  vectorize: (v) => field(v, "binding"),
-  analytics_engine_datasets: (v) => field(v, "binding"),
-  dispatch_namespaces: (v) => field(v, "binding"),
-  mtls_certificates: (v) => field(v, "binding"),
-  secrets_store_secrets: (v) => field(v, "binding"),
-  workflows: (v) => field(v, "binding"),
-  pipelines: (v) => field(v, "binding"),
-  send_email: (v) => field(v, "name"),
-  ratelimits: (v) => field(v, "name"),
-  tail_consumers: (v) => field(v, "service"),
-  version_metadata: (v) => single(v, "binding"),
-  ai: (v) => single(v, "binding"),
-  browser: (v) => single(v, "binding"),
-  images: (v) => single(v, "binding"),
-  durable_objects: (v) => (isObject(v) ? field(v.bindings ?? [], "name") : []),
-  "queues.producers": (v) => field(v, "binding"),
-  "queues.consumers": (v) => field(v, "queue").map(stripEnvironmentToken),
-};
+type BindingKey =
+  | { readonly key: string; readonly shape: "list" | "one"; readonly nameField: string }
+  | { readonly key: string; readonly shape: "map" };
 
 /**
- * Keys wrangler DOES inherit. Inheriting any of these into a remote
- * environment is dangerous (a route or account aimed at the wrong place), so
- * each remote environment must set them itself.
+ * Config keys that wrangler does NOT copy from the top level into an
+ * environment. If the top level declares one and an environment does not, that
+ * environment runs without the binding.
+ */
+const NON_INHERITABLE_KEYS: readonly BindingKey[] = [
+  { key: "vars", shape: "map" },
+  { key: "define", shape: "map" },
+  { key: "d1_databases", shape: "list", nameField: "binding" },
+  { key: "r2_buckets", shape: "list", nameField: "binding" },
+  { key: "kv_namespaces", shape: "list", nameField: "binding" },
+  { key: "queues.producers", shape: "list", nameField: "binding" },
+  { key: "queues.consumers", shape: "list", nameField: "queue" },
+  { key: "durable_objects.bindings", shape: "list", nameField: "name" },
+  { key: "services", shape: "list", nameField: "binding" },
+  { key: "hyperdrive", shape: "list", nameField: "binding" },
+  { key: "vectorize", shape: "list", nameField: "binding" },
+  { key: "analytics_engine_datasets", shape: "list", nameField: "binding" },
+  { key: "dispatch_namespaces", shape: "list", nameField: "binding" },
+  { key: "mtls_certificates", shape: "list", nameField: "binding" },
+  { key: "secrets_store_secrets", shape: "list", nameField: "binding" },
+  { key: "workflows", shape: "list", nameField: "binding" },
+  { key: "pipelines", shape: "list", nameField: "binding" },
+  { key: "send_email", shape: "list", nameField: "name" },
+  { key: "ratelimits", shape: "list", nameField: "name" },
+  { key: "tail_consumers", shape: "list", nameField: "service" },
+  { key: "version_metadata", shape: "one", nameField: "binding" },
+  { key: "ai", shape: "one", nameField: "binding" },
+  { key: "browser", shape: "one", nameField: "binding" },
+  { key: "images", shape: "one", nameField: "binding" },
+];
+
+/**
+ * Config keys that wrangler DOES copy into every environment. For a remote
+ * environment each must be set in its own block, or it could inherit a route
+ * or an account meant for local.
  */
 const MUST_BE_EXPLICIT = ["name", "account_id", "workers_dev", "preview_urls", "observability", "routes"] as const;
 
-const ENVIRONMENT_TOKENS = Object.values(RESOURCE_TOKEN);
-
-export const PLACEHOLDER_DATABASE_ID = /^0{8}-0{4}-0{4}-0{4}-0{12}$/;
-
 export const REQUIRED_API_BINDINGS = [
   "DB",
-  "UPLOADS",
-  "RESULTS",
   "RENDER_QUEUE",
   "CRM_QUEUE",
   "MESSAGE_QUEUE",
   "CF_VERSION_METADATA",
 ] as const;
 
+/** `wrangler d1 create` has not been run yet. */
+export const PLACEHOLDER_DATABASE_ID = "00000000-0000-0000-0000-000000000000";
+
+const ENVIRONMENT_TOKENS: readonly string[] = Object.values(RESOURCE_TOKEN);
+
 export interface CheckOptions {
-  /** Deploy-time: reject placeholder resource IDs. */
+  /** Used before a deploy: reject placeholder database IDs. */
   readonly requireProvisioned?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Reading the parsed config
+// ---------------------------------------------------------------------------
 
 function isObject(value: Json | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function field(value: Json, key: string): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((item) => {
-    const name = isObject(item) ? item[key] : undefined;
-    return typeof name === "string" ? [name] : [];
-  });
-}
-
-function single(value: Json, key: string): string[] {
-  const name = isObject(value) ? value[key] : undefined;
-  return typeof name === "string" ? [name] : [];
-}
-
-/** `mm-render-staging` and `mm-render-prod` are the same logical queue. */
-function stripEnvironmentToken(name: string): string {
-  return ENVIRONMENT_TOKENS.reduce((acc, token) => acc.replace(new RegExp(`(^|-)${token}(-|$)`), "$1{env}$2"), name);
-}
-
+/** Follows a dotted path such as "queues.producers". */
 function read(config: JsonObject, path: string): Json | undefined {
   let current: Json | undefined = config;
   for (const part of path.split(".")) {
@@ -104,109 +100,136 @@ function read(config: JsonObject, path: string): Json | undefined {
   return current;
 }
 
-function environmentBlock(config: JsonObject, name: string): JsonObject | undefined {
+/** The objects in an array, ignoring anything else. */
+function objectsIn(value: Json | undefined): JsonObject[] {
+  return Array.isArray(value) ? value.filter(isObject) : [];
+}
+
+function stringField(object: JsonObject, field: string): string | undefined {
+  const value = object[field];
+  return typeof value === "string" ? value : undefined;
+}
+
+function environmentBlock(config: JsonObject, environment: string): JsonObject | undefined {
   const envs = config.env;
   if (!isObject(envs)) return undefined;
-  const block = envs[name];
+  const block = envs[environment];
   return isObject(block) ? block : undefined;
 }
 
-function sameSet(a: readonly string[], b: readonly string[]): boolean {
-  const left = new Set(a);
-  const right = new Set(b);
-  return left.size === right.size && [...left].every((item) => right.has(item));
+/** The binding names declared under one key, e.g. ["DB"] for d1_databases. */
+function namesUnder(block: JsonObject, bindingKey: BindingKey): string[] | undefined {
+  const value = read(block, bindingKey.key);
+  if (value === undefined) return undefined;
+  if (bindingKey.shape === "map") return isObject(value) ? Object.keys(value) : [];
+
+  let bindings: JsonObject[] = [];
+  if (bindingKey.shape === "list") bindings = objectsIn(value);
+  else if (isObject(value)) bindings = [value];
+  return bindings.flatMap((binding) => stringField(binding, bindingKey.nameField) ?? []);
 }
 
-/** Every non-inheritable key at the top level is redeclared, with the same binding names. */
+/** "mm-render-staging" and "mm-render-prod" both become "mm-render-{env}". */
+function withoutEnvironmentToken(name: string): string {
+  return name
+    .split("-")
+    .map((part) => (ENVIRONMENT_TOKENS.includes(part) ? "{env}" : part))
+    .join("-");
+}
+
+function sameNames(a: readonly string[], b: readonly string[]): boolean {
+  const left = new Set(a.map(withoutEnvironmentToken));
+  const right = new Set(b.map(withoutEnvironmentToken));
+  return left.size === right.size && [...left].every((name) => right.has(name));
+}
+
+interface Resource {
+  readonly kind: string;
+  readonly name: string;
+}
+
+/** Every named resource a block points at: databases, buckets, queues. */
+function resourcesOf(block: JsonObject): Resource[] {
+  const resources: Resource[] = [];
+  const add = (kind: string, name: string | undefined): void => {
+    if (name !== undefined) resources.push({ kind, name });
+  };
+  for (const db of objectsIn(block.d1_databases)) add("D1 database", stringField(db, "database_name"));
+  for (const bucket of objectsIn(block.r2_buckets)) add("R2 bucket", stringField(bucket, "bucket_name"));
+  for (const producer of objectsIn(read(block, "queues.producers"))) add("queue", stringField(producer, "queue"));
+  for (const consumer of objectsIn(read(block, "queues.consumers"))) {
+    add("queue consumer", stringField(consumer, "queue"));
+    add("dead-letter queue", stringField(consumer, "dead_letter_queue"));
+  }
+  return resources;
+}
+
+function databaseIds(block: JsonObject): string[] {
+  return objectsIn(block.d1_databases).flatMap((db) => stringField(db, "database_id") ?? []);
+}
+
+// ---------------------------------------------------------------------------
+// Checks
+// ---------------------------------------------------------------------------
+
+/** Every non-inheritable key at the top level is redeclared with the same binding names. */
 function checkRedeclared(top: JsonObject, block: JsonObject, label: string): string[] {
   const problems: string[] = [];
-  for (const [key, names] of Object.entries(NON_INHERITABLE)) {
-    const topValue = read(top, key);
-    const envValue = read(block, key);
-    if (topValue === undefined && envValue === undefined) continue;
-    if (envValue === undefined) {
-      problems.push(
-        `${label}: ${key} is not redeclared (the top level declares ${names(topValue ?? null).join(", ")})`,
-      );
-      continue;
-    }
-    if (topValue === undefined) {
+  for (const bindingKey of NON_INHERITABLE_KEYS) {
+    const topNames = namesUnder(top, bindingKey);
+    const envNames = namesUnder(block, bindingKey);
+    const { key } = bindingKey;
+
+    if (topNames === undefined && envNames === undefined) continue;
+    if (envNames === undefined) {
+      problems.push(`${label}: ${key} is not redeclared (the top level declares ${(topNames ?? []).join(", ")})`);
+    } else if (topNames === undefined) {
       problems.push(`${label}: declares ${key}, which the top level (local) does not`);
-      continue;
-    }
-    const expected = names(topValue);
-    const actual = names(envValue);
-    if (!sameSet(expected, actual)) {
+    } else if (!sameNames(topNames, envNames)) {
       problems.push(
-        `${label}: ${key} declares [${actual.join(", ")}] but the top level declares [${expected.join(", ")}]`,
+        `${label}: ${key} declares [${envNames.join(", ")}] but the top level declares [${topNames.join(", ")}]`,
       );
     }
   }
-  // Inheritable trigger keys: redeclare explicitly if the top level has them.
   if (top.triggers !== undefined && block.triggers === undefined) {
     problems.push(`${label}: triggers is inherited from the top level; declare it explicitly`);
   }
   return problems;
 }
 
-/** Every resource an environment names must carry that environment's token. */
-function resourceNames(block: JsonObject): { kind: string; name: string }[] {
-  const out: { kind: string; name: string }[] = [];
-  for (const db of Array.isArray(block.d1_databases) ? block.d1_databases : []) {
-    if (isObject(db) && typeof db.database_name === "string") out.push({ kind: "D1 database", name: db.database_name });
-  }
-  for (const bucket of Array.isArray(block.r2_buckets) ? block.r2_buckets : []) {
-    if (isObject(bucket) && typeof bucket.bucket_name === "string") {
-      out.push({ kind: "R2 bucket", name: bucket.bucket_name });
-    }
-  }
-  const queues = block.queues;
-  if (isObject(queues)) {
-    for (const producer of Array.isArray(queues.producers) ? queues.producers : []) {
-      if (isObject(producer) && typeof producer.queue === "string") out.push({ kind: "queue", name: producer.queue });
-    }
-    for (const consumer of Array.isArray(queues.consumers) ? queues.consumers : []) {
-      if (!isObject(consumer)) continue;
-      if (typeof consumer.queue === "string") out.push({ kind: "queue consumer", name: consumer.queue });
-      if (typeof consumer.dead_letter_queue === "string") {
-        out.push({ kind: "dead-letter queue", name: consumer.dead_letter_queue });
-      }
-    }
-  }
-  return out;
-}
-
-function databaseIds(block: JsonObject): string[] {
-  return field(block.d1_databases ?? [], "database_id");
-}
-
+/** A block names only its own environment's resources, and its ENVIRONMENT var matches. */
 function checkOwnResources(block: JsonObject, environment: EnvironmentName, label: string): string[] {
   const problems: string[] = [];
   const token = RESOURCE_TOKEN[environment];
-  const pattern = new RegExp(`(^|-)${token}(-|$)`);
-  for (const { kind, name } of resourceNames(block)) {
-    if (!pattern.test(name))
+
+  for (const { kind, name } of resourcesOf(block)) {
+    const parts = name.split("-");
+    if (!parts.includes(token)) {
       problems.push(`${label}: ${kind} "${name}" is not named for ${environment} (expected "${token}")`);
-    for (const other of ENVIRONMENT_TOKENS.filter((t) => t !== token)) {
-      if (new RegExp(`(^|-)${other}(-|$)`).test(name)) {
+    }
+    for (const other of ENVIRONMENT_TOKENS) {
+      if (other !== token && parts.includes(other)) {
         problems.push(`${label}: ${kind} "${name}" is named for another environment ("${other}")`);
       }
     }
   }
-  for (const db of field(block.d1_databases ?? [], "database_name")) {
-    if (db !== EXPECTED_DATABASE_NAME[environment]) {
-      problems.push(`${label}: D1 database "${db}" must be "${EXPECTED_DATABASE_NAME[environment]}"`);
+
+  const expectedDatabase = EXPECTED_DATABASE_NAME[environment];
+  for (const { kind, name } of resourcesOf(block)) {
+    if (kind === "D1 database" && name !== expectedDatabase) {
+      problems.push(`${label}: D1 database "${name}" must be "${expectedDatabase}"`);
     }
   }
-  const vars = block.vars;
-  const declared = isObject(vars) ? vars.ENVIRONMENT : undefined;
+
+  const declared = read(block, "vars.ENVIRONMENT");
   if (declared !== environment) {
     problems.push(`${label}: vars.ENVIRONMENT is ${JSON.stringify(declared ?? null)}, expected "${environment}"`);
   }
   return problems;
 }
 
-function checkExplicitSafety(
+/** The keys wrangler would otherwise inherit are set, and set safely. */
+function checkInheritableKeys(
   block: JsonObject,
   environment: RemoteEnvironmentName,
   worker: string,
@@ -216,8 +239,9 @@ function checkExplicitSafety(
   for (const key of MUST_BE_EXPLICIT) {
     if (block[key] === undefined) problems.push(`${label}: ${key} must be set explicitly (wrangler inherits it)`);
   }
-  if (block.name !== undefined && block.name !== `${worker}-${environment}`) {
-    problems.push(`${label}: name is ${JSON.stringify(block.name)}, expected "${worker}-${environment}"`);
+  const expectedName = `${worker}-${environment}`;
+  if (block.name !== undefined && block.name !== expectedName) {
+    problems.push(`${label}: name is ${JSON.stringify(block.name)}, expected "${expectedName}"`);
   }
   if (block.workers_dev !== undefined && block.workers_dev !== false) {
     problems.push(`${label}: workers_dev must be false (a workers.dev URL bypasses Cloudflare Access and the zone)`);
@@ -225,46 +249,53 @@ function checkExplicitSafety(
   if (block.preview_urls !== undefined && block.preview_urls !== false) {
     problems.push(`${label}: preview_urls must be false`);
   }
-  const observability = block.observability;
-  if (observability !== undefined && !(isObject(observability) && observability.enabled === true)) {
+  if (block.observability !== undefined && read(block, "observability.enabled") !== true) {
     problems.push(`${label}: observability.enabled must be true`);
   }
   return problems;
 }
 
+/** Exactly one route: the expected pattern on the maneman.in zone. */
 function checkRoutes(block: JsonObject, expectedPattern: string, label: string): string[] {
-  const routes = block.routes;
-  if (routes === undefined) return [];
+  if (block.routes === undefined) return []; // reported by checkInheritableKeys
+
+  const routes = Array.isArray(block.routes) ? block.routes : [];
+  const [route] = objectsIn(routes);
   const ok =
-    Array.isArray(routes) &&
     routes.length === 1 &&
-    isObject(routes[0]) &&
-    routes[0].pattern === expectedPattern &&
-    routes[0].zone_name === ZONE_NAME &&
-    routes[0].custom_domain === undefined;
+    route?.pattern === expectedPattern &&
+    route.zone_name === ZONE_NAME &&
+    route.custom_domain === undefined;
   return ok ? [] : [`${label}: routes must be exactly [{ pattern: "${expectedPattern}", zone_name: "${ZONE_NAME}" }]`];
 }
 
+/** No bucket, queue, database name or database ID appears in two environments. */
 function checkNoSharedResources(config: JsonObject): string[] {
-  const owners = new Map<string, string>();
-  const problems: string[] = [];
   const blocks: [string, JsonObject][] = [["top level (local)", config]];
   for (const environment of REMOTE_ENVIRONMENTS) {
     const block = environmentBlock(config, environment);
     if (block !== undefined) blocks.push([`env.${environment}`, block]);
   }
+
+  const ownerOf = new Map<string, string>();
+  const problems: string[] = [];
   for (const [label, block] of blocks) {
-    const names = resourceNames(block).map(({ name }) => name);
-    const ids = databaseIds(block).filter((id) => !PLACEHOLDER_DATABASE_ID.test(id));
+    const names = resourcesOf(block).map((resource) => resource.name);
+    const ids = databaseIds(block).filter((id) => id !== PLACEHOLDER_DATABASE_ID);
     for (const resource of new Set([...names, ...ids])) {
-      const owner = owners.get(resource);
-      if (owner !== undefined && owner !== label)
+      const owner = ownerOf.get(resource);
+      if (owner !== undefined && owner !== label) {
         problems.push(`${label} and ${owner} share the resource "${resource}"`);
-      owners.set(resource, label);
+      }
+      ownerOf.set(resource, label);
     }
   }
   return problems;
 }
+
+// ---------------------------------------------------------------------------
+// Entry points
+// ---------------------------------------------------------------------------
 
 export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): string[] {
   const problems: string[] = [];
@@ -276,9 +307,9 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
   }
   problems.push(...checkOwnResources(config, "local", "top level (local)"));
 
-  const topBindings = bindingNames(config);
+  const localBindings = NON_INHERITABLE_KEYS.flatMap((bindingKey) => namesUnder(config, bindingKey) ?? []);
   for (const binding of REQUIRED_API_BINDINGS) {
-    if (!topBindings.includes(binding)) problems.push(`top level (local): missing required binding ${binding}`);
+    if (!localBindings.includes(binding)) problems.push(`top level (local): missing required binding ${binding}`);
   }
 
   for (const environment of REMOTE_ENVIRONMENTS) {
@@ -288,15 +319,12 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
       problems.push(`${label} is missing`);
       continue;
     }
-    problems.push(...checkExplicitSafety(block, environment, "mm-api", label));
+    problems.push(...checkInheritableKeys(block, environment, "mm-api", label));
     problems.push(...checkRoutes(block, `${HOSTNAME[environment]}/api/*`, label));
     problems.push(...checkRedeclared(config, block, label));
     problems.push(...checkOwnResources(block, environment, label));
-    if (options.requireProvisioned === true) {
-      for (const id of databaseIds(block)) {
-        if (PLACEHOLDER_DATABASE_ID.test(id))
-          problems.push(`${label}: D1 database_id is a placeholder; provision it first`);
-      }
+    if (options.requireProvisioned === true && databaseIds(block).includes(PLACEHOLDER_DATABASE_ID)) {
+      problems.push(`${label}: D1 database_id is a placeholder; provision it first`);
     }
   }
 
@@ -304,20 +332,13 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
   return problems;
 }
 
-function bindingNames(block: JsonObject): string[] {
-  return Object.entries(NON_INHERITABLE).flatMap(([key, names]) => {
-    if (key === "vars" || key === "define" || key === "queues.consumers") return [];
-    const value = read(block, key);
-    return value === undefined ? [] : names(value);
-  });
-}
-
-/** mm-site holds no bindings and no secrets: static assets and routes only. */
+/** mm-site is static assets and routes only: no bindings, no code. */
 export function checkSiteConfig(config: JsonObject): string[] {
   const problems: string[] = [];
   if (config.routes !== undefined || config.route !== undefined) {
     problems.push("site top level: routes must not be declared at the top level");
   }
+
   const blocks: [string, JsonObject][] = [["site top level", config]];
   for (const environment of REMOTE_ENVIRONMENTS) {
     const label = `site env.${environment}`;
@@ -327,29 +348,33 @@ export function checkSiteConfig(config: JsonObject): string[] {
       continue;
     }
     blocks.push([label, block]);
-    problems.push(...checkExplicitSafety(block, environment, "mm-site", label));
+    problems.push(...checkInheritableKeys(block, environment, "mm-site", label));
     problems.push(...checkRoutes(block, `${HOSTNAME[environment]}/*`, label));
     if (!isObject(block.assets)) problems.push(`${label}: assets must be declared explicitly`);
   }
+
   for (const [label, block] of blocks) {
-    for (const key of Object.keys(NON_INHERITABLE)) {
-      if (read(block, key) !== undefined)
+    for (const { key } of NON_INHERITABLE_KEYS) {
+      if (read(block, key) !== undefined) {
         problems.push(`${label}: mm-site must not declare ${key}; mm-api owns every binding`);
+      }
     }
     if (block.main !== undefined) problems.push(`${label}: mm-site is assets-only and must not declare main`);
   }
   return problems;
 }
 
-/** Both Workers of an environment deploy to the same account. */
+/** Both Workers of an environment deploy to the same Cloudflare account. */
 export function checkAccountsAgree(api: JsonObject, site: JsonObject): string[] {
-  return REMOTE_ENVIRONMENTS.flatMap((environment) => {
-    const apiAccount = environmentBlock(api, environment)?.account_id;
-    const siteAccount = environmentBlock(site, environment)?.account_id;
-    return apiAccount === siteAccount
-      ? []
-      : [
-          `env.${environment}: mm-api and mm-site deploy to different accounts (${JSON.stringify(apiAccount ?? null)} vs ${JSON.stringify(siteAccount ?? null)})`,
-        ];
-  });
+  const problems: string[] = [];
+  for (const environment of REMOTE_ENVIRONMENTS) {
+    const apiAccount = environmentBlock(api, environment)?.account_id ?? null;
+    const siteAccount = environmentBlock(site, environment)?.account_id ?? null;
+    if (apiAccount !== siteAccount) {
+      problems.push(
+        `env.${environment}: mm-api and mm-site deploy to different accounts (${JSON.stringify(apiAccount)} vs ${JSON.stringify(siteAccount)})`,
+      );
+    }
+  }
+  return problems;
 }

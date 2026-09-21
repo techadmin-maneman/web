@@ -1,10 +1,11 @@
-// mm-api: owns every binding and secret. Serves https://{host}/api/* through a
-// zone route. See docs/decisions/0004-routing-and-hostnames.md.
+// mm-api: serves https://{host}/api/* and owns every binding and secret.
 //
-// The top level is the LOCAL environment only (`wrangler dev`, tests). Staging
-// and production redeclare every binding, var, route and safety flag
-// explicitly; `npm run check:config` fails the build if one does not. See
-// docs/decisions/0005-environment-isolation-in-wrangler-config.md.
+// The top level is the local environment (`wrangler dev`, tests). Staging and
+// production each redeclare everything; `npm run check:config` fails if one
+// does not. See docs/decisions/0005-environment-isolation-in-wrangler-config.md.
+//
+// The R2 buckets (UPLOADS, RESULTS) are added in M3, once R2 is enabled on the
+// account.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mm-api",
@@ -23,10 +24,6 @@
       "migrations_dir": "migrations"
     }
   ],
-  "r2_buckets": [
-    { "binding": "UPLOADS", "bucket_name": "mm-local-tryon-uploads" },
-    { "binding": "RESULTS", "bucket_name": "mm-local-tryon-results" }
-  ],
   "queues": {
     "producers": [
       { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
@@ -43,7 +40,7 @@
   "env": {
     "staging": {
       "name": "mm-api-staging",
-      "account_id": "72edc81c65cb5830f76c57e841831d7d",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
       "workers_dev": false,
       "preview_urls": false,
       "observability": { "enabled": true },
@@ -53,13 +50,9 @@
         {
           "binding": "DB",
           "database_name": "maneman-staging",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "82a07dc1-c86e-4905-b9ac-a474652a1d63",
           "migrations_dir": "migrations"
         }
-      ],
-      "r2_buckets": [
-        { "binding": "UPLOADS", "bucket_name": "mm-staging-tryon-uploads" },
-        { "binding": "RESULTS", "bucket_name": "mm-staging-tryon-results" }
       ],
       "queues": {
         "producers": [
@@ -77,7 +70,7 @@
     },
     "production": {
       "name": "mm-api-production",
-      "account_id": "72edc81c65cb5830f76c57e841831d7d",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
       "workers_dev": false,
       "preview_urls": false,
       "observability": { "enabled": true },
@@ -87,13 +80,9 @@
         {
           "binding": "DB",
           "database_name": "maneman-prod",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "4917e9e0-7bf4-4116-9894-369d490f0ea2",
           "migrations_dir": "migrations"
         }
-      ],
-      "r2_buckets": [
-        { "binding": "UPLOADS", "bucket_name": "mm-prod-tryon-uploads" },
-        { "binding": "RESULTS", "bucket_name": "mm-prod-tryon-results" }
       ],
       "queues": {
         "producers": [

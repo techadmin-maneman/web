@@ -14,7 +14,7 @@
   "env": {
     "staging": {
       "name": "mm-site-staging",
-      "account_id": "72edc81c65cb5830f76c57e841831d7d",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
       "workers_dev": false,
       "preview_urls": false,
       "observability": { "enabled": true },
@@ -23,7 +23,7 @@
     },
     "production": {
       "name": "mm-site-production",
-      "account_id": "72edc81c65cb5830f76c57e841831d7d",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
       "workers_dev": false,
       "preview_urls": false,
       "observability": { "enabled": true },

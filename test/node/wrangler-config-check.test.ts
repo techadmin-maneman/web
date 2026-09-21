@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
-import { checkAccountsAgree, checkApiConfig, checkSiteConfig } from "../../scripts/lib/wrangler-config-check.ts";
+import {
+  PLACEHOLDER_DATABASE_ID,
+  checkAccountsAgree,
+  checkApiConfig,
+  checkSiteConfig,
+} from "../../scripts/lib/wrangler-config-check.ts";
 import { DELETE, edited, type Edit } from "./json-edit.ts";
 
 const realApi = readJsonc("wrangler.jsonc");
@@ -16,13 +21,17 @@ describe("mm-api wrangler config", () => {
   it("the committed deliberately broken fixture fails", () => {
     const fixture = readJsonc("test/fixtures/wrangler/broken-staging-inherits-bindings.jsonc");
     expect(checkApiConfig(fixture)).toEqual([
-      "env.staging: r2_buckets is not redeclared (the top level declares UPLOADS, RESULTS)",
       "env.staging: queues.producers is not redeclared (the top level declares RENDER_QUEUE, CRM_QUEUE, MESSAGE_QUEUE)",
     ]);
   });
 
   it.each<[string, Edit, string]>([
-    ["staging drops its buckets", ["env.staging.r2_buckets", DELETE], "env.staging: r2_buckets is not redeclared"],
+    ["staging drops its database", ["env.staging.d1_databases", DELETE], "env.staging: d1_databases is not redeclared"],
+    [
+      "the top level adds buckets staging lacks",
+      ["r2_buckets", [{ binding: "UPLOADS", bucket_name: "mm-local-tryon-uploads" }]],
+      "env.staging: r2_buckets is not redeclared (the top level declares UPLOADS)",
+    ],
     ["production drops its vars", ["env.production.vars", DELETE], "env.production: vars is not redeclared"],
     [
       "production drops version metadata",
@@ -50,15 +59,29 @@ describe("mm-api wrangler config", () => {
     expect(api(edit)).toContain(problem);
   });
 
-  it("fails when staging names a production bucket, and when two environments share it", () => {
-    const problems = checkApiConfig(edited(realApi, ["env.staging.r2_buckets.0.bucket_name", "mm-prod-tryon-uploads"]));
+  it("fails when staging names a production queue, and when two environments share it", () => {
+    const problems = checkApiConfig(edited(realApi, ["env.staging.queues.producers.0.queue", "mm-render-prod"]));
     expect(problems).toEqual(
       expect.arrayContaining([
-        'env.staging: R2 bucket "mm-prod-tryon-uploads" is not named for staging (expected "staging")',
-        'env.staging: R2 bucket "mm-prod-tryon-uploads" is named for another environment ("prod")',
-        'env.production and env.staging share the resource "mm-prod-tryon-uploads"',
+        'env.staging: queue "mm-render-prod" is not named for staging (expected "staging")',
+        'env.staging: queue "mm-render-prod" is named for another environment ("prod")',
+        'env.production and env.staging share the resource "mm-render-prod"',
       ]),
     );
+  });
+
+  it("fails when staging names a production bucket", () => {
+    const bucket = [{ binding: "UPLOADS", bucket_name: "mm-prod-tryon-uploads" }];
+    const local = [{ binding: "UPLOADS", bucket_name: "mm-local-tryon-uploads" }];
+    const problems = api(
+      ["r2_buckets", local],
+      ["env.staging.r2_buckets", bucket],
+      ["env.production.r2_buckets", bucket],
+    );
+    expect(problems).toContain(
+      'env.staging: R2 bucket "mm-prod-tryon-uploads" is named for another environment ("prod")',
+    );
+    expect(problems).toContain('env.production and env.staging share the resource "mm-prod-tryon-uploads"');
   });
 
   it("fails when staging is bound to the production database", () => {
@@ -132,10 +155,13 @@ describe("mm-api wrangler config", () => {
     expect(api(edit)).toContain(problem);
   });
 
-  it("at deploy time, rejects placeholder database IDs", () => {
-    expect(checkApiConfig(realApi, { requireProvisioned: true })).toEqual([
+  it("at deploy time, requires real database IDs", () => {
+    expect(checkApiConfig(realApi, { requireProvisioned: true })).toEqual([]);
+
+    const unprovisioned = edited(realApi, ["env.staging.d1_databases.0.database_id", PLACEHOLDER_DATABASE_ID]);
+    expect(checkApiConfig(unprovisioned)).toEqual([]);
+    expect(checkApiConfig(unprovisioned, { requireProvisioned: true })).toEqual([
       "env.staging: D1 database_id is a placeholder; provision it first",
-      "env.production: D1 database_id is a placeholder; provision it first",
     ]);
   });
 });
