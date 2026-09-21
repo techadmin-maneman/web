@@ -128,7 +128,7 @@ jobs:
         run: |
           node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8787 > api.log 2>&1 &
           node node_modules/wrangler/bin/wrangler.js dev --config site/wrangler.jsonc --env="" --port 8788 > site.log 2>&1 &
-          for i in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             curl -sf -o /dev/null http://localhost:8787/api/health && curl -sf -o /dev/null http://localhost:8788/ && exit 0
             sleep 1
           done
