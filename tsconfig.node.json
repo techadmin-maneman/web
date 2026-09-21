@@ -17,5 +17,7 @@
     "src/worker-configuration.d.ts",
     "vitest.config.ts",
     "eslint.config.ts"
-  ]
+  ],
+  // Browser-side tooling has its own config: tsconfig.browser.json.
+  "exclude": ["scripts/fidelity.ts", "scripts/serve-site.ts"]
 }

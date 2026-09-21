@@ -1,0 +1,50 @@
+---
+// Every page's frame: the head, the fixed header and, on the home page only,
+// the footer and the sticky bottom bar (as v2 shows them).
+import "../styles/global.css";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import Sprite from "../components/Sprite.astro";
+import StickyBar from "../components/StickyBar.astro";
+import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
+import favicon from "../../../design/brand/favicon-32.svg?url";
+import serif400 from "../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2?url";
+import sans400 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff2?url";
+import sans500 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff2?url";
+
+interface Props {
+  title: string;
+  description?: string;
+  /** The home page carries the footer and the sticky bar. */
+  home?: boolean;
+}
+
+const { title, description, home = false } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en-IN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="mm-worker" content="mm-site" />
+    <meta name="mm-environment" content={ENVIRONMENT} />
+    {!IS_PRODUCTION && <meta name="robots" content="noindex, nofollow" />}
+    <title>{title}</title>
+    {description !== undefined && <meta name="description" content={description} />}
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+    <link rel="preload" href={serif400} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={sans400} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={sans500} as="font" type="font/woff2" crossorigin />
+    <slot name="head" />
+  </head>
+  <body>
+    <Sprite />
+    <Header />
+    <main>
+      <slot />
+    </main>
+    {home && <Footer />}
+    {home && <StickyBar />}
+  </body>
+</html>

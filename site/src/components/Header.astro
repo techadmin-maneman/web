@@ -1,0 +1,88 @@
+---
+// The fixed header. Below 760 px the section links and the area tag hide; v2
+// has no menu button there, so there is none.
+import { header } from "../content/site.ts";
+---
+
+<div class="space" aria-hidden="true"></div>
+<header class="bar on-ink">
+  <a class="brand" href="/" aria-label={header.homeLabel}>
+    <svg class="mark" viewBox="0 0 200 217.4" width="34" height="37" aria-hidden="true">
+      <use href="#mm"></use>
+    </svg>
+    <svg class="word" viewBox="-3 -3 638 106" width="96" height="16" aria-hidden="true">
+      <use href="#wms"></use>
+    </svg>
+  </a>
+  <div class="right">
+    <nav class="wide-only" aria-label="Sections">
+      {header.nav.map((link) => (
+        <a class="link" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+    <span class="area caps wide-only">{header.area}</span>
+    <a class="btn btn--sm btn--line-on-ink" href="/book">
+      {header.book}
+    </a>
+  </div>
+</header>
+
+<style>
+  .space {
+    height: var(--header-h);
+    flex-shrink: 0;
+  }
+  .bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    height: var(--header-h);
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--gutter);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-13);
+    min-height: var(--tap);
+  }
+  .mark {
+    fill: var(--gilt);
+  }
+  .word {
+    fill: var(--paper);
+  }
+  .right,
+  nav {
+    display: flex;
+    align-items: center;
+    gap: var(--header-gap);
+  }
+  .link,
+  .link:hover {
+    font-size: var(--fs-15);
+    color: var(--paper);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+  }
+  .area {
+    font-size: var(--fs-15);
+    color: var(--ink-muted);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+  }
+  @media (max-width: 760px) {
+    .wide-only {
+      display: none;
+    }
+  }
+</style>

@@ -7,7 +7,18 @@ const ADR_DESCRIPTION = { descriptionFormat: "^: see docs/decisions/\\d{4}-[a-z0
 
 export default defineConfig(
   {
-    ignores: ["node_modules/", "coverage/", "dist/", ".wrangler/", "site/", "Design/", "src/worker-configuration.d.ts"],
+    ignores: [
+      "node_modules/",
+      "coverage/",
+      "**/dist/",
+      ".wrangler/",
+      "site/.astro/",
+      "site/placeholder/",
+      "design/",
+      "test-results/",
+      "playwright-report/",
+      "src/worker-configuration.d.ts",
+    ],
   },
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
@@ -15,7 +26,7 @@ export default defineConfig(
   {
     languageOptions: {
       parserOptions: {
-        project: ["./tsconfig.json", "./tsconfig.node.json"],
+        project: ["./tsconfig.json", "./tsconfig.node.json", "./tsconfig.browser.json", "./site/tsconfig.json"],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -42,11 +53,11 @@ export default defineConfig(
   },
   {
     // The logger is the only place src/ may write to the console.
-    files: ["src/log.ts", "scripts/**/*.ts"],
+    files: ["src/log.ts", "scripts/**/*.ts", "site/astro.config.ts"],
     rules: { "no-console": "off" },
   },
   {
-    files: ["test/**/*.ts"],
+    files: ["test/**/*.ts", "e2e/**/*.ts"],
     rules: { "no-console": "off" },
   },
 );

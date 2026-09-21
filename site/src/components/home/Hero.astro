@@ -1,0 +1,144 @@
+---
+// The hero: muted looping footage behind the headline. The poster is the
+// largest thing painted first, so it is preloaded; the video only fetches its
+// metadata until it plays, and never plays for reduced motion.
+import { hero, heroFootage } from "../../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import { designMedia } from "../../lib/images.ts";
+
+interface Props {
+  /** The poster's URL, which the page also preloads (src/lib/hero.ts). */
+  poster: string | undefined;
+}
+
+const { poster } = Astro.props;
+const showFootage = isShown(heroFootage);
+---
+
+<section class="hero on-ink" data-section="hero">
+  {showFootage && poster !== undefined && (
+    <div class="footage">
+      <video
+        data-hero-video
+        src={designMedia(heroFootage.video)}
+        poster={poster}
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+      />
+    </div>
+  )}
+  <div class="scrim"></div>
+  <div class="scrim scrim--up"></div>
+  <div class="scrim scrim--side"></div>
+  {SHOW_PLACEHOLDER_TAGS && showFootage && <div class="label tag">{heroFootage.tag}</div>}
+  <div class="content">
+    <h1>{hero.title}</h1>
+    <p>{hero.body}</p>
+    <div class="actions">
+      <a class="btn btn--lg btn--paper" href="/try">
+        {hero.tryOn}
+      </a>
+      <a class="btn btn--lg btn--line-on-ink strong" href="/book">
+        {hero.book}
+      </a>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Plays the footage unless the visitor asked for reduced motion. Browsers
+  // pause media in a background tab, so it is resumed when the tab returns.
+  const video = document.querySelector<HTMLVideoElement>("[data-hero-video]");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const play = () => {
+    if (video === null || reduced.matches || document.hidden) return;
+    video.play().catch(() => undefined);
+  };
+  play();
+  document.addEventListener("visibilitychange", play);
+  reduced.addEventListener("change", () => (reduced.matches ? video?.pause() : play()));
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    background: var(--ink-deep);
+    overflow: hidden;
+    min-height: var(--hero-min-h);
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: var(--bar-reserve);
+  }
+  .footage {
+    position: absolute;
+    inset: 0;
+    background: var(--ink-night);
+  }
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transform: scaleX(-1);
+  }
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: var(--hero-scrim);
+  }
+  .scrim--up {
+    background: var(--hero-scrim-up);
+  }
+  .scrim--side {
+    background: var(--hero-scrim-side);
+  }
+  .tag {
+    position: absolute;
+    top: var(--hero-tag-top);
+    left: var(--gutter);
+    padding: var(--sp-7) var(--sp-12);
+    font-size: var(--fs-14);
+  }
+  .content {
+    position: relative;
+    width: 100%;
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: 0 var(--gutter) var(--hero-pad-bottom);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--fs-hero);
+    line-height: 0.97;
+    letter-spacing: var(--tracking-display);
+    color: var(--paper);
+    max-width: var(--measure-hero);
+    text-wrap: balance;
+  }
+  p {
+    margin: var(--hero-body-gap) 0 0;
+    font-size: var(--fs-hero-body);
+    line-height: 1.55;
+    color: var(--ink-tag);
+    max-width: var(--measure-hero-body);
+    text-wrap: pretty;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-14);
+    margin-top: var(--hero-actions-gap);
+  }
+  .strong,
+  .strong:hover {
+    border-color: var(--ink-line-strong);
+  }
+  .strong:hover {
+    border-color: var(--paper);
+  }
+</style>

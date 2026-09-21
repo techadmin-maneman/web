@@ -1,0 +1,105 @@
+---
+// How it works: four numbered steps, each with a photograph.
+import { howItWorks, placeholderTag, stepPhotos } from "../../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import DesignPicture from "../DesignPicture.astro";
+
+const showPhotos = isShown(stepPhotos);
+const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhotos.images[index] }));
+---
+
+<section class="container how" data-section="how">
+  <h2 class="section-title">{howItWorks.title}</h2>
+  <ol class="steps">
+    {steps.map((step) => (
+      <li class="step">
+        <div class="text">
+          <span class="number" aria-hidden="true">
+            {step.number}
+          </span>
+          <div>
+            <h3>{step.title}</h3>
+            <p>{step.body}</p>
+            <div class="meta caps">{step.meta}</div>
+          </div>
+        </div>
+        {showPhotos && step.photo !== undefined && (
+          <div class="frame photo">
+            <DesignPicture
+              file={step.photo.file}
+              alt={step.photo.alt}
+              sizes="(min-width: 760px) 50vw, 100vw"
+              widths={[390, 780, 1200]}
+            />
+            {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+          </div>
+        )}
+      </li>
+    ))}
+  </ol>
+</section>
+
+<style>
+  .how {
+    padding-top: var(--section-gap);
+  }
+  .section-title {
+    margin-bottom: var(--how-title-gap);
+  }
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--hairline) solid var(--text);
+  }
+  .step {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min)), 1fr));
+    gap: var(--how-gap);
+    align-items: center;
+    padding: var(--how-step-pad) 0;
+    border-bottom: var(--hairline) solid var(--paper-line);
+  }
+  .text {
+    display: flex;
+    gap: var(--how-number-gap);
+    align-items: baseline;
+  }
+  .number {
+    font-family: var(--font-serif);
+    font-size: var(--fs-step-number);
+    line-height: 0.9;
+    color: var(--text-muted);
+    font-variant-numeric: lining-nums;
+    flex-shrink: 0;
+  }
+  h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--fs-step-title);
+    line-height: 1.15;
+    letter-spacing: var(--tracking-heading);
+  }
+  p {
+    margin: var(--sp-14) 0 0;
+    font-size: var(--fs-body);
+    line-height: 1.65;
+    color: var(--text-soft);
+    max-width: var(--measure-short);
+    text-wrap: pretty;
+  }
+  .meta {
+    margin-top: var(--sp-16);
+    font-size: var(--fs-15);
+    color: var(--text-muted);
+  }
+  .photo {
+    height: var(--how-photo-h);
+  }
+  .tag {
+    position: absolute;
+    top: var(--sp-14);
+    left: var(--sp-14);
+  }
+</style>

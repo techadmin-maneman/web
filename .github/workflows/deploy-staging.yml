@@ -58,6 +58,8 @@ jobs:
           version=$(node scripts/release.ts upload --worker mm-api --env staging --tag "$SHA")
           node scripts/release.ts deploy --worker mm-api --env staging --split "$version@100" --message "staging $SHA"
 
+      - name: Build the site (staging)
+        run: npm run build:site -- --env staging
       - name: Deploy mm-site
         run: |
           version=$(node scripts/release.ts upload --worker mm-site --env staging --tag "$SHA")

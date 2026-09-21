@@ -1,0 +1,46 @@
+---
+import Bases from "../components/home/Bases.astro";
+import Closing from "../components/home/Closing.astro";
+import Comparison from "../components/home/Comparison.astro";
+import DiscretionBand from "../components/home/DiscretionBand.astro";
+import Faq from "../components/home/Faq.astro";
+import GuaranteeFounder from "../components/home/GuaranteeFounder.astro";
+import Hero from "../components/home/Hero.astro";
+import HowItWorks from "../components/home/HowItWorks.astro";
+import Norwood from "../components/home/Norwood.astro";
+import Prices from "../components/home/Prices.astro";
+import Technicians from "../components/home/Technicians.astro";
+import Testimonials from "../components/home/Testimonials.astro";
+import TryOnTeaser from "../components/home/TryOnTeaser.astro";
+import WhatItIs from "../components/home/WhatItIs.astro";
+import { hero, pageTitles } from "../content/site.ts";
+import Site from "../layouts/Site.astro";
+import { heroPosterUrl } from "../lib/hero.ts";
+
+const poster = await heroPosterUrl();
+---
+
+<Site title={pageTitles.home} description={hero.body} home>
+  <Fragment slot="head">
+    <script is:inline>
+      // v2 routed with #tryon and #book, and ads already link to them.
+      if (location.hash === "#tryon") location.replace("/try");
+      else if (location.hash === "#book") location.replace("/book");
+    </script>
+    {poster !== undefined && <link rel="preload" as="image" href={poster} fetchpriority="high" />}
+  </Fragment>
+  <Hero poster={poster} />
+  <WhatItIs />
+  <Norwood />
+  <Comparison />
+  <TryOnTeaser />
+  <DiscretionBand />
+  <HowItWorks />
+  <Technicians />
+  <Bases />
+  <Prices />
+  <Testimonials />
+  <GuaranteeFounder />
+  <Faq />
+  <Closing />
+</Site>

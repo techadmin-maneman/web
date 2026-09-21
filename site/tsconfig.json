@@ -1,0 +1,14 @@
+{
+  // The site: Astro pages, Preact islands, and the content they share. Astro's
+  // strictest preset, plus the repository's own rules (tsconfig.base.json).
+  // The backend's src/config is imported for the notices, stages and presets.
+  "extends": ["astro/tsconfigs/strictest", "../tsconfig.base.json"],
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "types": ["astro/client"]
+  },
+  "include": [".astro/types.d.ts", "src/**/*", "astro.config.ts", "../src/config/**/*.ts"],
+  "exclude": ["dist"]
+}

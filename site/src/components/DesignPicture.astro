@@ -1,0 +1,29 @@
+---
+// One of the design's photographs, served as AVIF or WebP at the widths the
+// layout needs. Lazy unless it is above the fold (`priority`).
+import { Picture } from "astro:assets";
+import { designImage } from "../lib/images.ts";
+
+interface Props {
+  file: string;
+  alt: string;
+  /** The `sizes` attribute: how wide the image is drawn at each viewport width. */
+  sizes: string;
+  widths: number[];
+  priority?: boolean;
+  /** A framing class from global.css, such as `focus-portrait`. */
+  class?: string;
+}
+
+const { file, alt, sizes, widths, priority = false, class: className } = Astro.props;
+---
+
+<Picture
+  src={designImage(file)}
+  alt={alt}
+  sizes={sizes}
+  widths={widths}
+  formats={["avif", "webp"]}
+  priority={priority}
+  class={className}
+/>

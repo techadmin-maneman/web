@@ -1,0 +1,90 @@
+---
+// The try-on teaser: copy on the left, a before/after pair on the right.
+import BeforeAfter from "../../islands/BeforeAfter.tsx";
+import { placeholderTag, teaserPair, tryOnTeaser } from "../../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import DesignPicture from "../DesignPicture.astro";
+
+const sizes = "(min-width: 760px) 50vw, 100vw";
+const widths = [390, 780, 1200];
+---
+
+<section class="teaser on-ink" data-section="teaser">
+  <div class="container inner">
+    <div>
+      <div class="eyebrow caps">{tryOnTeaser.eyebrow}</div>
+      <h2>{tryOnTeaser.title}</h2>
+      <p>{tryOnTeaser.body}</p>
+      <a class="btn btn--lg btn--paper start" href="/try">
+        {tryOnTeaser.start}
+      </a>
+    </div>
+    {isShown(teaserPair) && (
+      <BeforeAfter
+        client:visible
+        start={46}
+        size="teaser"
+        beforeLabel={tryOnTeaser.before}
+        afterLabel={tryOnTeaser.after}
+        sliderLabel={tryOnTeaser.sliderLabel}
+        tag={SHOW_PLACEHOLDER_TAGS ? placeholderTag : undefined}
+      >
+        <DesignPicture
+          slot="after"
+          file={teaserPair.after.file}
+          alt={teaserPair.after.alt}
+          sizes={sizes}
+          widths={widths}
+        />
+        <DesignPicture
+          slot="before"
+          file={teaserPair.before.file}
+          alt={teaserPair.before.alt}
+          sizes={sizes}
+          widths={widths}
+        />
+      </BeforeAfter>
+    )}
+  </div>
+</section>
+
+<style>
+  .teaser {
+    margin-top: var(--section-gap-lg);
+    background: var(--ink-deep);
+  }
+  .inner {
+    padding-block: var(--band-pad);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-wide)), 1fr));
+    gap: var(--split-gap);
+    align-items: center;
+  }
+  .eyebrow {
+    letter-spacing: var(--tracking-18);
+    font-size: var(--fs-17);
+    color: var(--ink-muted);
+  }
+  h2 {
+    margin: var(--sp-22) 0 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--fs-teaser-title);
+    line-height: 1.03;
+    letter-spacing: var(--tracking-title);
+    color: var(--paper);
+    max-width: var(--measure-lead);
+    text-wrap: balance;
+  }
+  p {
+    margin: var(--sp-24) 0 0;
+    font-size: var(--fs-body);
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: var(--measure-short);
+    text-wrap: pretty;
+  }
+  .start {
+    margin-top: var(--teaser-start-gap);
+  }
+</style>

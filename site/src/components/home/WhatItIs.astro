@@ -1,0 +1,63 @@
+---
+// "What it is": the full-bleed plate of the membrane, then a narrow column.
+import { placeholderTag, whatItIs, whatPlate } from "../../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import DesignPicture from "../DesignPicture.astro";
+
+const [first, second] = whatItIs.paragraphs;
+---
+
+<section id="what" class="what" data-section="what">
+  {isShown(whatPlate) && (
+    <div class="frame plate" data-section="plate">
+      <DesignPicture
+        file={whatPlate.image.file}
+        alt={whatPlate.image.alt}
+        sizes="100vw"
+        widths={[640, 1024, 1440, 1920]}
+      />
+      {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+    </div>
+  )}
+  <div class="column">
+    <h2 class="section-title">{whatItIs.title}</h2>
+    <p class="first">{first}</p>
+    <p>{second}</p>
+    <p class="closing">{whatItIs.closing}</p>
+  </div>
+</section>
+
+<style>
+  .what {
+    margin-top: var(--section-gap-lg);
+  }
+  .plate {
+    height: var(--what-plate-h);
+  }
+  .tag {
+    position: absolute;
+    top: var(--sp-16);
+    left: var(--sp-16);
+  }
+  .column {
+    max-width: var(--measure-column);
+    margin: 0 auto;
+    padding: var(--what-pad-top) var(--gutter) 0;
+  }
+  p {
+    margin: var(--sp-20) 0 0;
+    font-size: var(--fs-reading);
+    line-height: 1.75;
+    color: var(--text);
+    text-wrap: pretty;
+  }
+  .first {
+    margin-top: var(--sp-26);
+  }
+  .closing {
+    font-family: var(--font-serif);
+    font-size: var(--fs-reading-serif);
+    line-height: 1.35;
+    text-wrap: wrap;
+  }
+</style>

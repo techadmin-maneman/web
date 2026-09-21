@@ -1,0 +1,158 @@
+---
+// Transplant, medication or a system. A table to assistive technology; to the
+// eye, v2's grid. Below 760 px each row's label moves above it and the
+// columns go to three, as v2 does.
+import { comparison, type ComparisonCell } from "../../content/site.ts";
+import Icon from "../Icon.astro";
+
+const [firstColumn, secondColumn, thirdColumn] = comparison.columns;
+const columns = [firstColumn, secondColumn, thirdColumn];
+function isMark(cell: ComparisonCell): cell is boolean {
+  return typeof cell === "boolean";
+}
+---
+
+<section class="container comparison" data-section="comparison">
+  <h2 class="section-title">{comparison.title}</h2>
+  <p class="lead intro">{comparison.intro}</p>
+  <div class="table" role="table" aria-label={comparison.title}>
+    <div class="row head" role="row">
+      <div class="label-cell corner" role="columnheader">
+        <span class="visually-hidden">{comparison.title}</span>
+      </div>
+      {columns.map((column) => (
+        <div class="cell column-head" role="columnheader">
+          {column}
+        </div>
+      ))}
+    </div>
+    {comparison.rows.map((row) => (
+      <div class="entry" role="rowgroup">
+        <div class="label-above caps" aria-hidden="true">
+          {row.label}
+        </div>
+        <div class="row" role="row">
+          <div class="label-cell row-label caps" role="rowheader">
+            {row.label}
+          </div>
+          {row.cells.map((cell) => (
+            <div class="cell" role="cell">
+              {isMark(cell) ? (
+                <>
+                  <Icon name={cell ? "tick" : "cross"} size={19} stroke={1.65} class={cell ? "yes" : "no"} />
+                  <span class="visually-hidden">{cell ? comparison.yes : comparison.no}</span>
+                </>
+              ) : (
+                <span>{cell}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+  <p class="note">{comparison.note}</p>
+</section>
+
+<style>
+  .comparison {
+    padding-top: var(--section-gap);
+  }
+  .section-title {
+    margin-bottom: var(--sp-12);
+  }
+  .intro {
+    margin: 0 0 var(--intro-gap);
+  }
+  .table {
+    border-top: var(--hairline) solid var(--text);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: var(--comparison-label-w) repeat(3, 1fr);
+    align-items: center;
+    padding: var(--sp-20) 0;
+  }
+  .head {
+    align-items: stretch;
+    padding: var(--comparison-head-pad-top) 0 var(--comparison-head-pad-bottom);
+  }
+  .entry {
+    border-top: var(--hairline) solid var(--paper-line);
+  }
+  .label-above {
+    display: none;
+    padding: var(--sp-14) 0 var(--sp-6);
+    letter-spacing: var(--tracking-12);
+    font-size: var(--fs-15);
+    color: var(--text-muted);
+  }
+  .label-cell {
+    padding: 0 var(--sp-20) 0 0;
+    letter-spacing: var(--tracking-12);
+    font-size: var(--fs-17);
+    color: var(--text-muted);
+  }
+  .cell {
+    padding: 0 var(--comparison-cell-pad);
+    border-left: var(--hairline) solid var(--paper-line);
+    font-size: var(--fs-17);
+    line-height: 1.45;
+  }
+  .label-cell + .cell {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .cell:last-child {
+    padding-right: 0;
+  }
+  .column-head {
+    font-family: var(--font-serif);
+    font-size: var(--fs-column-head);
+    line-height: 1.15;
+  }
+  .yes {
+    color: var(--ink);
+  }
+  .no {
+    color: var(--text-muted);
+  }
+  .note {
+    margin: var(--sp-26) 0 0;
+    font-size: var(--fs-16);
+    line-height: 1.7;
+    color: var(--text-muted);
+    max-width: var(--measure-note);
+    text-wrap: pretty;
+  }
+  @media (max-width: 760px) {
+    .row {
+      grid-template-columns: repeat(3, 1fr);
+      padding: 0 0 var(--sp-16);
+    }
+    .head {
+      padding: var(--comparison-head-pad-top) 0 var(--comparison-head-pad-bottom);
+    }
+    .corner {
+      display: none;
+    }
+    /* The label is above the row now; screen readers still hear it as the row header. */
+    .row-label {
+      position: absolute;
+      width: var(--sr-only-size);
+      height: var(--sr-only-size);
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .label-above {
+      display: block;
+    }
+    .cell {
+      font-size: var(--fs-15);
+    }
+    .column-head {
+      font-size: var(--fs-column-head);
+    }
+  }
+</style>

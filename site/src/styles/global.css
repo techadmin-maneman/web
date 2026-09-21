@@ -1,0 +1,245 @@
+/*
+ * The design's base rules and the few patterns every page shares. Section
+ * layout lives in each component's own <style>. Values come from tokens.css.
+ */
+
+@import "./tokens.css";
+@import "./fonts.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--text);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--ink);
+}
+
+input,
+select,
+button,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+::placeholder {
+  color: var(--paper-placeholder);
+  opacity: 1;
+}
+.on-ink ::placeholder {
+  color: var(--ink-muted);
+}
+select {
+  appearance: none;
+}
+
+/* Keyboard focus: the design has none, so it follows the surface's text colour. */
+:focus-visible {
+  outline: var(--focus-width) solid var(--focus-colour, var(--ink));
+  outline-offset: var(--focus-offset);
+}
+.on-ink {
+  --focus-colour: var(--paper);
+}
+
+/* Sections that the header links to stop below the fixed header. */
+[id] {
+  scroll-margin-top: var(--header-h);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- Layout ------------------------------------------------------------- */
+
+.container {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.three-up {
+  display: grid;
+  gap: var(--three-up-gap);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 700px) {
+  .three-up {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-16);
+  }
+}
+@media (min-width: 1024px) {
+  .three-up {
+    gap: var(--sp-28);
+  }
+}
+
+/* ---- Type ----------------------------------------------------------------- */
+
+.serif {
+  font-family: var(--font-serif);
+}
+
+/* Small capitals in the serif: the design's labels, tags and eyebrows. */
+.caps {
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+}
+
+.section-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-h2);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-heading);
+}
+
+.lead {
+  font-size: var(--fs-lead);
+  line-height: 1.6;
+  color: var(--text-soft);
+  max-width: var(--measure-lead);
+  text-wrap: pretty;
+}
+
+/* ---- Buttons (links styled as buttons navigate; buttons act) -------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-12);
+  border: 0;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--ease),
+    border-color var(--ease);
+}
+.btn--lg {
+  height: var(--btn-lg);
+  padding: 0 var(--sp-30);
+  font-size: var(--fs-16);
+}
+.btn--md {
+  height: var(--btn-md);
+  padding: 0 var(--sp-24);
+  font-size: var(--fs-15);
+}
+.btn--sm {
+  height: var(--tap);
+  padding: 0 var(--sp-20);
+  font-size: var(--fs-15);
+}
+
+/* Paper on ink: the primary button on dark grounds. */
+.btn--paper,
+.btn--paper:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+.btn--paper:hover {
+  background: var(--white);
+}
+
+/* An outline on ink. */
+.btn--line-on-ink,
+.btn--line-on-ink:hover {
+  background: transparent;
+  color: var(--paper);
+  border: var(--hairline) solid var(--ink-line);
+}
+.btn--line-on-ink:hover {
+  border-color: var(--paper);
+}
+
+/* Ink on paper: the primary button on light grounds. */
+.btn--ink,
+.btn--ink:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* An outline on paper. */
+.btn--line-on-paper,
+.btn--line-on-paper:hover {
+  background: transparent;
+  color: var(--ink);
+  border: var(--hairline) solid var(--ink);
+}
+
+/* ---- Labels on images: tags, numerals, Before and After ---------------- */
+
+.label {
+  background: var(--ink-night);
+  padding: var(--sp-6) var(--sp-11);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-13);
+  color: var(--ink-tag);
+  white-space: nowrap;
+}
+
+/* An image frame: a coloured ground with the picture covering it. */
+.frame {
+  position: relative;
+  width: 100%;
+  background: var(--ink);
+  overflow: hidden;
+}
+.frame picture,
+.frame img,
+.frame video {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.frame img,
+.frame video {
+  object-fit: cover;
+}
+
+/* The design's framings of people. */
+.focus-norwood {
+  object-position: 50% 22%;
+}
+.focus-technician {
+  object-position: 50% 18%;
+}
+.focus-client {
+  object-position: 50% 28%;
+}

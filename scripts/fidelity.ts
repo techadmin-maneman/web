@@ -1,0 +1,321 @@
+// The visual comparison harness: the design (design/Mane Man Site v2.dc.html)
+// and the built site side by side, section by section, at 390 and 1440 px.
+//
+//   npm run build:site -- --env local && npm run fidelity
+//
+// The design is a prototype that fetches React, ReactDOM and Babel from unpkg;
+// those requests are answered from the same versions in node_modules. Video
+// is blocked on both sides, so both show the poster. Fixed bars are hidden
+// while sections are shot, and shot on their own.
+//
+// Writes docs/fidelity/<width>/<nn>-<name>.jpg: the design on the left, the
+// build on the right. Differences in type, spacing, colour or order are defects.
+
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import type { Server } from "node:http";
+import { resolve } from "node:path";
+import { chromium, type Browser, type Page } from "@playwright/test";
+import sharp from "sharp";
+import { serveDirectory } from "./lib/static-server.ts";
+
+const WIDTHS = [390, 1440] as const;
+const SITE_DIR = resolve("site/dist/local");
+const DESIGN_DIR = resolve("design");
+const SITE = "http://127.0.0.1:4311";
+const DESIGN = "http://127.0.0.1:4312/Mane%20Man%20Site%20v2.dc.html";
+const OUT = resolve("docs/fidelity");
+
+const LIBRARIES: Readonly<Record<string, string>> = {
+  "https://unpkg.com/react@18.3.1/umd/react.production.min.js": "node_modules/react/umd/react.production.min.js",
+  "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":
+    "node_modules/react-dom/umd/react-dom.production.min.js",
+  "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js": "node_modules/@babel/standalone/babel.min.js",
+};
+
+/** The home page's sections, in order: v2's top-level blocks pair with these. */
+const HOME_SECTIONS = [
+  "hero",
+  "what",
+  "norwood",
+  "comparison",
+  "teaser",
+  "discretion",
+  "how",
+  "technicians",
+  "bases",
+  "prices",
+  "testimonials",
+  "guarantee",
+  "faq",
+  "closing",
+] as const;
+
+const STILL =
+  "html { scroll-behavior: auto !important; } *, *::before, *::after { transition: none !important; animation: none !important; caret-color: transparent !important; }";
+
+async function preparePage(browser: Browser, width: number): Promise<Page> {
+  const page = await browser.newPage({ viewport: { width, height: 900 } });
+  await page.route("**/*.mp4", (route) => route.abort());
+  await page.route("https://unpkg.com/**", async (route) => {
+    const file = LIBRARIES[route.request().url()];
+    if (file === undefined) return route.abort();
+    return route.fulfill({
+      body: readFileSync(file),
+      contentType: "text/javascript",
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  return page;
+}
+
+async function settle(page: Page): Promise<void> {
+  await page.addStyleTag({ content: STILL });
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    // Load every lazy image: walk down the page, then back to the top.
+    for (let y = 0; y < document.body.scrollHeight; y += 700) {
+      window.scrollTo(0, y);
+      await new Promise((done) => setTimeout(done, 40));
+    }
+    window.scrollTo(0, 0);
+    // Every image settles, loaded or not, within five seconds.
+    const images = [...document.images]
+      .filter((image) => !image.complete)
+      .map(
+        (image) =>
+          new Promise((done) => {
+            image.addEventListener("load", done, { once: true });
+            image.addEventListener("error", done, { once: true });
+          }),
+      );
+    await Promise.race([Promise.all(images), new Promise((done) => setTimeout(done, 5000))]);
+  });
+}
+
+async function openDesign(page: Page): Promise<void> {
+  await page.goto(DESIGN, { waitUntil: "networkidle" });
+  await page.getByText("Hair, fitted at your home across Delhi NCR.").waitFor();
+  await settle(page);
+}
+
+async function openSite(page: Page, path: string): Promise<void> {
+  await page.goto(`${SITE}${path}`, { waitUntil: "networkidle" });
+  await settle(page);
+}
+
+/** Hides (or shows again) everything with position: fixed. */
+async function fixedBars(page: Page, visible: boolean): Promise<void> {
+  await page.evaluate((show) => {
+    for (const element of document.querySelectorAll<HTMLElement>("body *")) {
+      if (getComputedStyle(element).position === "fixed" || element.dataset.fidelityFixed === "1") {
+        element.dataset.fidelityFixed = "1";
+        element.style.visibility = show ? "" : "hidden";
+      }
+    }
+  }, visible);
+}
+
+/** Marks v2's top-level home blocks data-fidelity="0".."13", and its footer. */
+async function markDesign(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const heading = [...document.querySelectorAll("h1")].find((h1) => h1.textContent.startsWith("Hair, fitted"));
+    let block: Element | null | undefined = heading;
+    while (block?.parentElement && block.parentElement.children.length < 10) block = block.parentElement;
+    [...(block?.parentElement?.children ?? [])].forEach((child, index) => {
+      child.setAttribute("data-fidelity", String(index));
+    });
+    const entity = [...document.querySelectorAll("span")].find((span) =>
+      span.textContent.includes("Grooming Services"),
+    );
+    let footer: HTMLElement | null | undefined = entity;
+    while (footer && getComputedStyle(footer).marginTop === "0px") footer = footer.parentElement;
+    footer?.setAttribute("data-fidelity", "footer");
+  });
+}
+
+async function shoot(page: Page, selector: string | null): Promise<Buffer> {
+  if (selector === null) return page.screenshot({ fullPage: true });
+  const element = page.locator(selector).first();
+  await element.scrollIntoViewIfNeeded();
+  return element.screenshot();
+}
+
+/** The two screenshots side by side, the design on the left. */
+async function pair(width: number, name: string, design: Buffer, built: Buffer): Promise<void> {
+  const scale = width > 1000 ? 0.5 : 1;
+  const [left, right] = await Promise.all(
+    [design, built].map(async (image) => {
+      const meta = await sharp(image).metadata();
+      const scaled = await sharp(image)
+        .resize({ width: Math.round(meta.width * scale) })
+        .toBuffer({ resolveWithObject: true });
+      return scaled;
+    }),
+  );
+  if (left === undefined || right === undefined) throw new Error("screenshot missing");
+  const gap = 16;
+  const label = 28;
+  const height = Math.max(left.info.height, right.info.height) + label;
+  const total = left.info.width + gap + right.info.width;
+  const caption = Buffer.from(
+    `<svg width="${String(total)}" height="${String(label)}"><style>text{font:14px sans-serif;fill:#5F5851}</style>` +
+      `<text x="4" y="19">design · ${name} · ${String(width)} px</text>` +
+      `<text x="${String(left.info.width + gap + 4)}" y="19">built</text></svg>`,
+  );
+  const dir = `${OUT}/${String(width)}`;
+  mkdirSync(dir, { recursive: true });
+  await sharp({ create: { width: total, height, channels: 3, background: "#ffffff" } })
+    .composite([
+      { input: caption, top: 0, left: 0 },
+      { input: left.data, top: label, left: 0 },
+      { input: right.data, top: label, left: left.info.width + gap },
+    ])
+    .jpeg({ quality: 70 })
+    .toFile(`${dir}/${name}.jpg`);
+  console.log(`  ${String(width)} ${name}`);
+}
+
+// ---- The screens ------------------------------------------------------------
+
+type Step = { name: string; design: (page: Page) => Promise<void>; site: string };
+
+const click = (text: string) => async (page: Page) => {
+  await page.getByText(text, { exact: true }).first().click();
+};
+
+const TRY_ON_STEPS: Step[] = [
+  { name: "try-1-upload", design: click("See yourself with hair"), site: "/try" },
+  { name: "try-2-consent", design: click("Choose a photograph"), site: "/try?state=consent" },
+  {
+    name: "try-3-stage",
+    design: async (page) => {
+      await page.getByText("I understand, and I agree to my photograph being used this way.").click();
+      await click("Continue")(page);
+    },
+    site: "/try?state=stage",
+  },
+  { name: "try-4-looks", design: click("Continue"), site: "/try?state=looks" },
+  {
+    name: "try-5-processing",
+    design: async (page) => {
+      await page.getByText("Full density", { exact: true }).first().click();
+      await click("Generate the simulation")(page);
+    },
+    site: "/try?state=processing",
+  },
+  {
+    name: "try-6-gate",
+    design: async (page) => {
+      await page.getByText("Where should we send it?").waitFor({ timeout: 30_000 });
+    },
+    site: "/try?state=gate",
+  },
+  {
+    name: "try-7-result",
+    design: async (page) => {
+      await page.getByPlaceholder("Your name").fill("Arjun Mehta");
+      await page.getByPlaceholder("98100 00000").fill("9810000000");
+      await click("Show me the result")(page);
+    },
+    site: "/try?state=result",
+  },
+];
+
+async function bookThrough(page: Page, city: string): Promise<void> {
+  await openDesign(page);
+  await click("Book a visit")(page);
+  await page.locator("select").selectOption(city);
+  await page.getByPlaceholder("Your name").fill("Arjun Mehta");
+  await page.getByPlaceholder("98100 00000").fill("9810000000");
+  await page.getByText("I agree to be contacted about this visit.", { exact: false }).click();
+  await click("Request a visit")(page);
+}
+
+async function run(browser: Browser, width: number): Promise<void> {
+  const design = await preparePage(browser, width);
+  const site = await preparePage(browser, width);
+
+  // Home, section by section, then the fixed header and bar, then the footer.
+  await openDesign(design);
+  await markDesign(design);
+  await openSite(site, "/");
+  await fixedBars(design, false);
+  await fixedBars(site, false);
+  for (const [index, name] of HOME_SECTIONS.entries()) {
+    await pair(
+      width,
+      `home-${String(index + 1).padStart(2, "0")}-${name}`,
+      await shoot(design, `[data-fidelity="${String(index)}"]`),
+      await shoot(site, `main > [data-section="${name}"]`),
+    );
+  }
+  await pair(width, "home-15-footer", await shoot(design, `[data-fidelity="footer"]`), await shoot(site, "footer"));
+  for (const page of [design, site]) {
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await fixedBars(page, true);
+  }
+  const top = { x: 0, y: 0, width, height: 56 };
+  await pair(width, "chrome-header", await design.screenshot({ clip: top }), await site.screenshot({ clip: top }));
+  const bottom = { x: 0, y: 900 - 64, width, height: 64 };
+  await pair(
+    width,
+    "chrome-sticky-bar",
+    await design.screenshot({ clip: bottom }),
+    await site.screenshot({ clip: bottom }),
+  );
+
+  // The try-on: the design is clicked through; the build opens each screen.
+  await openDesign(design);
+  for (const step of TRY_ON_STEPS) {
+    await step.design(design);
+    await settle(design);
+    await openSite(site, step.site);
+    await pair(width, step.name, await shoot(design, null), await shoot(site, null));
+  }
+  await openDesign(design);
+  await click("See yourself with hair")(design);
+  await click("See what happens if the photo will not work")(design);
+  await settle(design);
+  await openSite(site, "/try?state=error");
+  await pair(width, "try-8-error", await shoot(design, null), await shoot(site, null));
+
+  // Booking: the form, then a served and an unserved city.
+  await openDesign(design);
+  await click("Book a visit")(design);
+  await settle(design);
+  await openSite(site, "/book");
+  await pair(width, "book-1-form", await shoot(design, null), await shoot(site, null));
+  await bookThrough(design, "Gurgaon");
+  await design.getByText("He will confirm the hour on WhatsApp by tomorrow evening.").waitFor();
+  await settle(design);
+  await openSite(site, "/book?state=booked");
+  await pair(width, "book-2-booked", await shoot(design, null), await shoot(site, null));
+  await bookThrough(design, "Mumbai");
+  await design.getByText("On the list", { exact: true }).waitFor();
+  await settle(design);
+  await openSite(site, "/book?state=waitlist");
+  await pair(width, "book-3-waitlist", await shoot(design, null), await shoot(site, null));
+
+  await design.close();
+  await site.close();
+}
+
+const servers: Server[] = [await serveDirectory(SITE_DIR, 4311), await serveDirectory(DESIGN_DIR, 4312)];
+const browser = await chromium.launch();
+try {
+  rmSync(OUT, { recursive: true, force: true });
+  for (const width of WIDTHS) {
+    console.log(`fidelity: ${String(width)} px`);
+    await run(browser, width);
+  }
+  writeFileSync(
+    `${OUT}/README.md`,
+    "# Fidelity screenshots\n\nMade by `npm run fidelity`: the design on the left, the build on the right, at 390 and 1440 px.\n",
+  );
+  console.log(`fidelity: written to ${OUT}`);
+} finally {
+  await browser.close();
+  for (const server of servers) server.close();
+}

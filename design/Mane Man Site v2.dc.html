@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" data-bg-color="#16233A">
+  <rect width="240" height="240" fill="#16233A"></rect>
+  <g fill="#C9A363" transform="translate(72,60) scale(0.48)">
+    <path d="M100 0 L104 8 L116 30 L120 8 L128 0 L136 8 L140 30 L152 8 L156 0 L164 10 L168 50 L32 50 L36 10 L44 0 L48 8 L60 30 L64 8 L72 0 L80 8 L84 30 L96 8 Z"></path>
+    <rect x="30" y="62" width="140" height="18"></rect>
+    <rect x="44" y="94" width="112" height="14"></rect>
+  </g>
+  <text x="120" y="176" fill="#E9E4D8" font-family="Georgia, serif" font-size="19" letter-spacing="5" text-anchor="middle">MANE MAN</text>
+</svg>
+</template>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#E9E4D8; color:#1A1714; font-family:'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#1A1714; text-decoration:none; }
+  a:hover { color:#16233A; }
+  * { box-sizing:border-box; }
+  input, select, button, textarea { font-family:inherit; font-size:inherit; color:inherit; }
+  input[type=range] { -webkit-appearance:none; appearance:none; background:transparent; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:1px; height:1px; background:transparent; border:0; }
+  input[type=range]::-moz-range-thumb { width:1px; height:1px; background:transparent; border:0; }
+  ::placeholder { color:#9A9284; opacity:1; }
+  input[data-on-ink]::placeholder { color:#8C96A8; }
+  select { -webkit-appearance:none; appearance:none; }
+  .mm-3up { display:grid; gap:20px; grid-template-columns:1fr; }
+  .mm-4up { display:grid; grid-template-columns:1fr; }
+  @media (min-width:560px) { .mm-4up { grid-template-columns:repeat(2,1fr); } }
+  @media (min-width:1024px) { .mm-4up { grid-template-columns:repeat(4,1fr); } }
+  .mm-flow { display:flex; flex-wrap:wrap; justify-content:center; gap:clamp(12px,1.6vw,20px); }
+  .mm-flow > * { flex:1 1 150px; max-width:210px; }
+  @media (min-width:700px) { .mm-3up { grid-template-columns:repeat(3,1fr); gap:16px; } }
+  @media (min-width:1024px) { .mm-3up { gap:28px; } }
+</style>
+</helmet>
+
+<svg width="0" height="0" style="position:absolute; overflow:hidden;" aria-hidden="true"><defs>
+  <symbol id="wms" viewBox="-3 -3 638 106"><path d="M3 0L12.4 0L12.4 100L3 100ZM79.6 0L89 0L89 100L79.6 100ZM3 0L19 0L48.5 90L40.5 90ZM75 0L89 0L51.5 90L43.5 90ZM-1 0L16 0L16 8.6L-1 8.6ZM76 0L93 0L93 8.6L76 8.6ZM-1 91.4L14 91.4L14 100L-1 100ZM76.5 91.4L93 91.4L93 100L76.5 100ZM131.5 0L140.9 0L117 100L107.6 100ZM136.5 0L145.9 0L167.5 100L153.9 100ZM119.5 65L157 65L157 74L119.5 74ZM103 91.4L123 91.4L123 100L103 100ZM150 91.4L172 91.4L172 100L150 100ZM190 0L199.4 0L199.4 100L190 100ZM244.6 0L254 0L254 100L244.6 100ZM190 0L206 0L254 86L254 100L238 100L190 14ZM186 0L203 0L203 8.6L186 8.6ZM241 0L258 0L258 8.6L241 8.6ZM186 91.4L201 91.4L201 100L186 100ZM240 91.4L258 91.4L258 100L240 100ZM274 0L290 0L290 100L274 100ZM290 0L323 0L323 8.6L290 8.6ZM317 0L324 0L324 16L317 16ZM290 46L318 46L318 54L290 54ZM312.5 40L319.5 40L319.5 60L312.5 60ZM290 91.4L327 91.4L327 100L290 100ZM321 83L328 83L328 100L321 100ZM378 0L387.4 0L387.4 100L378 100ZM454.6 0L464 0L464 100L454.6 100ZM378 0L394 0L423.5 90L415.5 90ZM450 0L464 0L426.5 90L418.5 90ZM374 0L391 0L391 8.6L374 8.6ZM451 0L468 0L468 8.6L451 8.6ZM374 91.4L389 91.4L389 100L374 100ZM451.5 91.4L468 91.4L468 100L451.5 100ZM506.5 0L515.9 0L492 100L482.6 100ZM511.5 0L520.9 0L542.5 100L528.9 100ZM494.5 65L532 65L532 74L494.5 74ZM478 91.4L498 91.4L498 100L478 100ZM525 91.4L547 91.4L547 100L525 100ZM565 0L574.4 0L574.4 100L565 100ZM619.6 0L629 0L629 100L619.6 100ZM565 0L581 0L629 86L629 100L613 100L565 14ZM561 0L578 0L578 8.6L561 8.6ZM616 0L633 0L633 8.6L616 8.6ZM561 91.4L576 91.4L576 100L561 100ZM615 91.4L633 91.4L633 100L615 100Z"></path></symbol>
+  <clipPath id="headclip"><ellipse cx="32" cy="44" rx="23" ry="38"></ellipse></clipPath>
+  <symbol id="mm" viewBox="0 0 200 217.4"><path fill-rule="evenodd" d="M97.3 0.1L99.3 0L101.8 1.6L107.1 7.7L109.5 14L110.3 19.7L110.1 23.8L108.4 30.8L103.8 40.9L92.4 60.2L91 63.5L83.2 76L81.4 76.9L77.4 72.7L77.2 70.8L84.8 59.1L94.3 42.5L99.5 32.7L102.4 24L102.4 15.4L101.1 11L98.5 8.2L95.9 10.5L94.3 14.8L94.3 23.5L96.5 32.5L94 37.9L92.5 38.3L91.3 37.4L86.7 23.5L86.7 15.1L88.3 9.9L92.1 4.2L97.1 0.3ZM147.6 30.6L151.5 31L154.8 32.6L157.3 35.2L159 39.3L159 43.9L157.3 49L152.2 56.1L129.2 78.3L114.9 93.3L111.4 98.2L106.5 106.9L101.2 120.7L95.5 120.7L94.6 119.7L91.8 110.2L86.1 99L74.7 85.2L57.3 68.3L57.1 65.6L58.4 61.8L59.4 60.9L60.5 61.1L83.2 83.6L90.2 92.5L95.9 101.5L97.6 105.6L98.5 106L104.6 94.7L116 80.6L146.5 51L150.3 46.1L151.6 42.3L151.6 40.4L150.4 38L148.2 37.5L145.9 40.1L145.4 41.7L145.4 47.1L143.2 50.7L140.1 53.3L138.9 52.3L137.8 48.2L137.8 40.1L139.4 36.3L142.5 32.6L145.5 31L147.4 30.7ZM45.9 30.8L51 31L55 33.4L57.9 37.6L59.2 43.9L58.7 51.2L55.4 63.7L46.5 88.7L45.8 89.1L41.2 85.1L40.2 84.1L40.2 82.5L45.4 69.7L51.4 50.7L51.9 47.4L51.6 41.2L50.8 39L49.3 37.5L47.1 37.5L45.4 40.1L45.4 44.2L48.4 50.7L47.6 55.6L46.6 57.1L45.7 56.7L40.5 50.1L38.9 46.1L38 41.2L38.6 38.5L41.3 33.6L45.8 31ZM103.5 46.6L105.2 47.4L116.6 65.9L119.6 71.1L119.8 73.2L115.6 77.4L114.8 77.4L113.3 75.7L103 58.8L100 52.3L103.4 46.7ZM0.8 54.5L1.5 54.3L3.7 56L30.3 79.3L43.2 92L48.6 98.2L55.2 108.6L58.4 115.9L60.6 123L64.4 129.8L64.4 130.8L63.2 131.5L51 132.6L40.9 134.8L33.6 137L24.9 140.8L22.6 139.5L3.3 67.8L0 57.7L0 55.3L0.7 54.6ZM195.1 54.8L196.6 54.6L197 56.4L188.3 87.4L185.6 99.3L184 103.7L178.5 126L175.3 136.5L170.9 143.9L165.6 148.4L158.8 151.6L150.1 153.3L139.8 153.3L130.3 151.1L115.9 145.9L109.1 141.8L104.8 140.2L99.3 137L98.4 135.7L100.4 135.6L113.5 140.2L128.7 144L141.7 145.7L150.1 145.1L155.3 144L161.8 140.5L163.3 138.7L162.6 137.2L151.5 133.7L135.7 131L120.2 129.9L119.6 129.2L119.8 127.9L123.4 123.8L125.8 119.7L127.2 112.4L126.4 100.4L122.3 89.3L126.5 84.5L127.3 84.5L133.2 96.6L135.6 106.9L135.1 115.6L133.4 121.3L133.8 122.8L151.5 125.8L164.8 129.9L165.2 128.9L164.4 127.9L159.5 112.4L157.9 109.1L150.8 88.5L145.4 75.7L143.2 68.3L148 63.9L149.7 64.8L153 72.7L154.6 78.9L163.3 100.7L163.9 103.7L166.6 109.6L169.3 119.4L170.2 120.1L176.1 101.2L182.3 76L181.4 75.8L180.3 76.6L164 91.8L163.2 91.8L162.2 90.4L160.9 84.9L161.7 83.3L165.6 79.6L169.7 76.6L189 59.2L195 54.9ZM13.9 75.1L19.4 79.1L38 96.9L47 108.6L50.8 116.7L53 124L50.7 125L38.7 127.2L32.5 129.3L31 129.2L32.3 127.3L34.5 120.2L39.4 108.3L39.7 104.8L35.7 99.7L34 100.4L27.7 117.3L26.9 119.2L25.8 119.4L15.5 81.7L13.6 76.5L13.7 75.3ZM69.3 85.2L70.2 85.1L74.2 89.5L73.1 94.7L71.2 98.2L69.8 104.2L69.8 115.6L72 121.9L77.6 128.5L99.3 142.4L123.5 163.6L130 167.9L136 170.7L141.7 172.8L148.8 173.9L154.2 173.9L161.8 172.8L173.5 167.7L178.9 163.6L184.6 157.6L185.1 159.1L178.8 169.4L170.8 176.6L160.7 182.1L150.1 184.5L140.6 184.5L132.2 182.9L122.7 179.3L112.4 173.6L86 157.1L75.4 151.9L65.1 148.6L55.6 147L47.7 147L40.4 147.8L30.3 150.5L16.2 157.3L15.8 155L18.9 151.9L26.8 145.9L32.5 142.9L38.2 140.8L45.5 139.1L49.3 138.6L62.1 138.6L75.1 141.8L87.1 147.8L97.4 154.3L116.4 169.6L126.8 175.5L134.6 178.3L142.8 179.6L153.1 179.3L156.3 178.1L155.8 177.7L154.5 178.3L145.8 178.5L139.5 177.7L130.3 175L122.4 171.2L112.1 163.6L94.4 148.6L83 140.8L76.2 137L68.5 130L65.2 125.4L62.5 117.8L61.7 106.4L62.5 101L65.5 91.7L69.2 85.3ZM149.5 97.1L150.8 98L151.4 99.3L152.4 102.6L152.4 105L147 114L144.3 120.5L142.8 121.2L137.4 120.4L137 118.3L140.5 109.4L146.5 100.1L149.3 97.3ZM187.2 120L188.6 120.2L189.4 124.3L189.9 128.4L189.7 136.5L187.2 146.1L183.4 153.7L177 160.1L171.3 164.1L162.9 167.4L153.9 168.8L148.8 168.5L141.4 167.1L137.6 165.8L129.8 161.7L124.6 157.6L122.8 155.3L123.8 154.9L131.4 157.6L139 159.2L150.1 159.5L156.9 158.7L167 154.9L173.2 150.5L177.2 146.6L181.3 140.9L185.6 129.2L187.1 120.1ZM194.6 124.6L196.5 126L198.1 130.6L199.7 139.5L200 146.3L199.7 153.1L198.1 160.7L195.7 168.1L193.2 173L185.9 183.8L176.8 192.4L165.9 198.6L155.6 202.2L146.1 203.8L139.3 203.8L127.9 202.2L120.8 200L112.9 196.5L103.7 191.3L77 172.8L65.4 167.4L56.7 164.7L50.1 163.6L37.6 164.1L28.9 166.3L20.8 170.1L14.8 174.2L10.1 178.9L2.9 189.1L2.2 188.5L2.4 185.2L5.2 177.9L9.5 171.1L13 167L19.2 161.4L23.5 158.7L33.3 154.3L43.9 151.9L58.8 152.4L70.8 155.4L83 160.9L90.9 165.2L115.6 181.3L123 184.8L134.4 188.6L141.2 189.7L148 189.7L154.8 188.6L163.5 186.1L172.4 181.5L181.8 173.2L186.1 167.5L191 157.5L194.3 146.1L195.1 138.7L194.4 124.7ZM177.2 152.3L177.7 152.6L172.7 157.6L168.6 160.3L163.2 162.8L157.5 164.1L151 164.7L145.5 164.1L143.8 163.2L154.2 163L162.6 161.4L171.6 156.8L177 152.4ZM44 157.7L52 157.6L58.6 158.4L66.4 160.3L74.9 163.6L82.5 167.4L103.4 181.5L113.5 187.5L126.5 193.2L134.6 195.1L146.9 195.7L158 193.5L171.6 187.5L179.8 180.7L180.6 180.2L181 180.6L170.5 189.7L161.5 194L152.3 196.7L148.2 197.3L136 197.3L124.6 194.6L111.3 188.6L88.7 173.4L73 164.7L64.3 161.4L54.8 159.2L45 158.7L37.6 159.5L37.6 159L40.1 158.2L43.9 157.9ZM45.1 168.9L54.5 169.6L66.7 173.4L78.9 179.9L96.6 192.7L107.5 199.5L114 202.7L126 207.1L134.6 208.7L148.5 208.7L154.5 207.6L161.3 205.4L171.3 200.3L172.7 200.3L172.8 201L171.2 202.9L160.5 210.3L152.3 214.1L145.5 216L138.7 217.1L128.7 217.4L115.9 215.2L106.9 212L96.3 206.5L63.2 182.6L50.1 177.2L43.9 176.1L33.8 176.1L24.3 178.3L14.8 183.2L14.4 181.4L17 178.8L25.1 173.6L35.5 169.6L45 169ZM39.4 182.2L49.6 182.6L56.4 184.8L62.9 188.3L69.4 192.9L76.5 198.4L77.2 200.1L76.2 200.5L67.5 195.7L56.9 190.8L46.1 188L38.2 187.8L29.2 189.7L23.8 191.8L23.4 190.1L27.9 186.1L32.7 183.7L39.3 182.3Z"></path></symbol>
+  <symbol id="wm" viewBox="-4 -4 741 108"><path d="M3 0L6.8 0L6.62 50L6.8 100L3 100L3.18 50ZM83.2 0L87 0L86.82 50L87 100L83.2 100L83.38 50ZM3 0L15.2 0L48.8 92L42.6 92ZM80.4 0L87 0L48.4 92L43.6 92ZM-2.6 0L14 0L14 2.9L-2.6 2.9ZM78 0L89.6 0L89.6 2.9L78 2.9ZM-2.6 97.1L12 97.1L12 100L-2.6 100ZM78.5 97.1L89.6 97.1L89.6 100L78.5 100ZM145.6 0L150.4 0L127.6 100L121.2 100ZM149.4 0L155 0L179.6 100L166.6 100ZM131.6 69.5L168.6 69.5L168.6 73.4L131.6 73.4ZM115 97.1L133.4 97.1L133.4 100L115 100ZM163 97.1L184.4 97.1L184.4 100L163 100ZM214 0L217.8 0L217.62 50L217.8 100L214 100L214.18 50ZM277.2 0L281 0L280.82 50L281 100L277.2 100L277.38 50ZM214 0L226.2 0L281 89L281 100L268.8 100L214 11ZM208.4 0L225 0L225 2.9L208.4 2.9ZM271 0L286.6 0L286.6 2.9L271 2.9ZM208.4 97.1L223 97.1L223 100L208.4 100ZM270 97.1L286.6 97.1L286.6 100L270 100ZM315 0L327.6 0L327.42 50L327.6 100L315 100L315.18 50ZM327.6 0L369 0L369 5.2L327.6 5.2ZM366.1 0L369 0L369 12.4L366.1 12.4ZM327.6 47.4L362 47.4L362 51.8L327.6 51.8ZM359.1 43.6L362 43.6L362 55.6L359.1 55.6ZM327.6 94.8L373 94.8L373 100L327.6 100ZM370.1 87.6L373 87.6L373 100L370.1 100ZM452 0L455.8 0L455.62 50L455.8 100L452 100L452.18 50ZM532.2 0L536 0L535.82 50L536 100L532.2 100L532.38 50ZM452 0L464.2 0L497.8 92L491.6 92ZM529.4 0L536 0L497.4 92L492.6 92ZM446.4 0L463 0L463 2.9L446.4 2.9ZM527 0L538.6 0L538.6 2.9L527 2.9ZM446.4 97.1L461 97.1L461 100L446.4 100ZM527.5 97.1L538.6 97.1L538.6 100L527.5 100ZM594.6 0L599.4 0L576.6 100L570.2 100ZM598.4 0L604 0L628.6 100L615.6 100ZM580.6 69.5L617.6 69.5L617.6 73.4L580.6 73.4ZM564 97.1L582.4 97.1L582.4 100L564 100ZM612 97.1L633.4 97.1L633.4 100L612 100ZM663 0L666.8 0L666.62 50L666.8 100L663 100L663.18 50ZM726.2 0L730 0L729.82 50L730 100L726.2 100L726.38 50ZM663 0L675.2 0L730 89L730 100L717.8 100L663 11ZM657.4 0L674 0L674 2.9L657.4 2.9ZM720 0L735.6 0L735.6 2.9L720 2.9ZM657.4 97.1L672 97.1L672 100L657.4 100ZM719 97.1L735.6 97.1L735.6 100L719 100Z"></path></symbol>
+  <symbol id="oval" viewBox="0 0 320 400">
+    <path d="M160 92 C196 92 218 126 218 178 C218 232 194 268 160 274 C126 268 102 232 102 178 C102 126 124 92 160 92 Z" fill="none" stroke="#3A4A64" stroke-width="1.6" stroke-dasharray="6 6"></path>
+    <path d="M30 30 H66 M30 30 V66 M290 30 H254 M290 30 V66 M30 370 H66 M30 370 V334 M290 370 H254 M290 370 V334" fill="none" stroke="#C9A363" stroke-width="2"></path>
+    <text x="160" y="332" fill="#8C96A8" font-family="EB Garamond, serif" font-size="15" letter-spacing="1.8" text-anchor="middle" font-variant="small-caps">Fill the oval</text>
+  </symbol>
+</defs></svg>
+
+<!-- ========== HEADER ========== -->
+<div style="height:56px; flex-shrink:0;"></div>
+<div style="position:fixed; top:0; left:0; right:0; z-index:40; height:56px; background:#16233A; display:flex; align-items:center; justify-content:space-between; padding:0 clamp(20px,4vw,48px);">
+  <div onClick="{{ goHome }}" style="display:flex; align-items:center; gap:13px; cursor:pointer; min-height:44px;">
+    <svg viewBox="0 0 200 217.4" width="34" height="37" fill="#C9A363"><use href="#mm"></use></svg>
+    <svg viewBox="-3 -3 638 106" width="96" height="16" fill="#E9E4D8"><use href="#wms"></use></svg>
+  </div>
+  <div style="display:flex; align-items:center; gap:clamp(16px,2.5vw,34px);">
+    <span onClick="{{ toWhat }}" style="font-size:15px; color:#E9E4D8; cursor:pointer; align-items:center; min-height:44px; display:{{ navDisplay }};">What it is</span>
+    <span onClick="{{ toPrices }}" style="font-size:15px; color:#E9E4D8; cursor:pointer; align-items:center; min-height:44px; display:{{ navDisplay }};">Prices</span>
+    <span onClick="{{ toFaq }}" style="font-size:15px; color:#E9E4D8; cursor:pointer; align-items:center; min-height:44px; display:{{ navDisplay }};">Questions</span>
+    <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8; align-items:center; min-height:44px; display:{{ navDisplay }};">Delhi NCR</span>
+    <button onClick="{{ goBook }}" style="height:44px; padding:0 20px; background:transparent; color:#E9E4D8; border:1px solid #3A4A64; font-weight:500; font-size:15px; cursor:pointer; transition:border-color 300ms cubic-bezier(.22,.61,.36,1);" style-hover="border-color:#E9E4D8;">Book a visit</button>
+  </div>
+</div>
+
+<!-- ========== HOME ========== -->
+<sc-if value="{{ onHome }}" hint-placeholder-val="{{ true }}">
+<div>
+
+  <!-- hero -->
+  <div style="position:relative; background:#0E1728; overflow:hidden; min-height:clamp(520px,82vh,780px); display:flex; align-items:flex-end; padding-bottom:{{ barSpace }};">
+    <div style="position:absolute; inset:0; background:#0B1220;">
+      <video ref="{{ heroRef }}" src="assets/hero.mp4" poster="assets/hero-poster.jpg" autoplay muted="{{ true }}" loop="{{ true }}" playsinline="{{ true }}" style="width:100%; height:100%; object-fit:cover; display:block; transform:scaleX(-1);"></video>
+    </div>
+    <div style="position:absolute; inset:0; background:rgba(11,18,32,0.3);"></div>
+    <div style="position:absolute; inset:0; background:linear-gradient(to top, #0B1220 0%, rgba(11,18,32,0.68) 50%, rgba(11,18,32,0.1) 100%);"></div>
+    <div style="position:absolute; inset:0; background:linear-gradient(to right, rgba(11,18,32,0.78) 0%, rgba(11,18,32,0.5) 42%, rgba(11,18,32,0) 72%);"></div>
+    <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute; top:clamp(16px,2.4vw,26px); left:clamp(20px,4vw,48px); background:#0B1220; padding:7px 12px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">Placeholder footage</div>
+    </sc-if>
+    <div style="position:relative; width:100%; max-width:1440px; margin:0 auto; padding:0 clamp(20px,4vw,48px) clamp(36px,5vw,64px);">
+      <h1 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(42px,7.4vw,96px); line-height:0.97; letter-spacing:-0.02em; color:#E9E4D8; max-width:900px; text-wrap:balance;">Hair, fitted at your home across Delhi NCR.</h1>
+      <p style="margin:clamp(18px,2.4vw,28px) 0 0; font-size:clamp(17px,1.5vw,21px); line-height:1.55; color:#C5CDD9; max-width:600px; text-wrap:pretty;">A technician comes to your home, matches the piece to the hair you already have, and fits it in about ninety minutes.</p>
+      <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:clamp(26px,3.4vw,40px);">
+        <button onClick="{{ goTryon }}" style="height:56px; padding:0 30px; background:#E9E4D8; color:#16233A; border:0; font-size:16px; font-weight:500; cursor:pointer; transition:background-color 300ms cubic-bezier(.22,.61,.36,1);" style-hover="background-color:#FFFFFF;">See yourself with hair</button>
+        <button onClick="{{ goBook }}" style="height:56px; padding:0 30px; background:transparent; color:#E9E4D8; border:1px solid #6B7B95; font-size:16px; font-weight:500; cursor:pointer; transition:border-color 300ms cubic-bezier(.22,.61,.36,1);" style-hover="border-color:#E9E4D8;">Book a free measurement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- what it is · full-bleed plate, then a narrow column -->
+  <div id="what" style="margin-top:clamp(64px,10vw,160px);">
+    <div style="position:relative; width:100%; height:clamp(320px,52vw,620px); background:#16233A; overflow:hidden;">
+      <img src="assets/membrane-on-skin.jpg" alt="A hair-system membrane laid against scalp skin, individual hairs passing through it" style="width:100%; height:100%; object-fit:cover; display:block;">
+      <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; top:16px; left:16px; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+      </sc-if>
+    </div>
+    <div style="max-width:660px; margin:0 auto; padding:clamp(48px,7vw,104px) clamp(20px,4vw,48px) 0;">
+      <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,54px); line-height:1.05; letter-spacing:-0.01em;">What it is</h2>
+      <p style="margin:26px 0 0; font-size:clamp(17px,1.4vw,20px); line-height:1.75; color:#1A1714; text-wrap:pretty;">A membrane between three and twelve hundredths of a millimetre thick, with human hair knotted or looped through it one strand at a time. It is made to a template of your own scalp, cut to your face, and bonded to the skin.</p>
+      <p style="margin:20px 0 0; font-size:clamp(17px,1.4vw,20px); line-height:1.75; color:#1A1714; text-wrap:pretty;">You sleep in it, shower in it, train in it. Once a month he lifts it off, cleans the base, puts it back and trims the hair.</p>
+      <p style="margin:20px 0 0; font-family:'EB Garamond',serif; font-size:clamp(22px,2.4vw,30px); line-height:1.35; color:#1A1714;">It is not a wig. Nothing clips on and it stays on at night.</p>
+    </div>
+  </div>
+  <!-- norwood -->
+  <div style="margin-top:clamp(56px,8vw,112px); background:#F4F1E9; border-top:1px solid #CEC6B4; border-bottom:1px solid #CEC6B4;">
+    <div style="max-width:1440px; margin:0 auto; padding:clamp(48px,7vw,96px) clamp(20px,4vw,48px);">
+      <h2 style="margin:0 0 12px; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,54px); line-height:1.05; letter-spacing:-0.01em;">Where you are on the scale</h2>
+      <p style="margin:0 0 clamp(32px,4vw,48px); font-size:clamp(17px,1.4vw,19px); line-height:1.6; color:#3A352E; max-width:620px; text-wrap:pretty;">Hair loss in men is graded in seven stages.</p>
+
+      <div style="margin-bottom:16px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:16px; color:#5F5851;">Stages one and two · nothing to fit yet</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(46%,240px),1fr)); gap:clamp(12px,1.6vw,20px); max-width:760px;">
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:4/5; background:#16233A; overflow:hidden;">
+            <img src="assets/nw-1.jpg" alt="A man at Norwood stage I, seen in three-quarter view" style="width:100%; height:100%; object-fit:cover; object-position:50% 22%; display:block;">
+            <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">I</div>
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; bottom:0; right:0; background:#0B1220; padding:5px 9px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; color:#8C96A8;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(14px,1.6vw,20px); display:flex; flex-direction:column; gap:8px; border-top:1px solid #CEC6B4;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+              <span style="font-family:'EB Garamond',serif; font-size:clamp(17px,1.6vw,21px); line-height:1.2;">No recession</span>
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; white-space:nowrap; color:#5F5851;">No loss</span>
+            </div>
+            <div style="font-size:14px; line-height:1.55; color:#3A352E; text-wrap:pretty;">The hairline sits where it always has.</div>
+          </div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:4/5; background:#16233A; overflow:hidden;">
+            <img src="assets/nw-2.jpg" alt="A man at Norwood stage II, seen in three-quarter view" style="width:100%; height:100%; object-fit:cover; object-position:50% 22%; display:block;">
+            <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">II</div>
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; bottom:0; right:0; background:#0B1220; padding:5px 9px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; color:#8C96A8;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(14px,1.6vw,20px); display:flex; flex-direction:column; gap:8px; border-top:1px solid #CEC6B4;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+              <span style="font-family:'EB Garamond',serif; font-size:clamp(17px,1.6vw,21px); line-height:1.2;">Temple recession</span>
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; white-space:nowrap; color:#5F5851;">Early</span>
+            </div>
+            <div style="font-size:14px; line-height:1.55; color:#3A352E; text-wrap:pretty;">The corners have moved back a little. Most men reach this and go no further.</div>
+          </div>
+        </div>
+      </div>
+      <p style="margin:20px 0 0; font-size:16px; line-height:1.7; color:#5F5851; max-width:560px; text-wrap:pretty;">A system here would cover hair you still have.</p>
+
+      <div style="margin:clamp(40px,5vw,64px) 0 16px; padding-top:clamp(32px,4vw,48px); border-top:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:16px; color:#16233A;">Stages three to seven · we can fit all of these</div>
+      <div class="mm-flow">
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:4/5; background:#16233A; overflow:hidden;">
+            <img src="assets/nw-3.jpg" alt="A man at Norwood stage III, seen in three-quarter view" style="width:100%; height:100%; object-fit:cover; object-position:50% 22%; display:block;">
+            <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">III</div>
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; bottom:0; right:0; background:#0B1220; padding:5px 9px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; color:#8C96A8;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(14px,1.6vw,20px); display:flex; flex-direction:column; gap:8px; border-top:2px solid #16233A;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+              <span style="font-family:'EB Garamond',serif; font-size:clamp(17px,1.6vw,21px); line-height:1.2;">A clear M</span>
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; white-space:nowrap; color:#16233A;">We fit</span>
+            </div>
+            <div style="font-size:14px; line-height:1.55; color:#3A352E; text-wrap:pretty;">Deep recession at both temples. The first stage other people notice.</div>
+          </div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:4/5; background:#16233A; overflow:hidden;">
+            <img src="assets/nw-4.jpg" alt="A man at Norwood stage IV, seen in three-quarter view" style="width:100%; height:100%; object-fit:cover; object-position:50% 22%; display:block;">
+            <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">IV</div>
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; bottom:0; right:0; background:#0B1220; padding:5px 9px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; color:#8C96A8;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(14px,1.6vw,20px); display:flex; flex-direction:column; gap:8px; border-top:2px solid #16233A;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+              <span style="font-family:'EB Garamond',serif; font-size:clamp(17px,1.6vw,21px); line-height:1.2;">Front and crown</span>
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; white-space:nowrap; color:#16233A;">We fit</span>
+            </div>
+            <div style="font-size:14px; line-height:1.55; color:#3A352E; text-wrap:pretty;">The front has gone back further and the crown has opened separately.</div>
+          </div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:4/5; background:#16233A; overflow:hidden;">
+            <img src="assets/nw-5.jpg" alt="A man at Norwood stage V, seen in three-quarter view" style="width:100%; height:100%; object-fit:cover; object-position:50% 22%; display:block;">
+            <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">V</div>
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; bottom:0; right:0; background:#0B1220; padding:5px 9px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; color:#8C96A8;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(14px,1.6vw,20px); display:flex; flex-direction:column; gap:8px; border-top:2px solid #16233A;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+              <span style="font-family:'EB Garamond',serif; font-size:clamp(17px,1.6vw,21px); line-height:1.2;">The bridge narrows</span>
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; white-space:nowrap; color:#16233A;">We fit</span>
+            </div>
+            <div style="font-size:14px; line-height:1.55; color:#3A352E; text-wrap:pretty;">Front and crown are both bare, divided by a thinning band of hair.</div>
+          </div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:4/5; background:#16233A; overflow:hidden;">
+            <img src="assets/nw-6.jpg" alt="A man at Norwood stage VI, seen in three-quarter view" style="width:100%; height:100%; object-fit:cover; object-position:50% 22%; display:block;">
+            <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">VI</div>
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; bottom:0; right:0; background:#0B1220; padding:5px 9px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; color:#8C96A8;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(14px,1.6vw,20px); display:flex; flex-direction:column; gap:8px; border-top:2px solid #16233A;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+              <span style="font-family:'EB Garamond',serif; font-size:clamp(17px,1.6vw,21px); line-height:1.2;">The bridge is gone</span>
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; white-space:nowrap; color:#16233A;">We fit</span>
+            </div>
+            <div style="font-size:14px; line-height:1.55; color:#3A352E; text-wrap:pretty;">Front and crown have joined into one continuous bare area.</div>
+          </div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:4/5; background:#16233A; overflow:hidden;">
+            <img src="assets/nw-7.jpg" alt="A man at Norwood stage VII, seen in three-quarter view" style="width:100%; height:100%; object-fit:cover; object-position:50% 22%; display:block;">
+            <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">VII</div>
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; bottom:0; right:0; background:#0B1220; padding:5px 9px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; color:#8C96A8;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(14px,1.6vw,20px); display:flex; flex-direction:column; gap:8px; border-top:2px solid #16233A;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+              <span style="font-family:'EB Garamond',serif; font-size:clamp(17px,1.6vw,21px); line-height:1.2;">A rim only</span>
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:13px; white-space:nowrap; color:#16233A;">We fit</span>
+            </div>
+            <div style="font-size:14px; line-height:1.55; color:#3A352E; text-wrap:pretty;">Hair remains as a band around the sides and back of the head.</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:clamp(28px,3vw,40px); display:flex; flex-wrap:wrap; gap:14px 32px; align-items:center;">
+        
+        <button onClick="{{ goBook }}" style="height:48px; padding:0 24px; background:#16233A; color:#E9E4D8; border:0; font-size:15px; font-weight:500; cursor:pointer;">Book a free measurement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- comparison -->
+  <div style="max-width:1440px; margin:0 auto; padding:clamp(56px,8vw,112px) clamp(20px,4vw,48px) 0;">
+    <h2 style="margin:0 0 12px; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,54px); line-height:1.05; letter-spacing:-0.01em;">Transplant, medication, or a system</h2>
+    <p style="margin:0 0 clamp(28px,4vw,48px); font-size:clamp(17px,1.4vw,19px); line-height:1.6; color:#3A352E; max-width:620px; text-wrap:pretty;">Two of these are not ours.</p>
+    <div style="border-top:1px solid #1A1714;">
+      <div style="display:grid; grid-template-columns:{{ cmpCols }}; padding:clamp(14px,2vw,22px) 0 clamp(14px,2vw,20px);">
+        <div style="display:{{ cmpLabelDisplay }};"></div>
+        <div style="padding:0 clamp(8px,1.2vw,24px) 0 0; font-family:'EB Garamond',serif; font-size:clamp(17px,2vw,28px); line-height:1.15;">Transplant</div>
+        <div style="padding:0 clamp(8px,1.2vw,24px); border-left:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-size:clamp(17px,2vw,28px); line-height:1.15;">Medication</div>
+        <div style="padding:0 0 0 clamp(8px,1.2vw,24px); border-left:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-size:clamp(17px,2vw,28px); line-height:1.15;">Hair system</div>
+      </div>
+      <sc-for list="{{ cmpRows }}" as="r" hint-placeholder-count="7">
+        <div style="border-top:1px solid #CEC6B4;">
+          <div style="padding:14px 0 6px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:15px; color:#5F5851; display:{{ cmpLabelRowDisplay }};">{{ r.label }}</div>
+          <div style="display:grid; grid-template-columns:{{ cmpCols }}; align-items:center; padding:{{ cmpRowPad }};">
+            <div style="padding:0 20px 0 0; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:17px; color:#5F5851; display:{{ cmpLabelDisplay }};">{{ r.label }}</div>
+            <div style="padding:0 clamp(8px,1.2vw,24px) 0 0; font-size:{{ cmpFs }}; line-height:1.45;">
+              <sc-if value="{{ r.aIcon }}" hint-placeholder-val="{{ false }}">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="{{ r.aInk }}" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.aD }}"></path></svg>
+              </sc-if>
+              <sc-if value="{{ r.aText }}" hint-placeholder-val="{{ true }}">
+                <span>{{ r.a }}</span>
+              </sc-if>
+            </div>
+            <div style="padding:0 clamp(8px,1.2vw,24px); border-left:1px solid #CEC6B4; font-size:{{ cmpFs }}; line-height:1.45;">
+              <sc-if value="{{ r.bIcon }}" hint-placeholder-val="{{ false }}">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="{{ r.bInk }}" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.bD }}"></path></svg>
+              </sc-if>
+              <sc-if value="{{ r.bText }}" hint-placeholder-val="{{ true }}">
+                <span>{{ r.b }}</span>
+              </sc-if>
+            </div>
+            <div style="padding:0 0 0 clamp(8px,1.2vw,24px); border-left:1px solid #CEC6B4; font-size:{{ cmpFs }}; line-height:1.45;">
+              <sc-if value="{{ r.cIcon }}" hint-placeholder-val="{{ false }}">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="{{ r.cInk }}" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.cD }}"></path></svg>
+              </sc-if>
+              <sc-if value="{{ r.cText }}" hint-placeholder-val="{{ true }}">
+                <span>{{ r.c }}</span>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:26px 0 0; font-size:16px; line-height:1.7; color:#5F5851; max-width:560px; text-wrap:pretty;">A transplant moves hair you still have. Medication protects what is left. A system covers what has gone. Plenty of men do two of the three.</p>
+  </div>
+
+  <!-- try-on entry -->
+  <div style="margin-top:clamp(64px,10vw,160px); background:#0E1728;">
+    <div style="max-width:1440px; margin:0 auto; padding:clamp(48px,7vw,96px) clamp(20px,4vw,48px); display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); gap:clamp(32px,5vw,64px); align-items:center;">
+      <div>
+        <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.18em; font-size:17px; color:#8C96A8;">Try-on</div>
+        <h2 style="margin:22px 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(32px,4.6vw,62px); line-height:1.03; letter-spacing:-0.015em; color:#E9E4D8; max-width:620px; text-wrap:balance;">See yourself with hair before anyone comes to your home.</h2>
+        <p style="margin:24px 0 0; font-size:clamp(16px,1.3vw,18px); line-height:1.6; color:#A8B2C2; max-width:480px; text-wrap:pretty;">One photograph, six looks. What you get back is a simulation, not a photograph of a result. Your photograph is deleted after thirty days.</p>
+        <button onClick="{{ goTryon }}" style="height:56px; padding:0 30px; margin-top:clamp(28px,4vw,40px); background:#E9E4D8; color:#16233A; border:0; font-size:16px; font-weight:500; cursor:pointer; transition:background-color 300ms cubic-bezier(.22,.61,.36,1);" style-hover="background-color:#FFFFFF;">Start the try-on</button>
+      </div>
+      <div style="position:relative; width:100%; height:clamp(280px,42vw,420px); background:#131C2E; overflow:hidden;">
+        <img src="assets/ba-after.jpg" alt="After a hair system is fitted" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;">
+        <div style="position:absolute; inset:0; clip-path:inset(0 {{ teaserClip }} 0 0);">
+          <img src="assets/ba-before.jpg" alt="Before, crown thinning" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;">
+        </div>
+        <span style="position:absolute; left:20px; top:20px; background:#0B1220; padding:6px 11px; white-space:nowrap; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#C5CDD9;">Before</span>
+        <span style="position:absolute; right:20px; top:20px; background:#0B1220; padding:6px 11px; white-space:nowrap; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#C5CDD9;">After</span>
+        <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+          <span style="position:absolute; left:20px; bottom:20px; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</span>
+        </sc-if>
+        <div style="position:absolute; top:0; bottom:0; width:1px; background:#C9A363; transform:translateX(-0.5px); pointer-events:none; left:{{ teaserPct }};"></div>
+        <div style="position:absolute; top:50%; transform:translate(-50%,-50%); width:46px; height:46px; border:1px solid #C9A363; background:#0E1728; display:flex; align-items:center; justify-content:center; gap:5px; pointer-events:none; left:{{ teaserPct }};">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#C9A363" stroke-width="1.6" stroke-linecap="round"><path d="M14 8 L10 12 L14 16"></path></svg>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#C9A363" stroke-width="1.6" stroke-linecap="round"><path d="M10 8 L14 12 L10 16"></path></svg>
+        </div>
+        <input type="range" min="0" max="100" value="{{ teaser }}" onChange="{{ setTeaser }}" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:ew-resize; margin:0;">
+      </div>
+    </div>
+  </div>
+
+  <!-- editorial beat -->
+  <div style="background:#0B1220;">
+    <div style="max-width:1100px; margin:0 auto; padding:clamp(120px,20vw,280px) clamp(24px,5vw,64px); display:flex; justify-content:center;">
+      <p style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(34px,6.4vw,84px); line-height:1.08; letter-spacing:-0.02em; color:#E9E4D8; text-align:center; text-wrap:balance;">Ninety minutes at your own table, and nobody else need ever know.</p>
+    </div>
+  </div>
+
+  <!-- how it works -->
+  <div style="max-width:1440px; margin:0 auto; padding:clamp(56px,8vw,112px) clamp(20px,4vw,48px) 0;">
+    <h2 style="margin:0 0 clamp(28px,4vw,56px); font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,54px); line-height:1.05; letter-spacing:-0.01em;">How it works</h2>
+    <div style="border-top:1px solid #1A1714;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:clamp(24px,4vw,64px); align-items:center; padding:clamp(28px,4vw,52px) 0; border-bottom:1px solid #CEC6B4;">
+        <div style="display:flex; gap:clamp(20px,2.6vw,36px); align-items:baseline;">
+          <span style="font-family:'EB Garamond',serif; font-size:clamp(40px,5vw,72px); line-height:0.9; color:#5F5851; font-variant-numeric:lining-nums; flex-shrink:0;">01</span>
+          <div>
+            <div style="font-family:'EB Garamond',serif; font-size:clamp(24px,2.6vw,36px); line-height:1.15; letter-spacing:-0.01em;">A call</div>
+            <div style="margin-top:14px; font-size:clamp(16px,1.3vw,18px); line-height:1.65; color:#3A352E; max-width:480px; text-wrap:pretty;">We ask what stage you are at and tell you what a system can and cannot do.</div>
+            <div style="margin-top:16px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Fifteen minutes · free</div>
+          </div>
+        </div>
+        <div style="position:relative; width:100%; height:clamp(200px,26vw,320px); background:#16233A; overflow:hidden;">
+          <img src="assets/step-01-call.jpg" alt="A notebook of scalp measurements and a sketched head, beside a phone and a steel ruler" style="width:100%; height:100%; object-fit:cover; display:block;">
+          <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute; top:14px; left:14px; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:clamp(24px,4vw,64px); align-items:center; padding:clamp(28px,4vw,52px) 0; border-bottom:1px solid #CEC6B4;">
+        <div style="display:flex; gap:clamp(20px,2.6vw,36px); align-items:baseline;">
+          <span style="font-family:'EB Garamond',serif; font-size:clamp(40px,5vw,72px); line-height:0.9; color:#5F5851; font-variant-numeric:lining-nums; flex-shrink:0;">02</span>
+          <div>
+            <div style="font-family:'EB Garamond',serif; font-size:clamp(24px,2.6vw,36px); line-height:1.15; letter-spacing:-0.01em;">Measurement at home</div>
+            <div style="margin-top:14px; font-size:clamp(16px,1.3vw,18px); line-height:1.65; color:#3A352E; max-width:480px; text-wrap:pretty;">A template of your scalp taken in cling film and tape, and your hair colour matched against forty samples in daylight.</div>
+            <div style="margin-top:16px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Forty minutes · free</div>
+          </div>
+        </div>
+        <div style="position:relative; width:100%; height:clamp(200px,26vw,320px); background:#16233A; overflow:hidden;">
+          <img src="assets/step-02-template.jpg" alt="Hands laying strips of tape over cling film on the crown of a head" style="width:100%; height:100%; object-fit:cover; display:block;">
+          <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute; top:14px; left:14px; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:clamp(24px,4vw,64px); align-items:center; padding:clamp(28px,4vw,52px) 0; border-bottom:1px solid #CEC6B4;">
+        <div style="display:flex; gap:clamp(20px,2.6vw,36px); align-items:baseline;">
+          <span style="font-family:'EB Garamond',serif; font-size:clamp(40px,5vw,72px); line-height:0.9; color:#5F5851; font-variant-numeric:lining-nums; flex-shrink:0;">03</span>
+          <div>
+            <div style="font-family:'EB Garamond',serif; font-size:clamp(24px,2.6vw,36px); line-height:1.15; letter-spacing:-0.01em;">The fit</div>
+            <div style="margin-top:14px; font-size:clamp(16px,1.3vw,18px); line-height:1.65; color:#3A352E; max-width:480px; text-wrap:pretty;">Your piece arrives cut to that template. The technician seats it, trims it into your own hair and styles it.</div>
+            <div style="margin-top:16px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Ninety minutes · at your table</div>
+          </div>
+        </div>
+        <div style="position:relative; width:100%; height:clamp(200px,26vw,320px); background:#16233A; overflow:hidden;">
+          <img src="assets/step-03-fit.jpg" alt="Barber’s scissors trimming hair at a bonded hairline" style="width:100%; height:100%; object-fit:cover; display:block;">
+          <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute; top:14px; left:14px; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:clamp(24px,4vw,64px); align-items:center; padding:clamp(28px,4vw,52px) 0; border-bottom:1px solid #CEC6B4;">
+        <div style="display:flex; gap:clamp(20px,2.6vw,36px); align-items:baseline;">
+          <span style="font-family:'EB Garamond',serif; font-size:clamp(40px,5vw,72px); line-height:0.9; color:#5F5851; font-variant-numeric:lining-nums; flex-shrink:0;">04</span>
+          <div>
+            <div style="font-family:'EB Garamond',serif; font-size:clamp(24px,2.6vw,36px); line-height:1.15; letter-spacing:-0.01em;">Monthly service</div>
+            <div style="margin-top:14px; font-size:clamp(16px,1.3vw,18px); line-height:1.65; color:#3A352E; max-width:480px; text-wrap:pretty;">He returns each month to lift the base, clean it, re-seat it and trim the hair back to your own growth.</div>
+            <div style="margin-top:16px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">₹1,500 a visit · one hour</div>
+          </div>
+        </div>
+        <div style="position:relative; width:100%; height:clamp(200px,26vw,320px); background:#16233A; overflow:hidden;">
+          <img src="assets/step-04-kit.jpg" alt="A technician’s canvas tool roll laid open, scissors, comb, adhesive remover and brush in order" style="width:100%; height:100%; object-fit:cover; display:block;">
+          <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute; top:14px; left:14px; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- technicians -->
+  <div style="max-width:1440px; margin:0 auto; padding:clamp(56px,8vw,112px) clamp(20px,4vw,48px) 0;">
+    <h2 style="margin:0 0 12px; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,54px); line-height:1.05; letter-spacing:-0.01em;">Who comes to your home</h2>
+    <p style="margin:0 0 clamp(28px,4vw,48px); font-size:clamp(17px,1.4vw,19px); line-height:1.6; color:#3A352E; max-width:620px; text-wrap:pretty;">The same man fits your first piece and comes back every month after.</p>
+    <div class="mm-3up">
+        <div style="border:1px solid #CEC6B4; background:#E9E4D8; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:1/1; background:#16233A; overflow:hidden;">
+            <img src="assets/tech-1.jpg" alt="Imran Qureshi, hair-system technician" style="width:100%; height:100%; object-fit:cover; object-position:50% 18%; display:block;">
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(18px,2vw,26px); display:flex; flex-direction:column; gap:12px; flex:1;">
+            <div style="font-family:'EB Garamond',serif; font-size:clamp(20px,1.9vw,26px); line-height:1.2;">Imran Qureshi</div>
+            <div style="display:flex; gap:20px; padding:12px 0; border-top:1px solid #CEC6B4; border-bottom:1px solid #CEC6B4;">
+              <div>
+                <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1; font-variant-numeric:lining-nums;">11</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px;">years fitting</div>
+              </div>
+              <div>
+                <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1; font-variant-numeric:lining-nums;">1,400</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px;">fits completed</div>
+              </div>
+            </div>
+            <div style="font-size:15px; line-height:1.6; color:#3A352E; text-wrap:pretty;">Does most of our thin-skin work. Covers Gurgaon and South Delhi.</div>
+          </div>
+        </div>
+        <div style="border:1px solid #CEC6B4; background:#E9E4D8; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:1/1; background:#16233A; overflow:hidden;">
+            <img src="assets/tech-2.jpg" alt="Sandeep Rawat, hair-system technician" style="width:100%; height:100%; object-fit:cover; object-position:50% 18%; display:block;">
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(18px,2vw,26px); display:flex; flex-direction:column; gap:12px; flex:1;">
+            <div style="font-family:'EB Garamond',serif; font-size:clamp(20px,1.9vw,26px); line-height:1.2;">Sandeep Rawat</div>
+            <div style="display:flex; gap:20px; padding:12px 0; border-top:1px solid #CEC6B4; border-bottom:1px solid #CEC6B4;">
+              <div>
+                <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1; font-variant-numeric:lining-nums;">8</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px;">years fitting</div>
+              </div>
+              <div>
+                <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1; font-variant-numeric:lining-nums;">900</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px;">fits completed</div>
+              </div>
+            </div>
+            <div style="font-size:15px; line-height:1.6; color:#3A352E; text-wrap:pretty;">Cuts and colour-matches. Covers Noida, Ghaziabad and East Delhi.</div>
+          </div>
+        </div>
+        <div style="border:1px solid #CEC6B4; background:#E9E4D8; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:1/1; background:#16233A; overflow:hidden;">
+            <img src="assets/tech-3.jpg" alt="Vikas Chauhan, hair-system technician" style="width:100%; height:100%; object-fit:cover; object-position:50% 18%; display:block;">
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#C5CDD9;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(18px,2vw,26px); display:flex; flex-direction:column; gap:12px; flex:1;">
+            <div style="font-family:'EB Garamond',serif; font-size:clamp(20px,1.9vw,26px); line-height:1.2;">Vikas Chauhan</div>
+            <div style="display:flex; gap:20px; padding:12px 0; border-top:1px solid #CEC6B4; border-bottom:1px solid #CEC6B4;">
+              <div>
+                <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1; font-variant-numeric:lining-nums;">6</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px;">years fitting</div>
+              </div>
+              <div>
+                <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1; font-variant-numeric:lining-nums;">600</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px;">fits completed</div>
+              </div>
+            </div>
+            <div style="font-size:15px; line-height:1.6; color:#3A352E; text-wrap:pretty;">Handles repairs and the monthly visits. Covers Gurgaon and Faridabad.</div>
+          </div>
+        </div>
+    </div>
+    
+  </div>
+
+  <!-- two bases -->
+  <div style="max-width:1440px; margin:0 auto; padding:clamp(56px,8vw,112px) clamp(20px,4vw,48px) 0;">
+    <h2 style="margin:0 0 12px; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,54px); line-height:1.05; letter-spacing:-0.01em;">Two bases, two prices</h2>
+    
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); border-top:1px solid #1A1714;">
+      <sc-for list="{{ bases }}" as="b" hint-placeholder-count="2">
+        <div style="padding:clamp(26px,3vw,40px) 0; border-bottom:1px solid #CEC6B4;">
+          <div style="padding:0 clamp(0px,2vw,40px);">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:20px; flex-wrap:wrap;">
+              <div style="font-family:'EB Garamond',serif; font-size:clamp(26px,2.4vw,34px);">{{ b.name }}</div>
+              <div style="font-size:14px; color:#5F5851; text-align:right; font-variant-numeric:oldstyle-nums; line-height:1.5;">{{ b.spec }}</div>
+            </div>
+            <div style="position:relative; margin-top:22px; width:100%; height:clamp(200px,24vw,300px); background:#16233A; overflow:hidden;">
+            <sc-if value="{{ b.isStandard }}" hint-placeholder-val="{{ true }}">
+              <img src="assets/base-monofilament.jpg" alt="Macro of a monofilament mesh base with hairs hand-tied into it as visible knots" style="width:100%; height:100%; object-fit:cover; display:block;">
+            </sc-if>
+            <sc-if value="{{ b.isPremium }}" hint-placeholder-val="{{ false }}">
+              <img src="assets/base-thinskin.jpg" alt="Macro of an ultra-thin polyurethane base held between finger and thumb, hair passing through it" style="width:100%; height:100%; object-fit:cover; display:block;">
+            </sc-if>
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; top:14px; left:14px; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+            </sc-if>
+          </div>
+          <svg viewBox="0 0 320 176" width="100%" height="auto" style="margin-top:20px; max-height:200px;" fill="none" stroke="#16233A" stroke-width="1.2" stroke-linecap="round">
+              <path d="M14 112 H306" stroke="#1A1714" stroke-width="1.4"></path>
+              <path d="M14 121 H306" stroke="#CEC6B4"></path>
+              <path d="M14 130 H306" stroke="#CEC6B4"></path>
+              <path d="{{ b.membrane }}" stroke="#5F5851" stroke-width="1.2"></path>
+              <path d="{{ b.detail }}" stroke="#5F5851" stroke-width="0.8" stroke-dasharray="{{ b.dash }}"></path>
+              <path d="{{ b.knots }}" stroke-width="1.15"></path>
+              <path d="{{ b.hair }}"></path>
+              <g font-family="EB Garamond, serif" font-size="13" fill="#5F5851" letter-spacing="1.4" font-variant="small-caps">
+                <text x="14" y="14">{{ b.tag }}</text>
+                <text x="14" y="168">Scalp</text>
+                <text x="306" y="168" text-anchor="end">{{ b.tag2 }}</text>
+              </g>
+            </svg>
+            <div style="display:grid; grid-template-columns:auto 1fr; gap:13px 26px; margin-top:24px; font-size:16px; border-top:1px solid #CEC6B4; padding-top:22px;">
+              <div style="color:#5F5851;">Look</div><div>{{ b.look }}</div>
+              <div style="color:#5F5851;">Breathability</div><div>{{ b.breath }}</div>
+              <div style="color:#5F5851;">Lifespan</div><div>{{ b.life }}</div>
+              <div style="color:#5F5851;">First fit</div><div style="font-family:'EB Garamond',serif; font-size:clamp(22px,2vw,26px); line-height:1; font-variant-numeric:lining-nums;">{{ b.price }}</div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- prices -->
+  <div id="prices" style="max-width:1440px; margin:0 auto; padding:clamp(36px,5vw,64px) clamp(20px,4vw,48px) 0;">
+    <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:16px; color:#5F5851;">Published prices</div>
+    <p style="margin:0 0 clamp(28px,4vw,48px); font-size:clamp(17px,1.4vw,19px); line-height:1.6; color:#3A352E; max-width:620px; text-wrap:pretty;">No consultation fee, no deposit, no package. You pay for the piece and for the visits you take.</p>
+    <div style="border-top:1px solid #1A1714;">
+      <div style="display:grid; grid-template-columns:1fr clamp(96px,16vw,240px) clamp(96px,16vw,240px); padding:18px 0; border-bottom:1px solid #CEC6B4;">
+        <div></div>
+        <div style="padding-left:clamp(8px,1.5vw,28px); font-family:'EB Garamond',serif; font-size:clamp(18px,2vw,28px);">Standard</div>
+        <div style="padding-left:clamp(8px,1.5vw,28px); font-family:'EB Garamond',serif; font-size:clamp(18px,2vw,28px);">Premium</div>
+      </div>
+      <sc-for list="{{ prices }}" as="p" hint-placeholder-count="3">
+        <div style="display:grid; grid-template-columns:1fr clamp(96px,16vw,240px) clamp(96px,16vw,240px); align-items:baseline; padding:clamp(20px,3vw,32px) 0; border-bottom:1px solid #CEC6B4;">
+          <div style="padding-right:16px;">
+            <div style="font-size:clamp(16px,1.3vw,18px);">{{ p.label }}</div>
+            <div style="font-size:14px; color:#5F5851; margin-top:5px; line-height:1.5;">{{ p.note }}</div>
+          </div>
+          <div style="padding-left:clamp(8px,1.5vw,28px); font-family:'EB Garamond',serif; font-size:clamp(24px,3vw,40px); line-height:1; font-variant-numeric:lining-nums tabular-nums;">{{ p.std }}</div>
+          <div style="padding-left:clamp(8px,1.5vw,28px); font-family:'EB Garamond',serif; font-size:clamp(24px,3vw,40px); line-height:1; font-variant-numeric:lining-nums tabular-nums;">{{ p.prm }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:14px 48px; margin-top:28px; font-size:15px; color:#5F5851; line-height:1.6;">
+      <span>A standard base in the first year: ₹25,000 plus twelve service visits at ₹1,500 — ₹43,000.</span>
+      <span>Payment on the day of the fit. Card, UPI or bank transfer.</span>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:24px 32px; margin-top:clamp(28px,4vw,48px);">
+      <button onClick="{{ goBook }}" style="height:56px; padding:0 30px; background:#16233A; color:#E9E4D8; border:0; font-size:16px; font-weight:500; cursor:pointer; transition:background-color 300ms cubic-bezier(.22,.61,.36,1);" style-hover="background-color:#0E1728;">Book a free measurement</button>
+      <span onClick="{{ goTryon }}" style="font-size:16px; cursor:pointer; display:inline-flex; align-items:center; min-height:44px;"><span style="border-bottom:1px solid #CEC6B4; padding-bottom:4px;">Or see yourself with hair first</span></span>
+    </div>
+  </div>
+
+  <!-- testimonials -->
+  <div style="margin-top:clamp(72px,12vw,180px); background:#16233A;">
+    <div style="max-width:1440px; margin:0 auto; padding:clamp(48px,7vw,96px) clamp(20px,4vw,48px);">
+      <h2 style="margin:0 0 12px; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,54px); line-height:1.05; letter-spacing:-0.01em; color:#E9E4D8;">What clients say</h2>
+      <p style="margin:0 0 clamp(32px,4vw,56px); font-size:clamp(17px,1.4vw,19px); line-height:1.6; color:#A8B2C2; max-width:560px; text-wrap:pretty;">Three men who had a system fitted at home in the last year.</p>
+      <div class="mm-3up">
+        <div style="border:1px solid #3A4A64; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:3/4; background:#131C2E; overflow:hidden;">
+            <img src="assets/client-1.jpg" alt="Portrait of a Mane Man client" style="width:100%; height:100%; object-fit:cover; object-position:50% 28%; display:block;">
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(20px,2.2vw,28px); display:flex; flex-direction:column; gap:18px; flex:1;">
+            <p style="margin:0; font-family:'EB Garamond',serif; font-size:clamp(19px,1.8vw,23px); line-height:1.4; color:#E9E4D8; text-wrap:pretty;">He came on a Sunday morning and was finished by eleven. I had a wedding that week and nobody said a word about my hair.</p>
+            <div style="margin-top:auto; border-top:1px solid #1E2E49; padding-top:16px;">
+              <div style="font-size:16px; color:#E9E4D8;">Client name</div>
+              <div style="font-size:14px; color:#8C96A8; margin-top:4px;">Age · Norwood IV · Gurgaon</div>
+            </div>
+          </div>
+        </div>
+        <div style="border:1px solid #3A4A64; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:3/4; background:#131C2E; overflow:hidden;">
+            <img src="assets/client-2.jpg" alt="Portrait of a Mane Man client" style="width:100%; height:100%; object-fit:cover; object-position:50% 28%; display:block;">
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(20px,2.2vw,28px); display:flex; flex-direction:column; gap:18px; flex:1;">
+            <p style="margin:0; font-family:'EB Garamond',serif; font-size:clamp(19px,1.8vw,23px); line-height:1.4; color:#E9E4D8; text-wrap:pretty;">The first fit took about ninety minutes. What I did not expect was the monthly visit — he lifts it, cleans the base, re-cuts it, and is gone inside an hour.</p>
+            <div style="margin-top:auto; border-top:1px solid #1E2E49; padding-top:16px;">
+              <div style="font-size:16px; color:#E9E4D8;">Client name</div>
+              <div style="font-size:14px; color:#8C96A8; margin-top:4px;">Age · Norwood V · Noida</div>
+            </div>
+          </div>
+        </div>
+        <div style="border:1px solid #3A4A64; display:flex; flex-direction:column;">
+          <div style="position:relative; width:100%; aspect-ratio:3/4; background:#131C2E; overflow:hidden;">
+            <img src="assets/client-3.jpg" alt="Portrait of a Mane Man client" style="width:100%; height:100%; object-fit:cover; object-position:50% 28%; display:block;">
+            <sc-if value="{{ showTags }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; top:0; left:0; background:#0B1220; padding:6px 11px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#C5CDD9;">Placeholder</div>
+            </sc-if>
+          </div>
+          <div style="padding:clamp(20px,2.2vw,28px); display:flex; flex-direction:column; gap:18px; flex:1;">
+            <p style="margin:0; font-family:'EB Garamond',serif; font-size:clamp(19px,1.8vw,23px); line-height:1.4; color:#E9E4D8; text-wrap:pretty;">I asked what happens if I hate it. He gave me the fourteen-day terms before taking any money, which is why I went ahead.</p>
+            <div style="margin-top:auto; border-top:1px solid #1E2E49; padding-top:16px;">
+              <div style="font-size:16px; color:#E9E4D8;">Client name</div>
+              <div style="font-size:14px; color:#8C96A8; margin-top:4px;">Age · Norwood III · Delhi</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- guarantee + founder · narrow column -->
+  <div style="max-width:660px; margin:0 auto; padding:clamp(72px,12vw,180px) clamp(20px,4vw,48px) 0;">
+    <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:16px; color:#5F5851;">The guarantee</div>
+    <p style="margin:20px 0 0; font-family:'EB Garamond',serif; font-size:clamp(26px,3.2vw,40px); line-height:1.25; letter-spacing:-0.01em; text-wrap:pretty;">If the fit is not right we will refit it at no charge, or refund you in full, within fourteen days.</p>
+    <div style="margin-top:clamp(48px,7vw,88px); font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:16px; color:#5F5851;">A note from the founder</div>
+    <p style="margin:20px 0 0; font-size:clamp(17px,1.4vw,19px); line-height:1.8; color:#1A1714; text-wrap:pretty;">I started losing my hair at twenty-six. By thirty I had been to four clinics, and not one would tell me a price before I was sitting in the chair with a consultant beside me.</p>
+    <p style="margin:18px 0 0; font-size:clamp(17px,1.4vw,19px); line-height:1.8; color:#1A1714; text-wrap:pretty;">So Mane Man does two things differently. The technician comes to your home, so nobody sees you walk into anywhere. And every price is on this page, so you can decide before you speak to us.</p>
+    <div style="margin-top:32px; display:flex; align-items:center; gap:15px;">
+      <svg viewBox="0 0 200 217.4" width="30" height="33" fill="#16233A"><use href="#mm"></use></svg>
+      <span style="font-family:'EB Garamond',serif; font-size:18px; color:#5F5851;">Founder, Mane Man</span>
+    </div>
+  </div>
+  <!-- faq -->
+  <div id="faq" style="max-width:1440px; margin:0 auto; padding:clamp(64px,10vw,144px) clamp(20px,4vw,48px) 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:clamp(28px,4vw,64px); align-items:start;">
+    <div style="max-width:380px;">
+      <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,54px); line-height:1.05; letter-spacing:-0.01em;">Questions</h2>
+      <p style="margin:22px 0 0; font-size:17px; line-height:1.7; color:#5F5851; text-wrap:pretty;">If yours is not here, ask on WhatsApp.</p>
+    </div>
+    <div style="border-top:1px solid #1A1714;">
+      <sc-for list="{{ faq }}" as="q" hint-placeholder-count="10">
+        <div style="border-bottom:1px solid #CEC6B4;">
+          <div onClick="{{ q.toggle }}" style="display:flex; justify-content:space-between; align-items:center; gap:20px; padding:22px 0; cursor:pointer; font-size:clamp(17px,1.4vw,19px); line-height:1.4;">
+            <span>{{ q.q }}</span>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="{{ q.ink }}" stroke-width="1.6" stroke-linecap="round" style="flex-shrink:0;"><path d="{{ q.sign }}"></path></svg>
+          </div>
+          <sc-if value="{{ q.open }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:0 0 24px; font-size:17px; line-height:1.7; color:#3A352E; max-width:560px; text-wrap:pretty;">{{ q.a }}</p>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- closing CTA -->
+  <div style="max-width:1440px; margin:clamp(56px,8vw,112px) auto 0; padding:0 clamp(20px,4vw,48px);">
+    <div style="background:#16233A; padding:clamp(40px,6vw,72px) clamp(24px,4vw,56px); display:flex; flex-wrap:wrap; gap:32px; align-items:center; justify-content:space-between;">
+      <div>
+        <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(28px,3.4vw,44px); line-height:1.1; color:#E9E4D8; max-width:520px; text-wrap:balance;">The measurement takes forty minutes and costs nothing.</h2>
+        
+      </div>
+      <button onClick="{{ goBook }}" style="height:56px; padding:0 30px; background:#E9E4D8; color:#16233A; border:0; font-size:16px; font-weight:500; cursor:pointer; transition:background-color 300ms cubic-bezier(.22,.61,.36,1); flex-shrink:0;" style-hover="background-color:#FFFFFF;">Book a free measurement</button>
+    </div>
+  </div>
+
+</div>
+</sc-if>
+
+<!-- ========== TRY-ON ========== -->
+<sc-if value="{{ onTryon }}" hint-placeholder-val="{{ false }}">
+<div style="background:#0E1728; min-height:calc(100vh - 56px);">
+  <div style="height:2px; background:#1E2E49; position:relative;">
+    <div style="position:absolute; left:0; top:0; bottom:0; background:#C9A363; transition:width 420ms cubic-bezier(.22,.61,.36,1); width:{{ tProgress }};"></div>
+  </div>
+  <div style="max-width:1440px; margin:0 auto; padding:clamp(28px,4vw,56px) clamp(20px,4vw,48px) clamp(48px,6vw,72px);">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:clamp(24px,3vw,40px);">
+      <span onClick="{{ tBack }}" style="font-size:15px; color:#A8B2C2; cursor:pointer; display:inline-flex; align-items:center; gap:9px; min-height:44px;">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#A8B2C2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+        {{ tBackLabel }}
+      </span>
+      <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.16em; font-size:15px; color:#8C96A8;">{{ tStepLabel }}</span>
+    </div>
+
+    <!-- upload -->
+    <sc-if value="{{ tUpload }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); gap:clamp(32px,5vw,72px); align-items:center;">
+        <div>
+          <h1 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(32px,4.6vw,60px); line-height:1.03; letter-spacing:-0.015em; color:#E9E4D8; max-width:520px; text-wrap:balance;">One photograph, taken straight on.</h1>
+          <p style="margin:24px 0 0; font-size:clamp(16px,1.3vw,18px); line-height:1.65; color:#A8B2C2; max-width:480px; text-wrap:pretty;">The simulation is only as good as the photo. Three things matter, and none of them need a good camera.</p>
+          <div style="margin-top:clamp(28px,4vw,40px); display:flex; flex-direction:column; gap:18px;">
+            <sc-for list="{{ guidelines }}" as="g" hint-placeholder-count="3">
+              <div style="display:flex; gap:16px; align-items:flex-start; border-top:1px solid #1E2E49; padding-top:18px;">
+                <span style="font-family:'EB Garamond',serif; font-size:22px; color:#8C96A8; font-variant-numeric:oldstyle-nums; flex-shrink:0;">{{ g.n }}</span>
+                <div>
+                  <div style="font-size:17px; color:#E9E4D8; line-height:1.4;">{{ g.title }}</div>
+                  <div style="font-size:15px; color:#8C96A8; margin-top:5px; line-height:1.55;">{{ g.body }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:clamp(28px,4vw,44px);">
+            <button onClick="{{ tNext }}" style="height:56px; padding:0 30px; background:#E9E4D8; color:#16233A; border:0; font-size:16px; font-weight:500; cursor:pointer;" style-hover="background-color:#FFFFFF;">Choose a photograph</button>
+            <button onClick="{{ tNext }}" style="height:56px; padding:0 30px; background:transparent; color:#E9E4D8; border:1px solid #3A4A64; font-size:16px; font-weight:500; cursor:pointer;" style-hover="border-color:#E9E4D8;">Use the camera</button>
+          </div>
+          <div onClick="{{ tShowError }}" style="margin-top:16px; font-size:15px; color:#A8B2C2; cursor:pointer; display:inline-flex; align-items:center; min-height:44px;"><span style="border-bottom:1px solid #3A4A64; padding-bottom:3px;">See what happens if the photo will not work</span></div>
+        </div>
+        <div style="width:100%; height:clamp(340px,56vw,520px); background:#131C2E; position:relative; display:flex; align-items:center; justify-content:center;">
+          <svg viewBox="0 0 320 400" width="70%" style="max-width:300px;"><use href="#oval"></use></svg>
+          <div style="position:absolute; left:24px; right:24px; bottom:24px; font-size:14px; color:#8C96A8; line-height:1.55;">Your photograph appears here</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- consent -->
+    <sc-if value="{{ tConsent }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:620px;">
+        <h1 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,52px); line-height:1.05; letter-spacing:-0.015em; color:#E9E4D8; text-wrap:balance;">What happens to your photograph.</h1>
+        <div style="margin-top:clamp(24px,3vw,36px); border-top:1px solid #1E2E49;">
+          <sc-for list="{{ consentRows }}" as="c" hint-placeholder-count="5">
+            <div style="display:flex; flex-wrap:wrap; gap:8px 18px; padding:15px 0; border-bottom:1px solid #1E2E49;">
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em; font-size:16px; color:#8C96A8; width:116px; flex-shrink:0;">{{ c.k }}</span>
+              <span style="font-size:16px; color:#E9E4D8; line-height:1.5;">{{ c.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div onClick="{{ tToggleConsent }}" style="margin-top:28px; display:flex; gap:14px; align-items:flex-start; cursor:pointer;">
+          <div style="width:22px; height:22px; flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; transition:background-color 300ms cubic-bezier(.22,.61,.36,1), border-color 300ms cubic-bezier(.22,.61,.36,1); border:1px solid {{ consentBorder }}; background:{{ consentFill }};">
+            <sc-if value="{{ consent }}" hint-placeholder-val="{{ false }}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#16233A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"></path></svg>
+            </sc-if>
+          </div>
+          <span style="font-size:16px; line-height:1.6; color:#E9E4D8;">I understand, and I agree to my photograph being used this way.</span>
+        </div>
+        <button onClick="{{ tNext }}" style="height:56px; width:100%; max-width:320px; margin-top:28px; border:0; font-size:16px; font-weight:500; transition:background-color 300ms cubic-bezier(.22,.61,.36,1); background:{{ consentBtnBg }}; color:{{ consentBtnInk }}; cursor:{{ consentBtnCursor }};">Continue</button>
+        <div style="margin-top:16px; font-size:14px; color:#8C96A8; line-height:1.6;">The full privacy notice is two paragraphs long, and it is linked in the footer.</div>
+      </div>
+    </sc-if>
+
+    <!-- stage -->
+    <sc-if value="{{ tStage }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:720px;">
+        <h1 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,52px); line-height:1.05; letter-spacing:-0.015em; color:#E9E4D8;">Where are you now?</h1>
+        <p style="margin:20px 0 0; font-size:clamp(16px,1.3vw,18px); line-height:1.65; color:#A8B2C2; max-width:480px; text-wrap:pretty;">Pick whichever is closest. He measures properly at the visit.</p>
+        <div style="margin-top:clamp(24px,3vw,32px); display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:14px;">
+          <sc-for list="{{ stageOptions }}" as="o" hint-placeholder-count="3">
+            <div onClick="{{ o.pick }}" style="padding:20px 18px; display:flex; flex-direction:column; gap:16px; cursor:pointer; transition:border-color 300ms cubic-bezier(.22,.61,.36,1), background-color 300ms cubic-bezier(.22,.61,.36,1); border:1px solid {{ o.border }}; background:{{ o.bg }};">
+              <svg viewBox="0 0 64 74" width="52" height="60" fill="none" stroke="{{ o.ink }}" stroke-width="1.4" stroke-linecap="round">
+                <path d="M32 5 C47 5 55 19 55 39 C55 58 45 69 32 69 C19 69 9 58 9 39 C9 19 17 5 32 5 Z"></path>
+                <path d="{{ o.hair }}" stroke-width="1.1"></path>
+                <path d="{{ o.zone }}" stroke-width="1.1" stroke-dasharray="2.5 3"></path>
+              </svg>
+              <div>
+                <div style="font-size:17px; line-height:1.3; color:{{ o.ink }};">{{ o.title }}</div>
+                <div style="font-size:14px; color:#8C96A8; margin-top:6px; line-height:1.5;">{{ o.sub }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <button onClick="{{ tNext }}" style="height:56px; width:100%; max-width:320px; margin-top:32px; background:#E9E4D8; color:#16233A; border:0; font-size:16px; font-weight:500; cursor:pointer;">Continue</button>
+      </div>
+    </sc-if>
+
+    <!-- looks -->
+    <sc-if value="{{ tLooks }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,52px); line-height:1.05; letter-spacing:-0.015em; color:#E9E4D8;">Choose a look.</h1>
+        <p style="margin:20px 0 0; font-size:clamp(16px,1.3vw,18px); line-height:1.65; color:#A8B2C2; max-width:480px; text-wrap:pretty;">Six to choose from. You can try the others afterwards.</p>
+        <div style="margin-top:clamp(24px,3vw,32px); display:grid; grid-template-columns:repeat(auto-fit,minmax(min(46%,200px),1fr)); gap:14px;">
+          <sc-for list="{{ looks }}" as="l" hint-placeholder-count="6">
+            <div onClick="{{ l.pick }}" style="cursor:pointer; display:flex; flex-direction:column; transition:border-color 300ms cubic-bezier(.22,.61,.36,1); border:1px solid {{ l.border }};">
+              <div style="aspect-ratio:4/3; display:flex; align-items:flex-end; padding:10px; transition:background-color 300ms cubic-bezier(.22,.61,.36,1); background:{{ l.thumbBg }};">
+                <span style="font-size:13px; color:#8C96A8;">Preview</span>
+              </div>
+              <div style="padding:12px 14px 14px;">
+                <div style="font-size:15px; color:{{ l.ink }};">{{ l.density }}</div>
+                <div style="font-size:13px; color:#8C96A8; margin-top:4px; line-height:1.45;">{{ l.detail }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <button onClick="{{ tNext }}" style="height:56px; width:100%; max-width:320px; margin-top:32px; border:0; font-size:16px; font-weight:500; transition:background-color 300ms cubic-bezier(.22,.61,.36,1); background:{{ lookBtnBg }}; color:{{ lookBtnInk }}; cursor:{{ lookBtnCursor }};">{{ lookBtnLabel }}</button>
+      </div>
+    </sc-if>
+
+    <!-- processing -->
+    <sc-if value="{{ tProcessing }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:560px; padding:clamp(24px,5vw,64px) 0;">
+        <h1 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,52px); line-height:1.05; letter-spacing:-0.015em; color:#E9E4D8;">Working on it.</h1>
+        <div style="margin-top:clamp(32px,4vw,48px); display:flex; flex-direction:column; gap:16px;">
+          <sc-for list="{{ procSteps }}" as="p" hint-placeholder-count="4">
+            <div style="display:flex; gap:14px; align-items:center; transition:opacity 480ms cubic-bezier(.22,.61,.36,1); opacity:{{ p.opacity }};">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="{{ p.tick }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 12.5 L9.5 18 L20 6"></path></svg>
+              <span style="font-size:17px; color:{{ p.ink }};">{{ p.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:clamp(32px,4vw,48px); font-family:'EB Garamond',serif; font-size:clamp(44px,6vw,64px); line-height:1; color:#2A3A56; font-variant-numeric:lining-nums tabular-nums;">{{ countdown }}</div>
+        
+      </div>
+    </sc-if>
+
+    <!-- gate -->
+    <sc-if value="{{ tGate }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:clamp(32px,5vw,72px); align-items:center;">
+        <div style="order:{{ gateImgOrder }};">
+          <div style="width:100%; height:clamp(300px,44vw,420px); background:#131C2E; position:relative; display:flex;">
+            <div style="flex:1; border-right:1px solid #C9A363;"></div>
+            <div style="flex:1; background:#1A2740; filter:blur(7px);"></div>
+            <div style="position:absolute; inset:0; display:flex; align-items:flex-end; padding:20px;">
+              <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8;">Your result · ready</span>
+            </div>
+          </div>
+          <p style="margin:20px 0 0; font-size:15px; line-height:1.7; color:#8C96A8; max-width:440px; text-wrap:pretty;">The full-size image is on the next screen. We also send a copy to your WhatsApp so it is not lost when you close the browser.</p>
+        </div>
+        <div>
+          <h1 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(30px,4vw,52px); line-height:1.05; letter-spacing:-0.015em; color:#E9E4D8; text-wrap:balance;">Where should we send it?</h1>
+          <p style="margin:20px 0 0; font-size:clamp(16px,1.3vw,18px); line-height:1.65; color:#A8B2C2; max-width:480px; text-wrap:pretty;">The result opens on the next screen either way. The number is so we can send you a copy.</p>
+          <div style="margin-top:clamp(24px,3vw,32px); display:flex; flex-direction:column; gap:20px; max-width:440px;">
+            <div>
+              <div style="font-size:14px; color:#8C96A8; margin-bottom:8px;">Name</div>
+              <input data-on-ink="1" value="{{ gName }}" onChange="{{ setGName }}" placeholder="Your name" style="height:56px; width:100%; border:1px solid {{ gNameBorder }}; background:transparent; padding:0 15px; font-size:16px; color:#E9E4D8; outline:none;">
+              <sc-if value="{{ gNameError }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:14px; color:#E0917F; margin-top:8px;">Tell us what to call you.</div>
+              </sc-if>
+            </div>
+            <div>
+              <div style="font-size:14px; color:#8C96A8; margin-bottom:8px;">Mobile</div>
+              <div style="height:56px; display:flex; border:1px solid {{ gPhoneBorder }};">
+                <span style="padding:0 14px; color:#8C96A8; border-right:1px solid #3A4A64; display:flex; align-items:center; font-size:16px; font-variant-numeric:tabular-nums;">+91</span>
+                <input data-on-ink="1" value="{{ gPhone }}" onChange="{{ setGPhone }}" placeholder="98100 00000" inputmode="numeric" style="flex:1; border:0; background:transparent; padding:0 14px; font-size:16px; color:#E9E4D8; outline:none; font-variant-numeric:tabular-nums; min-width:0;">
+              </div>
+              <sc-if value="{{ gPhoneError }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:14px; color:#E0917F; margin-top:8px;">Enter all ten digits so we can send the result.</div>
+              </sc-if>
+            </div>
+          </div>
+          <button onClick="{{ tSubmitGate }}" style="height:56px; width:100%; max-width:440px; margin-top:26px; background:#E9E4D8; color:#16233A; border:0; font-size:16px; font-weight:500; cursor:pointer;" style-hover="background-color:#FFFFFF;">Show me the result</button>
+          <div style="margin-top:16px; font-size:14px; color:#8C96A8; line-height:1.65; max-width:440px;">No password, no account, no marketing. Your photograph is deleted after thirty days.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- result -->
+    <sc-if value="{{ tResult }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:clamp(28px,4vw,56px); align-items:start;">
+        <div style="width:100%; height:clamp(340px,52vw,520px); background:#131C2E; position:relative; overflow:hidden;">
+          <img src="assets/ba-after.jpg" alt="Simulated result" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;">
+          <div style="position:absolute; inset:0; clip-path:inset(0 {{ sliderClip }} 0 0);">
+            <img src="assets/ba-before.jpg" alt="Your photograph" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;">
+          </div>
+          <span style="position:absolute; left:18px; top:18px; background:#0B1220; padding:6px 11px; white-space:nowrap; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#C5CDD9;">Before</span>
+          <span style="position:absolute; right:18px; top:18px; background:#0B1220; padding:6px 11px; white-space:nowrap; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#C5CDD9;">After</span>
+          <div style="position:absolute; top:0; bottom:0; width:1px; background:#C9A363; transform:translateX(-0.5px); pointer-events:none; left:{{ sliderPct }};"></div>
+          <div style="position:absolute; top:50%; transform:translate(-50%,-50%); width:48px; height:48px; border:1px solid #C9A363; background:#0E1728; display:flex; align-items:center; justify-content:center; gap:5px; pointer-events:none; left:{{ sliderPct }};">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#C9A363" stroke-width="1.6" stroke-linecap="round"><path d="M14 8 L10 12 L14 16"></path></svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#C9A363" stroke-width="1.6" stroke-linecap="round"><path d="M10 8 L14 12 L10 16"></path></svg>
+          </div>
+          <input type="range" min="0" max="100" value="{{ slider }}" onChange="{{ setSlider }}" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:ew-resize; margin:0;">
+        </div>
+        <div>
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.16em; font-size:15px; color:#8C96A8;">{{ chosenLook }}</div>
+          <h1 style="margin:18px 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(28px,3.4vw,44px); line-height:1.06; color:#E9E4D8;">Drag the handle to compare.</h1>
+          <div style="margin-top:26px; border:1px solid #3A4A64; padding:18px 20px; font-size:15px; line-height:1.65; color:#A8B2C2;">This is an illustrative simulation, not a photograph of a result. A fitted piece is matched to your own hair colour, density and growth pattern, and will differ.</div>
+          <div style="margin-top:28px; display:flex; flex-direction:column; gap:13px; max-width:440px;">
+            <button onClick="{{ goBook }}" style="height:56px; background:#E9E4D8; color:#16233A; border:0; font-size:16px; font-weight:500; cursor:pointer;" style-hover="background-color:#FFFFFF;">Book a free measurement</button>
+            <div style="display:flex; gap:13px;">
+              <button style="flex:1; height:52px; background:transparent; color:#E9E4D8; border:1px solid #3A4A64; font-size:15px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px;" style-hover="border-color:#E9E4D8;">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#E9E4D8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 V15 M7.5 10.5 L12 15 L16.5 10.5 M5 19 H19"></path></svg>
+                Download
+              </button>
+              <button style="flex:1; height:52px; background:transparent; color:#E9E4D8; border:1px solid #3A4A64; font-size:15px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px;" style-hover="border-color:#E9E4D8;">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#E9E4D8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z M8.8 8.2 C8.4 9.2 9 10.6 10 11.8 C11 13 12.4 13.8 13.4 13.6 L14.6 12.4 L13 11.2 L12 12 C11.4 11.6 10.6 10.8 10.2 10 L11 9 L9.8 7.6 Z"></path></svg>
+                WhatsApp
+              </button>
+            </div>
+            <div onClick="{{ tTryAnother }}" style="font-size:15px; color:#A8B2C2; text-align:center; cursor:pointer; min-height:44px; display:flex; align-items:center; justify-content:center;">Try another look</div>
+          </div>
+          <div style="margin-top:22px; font-size:14px; color:#8C96A8; line-height:1.6;">A copy is on its way to <span style="font-variant-numeric:tabular-nums;">+91 {{ gPhoneShown }}</span>. Deleted after thirty days.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- error -->
+    <sc-if value="{{ tError }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:560px;">
+        <div style="border:1px solid #3A4A64; width:100%; height:clamp(200px,28vw,260px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center;">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#8C96A8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 H7 L8.5 5.5 H15.5 L17 8 H20.5 V19 H3.5 Z M12 9.7 A3.8 3.8 0 0 1 12 17.3 A3.8 3.8 0 0 1 12 9.7 M4 4 L20 20"></path></svg>
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8;">Cannot read the photograph</div>
+        </div>
+        <h1 style="margin:clamp(24px,3vw,36px) 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(28px,3.6vw,44px); line-height:1.1; color:#E9E4D8; text-wrap:balance;">We cannot use this photograph.</h1>
+        <p style="margin:18px 0 0; font-size:clamp(16px,1.3vw,18px); line-height:1.7; color:#A8B2C2; max-width:520px; text-wrap:pretty;">Either the face is turned too far, something is covering the hairline, or the frame is too dark to read. A photograph taken facing a window, straight on, works almost every time.</p>
+        <div style="margin-top:32px; display:flex; flex-direction:column; gap:13px; max-width:360px;">
+          <button onClick="{{ tRestart }}" style="height:56px; background:#E9E4D8; color:#16233A; border:0; font-size:16px; font-weight:500; cursor:pointer;">Choose another</button>
+          <button onClick="{{ goBook }}" style="height:56px; background:transparent; color:#E9E4D8; border:1px solid #3A4A64; font-size:16px; font-weight:500; cursor:pointer;">Book a visit instead</button>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</sc-if>
+
+<!-- ========== BOOKING ========== -->
+<sc-if value="{{ onBook }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:calc(100vh - 56px);">
+  <div style="max-width:1440px; margin:0 auto; padding:clamp(40px,6vw,88px) clamp(20px,4vw,48px) clamp(56px,8vw,112px);">
+
+    <!-- form -->
+    <sc-if value="{{ bForm }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); gap:clamp(32px,5vw,80px); align-items:start;">
+        <div>
+          <h1 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(32px,4.6vw,56px); line-height:1.04; letter-spacing:-0.015em; max-width:480px; text-wrap:balance;">Book a free measurement</h1>
+          <p style="margin:22px 0 0; font-size:clamp(17px,1.4vw,19px); line-height:1.65; color:#3A352E; max-width:460px; text-wrap:pretty;">Nothing is fitted on the first visit. He measures your scalp and matches your colour, then leaves. Forty minutes, nothing to pay.</p>
+          </div>
+        </div>
+
+        <div style="border:1px solid #CEC6B4; background:#F4F1E9; padding:clamp(22px,3vw,40px);">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr)); gap:20px;">
+            <div>
+              <div style="font-size:14px; color:#5F5851; margin-bottom:8px;">Name</div>
+              <input value="{{ bName }}" onChange="{{ setBName }}" placeholder="Your name" style="height:52px; width:100%; border:1px solid {{ bNameBorder }}; background:#FFFFFF; padding:0 15px; font-size:16px; outline:none;">
+              <sc-if value="{{ bNameError }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:14px; color:#8A3A2E; margin-top:7px;">Tell us what to call you.</div>
+              </sc-if>
+            </div>
+            <div>
+              <div style="font-size:14px; color:#5F5851; margin-bottom:8px;">Mobile</div>
+              <div style="height:52px; display:flex; border:1px solid {{ bPhoneBorder }}; background:#FFFFFF;">
+                <span style="padding:0 13px; color:#5F5851; border-right:1px solid #CEC6B4; display:flex; align-items:center; font-size:16px; font-variant-numeric:tabular-nums;">+91</span>
+                <input value="{{ bPhone }}" onChange="{{ setBPhone }}" placeholder="98100 00000" inputmode="numeric" style="flex:1; border:0; background:transparent; padding:0 13px; font-size:16px; outline:none; font-variant-numeric:tabular-nums; min-width:0;">
+              </div>
+              <sc-if value="{{ bPhoneError }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:14px; color:#8A3A2E; margin-top:7px;">Enter all ten digits so the technician can reach you.</div>
+              </sc-if>
+            </div>
+            <div>
+              <div style="font-size:14px; color:#5F5851; margin-bottom:8px;">City</div>
+              <div style="height:52px; border:1px solid #CEC6B4; background:#FFFFFF; display:flex; align-items:center; padding-right:15px;">
+                <select value="{{ bCity }}" onChange="{{ setBCity }}" style="flex:1; height:100%; border:0; background:transparent; padding:0 15px; font-size:16px; outline:none; cursor:pointer; min-width:0;">
+                  <option value="Gurgaon">Gurgaon</option>
+                  <option value="Delhi">Delhi</option>
+                  <option value="Noida">Noida</option>
+                  <option value="Faridabad">Faridabad</option>
+                  <option value="Ghaziabad">Ghaziabad</option>
+                  <option value="Mumbai">Mumbai — coming soon</option>
+                  <option value="Bengaluru">Bengaluru — coming soon</option>
+                </select>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#5F5851" stroke-width="1.6" stroke-linecap="round" style="flex-shrink:0; pointer-events:none;"><path d="M6 10 L12 16 L18 10"></path></svg>
+              </div>
+              <sc-if value="{{ bCityNotServed }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:14px; color:#5F5851; margin-top:7px; line-height:1.5;">Not served yet — you will join the {{ bCity }} list instead.</div>
+              </sc-if>
+            </div>
+            <div>
+              <div style="font-size:14px; color:#5F5851; margin-bottom:8px;">Preferred visit</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:9px;">
+                <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="4">
+                  <div onClick="{{ sl.pick }}" style="height:48px; display:flex; align-items:center; padding:0 12px; font-size:14px; cursor:pointer; transition:background-color 300ms cubic-bezier(.22,.61,.36,1), border-color 300ms cubic-bezier(.22,.61,.36,1); border:1px solid {{ sl.border }}; background:{{ sl.bg }}; color:{{ sl.ink }};">{{ sl.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:24px;">
+            <div style="font-size:14px; color:#5F5851; margin-bottom:10px;">Extent of hair loss</div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+              <sc-for list="{{ bStages }}" as="st" hint-placeholder-count="3">
+                <div onClick="{{ st.pick }}" style="background:#FFFFFF; padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; transition:border-color 300ms cubic-bezier(.22,.61,.36,1); border:1px solid {{ st.border }};">
+                  <svg viewBox="0 0 64 74" width="44" height="50" fill="none" stroke="{{ st.ink }}" stroke-width="1.4" stroke-linecap="round">
+                    <path d="M32 5 C47 5 55 19 55 39 C55 58 45 69 32 69 C19 69 9 58 9 39 C9 19 17 5 32 5 Z"></path>
+                    <path d="{{ st.hair }}" stroke-width="1.1"></path>
+                    <path d="{{ st.zone }}" stroke-width="1.1" stroke-dasharray="2.5 3"></path>
+                  </svg>
+                  <span style="font-size:13px; text-align:center; line-height:1.3; color:{{ st.ink }};">{{ st.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div onClick="{{ toggleBConsent }}" style="display:flex; align-items:flex-start; gap:12px; margin-top:24px; cursor:pointer; min-height:44px; padding-top:4px;">
+            <div style="width:20px; height:20px; flex-shrink:0; margin-top:2px; background:#FFFFFF; display:flex; align-items:center; justify-content:center; transition:border-color 300ms cubic-bezier(.22,.61,.36,1); border:1px solid {{ bConsentBorder }};">
+              <sc-if value="{{ bConsent }}" hint-placeholder-val="{{ false }}">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#16233A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"></path></svg>
+              </sc-if>
+            </div>
+            <span style="font-size:14px; line-height:1.6; color:#3A352E;">I agree to be contacted about this visit. I have read how my details are used.</span>
+          </div>
+          <sc-if value="{{ bConsentError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:14px; color:#8A3A2E; margin-top:8px;">Please agree to be contacted before we arrange a visit.</div>
+          </sc-if>
+
+          <button onClick="{{ bSubmit }}" style="height:56px; width:100%; margin-top:24px; background:#16233A; color:#E9E4D8; border:0; font-size:16px; font-weight:500; cursor:{{ bBtnCursor }}; display:flex; align-items:center; justify-content:center; gap:12px; transition:background-color 300ms cubic-bezier(.22,.61,.36,1);" style-hover="background-color:#0E1728;">
+            <sc-if value="{{ bSending }}" hint-placeholder-val="{{ false }}">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#E9E4D8" stroke-width="1.7" stroke-linecap="round"><path d="M12 3.5 A8.5 8.5 0 0 1 20.5 12"></path></svg>
+            </sc-if>
+            {{ bBtnLabel }}
+          </button>
+          <div style="margin-top:14px; font-size:13px; color:#5F5851; text-align:center;">We reply on WhatsApp inside a working day.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- booked -->
+    <sc-if value="{{ bBooked }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:620px;">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#16233A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"></path></svg>
+        <h1 style="margin:clamp(22px,3vw,32px) 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(32px,4.4vw,52px); line-height:1.06; letter-spacing:-0.015em; text-wrap:balance;">{{ bookedHeadline }}</h1>
+        <p style="margin:20px 0 0; font-size:clamp(17px,1.4vw,19px); line-height:1.7; color:#3A352E; text-wrap:pretty;">He will confirm the hour on WhatsApp by tomorrow evening.</p>
+        <div style="margin-top:clamp(28px,3vw,40px); border-top:1px solid #1A1714;">
+          <sc-for list="{{ bookedRows }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex; justify-content:space-between; gap:20px; padding:16px 0; border-bottom:1px solid #CEC6B4; font-size:16px;">
+              <span style="color:#5F5851;">{{ r.k }}</span>
+              <span style="text-align:right;">{{ r.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:24px 0 0; font-size:16px; line-height:1.7; color:#5F5851; max-width:540px; text-wrap:pretty;">No branding on the car or the bag, and will call from the gate rather than ring the bell if you ask.</p>
+        <div style="margin-top:clamp(28px,4vw,40px); display:flex; flex-wrap:wrap; gap:13px;">
+          <button style="height:56px; padding:0 30px; background:#16233A; color:#E9E4D8; border:0; font-size:16px; font-weight:500; cursor:pointer;">Add to calendar</button>
+          <button onClick="{{ goHome }}" style="height:56px; padding:0 30px; background:transparent; color:#16233A; border:1px solid #16233A; font-size:16px; font-weight:500; cursor:pointer;">Back to the site</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- waitlist -->
+    <sc-if value="{{ bWaitlist }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:620px;">
+        <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.16em; font-size:16px; color:#5F5851;">On the list</div>
+        <h1 style="margin:22px 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:clamp(32px,4.4vw,52px); line-height:1.06; letter-spacing:-0.015em; text-wrap:balance;">We are across Delhi NCR, not yet in {{ bCity }}.</h1>
+        <p style="margin:20px 0 0; font-size:clamp(17px,1.4vw,19px); line-height:1.7; color:#3A352E; text-wrap:pretty;">Your number is on the {{ bCity }} list. We will message you when a technician is working there, and not about anything else.</p>
+        <div style="margin-top:clamp(28px,3vw,40px); border-top:1px solid #1A1714;">
+          <div style="display:flex; justify-content:space-between; gap:20px; padding:16px 0; border-bottom:1px solid #CEC6B4; font-size:16px;">
+            <span style="color:#5F5851;">City</span><span>{{ bCity }}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; gap:20px; padding:16px 0; border-bottom:1px solid #CEC6B4; font-size:16px;">
+            <span style="color:#5F5851;">Number</span><span style="font-variant-numeric:tabular-nums;">+91 {{ bPhoneShown }}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; gap:20px; padding:16px 0; border-bottom:1px solid #CEC6B4; font-size:16px;">
+            <span style="color:#5F5851;">Expected</span><span>First quarter, 2027</span>
+          </div>
+        </div>
+        <p style="margin:24px 0 0; font-size:16px; line-height:1.7; color:#5F5851; max-width:540px; text-wrap:pretty;">If you are ever in Delhi NCR for a day, a fit can be done there. Say so on WhatsApp and we will arrange it.</p>
+        <div style="margin-top:clamp(28px,4vw,40px); display:flex; flex-wrap:wrap; gap:13px;">
+          <button onClick="{{ goTryon }}" style="height:56px; padding:0 30px; background:#16233A; color:#E9E4D8; border:0; font-size:16px; font-weight:500; cursor:pointer;">Try the simulation meanwhile</button>
+          <button onClick="{{ goHome }}" style="height:56px; padding:0 30px; background:transparent; color:#16233A; border:1px solid #16233A; font-size:16px; font-weight:500; cursor:pointer;">Back to the site</button>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</sc-if>
+
+<!-- ========== FOOTER ========== -->
+<sc-if value="{{ showFooter }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:clamp(72px,12vw,180px); background:#16233A;">
+  <div style="max-width:1440px; margin:0 auto; padding:clamp(40px,5vw,64px) clamp(20px,4vw,48px) {{ footerBottom }};">
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:clamp(28px,4vw,48px); padding-bottom:clamp(28px,4vw,40px); border-bottom:1px solid #1E2E49;">
+      <div style="display:flex; align-items:center; gap:15px;">
+        <svg viewBox="0 0 200 217.4" width="38" height="41" fill="#C9A363"><use href="#mm"></use></svg>
+        <svg viewBox="-3 -3 638 106" width="132" height="22" fill="#E9E4D8"><use href="#wms"></use></svg>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:clamp(28px,4vw,56px);">
+        <div style="display:flex; flex-direction:column;">
+          <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8; min-height:36px; display:flex; align-items:center;">Service</span>
+          <span onClick="{{ toWhat }}" style="font-size:15px; color:#A8B2C2; cursor:pointer; min-height:44px; display:flex; align-items:center;">What it is</span>
+          <span onClick="{{ toPrices }}" style="font-size:15px; color:#A8B2C2; cursor:pointer; min-height:44px; display:flex; align-items:center;">Prices</span>
+          <span onClick="{{ goTryon }}" style="font-size:15px; color:#A8B2C2; cursor:pointer; min-height:44px; display:flex; align-items:center;">Try-on</span>
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8; min-height:36px; display:flex; align-items:center;">Reach us</span>
+          <span style="font-size:15px; color:#A8B2C2; font-variant-numeric:tabular-nums; min-height:44px; display:flex; align-items:center;">WhatsApp · +91 98100 40200</span>
+          <span style="font-size:15px; color:#A8B2C2; font-variant-numeric:tabular-nums; min-height:44px; display:flex; align-items:center;">Phone · +91 124 400 2200</span>
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8; min-height:36px; display:flex; align-items:center;">Legal</span>
+          <span style="font-size:15px; color:#A8B2C2; min-height:44px; display:flex; align-items:center;">Privacy</span>
+          <span style="font-size:15px; color:#A8B2C2; min-height:44px; display:flex; align-items:center;">Terms</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; padding-top:24px; font-size:14px; color:#8C96A8;">
+      <span>Delhi NCR · home service only</span>
+      <span>Mane Man Grooming Services Private Limited</span>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ========== STICKY MOBILE BAR ========== -->
+<sc-if value="{{ showSticky }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed; left:0; right:0; bottom:0; z-index:50; height:64px; background:#0E1728; border-top:1px solid #1E2E49; display:flex; align-items:center; gap:12px; padding:0 16px;">
+  <div style="width:48px; height:48px; border:1px solid #3A4A64; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#E9E4D8;">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#E9E4D8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z M8.8 8.2 C8.4 9.2 9 10.6 10 11.8 C11 13 12.4 13.8 13.4 13.6 L14.6 12.4 L13 11.2 L12 12 C11.4 11.6 10.6 10.8 10.2 10 L11 9 L9.8 7.6 Z"></path></svg>
+  </div>
+  <button onClick="{{ goBook }}" style="flex:1; height:48px; background:#E9E4D8; color:#16233A; border:0; font-size:15px; font-weight:500; cursor:pointer;">Book a visit</button>
+</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showPlaceholderTags&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Imagery&quot;}}">
+class Component extends DCLogic {
+  _hero = React.createRef();
+  state = {
+    route: 'home', teaser: 46, openFaq: 0, narrow: false,
+    // try-on
+    tStep: 0, consent: false, stage: 0, look: -1, elapsed: 0, slider: 50,
+    gName: '', gPhone: '', gTouched: false,
+    // booking
+    bName: '', bPhone: '', bCity: 'Gurgaon', bSlot: 1, bStage: 0,
+    bConsent: false, bTouched: false, bState: 'form'
+  };
+
+  digits(v) { return (v || '').replace(/\D/g, '').slice(0, 10); }
+  fmtPhone(v) {
+    const d = this.digits(v);
+    return d.length > 5 ? d.slice(0, 5) + ' ' + d.slice(5) : d;
+  }
+
+  clock() {
+    clearInterval(this._t);
+    this.setState({ elapsed: 0 });
+    this._t = setInterval(() => {
+      this.setState(s => {
+        if (s.tStep !== 4) { clearInterval(this._t); return null; }
+        const e = s.elapsed + 1;
+        if (e >= 20) { clearInterval(this._t); return { elapsed: 20, tStep: 5 }; }
+        return { elapsed: e };
+      });
+    }, 1000);
+  }
+
+  tGo(n) {
+    clearInterval(this._t);
+    this.setState({ tStep: n }, () => {
+      window.scrollTo(0, 0);
+      if (n === 4) this.clock();
+    });
+  }
+
+  componentDidMount() {
+    const arm = () => {
+      const v = this._hero && this._hero.current;
+      if (!v) return;
+      v.muted = true;            // React omits the bare attribute; autoplay is blocked without it
+      v.loop = true;
+      v.playsInline = true;
+      const go = v.play();
+      if (go && go.catch) go.catch(() => {});
+    };
+    this._armVideo = arm;
+    requestAnimationFrame(() => requestAnimationFrame(arm));
+    this._vidTimer = setInterval(() => {
+      const v = this._hero && this._hero.current;
+      if (v && !document.hidden && (v.paused || v.ended)) arm();
+    }, 4000);
+    // Chrome pauses media in a backgrounded tab and does not resume it on return
+    this._vis = () => { if (!document.hidden) arm(); };
+    document.addEventListener('visibilitychange', this._vis);
+    this._mq = window.matchMedia('(max-width: 760px)');
+    this._sync = () => this.setState({ narrow: this._mq.matches });
+    this._sync();
+    this._mq.addEventListener('change', this._sync);
+    this._hash = () => {
+      const h = (location.hash || '').replace('#', '');
+      if (h === 'tryon' || h === 'book') this.setState({ route: h });
+    };
+    window.addEventListener('hashchange', this._hash);
+  }
+  componentWillUnmount() {
+    if (this._mq) this._mq.removeEventListener('change', this._sync);
+    window.removeEventListener('hashchange', this._hash);
+    clearInterval(this._t);
+    clearTimeout(this._b);
+    clearInterval(this._vidTimer);
+    if (this._vis) document.removeEventListener('visibilitychange', this._vis);
+  }
+
+  nav(route) {
+    clearInterval(this._t);
+    const patch = { route };
+    if (route === 'tryon') { patch.tStep = 0; patch.elapsed = 0; }
+    if (route === 'book') { patch.bState = 'form'; patch.bTouched = false; }
+    this.setState(patch, () => window.scrollTo(0, 0));
+  }
+
+  // Scroll to a homepage section, routing home first when on another page.
+  // Waits two frames so the section exists and has been laid out before measuring.
+  section(id) {
+    const jump = () => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const y = el.getBoundingClientRect().top + window.pageYOffset - 56;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+      }));
+    };
+    if (this.state.route !== 'home') {
+      clearInterval(this._t);
+      this.setState({ route: 'home' }, jump);
+    } else {
+      jump();
+    }
+  }
+
+  submitGate() {
+    const s = this.state;
+    const ok = s.gName.trim().length > 0 && this.digits(s.gPhone).length === 10;
+    if (!ok) { this.setState({ gTouched: true }); return; }
+    this.tGo(6);
+  }
+
+  submitBooking() {
+    const s = this.state;
+    if (s.bState === 'sending') return;
+    const ok = s.bName.trim().length > 0 && this.digits(s.bPhone).length === 10 && s.bConsent;
+    if (!ok) { this.setState({ bTouched: true }); return; }
+    this.setState({ bState: 'sending' });
+    clearTimeout(this._b);
+    this._b = setTimeout(() => {
+      const served = ['Gurgaon', 'Delhi', 'Noida', 'Faridabad', 'Ghaziabad'];
+      this.setState(p => ({ bState: served.indexOf(p.bCity) !== -1 ? 'booked' : 'waitlist' }), () => window.scrollTo(0, 0));
+    }, 1400);
+  }
+
+  // Norwood stages drawn in profile. Bald regions are generous polygons
+  // clipped to the skull outline, so only the scalp area ever shows pale.
+  _nw() {
+    const rows = [
+      ['I',   'I',   'No loss',  'No recession',        'The hairline sits where it always has.'],
+      ['II',  'II',  'Early',    'Temple recession',    'The corners have moved back a little. Most men reach this and go no further.'],
+      ['III', 'III', 'We fit',   'A clear M',           'Deep recession at both temples. The first stage other people notice.'],
+      ['IV',  'IV',  'We fit',   'Front and crown',     'The front has gone back further and the crown has opened separately.'],
+      ['V',   'V',   'We fit',   'The bridge narrows',  'Front and crown are both bare, divided by a thinning band of hair.'],
+      ['VI',  'VI',  'We fit',   'The bridge is gone',  'Front and crown have joined into one continuous bare area.'],
+      ['VII', 'VII', 'We fit',   'A rim only',          'Hair remains as a band around the sides and back of the head.']
+    ];
+    return rows.map(([, numeral, tag, name, desc]) => {
+      const fits = tag === 'We fit';
+      return {
+        numeral, tag, name, desc,
+        border: '#CEC6B4',
+        rule: fits ? '#16233A' : '#CEC6B4',
+        tagInk: fits ? '#16233A' : '#5F5851'
+      };
+    });
+  }
+
+  _nwOld() {
+    const FRONT = {
+      ii:  'M96 0 L96 26 C90 20 80 15 68 13 L63 0 Z',
+      iii: 'M96 0 L96 30 C88 21 76 15 60 13 L53 0 Z',
+      iv:  'M96 0 L96 32 C87 21 73 15 55 13 L47 0 Z',
+      v:   'M96 0 L96 35 C85 22 69 15 49 14 L40 0 Z',
+      vi:  'M0 0 L96 0 L96 37 C80 20 46 12 26 27 C16 35 10 47 8 61 L0 61 Z',
+      vii: 'M0 0 L96 0 L96 45 C80 27 44 18 22 35 C12 45 6 59 5 74 L0 74 Z'
+    };
+    const VERTEX = {
+      sm: ' M45 27 C51 27 54 23 54 18 C54 13 50 10 45 10 C40 10 36 13 36 18 C36 23 39 27 45 27 Z',
+      md: ' M42 31 C50 31 56 25 56 19 C56 12 50 8 42 8 C34 8 28 12 28 19 C28 25 34 31 42 31 Z'
+    };
+    const rows = [
+      ['I',   'No loss', '',                      'The hairline sits where it always has.'],
+      ['II',  'Early',   FRONT.ii,                'The temples have moved back slightly. Most men reach this and go no further.'],
+      ['III', 'We fit',  FRONT.iii,               'A clear M at the front. The first stage other people notice.'],
+      ['IV',  'We fit',  FRONT.iv + VERTEX.sm,    'The front has gone back further and the crown has opened.'],
+      ['V',   'We fit',  FRONT.v + VERTEX.md,     'Front and crown are both bare, separated by a narrowing band.'],
+      ['VI',  'We fit',  FRONT.vi,                'The band has gone. Front and crown are one continuous area.'],
+      ['VII', 'We fit',  FRONT.vii,               'Hair remains only as a rim around the sides and back.']
+    ];
+    return rows.map(([stage, tag, bald, desc]) => {
+      const fits = tag === 'We fit';
+      return {
+        stage: 'Norwood ' + stage, tag, desc,
+        bald: bald || 'M0 0 Z',
+        border: fits ? '#16233A' : '#CEC6B4',
+        tagInk: fits ? '#16233A' : '#5F5851'
+      };
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const narrow = s.narrow;
+
+    const faqDefs = [
+      ['Will anyone be able to tell?', 'At conversational distance, no — the front hairline is where it is won or lost, and a thin-skin base puts each hair through a membrane three hundredths of a millimetre thick. Under a shower, or a hand run backwards through the hair, someone would know.'],
+      ['How long does a piece last?', 'A monofilament base runs six to eight months with monthly servicing. Thin skin is finer and shorter-lived: four to six months. The base wears out before the hair does.'],
+      ['What happens during the monthly service visit?', 'The technician lifts the piece, cleans the adhesive off the base and your scalp, checks the knots, re-seats it and trims the hair to match your own growth. About an hour, at your home.'],
+      ['Can I swim, shower and exercise with it?', 'Yes to all three. Chlorine and sea salt shorten the life of the base, so rinse it in fresh water afterwards. Heavy sweating is fine.'],
+      ['Does it damage the hair I still have?', 'The base sits on skin, not on hair, and the perimeter is bonded to areas where you have little or none. Hair under the base is trimmed short rather than shaved.'],
+      ['How do you match the colour and the hairline?', 'Colour is matched against forty samples in daylight at the measurement visit, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed before the piece is ordered.'],
+      ['What if I do not like it at the fit?', 'Fourteen days to change your mind: we refit it at no charge or refund you in full, including the fitting and the cut.'],
+      ['Which cities do you cover?', 'All of Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad. Mumbai and Bengaluru are next. Leave your number and we will tell you when a technician is working in your city.'],
+      ['What does the first year cost in total?', 'A standard base: ₹25,000 for the first fit plus twelve monthly service visits at ₹1,500, so ₹43,000. Premium: ₹40,000 plus twelve at ₹2,000, so ₹64,000. A replacement piece at six months is separate.'],
+      ['Is this the same thing as a wig?', 'No. A wig sits on the whole head, is held by tension or clips, and comes off at night. This is bonded to the skin over the area you have lost, is cut to your face, and stays on for weeks at a time.']
+    ];
+
+    // Path data rather than a symbol reference: a {{ }} hole in `d` is inert to the
+    // publish bundler, whereas a hole in `use href` reads as an unresolvable asset.
+    const TICK = 'M4 12.5 L9.5 18 L20 6';
+    const CROSS = 'M6 6 L18 18 M18 6 L6 18';
+    const icon = (kind) => ({
+      icon: true, text: false,
+      d: kind ? TICK : CROSS,
+      ink: kind ? '#16233A' : '#5F5851',
+      v: ''
+    });
+    const txt = (v) => ({ icon: false, text: true, v, d: TICK, ink: '#1A1714' });
+
+    const cmpDefs = [
+      ['Cost', txt('₹1.2–3 lakh, once'), txt('₹800–2,000 a month, for life'), txt('₹25,000, then ₹1,500 a month')],
+      ['Visible result', txt('9–12 months'), txt('4–6 months'), txt('The same day')],
+      ['Covers advanced loss', icon(false), icon(false), icon(true)],
+      ['Slows the loss itself', icon(false), icon(true), icon(false)],
+      ['Surgery', icon(true), icon(false), icon(false)],
+      ['Reversible', icon(false), icon(true), icon(true)],
+      ['Upkeep', txt('None, once healed'), txt('Daily, for life'), txt('One visit a month')]
+    ];
+
+    const on = '#E9E4D8';
+    const stageDefs = [
+      { title: 'Thinning at the crown', sub: 'The parting has widened', short: 'Crown thinning',
+        hair: 'M13 28 C20 17 44 17 51 28',
+        zone: 'M32 33 C41 33 46 38 46 44 C46 50 40 55 32 55 C24 55 18 50 18 44 C18 38 23 33 32 33 Z' },
+      { title: 'Receding at the front', sub: 'The corners have gone back', short: 'Receding front',
+        hair: 'M11 34 C16 22 24 18 32 18 C40 18 48 22 53 34',
+        zone: 'M13 30 C18 19 25 25 32 25 C39 25 46 19 51 30' },
+      { title: 'Advanced, front and crown', sub: 'Little left on top', short: 'Advanced',
+        hair: 'M10 40 C14 30 22 26 32 26 C42 26 50 30 54 40',
+        zone: 'M12 34 C18 16 46 16 52 34 C46 28 18 28 12 34 Z' }
+    ];
+    const lookDefs = [
+      ['Full density', 'Natural hairline · short'],
+      ['Full density', 'Straight hairline · medium'],
+      ['Medium density', 'Natural hairline · short'],
+      ['Medium density', 'Receded hairline · medium'],
+      ['Light density', 'Natural hairline · short'],
+      ['Light density', 'Receded hairline · cropped']
+    ];
+    const procDefs = [['Reading the photograph', 2], ['Finding the hairline', 6], ['Placing the hair', 11], ['Matching the light', 16]];
+    const slotDefs = ['Weekday morning', 'Weekday evening', 'Weekend morning', 'Weekend evening'];
+
+    const tStep = s.tStep;
+    const gNameBad = s.gTouched && !s.gName.trim();
+    const gPhoneBad = s.gTouched && this.digits(s.gPhone).length !== 10;
+    const bNameBad = s.bTouched && !s.bName.trim();
+    const bPhoneBad = s.bTouched && this.digits(s.bPhone).length !== 10;
+    const bConsentBad = s.bTouched && !s.bConsent;
+    const SERVED = ['Gurgaon', 'Delhi', 'Noida', 'Faridabad', 'Ghaziabad'];
+    const notServed = SERVED.indexOf(s.bCity) === -1;
+
+    return {
+      heroRef: this._hero,
+      onHome: s.route === 'home',
+      onTryon: s.route === 'tryon',
+      onBook: s.route === 'book',
+      route: s.route,
+      showFooter: s.route === 'home',
+
+      // ---- try-on ----
+      tUpload: tStep === 0,
+      tConsent: tStep === 1,
+      tStage: tStep === 2,
+      tLooks: tStep === 3,
+      tProcessing: tStep === 4,
+      tGate: tStep === 5,
+      tResult: tStep === 6,
+      tError: tStep === 7,
+      tProgress: ['14%', '28%', '44%', '60%', '78%', '90%', '100%', '28%'][tStep],
+      tStepLabel: ['Step one of five', 'Before we begin', 'Step two of five', 'Step three of five', 'Step four of five', 'Step five of five', 'Your result', 'Cannot use this photograph'][tStep],
+      tBackLabel: tStep === 0 ? 'Back to the site' : 'Back',
+      tBack: () => {
+        if (tStep === 0) this.nav('home');
+        else if (tStep === 7) this.tGo(0);
+        else if (tStep === 6) this.tGo(5);
+        else if (tStep === 5) this.tGo(3);
+        else this.tGo(tStep - 1);
+      },
+      tNext: () => {
+        if (tStep === 1 && !s.consent) return;
+        if (tStep === 3 && s.look < 0) return;
+        this.tGo(tStep + 1);
+      },
+      tShowError: () => this.tGo(7),
+      tRestart: () => this.tGo(0),
+      tTryAnother: () => this.tGo(3),
+      tSubmitGate: () => this.submitGate(),
+
+      guidelines: [
+        { n: '1', title: 'Face the window', body: 'Daylight from the front, nothing bright behind you.' },
+        { n: '2', title: 'Straight on, no tilt', body: 'Phone at eye level, arm out, chin level.' },
+        { n: '3', title: 'Nothing on your head', body: 'No cap, no hood, hair as it is today.' }
+      ],
+      consentRows: [
+        { k: 'Used for', v: 'Generating your simulation. Nothing else.' },
+        { k: 'Kept for', v: 'Thirty days, then deleted automatically.' },
+        { k: 'Training', v: 'Never used to train any model.' },
+        { k: 'Shared with', v: 'Nobody outside Mane Man.' },
+        { k: 'To withdraw', v: 'Message us and it is deleted the same day.' }
+      ],
+      consent: s.consent,
+      tToggleConsent: () => this.setState(p => ({ consent: !p.consent })),
+      consentBorder: s.consent ? on : '#3A4A64',
+      consentFill: s.consent ? on : 'transparent',
+      consentBtnBg: s.consent ? on : '#2A3A56',
+      consentBtnInk: s.consent ? '#16233A' : '#A8B2C2',
+      consentBtnCursor: s.consent ? 'pointer' : 'default',
+
+      stageOptions: stageDefs.map((d, i) => ({
+        hair: d.hair, zone: d.zone, title: d.title, sub: d.sub,
+        pick: () => this.setState({ stage: i }),
+        border: s.stage === i ? on : '#3A4A64',
+        bg: s.stage === i ? '#16233A' : 'transparent',
+        ink: s.stage === i ? on : '#A8B2C2'
+      })),
+      looks: lookDefs.map((l, i) => ({
+        density: l[0], detail: l[1],
+        pick: () => this.setState({ look: i }),
+        border: s.look === i ? on : '#3A4A64',
+        thumbBg: s.look === i ? '#1A2740' : '#131C2E',
+        ink: s.look === i ? on : '#A8B2C2'
+      })),
+      lookBtnBg: s.look >= 0 ? on : '#2A3A56',
+      lookBtnInk: s.look >= 0 ? '#16233A' : '#A8B2C2',
+      lookBtnCursor: s.look >= 0 ? 'pointer' : 'default',
+      lookBtnLabel: s.look >= 0 ? 'Generate the simulation' : 'Choose one to continue',
+
+      procSteps: procDefs.map(([label, at]) => ({
+        label,
+        opacity: 1,
+        tick: s.elapsed >= at ? '#C9A363' : '#3A4A64',
+        ink: s.elapsed >= at ? on : '#8C96A8'
+      })),
+      countdown: String(Math.max(0, 20 - s.elapsed)) + 's',
+
+      gateImgOrder: narrow ? 2 : 0,
+      gName: s.gName,
+      gPhone: s.gPhone,
+      setGName: e => this.setState({ gName: e.target.value }),
+      setGPhone: e => this.setState({ gPhone: this.fmtPhone(e.target.value) }),
+      gNameBorder: gNameBad ? '#E0917F' : '#3A4A64',
+      gPhoneBorder: gPhoneBad ? '#E0917F' : '#3A4A64',
+      gNameError: gNameBad,
+      gPhoneError: gPhoneBad,
+      gPhoneShown: s.gPhone || '98100 00000',
+
+      slider: s.slider,
+      sliderPct: s.slider + '%',
+      sliderClip: (100 - s.slider) + '%',
+      setSlider: e => this.setState({ slider: +e.target.value }),
+      chosenLook: s.look >= 0 ? lookDefs[s.look][0] + ' · ' + lookDefs[s.look][1] : 'Medium density · natural hairline · short',
+
+      // ---- booking ----
+      bForm: s.bState === 'form' || s.bState === 'sending',
+      bBooked: s.bState === 'booked',
+      bWaitlist: s.bState === 'waitlist',
+      bSending: s.bState === 'sending',
+      bBtnLabel: s.bState === 'sending' ? 'Sending' : 'Request a visit',
+      bBtnCursor: s.bState === 'sending' ? 'default' : 'pointer',
+      bSubmit: () => this.submitBooking(),
+      bName: s.bName,
+      bPhone: s.bPhone,
+      bCity: s.bCity,
+      setBName: e => this.setState({ bName: e.target.value }),
+      setBPhone: e => this.setState({ bPhone: this.fmtPhone(e.target.value) }),
+      setBCity: e => this.setState({ bCity: e.target.value }),
+      bNameBorder: bNameBad ? '#8A3A2E' : '#CEC6B4',
+      bPhoneBorder: bPhoneBad ? '#8A3A2E' : '#CEC6B4',
+      bNameError: bNameBad,
+      bPhoneError: bPhoneBad,
+      bCityNotServed: notServed,
+      bPhoneShown: s.bPhone || '98100 00000',
+      bConsent: s.bConsent,
+      bConsentBorder: bConsentBad ? '#8A3A2E' : '#16233A',
+      bConsentError: bConsentBad,
+      toggleBConsent: () => this.setState(p => ({ bConsent: !p.bConsent })),
+      slots: slotDefs.map((label, i) => ({
+        label,
+        pick: () => this.setState({ bSlot: i }),
+        border: s.bSlot === i ? '#16233A' : '#CEC6B4',
+        bg: s.bSlot === i ? '#16233A' : '#FFFFFF',
+        ink: s.bSlot === i ? '#E9E4D8' : '#1A1714'
+      })),
+      bStages: stageDefs.map((d, i) => ({
+        hair: d.hair, zone: d.zone, label: d.short,
+        pick: () => this.setState({ bStage: i }),
+        border: s.bStage === i ? '#16233A' : '#CEC6B4',
+        ink: s.bStage === i ? '#16233A' : '#5F5851'
+      })),
+      bookedHeadline: 'Thursday, 24 September, ' + ['before noon', 'after six', 'before noon', 'after six'][s.bSlot] + '.',
+      bookedRows: [
+        { k: 'What happens', v: 'Measurement, not a fitting' },
+        { k: 'How long', v: 'Forty minutes' },
+        { k: 'To pay', v: 'Nothing' },
+        { k: 'Where', v: 'Your address' },
+        { k: 'Confirming to', v: '+91 ' + (s.bPhone || '98100 00000') }
+      ],
+
+      showSticky: s.route === 'home',
+      navDisplay: narrow ? 'none' : 'inline-flex',
+      footerBottom: '96px',
+      barSpace: s.route === 'home' ? '72px' : '0px',
+      showTags: this.props.showPlaceholderTags ?? true,
+
+      goHome: () => this.nav('home'),
+      goTryon: () => this.nav('tryon'),
+      goBook: () => this.nav('book'),
+      toWhat: () => this.section('what'),
+      toPrices: () => this.section('prices'),
+      toFaq: () => this.section('faq'),
+
+      teaser: s.teaser,
+      teaserPct: s.teaser + '%',
+      teaserClip: (100 - s.teaser) + '%',
+      setTeaser: e => this.setState({ teaser: +e.target.value }),
+
+      cmpCols: narrow ? 'repeat(3,1fr)' : '260px repeat(3,1fr)',
+      cmpLabelDisplay: narrow ? 'none' : 'block',
+      cmpLabelRowDisplay: narrow ? 'block' : 'none',
+      cmpRowPad: narrow ? '0 0 16px' : '20px 0',
+      cmpFs: narrow ? '15px' : '17px',
+      cmpRows: cmpDefs.map(([label, a, b, c]) => ({
+        label,
+        a: a.v, b: b.v, c: c.v,
+        aText: a.text, bText: b.text, cText: c.text,
+        aIcon: a.icon, bIcon: b.icon, cIcon: c.icon,
+        aD: a.d, bD: b.d, cD: c.d,
+        aInk: a.ink, bInk: b.ink, cInk: c.ink
+      })),
+
+      counts: [
+        { v: '10 years', label: 'of fitting experience across our technicians' },
+        { v: '10,000+', label: 'systems fitted by the team to date' },
+        { v: '5 cities', label: 'across Delhi NCR. Mumbai and Bengaluru next' },
+        { v: '90 min', label: 'from the technician arriving to the cut finished' }
+      ],
+
+      norwoodEarly: this._nw().slice(0, 2),
+      norwoodLate: this._nw().slice(2),
+
+
+      testimonials: [
+        { quote: 'Placeholder. Two or three sentences in the client\u2019s own words, about the fitting rather than about how he feels.',
+          name: 'Client name', meta: 'Age · Norwood stage · city',
+          shot: 'Seated at home, natural light, not a studio portrait.' },
+        { quote: 'Placeholder. Something specific and checkable \u2014 how long the visit took, what the technician did, what he does differently now.',
+          name: 'Client name', meta: 'Age · Norwood stage · city',
+          shot: 'Three-quarter view, hairline visible, no retouching.' },
+        { quote: 'Placeholder. One reservation he had beforehand and what actually happened instead.',
+          name: 'Client name', meta: 'Age · Norwood stage · city',
+          shot: 'Candid, mid-conversation, warm single source.' }
+      ],
+
+      trust: [
+        { title: 'The technician comes to you', sub: 'Ninety minutes at your table.',
+          d: 'M3 11 L12 4 L21 11 M5.5 10 V20 H18.5 V10 M10 20 V14.5 H14 V20' },
+        { title: 'Across Delhi NCR', sub: 'Gurgaon, Delhi, Noida, Faridabad, Ghaziabad.',
+          d: 'M12 21 C7 16 4.5 12.6 4.5 9.5 A7.5 7.5 0 0 1 19.5 9.5 C19.5 12.6 17 16 12 21 Z M12 7 A2.6 2.6 0 0 1 12 12.2 A2.6 2.6 0 0 1 12 7' },
+        { title: 'Prices published below', sub: 'Measurement free. No deposit.',
+          d: 'M7 4 H16 M7 8.5 H16 M7 13 C12 13 14.5 11.5 14.5 8.5 C14.5 6 12.8 4 9.5 4 M7 13 H10.5 L17 20.5' },
+        { title: 'No clinic, no waiting room', sub: 'Nobody else is in the room.',
+          d: 'M12 3 L19.5 6 V12 C19.5 16.5 16.3 19.8 12 21 C7.7 19.8 4.5 16.5 4.5 12 V6 Z M9 12 L11.5 14.5 L15.5 9.5' }
+      ],
+
+      steps: [
+        { n: '01', title: 'A call', meta: 'Fifteen minutes · free',
+          body: 'We ask what stage you are at and tell you what a system can and cannot do.',
+          img: 'assets/step-01-call.jpg', alt: 'A notebook of scalp measurements and a sketched head, beside a phone and a steel ruler' },
+        { n: '02', title: 'Measurement at home', meta: 'Forty minutes · free',
+          body: 'A template of your scalp taken in cling film and tape, and your hair colour matched against forty samples in daylight.',
+          img: 'assets/step-02-template.jpg', alt: 'Hands laying strips of tape over cling film on the crown of a head' },
+        { n: '03', title: 'The fit', meta: 'Ninety minutes · at your table',
+          body: 'Your piece arrives cut to that template. The technician seats it, trims it into your own hair and styles it.',
+          img: 'assets/step-03-fit.jpg', alt: 'Barber\u2019s scissors trimming hair at a bonded hairline' },
+        { n: '04', title: 'Monthly service', meta: '₹1,500 a visit · one hour',
+          body: 'He returns each month to lift the base, clean it, re-seat it and trim the hair back to your own growth.',
+          img: 'assets/step-04-kit.jpg', alt: 'A technician\u2019s canvas tool roll laid open, scissors, comb, adhesive remover and brush in order' }
+      ],
+
+      bases: [
+        { name: 'Standard', spec: 'Monofilament / lace mesh\u00A00.06–0.12 mm', tag: 'Hand-tied knots', tag2: 'Mesh base',
+          isStandard: true, isPremium: false,
+          membrane: 'M14 86 H306', dash: '3 5', detail: 'M14 93 H306 M44 86 V93 M74 86 V93 M104 86 V93 M134 86 V93 M164 86 V93 M194 86 V93 M224 86 V93 M254 86 V93 M284 86 V93',
+          knots: 'M60 89 C58 80 66 76 70 82 C72 86 64 90 62 86 M140 89 C138 80 146 76 150 82 C152 86 144 90 142 86 M220 89 C218 80 226 76 230 82 C232 86 224 90 222 86',
+          hair: 'M62 82 C58 62 70 42 96 30 M142 82 C138 60 152 40 178 28 M222 82 C218 60 232 40 258 30 M96 84 C92 64 104 46 128 36 M178 84 C174 64 186 46 210 36',
+          look: 'Soft, forgiving at the parting', breath: 'High — the mesh is open', life: 'Six to eight months', price: '₹25,000' },
+        { name: 'Premium', spec: 'Polyurethane thin skin\u00A00.03–0.10 mm', tag: 'V-looped, no knots', tag2: 'Thin skin',
+          isStandard: false, isPremium: true,
+          membrane: 'M14 88 H306 M14 91.5 H306', dash: '0',
+          detail: 'M40 94 C60 102 90 102 110 94 M120 94 C140 102 170 102 190 94 M200 94 C220 102 250 102 270 94',
+          knots: 'M64 88 C60 92 60 94 64 91.5 M144 88 C140 92 140 94 144 91.5 M224 88 C220 92 220 94 224 91.5',
+          hair: 'M64 88 C60 64 72 42 98 28 M144 88 C140 62 154 40 180 26 M224 88 C220 62 234 40 260 28 M98 88 C94 64 106 46 130 34 M180 88 C176 64 188 46 212 34',
+          look: 'Hair appears to leave the scalp', breath: 'Lower — the membrane is sealed', life: 'Four to six months', price: '₹40,000' }
+      ],
+
+      prices: [
+        { label: 'First fit', note: 'The piece, the fitting and the cut', std: '₹25,000', prm: '₹40,000' },
+        { label: 'Monthly service visit', note: 'Refit, clean, trim — at your home', std: '₹1,500', prm: '₹2,000' },
+        { label: 'Replacement piece', note: 'Every six months', std: '₹17,000', prm: '₹30,000' }
+      ],
+
+      numbers: [
+        { v: '180', label: 'hours of training behind every technician' },
+        { v: '48', label: 'hours from a service request to a technician at your door' },
+        { v: '14', label: 'days to change your mind — refit or full refund' }
+      ],
+
+      faq: faqDefs.map(([q, a], i) => ({
+        q, a,
+        open: s.openFaq === i,
+        sign: s.openFaq === i ? 'M6 12 H18' : 'M12 6 V18 M6 12 H18',
+        ink: s.openFaq === i ? '#1A1714' : '#5F5851',
+        toggle: () => this.setState(p => ({ openFaq: p.openFaq === i ? -1 : i }))
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

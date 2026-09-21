@@ -1,6 +1,7 @@
-// mm-site: static assets for everything outside /api/*. This is a placeholder
-// that serves one page per environment so routing can be tested; the
-// front-end task replaces the assets with the Astro build.
+// mm-site: static assets for everything outside /api/*. Local and staging serve
+// the Astro build (site/dist/<environment>, from npm run build:site). Production
+// keeps its placeholder page until the site goes live there, which the owner
+// will do in one release with the backend.
 //
 // mm-api's route (host/api/*) is more specific than this Worker's (host/*), so
 // Cloudflare sends /api/* to mm-api. See docs/decisions/0004-routing-and-hostnames.md.
@@ -10,7 +11,7 @@
   "compatibility_date": "2026-08-15",
   "workers_dev": false,
   "preview_urls": false,
-  "assets": { "directory": "./placeholder/local", "not_found_handling": "404-page" },
+  "assets": { "directory": "./dist/local", "not_found_handling": "404-page" },
   "env": {
     "staging": {
       "name": "mm-site-staging",
@@ -19,7 +20,7 @@
       "preview_urls": false,
       "observability": { "enabled": true },
       "routes": [{ "pattern": "staging.maneman.in/*", "zone_name": "maneman.in" }],
-      "assets": { "directory": "./placeholder/staging", "not_found_handling": "404-page" }
+      "assets": { "directory": "./dist/staging", "not_found_handling": "404-page" }
     },
     "production": {
       "name": "mm-site-production",

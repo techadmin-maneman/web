@@ -1,0 +1,207 @@
+---
+// The Norwood scale: stages I–II (nothing to fit) and III–VII (we fit). The
+// photographs are placeholders; content can switch to v2's line drawings.
+import { norwood, norwoodPhotos, placeholderTag, type NorwoodStage } from "../../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import DesignPicture from "../DesignPicture.astro";
+
+const showPhotos = isShown(norwoodPhotos) && norwoodPhotos.use === "photos";
+const showDrawings = norwoodPhotos.use === "drawings";
+const groups = [
+  { ...norwood.early, fits: false, offset: 0 },
+  { ...norwood.late, fits: true, offset: norwood.early.stages.length },
+];
+
+function photoFor(index: number) {
+  const photo = norwoodPhotos.images[index];
+  if (photo === undefined) throw new Error(`no Norwood photograph for stage ${String(index + 1)}`);
+  return photo;
+}
+function cards(stages: readonly NorwoodStage[], offset: number) {
+  return stages.map((stage, index) => ({ stage, photo: photoFor(offset + index) }));
+}
+---
+
+<section class="norwood" data-section="norwood">
+  <div class="container inner">
+    <h2 class="section-title">{norwood.title}</h2>
+    <p class="lead intro">{norwood.intro}</p>
+
+    {groups.map((group) => (
+      <div class:list={["group", { late: group.fits }]}>
+        <div class="group-label caps">{group.label}</div>
+        <ul class:list={["cards", group.fits ? "flow" : "early"]}>
+          {cards(group.stages, group.offset).map(({ stage, photo }) => (
+            <li class="card">
+              {(showPhotos || showDrawings) && (
+                <div class="frame picture">
+                  {showPhotos ? (
+                    <DesignPicture
+                      file={photo.file}
+                      alt={photo.alt}
+                      sizes="(min-width: 760px) 240px, 46vw"
+                      widths={[240, 480]}
+                      class="focus-norwood"
+                    />
+                  ) : (
+                    <svg class="drawing" viewBox="0 0 96 74" role="img" aria-label={`Norwood ${stage.numeral}`}>
+                      <path d={stage.bald} />
+                    </svg>
+                  )}
+                  <div class="label numeral">{stage.numeral}</div>
+                  {SHOW_PLACEHOLDER_TAGS && showPhotos && <div class="label placeholder">{placeholderTag}</div>}
+                </div>
+              )}
+              <div class="body">
+                <div class="head">
+                  <span class="name">{stage.name}</span>
+                  <span class="tag caps">{stage.tag}</span>
+                </div>
+                <div class="description">{stage.description}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {"note" in group && <p class="note">{group.note}</p>}
+      </div>
+    ))}
+
+    <div class="actions">
+      <a class="btn btn--md btn--ink" href="/book">
+        {norwood.book}
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .norwood {
+    margin-top: var(--section-gap);
+    background: var(--paper-light);
+    border-top: var(--hairline) solid var(--paper-line);
+    border-bottom: var(--hairline) solid var(--paper-line);
+  }
+  .inner {
+    padding-block: var(--band-pad);
+  }
+  .section-title {
+    margin-bottom: var(--sp-12);
+  }
+  .intro {
+    margin: 0 0 var(--norwood-intro-gap);
+  }
+  .group-label {
+    margin-bottom: var(--sp-16);
+    font-size: var(--fs-16);
+    color: var(--text-muted);
+  }
+  .late .group-label {
+    margin: var(--norwood-late-gap) 0 var(--sp-16);
+    padding-top: var(--norwood-late-pad);
+    border-top: var(--hairline) solid var(--paper-line);
+    color: var(--ink);
+  }
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .early {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--norwood-early-min)), 1fr));
+    gap: var(--norwood-gap);
+    max-width: var(--norwood-early-max);
+  }
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--norwood-gap);
+  }
+  .flow > .card {
+    flex: 1 1 var(--norwood-flow-basis);
+    max-width: var(--norwood-flow-max);
+  }
+  .card {
+    background: var(--paper);
+    border: var(--hairline) solid var(--paper-line);
+    display: flex;
+    flex-direction: column;
+  }
+  .picture {
+    aspect-ratio: 4 / 5;
+  }
+  .drawing {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .drawing path {
+    fill: var(--paper);
+  }
+  .numeral {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: var(--fs-14);
+  }
+  .placeholder {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    padding: var(--sp-5) var(--sp-9);
+    letter-spacing: var(--tracking-12);
+    color: var(--ink-muted);
+  }
+  .body {
+    padding: var(--norwood-card-pad);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+    border-top: var(--hairline) solid var(--paper-line);
+  }
+  .late .body {
+    border-top: var(--rule-strong) solid var(--ink);
+  }
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-10);
+  }
+  .name {
+    font-family: var(--font-serif);
+    font-size: var(--fs-card-title);
+    line-height: 1.2;
+  }
+  .tag {
+    letter-spacing: var(--tracking-12);
+    font-size: var(--fs-13);
+    white-space: nowrap;
+    color: var(--text-muted);
+  }
+  .late .tag {
+    color: var(--ink);
+  }
+  .description {
+    font-size: var(--fs-14);
+    line-height: 1.55;
+    color: var(--text-soft);
+    text-wrap: pretty;
+  }
+  .note {
+    margin: var(--sp-20) 0 0;
+    font-size: var(--fs-16);
+    line-height: 1.7;
+    color: var(--text-muted);
+    max-width: var(--measure-note);
+    text-wrap: pretty;
+  }
+  .actions {
+    margin-top: var(--norwood-actions-gap);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-14) var(--sp-32);
+    align-items: center;
+  }
+</style>

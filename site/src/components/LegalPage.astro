@@ -1,0 +1,43 @@
+---
+// A long-form text page in the site layout. The text is supplied later; until
+// then staging shows the placeholder with the design's tag.
+import { placeholderTag } from "../content/site.ts";
+import Site from "../layouts/Site.astro";
+import { SHOW_PLACEHOLDER_TAGS } from "../lib/build.ts";
+
+interface Props {
+  pageTitle: string;
+  page: { publish: boolean; title: string; paragraphs: readonly string[] };
+}
+
+const { pageTitle, page } = Astro.props;
+---
+
+<Site title={pageTitle}>
+  <article class="page">
+    {SHOW_PLACEHOLDER_TAGS && !page.publish && <div class="label tag">{placeholderTag}</div>}
+    <h1 class="section-title">{page.title}</h1>
+    {page.paragraphs.map((paragraph) => (
+      <p>{paragraph}</p>
+    ))}
+  </article>
+</Site>
+
+<style>
+  .page {
+    max-width: var(--measure-column);
+    margin: 0 auto;
+    padding: var(--book-pad-top) var(--gutter) var(--section-gap);
+    min-height: calc(100vh - var(--header-h));
+  }
+  .tag {
+    display: inline-block;
+    margin-bottom: var(--sp-24);
+  }
+  p {
+    margin: var(--sp-20) 0 0;
+    font-size: var(--fs-reading);
+    line-height: 1.75;
+    text-wrap: pretty;
+  }
+</style>

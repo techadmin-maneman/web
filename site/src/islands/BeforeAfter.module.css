@@ -1,0 +1,117 @@
+.frame {
+  position: relative;
+  width: 100%;
+  background: var(--ink-frame);
+  overflow: hidden;
+}
+.teaser {
+  height: var(--teaser-frame-h);
+}
+.result {
+  height: var(--result-frame-h);
+}
+.from46 {
+  --position: 46%;
+}
+.from50 {
+  --position: 50%;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+.layer :global(picture),
+.layer :global(img) {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.before {
+  clip-path: inset(0 calc(100% - var(--position)) 0 0);
+}
+
+/* Two classes, so the size wins over the global .label rule. */
+.frame .corner {
+  position: absolute;
+  font-size: var(--fs-15);
+}
+.teaser .corner {
+  top: var(--sp-20);
+}
+.result .corner {
+  top: var(--sp-18);
+}
+.teaser .left {
+  left: var(--sp-20);
+}
+.teaser .right {
+  right: var(--sp-20);
+}
+.result .left {
+  left: var(--sp-18);
+}
+.result .right {
+  right: var(--sp-18);
+}
+.frame .tag {
+  position: absolute;
+  left: var(--sp-20);
+  bottom: var(--sp-20);
+}
+
+.line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--position);
+  width: var(--hairline);
+  background: var(--gilt);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.handle {
+  position: absolute;
+  top: 50%;
+  left: var(--position);
+  transform: translate(-50%, -50%);
+  border: var(--hairline) solid var(--gilt);
+  background: var(--ink-deep);
+  color: var(--gilt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-5);
+  pointer-events: none;
+}
+.teaser .handle {
+  width: var(--teaser-handle);
+  height: var(--teaser-handle);
+}
+.result .handle {
+  width: var(--result-handle);
+  height: var(--result-handle);
+}
+
+/* The input covers the frame, invisible; its focus ring moves to the handle. */
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  appearance: none;
+  background: transparent;
+}
+.input:focus-visible {
+  outline: none;
+}
+.frame:has(.input:focus-visible) .handle {
+  outline: var(--focus-width) solid var(--paper);
+  outline-offset: var(--focus-offset);
+}

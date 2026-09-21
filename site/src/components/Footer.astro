@@ -1,0 +1,126 @@
+---
+// The footer, on the home page only (as v2). The wordmark here is 132 px wide,
+// so it is the display cut (design/brand/README.md); v2 drew the small cut.
+import { contact, footer } from "../content/site.ts";
+import { isShown } from "../lib/build.ts";
+import { whatsappLink } from "../lib/icons.ts";
+
+const { service, reach, legal } = footer.columns;
+const showContact = isShown(contact);
+---
+
+<footer class="footer on-ink">
+  <div class="inner">
+    <div class="top">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 200 217.4" width="38" height="41" aria-hidden="true">
+          <use href="#mm"></use>
+        </svg>
+        <svg class="word" viewBox="-4 -4 741 108" width="132" height="19" role="img" aria-label="Mane Man">
+          <use href="#wm"></use>
+        </svg>
+      </div>
+      <div class="columns">
+        <div class="column">
+          <span class="title caps">{service.title}</span>
+          {service.links.map((link) => (
+            <a class="item" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
+        {showContact && (
+          <div class="column">
+            <span class="title caps">{reach.title}</span>
+            <a class="item number" href={whatsappLink(contact.whatsapp.number)}>
+              {contact.whatsapp.label}
+            </a>
+            <a class="item number" href={`tel:${contact.phone.number}`}>
+              {contact.phone.label}
+            </a>
+          </div>
+        )}
+        <div class="column">
+          <span class="title caps">{legal.title}</span>
+          {legal.links.map((link) => (
+            <a class="item" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>{footer.area}</span>
+      <span>{footer.entity}</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    margin-top: var(--section-gap-xl);
+    background: var(--ink);
+  }
+  .inner {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: var(--footer-pad-top) var(--gutter) var(--footer-pad-bottom);
+  }
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--footer-gap);
+    padding-bottom: var(--footer-rule-gap);
+    border-bottom: var(--hairline) solid var(--ink-rule);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-15);
+  }
+  .mark {
+    fill: var(--gilt);
+  }
+  .word {
+    fill: var(--paper);
+  }
+  .columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--footer-columns-gap);
+  }
+  .column {
+    display: flex;
+    flex-direction: column;
+  }
+  .title {
+    font-size: var(--fs-15);
+    color: var(--ink-muted);
+    min-height: var(--sp-36);
+    display: flex;
+    align-items: center;
+  }
+  .item,
+  .item:hover {
+    font-size: var(--fs-15);
+    color: var(--ink-soft);
+    min-height: var(--tap);
+    display: flex;
+    align-items: center;
+  }
+  .number {
+    font-variant-numeric: tabular-nums;
+  }
+  .bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--sp-12);
+    padding-top: var(--sp-24);
+    font-size: var(--fs-14);
+    color: var(--ink-muted);
+  }
+</style>
