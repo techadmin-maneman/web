@@ -183,6 +183,9 @@ if (environment === "staging") {
   const accessSecret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
   if (accessId === "" || accessSecret === "") {
     report("FAIL", "Access service token", "CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET are not both set");
+  } else if (!accessId.endsWith(".access")) {
+    // Access ignores a malformed token and redirects to the login, which looks like a policy problem.
+    report("FAIL", "Access service token", "CF_ACCESS_CLIENT_ID should end in .access; it looks cut short");
   } else {
     const withToken = await fetch(healthUrl, {
       headers: { "CF-Access-Client-Id": accessId, "CF-Access-Client-Secret": accessSecret },
