@@ -16,22 +16,22 @@ Section still to come: erasure within the day (M4).
 
 ### State on 21 September 2026
 
-| Step                                        | staging                                      | production                        |
-| ------------------------------------------- | -------------------------------------------- | --------------------------------- |
-| 1. D1 database, queues                      | done                                         | done                              |
-| 1. R2 buckets, 30-day expiry                | done                                         | done                              |
-| 2. DNS record                               | done                                         | exists (the apex record)          |
-| 3. Access application and service token     | done                                         | not applicable                    |
-| 4. Migrations and identity mark             | done                                         | done                              |
-| 5. Bootstrap deploy of both Workers         | done                                         | done                              |
-| 6. CI tokens and GitHub secrets, checked    | done                                         | done                              |
-| 7. Worker secrets: Turnstile, IP salt       | done                                         | done                              |
-| 7. Worker secrets: alert webhook            | done (Google Chat)                           | **to do** (owner)                 |
-| 7. Worker secrets: AILabTools, link signing | **to do** (M3)                               | **to do** (before the release)    |
-| 7. Worker secrets: Evolution, allowlist     | **to do** (owner, M3)                        | not until messaging is enabled    |
-| 8. Zoho org, fields, secrets                | done: Developer Edition                      | **to do** (owner): production org |
-| 9. Triggers (cron and all three consumers)  | crm-sync done; M3's two after M3 is deployed | after the release                 |
-| 10. Access bypass for result links          | **to do** (owner, M3)                        | not applicable                    |
+| Step                                        | staging                               | production                        |
+| ------------------------------------------- | ------------------------------------- | --------------------------------- |
+| 1. D1 database, queues                      | done                                  | done                              |
+| 1. R2 buckets, 30-day expiry                | done                                  | done                              |
+| 2. DNS record                               | done                                  | exists (the apex record)          |
+| 3. Access application and service token     | done                                  | not applicable                    |
+| 4. Migrations and identity mark             | done                                  | done                              |
+| 5. Bootstrap deploy of both Workers         | done                                  | done                              |
+| 6. CI tokens and GitHub secrets, checked    | done                                  | done                              |
+| 7. Worker secrets: Turnstile, IP salt       | done                                  | done                              |
+| 7. Worker secrets: alert webhook            | done (Google Chat)                    | **to do** (owner)                 |
+| 7. Worker secrets: AILabTools, link signing | done                                  | **to do** (before the release)    |
+| 7. Worker secrets: Evolution, allowlist     | done (poker-settle's bridge, for now) | not until messaging is enabled    |
+| 8. Zoho org, fields, secrets                | done: Developer Edition               | **to do** (owner): production org |
+| 9. Triggers (cron and all three consumers)  | done                                  | after the release                 |
+| 10. Access bypass for result links          | done                                  | not applicable                    |
 
 ### 1. Resources
 
@@ -133,17 +133,17 @@ When the GitHub plan allows (0008): require every job in `.github/workflows/ci.y
 
 Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the value. Set them **before** deploying code that needs them: the Worker refuses to start without them (`docs/decisions/0011-lead-api.md`).
 
-| Secret                                                                      | Value                                                                                                                                                  |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `TURNSTILE_SECRET`                                                          | The secret of the environment's Turnstile widget (Cloudflare dashboard → Turnstile).                                                                   |
-| `IP_HASH_SALT`                                                              | 32 or more random characters: `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`. Changing it resets the rate-limit counters.       |
-| `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                                   |
-| `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                                |
-| `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | India data centre: `accounts.zoho.in`, and for the API `www.zohoapis.in` (production org) or `developer.zohoapis.in` (Developer Edition org, staging). |
-| `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                       |
-| `RESULT_SIGNING_KEY`                                                        | 32 or more random characters, generated like `IP_HASH_SALT`. Signs upload and result links; changing it invalidates links already handed out.          |
-| `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`         | The Evolution API bridge (`docs/decisions/0016-whatsapp-through-evolution.md`). The URL must be public `https://`, reachable from Cloudflare.          |
-| `MESSAGING_ALLOWLIST`                                                       | Staging: the founders' mobile numbers, comma-separated. Only these receive messages. A secret, so the numbers stay out of git.                         |
+| Secret                                                                      | Value                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TURNSTILE_SECRET`                                                          | The secret of the environment's Turnstile widget (Cloudflare dashboard → Turnstile).                                                                                                                                                                                                                                                |
+| `IP_HASH_SALT`                                                              | 32 or more random characters: `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`. Changing it resets the rate-limit counters.                                                                                                                                                                                    |
+| `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                                                                                                                                                                                                                |
+| `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                                                                                                                                                                                                             |
+| `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | India data centre: `accounts.zoho.in`, and for the API `www.zohoapis.in` (production org) or `developer.zohoapis.in` (Developer Edition org, staging).                                                                                                                                                                              |
+| `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                                                                                                                                                                                                    |
+| `RESULT_SIGNING_KEY`                                                        | 32 or more random characters, generated like `IP_HASH_SALT`. Signs upload and result links; changing it invalidates links already handed out.                                                                                                                                                                                       |
+| `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`         | The Evolution API bridge (`docs/decisions/0016-whatsapp-through-evolution.md`). The URL must be public `https://`, reachable from Cloudflare, and include the port if it is not 443: staging's ends in `ts.net:8443`, because port 443 on that host serves another app. `GET /` there should answer "Welcome to the Evolution API". |
+| `MESSAGING_ALLOWLIST`                                                       | Staging: the founders' mobile numbers, comma-separated. Only these receive messages. A secret, so the numbers stay out of git.                                                                                                                                                                                                      |
 
 To set several at once without typing them into a terminal, put them in a git-ignored file at the repository root, such as `.env.worker-staging`, with one `NAME="value"` per line. Then:
 

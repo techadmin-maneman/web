@@ -104,7 +104,7 @@ Leads were booked through the real staging API with the `staging-lead` workflow:
 
 ## M3: try-on and messaging
 
-On the `m3/tryon-and-messaging` branch. The code is checked locally against the stub AILabTools, which the real adapter talks to over a fake HTTP API with the documented response shapes. The staging proof follows once the owner's secrets are in place.
+Merged in PR #6. Fixes from the staging proof: PR #7 (a WhatsApp send that timed out is not retried), PR #8 (slow renders are followed for 15 minutes) and PR #9 (timing for stalled consumer runs). The code is also checked locally against the stub AILabTools, which the real adapter talks to over a fake HTTP API with the documented response shapes.
 
 | Requirement                                                        | Evidence                                                                                                                                                                                                                                                                                                                 | Result                       |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
@@ -122,14 +122,38 @@ On the `m3/tryon-and-messaging` branch. The code is checked locally against the 
 | Messaging queue                                                    | `test/worker/messaging.test.ts`: sends a one-hour signed link; skipped when messaging is off, the person is erased, the number is not on the allowlist, or three have gone today; retried three times, then failed with an alert. Through Evolution for now (`docs/decisions/0016-whatsapp-through-evolution.md`)        | code **pass**; staging below |
 | Try-on-only lead in Zoho as `Try-on — delivery only`, unassigned   | M2's rules (`test/worker/crm-rules.test.ts`); the claim writes the lead the sync reads                                                                                                                                                                                                                                   | code **pass**; staging below |
 
-### Staging proof
+### Staging proof, 21 September 2026
 
-- [ ] A Pro render and a Premium render both complete, with measured latency recorded.
-- [ ] A deliberately wrong filename extension to Premium is classified `photo_invalid_file`.
-- [ ] The credits check proves a rejected face bills nothing, or an ADR adds a pre-check.
-- [ ] A forced download failure recovers from the stored URL without a second billed render.
-- [ ] A gate submitted while the render is still running creates the lead at once, and the result appears when ready.
-- [ ] A second look releases without a second gate or a second lead.
-- [ ] The WhatsApp copy arrives on a test handset, and with `MESSAGING_ENABLED=false` the claim returns `whatsapp_copy: false` and nothing is sent.
-- [ ] A try-on-only lead is in Zoho as `Try-on — delivery only` and is not assigned.
-- [ ] The ceiling trips at 3 and returns `503`.
+Run with `scripts/staging-tryon.ts` through Cloudflare Access, and with `scripts/ailabtools-probe.ts` directly against AILabTools with the staging key. Times are Cloudflare's (UTC).
+
+The photos were supplied by the owner and kept outside the repository:
+
+- three front-on men with hair loss, each cropped at the eyes or nose;
+- a side profile;
+- a two-face image composed from two of them.
+
+Their licences are unknown; the owner chose to use them for this internal test.
+
+- [x] **A Pro render and a Premium render both complete, with measured latency recorded.** From submit to stored result: Pro 27.1 s and 58.9 s, Premium 99.8 s. Results were 1288 × 808 PNGs of 0.95 to 1.9 MB from an 800 × 500 photo, well under the 6 MB cap.
+  - An earlier Premium render was still running at 189 s. The prompt's 180-second deadline failed it, though it had been billed. AILabTools finished it about 6½ minutes after submitting. Renders are now followed for 15 minutes (PR #8, docs/decisions/0015).
+- [x] **A deliberately wrong filename extension to Premium is classified `photo_invalid_file`.** A JPEG sent to Premium named `portrait.avif` got 502, "AI service internal error … File type not supported". The adapter classified it `photo_invalid_file`, and it billed 0 credits.
+- [x] **The credits check proves a rejected face bills nothing.** The side profile ("No face detected") and the two-face image ("Multiple faces detected") were each accepted, then refused at the first poll, and billed 0 credits. No pre-check is needed (docs/decisions/0017).
+- [x] **A forced download failure recovers from the stored URL without a second billed render.**
+  - The failure was simulated on a finished Premium job: its stored result was deleted from R2, and the job was set back to `downloading` with no attempts.
+  - The 16:25 sweep re-enqueued it, and the render consumer downloaded the result again from the stored AILabTools URL on its first attempt.
+  - The balance was 1,680 credits before and after. The real download-failure path (three quick tries, then the sweeper) is covered by `test/worker/render.test.ts`.
+- [x] **A gate submitted while the render is still running creates the lead at once, and the result appears when ready.**
+  - The gate was submitted 5 s in, with the job still `queued`. It returned 201 with the lead, `whatsapp_copy: true` and the session cookie. D1 held both consents (`gate-v1`, `photo-v1`) and a `tryon` lead with the stage as its loss extent.
+  - The result was ready at 59 s, and the session fetched it.
+- [x] **A second look releases without a second gate or a second lead.** A different look on the same job returned a new job with the same photo, person and session, and no lead of its own. D1 held one lead and one `try_on_additional_look` event; the session fetched the second result.
+- [ ] **The WhatsApp copy arrives on a test handset**: the owner to confirm.
+  - The first result's message was `sent` on its third attempt. The first two timed out after the bridge had already fetched the image, so the handset probably received it more than once. A timeout is no longer retried (PR #7, docs/decisions/0016).
+  - The bridge is the Evolution API on port 8443 of the owner's Tailscale Funnel host; port 443 there serves another app.
+- [x] **With `MESSAGING_ENABLED=false`, the claim returns `whatsapp_copy: false` and nothing is sent.** A staging version with messaging off was deployed for the test. The claim returned `whatsapp_copy: false`. When the render was ready, its message went from `queued` to `skipped` ("messaging is off") with no attempt.
+- [ ] **A try-on-only lead is in Zoho as `Try-on — delivery only`, and is not assigned**: the owner to confirm in Zoho, record `32619000000175412`. In D1 the person is not contactable, and the sync inserted a new record, which the rules make `Try-on — delivery only` with no assignment rule.
+- [x] **The ceiling trips at 3 and returns `503`.** The same version set `RENDER_DAILY_CEILING` to 3, and today's counter was reset. Three generates got 202, and the fourth got 503 `busy`, with its job `failed` / `busy`. The counter stopped at 3, and the ceiling alert fired once. Staging then went back to the pipeline's version, `b434a6c1`.
+
+**Also seen:**
+
+- **The stall recurred.** A CRM sync spent 2 min 10 s before its first Zoho call, as in M2. The steps before the first outside call are now timed (PR #9, docs/decisions/0012).
+- **Queue delivery adds seconds.** A new job waited 10 to 25 s for its first delivery, and a 5-second poll delay was 10 to 15 s in practice.
