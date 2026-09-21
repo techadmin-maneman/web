@@ -24,7 +24,7 @@ const TIMEOUT_MS = 10_000;
 /** Refresh a token this long before Zoho would expire it. */
 const TOKEN_MARGIN_MS = 60_000;
 
-const LEAD_SOURCE_NAMES: Readonly<Record<LeadSource, string>> = {
+export const LEAD_SOURCE_NAMES: Readonly<Record<LeadSource, string>> = {
   form: "Booking form",
   waitlist: "Waitlist",
   tryon: "Try-on",

@@ -60,7 +60,7 @@ Every implementation calls `assertStatusAllowed` before writing. It throws if a 
 
 **Hosts** are secrets (`ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`); for Zoho's India data centre they are `accounts.zoho.in` and `www.zohoapis.in`.
 
-**Scopes:** `ZohoCRM.modules.leads.ALL`, `ZohoCRM.modules.notes.CREATE` and `ZohoSearch.securesearch.READ`.
+**Scopes:** `ZohoCRM.modules.leads.ALL`, `ZohoCRM.modules.notes.CREATE` and `ZohoSearch.securesearch.READ` for the sync. Plus `ZohoCRM.settings.fields.READ` and `ZohoCRM.settings.assignment_rules.READ`, read-only, so `scripts/check-zoho-setup.ts` can confirm the org is set up as the sync expects.
 
 ## Consequences
 

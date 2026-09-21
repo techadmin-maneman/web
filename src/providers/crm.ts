@@ -10,7 +10,8 @@ import { createZohoCrm } from "./zoho.ts";
 export type LeadSource = "form" | "waitlist" | "tryon";
 
 /** Statuses the sync sets. Ops move leads on from these by hand. */
-export type LeadStatus = "New" | "Waitlist" | "Try-on — delivery only";
+export const LEAD_STATUSES = ["New", "Waitlist", "Try-on — delivery only"] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
 /** Everything a CRM record is built from; read from D1 at sync time. */
 export interface CrmLead {

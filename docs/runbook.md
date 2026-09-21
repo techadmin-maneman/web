@@ -138,10 +138,24 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                          |
 | `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | For Zoho's India data centre: `accounts.zoho.in` and `www.zohoapis.in`.                                                                          |
 
+To set several at once without typing them into a terminal, put them in a git-ignored file at the repository root, such as `.env.worker-staging`, with one `NAME="value"` per line. Then:
+
 ```sh
-W secret put ALERT_WEBHOOK_URL --env <env>
-W secret list --env <env>        # names only, to check
+W secret bulk .env.worker-staging --env staging
+rm .env.worker-staging
+W secret list --env staging      # names only, to check
 ```
+
+A single secret: `W secret put ALERT_WEBHOOK_URL --env <env>` prompts for the value.
+
+**A Google Chat webhook for `ALERT_WEBHOOK_URL`.** The Workspace admin must allow incoming webhooks (Admin console → Apps → Google Workspace → Google Chat).
+
+1. In Google Chat, create a space, for example "Mane Man alerts", and add whoever should see alerts.
+2. Click the arrow next to the space name → **Apps & integrations** → **Add webhooks**.
+3. Name it `mm-api`, then **Save**.
+4. In the webhook's **More** menu, choose **Copy link**. The URL starts `https://chat.googleapis.com/v1/spaces/`; its `token` part is secret.
+
+One space can serve both environments: every alert starts `[mm-api staging]` or `[mm-api production]`.
 
 The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-production` (`maneman.in`, `www.maneman.in`). The front-end needs their site keys, which are public: `docs/turnstile.md`.
 
@@ -163,20 +177,36 @@ Staging uses a Zoho CRM **Developer Edition** org, production the real org. Do t
    | UTM Source (`UTM_Source`), UTM Campaign (`UTM_Campaign`) | Single line |                                                                    |
 
 2. **Pick-list values.** Lead Status: add `New`, `Waitlist` and `Try-on — delivery only` (with the em dash). Lead Source: add `Booking form`, `Waitlist` and `Try-on`.
-3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that assigns new bookings to technicians. Its ID is the number at the end of the rule's URL; that is `ZOHO_LAR_ID`.
+3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that assigns new bookings to technicians. Its ID becomes `ZOHO_LAR_ID`; `scripts/check-zoho-setup.ts` (step 6) lists it.
 4. **Workflows.** Setup → Automation → Workflow Rules → Leads:
    - on create, when Lead Status is New: notify the assigned technician and ops;
    - on edit, when Contact Consent becomes true: assign an owner. This covers a try-on customer who later books; Zoho has no assignment rule on update.
    - Nothing may fire for Lead Status "Try-on — delivery only". The sync also sends those with workflows switched off.
-5. **API client.** At the API console for your data centre (`https://api-console.zoho.in`): Add Client → Self Client. Note the client ID and secret. Generate a code with the scope `ZohoCRM.modules.leads.ALL,ZohoCRM.modules.notes.CREATE,ZohoSearch.securesearch.READ`, then exchange it within its lifetime for a refresh token:
+5. **API client.** The data centre is in the address you log in at: `crm.zoho.in` is India, `crm.zoho.com` the US, and so on. Use the matching API console, for example `https://api-console.zoho.in`.
+   1. **Add Client** → **Self Client** → **Create Now** → **OK**. The **Client Secret** tab shows the client ID and secret.
+   2. **Generate Code** tab. Scope, exactly:
+
+      ```
+      ZohoCRM.modules.leads.ALL,ZohoCRM.modules.notes.CREATE,ZohoSearch.securesearch.READ,ZohoCRM.settings.fields.READ,ZohoCRM.settings.assignment_rules.READ
+      ```
+
+      The first three are what the sync uses. The two `settings…READ` scopes let `scripts/check-zoho-setup.ts` read the fields and assignment rules; they cannot change anything. Choose the longest time duration, add a description, then **Create** and pick the org.
+
+   3. Before the code expires, exchange it for a refresh token. Use your data centre's accounts host:
+
+      ```sh
+      curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
+      ```
+
+      Keep the `refresh_token` from the answer. It does not expire; revoke it in the API console if it leaks.
+
+6. **Check, then store.** Put the Zoho values (and `ALERT_WEBHOOK_URL`) in `.env.worker-<env>` (step 7). Leave `ZOHO_LAR_ID` empty if you don't know it yet. Then:
 
    ```sh
-   curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
+   node --env-file=.env.worker-staging scripts/check-zoho-setup.ts
    ```
 
-   Keep the `refresh_token` from the answer.
-
-6. **Secrets.** Put all six Zoho secrets on the Worker (step 7). The next lead proves the setup: it should appear in Zoho within a minute, assigned and with its proposed date.
+   It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
 ### 9. Triggers
 
