@@ -1,10 +1,11 @@
 // The Worker refuses to run when it cannot prove which environment it is.
 //
-// validateStaticConfig runs at module load (src/index.ts), so a misconfigured
-// Worker fails Cloudflare's startup validation and the upload itself is
-// rejected. verifyDatabaseIdentity needs I/O, so it runs on the first
-// invocation in each isolate and blocks every request until it passes.
-// See docs/decisions/0003-environment-identity-guard.md.
+// validateStaticConfig runs when the module loads (src/index.ts). If it throws,
+// Cloudflare rejects the upload and `wrangler dev` does not start.
+//
+// verifyDatabaseIdentity needs to query D1, which a module cannot do while
+// loading, so it runs on the first request instead and blocks every request
+// until it passes. See docs/decisions/0003-environment-identity-guard.md.
 
 import {
   EXPECTED_DATABASE_NAME,
@@ -29,33 +30,34 @@ export class ConfigError extends Error {
   }
 }
 
-const PROVIDER_ENTRIES = Object.entries(PROVIDER_VARS) as [ProviderVar, readonly string[]][];
-
-/** Throws ConfigError listing every problem; returns the parsed config otherwise. */
+/** Returns the parsed config, or throws a ConfigError listing every problem. */
 export function validateStaticConfig(env: Readonly<Record<string, unknown>>): StaticConfig {
   const problems: string[] = [];
 
-  const environment = env.ENVIRONMENT;
-  if (environment === undefined || environment === "") {
+  let environment: EnvironmentName | undefined;
+  if (env.ENVIRONMENT === undefined || env.ENVIRONMENT === "") {
     problems.push("ENVIRONMENT is not set");
-  } else if (!isEnvironmentName(environment)) {
-    problems.push(`ENVIRONMENT has unknown value ${JSON.stringify(environment)}`);
+  } else if (isEnvironmentName(env.ENVIRONMENT)) {
+    environment = env.ENVIRONMENT;
+  } else {
+    problems.push(`ENVIRONMENT has unknown value ${JSON.stringify(env.ENVIRONMENT)}`);
   }
 
   const providers: Partial<Record<ProviderVar, string>> = {};
-  for (const [variable, allowed] of PROVIDER_ENTRIES) {
+  for (const variable of Object.keys(PROVIDER_VARS) as ProviderVar[]) {
+    const allowed: readonly string[] = PROVIDER_VARS[variable];
     const value = env[variable];
     if (typeof value !== "string" || !allowed.includes(value)) {
       problems.push(`${variable} must be one of ${allowed.join(", ")}`);
       continue;
     }
-    providers[variable] = value;
     if (environment === "production" && value === "stub") {
       problems.push(`${variable} is a stub in production`);
     }
+    providers[variable] = value;
   }
 
-  if (problems.length > 0 || !isEnvironmentName(environment)) throw new ConfigError(problems);
+  if (environment === undefined || problems.length > 0) throw new ConfigError(problems);
   return { environment, providers: providers as Record<ProviderVar, string> };
 }
 
@@ -65,8 +67,10 @@ export type DatabaseIdentity =
   | { readonly state: "mismatch"; readonly databaseName: string; readonly expected: string }
   | { readonly state: "unreachable"; readonly error: unknown };
 
+/** Reads the database's identity row and compares it with the environment's database. */
 export async function verifyDatabaseIdentity(db: D1Database, environment: EnvironmentName): Promise<DatabaseIdentity> {
   const expected = EXPECTED_DATABASE_NAME[environment];
+
   let row: { database_name: string } | null;
   try {
     row = await db
@@ -75,24 +79,25 @@ export async function verifyDatabaseIdentity(db: D1Database, environment: Enviro
   } catch (error) {
     return { state: "unreachable", error };
   }
+
   if (row === null) return { state: "unmarked" };
-  if (row.database_name !== expected) {
-    return { state: "mismatch", databaseName: row.database_name, expected };
-  }
+  if (row.database_name !== expected) return { state: "mismatch", databaseName: row.database_name, expected };
   return { state: "ok", databaseName: row.database_name };
 }
 
+export type IdentityCheck = (db: D1Database, environment: EnvironmentName) => Promise<DatabaseIdentity>;
+
 /**
- * Caches a successful identity check for the life of the isolate. Failures are
- * not cached: the next invocation checks again, so marking the database or
- * fixing the binding takes effect without a redeploy.
+ * verifyDatabaseIdentity, remembering a success for the life of the isolate.
+ * A failure is not remembered: the next request checks again, so marking the
+ * database takes effect without a redeploy.
  */
-export function createIdentityGate(): (db: D1Database, environment: EnvironmentName) => Promise<DatabaseIdentity> {
-  let verified: DatabaseIdentity | undefined;
+export function createCachedIdentityCheck(): IdentityCheck {
+  let success: DatabaseIdentity | undefined;
   return async (db, environment) => {
-    if (verified !== undefined) return verified;
+    if (success !== undefined) return success;
     const result = await verifyDatabaseIdentity(db, environment);
-    if (result.state === "ok") verified = result;
+    if (result.state === "ok") success = result;
     return result;
   };
 }

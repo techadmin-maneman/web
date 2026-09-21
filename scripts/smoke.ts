@@ -35,17 +35,21 @@ if (!isEnvironmentName(environment) || apiBase === undefined || siteBase === und
 }
 
 const headers: Record<string, string> = {};
-const accessId = process.env.CF_ACCESS_CLIENT_ID;
-const accessSecret = process.env.CF_ACCESS_CLIENT_SECRET;
-if (accessId !== undefined && accessId !== "" && accessSecret !== undefined && accessSecret !== "") {
+
+const accessId = process.env.CF_ACCESS_CLIENT_ID ?? "";
+const accessSecret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
+if (accessId !== "" && accessSecret !== "") {
   headers["CF-Access-Client-Id"] = accessId;
   headers["CF-Access-Client-Secret"] = accessSecret;
 }
+
+// --override mm-api-production=<id> becomes: Cloudflare-Workers-Version-Overrides: mm-api-production="<id>"
 const overrides = (values.override ?? []).map((pair) => {
-  const [worker, id] = pair.split("=");
-  if (worker === undefined || id === undefined)
+  const [worker, versionId] = pair.split("=");
+  if (worker === undefined || versionId === undefined) {
     throw new Error(`--override expects <worker>=<version-id>, got ${pair}`);
-  return `${worker}="${id}"`;
+  }
+  return `${worker}="${versionId}"`;
 });
 if (overrides.length > 0) headers["Cloudflare-Workers-Version-Overrides"] = overrides.join(", ");
 
@@ -54,8 +58,8 @@ const results = await runSmoke({
   siteBase: siteBase.replace(/\/$/, ""),
   environment,
   headers,
-  ...(values["version-id"] === undefined ? {} : { versionId: values["version-id"] }),
-  ...(values["version-tag"] === undefined ? {} : { versionTag: values["version-tag"] }),
+  versionId: values["version-id"],
+  versionTag: values["version-tag"],
 });
 
 for (const result of results) console.log(`${result.ok ? "PASS" : "FAIL"}  ${result.name}: ${result.detail}`);

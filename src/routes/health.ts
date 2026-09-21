@@ -35,7 +35,7 @@ export const healthRoute = createRoute({
 
 export function registerHealth(app: App): void {
   app.openapi(healthRoute, async (c) => {
-    const identity = await c.var.verifyIdentity(c.env.DB, c.var.config.environment);
+    const identity = await c.var.checkIdentity(c.env.DB, c.var.config.environment);
     const version = c.env.CF_VERSION_METADATA;
     const body: Health = {
       status: identity.state === "ok" ? "ok" : "unavailable",

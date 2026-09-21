@@ -34,17 +34,17 @@ export interface DocumentedResponse {
   readonly jsonSchema: unknown;
 }
 
-/** openapi3-ts types response maps loosely; read one entry without trusting it. */
+/** `value[key]` if `value` is an object that has `key`, otherwise undefined. */
+function property(value: unknown, key: string): unknown {
+  if (typeof value !== "object" || value === null || !(key in value)) return undefined;
+  return (value as Record<string, unknown>)[key];
+}
+
+/** The OpenAPI types describe responses loosely, so read one without trusting its shape. */
 export function readResponse(response: unknown): DocumentedResponse {
-  if (typeof response !== "object" || response === null) return { description: "", jsonSchema: undefined };
-  const description = "description" in response ? String(response.description) : "";
-  const content = "content" in response ? response.content : undefined;
-  const json =
-    typeof content === "object" && content !== null && "application/json" in content
-      ? content["application/json"]
-      : undefined;
-  const jsonSchema = typeof json === "object" && json !== null && "schema" in json ? json.schema : undefined;
-  return { description, jsonSchema };
+  const description = property(response, "description");
+  const jsonSchema = property(property(property(response, "content"), "application/json"), "schema");
+  return { description: typeof description === "string" ? description : "", jsonSchema };
 }
 
 const json = (value: unknown): string => ["```json", JSON.stringify(value, null, 2), "```"].join("\n");

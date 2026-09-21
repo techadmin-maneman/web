@@ -1,8 +1,9 @@
-// Writes this database's identity row (once; the row is immutable), then reads
-// it back and fails if it names a different database. Run after migrations.
+// Writes this database's identity row, then reads it back and fails if it
+// names a different database. Safe to run repeatedly: the row is written once
+// and can never change. Run after migrations.
 //
 //   node scripts/mark-database.ts local
-//   node scripts/mark-database.ts staging      (remote; needs CLOUDFLARE_API_TOKEN)
+//   node scripts/mark-database.ts staging       (remote; uses your wrangler login or CLOUDFLARE_API_TOKEN)
 //   node scripts/mark-database.ts production
 //
 // See docs/decisions/0003-environment-identity-guard.md.
@@ -18,27 +19,32 @@ if (!isEnvironmentName(environment)) {
 }
 
 const databaseName = EXPECTED_DATABASE_NAME[environment];
-const target = environment === "local" ? ["DB", "--local"] : [databaseName, "--remote", "--env", environment];
 
-function d1(sql: string): unknown {
-  const out = execFileSync(
+// Locally, wrangler finds the database by binding name; remotely, by database name and environment.
+const wranglerTarget =
+  environment === "local" ? ["DB", "--local", "--env="] : [databaseName, "--remote", "--env", environment];
+
+/** What `wrangler d1 execute --json` prints for a SELECT. */
+const QueryOutput = z.array(z.object({ results: z.array(z.object({ database_name: z.string() })) }));
+
+function runSql(sql: string): unknown {
+  const output = execFileSync(
     process.execPath,
-    ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...target, "--json", "--command", sql],
+    ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...wranglerTarget, "--json", "--command", sql],
     { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
   );
-  return JSON.parse(out);
+  return JSON.parse(output);
 }
 
-// databaseName comes from a fixed table, never from input, so interpolation is safe.
-d1(`INSERT INTO deployment_identity (id, database_name) VALUES (1, '${databaseName}') ON CONFLICT(id) DO NOTHING`);
+// databaseName comes from EXPECTED_DATABASE_NAME, never from input, so building the SQL string is safe.
+runSql(`INSERT INTO deployment_identity (id, database_name) VALUES (1, '${databaseName}') ON CONFLICT(id) DO NOTHING`);
 
-const ExecuteOutput = z.array(z.object({ results: z.array(z.object({ database_name: z.string() })) }));
-const found = ExecuteOutput.parse(d1("SELECT database_name FROM deployment_identity WHERE id = 1"))[0]?.results[0]
-  ?.database_name;
+const [query] = QueryOutput.parse(runSql("SELECT database_name FROM deployment_identity WHERE id = 1"));
+const markedAs = query?.results[0]?.database_name ?? null;
 
-if (found !== databaseName) {
+if (markedAs !== databaseName) {
   console.error(
-    `identity mismatch: ${environment} expects "${databaseName}", database is marked ${JSON.stringify(found ?? null)}`,
+    `identity mismatch: ${environment} expects "${databaseName}", database is marked ${JSON.stringify(markedAs)}`,
   );
   process.exit(1);
 }
