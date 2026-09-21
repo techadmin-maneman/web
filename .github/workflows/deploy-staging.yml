@@ -1,0 +1,68 @@
+# On every merge to main: run the PR checks again, then migrate the staging
+# database, deploy both Workers to staging and smoke-test staging.maneman.in.
+#
+# Secrets, on the GitHub Environment "staging":
+#   CLOUDFLARE_API_TOKEN                            staging's deploy token (docs/runbook.md)
+#   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET    Access service token, so the smoke suite gets past Access
+name: deploy-staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: deploy staging
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://staging.maneman.in
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+
+      - name: Staging is set up
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::The GitHub Environment 'staging' has no CLOUDFLARE_API_TOKEN. See docs/runbook.md."
+            exit 1
+          fi
+          npm run check:config -- --require-provisioned
+
+      - name: Migrate the staging database
+        run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-staging --env staging --remote
+
+      - name: Check the database is staging's
+        run: node scripts/mark-database.ts staging
+
+      - name: Deploy mm-api
+        run: |
+          version=$(node scripts/release.ts upload --worker mm-api --env staging --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-api --env staging --split "$version@100" --message "staging $SHA"
+
+      - name: Deploy mm-site
+        run: |
+          version=$(node scripts/release.ts upload --worker mm-site --env staging --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-site --env staging --split "$version@100" --message "staging $SHA"
+
+      - name: Smoke-test staging
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run smoke -- --base https://staging.maneman.in --environment staging --version-tag "$SHA"

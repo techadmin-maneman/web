@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests", ":pinAllExceptPeerDependencies"],
+  "rangeStrategy": "pin",
+  "timezone": "Asia/Kolkata",
+  "schedule": ["before 9am on monday"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "wrangler, workerd and the Workers test pool move together.",
+      "groupName": "cloudflare tooling",
+      "matchPackageNames": ["wrangler", "@cloudflare/vitest-pool-workers", "@cloudflare/workers-types"]
+    },
+    {
+      "description": "typescript-eslint caps TypeScript; update them together.",
+      "groupName": "typescript",
+      "matchPackageNames": ["typescript", "typescript-eslint", "@eslint/js", "eslint"]
+    },
+    {
+      "description": "The Workers test pool pins vitest's major.",
+      "groupName": "vitest",
+      "matchPackageNames": ["vitest", "@vitest/coverage-istanbul"]
+    }
+  ],
+  "vulnerabilityAlerts": { "labels": ["security"], "schedule": ["at any time"] }
+}

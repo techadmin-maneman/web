@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+dist/
+.wrangler/
+package-lock.json
+# Generated; the contract test compares them with the schemas byte for byte.
+docs/openapi.json
+docs/api.md
+src/worker-configuration.d.ts
+# Design export; not part of this build.
+Design/

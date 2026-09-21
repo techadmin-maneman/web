@@ -1,0 +1,154 @@
+# Every pull request, and every staging deploy (called from deploy-staging.yml).
+# Each job is one required status check on main; keep job names stable.
+name: ci
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Env types match wrangler.jsonc
+        run: npm run types:check
+      - run: npm run typecheck
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: npm run lint
+      - name: Workflows
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+
+  format:
+    name: format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: npm run format:check
+
+  test:
+    name: test (unit, contract, coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Unit and contract tests, 85% line coverage on src/
+        run: npm run test:coverage
+
+  config:
+    name: config check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - name: Every environment redeclares every binding
+        run: npm run check:config
+      - name: A deliberately broken config is rejected
+        run: >-
+          node scripts/check-wrangler-config.ts
+          --api test/fixtures/wrangler/broken-staging-inherits-bindings.jsonc
+          --expect-problem "env.staging: queues.producers is not redeclared"
+      - name: Migrations are forward-only and applied ones are unchanged
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            npm run check:migrations
+          else
+            npm run check:migrations -- --base "$BASE"
+          fi
+
+  migrations:
+    name: migrations apply
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Apply every migration to an empty D1 and mark it
+        run: npm run db:local
+      - name: Nothing is left unapplied
+        run: |
+          node node_modules/wrangler/bin/wrangler.js d1 migrations list DB --local --env="" | tee migrations.txt
+          grep -q "No migrations to apply" migrations.txt
+
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: npm audit --audit-level=high
+      - name: Registry signatures
+        run: npm audit signatures
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Bundle both Workers for every environment (dry run)
+        run: npm run build
+
+  smoke-local:
+    name: smoke (local)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: npm run db:local
+      # One at a time, each with its own inspector port: two wrangler dev
+      # processes starting together race for the same auxiliary ports.
+      - name: Start mm-api under wrangler dev
+        run: |
+          node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8787 --inspector-port 9230 > api.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:8787/api/health && exit 0
+            sleep 1
+          done
+          cat api.log
+          exit 1
+      - name: Start mm-site under wrangler dev
+        run: |
+          node node_modules/wrangler/bin/wrangler.js dev --config site/wrangler.jsonc --env="" --port 8788 --inspector-port 9231 > site.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:8788/ && exit 0
+            sleep 1
+          done
+          cat site.log
+          exit 1
+      - name: Smoke suite against local
+        run: npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
+      - name: A production Worker holding stubs refuses to start
+        run: |
+          if timeout 60 node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8789 --inspector-port 9232 --var ENVIRONMENT:production > refuse.log 2>&1; then
+            cat refuse.log; exit 1
+          fi
+          grep -q "refuses to start: IMAGE_PROVIDER is a stub in production" refuse.log

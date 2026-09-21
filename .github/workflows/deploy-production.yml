@@ -1,0 +1,183 @@
+# Production release, started by hand for a commit on main that passed staging.
+#
+#   migrate -> upload the new mm-api version -> send it 10% of traffic -> smoke it
+#   -> wait -> smoke it again -> 100% -> smoke -> deploy mm-site -> smoke
+#
+# If anything fails after traffic starts moving, both Workers go back to the
+# versions that were serving before. Migrations are not rolled back; every
+# migration works with the previous code (docs/decisions/0006-deployment-pipeline.md).
+#
+# Runs in the GitHub Environment "production". Required reviewers get added
+# there when the GitHub plan allows it (docs/decisions/0007-platform-constraints.md).
+#
+# Secret, on the GitHub Environment "production":
+#   CLOUDFLARE_API_TOKEN    production's deploy token (docs/runbook.md)
+name: deploy-production
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit SHA on main to release. It must have passed deploy-staging.
+        required: true
+        type: string
+      canary_percent:
+        description: Share of traffic the new mm-api version gets first (1-50).
+        default: "10"
+        type: string
+      soak_seconds:
+        description: How long the canary serves before promotion.
+        default: "300"
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  eligible:
+    name: commit is on main and passed staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      - name: The commit is on main
+        run: |
+          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::sha must be a full 40-character commit SHA"
+            exit 1
+          fi
+          # "ahead" or "identical" means main contains the commit.
+          status=$(gh api "repos/${{ github.repository }}/compare/$SHA...main" --jq .status)
+          if [ "$status" != "ahead" ] && [ "$status" != "identical" ]; then
+            echo "::error::$SHA is not on main (compare status: $status)"
+            exit 1
+          fi
+
+      - name: The commit passed staging
+        run: |
+          passed=$(gh run list --repo "${{ github.repository }}" --workflow deploy-staging.yml \
+            --commit "$SHA" --status success --json databaseId --jq length)
+          if [ "$passed" -eq 0 ]; then
+            echo "::error::$SHA has no successful deploy-staging run"
+            exit 1
+          fi
+
+  release:
+    name: release production
+    needs: eligible
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+      url: https://maneman.in
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      SHA: ${{ inputs.sha }}
+      CANARY: ${{ inputs.canary_percent }}
+      SOAK: ${{ inputs.soak_seconds }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: ./.github/actions/setup
+
+      - name: Check the inputs and setup
+        run: |
+          if ! [[ "$CANARY" =~ ^[0-9]+$ ]] || [ "$CANARY" -lt 1 ] || [ "$CANARY" -gt 50 ]; then
+            echo "::error::canary_percent must be a number from 1 to 50"
+            exit 1
+          fi
+          if ! [[ "$SOAK" =~ ^[0-9]+$ ]]; then
+            echo "::error::soak_seconds must be a number"
+            exit 1
+          fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::The GitHub Environment 'production' has no CLOUDFLARE_API_TOKEN. See docs/runbook.md."
+            exit 1
+          fi
+          npm run check:config -- --require-provisioned
+
+      - name: Record the versions serving now
+        id: before
+        run: |
+          api=$(node scripts/release.ts current --worker mm-api --env production)
+          site=$(node scripts/release.ts current --worker mm-site --env production)
+          if [ -z "$api" ] || [ -z "$site" ]; then
+            echo "::error::Production has never been deployed, so there is nothing to roll back to. Bootstrap it first (docs/runbook.md)."
+            exit 1
+          fi
+          echo "api=$api" >> "$GITHUB_OUTPUT"
+          echo "site=$site" >> "$GITHUB_OUTPUT"
+
+      - name: Migrate the production database
+        run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-prod --env production --remote
+
+      - name: Check the database is production's
+        run: node scripts/mark-database.ts production
+
+      - name: Upload the new mm-api version (no traffic yet)
+        id: api
+        run: echo "version=$(node scripts/release.ts upload --worker mm-api --env production --tag "$SHA")" >> "$GITHUB_OUTPUT"
+
+      - name: Send the new version ${{ inputs.canary_percent }}% of traffic
+        id: canary
+        run: >-
+          node scripts/release.ts deploy --worker mm-api --env production
+          --split "${{ steps.api.outputs.version }}@$CANARY"
+          --split "${{ steps.before.outputs.api }}@$((100 - CANARY))"
+          --message "canary $SHA"
+
+      # --override pins these requests to the new version, whatever the split.
+      - name: Smoke the new version
+        run: >-
+          npm run smoke -- --base https://maneman.in --environment production
+          --override "mm-api-production=${{ steps.api.outputs.version }}"
+          --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
+
+      - name: Let it serve for a while
+        run: sleep "$SOAK"
+
+      - name: Smoke the new version again
+        run: >-
+          npm run smoke -- --base https://maneman.in --environment production
+          --override "mm-api-production=${{ steps.api.outputs.version }}"
+          --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
+
+      - name: Send the new version all traffic
+        run: >-
+          node scripts/release.ts deploy --worker mm-api --env production
+          --split "${{ steps.api.outputs.version }}@100" --message "release $SHA"
+
+      - name: Smoke mm-api at 100%
+        run: >-
+          npm run smoke -- --base https://maneman.in --environment production
+          --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
+
+      - name: Deploy mm-site
+        id: site
+        run: |
+          version=$(node scripts/release.ts upload --worker mm-site --env production --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-site --env production --split "$version@100" --message "release $SHA"
+
+      - name: Final smoke
+        run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"
+
+      - name: Roll back
+        if: failure() && steps.canary.outcome != 'skipped' && steps.before.outputs.api != ''
+        run: |
+          echo "::error::Release $SHA failed. Restoring the versions that were serving before it."
+          node scripts/release.ts deploy --worker mm-api --env production \
+            --split "${{ steps.before.outputs.api }}@100" --message "rollback of $SHA"
+          if [ "${{ steps.site.outcome }}" != "skipped" ]; then
+            node scripts/release.ts deploy --worker mm-site --env production \
+              --split "${{ steps.before.outputs.site }}@100" --message "rollback of $SHA"
+          fi
+          npm run smoke -- --base https://maneman.in --environment production \
+            --version-id "${{ steps.before.outputs.api }}"

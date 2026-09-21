@@ -1,0 +1,102 @@
+// mm-api: serves https://{host}/api/* and owns every binding and secret.
+//
+// The top level is the local environment (`wrangler dev`, tests). Staging and
+// production each redeclare everything; `npm run check:config` fails if one
+// does not. See docs/decisions/0005-environment-isolation-in-wrangler-config.md.
+//
+// The R2 buckets (UPLOADS, RESULTS) are added in M3, once R2 is enabled on the
+// account.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mm-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-15",
+  "workers_dev": false,
+  "preview_urls": false,
+  "upload_source_maps": true,
+  "observability": { "enabled": true },
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "maneman-local",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "queues": {
+    "producers": [
+      { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
+      { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-local" },
+      { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" }
+    ]
+  },
+  "vars": {
+    "ENVIRONMENT": "local",
+    "IMAGE_PROVIDER": "stub",
+    "CRM_PROVIDER": "stub",
+    "MESSAGING_PROVIDER": "stub"
+  },
+  "env": {
+    "staging": {
+      "name": "mm-api-staging",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "routes": [{ "pattern": "staging.maneman.in/api/*", "zone_name": "maneman.in" }],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "maneman-staging",
+          "database_id": "82a07dc1-c86e-4905-b9ac-a474652a1d63",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "queues": {
+        "producers": [
+          { "binding": "RENDER_QUEUE", "queue": "mm-render-staging" },
+          { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-staging" },
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-staging" }
+        ]
+      },
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "IMAGE_PROVIDER": "ailabtools",
+        "CRM_PROVIDER": "zoho",
+        "MESSAGING_PROVIDER": "bsp"
+      }
+    },
+    "production": {
+      "name": "mm-api-production",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "routes": [{ "pattern": "maneman.in/api/*", "zone_name": "maneman.in" }],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "maneman-prod",
+          "database_id": "4917e9e0-7bf4-4116-9894-369d490f0ea2",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "queues": {
+        "producers": [
+          { "binding": "RENDER_QUEUE", "queue": "mm-render-prod" },
+          { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-prod" },
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" }
+        ]
+      },
+      "vars": {
+        "ENVIRONMENT": "production",
+        "IMAGE_PROVIDER": "ailabtools",
+        "CRM_PROVIDER": "zoho",
+        "MESSAGING_PROVIDER": "bsp"
+      }
+    }
+  }
+}

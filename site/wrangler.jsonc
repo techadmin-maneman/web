@@ -1,0 +1,34 @@
+// mm-site: static assets for everything outside /api/*. This is a placeholder
+// that serves one page per environment so routing can be tested; the
+// front-end task replaces the assets with the Astro build.
+//
+// mm-api's route (host/api/*) is more specific than this Worker's (host/*), so
+// Cloudflare sends /api/* to mm-api. See docs/decisions/0004-routing-and-hostnames.md.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "mm-site",
+  "compatibility_date": "2026-08-15",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": { "directory": "./placeholder/local", "not_found_handling": "404-page" },
+  "env": {
+    "staging": {
+      "name": "mm-site-staging",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "routes": [{ "pattern": "staging.maneman.in/*", "zone_name": "maneman.in" }],
+      "assets": { "directory": "./placeholder/staging", "not_found_handling": "404-page" }
+    },
+    "production": {
+      "name": "mm-site-production",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "routes": [{ "pattern": "maneman.in/*", "zone_name": "maneman.in" }],
+      "assets": { "directory": "./placeholder/production", "not_found_handling": "404-page" }
+    }
+  }
+}
