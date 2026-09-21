@@ -2,8 +2,8 @@
 // items 22–30). These make no API calls; try-flow.e2e.ts runs the flow on a
 // mocked API, and try-api.e2e.ts on the local one.
 
-import { expect, test, type Page } from "@playwright/test";
-import { drawnHeadPhoto, fakeTurnstile, TINY_JPEG } from "./support.ts";
+import type { Page } from "@playwright/test";
+import { drawnHeadPhoto, expect, fakeTurnstile, test, TINY_JPEG } from "./support.ts";
 
 test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);

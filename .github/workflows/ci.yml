@@ -119,7 +119,7 @@ jobs:
   site:
     name: site (browser tests)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
@@ -133,12 +133,23 @@ jobs:
         run: npm run build:site -- --env local
       - name: Browser tests at 390 and 1440 px, against a local mm-api with stub providers
         run: npm run test:e2e
+      # After the browser tests, so nothing else competes for the runner's CPU.
+      - name: Lighthouse on /, /try and /book, mobile profile, against the budgets
+        run: npm run lighthouse
       - name: Traces of failed tests
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-traces
           path: test-results/
+          retention-days: 7
+      - name: Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-reports
+          path: lighthouse/
+          if-no-files-found: ignore
           retention-days: 7
 
   smoke-local:

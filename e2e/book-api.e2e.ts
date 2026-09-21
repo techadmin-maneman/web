@@ -2,12 +2,14 @@
 // its proposed date. The local mm-api runs the backend with stub providers
 // (playwright.config.ts), and Turnstile's dummy token passes its test secret.
 
-import { expect, test } from "@playwright/test";
-import { fakeTurnstile, randomMobile, visit } from "./support.ts";
+import { expect, fakeTurnstile, randomMobile, test, visit } from "./support.ts";
 
 // One at a time: each booking makes the API ask Cloudflare to verify the
 // token, and a burst of those from one machine can outrun the API's timeout.
 test.describe.configure({ mode: "serial" });
+
+/** The API gives Cloudflare's token check up to 5 s, and answers 503 after that; wait out both. */
+const API_ANSWER_MS = 15_000;
 
 test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);
@@ -32,7 +34,7 @@ test("a served city is booked with the API's proposed day and window", async ({ 
   await page.getByLabel("Mobile").fill(randomMobile());
   await page.getByLabel("City").selectOption("Noida");
   await page.getByText("I agree to be contacted about this visit.", { exact: false }).click();
-  const answer = page.waitForResponse("**/api/lead");
+  const answer = page.waitForResponse("**/api/lead", { timeout: API_ANSWER_MS });
   await page.getByRole("button", { name: "Request a visit" }).click();
   const response = await answer;
   expect(response.status()).toBe(201);
@@ -49,6 +51,8 @@ test("an unserved city joins the waitlist", async ({ page }) => {
   await page.getByLabel("Mobile").fill(randomMobile());
   await page.getByLabel("City").selectOption("Bengaluru");
   await page.getByText("I agree to be contacted about this visit.", { exact: false }).click();
+  const answer = page.waitForResponse("**/api/lead", { timeout: API_ANSWER_MS });
   await page.getByRole("button", { name: "Request a visit" }).click();
+  expect((await answer).status()).toBe(201);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("We are across Delhi NCR, not yet in Bengaluru.");
 });

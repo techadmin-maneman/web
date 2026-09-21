@@ -31,7 +31,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
     return { ok: false, code: "network", fields: [] };
   }
   const body: unknown = await response.json().catch(() => null);
-  if (response.ok) return { ok: true, body: body as T };
+  // Only 204 has no body. Any other answer that is not JSON came from something other than mm-api.
+  if (response.ok && (body !== null || response.status === 204)) return { ok: true, body: body as T };
   const error = (body as Partial<Schemas["ErrorResponse"]> | null)?.error;
   return { ok: false, code: error?.code ?? "network", fields: error?.fields ?? [] };
 }

@@ -13,14 +13,15 @@ import Technicians from "../components/home/Technicians.astro";
 import Testimonials from "../components/home/Testimonials.astro";
 import TryOnTeaser from "../components/home/TryOnTeaser.astro";
 import WhatItIs from "../components/home/WhatItIs.astro";
-import { hero, pageTitles } from "../content/site.ts";
+import { pageDescriptions, pageTitles } from "../content/site.ts";
 import Site from "../layouts/Site.astro";
 import { heroPosterUrl } from "../lib/hero.ts";
+import { faqPage, localBusiness } from "../lib/structured-data.ts";
 
 const poster = await heroPosterUrl();
 ---
 
-<Site title={pageTitles.home} description={hero.body} home>
+<Site title={pageTitles.home} description={pageDescriptions.home} structuredData={[localBusiness(), faqPage()]} home>
   <Fragment slot="head">
     <script is:inline>
       // v2 routed with #tryon and #book, and ads already link to them.

@@ -65,7 +65,8 @@ const STILL =
   "html { scroll-behavior: auto !important; } *, *::before, *::after { transition: none !important; animation: none !important; caret-color: transparent !important; }";
 
 async function preparePage(browser: Browser, width: number): Promise<Page> {
-  const page = await browser.newPage({ viewport: { width, height: 900 } });
+  // The site's content security policy would refuse the style that stills the page; screenshots set it aside.
+  const page = await browser.newPage({ viewport: { width, height: 900 }, bypassCSP: true });
   await page.route("**/*.mp4", (route) => route.abort());
   // The build's pages call the API; here they get v2's cities and a Turnstile that passes.
   await page.route("**/api/cities", (route) => route.fulfill({ json: CITIES }));

@@ -6,6 +6,12 @@ import type { ErrorCode, FailureCode, JobStatus } from "./api.ts";
 
 export type ErrorKind = "photo" | "renderFailed" | "busy" | "lookLimit";
 
+/** A failure: what the error screen says, and the code analytics records. */
+export interface Failure {
+  readonly kind: ErrorKind;
+  readonly code: string;
+}
+
 /** An API refusal. Anything the visitor cannot fix by choosing another photograph is "busy". */
 export function errorKindOf(code: ErrorCode | "network"): ErrorKind {
   if (code === "look_limit_reached") return "lookLimit";
@@ -20,9 +26,12 @@ export function failureKindOf(code: FailureCode): ErrorKind {
   return "photo";
 }
 
-/** A job's state as the page cares about it: still going (null), or the error it ended in. */
-export function jobProblem(status: JobStatus): ErrorKind | null {
-  if (status.state === "failed") return failureKindOf(status.failure_code ?? "render_failed");
-  if (status.state === "expired") return "busy";
+/** A job's state as the page cares about it: still going (null), or how it ended. */
+export function jobProblem(status: JobStatus): Failure | null {
+  if (status.state === "failed") {
+    const code = status.failure_code ?? "render_failed";
+    return { kind: failureKindOf(code), code };
+  }
+  if (status.state === "expired") return { kind: "busy", code: "expired" };
   return null;
 }

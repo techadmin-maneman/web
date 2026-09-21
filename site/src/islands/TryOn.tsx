@@ -10,13 +10,14 @@
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { looks, notices, stageOptions, tryOn } from "../content/site.ts";
+import { track } from "../lib/analytics.ts";
 import { claimResult, fetchResult, jobStatus, type ClaimResponse } from "../lib/api.ts";
 import { downloadFile } from "../lib/download.ts";
 import { ICONS } from "../lib/icons.ts";
 import { formatMobile, isCompleteMobile } from "../lib/phone.ts";
 import { preparePhoto, type PreparedPhoto } from "../lib/photo.ts";
 import { startRender, startUpload, type Outcome, type Uploaded } from "../lib/tryon.ts";
-import { failureKindOf, jobProblem, type ErrorKind } from "../lib/tryon-errors.ts";
+import { failureKindOf, jobProblem, type ErrorKind, type Failure } from "../lib/tryon-errors.ts";
 import { turnstileWidget } from "../lib/turnstile.ts";
 import { readAttribution } from "../lib/visit.ts";
 import BeforeAfter from "./BeforeAfter.tsx";
@@ -109,9 +110,10 @@ export default function TryOn(props: Props) {
   const rendering = useRef<Promise<Outcome<string>> | null>(null);
   const jobId = useRef<string | null>(null);
 
-  function fail(kind: ErrorKind) {
-    setErrorKind(kind);
+  function fail(failure: Failure) {
+    setErrorKind(failure.kind);
     setScreen("error");
+    if (!demo) track({ name: "try_on_failed", failure_code: failure.code });
   }
 
   // ?state= opens a screen with stand-ins, outside production. Otherwise, Turnstile is readied.
@@ -159,6 +161,9 @@ export default function TryOn(props: Props) {
   useEffect(() => {
     if (screen === "processing" && elapsed >= tryOn.processing.seconds) setScreen("gate");
   }, [screen, elapsed]);
+  useEffect(() => {
+    if (screen === "gate" && !demo) track({ name: "try_on_gate_shown" });
+  }, [screen, demo]);
 
   // Until the gate is submitted, a render that fails sends the visitor to the error screen.
   useEffect(() => {
@@ -188,19 +193,25 @@ export default function TryOn(props: Props) {
       if (answer.kind === "ready") {
         void loadRendered(answer.url).then((image) => {
           if (stopped) return;
-          if (image === null) fail("busy");
-          else setRendered(image);
+          if (image === null) {
+            fail({ kind: "busy", code: "result_unavailable" });
+            return;
+          }
+          setRendered(image);
+          track({ name: "try_on_completed" });
         });
         return;
       }
       if (answer.kind === "failed") {
-        fail(failureKindOf(answer.failureCode));
+        fail({ kind: failureKindOf(answer.failureCode), code: answer.failureCode });
         return;
       }
-      const gaveUp = Date.now() - started > RESULT_WAIT_MS;
-      const refused = answer.kind === "error" && answer.code !== "network";
-      if (gaveUp || refused) {
-        fail("busy");
+      if (answer.kind === "error" && answer.code !== "network") {
+        fail({ kind: "busy", code: answer.code });
+        return;
+      }
+      if (Date.now() - started > RESULT_WAIT_MS) {
+        fail({ kind: "busy", code: "result_timeout" });
         return;
       }
       timer = setTimeout(() => void check(), POLL_MS);
@@ -241,9 +252,11 @@ export default function TryOn(props: Props) {
     setRendered(null);
     setPhoto(URL.createObjectURL(file));
     setScreen("consent");
+    if (prepared === null) return;
+    track({ name: "try_on_started" });
     // A file the browser cannot read, or one too small, is refused at once.
-    prepared?.catch(() => {
-      if (preparing.current === prepared) fail("photo");
+    prepared.catch(() => {
+      if (preparing.current === prepared) fail({ kind: "photo", code: "photo_invalid_file" });
     });
   }
 
@@ -256,7 +269,7 @@ export default function TryOn(props: Props) {
     uploading.current = upload;
     // A refusal shows at once, rather than after the visitor has chosen a look.
     void upload.then((outcome) => {
-      if (!outcome.ok && uploading.current === upload) fail(outcome.error);
+      if (!outcome.ok && uploading.current === upload) fail(outcome);
     });
   }
 
@@ -272,7 +285,7 @@ export default function TryOn(props: Props) {
     void render.then((outcome) => {
       if (rendering.current !== render) return;
       if (outcome.ok) jobId.current = outcome.value;
-      else fail(outcome.error);
+      else fail(outcome);
     });
   }
 
@@ -300,10 +313,10 @@ export default function TryOn(props: Props) {
     setSending(true);
     setGateFailure(null);
     // The gate may open before the upload has finished; the claim needs the render started.
-    const render = (await rendering.current) ?? ({ ok: false, error: "busy" } as const);
+    const render = (await rendering.current) ?? ({ ok: false, kind: "busy", code: "no_render" } as const);
     if (!render.ok) {
       setSending(false);
-      fail(render.error);
+      fail(render);
       return;
     }
     const attribution = readAttribution();
@@ -315,6 +328,7 @@ export default function TryOn(props: Props) {
     if (answer.ok) {
       setClaimed({ jobId: render.value, answer: answer.body });
       setScreen("result");
+      track({ name: "try_on_claimed" });
       return;
     }
     if (answer.code === "job_not_claimable") {
@@ -553,7 +567,7 @@ export default function TryOn(props: Props) {
               ))}
             </ul>
             {/* Seconds tick visually; screen readers hear only each finished step. */}
-            <div class={styles.countdown} aria-hidden="true">
+            <div class={styles.countdown} aria-hidden="true" data-countdown>
               {`${String(Math.max(0, tryOn.processing.seconds - elapsed))}s`}
             </div>
             <p class="visually-hidden" role="status">

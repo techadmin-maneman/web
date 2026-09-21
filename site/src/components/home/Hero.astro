@@ -1,7 +1,8 @@
 ---
 // The hero: muted looping footage behind the headline. The poster is the
-// largest thing painted first, so it is preloaded; the video only fetches its
-// metadata until it plays, and never plays for reduced motion.
+// largest thing painted first, so it is preloaded; the video fetches only its
+// metadata until it plays, once the page has loaded, and never plays for
+// reduced motion.
 import { hero, heroFootage } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import { designMedia } from "../../lib/images.ts";
@@ -49,15 +50,17 @@ const showFootage = isShown(heroFootage);
 </section>
 
 <script>
-  // Plays the footage unless the visitor asked for reduced motion. Browsers
-  // pause media in a background tab, so it is resumed when the tab returns.
+  // Plays the footage unless the visitor asked for reduced motion. It waits for
+  // the page to load, so its download never slows the poster or the fonts.
+  // Browsers pause media in a background tab, so it is resumed when the tab returns.
   const video = document.querySelector<HTMLVideoElement>("[data-hero-video]");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const play = () => {
     if (video === null || reduced.matches || document.hidden) return;
     video.play().catch(() => undefined);
   };
-  play();
+  if (document.readyState === "complete") play();
+  else window.addEventListener("load", play, { once: true });
   document.addEventListener("visibilitychange", play);
   reduced.addEventListener("change", () => (reduced.matches ? video?.pause() : play()));
 </script>

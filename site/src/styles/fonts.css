@@ -2,7 +2,12 @@
  * EB Garamond and Instrument Sans, self-hosted (SIL Open Font License), from
  * @fontsource. Only the weights the design uses, and only Google's latin and
  * latin-ext subsets: the browser fetches latin-ext only for a character in its
- * range, such as ₹.
+ * range.
+ *
+ * ₹ (U+20B9) is the site's only character outside latin, so it is taken out
+ * of the latin-ext ranges. EB Garamond draws it from a file holding that one
+ * glyph (scripts/subset-fonts.ts). Instrument Sans has no ₹ in any subset, so
+ * its ₹ comes from the system font, as it does in the design.
  */
 
 @font-face {
@@ -23,7 +28,16 @@
   src: url("../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-ext-400-normal.woff2") format("woff2");
   unicode-range:
     U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20B8, U+20BA-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/eb-garamond-rupee-400.woff2") format("woff2");
+  unicode-range: U+20B9;
 }
 
 @font-face {
@@ -46,7 +60,7 @@
     format("woff2");
   unicode-range:
     U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20B8, U+20BA-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Instrument Sans";
@@ -68,5 +82,5 @@
     format("woff2");
   unicode-range:
     U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20B8, U+20BA-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }

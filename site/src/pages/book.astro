@@ -1,12 +1,12 @@
 ---
-import { booking, pageTitles } from "../content/site.ts";
+import { pageDescriptions, pageTitles } from "../content/site.ts";
 import Booking from "../islands/Booking.tsx";
 import Site from "../layouts/Site.astro";
 import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { TURNSTILE_SITE_KEYS } from "../lib/turnstile.ts";
 ---
 
-<Site title={pageTitles.book} description={booking.intro}>
+<Site title={pageTitles.book} description={pageDescriptions.book}>
   <div class="page">
     <Booking client:load turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
   </div>

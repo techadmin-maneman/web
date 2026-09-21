@@ -1,6 +1,6 @@
 ---
 import LegalPage from "../components/LegalPage.astro";
-import { legalPages, pageTitles } from "../content/site.ts";
+import { legalPages, pageDescriptions, pageTitles } from "../content/site.ts";
 ---
 
-<LegalPage pageTitle={pageTitles.terms} page={legalPages.terms} />
+<LegalPage pageTitle={pageTitles.terms} description={pageDescriptions.terms} page={legalPages.terms} />
