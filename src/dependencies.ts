@@ -4,7 +4,7 @@
 
 import type { StaticConfig } from "./guard.ts";
 import type { Logger } from "./log.ts";
-import { createAlert, type Alert } from "./providers/alerts.ts";
+import { createAlert, createLeadNotice, type Alert, type LeadNotice } from "./providers/alerts.ts";
 import { createCrmProvider, type CrmProvider } from "./providers/crm.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
@@ -16,6 +16,8 @@ export interface Dependencies {
   readonly image: ImageProvider;
   readonly messaging: MessagingProvider;
   readonly alert: Alert;
+  /** Posts a new lead to the chat space. */
+  readonly notifyLead: LeadNotice;
 }
 
 export type DependencyFactory = (env: Env, log: Logger) => Dependencies;
@@ -34,6 +36,12 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       messaging: createMessagingProvider(settings.messaging.evolution, { fetch: httpFetch, log }),
       alert: createAlert({
         webhookUrl: settings.alertWebhookUrl,
+        environment: config.environment,
+        fetch: httpFetch,
+        log,
+      }),
+      notifyLead: createLeadNotice({
+        webhookUrl: settings.leadWebhookUrl,
         environment: config.environment,
         fetch: httpFetch,
         log,

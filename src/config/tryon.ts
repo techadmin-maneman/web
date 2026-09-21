@@ -55,6 +55,9 @@ export const UPLOAD_LINK_TTL_MS = 5 * 60 * 1000;
 /** The mm_tryon cookie and its session. */
 export const SESSION_TTL_MS = 30 * 60 * 1000;
 export const SESSION_COOKIE = "mm_tryon";
+/** One look per visitor: the browser remembers its render this long, the photos' retention period. */
+export const LOOK_COOKIE = "mm_look";
+export const LOOK_COOKIE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** The link GET /api/tryon/result hands the browser. */
 export const RESULT_LINK_BROWSER_TTL_MS = 15 * 60 * 1000;
 /** The link a WhatsApp message carries, minted at send time. */

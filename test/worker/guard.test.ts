@@ -148,6 +148,15 @@ describe("validateStaticConfig: settings and secrets", () => {
     expect(validateStaticConfig({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS }).settings.alertWebhookUrl).toBeNull();
   });
 
+  it("posts lead notices to LEAD_WEBHOOK_URL if set, else to the alert space, and only over https", () => {
+    expect(validateStaticConfig(production).settings.leadWebhookUrl).toBe("https://chat.example/hook");
+    const own = validateStaticConfig({ ...production, LEAD_WEBHOOK_URL: "https://chat.example/leads" });
+    expect(own.settings.leadWebhookUrl).toBe("https://chat.example/leads");
+    expect(problemsOf({ ...production, LEAD_WEBHOOK_URL: "http://chat.example/leads" })).toEqual([
+      "LEAD_WEBHOOK_URL must be an https:// URL",
+    ]);
+  });
+
   it("requires every Zoho secret when the CRM is Zoho, and none when it is the stub", () => {
     const { ZOHO_LAR_ID: _lar, ZOHO_REFRESH_TOKEN: _refresh, ...partialZoho } = production;
     expect(problemsOf(partialZoho)).toEqual(["ZOHO_REFRESH_TOKEN is not set", "ZOHO_LAR_ID is not set"]);

@@ -156,7 +156,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed
+**403**: turnstile_failed; look_limit_reached: this browser already has its look
 
 ```json
 {
@@ -212,7 +212,7 @@ Upload the photo: a JPEG or PNG, at most 5 MB and 200 to 4090 px a side
 
 ### POST /api/tryon/generate
 
-Render a look: the first for an upload, or another look for the same photo
+Render the look for an uploaded photo: one look per visitor
 
 Request body:
 
@@ -238,7 +238,7 @@ Request body:
 }
 ```
 
-**403**: session_required: another look needs the session the gate set
+**403**: look_limit_reached: this photo already has its look
 
 ```json
 {
@@ -360,7 +360,7 @@ Request body:
 
 ### GET /api/tryon/result/{job_id}
 
-The result, for the session the gate set. Also serves every further look
+The result, for the session the gate set
 
 **200**: Ready
 
@@ -452,7 +452,8 @@ A result image, behind a signed link that expires
             "upload_already_received",
             "upload_missing",
             "session_required",
-            "job_not_claimable"
+            "job_not_claimable",
+            "look_limit_reached"
           ]
         },
         "request_id": {

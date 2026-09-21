@@ -99,6 +99,26 @@ describe("crm-sync: syncing a lead", () => {
     expect(person).toEqual({ zoho_lead_id: "zoho-1" });
   });
 
+  it("posts a new-lead notice once the lead is in the CRM, with no personal data, and never twice", async () => {
+    const leadId = await bookLead();
+    const deps = fakeDependencies({ crm: recordingCrm() });
+
+    await syncLead(env.DB, deps, log, leadId);
+    await syncLead(env.DB, deps, log, leadId); // a duplicate message
+
+    expect(deps.leadNotices).toEqual([
+      `New booking: Gurgaon, weekday morning, proposed Wed 23 Sep. Lead ${leadId.slice(0, 8)}.`,
+    ]);
+    expect(deps.leadNotices.join()).not.toMatch(/Arjun|9810000001/);
+  });
+
+  it("posts no notice while the CRM is failing", async () => {
+    const leadId = await bookLead();
+    const deps = fakeDependencies({ crm: stubCrmThatFails("Zoho 503 down") });
+    await syncLead(env.DB, deps, log, leadId);
+    expect(deps.leadNotices).toEqual([]);
+  });
+
   it("passes the stored CRM ID for a returning person, so the CRM updates instead of inserting", async () => {
     const first = await bookLead();
     const crm = recordingCrm();

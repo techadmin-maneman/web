@@ -20,7 +20,7 @@ import { insertPerson, syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
 type TryonSettingsOverride = Partial<Settings["tryon"]>;
 
-/** The try-on API as one visitor's browser sees it: it keeps the mm_tryon cookie between calls. */
+/** The try-on API as one visitor's browser sees it: it keeps its cookies (mm_look, mm_tryon) between calls. */
 function visitor(
   options: { tryon?: TryonSettingsOverride; messaging?: Partial<Settings["messaging"]>; deps?: TestDependencies } = {},
 ) {
@@ -30,14 +30,16 @@ function visitor(
     messaging: { ...LOCAL_SETTINGS.messaging, ...options.messaging },
   });
   const queues = { RENDER_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() };
-  let cookie = "";
+  const cookies = new Map<string, string>();
 
   const call = async (path: string, init: RequestInit = {}): Promise<Response> => {
     const headers = new Headers(init.headers);
-    if (cookie !== "") headers.set("Cookie", cookie);
+    if (cookies.size > 0) headers.set("Cookie", [...cookies].map(([name, value]) => `${name}=${value}`).join("; "));
     const response = await request(app, path, { ...init, headers }, queues);
-    const set = response.headers.get("Set-Cookie");
-    if (set !== null) cookie = set.split(";")[0] ?? "";
+    for (const set of response.headers.getSetCookie()) {
+      const [name = "", value = ""] = (set.split(";")[0] ?? "").split("=");
+      cookies.set(name, value);
+    }
     return response;
   };
   const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
@@ -52,8 +54,9 @@ function visitor(
     queues,
     call,
     post,
-    cookie: () => cookie,
-    dropCookie: () => (cookie = ""),
+    dropCookies: () => {
+      cookies.clear();
+    },
     uploadLink: (body: Record<string, unknown> = {}) =>
       post("/api/tryon/upload-url", { photo_consent: true, notice_version: "photo-v1", turnstile_token: "t", ...body }),
     put: (path: string, bytes: Uint8Array, contentType = "image/jpeg") =>
@@ -244,7 +247,7 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     expect(browser.queues.RENDER_QUEUE.sent).toHaveLength(1);
   });
 
-  it("needs the upload first, and a session for a different look", async () => {
+  it("needs the upload first, and refuses a different look for the same photo", async () => {
     const browser = visitor();
     const link = await (await browser.uploadLink()).json<{ job_id: string }>();
     expect(await (await browser.generate(link.job_id)).json()).toMatchObject({ error: { code: "upload_missing" } });
@@ -253,7 +256,7 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     await browser.generate(jobId);
     const other = await browser.generate(jobId, { preset: "light-natural-short" });
     expect(other.status).toBe(403);
-    expect(await other.json()).toMatchObject({ error: { code: "session_required" } });
+    expect(await other.json()).toMatchObject({ error: { code: "look_limit_reached" } });
   });
 
   it("trips the render ceiling at 3: the fourth answers 503 busy, fails its job and alerts once", async () => {
@@ -361,7 +364,7 @@ describe("POST /api/tryon/claim", () => {
     const jobId = await browser.uploaded();
     await browser.generate(jobId);
     const first = await (await browser.claim(jobId, "98100 00001", { "Idempotency-Key": "claim-key-1" })).json();
-    browser.dropCookie();
+    browser.dropCookies();
 
     const replay = await browser.claim(jobId, "98100 00001", { "Idempotency-Key": "claim-key-1" });
     expect(await replay.json()).toEqual(first);
@@ -404,7 +407,7 @@ describe("POST /api/tryon/claim", () => {
   });
 });
 
-describe("results and more looks", () => {
+describe("results, and one look per visitor", () => {
   it("shows the result only to the session that claimed it", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
@@ -441,51 +444,40 @@ describe("results and more looks", () => {
     expect(await response.json()).toEqual({ state: "failed", failure_code: "photo_unreadable" });
   });
 
-  it("releases a second look without a second gate or a second lead", async () => {
+  it("gives one look per visitor: no second look, even after the gate", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
     await browser.generate(jobId);
     await browser.claim(jobId);
 
     const look = await browser.generate(jobId, { preset: "medium-receded-medium" });
-    expect(look.status).toBe(202);
-    const { job_id: lookId } = await look.json<{ job_id: string }>();
-    expect(lookId).not.toBe(jobId);
-
-    const first = await jobRow(jobId);
-    expect(await jobRow(lookId)).toMatchObject({
-      state: "queued",
-      parent_job_id: jobId,
-      upload_key: first?.upload_key,
-      person_id: first?.person_id,
-      session_id: first?.session_id,
-      preset: "medium-receded-medium",
-      lead_id: null,
-    });
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM leads").first()).toEqual({ n: 1 });
-    const event = await env.DB.prepare("SELECT subject_id FROM events WHERE name = 'try_on_additional_look'").first();
-    expect(event).toEqual({ subject_id: first?.person_id });
-
-    // The same look asked for again returns the job already running for it.
-    expect(await (await browser.generate(jobId, { preset: "medium-receded-medium" })).json()).toMatchObject({
-      job_id: lookId,
-    });
-
-    await makeReady(lookId);
-    expect((await browser.call(`/api/tryon/result/${lookId}`)).status).toBe(200);
+    expect(look.status).toBe(403);
+    expect(await look.json()).toMatchObject({ error: { code: "look_limit_reached" } });
+    // The same look asked for again is the job that already exists.
+    expect(await (await browser.generate(jobId)).json()).toMatchObject({ job_id: jobId });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM tryon_jobs").first()).toEqual({ n: 1 });
   });
 
-  it("refuses another look once the photo has been deleted", async () => {
+  it("refuses a second photo from a browser that already has its look", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    const queued = await browser.generate(jobId);
+    expect(queued.headers.get("Set-Cookie")).toMatch(
+      new RegExp(`^mm_look=${jobId}; Max-Age=2592000; Path=/api/tryon; HttpOnly; Secure; SameSite=Strict$`),
+    );
+
+    const second = await browser.uploadLink();
+    expect(second.status).toBe(403);
+    expect(await second.json()).toMatchObject({ error: { code: "look_limit_reached" } });
+  });
+
+  it("lets a browser try another photo when its render failed", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
     await browser.generate(jobId);
-    await browser.claim(jobId);
-    await env.DB.prepare("UPDATE tryon_jobs SET upload_deleted_at = ? WHERE id = ?")
-      .bind(NOW.toISOString(), jobId)
-      .run();
-    expect(await (await browser.generate(jobId, { preset: "light-natural-short" })).json()).toMatchObject({
-      error: { code: "upload_missing" },
-    });
+    await setState(jobId, "failed", ", failure_code = 'photo_unreadable'");
+
+    expect((await browser.uploadLink()).status).toBe(201);
   });
 });
 

@@ -24,6 +24,8 @@ The upload link's body gains `turnstile_token`, because the prompt puts Turnstil
 
 ### Jobs, looks and sessions
 
+> **Superseded in part by docs/decisions/0018:** the owner decided on one look per visitor, so there is no "try another look". The rest of this section stands.
+
 - **One job per render.** The first look of a photo is the job `upload-url` created. "Try another look" is a new job that shares the photo (`upload_key`) and points at the first look (`parent_job_id`).
 - **Deduplication.** A generate with the same photo, look and colour as a job that is queued, rendering, downloading or ready returns that job. Stage is not compared, because it does not change the render.
 - **Before the gate, only the first look.** A different look needs the `mm_tryon` session that owns the job (`403 session_required`); otherwise the gate could be skipped indefinitely.

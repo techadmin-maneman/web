@@ -17,6 +17,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     acceptTurnstileTestToken: false,
     ipHashSalt: "",
     alertWebhookUrl: null,
+    leadWebhookUrl: null,
     zoho: null,
     tryon: {
       uploadIpHourlyLimit: 0,
