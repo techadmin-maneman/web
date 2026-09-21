@@ -59,9 +59,11 @@ The six looks are the backend's presets, in `src/config/presets.ts`, in its orde
 
 The site calls `mm-api` on its own host, `/api/*`. The request and response types in `site/src/lib/api-schema.ts` are generated from `docs/openapi.json` by `npm run openapi`; never edit them by hand. `site/src/lib/api.ts` holds the calls.
 
-- **Turnstile.** Every mutating call carries a Turnstile token. The widget is managed, rendered invisibly, and appears only if Cloudflare needs the visitor to act (`site/src/lib/turnstile.ts`, site keys in `docs/turnstile.md`).
+- **Turnstile.** A booking and a try-on upload link carry a Turnstile token; the gate's claim takes none (ADR 0022, 20). The widget is managed, rendered invisibly, and appears only if Cloudflare needs the visitor to act (`site/src/lib/turnstile.ts`, site keys in `docs/turnstile.md`).
 - **Idempotency.** Each submission attempt sends a new `Idempotency-Key`.
 - **Attribution.** The first page of a visit stores its campaign tags, referring site and landing path in `sessionStorage` (`site/src/lib/attribution.ts`). Never a query string.
+
+- **The try-on.** `site/src/lib/tryon.ts` chains the calls. Continue on the consent screen prepares the photograph (`photo.ts`: resize, re-encode and the hair colour from `hair-colour.ts`) and uploads it; Generate starts the render once the upload is done; the gate claims the result while it renders; the result screen asks for it every 3 seconds. `tryon-errors.ts` decides which error the visitor sees.
 
 The browser tests run the site against a local `mm-api` with stub providers (`playwright.config.ts`). Run `node scripts/ensure-dev-vars.ts && npm run db:local` once first.
 
@@ -70,7 +72,8 @@ The browser tests run the site against a local `mm-api` with stub providers (`pl
 - **Tokens.** Every colour, size and space comes from `tokens.css`, and `test/node/site-tokens.test.ts` fails on a raw value. Media query conditions keep their pixels, since CSS custom properties cannot be used there.
 - **No inline styles.** A component renders no `style` attribute; an island that must move something sets a CSS variable from script instead.
 - **Placeholder tags and `noindex`.** Staging and local show the design's tags and are not indexed. Production shows no tags and is indexed.
-- **Previewing a screen.** Outside production, `?state=` opens any try-on screen (`/try?state=gate`) or booking state (`/book?state=waitlist`). The screenshots and tests use it.
+- **Previewing a screen.** Outside production, `?state=` opens any try-on screen (`/try?state=gate`) or booking state (`/book?state=waitlist`), with stand-in images and no API calls. `/try?state=error&kind=busy` shows another error (`renderFailed`, `busy` or `lookLimit`). The screenshots and tests use it.
+- **No photographs of people in tests.** The try-on tests upload a drawn head (`test/node/drawn-head.ts`).
 
 ## Going live in production
 

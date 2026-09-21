@@ -1,7 +1,13 @@
-// The try-on's screens as F1 builds them (docs/feature-inventory.md, items 22–30).
-// No API yet: F3 adds uploads, renders and the gate's claim.
+// The try-on's screens, opened directly with ?state= (docs/feature-inventory.md,
+// items 22–30). These make no API calls; try-flow.e2e.ts runs the flow on a
+// mocked API, and try-api.e2e.ts on the local one.
 
 import { expect, test, type Page } from "@playwright/test";
+import { drawnHeadPhoto, fakeTurnstile, TINY_JPEG } from "./support.ts";
+
+test.beforeEach(async ({ page }) => {
+  await fakeTurnstile(page);
+});
 
 const SCREENS = {
   upload: { label: "Step one of five", progress: 14 },
@@ -78,18 +84,25 @@ test.describe("upload", () => {
 
   test("a chosen photograph shows in the frame and the consent screen follows", async ({ page }) => {
     await open(page, "upload");
-    // A 1 × 1 JPEG, made here: never a photograph of a person.
-    const jpeg = Buffer.from(
-      "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==",
-      "base64",
-    );
     await page
       .locator('input[type="file"]')
       .first()
-      .setInputFiles({ name: "test.jpg", mimeType: "image/jpeg", buffer: jpeg });
+      .setInputFiles(await drawnHeadPhoto());
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
     await page.getByRole("button", { name: "Back", exact: true }).click();
     await expect(page.getByRole("img", { name: "The photograph you chose" })).toBeVisible();
+  });
+
+  test("a photograph too small for the API is refused before anything is sent", async ({ page }) => {
+    const calls: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/api/tryon/")) calls.push(request.url());
+    });
+    await open(page, "upload");
+    await page.locator('input[type="file"]').first().setInputFiles(TINY_JPEG);
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "error");
+    await expect(page.getByRole("heading", { name: "We cannot use this photograph." })).toBeVisible();
+    expect(calls).toEqual([]);
   });
 });
 
@@ -201,4 +214,19 @@ test.describe("error", () => {
     await page.getByRole("button", { name: "Choose another" }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "upload");
   });
+
+  const KINDS = [
+    { kind: "renderFailed", heading: "The simulation did not work this time.", another: true },
+    { kind: "busy", heading: "The simulation is busy just now.", another: true },
+    { kind: "lookLimit", heading: "You have had your look.", another: false },
+  ];
+  for (const { kind, heading, another } of KINDS) {
+    test(`${kind} changes only the heading and body`, async ({ page }) => {
+      await page.goto(`/try?state=error&kind=${kind}`);
+      await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+      await expect(page.getByText("Cannot read the photograph")).toBeVisible();
+      await expect(page.getByRole("link", { name: "Book a visit instead" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(another ? 1 : 0);
+    });
+  }
 });

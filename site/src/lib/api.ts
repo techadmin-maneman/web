@@ -10,6 +10,13 @@ export type LeadRequest = Schemas["LeadRequest"];
 export type LeadResponse = Schemas["LeadResponse"];
 export type Attribution = Schemas["Attribution"];
 export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
+export type UploadUrlRequest = Schemas["UploadUrlRequest"];
+export type UploadUrlResponse = Schemas["UploadUrlResponse"];
+export type GenerateRequest = Schemas["GenerateRequest"];
+export type JobStatus = Schemas["JobStatus"];
+export type FailureCode = Schemas["ResultFailed"]["failure_code"];
+export type ClaimRequest = Schemas["ClaimRequest"];
+export type ClaimResponse = Schemas["ClaimResponse"];
 
 /** An answer from the API: the body, or the error code and the fields it names. */
 export type Answer<T> =
@@ -33,11 +40,60 @@ export function fetchCities(): Promise<Answer<City[]>> {
   return call<City[]>("/api/cities");
 }
 
+function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<Answer<T>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (idempotencyKey !== undefined) headers["Idempotency-Key"] = idempotencyKey;
+  return call<T>(path, { method: "POST", headers, body: JSON.stringify(body) });
+}
+
 /** A new idempotency key for each submission attempt, so a repeat of one attempt books once. */
 export function submitLead(lead: LeadRequest, idempotencyKey: string): Promise<Answer<LeadResponse>> {
-  return call<LeadResponse>("/api/lead", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
-    body: JSON.stringify(lead),
-  });
+  return post<LeadResponse>("/api/lead", lead, idempotencyKey);
+}
+
+// The try-on, in order: a link to upload one photo, the upload, the render,
+// its progress, the gate, and the result once the gate has given a session.
+
+export function requestUploadUrl(request: UploadUrlRequest): Promise<Answer<UploadUrlResponse>> {
+  return post<UploadUrlResponse>("/api/tryon/upload-url", request);
+}
+
+/** `uploadUrl` is the path the API gave; the photo is always a JPEG, from photo.ts. */
+export function uploadPhoto(uploadUrl: string, photo: Blob): Promise<Answer<null>> {
+  return call<null>(uploadUrl, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: photo });
+}
+
+/** The job to follow is the one this returns, which may differ from the one sent. */
+export function generateLook(request: GenerateRequest): Promise<Answer<JobStatus>> {
+  return post<JobStatus>("/api/tryon/generate", request);
+}
+
+export function jobStatus(jobId: string): Promise<Answer<JobStatus>> {
+  return call<JobStatus>(`/api/tryon/status/${jobId}`);
+}
+
+/** The gate. It sets the session cookie that fetchResult needs. */
+export function claimResult(claim: ClaimRequest, idempotencyKey: string): Promise<Answer<ClaimResponse>> {
+  return post<ClaimResponse>("/api/tryon/claim", claim, idempotencyKey);
+}
+
+export type ResultAnswer =
+  | { readonly kind: "ready"; readonly url: string }
+  | { readonly kind: "pending" }
+  | { readonly kind: "failed"; readonly failureCode: FailureCode }
+  | { readonly kind: "error"; readonly code: ErrorCode | "network" };
+
+/** The result: a link to the image, still rendering, failed, or an error. */
+export async function fetchResult(jobId: string): Promise<ResultAnswer> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/tryon/result/${jobId}`);
+  } catch {
+    return { kind: "error", code: "network" };
+  }
+  const body: unknown = await response.json().catch(() => null);
+  if (response.status === 200) return { kind: "ready", url: (body as Schemas["ResultReady"]).url };
+  if (response.status === 202) return { kind: "pending" };
+  if (response.status === 422) return { kind: "failed", failureCode: (body as Schemas["ResultFailed"]).failure_code };
+  return { kind: "error", code: (body as Partial<Schemas["ErrorResponse"]> | null)?.error?.code ?? "network" };
 }

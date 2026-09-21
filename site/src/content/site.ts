@@ -713,7 +713,13 @@ export const tryOn = {
     mobilePlaceholder: "98100 00000",
     mobileError: "Enter all ten digits so we can send the result.",
     submit: "Show me the result",
+    sending: "Saving",
     reassurance: gateReassurance,
+    errors: {
+      rateLimited: "This number has had several results today. Please try again tomorrow.",
+      taken: "This result is already saved to another number.",
+      other: "That did not go through. Please try again in a minute.",
+    },
   },
   result: {
     title: "Drag the handle to compare.",
@@ -722,19 +728,39 @@ export const tryOn = {
     beforeAlt: "Your photograph",
     afterAlt: "Simulated result",
     sliderLabel: "Compare your photograph with the simulation",
+    pending: "Still working on it",
     disclaimer:
       "This is an illustrative simulation, not a photograph of a result. A fitted piece is matched to your own hair colour, density and growth pattern, and will differ.",
     book: "Book a free measurement",
     download: "Download",
     whatsapp: "WhatsApp",
     copy: { before: "A copy is on its way to ", after: ". Deleted after thirty days." },
+    fileName: "mane-man-simulation",
+    share: "My Mane Man simulation. See yours at maneman.in/try",
   },
   error: {
     frame: "Cannot read the photograph",
-    title: "We cannot use this photograph.",
-    body: "Either the face is turned too far, something is covering the hairline, or the frame is too dark to read. A photograph taken facing a window, straight on, works almost every time.",
     another: "Choose another",
     book: "Book a visit instead",
+    /** By ErrorKind (lib/tryon-errors.ts). v2's heading and body are the photograph's. */
+    kinds: {
+      photo: {
+        title: "We cannot use this photograph.",
+        body: "Either the face is turned too far, something is covering the hairline, or the frame is too dark to read. A photograph taken facing a window, straight on, works almost every time.",
+      },
+      renderFailed: {
+        title: "The simulation did not work this time.",
+        body: "The photograph looked fine; the simulation failed on our side. Try again with the same photograph or another, or book a measurement and see it in person.",
+      },
+      busy: {
+        title: "The simulation is busy just now.",
+        body: "Too many people are trying it at once, or it could not be reached. Please try again in a little while, or book a measurement and see it in person.",
+      },
+      lookLimit: {
+        title: "You have had your look.",
+        body: "Each visitor gets one simulation, and this browser has had its one. The measurement shows you the real thing, in person, and costs nothing.",
+      },
+    },
   },
 };
 

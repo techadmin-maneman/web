@@ -19,9 +19,17 @@ export default defineConfig({
   use: { baseURL: "http://127.0.0.1:4321", trace: "retain-on-failure" },
   webServer: [
     {
-      // The tests book many leads from one address; the daily limit per address is raised for them.
-      command:
-        "node node_modules/wrangler/bin/wrangler.js dev --port 8787 --inspector-port 9230 --var LEAD_IP_DAILY_LIMIT:10000",
+      // The tests book leads and render try-ons from one address, run after run on one local
+      // database, so the limits per address and the daily ceilings are raised for them.
+      command: [
+        "node node_modules/wrangler/bin/wrangler.js dev --port 8787 --inspector-port 9230",
+        "--var LEAD_IP_DAILY_LIMIT:10000",
+        "--var TRYON_UPLOAD_IP_HOURLY_LIMIT:10000",
+        "--var TRYON_GENERATE_IP_HOURLY_LIMIT:10000",
+        "--var UPLOAD_DAILY_CEILING:10000",
+        "--var RENDER_DAILY_CEILING:10000",
+        "--var RESULT_READ_DAILY_CEILING:10000",
+      ].join(" "),
       url: "http://127.0.0.1:8787/api/health",
       reuseExistingServer: local,
       timeout: 120_000,
