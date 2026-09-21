@@ -106,6 +106,18 @@ const errorShape: Check = async ({ api }) => {
   return "stable error code and request ID";
 };
 
+/** The booking form's city list comes back, so the database is migrated and seeded. */
+const cities: Check = async ({ api }) => {
+  const response = await api("/api/cities");
+  assert(response.status === 200, `status ${String(response.status)}`);
+
+  const body: unknown = await response.json();
+  assert(Array.isArray(body) && body.length > 0, "the city list is empty");
+  const served = body.filter((city: { served?: unknown }) => city.served === true).length;
+  assert(served > 0, "no city is served");
+  return `${String(body.length)} cities, ${String(served)} served`;
+};
+
 /** Everything outside /api/* reaches mm-site, and it is this environment's site. */
 const siteRouting: Check = async ({ options, site }) => {
   const response = await site("/");
@@ -137,6 +149,7 @@ const indexing: Check = async ({ options, api, site }) => {
 export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["mm-api /api/health", health],
   ["mm-api error shape", errorShape],
+  ["mm-api cities", cities],
   ["mm-site routing", siteRouting],
   ["indexing", indexing],
 ];

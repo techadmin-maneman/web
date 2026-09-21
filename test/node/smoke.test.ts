@@ -6,6 +6,7 @@ interface Faults {
   health?: { status?: number; body?: Record<string, unknown>; headers?: Record<string, string> };
   notFound?: { status?: number; body?: unknown; requestId?: string };
   site?: { status?: number; html?: string; robots?: string | null };
+  cities?: unknown;
 }
 
 const REQUEST_ID = "4b0e6c0a-0000-4000-8000-000000000001";
@@ -47,6 +48,8 @@ function fakeDeployment(environment: string, faults: Faults = {}): { fetch: type
     const url = input instanceof Request ? input.url : input.toString();
     seen.push(new Headers(init?.headers));
     if (url.endsWith("/api/health")) return Promise.resolve(health());
+    if (url.endsWith("/api/cities"))
+      return Promise.resolve(json(200, faults.cities ?? [{ name: "Gurgaon", served: true }]));
     if (url.includes("/api/")) return Promise.resolve(notFound());
     return Promise.resolve(sitePage());
   };
@@ -146,6 +149,13 @@ describe("smoke suite", () => {
     ]);
     expect(await failures(smokeOptions("production", { site: { robots: "noindex" } }))).toEqual([
       "indexing: production site is marked noindex",
+    ]);
+  });
+
+  it("fails when the city list is empty or has no served city", async () => {
+    expect(await failures(smokeOptions("staging", { cities: [] }))).toEqual(["mm-api cities: the city list is empty"]);
+    expect(await failures(smokeOptions("staging", { cities: [{ name: "Mumbai", served: false }] }))).toEqual([
+      "mm-api cities: no city is served",
     ]);
   });
 

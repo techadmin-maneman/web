@@ -46,7 +46,42 @@ Checked with `scripts/verify-ci-token.ts` from GitHub Actions (run 35596608538),
 - The staging Access service token gets through Access (200). Without it, staging redirects to the Access login. Production is public (200) and holds no Access secrets.
 - Getting there took two fixes: turning off Bot Fight Mode, which challenged all traffic from GitHub, and re-copying the Access client ID with its `.access` suffix.
 
-### Still open for M1
+### The pipeline, end to end
 
-1. Merge PR #1. `deploy-staging` then runs end to end with the staging token and the Access service token.
-2. Run `deploy-production` for the merge commit. This is the first run of the real workflow: canary, smoke, promotion, with rollback on failure.
+M1 merged in PR #1 and PR #2. The merge commit `357c26f` then went out through the workflows alone:
+
+- `deploy-staging`, run 35596946792: every PR check, then migrations (none pending), the database identity check, both Workers at 100%, and the smoke suite through Access against tag `357c26f`. Passed.
+- `deploy-production`, run 35597160973. Every step passed and the rollback step was skipped:
+  1. Confirmed the commit is on `main` and passed staging.
+  2. Uploaded mm-api `67abefa7…` and split traffic 10/90 against the previous version.
+  3. Ran the smoke suite pinned to the new version, let it serve 5 minutes, and ran it again.
+  4. Promoted to 100% and ran the smoke suite.
+  5. Deployed mm-site and ran the final smoke suite.
+
+M1 is done. The exceptions are required checks on `main` and required reviewers on `production`, which the owner deferred to the paid GitHub plan (ADR 0008).
+
+## M2: lead path
+
+In progress on the `m2/lead-path` branch.
+
+| Requirement                                      | Evidence                                                                                                                                                                                                                                                                                       | Result                                                                                         |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `GET /api/cities`                                | `test/worker/entrypoints.test.ts`: active cities in display order, `Cache-Control: public, max-age=300`. Local `wrangler dev` answers with the seven seeded cities.                                                                                                                            | **pass**                                                                                       |
+| Booking lead with proposed date and window label | `test/worker/lead.test.ts`: person, `contact` consent (`booking-v1`), pending lead, queued sync; weekday and weekend dates; blackouts; the India date boundary (`test/worker/visit-date.test.ts`). Local `wrangler dev`: Noida, weekend morning → `2026-09-26`, "before noon".                 | **pass**                                                                                       |
+| Waitlist                                         | Mumbai → `served: false`, no date, source `waitlist`; opening a city is an `UPDATE`.                                                                                                                                                                                                           | **pass**                                                                                       |
+| Consents append-only, notices versioned verbatim | Triggers reject `UPDATE` and `DELETE` on `consents`. `test/worker/notices.test.ts` locks the three published texts by hash.                                                                                                                                                                    | **pass**                                                                                       |
+| Idempotency                                      | A replay returns the first response without a second lead; a reused key with a different body gets 422; a key in progress gets 409; a failed request releases its key. Local `wrangler dev` replay confirmed.                                                                                  | **pass**                                                                                       |
+| Rate limits                                      | 5 a day per mobile, 20 a day per IP (configurable). Counter keys are salted hashes.                                                                                                                                                                                                            | **pass**                                                                                       |
+| Validation                                       | Unknown fields, bad names and mobiles, consent not given, unknown or inactive city, malformed JSON: all `400 invalid_request` with field names only.                                                                                                                                           | **pass**                                                                                       |
+| Turnstile                                        | Rejected → 403, unreachable → 503. Locally verified against Cloudflare's siteverify with the test keys. Staging and production widgets created; secrets set on both Workers.                                                                                                                   | **pass**                                                                                       |
+| `crm-sync` against Zoho                          | Adapter tested against the v8 shapes (`test/worker/zoho.test.ts`): insert with `lar_id` and workflows, waitlist unassigned, try-on-only with `trigger: []`, update and note, search before insert, token cache, refresh on 401, errors without record data. Local queue → stub CRM end to end. | code **pass**. Against the Zoho Developer Edition org: **waiting** for the org and its secrets |
+| A try-on-only lead is never chased               | `test/worker/crm-rules.test.ts`: for every source a non-contactable person gets delivery-only, no assignment and no workflows, and `assertStatusAllowed` throws on any other status.                                                                                                           | **pass**                                                                                       |
+| Sweeper                                          | `test/worker/sweeper.test.ts`: pending leads older than 2 minutes and failed ones under 10 attempts re-enqueued; idempotency and counters purged. The cron runs on staging once triggers are applied (ADR 0010).                                                                               | code **pass**                                                                                  |
+| No personal data in logs                         | Local run: the log contains neither the test name nor the number. Request IDs are carried through the queue into consumer logs.                                                                                                                                                                | **pass**                                                                                       |
+| Free tier                                        | Account confirmed on Workers Free; binding allowlist in the config check (ADR 0009).                                                                                                                                                                                                           | **pass**                                                                                       |
+
+### Staging proof (after the owner's Zoho setup)
+
+- [ ] A served-city lead reaches Zoho, assigned and notified, within 60 seconds, with the proposed date on the record.
+- [ ] A Mumbai lead lands as Waitlist, unassigned.
+- [ ] With the Zoho token revoked, the browser still gets 201, and the sweeper delivers within five minutes of restoring it.

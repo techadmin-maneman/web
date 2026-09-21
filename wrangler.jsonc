@@ -13,6 +13,7 @@
   "upload_source_maps": true,
   "observability": { "enabled": true },
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "triggers": { "crons": ["*/5 * * * *"] },
   "d1_databases": [
     {
       "binding": "DB",
@@ -30,13 +31,27 @@
       { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
       { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-local" },
       { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" }
+    ],
+    // One batch at a time, so two syncs for the same person never race.
+    "consumers": [
+      {
+        "queue": "mm-crm-sync-local",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 2,
+        "max_concurrency": 1
+      }
     ]
   },
   "vars": {
     "ENVIRONMENT": "local",
+    "TURNSTILE_ACCEPT_TEST_TOKEN": "true",
     "IMAGE_PROVIDER": "stub",
     "CRM_PROVIDER": "stub",
-    "MESSAGING_PROVIDER": "stub"
+    "MESSAGING_PROVIDER": "stub",
+    "VISIT_LEAD_DAYS": "2",
+    "LEAD_MOBILE_DAILY_LIMIT": "5",
+    "LEAD_IP_DAILY_LIMIT": "20"
   },
   "env": {
     "staging": {
@@ -46,6 +61,7 @@
       "preview_urls": false,
       "observability": { "enabled": true },
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "triggers": { "crons": ["*/5 * * * *"] },
       "routes": [{ "pattern": "staging.maneman.in/api/*", "zone_name": "maneman.in" }],
       "d1_databases": [
         {
@@ -64,13 +80,26 @@
           { "binding": "RENDER_QUEUE", "queue": "mm-render-staging" },
           { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-staging" },
           { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-staging" }
+        ],
+        "consumers": [
+          {
+            "queue": "mm-crm-sync-staging",
+            "max_batch_size": 10,
+            "max_batch_timeout": 5,
+            "max_retries": 2,
+            "max_concurrency": 1
+          }
         ]
       },
       "vars": {
         "ENVIRONMENT": "staging",
+        "TURNSTILE_ACCEPT_TEST_TOKEN": "true",
         "IMAGE_PROVIDER": "ailabtools",
         "CRM_PROVIDER": "zoho",
-        "MESSAGING_PROVIDER": "bsp"
+        "MESSAGING_PROVIDER": "bsp",
+        "VISIT_LEAD_DAYS": "2",
+        "LEAD_MOBILE_DAILY_LIMIT": "5",
+        "LEAD_IP_DAILY_LIMIT": "20"
       }
     },
     "production": {
@@ -80,6 +109,7 @@
       "preview_urls": false,
       "observability": { "enabled": true },
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "triggers": { "crons": ["*/5 * * * *"] },
       "routes": [{ "pattern": "maneman.in/api/*", "zone_name": "maneman.in" }],
       "d1_databases": [
         {
@@ -98,13 +128,26 @@
           { "binding": "RENDER_QUEUE", "queue": "mm-render-prod" },
           { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-prod" },
           { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" }
+        ],
+        "consumers": [
+          {
+            "queue": "mm-crm-sync-prod",
+            "max_batch_size": 10,
+            "max_batch_timeout": 5,
+            "max_retries": 2,
+            "max_concurrency": 1
+          }
         ]
       },
       "vars": {
         "ENVIRONMENT": "production",
+        "TURNSTILE_ACCEPT_TEST_TOKEN": "false",
         "IMAGE_PROVIDER": "ailabtools",
         "CRM_PROVIDER": "zoho",
-        "MESSAGING_PROVIDER": "bsp"
+        "MESSAGING_PROVIDER": "bsp",
+        "VISIT_LEAD_DAYS": "2",
+        "LEAD_MOBILE_DAILY_LIMIT": "5",
+        "LEAD_IP_DAILY_LIMIT": "20"
       }
     }
   }

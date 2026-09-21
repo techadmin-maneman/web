@@ -37,6 +37,97 @@ Environment, version and database reachability
 }
 ```
 
+### GET /api/cities
+
+The booking form's city list, in display order. Cacheable for five minutes.
+
+**200**: Active cities
+
+```json
+{
+  "type": "array",
+  "items": {
+    "$ref": "#/components/schemas/City"
+  }
+}
+```
+
+**503**: The database is unavailable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/lead
+
+Book a free measurement, or join a city's waitlist
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/LeadRequest"
+}
+```
+
+**201**: Saved
+
+```json
+{
+  "$ref": "#/components/schemas/LeadResponse"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: idempotency_in_progress: the first request with this key is still running
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: idempotency_key_reused: the key was used with a different body
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many requests from this number or address today
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Turnstile or the database could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -53,6 +144,10 @@ Environment, version and database reachability
           "enum": [
             "not_found",
             "invalid_request",
+            "turnstile_failed",
+            "rate_limited",
+            "idempotency_in_progress",
+            "idempotency_key_reused",
             "environment_mismatch",
             "unavailable",
             "internal_error"
@@ -60,6 +155,13 @@ Environment, version and database reachability
         },
         "request_id": {
           "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "invalid_request only: the fields that failed validation, never their values."
         }
       },
       "required": [
@@ -127,5 +229,174 @@ Environment, version and database reachability
     "d1"
   ],
   "additionalProperties": false
+}
+```
+
+### City
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "served": {
+      "type": "boolean",
+      "description": "false: the booking form offers the waitlist instead."
+    }
+  },
+  "required": [
+    "name",
+    "served"
+  ],
+  "additionalProperties": false
+}
+```
+
+### LeadResponse
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lead_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "served": {
+      "type": "boolean"
+    },
+    "proposed_visit_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Served cities only. May be absent if every candidate day is blacked out."
+    },
+    "window_label": {
+      "type": "string",
+      "enum": [
+        "before noon",
+        "after six"
+      ],
+      "description": "Served cities only."
+    }
+  },
+  "required": [
+    "lead_id",
+    "served"
+  ],
+  "additionalProperties": false
+}
+```
+
+### LeadRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "example": "98100 00000"
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "One of the names from GET /api/cities."
+    },
+    "first_choice_window": {
+      "type": "string",
+      "enum": [
+        "weekday_am",
+        "weekday_pm",
+        "weekend_am",
+        "weekend_pm"
+      ]
+    },
+    "loss_extent": {
+      "type": "string",
+      "enum": [
+        "crown",
+        "receding",
+        "advanced"
+      ]
+    },
+    "consent": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "The booking notice was agreed to; see src/config/notices.ts."
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "attribution": {
+      "$ref": "#/components/schemas/Attribution"
+    }
+  },
+  "required": [
+    "name",
+    "mobile",
+    "city",
+    "first_choice_window",
+    "loss_extent",
+    "consent",
+    "turnstile_token"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Attribution
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "utm_source": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_medium": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_campaign": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_content": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "gclid": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "fbclid": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "referrer": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "landing_path": {
+      "type": "string",
+      "maxLength": 500
+    }
+  },
+  "additionalProperties": false,
+  "description": "Where the visitor came from, as the page saw it. All optional."
 }
 ```

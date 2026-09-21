@@ -1,0 +1,36 @@
+# Creates one test lead on staging through the real API, to check that the
+# lead path reaches Zoho: after a Zoho change, a token rotation, or a deploy.
+# Then look for it in the Zoho Developer Edition org (docs/runbook.md,
+# "Checking the lead path on staging").
+name: staging-lead
+
+on:
+  workflow_dispatch:
+    inputs:
+      city:
+        description: A city from GET /api/cities. Mumbai or Bengaluru joins the waitlist.
+        default: Gurgaon
+        type: string
+      window:
+        description: weekday_am, weekday_pm, weekend_am or weekend_pm
+        default: weekday_am
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  lead:
+    name: create a test lead on staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: staging
+    env:
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      CITY: ${{ inputs.city }}
+      WINDOW: ${{ inputs.window }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: node scripts/staging-lead.ts --city "$CITY" --window "$WINDOW"

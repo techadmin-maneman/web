@@ -123,7 +123,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
-      - run: npm run db:local
+      - name: Local secrets and database
+        run: |
+          node scripts/ensure-dev-vars.ts
+          npm run db:local
       # One at a time, each with its own inspector port: two wrangler dev
       # processes starting together race for the same auxiliary ports.
       - name: Start mm-api under wrangler dev
