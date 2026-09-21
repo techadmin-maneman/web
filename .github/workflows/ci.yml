@@ -124,21 +124,31 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
       - run: npm run db:local
-      - name: Start mm-api and mm-site under wrangler dev
+      # One at a time, each with its own inspector port: two wrangler dev
+      # processes starting together race for the same auxiliary ports.
+      - name: Start mm-api under wrangler dev
         run: |
-          node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8787 > api.log 2>&1 &
-          node node_modules/wrangler/bin/wrangler.js dev --config site/wrangler.jsonc --env="" --port 8788 > site.log 2>&1 &
+          node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8787 --inspector-port 9230 > api.log 2>&1 &
           for _ in $(seq 1 60); do
-            curl -sf -o /dev/null http://localhost:8787/api/health && curl -sf -o /dev/null http://localhost:8788/ && exit 0
+            curl -sf -o /dev/null http://localhost:8787/api/health && exit 0
             sleep 1
           done
-          cat api.log site.log
+          cat api.log
+          exit 1
+      - name: Start mm-site under wrangler dev
+        run: |
+          node node_modules/wrangler/bin/wrangler.js dev --config site/wrangler.jsonc --env="" --port 8788 --inspector-port 9231 > site.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:8788/ && exit 0
+            sleep 1
+          done
+          cat site.log
           exit 1
       - name: Smoke suite against local
         run: npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
       - name: A production Worker holding stubs refuses to start
         run: |
-          if timeout 60 node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8789 --var ENVIRONMENT:production > refuse.log 2>&1; then
+          if timeout 60 node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8789 --inspector-port 9232 --var ENVIRONMENT:production > refuse.log 2>&1; then
             cat refuse.log; exit 1
           fi
           grep -q "refuses to start: IMAGE_PROVIDER is a stub in production" refuse.log

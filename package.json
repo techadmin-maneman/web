@@ -7,8 +7,8 @@
     "node": ">=24.11.0"
   },
   "scripts": {
-    "dev": "npm run db:local && wrangler dev",
-    "dev:site": "wrangler dev --config site/wrangler.jsonc --port 8788",
+    "dev": "npm run db:local && wrangler dev --env=\"\" --port 8787 --inspector-port 9230",
+    "dev:site": "wrangler dev --config site/wrangler.jsonc --env=\"\" --port 8788 --inspector-port 9231",
     "db:local": "wrangler d1 migrations apply DB --local && node scripts/mark-database.ts local",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint .",
