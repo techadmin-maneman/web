@@ -1,0 +1,55 @@
+{
+  "name": "maneman-web",
+  "private": true,
+  "description": "Mane Man Phase 1 backend: the mm-api Worker, the mm-site placeholder, migrations and pipeline.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.11.0"
+  },
+  "scripts": {
+    "dev": "npm run db:local && wrangler dev",
+    "dev:site": "wrangler dev --config site/wrangler.jsonc --port 8788",
+    "db:local": "wrangler d1 migrations apply DB --local && node scripts/mark-database.ts local",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check:config": "node scripts/check-wrangler-config.ts",
+    "check:migrations": "node scripts/check-migrations.ts",
+    "types": "wrangler types --include-runtime=false src/worker-configuration.d.ts",
+    "build": "node scripts/build.ts",
+    "openapi": "node scripts/generate-openapi.ts",
+    "smoke": "node scripts/smoke.ts",
+    "types:check": "wrangler types --include-runtime=false --check src/worker-configuration.d.ts"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "1.6.3",
+    "hono": "4.13.8",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.22.0",
+    "@cloudflare/workers-types": "5.20260921.1",
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.13.6",
+    "@vitest/coverage-istanbul": "4.1.11",
+    "eslint": "10.11.0",
+    "jiti": "2.7.0",
+    "jsonc-parser": "3.3.1",
+    "prettier": "3.9.8",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "4.1.11",
+    "wrangler": "4.135.0"
+  },
+  "overrides": {
+    "sharp": "0.35.4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260815.1": true,
+    "workerd@1.20260918.1": true
+  }
+}

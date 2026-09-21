@@ -1,0 +1,21 @@
+{
+  // Build, check and smoke scripts, and the tests that run in Node. Node runs
+  // these .ts files directly (type stripping), hence erasableSyntaxOnly and
+  // explicit .ts import extensions.
+  //
+  // Workers types are included because scripts/generate-openapi.ts imports the
+  // Worker's route modules to read their zod schemas.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024"],
+    "types": ["node", "@cloudflare/workers-types"]
+  },
+  "include": [
+    "scripts/**/*.ts",
+    "test/node/**/*.ts",
+    "src/config/**/*.ts",
+    "src/worker-configuration.d.ts",
+    "vitest.config.ts",
+    "eslint.config.ts"
+  ]
+}
