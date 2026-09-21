@@ -2,24 +2,134 @@ import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp, type App } from "../../src/app.ts";
 import { EXPECTED_DATABASE_NAME, type EnvironmentName } from "../../src/config/environments.ts";
+import type { Settings } from "../../src/config/settings.ts";
+import type { Dependencies } from "../../src/dependencies.ts";
 import type { StaticConfig } from "../../src/guard.ts";
+import { createLogger } from "../../src/log.ts";
+import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
+
+export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
+
+export const LOCAL_SETTINGS: Settings = {
+  visitLeadDays: 2,
+  leadMobileDailyLimit: 5,
+  leadIpDailyLimit: 20,
+  turnstileSecret: TURNSTILE_TEST_SECRET,
+  ipHashSalt: "test-salt-that-is-long-enough-000000",
+  alertWebhookUrl: null,
+  zoho: null,
+};
 
 export const LOCAL_CONFIG: StaticConfig = {
   environment: "local",
   providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub" },
+  settings: LOCAL_SETTINGS,
 };
 
 export async function markDatabase(databaseName: string = EXPECTED_DATABASE_NAME.local): Promise<void> {
   await env.DB.prepare("INSERT INTO deployment_identity (id, database_name) VALUES (1, ?)").bind(databaseName).run();
 }
 
-/** A fresh app (and so a fresh identity cache) per test. */
-export function appFor(environment: EnvironmentName = "local"): App {
-  return createApp({ ...LOCAL_CONFIG, environment });
+// ---------------------------------------------------------------------------
+// Fake outbound HTTP
+// ---------------------------------------------------------------------------
+
+export interface RecordedCall {
+  readonly method: string;
+  readonly url: string;
+  readonly body: string;
+  readonly headers: Headers;
 }
 
-export function request(app: App, path: string, init?: RequestInit): Promise<Response> {
-  return Promise.resolve(app.request(`https://maneman.test${path}`, init, env));
+type Handler = (call: RecordedCall) => Response | Promise<Response>;
+
+/**
+ * A fetch that answers by URL prefix and records every call. A URL with no
+ * matching route fails the test rather than reaching the internet.
+ */
+export function fakeFetch(routes: Readonly<Record<string, Handler>>): { fetch: typeof fetch; calls: RecordedCall[] } {
+  const calls: RecordedCall[] = [];
+  const fetchImpl = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const request = new Request(input, init);
+    const call: RecordedCall = {
+      method: request.method,
+      url: request.url,
+      body: request.method === "GET" ? "" : await request.text(),
+      headers: request.headers,
+    };
+    calls.push(call);
+    const prefix = Object.keys(routes).find((candidate) => call.url.startsWith(candidate));
+    const handler = prefix === undefined ? undefined : routes[prefix];
+    if (handler === undefined) throw new Error(`unexpected outbound request: ${call.method} ${call.url}`);
+    return handler(call);
+  };
+  return { fetch: fetchImpl, calls };
+}
+
+export const TURNSTILE_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+
+export function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+}
+
+export const turnstilePasses: Handler = () => json({ success: true });
+
+// ---------------------------------------------------------------------------
+// App and dependencies
+// ---------------------------------------------------------------------------
+
+export const NOW = new Date("2026-09-21T06:30:00Z"); // 12:00 on Monday 21 September in India
+
+export interface TestDependencies extends Dependencies {
+  readonly alerts: string[];
+}
+
+export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDependencies {
+  const alerts: string[] = [];
+  return {
+    fetch: fakeFetch({ [TURNSTILE_URL]: turnstilePasses }).fetch,
+    now: () => NOW,
+    crm: createStubCrm(createLogger()),
+    alert: (message) => {
+      alerts.push(message);
+      return Promise.resolve();
+    },
+    alerts,
+    ...overrides,
+  };
+}
+
+/** A fresh app (and so a fresh identity cache) per test. */
+export function appFor(
+  environment: EnvironmentName = "local",
+  deps: Dependencies = fakeDependencies(),
+  settings: Partial<Settings> = {},
+): App {
+  return createApp({ ...LOCAL_CONFIG, environment, settings: { ...LOCAL_SETTINGS, ...settings } }, () => deps);
+}
+
+export function request(app: App, path: string, init?: RequestInit, bindings: Partial<Env> = {}): Promise<Response> {
+  return Promise.resolve(app.request(`https://maneman.test${path}`, init, { ...env, ...bindings }));
+}
+
+/** A queue binding that keeps what is sent, instead of delivering it. */
+export function fakeQueue(): Queue & { sent: unknown[] } {
+  const sent: unknown[] = [];
+  return {
+    sent,
+    send: (body: unknown) => {
+      sent.push(body);
+      return Promise.resolve();
+    },
+    sendBatch: (messages: Iterable<MessageSendRequest>) => {
+      for (const message of messages) sent.push(message.body);
+      return Promise.resolve();
+    },
+  } as unknown as Queue & { sent: unknown[] };
+}
+
+export function stubCrmThatFails(message: string): CrmProvider {
+  return { syncLead: () => Promise.reject(new Error(message)) };
 }
 
 /** Captures every JSON log line written through console.*. */

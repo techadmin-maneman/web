@@ -18,7 +18,14 @@ export default defineConfig({
         plugins: [
           cloudflareTest({
             wrangler: { configPath: "./wrangler.jsonc" },
-            miniflare: { bindings: { TEST_MIGRATIONS: migrations } },
+            miniflare: {
+              // The local secrets the Worker needs to start; the same values as .dev.vars.example.
+              bindings: {
+                TEST_MIGRATIONS: migrations,
+                TURNSTILE_SECRET: "1x0000000000000000000000000000000AA",
+                IP_HASH_SALT: "local-development-salt-not-a-real-secret",
+              },
+            },
           }),
         ],
         test: {

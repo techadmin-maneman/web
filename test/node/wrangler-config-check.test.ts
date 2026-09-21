@@ -51,9 +51,14 @@ describe("mm-api wrangler config", () => {
       "env.staging: kv_namespaces is not redeclared",
     ],
     [
-      "a consumer is added only at the top level",
-      ["queues.consumers", [{ queue: "mm-render-local" }]],
+      "production drops its queue consumer",
+      ["env.production.queues.consumers", DELETE],
       "env.production: queues.consumers is not redeclared",
+    ],
+    [
+      "staging consumes a different queue",
+      ["env.staging.queues.consumers.0.queue", "mm-render-staging"],
+      "env.staging: queues.consumers declares [mm-render-staging]",
     ],
   ])("fails when %s", (_label, edit, problem) => {
     expect(api(edit)).toContain(problem);
@@ -133,7 +138,11 @@ describe("mm-api wrangler config", () => {
       "env.production: account_id must be set explicitly",
     ],
     ["the Worker name is wrong", ["env.staging.name", "mm-api-production"], 'expected "mm-api-staging"'],
-    ["triggers are inherited", ["triggers", { crons: ["*/5 * * * *"] }], "triggers is inherited from the top level"],
+    [
+      "staging inherits the cron",
+      ["env.staging.triggers", DELETE],
+      "env.staging: triggers is inherited from the top level",
+    ],
     ["an environment is missing", ["env.production", DELETE], "env.production is missing"],
     [
       "local names a staging resource",

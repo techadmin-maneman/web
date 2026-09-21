@@ -1,0 +1,26 @@
+// Dates as the customer sees them: India Standard Time, UTC+05:30, with no
+// daylight saving. Dates are "YYYY-MM-DD" strings, which compare and sort
+// correctly as plain text.
+
+const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The calendar date in India at `instant`. */
+export function indiaDate(instant: Date): string {
+  return new Date(instant.getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** The India clock hour at `instant`, as "YYYY-MM-DDTHH". */
+export function indiaHour(instant: Date): string {
+  return new Date(instant.getTime() + IST_OFFSET_MS).toISOString().slice(0, 13);
+}
+
+export function addDays(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/** True for Saturday and Sunday. */
+export function isWeekend(date: string): boolean {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0 is Sunday, 6 is Saturday
+  return day === 0 || day === 6;
+}

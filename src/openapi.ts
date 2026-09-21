@@ -3,6 +3,22 @@
 // contract test fails when a committed copy is stale.
 
 import { createApp } from "./app.ts";
+import type { StaticConfig } from "./guard.ts";
+
+/** Only the routes are read from this app, so its settings are placeholders. */
+const DOCUMENTATION_CONFIG: StaticConfig = {
+  environment: "local",
+  providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub" },
+  settings: {
+    visitLeadDays: 2,
+    leadMobileDailyLimit: 5,
+    leadIpDailyLimit: 20,
+    turnstileSecret: "",
+    ipHashSalt: "",
+    alertWebhookUrl: null,
+    zoho: null,
+  },
+};
 
 export const OPENAPI_INFO = {
   title: "Mane Man API",
@@ -13,10 +29,7 @@ export const OPENAPI_INFO = {
 export type OpenApiDocument = ReturnType<ReturnType<typeof createApp>["getOpenAPI31Document"]>;
 
 export function buildOpenApiDocument(): OpenApiDocument {
-  const app = createApp({
-    environment: "local",
-    providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub" },
-  });
+  const app = createApp(DOCUMENTATION_CONFIG);
   return app.getOpenAPI31Document({
     openapi: "3.1.0",
     info: OPENAPI_INFO,

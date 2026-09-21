@@ -7,7 +7,7 @@
     "node": ">=24.11.0"
   },
   "scripts": {
-    "dev": "npm run db:local && wrangler dev --env=\"\" --port 8787 --inspector-port 9230",
+    "dev": "node scripts/ensure-dev-vars.ts && npm run db:local && wrangler dev --env=\"\" --port 8787 --inspector-port 9230",
     "dev:site": "wrangler dev --config site/wrangler.jsonc --env=\"\" --port 8788 --inspector-port 9231",
     "db:local": "wrangler d1 migrations apply DB --local && node scripts/mark-database.ts local",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
@@ -18,11 +18,12 @@
     "test:coverage": "vitest run --coverage",
     "check:config": "node scripts/check-wrangler-config.ts",
     "check:migrations": "node scripts/check-migrations.ts",
-    "types": "wrangler types --include-runtime=false src/worker-configuration.d.ts",
+    "types": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example",
     "build": "node scripts/build.ts",
     "openapi": "node scripts/generate-openapi.ts",
     "smoke": "node scripts/smoke.ts",
-    "types:check": "wrangler types --include-runtime=false --check src/worker-configuration.d.ts"
+    "types:check": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example --check",
+    "apply-triggers": "wrangler triggers deploy"
   },
   "dependencies": {
     "@hono/zod-openapi": "1.6.3",

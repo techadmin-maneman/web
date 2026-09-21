@@ -14,10 +14,12 @@ import {
   type EnvironmentName,
   type ProviderVar,
 } from "./config/environments.ts";
+import { readSettings, type Settings } from "./config/settings.ts";
 
 export type StaticConfig = Readonly<{
   environment: EnvironmentName;
   providers: Readonly<Record<ProviderVar, string>>;
+  settings: Settings;
 }>;
 
 export class ConfigError extends Error {
@@ -57,8 +59,11 @@ export function validateStaticConfig(env: Readonly<Record<string, unknown>>): St
     providers[variable] = value;
   }
 
+  const { settings, problems: settingProblems } = readSettings(env, environment, providers.CRM_PROVIDER);
+  problems.push(...settingProblems);
+
   if (environment === undefined || problems.length > 0) throw new ConfigError(problems);
-  return { environment, providers: providers as Record<ProviderVar, string> };
+  return { environment, providers: providers as Record<ProviderVar, string>, settings };
 }
 
 export type DatabaseIdentity =

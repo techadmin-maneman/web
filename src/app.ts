@@ -1,11 +1,15 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
+import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
+import { productionDependencies, type Dependencies, type DependencyFactory } from "./dependencies.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { createLogger, type Logger } from "./log.ts";
+import { registerCities } from "./routes/cities.ts";
 import { registerHealth } from "./routes/health.ts";
+import { registerLead } from "./routes/lead.ts";
 
 /** What every handler can read from `c.env` and `c.var`. */
 export type AppEnv = {
@@ -14,6 +18,7 @@ export type AppEnv = {
     requestId: string;
     log: Logger;
     config: StaticConfig;
+    deps: Dependencies;
     checkIdentity: IdentityCheck;
   };
 };
@@ -25,17 +30,31 @@ export const REQUEST_ID_HEADER = "X-Request-Id";
 /** Routes that report on the database themselves instead of being blocked by it. */
 const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);
 
-export function createApp(config: StaticConfig): App {
-  const app = new OpenAPIHono<AppEnv>();
+export function createApp(config: StaticConfig, makeDependencies?: DependencyFactory): App {
+  const app = new OpenAPIHono<AppEnv>({
+    // A request that fails its zod schema: name the fields, never echo their values.
+    defaultHook: (result, c) => {
+      if (result.success) return undefined;
+      const fields = [...new Set(result.error.issues.map((issue) => issue.path.join(".") || "body"))];
+      return c.json(errorBody("invalid_request", c.var.requestId, fields), 400);
+    },
+  });
 
-  app.use("*", requestContext(config, createCachedIdentityCheck()));
+  const dependencies = makeDependencies ?? productionDependencies(config);
+  app.use("*", requestContext(config, dependencies, createCachedIdentityCheck()));
   app.use("/api/*", requireOwnDatabase);
 
   app.openAPIRegistry.register("ErrorResponse", ErrorResponseSchema);
   registerHealth(app);
+  registerCities(app);
+  registerLead(app);
 
   app.notFound((c) => c.json(errorBody("not_found", c.var.requestId), 404));
   app.onError((error, c) => {
+    // Hono raises a 400 for a body that is not valid JSON.
+    if (error instanceof HTTPException && error.status === 400) {
+      return c.json(errorBody("invalid_request", c.var.requestId, ["body"]), 400);
+    }
     c.var.log.error("unhandled_error", { error });
     return c.json(errorBody("internal_error", c.var.requestId), 500);
   });
@@ -43,8 +62,12 @@ export function createApp(config: StaticConfig): App {
   return app;
 }
 
-/** Gives each request an ID and a logger, sets common headers, and logs the request. */
-function requestContext(config: StaticConfig, checkIdentity: IdentityCheck): MiddlewareHandler<AppEnv> {
+/** Gives each request an ID, a logger and its dependencies; sets common headers; logs the request. */
+function requestContext(
+  config: StaticConfig,
+  makeDependencies: DependencyFactory,
+  checkIdentity: IdentityCheck,
+): MiddlewareHandler<AppEnv> {
   const baseLog = createLogger({ worker: "mm-api", environment: config.environment });
 
   return createMiddleware<AppEnv>(async (c, next) => {
@@ -54,6 +77,7 @@ function requestContext(config: StaticConfig, checkIdentity: IdentityCheck): Mid
     c.set("requestId", requestId);
     c.set("log", log);
     c.set("config", config);
+    c.set("deps", makeDependencies(c.env, log));
     c.set("checkIdentity", checkIdentity);
 
     await next();

@@ -34,6 +34,8 @@ export default defineConfig(
       "@typescript-eslint/consistent-type-definitions": "off",
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: false }],
       "@typescript-eslint/switch-exhaustiveness-check": "error",
+      // `const { omitted: _, ...rest } = object` is how a copy without one key is made.
+      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true, argsIgnorePattern: "^_" }],
       eqeqeq: ["error", "always"],
       "no-console": "error",
     },
