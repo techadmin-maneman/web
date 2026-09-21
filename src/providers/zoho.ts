@@ -11,6 +11,7 @@
 
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../config/booking.ts";
 import type { ZohoSettings } from "../config/settings.ts";
+import type { Logger } from "../log.ts";
 import type { CrmLead, CrmProvider, LeadSource, LeadStatus } from "./crm.ts";
 import {
   assertStatusAllowed,
@@ -20,7 +21,12 @@ import {
   statusForUpdate,
 } from "./crm-rules.ts";
 
-const TIMEOUT_MS = 10_000;
+/**
+ * No one waits on these calls; the queue consumer makes them. On staging a
+ * token refresh once took over 10 s, and a slow answer beats a retry that may
+ * duplicate a record Zoho did create. See docs/decisions/0012-zoho-sync.md.
+ */
+const TIMEOUT_MS = 20_000;
 /** Refresh a token this long before Zoho would expire it. */
 const TOKEN_MARGIN_MS = 60_000;
 
@@ -47,13 +53,13 @@ interface ZohoDependencies {
   readonly db: D1Database;
   readonly fetch: typeof fetch;
   readonly now: () => Date;
+  readonly log: Logger;
 }
 
 export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): CrmProvider {
-  const api = createZohoApi(settings, deps);
-
   return {
     async syncLead(lead, knownCrmLeadId) {
+      const api = createZohoApi(settings, { ...deps, log: deps.log.child({ lead_id: lead.leadId }) });
       const existingId = knownCrmLeadId ?? (await api.findLeadByPersonId(lead.personId));
 
       if (existingId === null) {
@@ -121,18 +127,40 @@ export function noteFor(lead: CrmLead): { title: string; content: string } {
 // HTTP
 // ---------------------------------------------------------------------------
 
+type Step = "token" | "search" | "insert" | "update" | "note";
+
+/**
+ * One HTTP request to Zoho, timed and logged by step. The URL is never logged:
+ * the token URL carries the client secret. A timeout becomes a ZohoError that
+ * names the step, so last_sync_error says which call was slow.
+ */
+async function send(deps: ZohoDependencies, step: Step, url: string, init: RequestInit): Promise<Response> {
+  const started = Date.now();
+  try {
+    const response = await deps.fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    deps.log.info("zoho_call", { step, status: response.status, duration_ms: Date.now() - started });
+    return response;
+  } catch (error) {
+    const reason = error instanceof Error ? error.name : "unknown";
+    deps.log.warn("zoho_call", { step, status: 0, reason, duration_ms: Date.now() - started });
+    if (reason === "TimeoutError") {
+      throw new ZohoError(0, "TIMEOUT", `${step} got no answer within ${String(TIMEOUT_MS / 1000)} s`);
+    }
+    throw error;
+  }
+}
+
 function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
   const tokens = createTokenCache(settings, deps);
 
   /** One API call. On 401 the token is refreshed once and the call repeated. */
-  async function call(method: string, path: string, body?: unknown): Promise<unknown> {
+  async function call(step: Step, method: string, path: string, body?: unknown): Promise<unknown> {
     for (const forceRefresh of [false, true]) {
       const token = await tokens.get(forceRefresh);
-      const response = await deps.fetch(`https://${settings.apiHost}${path}`, {
+      const response = await send(deps, step, `https://${settings.apiHost}${path}`, {
         method,
         headers: { Authorization: `Zoho-oauthtoken ${token}`, "Content-Type": "application/json" },
         body: body === undefined ? null : JSON.stringify(body),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       if (response.status === 401 && !forceRefresh) continue;
       if (response.status === 204) return null;
@@ -157,7 +185,7 @@ function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
   return {
     async findLeadByPersonId(personId: string): Promise<string | null> {
       const criteria = encodeURIComponent(`(D1_Person_ID:equals:${personId})`);
-      const json = await call("GET", `/crm/v8/Leads/search?criteria=${criteria}`);
+      const json = await call("search", "GET", `/crm/v8/Leads/search?criteria=${criteria}`);
       const id = (json as { data?: { id?: unknown }[] } | null)?.data?.[0]?.id;
       return typeof id === "string" ? id : null;
     },
@@ -168,18 +196,21 @@ function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
     ): Promise<string> {
       const body: Record<string, unknown> = { data: [record], trigger: options.runWorkflows ? ["workflow"] : [] };
       if (options.assignmentRuleId !== null) body.lar_id = options.assignmentRuleId;
-      return firstRecord(await call("POST", "/crm/v8/Leads", body)).id;
+      return firstRecord(await call("insert", "POST", "/crm/v8/Leads", body)).id;
     },
 
     async updateLead(id: string, record: Record<string, unknown>, options: { runWorkflows: boolean }): Promise<void> {
       firstRecord(
-        await call("PUT", `/crm/v8/Leads/${id}`, { data: [record], trigger: options.runWorkflows ? ["workflow"] : [] }),
+        await call("update", "PUT", `/crm/v8/Leads/${id}`, {
+          data: [record],
+          trigger: options.runWorkflows ? ["workflow"] : [],
+        }),
       );
     },
 
     async addNote(id: string, note: { title: string; content: string }): Promise<void> {
       firstRecord(
-        await call("POST", `/crm/v8/Leads/${id}/Notes`, {
+        await call("note", "POST", `/crm/v8/Leads/${id}/Notes`, {
           data: [{ Note_Title: note.title, Note_Content: note.content }],
         }),
       );
@@ -206,10 +237,14 @@ function createTokenCache(settings: ZohoSettings, deps: ZohoDependencies) {
         client_secret: settings.clientSecret,
         grant_type: "refresh_token",
       });
-      const response = await deps.fetch(`https://${settings.accountsHost}/oauth/v2/token?${query.toString()}`, {
-        method: "POST",
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
+      const response = await send(
+        deps,
+        "token",
+        `https://${settings.accountsHost}/oauth/v2/token?${query.toString()}`,
+        {
+          method: "POST",
+        },
+      );
       const json = (await response.json().catch(() => null)) as {
         access_token?: string;
         expires_in?: number;

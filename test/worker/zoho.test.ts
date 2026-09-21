@@ -1,9 +1,10 @@
 import { env } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoSettings } from "../../src/config/settings.ts";
+import { createLogger } from "../../src/log.ts";
 import { createZohoCrm, noteFor, recordFor } from "../../src/providers/zoho.ts";
 import { crmLead } from "./crm-rules.test.ts";
-import { NOW, fakeFetch, json, type RecordedCall } from "./helpers.ts";
+import { NOW, captureLogs, fakeFetch, json, type RecordedCall } from "./helpers.ts";
 
 const SETTINGS: ZohoSettings = {
   clientId: "1000.CLIENT",
@@ -25,13 +26,18 @@ const tokenIssued = (token = "access-1") => json({ access_token: token, expires_
 
 function zoho(routes: Parameters<typeof fakeFetch>[0]) {
   const http = fakeFetch(routes);
-  const crm = createZohoCrm(SETTINGS, { db: env.DB, fetch: http.fetch, now: () => NOW });
+  const crm = createZohoCrm(SETTINGS, { db: env.DB, fetch: http.fetch, now: () => NOW, log: createLogger() });
   return { crm, calls: http.calls };
 }
 
 function bodyOf(call: RecordedCall | undefined): Record<string, unknown> {
   return JSON.parse(call?.body ?? "{}") as Record<string, unknown>;
 }
+
+let logs: ReturnType<typeof captureLogs>;
+beforeEach(() => {
+  logs = captureLogs();
+});
 
 describe("Zoho: a person the CRM has not seen", () => {
   it("inserts a booking with the assignment rule and workflows, after checking it is not there already", async () => {
@@ -70,6 +76,24 @@ describe("Zoho: a person the CRM has not seen", () => {
       },
     ]);
     expect(calls[2]?.headers.get("Authorization")).toBe("Zoho-oauthtoken access-1");
+  });
+
+  it("logs each call's step, status and time against the lead, and never a URL or secret", async () => {
+    const { crm } = zoho({
+      [TOKEN_URL]: () => tokenIssued(),
+      [SEARCH_URL]: noMatch,
+      [LEADS_URL]: () => created("zoho-1"),
+    });
+    await crm.syncLead(crmLead(), null);
+
+    const lines = logs.lines().filter((line) => line.event === "zoho_call");
+    expect(lines.map(({ step, status, lead_id }) => ({ step, status, lead_id }))).toEqual([
+      { step: "token", status: 200, lead_id: "lead-1" },
+      { step: "search", status: 204, lead_id: "lead-1" },
+      { step: "insert", status: 201, lead_id: "lead-1" },
+    ]);
+    expect(lines.every((line) => typeof line.duration_ms === "number")).toBe(true);
+    expect(JSON.stringify(lines)).not.toMatch(/https:|client-secret|1000\.refresh|access-1/);
   });
 
   it("inserts a waitlist lead as Waitlist, unassigned", async () => {
@@ -181,6 +205,28 @@ describe("Zoho: access tokens", () => {
     await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow(
       "Zoho 200 invalid_code: could not refresh the access token",
     );
+  });
+
+  it("names the step that timed out", async () => {
+    const { crm } = zoho({
+      [TOKEN_URL]: () => {
+        throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+      },
+    });
+    await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow("Zoho 0 TIMEOUT: token got no answer within 20 s");
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "zoho_call", step: "token", status: 0, reason: "TimeoutError" }),
+    );
+  });
+
+  it("passes on a network failure unchanged", async () => {
+    const { crm } = zoho({
+      [TOKEN_URL]: () => tokenIssued(),
+      [LEADS_URL]: () => {
+        throw new TypeError("Network connection lost.");
+      },
+    });
+    await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow("Network connection lost.");
   });
 
   it("names Zoho's error code, never the record, when a call fails", async () => {

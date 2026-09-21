@@ -54,9 +54,16 @@ Every implementation calls `assertStatusAllowed` before writing. It throws if a 
 
 **Failures:**
 
-- The consumer marks the lead `failed` and stores `Zoho {status} {code}: {message}`, scrubbed of numbers and e-mails. It never stores record data.
-- The sweeper re-enqueues failed leads every five minutes until 10 attempts. The tenth failure raises an alert.
+- The consumer marks the lead `failed` and stores `Zoho {status} {code}: {message}`, scrubbed of numbers and e-mails. It never stores record data. A timeout is `Zoho 0 TIMEOUT: {step} got no answer within 20 s`.
+- A lead's first failure goes back on the queue with a 30-second delay (`message.retry`), so a passing slowdown still lands the lead within about a minute.
+- After that, the sweeper re-enqueues failed leads every five minutes until 10 attempts. The tenth failure raises an alert.
 - The consumer runs one batch at a time (`max_concurrency: 1`), so two messages for the same person never race.
+
+**Timeouts and timing:** each Zoho request has 20 seconds. Every request is logged as `zoho_call` with its step, status and duration, never its URL (the token URL carries the client secret).
+
+On staging on 21 September 2026, the first synced lead's token refresh timed out at the original 10-second limit. The sweeper delivered it five minutes later. The next two consumer runs took 16 and 18 seconds for three Zoho calls, though the same calls from Cloudflare's Delhi edge and from a laptop in India answered in under 200 ms. The consumer does not report where it runs, so the per-step timing is there to find out whether the time goes to Zoho or to D1.
+
+A longer timeout also matters for duplicates. If an insert times out after Zoho saved the record, the retry searches by `D1_Person_ID`, and Zoho's search index may not show the new record yet.
 
 **Hosts** are secrets (`ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`). For Zoho's India data centre the accounts host is `accounts.zoho.in`. The API host depends on the environment of the org: `www.zohoapis.in` for a production org, `developer.zohoapis.in` for a Developer Edition org, `sandbox.zohoapis.in` for a sandbox. The `api_domain` in a token response always names the production host, so it cannot be trusted for the other two; a token used on the wrong host gets a bare 401.
 
@@ -65,4 +72,4 @@ Every implementation calls `assertStatusAllowed` before writing. It throws if a 
 ## Consequences
 
 - Zoho has no assignment rule on update. A try-on-only person who later books through the form gets the `New` status and `Contact_Consent = true` on their existing record. Assigning an owner at that point takes a Zoho workflow on edit (Contact_Consent becomes true), configured in Zoho. See the runbook.
-- If Zoho is down for more than 10 × 5 minutes, leads stop retrying and an alert fires. Replaying them is in the runbook.
+- If Zoho is down for more than about 40 minutes (one quick retry, then eight sweeps), leads stop retrying and an alert fires. Replaying them is in the runbook.
