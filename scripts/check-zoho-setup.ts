@@ -16,6 +16,8 @@ interface ExpectedField {
   readonly apiName: string;
   readonly type: string;
   readonly values?: readonly string[];
+  /** Zoho must refuse a second record with the same value. */
+  readonly unique?: true;
 }
 
 /** What src/providers/zoho.ts writes. The values come from the same constants it uses. */
@@ -28,7 +30,8 @@ const EXPECTED_FIELDS: readonly ExpectedField[] = [
   { apiName: "Contact_Consent", type: "boolean" },
   { apiName: "Try_On", type: "boolean" },
   { apiName: "D1_Lead_ID", type: "text" },
-  { apiName: "D1_Person_ID", type: "text" },
+  // Unique, so two overlapping syncs of one person cannot both insert a record.
+  { apiName: "D1_Person_ID", type: "text", unique: true },
   { apiName: "UTM_Source", type: "text" },
   { apiName: "UTM_Campaign", type: "text" },
 ];
@@ -37,6 +40,8 @@ interface ZohoField {
   api_name: string;
   data_type: string;
   pick_list_values?: { actual_value: string }[];
+  /** `{}` when duplicates are allowed; `{ case_sensitive: … }` when they are not. */
+  unique?: Record<string, unknown>;
 }
 
 function required(name: string): string {
@@ -105,12 +110,18 @@ for (const expected of EXPECTED_FIELDS) {
     report(false, expected.apiName, `is ${field.data_type}, expected ${expected.type}`);
     continue;
   }
+  if (expected.unique === true && Object.keys(field.unique ?? {}).length === 0) {
+    report(false, expected.apiName, 'allows duplicates; tick "Do not allow duplicate values" on the field');
+    continue;
+  }
   const present = new Set((field.pick_list_values ?? []).map((value) => value.actual_value));
   const missing = (expected.values ?? []).filter((value) => !present.has(value));
   report(
     missing.length === 0,
     expected.apiName,
-    missing.length === 0 ? expected.type : `missing values: ${missing.join(", ")}`,
+    missing.length === 0
+      ? `${expected.type}${expected.unique === true ? ", unique" : ""}`
+      : `missing values: ${missing.join(", ")}`,
   );
 }
 

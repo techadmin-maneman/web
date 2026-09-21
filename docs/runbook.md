@@ -16,19 +16,19 @@ Sections still to come: AILabTools or the BSP down (M3), ceiling tripped (M3), r
 
 ### State on 21 September 2026
 
-| Step                                          | staging                              | production                        |
-| --------------------------------------------- | ------------------------------------ | --------------------------------- |
-| 1. D1 database, queues                        | done                                 | done                              |
-| 1. R2 buckets, 30-day expiry                  | done                                 | done                              |
-| 2. DNS record                                 | done                                 | exists (the apex record)          |
-| 3. Access application and service token       | done                                 | not applicable                    |
-| 4. Migrations and identity mark               | done                                 | done                              |
-| 5. Bootstrap deploy of both Workers           | done                                 | done                              |
-| 6. CI tokens and GitHub secrets, checked      | done                                 | done                              |
-| 7. Worker secrets: Turnstile, IP salt         | done                                 | done                              |
-| 7. Worker secrets: alert webhook              | **to do** (owner)                    | **to do** (owner)                 |
-| 8. Zoho org, fields, secrets                  | **to do** (owner): Developer Edition | **to do** (owner): production org |
-| 9. Triggers (sweeper cron, crm-sync consumer) | after M2 is deployed                 | after M2 is released              |
+| Step                                          | staging                 | production                        |
+| --------------------------------------------- | ----------------------- | --------------------------------- |
+| 1. D1 database, queues                        | done                    | done                              |
+| 1. R2 buckets, 30-day expiry                  | done                    | done                              |
+| 2. DNS record                                 | done                    | exists (the apex record)          |
+| 3. Access application and service token       | done                    | not applicable                    |
+| 4. Migrations and identity mark               | done                    | done                              |
+| 5. Bootstrap deploy of both Workers           | done                    | done                              |
+| 6. CI tokens and GitHub secrets, checked      | done                    | done                              |
+| 7. Worker secrets: Turnstile, IP salt         | done                    | done                              |
+| 7. Worker secrets: alert webhook              | done (Google Chat)      | **to do** (owner)                 |
+| 8. Zoho org, fields, secrets                  | done: Developer Edition | **to do** (owner): production org |
+| 9. Triggers (sweeper cron, crm-sync consumer) | done                    | after M2 is released              |
 
 ### 1. Resources
 
@@ -278,7 +278,7 @@ Symptoms: every sync fails with `invalid_code` or `INVALID_TOKEN`.
 UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
 ```
 
-The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync finds the person by `D1_Person_ID` first.
+The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
 
 ---
 
