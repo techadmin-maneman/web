@@ -1,8 +1,27 @@
-// Shared helpers for the browser tests.
+// Shared helpers for the browser tests, and the `test` they all use: it fails
+// any test in which the page broke the site's content security policy.
 
-import type { Page } from "@playwright/test";
+import { test as base, expect, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { drawnHead, HEAD_HEIGHT, HEAD_WIDTH, type Rgb } from "../test/node/drawn-head.ts";
+
+export { expect };
+
+export const test = base.extend<{ contentSecurityPolicy: undefined }>({
+  contentSecurityPolicy: [
+    async ({ page }, use) => {
+      const violations: string[] = [];
+      page.on("console", (message) => {
+        if (message.type() === "error" && message.text().includes("Content Security Policy")) {
+          violations.push(message.text());
+        }
+      });
+      await use(undefined);
+      expect(violations, "the page broke the content security policy").toEqual([]);
+    },
+    { auto: true },
+  ],
+});
 
 /** Cloudflare's dummy token: the local and staging APIs accept it (docs/turnstile.md). */
 export const DUMMY_TOKEN = "XXXX.DUMMY.TOKEN.XXXX";
@@ -72,4 +91,30 @@ export async function throughToGenerate(page: Page): Promise<void> {
   await reach("looks");
   await page.getByText("Light density").first().click();
   await page.getByRole("button", { name: "Generate the simulation" }).click();
+}
+
+/** Every command the page queued for the analytics tags (GA's dataLayer), as arrays. */
+export function analyticsCommands(page: Page): Promise<unknown[][]> {
+  return page.evaluate(() =>
+    ((window as unknown as { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? []).map((entry) => Array.from(entry)),
+  );
+}
+
+/** The analytics events the page sent, with their parameters. */
+export async function analyticsEvents(page: Page): Promise<[string, Record<string, unknown>][]> {
+  const commands = await analyticsCommands(page);
+  return commands
+    .filter(([command]) => command === "event")
+    .map(([, name, parameters]) => [String(name), (parameters ?? {}) as Record<string, unknown>]);
+}
+
+/**
+ * Fails if a name, a number or an image reference reached the analytics
+ * tags, or the address any tag would read.
+ */
+export async function expectNoPersonalData(page: Page, personal: readonly string[]): Promise<void> {
+  const sent = JSON.stringify(await analyticsCommands(page)) + page.url();
+  for (const value of [...personal, "blob:", "/api/result", "/api/tryon/upload"]) {
+    expect(sent, `analytics carried "${value}"`).not.toContain(value);
+  }
 }

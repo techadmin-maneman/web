@@ -13,3 +13,4 @@ coverage/
 site/.astro/
 test-results/
 playwright-report/
+lighthouse/

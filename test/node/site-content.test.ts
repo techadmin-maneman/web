@@ -145,9 +145,9 @@ describe("site helpers", () => {
   });
 
   it("keeps staging and local out of search engines, and only them", () => {
-    expect(headersFile("staging")).toContain("X-Robots-Tag: noindex");
+    expect(headersFile("staging", "default-src 'self'")).toContain("X-Robots-Tag: noindex");
     expect(robotsFile("local")).toContain("Disallow: /");
-    expect(headersFile("production")).toBe("");
+    expect(headersFile("production", "default-src 'self'")).not.toContain("X-Robots-Tag");
     expect(robotsFile("production")).toContain("Allow: /");
   });
 

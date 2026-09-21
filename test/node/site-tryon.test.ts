@@ -64,8 +64,11 @@ describe("the try-on's error screen", () => {
   it("waits while a job runs, and reads how it ended", () => {
     expect(jobProblem({ job_id: "j", state: "rendering" })).toBeNull();
     expect(jobProblem({ job_id: "j", state: "ready" })).toBeNull();
-    expect(jobProblem({ job_id: "j", state: "failed", failure_code: "render_failed" })).toBe("renderFailed");
-    expect(jobProblem({ job_id: "j", state: "failed" })).toBe("renderFailed");
-    expect(jobProblem({ job_id: "j", state: "expired" })).toBe("busy");
+    expect(jobProblem({ job_id: "j", state: "failed", failure_code: "photo_unreadable" })).toEqual({
+      kind: "photo",
+      code: "photo_unreadable",
+    });
+    expect(jobProblem({ job_id: "j", state: "failed" })).toEqual({ kind: "renderFailed", code: "render_failed" });
+    expect(jobProblem({ job_id: "j", state: "expired" })).toEqual({ kind: "busy", code: "expired" });
   });
 });

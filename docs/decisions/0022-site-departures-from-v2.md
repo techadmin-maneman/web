@@ -96,3 +96,15 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
     - shrunk by 15% at a time until it is under 5 MB.
 
     A file the browser cannot read, or one under 200 px on a side, goes straight to the error screen, and nothing is sent. The hair colour comes from the harness's detector, run in the browser. A shade the API does not accept, such as blonde or red, is sent as `unknown`.
+
+## Launch hardening (F4)
+
+26. **The hero footage starts once the page has loaded.** v2 plays it at once. Waiting keeps its 2.3 MB download from slowing the poster, which is the largest thing painted first (ADR 0023, 4). The poster shows until then.
+
+27. **₹ comes from a one-glyph font file.** EB Garamond's ₹ is cut into a 768-byte file, so the page no longer downloads the whole latin-ext subset for it. Instrument Sans has no ₹ in any subset, the design's copy included, so its ₹ was already the system font's. Nothing looks different: the fidelity pairs are unchanged.
+
+28. **The shared-link card.** v2 has none. The card is the brand kit's gilt lockup on ink, 1200 × 630.
+
+29. **The address is tidied on arrival.** A link carrying query parameters other than campaign tags loses them from the address bar before any analytics tag reads it. The campaign tags stay, as do the preview switches outside production.
+
+30. **The try-on countdown's contrast.** v2 draws the countdown in `#2A3A56` on `#0E1728`, a contrast of 1.6:1. That is under the 3:1 WCAG 2.2 AA asks of large text. The countdown is hidden from screen readers, which hear each finished step instead, but a sighted visitor with low vision may not read it. **Raised, not changed:** `#56678A` would reach 3.2:1. It is the one element the axe checks skip.

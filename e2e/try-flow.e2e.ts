@@ -1,9 +1,19 @@
 // The try-on on a mocked API: what the page sends, in what order, and what it
 // shows for each answer. try-api.e2e.ts runs the same flow on the local API.
 
-import { expect, test, type Page, type Request } from "@playwright/test";
+import type { Page, Request } from "@playwright/test";
 import sharp from "sharp";
-import { drawnHeadPhoto, DUMMY_TOKEN, fakeTurnstile, throughToGenerate, visit } from "./support.ts";
+import {
+  analyticsEvents,
+  drawnHeadPhoto,
+  DUMMY_TOKEN,
+  expect,
+  expectNoPersonalData,
+  fakeTurnstile,
+  test,
+  throughToGenerate,
+  visit,
+} from "./support.ts";
 
 const JOB = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
@@ -137,11 +147,18 @@ test("the whole try-on: uploaded during the choices, the gate before the render 
   await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after thirty days.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Download" })).toHaveAttribute("aria-disabled", "false");
 
-  // No name, number or image link in any address the page asked for.
+  // No name, number or image link in any address the page asked for, or in analytics.
   for (const request of seen) {
     expect(request.url()).not.toContain("Test");
     expect(request.url()).not.toContain("98100");
   }
+  expect((await analyticsEvents(page)).map(([name]) => name)).toEqual([
+    "try_on_started",
+    "try_on_gate_shown",
+    "try_on_claimed",
+    "try_on_completed",
+  ]);
+  await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
 });
 
 test("no WhatsApp line when messaging is off", async ({ page }) => {
@@ -197,6 +214,8 @@ for (const [name, answers, heading] of [
     await throughToGenerate(page);
     await page.clock.runFor(3_000);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+    const failed = (await analyticsEvents(page)).find(([name]) => name === "try_on_failed");
+    expect(failed?.[1]).toEqual({ failure_code: expect.any(String) as unknown });
   });
 }
 

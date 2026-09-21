@@ -27,7 +27,9 @@
     "build:site": "node scripts/build-site.ts",
     "check:site": "node scripts/build-site.ts --check",
     "fidelity": "node scripts/fidelity.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "lighthouse": "node scripts/lighthouse.ts",
+    "fonts": "node scripts/subset-fonts.ts"
   },
   "dependencies": {
     "@hono/zod-openapi": "1.6.3",
@@ -37,6 +39,7 @@
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@astrojs/preact": "6.0.5",
+    "@axe-core/playwright": "4.13.0",
     "@babel/standalone": "7.29.0",
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20260921.1",
@@ -50,6 +53,7 @@
     "eslint": "10.11.0",
     "jiti": "2.7.0",
     "jsonc-parser": "3.3.1",
+    "lighthouse": "13.5.0",
     "openapi-typescript": "7.13.0",
     "preact": "10.29.8",
     "prettier": "3.9.8",
@@ -57,6 +61,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "sharp": "0.35.4",
+    "subset-font": "2.9.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.0",
     "vitest": "4.1.11",

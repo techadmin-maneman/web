@@ -75,11 +75,25 @@ The browser tests run the site against a local `mm-api` with stub providers (`pl
 - **Previewing a screen.** Outside production, `?state=` opens any try-on screen (`/try?state=gate`) or booking state (`/book?state=waitlist`), with stand-in images and no API calls. `/try?state=error&kind=busy` shows another error (`renderFailed`, `busy` or `lookLimit`). The screenshots and tests use it.
 - **No photographs of people in tests.** The try-on tests upload a drawn head (`test/node/drawn-head.ts`).
 
+## Adding the analytics IDs
+
+The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a GA4 measurement ID, the Google Ads account ID with a conversion label for bookings and one for try-on claims, and a Meta Pixel ID.
+
+- Staging's IDs must be test or debug streams, never production's. GA4 marks everything outside production as debug traffic anyway.
+- A tag with no ID is not loaded. Setting one adds its hosts to the content security policy on the next build.
+- The events and what each carries are in `docs/decisions/0023-launch-hardening.md`. The browser tests fail if a name, a number or an image reference reaches a tag.
+
+## Headers, budgets and fonts
+
+- **Headers.** The build writes `_headers`: the content security policy, HSTS, the referrer policy, and the camera allowed on `/try` only. Inline scripts and styles are allowed by hash, computed from the built pages, so nothing needs listing by hand. Never add a `style` attribute or a `data:` URL: the policy refuses both, and the browser tests fail.
+- **Lighthouse.** `npm run lighthouse` audits the local build's `/`, `/try` and `/book` against the budgets, and CI runs it after the browser tests. Reports go to `lighthouse/`.
+- **Fonts.** ₹ is drawn from a one-glyph file. If the site starts using another character outside latin, add it in `scripts/subset-fonts.ts`, run `npm run fonts`, and take it out of the latin-ext ranges in `fonts.css`.
+
 ## Going live in production
 
 Production still serves `site/placeholder/production`. To go live:
 
 1. Publish or leave out every placeholder block, supply the privacy and terms text, and have counsel approve the three notices, until `npm run build:site -- --env production` passes.
-2. In `site/wrangler.jsonc`, point production's `assets.directory` at `./dist/production`.
-3. In `deploy-production.yml`, build the production site before "Deploy mm-site".
-4. Finish F4: analytics and conversion tags, SEO, the security headers and the performance budgets.
+2. Add production's analytics IDs, and decide on Bot Fight Mode (docs/decisions/0023-launch-hardening.md, 2).
+3. In `site/wrangler.jsonc`, point production's `assets.directory` at `./dist/production`.
+4. In `deploy-production.yml`, build the production site before "Deploy mm-site".

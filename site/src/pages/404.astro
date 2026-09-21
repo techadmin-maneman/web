@@ -3,7 +3,7 @@ import { notFound, pageTitles } from "../content/site.ts";
 import Site from "../layouts/Site.astro";
 ---
 
-<Site title={pageTitles.notFound}>
+<Site title={pageTitles.notFound} noindex>
   <section class="page">
     <h1 class="section-title">{notFound.title}</h1>
     <p class="lead">{notFound.body}</p>

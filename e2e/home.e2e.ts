@@ -1,6 +1,6 @@
 // The home page and the chrome every page shares (docs/feature-inventory.md, items 1–21).
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support.ts";
 
 const narrow = (width: number | undefined) => (width ?? 0) <= 760;
 

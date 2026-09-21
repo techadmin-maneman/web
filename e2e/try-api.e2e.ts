@@ -2,8 +2,7 @@
 // AILabTools stub (playwright.config.ts): a drawn photograph goes up, is
 // rendered, and the gate is submitted while the render is still running.
 
-import { expect, test } from "@playwright/test";
-import { drawnHeadPhoto, fakeTurnstile, randomMobile, throughToGenerate, visit } from "./support.ts";
+import { drawnHeadPhoto, expect, fakeTurnstile, randomMobile, test, throughToGenerate, visit } from "./support.ts";
 
 // One at a time, as for bookings: each upload makes the API verify a Turnstile token.
 test.describe.configure({ mode: "serial" });

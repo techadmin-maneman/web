@@ -4,10 +4,12 @@
 // anything else missing → 404.html with status 404.
 //
 // Given an API origin, it passes /api/* there, as Cloudflare routes /api/* to
-// mm-api on the site's own host.
+// mm-api on the site's own host. A `_headers` file in the root is applied as
+// Cloudflare applies it, so the tests run under the site's real policy.
 
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { createGzip } from "node:zlib";
 import { extname, join, normalize, resolve, sep } from "node:path";
 
 const TYPES: Readonly<Record<string, string>> = {
@@ -23,6 +25,7 @@ const TYPES: Readonly<Record<string, string>> = {
   ".mp4": "video/mp4",
   ".txt": "text/plain; charset=utf-8",
   ".json": "application/json",
+  ".xml": "application/xml",
 };
 
 function isFile(path: string): boolean {
@@ -39,6 +42,51 @@ export function resolveFile(root: string, urlPath: string): string | null {
     if (isFile(candidate)) return candidate;
   }
   return null;
+}
+
+interface HeaderRule {
+  readonly path: RegExp;
+  readonly set: [string, string][];
+  readonly unset: string[];
+}
+
+/** Reads a `_headers` file: a path pattern (`*` matches anything), then indented `Name: value` or `! Name` lines. */
+export function parseHeaders(text: string): HeaderRule[] {
+  const rules: HeaderRule[] = [];
+  for (const line of text.split("\n")) {
+    if (line.trim() === "" || line.trim().startsWith("#")) continue;
+    if (!/^\s/.test(line)) {
+      const pattern = line
+        .trim()
+        .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+        .replace("*", ".*");
+      rules.push({ path: new RegExp(`^${pattern}$`), set: [], unset: [] });
+      continue;
+    }
+    const rule = rules.at(-1);
+    const entry = line.trim();
+    if (rule === undefined) continue;
+    if (entry.startsWith("! ")) rule.unset.push(entry.slice(2).toLowerCase());
+    else {
+      const colon = entry.indexOf(":");
+      rule.set.push([entry.slice(0, colon).trim().toLowerCase(), entry.slice(colon + 1).trim()]);
+    }
+  }
+  return rules;
+}
+
+/**
+ * The headers for a path. Every matching rule applies in order: its `!` lines
+ * remove a header, and a header set twice is joined with a comma.
+ */
+export function headersFor(rules: readonly HeaderRule[], urlPath: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const path = urlPath.split("?")[0] ?? "/";
+  for (const rule of rules.filter((candidate) => candidate.path.test(path))) {
+    for (const name of rule.unset) Reflect.deleteProperty(headers, name);
+    for (const [name, value] of rule.set) headers[name] = name in headers ? `${headers[name] ?? ""}, ${value}` : value;
+  }
+  return headers;
 }
 
 /** Forwards one request to the API and streams its answer back. */
@@ -67,6 +115,8 @@ async function forward(request: IncomingMessage, response: ServerResponse, apiOr
 }
 
 export function serveDirectory(root: string, port: number, apiOrigin?: string): Promise<Server> {
+  const headersPath = join(root, "_headers");
+  const rules = isFile(headersPath) ? parseHeaders(readFileSync(headersPath, "utf8")) : [];
   const server = createServer((request, response) => {
     if (apiOrigin !== undefined && (request.url ?? "").startsWith("/api/")) {
       void forward(request, response, apiOrigin);
@@ -78,10 +128,18 @@ export function serveDirectory(root: string, port: number, apiOrigin?: string): 
       response.writeHead(404).end("not found");
       return;
     }
+    const type = TYPES[extname(file)] ?? "application/octet-stream";
+    // Text is compressed, as Cloudflare compresses it; images, fonts and video already are.
+    const compressible = /^text\/|^application\/(json|xml)|svg/.test(type);
+    const compress = compressible && (request.headers["accept-encoding"] ?? "").includes("gzip");
     response.writeHead(found === null ? 404 : 200, {
-      "Content-Type": TYPES[extname(file)] ?? "application/octet-stream",
+      ...headersFor(rules, request.url ?? "/"),
+      "Content-Type": type,
+      ...(compress ? { "Content-Encoding": "gzip", Vary: "Accept-Encoding" } : {}),
     });
-    createReadStream(file).pipe(response);
+    const body = createReadStream(file);
+    if (compress) body.pipe(createGzip()).pipe(response);
+    else body.pipe(response);
   });
   return new Promise((resolve) => {
     server.listen(port, "127.0.0.1", () => {

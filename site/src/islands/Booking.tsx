@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { LossExtent, VisitWindow } from "../../../src/config/booking.ts";
 import { booking, stageOptions, visitWindows } from "../content/site.ts";
+import { track } from "../lib/analytics.ts";
 import { fetchCities, submitLead, type City, type ErrorCode, type LeadResponse } from "../lib/api.ts";
 import { measurementCalendar } from "../lib/calendar.ts";
 import { bookedHeadline } from "../lib/dates.ts";
@@ -147,6 +148,9 @@ export default function Booking(props: Props) {
       setState("form");
       return;
     }
+    const served = answer.body.served;
+    track({ name: "lead_submitted", first_choice_window: window, loss_extent: extent, city: chosenCity.name, served });
+    track({ name: served ? "booking_confirmed" : "waitlist_submitted", city: chosenCity.name });
     setResult(answer.body);
     setState(answer.body.served ? "booked" : "waitlist");
   }

@@ -857,3 +857,21 @@ export const pageTitles = {
   terms: "Terms — Mane Man",
   notFound: "Not found — Mane Man",
 };
+
+/** Each page's description, for search results and shared links. */
+export const pageDescriptions = {
+  home: hero.body,
+  tryOn: tryOnTeaser.body,
+  book: booking.intro,
+  privacy: "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased.",
+  terms: "The terms of Mane Man's hair system service.",
+};
+
+/** The business as search engines read it (LocalBusiness). Only published facts. */
+export const business = {
+  name: "Mane Man",
+  description: hero.body,
+  /** The cities the FAQ says are covered. */
+  areaServed: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
+  priceRange: "₹25,000–₹40,000",
+};

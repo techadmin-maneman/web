@@ -7,13 +7,14 @@ import { SHOW_PLACEHOLDER_TAGS } from "../lib/build.ts";
 
 interface Props {
   pageTitle: string;
+  description: string;
   page: { publish: boolean; title: string; paragraphs: readonly string[] };
 }
 
-const { pageTitle, page } = Astro.props;
+const { pageTitle, description, page } = Astro.props;
 ---
 
-<Site title={pageTitle}>
+<Site title={pageTitle} description={description}>
   <article class="page">
     {SHOW_PLACEHOLDER_TAGS && !page.publish && <div class="label tag">{placeholderTag}</div>}
     <h1 class="section-title">{page.title}</h1>

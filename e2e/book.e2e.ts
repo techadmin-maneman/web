@@ -2,8 +2,8 @@
 // covered (docs/feature-inventory.md, items 31–33). e2e/book-api.e2e.ts books
 // against the real local API.
 
-import { expect, test, type Page, type Request } from "@playwright/test";
-import { DUMMY_TOKEN, fakeTurnstile, visit } from "./support.ts";
+import type { Page, Request } from "@playwright/test";
+import { analyticsEvents, DUMMY_TOKEN, expect, expectNoPersonalData, fakeTurnstile, test, visit } from "./support.ts";
 
 const CITIES = [
   { name: "Gurgaon", served: true },
@@ -126,6 +126,11 @@ test("booked: the API's date and window, the five rows, and a calendar file for 
   }
   await expect(page.getByText("+91 98100 00000")).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to the site" })).toHaveAttribute("href", "/");
+  expect(await analyticsEvents(page)).toEqual([
+    ["lead_submitted", { first_choice_window: "weekday_pm", loss_extent: "crown", city: "Gurgaon", served: true }],
+    ["booking_confirmed", { city: "Gurgaon" }],
+  ]);
+  await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Add to calendar" }).click();
@@ -155,6 +160,8 @@ test("an unserved city joins its list", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("We are across Delhi NCR, not yet in Pune.");
   await expect(page.getByText("First quarter, 2027")).toBeVisible();
   await expect(page.getByRole("link", { name: "Try the simulation meanwhile" })).toHaveAttribute("href", "/try");
+  expect((await analyticsEvents(page)).map(([name]) => name)).toEqual(["lead_submitted", "waitlist_submitted"]);
+  await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
 });
 
 const REFUSALS = [

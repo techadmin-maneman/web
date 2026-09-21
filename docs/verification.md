@@ -217,3 +217,42 @@ Production had run the M1 skeleton until now. Its secrets were set first. Zoho i
 `GET https://maneman.in/api/health` reports production, version `b12f0181`, tag `268eaa4`, D1 ok. The first cron sweep ran at 17:45:57 and found nothing to do.
 
 Messaging is off in production (`MESSAGING_ENABLED=false`), and the site is still the placeholder.
+
+## The public site: F1 to F3, on staging
+
+The site is built from the front-end prompt in four milestones, on staging only. Production keeps its placeholder until the owner releases the site and the backend together.
+
+### F1: the static port, 21 September 2026
+
+PR #15 put the static port of Mane Man Site v2 on `https://staging.maneman.in`. Each section and state was checked against the design at 390 and 1440 px, pair by pair (`docs/fidelity/`), and each item in `docs/feature-inventory.md` names its evidence.
+
+### F2: booking, 22 September 2026
+
+PR #16 wired the booking form to the API. On staging, a booking made through the page at 390 px, after a landing with `?utm_source=f2-proof&utm_campaign=staging`:
+
+- [x] `POST /api/lead` answered 201 and the page showed the proposed day and window.
+- [x] Lead `6bca5f49-ac8c-48b7-9797-90c9c24d9ff5` reached the Zoho Developer Edition org as record `32619000000175601` on the first sync attempt: `Proposed_Visit_Date` 2026-09-24, status New, assigned, UTM source `f2-proof` and campaign `staging`.
+
+### F3: the try-on, 22 September 2026
+
+PR #17 wired the try-on to the API; staging runs `4f37d5f`. The proof used a Pixel 7 profile, with Chrome's Slow 4G (150 ms, 1.6 Mbps down, 750 kbps up) and a CPU slowed four times. It used an internal test photograph and a random number, not an allowlisted one, so no WhatsApp message was sent. Turnstile was the stand-in widget giving Cloudflare's dummy token, which staging accepts.
+
+| Time       | Step                                                                      |
+| ---------- | ------------------------------------------------------------------------- |
+| 3.8 s      | `/try` loaded and hydrated                                                |
+| 4.6 s      | Continue on the consent screen: upload link 201                           |
+| 5.3 s      | Generate pressed                                                          |
+| 5.7 s      | Photograph uploaded: 204, 40,537 bytes                                    |
+| 6.9 s      | Render queued: 202, `crown`, `full-natural-short`, `hair_color` `unknown` |
+| 8.9–23.7 s | Status polled every 3 s                                                   |
+| 25.6 s     | The gate opened                                                           |
+| 26.9 s     | Claimed: 201, with the job still `rendering`                              |
+| 37.9 s     | Result ready                                                              |
+| 44.3 s     | Result shown                                                              |
+
+- [x] **A real render on a phone profile over 4G.** AILabTools Pro rendered it in 23.8 s.
+- [x] **The gate submitted before the render finished.** The job was `rendering` when the claim returned.
+- [x] **The upload ran during the choices.** It finished before Generate's request went out.
+- [ ] **The render kept the person's face.** It did not. The photograph is cropped above the mouth, with the eyes turned up, against v2's guidelines, and Pro returned a different person's face. It stored and served the result under the proof job's own ID, and the upload in R2 was the page's photograph. The same generated face came back for this photograph's backend renders earlier in the day. So the provider, not the site, replaces a face it cannot read. None of the owner's five test photographs is taken straight on. **Open for the owner:** a straight-on test photograph to prove identity is kept, and whether the page should refuse photographs whose face runs off the frame.
+
+The site's hair-colour detector agreed with the harness's own detector on all five test photographs. Two read brown, one white; two could not be read, which the harness defaults to black and the site sends as `unknown`.
