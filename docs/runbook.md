@@ -4,7 +4,9 @@ Commands run from the repository root. `W` stands for `node node_modules/wrangle
 
 Everything lives in the Cloudflare account `Tech@maneman.in's Account` (`a2e185075b1b8eef3bee24b72f45ace3`), which holds the `maneman.in` zone.
 
-Sections still to come, one milestone at a time: Zoho, AILabTools or the BSP down (M2, M3); ceiling tripped (M3); token revoked (M2); replaying a failed lead or message (M2, M3); D1 point-in-time restore (M2); erasure within the day (M4); opening a city (M2); adding a blackout date (M2).
+To run SQL against an environment's database: `W d1 execute maneman-<env> --env <env> --remote --command "<sql>"`, where `maneman-<env>` is `maneman-staging` or `maneman-prod`.
+
+Sections still to come: AILabTools or the BSP down (M3), ceiling tripped (M3), replaying a failed message (M3), erasure within the day (M4).
 
 ---
 
@@ -14,16 +16,19 @@ Sections still to come, one milestone at a time: Zoho, AILabTools or the BSP dow
 
 ### State on 21 September 2026
 
-| Step                                    | staging   | production               |
-| --------------------------------------- | --------- | ------------------------ |
-| 1. D1 database, queues                  | done      | done                     |
-| 1. R2 buckets, 30-day expiry            | done      | done                     |
-| 2. DNS record                           | done      | exists (the apex record) |
-| 3. Access application and service token | done      | not applicable           |
-| 4. Migrations and identity mark         | done      | done                     |
-| 5. Bootstrap deploy of both Workers     | done      | done                     |
-| 6. CI token created                     | done      | done                     |
-| 6. Token checked, GitHub secrets set    | **to do** | **to do**                |
+| Step                                          | staging                              | production                        |
+| --------------------------------------------- | ------------------------------------ | --------------------------------- |
+| 1. D1 database, queues                        | done                                 | done                              |
+| 1. R2 buckets, 30-day expiry                  | done                                 | done                              |
+| 2. DNS record                                 | done                                 | exists (the apex record)          |
+| 3. Access application and service token       | done                                 | not applicable                    |
+| 4. Migrations and identity mark               | done                                 | done                              |
+| 5. Bootstrap deploy of both Workers           | done                                 | done                              |
+| 6. CI tokens and GitHub secrets, checked      | done                                 | done                              |
+| 7. Worker secrets: Turnstile, IP salt         | done                                 | done                              |
+| 7. Worker secrets: alert webhook              | **to do** (owner)                    | **to do** (owner)                 |
+| 8. Zoho org, fields, secrets                  | **to do** (owner): Developer Edition | **to do** (owner): production org |
+| 9. Triggers (sweeper cron, crm-sync consumer) | after M2 is deployed                 | after M2 is released              |
 
 ### 1. Resources
 
@@ -121,6 +126,68 @@ Rotating a token later is the same: new token in a file, check it, load it, dele
 
 When the GitHub plan allows (0008): require every job in `.github/workflows/ci.yml` on `main`, and add required reviewers to the `production` environment.
 
+### 7. Worker secrets
+
+Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the value. Set them **before** deploying code that needs them: the Worker refuses to start without them (`docs/decisions/0011-lead-api.md`).
+
+| Secret                                                                      | Value                                                                                                                                            |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `TURNSTILE_SECRET`                                                          | The secret of the environment's Turnstile widget (Cloudflare dashboard → Turnstile).                                                             |
+| `IP_HASH_SALT`                                                              | 32 or more random characters: `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`. Changing it resets the rate-limit counters. |
+| `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                             |
+| `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                          |
+| `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | For Zoho's India data centre: `accounts.zoho.in` and `www.zohoapis.in`.                                                                          |
+
+```sh
+W secret put ALERT_WEBHOOK_URL --env <env>
+W secret list --env <env>        # names only, to check
+```
+
+The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-production` (`maneman.in`, `www.maneman.in`). The front-end needs their site keys, which are public: `docs/turnstile.md`.
+
+### 8. Zoho
+
+Staging uses a Zoho CRM **Developer Edition** org, production the real org. Do this once per org.
+
+1. **Fields.** Setup → Customization → Modules and Fields → Leads → Standard layout. Add these fields; their API names must match exactly:
+
+   | Field                                                    | Type        | Values                                                             |
+   | -------------------------------------------------------- | ----------- | ------------------------------------------------------------------ |
+   | First Choice Window (`First_Choice_Window`)              | Pick list   | Weekday morning, Weekday evening, Weekend morning, Weekend evening |
+   | Loss Extent (`Loss_Extent`)                              | Pick list   | Crown thinning, Receding front, Advanced                           |
+   | Proposed Visit Date (`Proposed_Visit_Date`)              | Date        |                                                                    |
+   | Contact Consent (`Contact_Consent`)                      | Checkbox    |                                                                    |
+   | Try On (`Try_On`)                                        | Checkbox    |                                                                    |
+   | D1 Lead ID (`D1_Lead_ID`)                                | Single line |                                                                    |
+   | D1 Person ID (`D1_Person_ID`)                            | Single line | tick "Do not allow duplicate values"                               |
+   | UTM Source (`UTM_Source`), UTM Campaign (`UTM_Campaign`) | Single line |                                                                    |
+
+2. **Pick-list values.** Lead Status: add `New`, `Waitlist` and `Try-on — delivery only` (with the em dash). Lead Source: add `Booking form`, `Waitlist` and `Try-on`.
+3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that assigns new bookings to technicians. Its ID is the number at the end of the rule's URL; that is `ZOHO_LAR_ID`.
+4. **Workflows.** Setup → Automation → Workflow Rules → Leads:
+   - on create, when Lead Status is New: notify the assigned technician and ops;
+   - on edit, when Contact Consent becomes true: assign an owner. This covers a try-on customer who later books; Zoho has no assignment rule on update.
+   - Nothing may fire for Lead Status "Try-on — delivery only". The sync also sends those with workflows switched off.
+5. **API client.** At the API console for your data centre (`https://api-console.zoho.in`): Add Client → Self Client. Note the client ID and secret. Generate a code with the scope `ZohoCRM.modules.leads.ALL,ZohoCRM.modules.notes.CREATE,ZohoSearch.securesearch.READ`, then exchange it within its lifetime for a refresh token:
+
+   ```sh
+   curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
+   ```
+
+   Keep the `refresh_token` from the answer.
+
+6. **Secrets.** Put all six Zoho secrets on the Worker (step 7). The next lead proves the setup: it should appear in Zoho within a minute, assigned and with its proposed date.
+
+### 9. Triggers
+
+CI deploys code but cannot attach cron schedules, queue consumers or routes (`docs/decisions/0010-applying-triggers.md`). After the code that handles them is live:
+
+```sh
+npm run apply-triggers -- --env <env>
+```
+
+`deploy-staging` prints a warning when a merge changed the staging triggers.
+
 ---
 
 ## Staying on the free tier
@@ -134,6 +201,83 @@ Once, in the Cloudflare dashboard:
 3. Billing → Subscriptions should list only free plans. Never upgrade Workers to Paid without a new ADR.
 
 If an R2 alert fires: set the render ceiling to 0 (M3 adds the variable) and redeploy, which stops new uploads and renders. Then find the cause before raising it again.
+
+---
+
+## Leads and Zoho
+
+A booking is saved in D1 before Zoho hears of it, so a customer never sees a Zoho problem. Where each lead stands:
+
+```sql
+SELECT sync_state, COUNT(*) AS leads, MAX(sync_attempts) AS most_attempts FROM leads GROUP BY sync_state;
+SELECT id, sync_attempts, last_sync_error, created_at FROM leads WHERE sync_state = 'failed' ORDER BY created_at;
+```
+
+`last_sync_error` holds Zoho's status and code, such as `Zoho 401 invalid_code: …`, and never the lead's details.
+
+### Zoho is down
+
+Nothing to do at first. Each failed lead is retried every five minutes by the sweeper. After 10 attempts (about 50 minutes) it stops and an alert names it. Once Zoho is back, replay the leads that gave up (below).
+
+### The Zoho token was revoked or expired
+
+Symptoms: every sync fails with `invalid_code` or `INVALID_TOKEN`.
+
+1. Make a new refresh token (Zoho, step 5 of "Provisioning an environment").
+2. `W secret put ZOHO_REFRESH_TOKEN --env <env>`
+3. Drop the cached access token: `DELETE FROM zoho_token;`
+4. The sweeper delivers the waiting leads within five minutes. Replay any that already gave up.
+
+### Replaying failed leads
+
+```sql
+UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
+```
+
+The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync finds the person by `D1_Person_ID` first.
+
+---
+
+## Cities and visit days
+
+Opening a city is a data change, not a deploy. The booking form reads `GET /api/cities`, which may be cached for five minutes.
+
+```sql
+-- Open a waitlisted city: new leads get a proposed visit day and go to the technicians.
+UPDATE cities SET served = 1 WHERE name = 'Mumbai';
+-- Add a city to the list, waitlisted, after Bengaluru.
+INSERT INTO cities (name, served, active, sort) VALUES ('Pune', 0, 1, 80);
+-- Take a city off the form. Existing leads keep it.
+UPDATE cities SET active = 0 WHERE name = 'Pune';
+```
+
+People already on a city's waitlist are not told automatically when it opens; that is out of Phase 1's scope. Find them with `SELECT l.id, l.created_at FROM leads l WHERE l.source = 'waitlist' AND l.city = 'Mumbai';` and work from Zoho.
+
+Blackout dates are days ops will not offer as the proposed visit:
+
+```sql
+INSERT INTO visit_blackouts (date, reason) VALUES ('2026-10-20', 'Diwali');
+DELETE FROM visit_blackouts WHERE date = '2026-10-20';
+```
+
+A blackout changes only proposals made after it is added.
+
+---
+
+## Restoring D1 to a point in time
+
+D1 Time Travel restores a database to any minute in the last 30 days. **It rolls back everything written since**, including leads that are already in Zoho. Prefer fixing rows by hand when you can.
+
+```sh
+W d1 time-travel info maneman-<env> --env <env> --timestamp 2026-09-21T10:00:00Z   # the bookmark for that moment
+W d1 time-travel restore maneman-<env> --env <env> --timestamp 2026-09-21T10:00:00Z
+```
+
+The restore prints a bookmark for the state it replaced, so the restore itself can be undone. Afterwards:
+
+- run `node scripts/mark-database.ts <env>`; the identity row is older than any restore point, so it should still match;
+- run the smoke suite;
+- replay any leads that were in flight.
 
 ---
 

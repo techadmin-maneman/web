@@ -13,6 +13,10 @@ Two Cloudflare Workers on one origin:
 
 Both environments are deployed in the Cloudflare account that holds `maneman.in`. The steps still owed are in `docs/runbook.md`, "Provisioning an environment".
 
+Endpoints so far: `GET /api/health`, `GET /api/cities` and `POST /api/lead` (the booking form and waitlist). Leads are saved in D1 first and reach Zoho through the `crm-sync` queue. See `docs/api.md`.
+
+The account stays on Cloudflare's free tier; the rules are in `docs/decisions/0009-stay-inside-cloudflare-free-tier.md`.
+
 Deploys: a merge to `main` deploys staging (`.github/workflows/deploy-staging.yml`). Production is released by hand with `deploy-production.yml`, for a commit that passed staging.
 
 ## Working locally
@@ -21,10 +25,12 @@ Node 24 (`.nvmrc`).
 
 ```sh
 npm ci
-npm run dev          # migrate and mark the local D1, then mm-api on :8787
+npm run dev          # creates .dev.vars, migrates and marks the local D1, then mm-api on :8787
 npm run dev:site     # mm-site placeholder on :8788
 npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
 ```
+
+Locally every provider is a stub and Turnstile uses Cloudflare's test keys: send `"turnstile_token": "XXXX.DUMMY.TOKEN.XXXX"`. The local queue delivers leads to the stub CRM within a few seconds.
 
 ## Checks (each is a CI job)
 
@@ -38,13 +44,17 @@ npm run check:migrations    # forward-only, contract steps need an ADR
 npm run build               # both Workers, every environment, dry run
 ```
 
-After changing a route schema, run `npm run openapi` to regenerate `docs/openapi.json` and `docs/api.md`; the contract test fails until you do. After changing bindings or vars, run `npm run types`.
+After changing a route schema, run `npm run openapi` to regenerate `docs/openapi.json` and `docs/api.md`; the contract test fails until you do. After changing bindings, vars or the secrets listed in `.dev.vars.example`, run `npm run types`. After changing crons, queue consumers or routes, an operator runs `npm run apply-triggers -- --env <env>` once the code is deployed (ADR 0010).
 
 ## Layout
 
 ```
 src/                  mm-api
-  config/             environments and the resources each must use
+  config/             environments, settings, booking choices, consent notices
+  domain/             leads, cities, visit dates, rate limits
+  providers/          CRM (Zoho and stub), Turnstile, alerts
+  queues/             queue consumers (crm-sync)
+  scheduled/          the sweeper
   guard.ts            startup and database-identity guard
   log.ts              the only logger; redacts personal data
   routes/             one module per route, zod schemas included
@@ -60,5 +70,6 @@ docs/decisions/       ADRs
 
 - `docs/api.md`, `docs/openapi.json`: generated API reference
 - `docs/decisions/`: architecture decisions
-- `docs/runbook.md`: provisioning, rollback, and incident procedures
+- `docs/runbook.md`: provisioning, Zoho setup, incidents, cities and blackouts, rollback
+- `docs/turnstile.md`: the Turnstile site keys for the front-end
 - `docs/verification.md`: each milestone's definition of done, with evidence
