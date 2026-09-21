@@ -2,7 +2,7 @@
 
 Two Cloudflare Workers on one origin:
 
-- **`mm-api`** (repository root): `https://{host}/api/*`. Owns every binding and secret: D1 and Queues now, R2 from M3.
+- **`mm-api`** (repository root): `https://{host}/api/*`. Owns every binding and secret: D1, R2 and Queues.
 - **`mm-site`** (`site/`): everything else. Static assets only. Today a placeholder page per environment; the front-end task replaces it with the Astro build and must keep the `mm-worker` and `mm-environment` meta tags the smoke suite looks for.
 
 |           | local                        | staging                                            | production                   |

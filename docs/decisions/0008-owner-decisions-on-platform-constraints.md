@@ -33,3 +33,8 @@ When the plan changes: require every `ci.yml` job on `main`, and add reviewers t
 
 - The runbook lists the owner's remaining steps: staging DNS record, Access application and service token, CI tokens, GitHub secrets, enabling R2.
 - `www.maneman.in` still points at GoDaddy's parked page through its old proxied record. Routing or redirecting it is a launch decision for the front-end task.
+
+## Update, 21 September 2026 (later the same day)
+
+- The owner enabled R2. The four try-on buckets exist, each with a rule that expires objects after 30 days and aborts unfinished multipart uploads after one day. `UPLOADS` and `RESULTS` are back in `wrangler.jsonc` in every environment, and the config check requires them again.
+- The staging DNS record and the Access application are in place. Every staging path now redirects to Cloudflare Access; production stays public.

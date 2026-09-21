@@ -14,15 +14,16 @@ Sections still to come, one milestone at a time: Zoho, AILabTools or the BSP dow
 
 ### State on 21 September 2026
 
-| Step                                    | staging                                       | production               |
-| --------------------------------------- | --------------------------------------------- | ------------------------ |
-| 1. D1 database, queues                  | done                                          | done                     |
-| 1. R2 buckets                           | **waiting**: R2 is not enabled on the account | **waiting**              |
-| 2. DNS record                           | **to do** (owner)                             | exists (the apex record) |
-| 3. Access application and service token | **to do** (owner)                             | not applicable           |
-| 4. Migrations and identity mark         | done                                          | done                     |
-| 5. Bootstrap deploy of both Workers     | done                                          | done                     |
-| 6. CI token and GitHub secrets          | **to do** (owner)                             | **to do** (owner)        |
+| Step                                    | staging   | production               |
+| --------------------------------------- | --------- | ------------------------ |
+| 1. D1 database, queues                  | done      | done                     |
+| 1. R2 buckets, 30-day expiry            | done      | done                     |
+| 2. DNS record                           | done      | exists (the apex record) |
+| 3. Access application and service token | done      | not applicable           |
+| 4. Migrations and identity mark         | done      | done                     |
+| 5. Bootstrap deploy of both Workers     | done      | done                     |
+| 6. CI token created                     | done      | done                     |
+| 6. Token checked, GitHub secrets set    | **to do** | **to do**                |
 
 ### 1. Resources
 
@@ -34,11 +35,13 @@ W queues create mm-messaging-<t>
 npm run check:config -- --require-provisioned  # must pass before anything deploys
 ```
 
-R2 (before M3): enable R2 in the dashboard (Storage & databases → R2; it needs a payment method), then:
+R2 must be enabled on the account first (dashboard → Storage & databases → R2; it needs a payment method). Try-on photos and results must not outlive 30 days, so each bucket gets an expiry rule:
 
 ```sh
-W r2 bucket create mm-<t>-tryon-uploads
-W r2 bucket create mm-<t>-tryon-results
+for bucket in mm-<t>-tryon-uploads mm-<t>-tryon-results; do
+  W r2 bucket create $bucket --location apac
+  W r2 bucket lifecycle add $bucket expire-after-30-days --expire-days 30 --abort-multipart-days 1 --force
+done
 ```
 
 ### 2. DNS
@@ -83,13 +86,38 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also reach production's database; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - No zone permissions.
 
-Then set the secrets. `gh` prompts for the value, so it never lands in shell history:
+Put each environment's secrets in a file at the repository root. Git ignores `.env.*` files.
+
+`.env.ci-staging`:
 
 ```sh
-gh secret set CLOUDFLARE_API_TOKEN --env <env>
-gh secret set CF_ACCESS_CLIENT_ID --env staging
-gh secret set CF_ACCESS_CLIENT_SECRET --env staging
+CLOUDFLARE_API_TOKEN=<the mm-ci-staging token>
+CF_ACCESS_CLIENT_ID=<the Access service token's client ID>
+CF_ACCESS_CLIENT_SECRET=<the Access service token's client secret>
 ```
+
+`.env.ci-production`:
+
+```sh
+CLOUDFLARE_API_TOKEN=<the mm-ci-production token>
+```
+
+Check that each token reaches exactly what it should. The script prints results, never the values:
+
+```sh
+node --env-file=.env.ci-staging scripts/verify-ci-token.ts staging
+node --env-file=.env.ci-production scripts/verify-ci-token.ts production
+```
+
+Then load the files into the GitHub environments and delete them:
+
+```sh
+gh secret set -f .env.ci-staging --env staging
+gh secret set -f .env.ci-production --env production
+rm .env.ci-staging .env.ci-production
+```
+
+Rotating a token later is the same: new token in a file, check it, load it, delete the file.
 
 When the GitHub plan allows (0008): require every job in `.github/workflows/ci.yml` on `main`, and add required reviewers to the `production` environment.
 
