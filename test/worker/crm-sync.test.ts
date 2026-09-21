@@ -74,7 +74,13 @@ describe("crm-sync: syncing a lead", () => {
     expect(await syncLead(env.DB, fakeDependencies({ crm }), log, leadId)).toEqual({ retrySoon: false });
 
     expect(logs.lines()).toContainEqual(
-      expect.objectContaining({ event: "crm_synced", lead_id: leadId, duration_ms: expect.any(Number) as number }),
+      expect.objectContaining({
+        event: "crm_synced",
+        lead_id: leadId,
+        duration_ms: expect.any(Number) as number,
+        read_ms: expect.any(Number) as number,
+        claim_ms: expect.any(Number) as number,
+      }),
     );
     expect(crm.calls).toHaveLength(1);
     expect(crm.calls[0]?.knownId).toBeNull();

@@ -18,6 +18,9 @@ const makeDependencies = productionDependencies(config);
 const checkIdentity = createCachedIdentityCheck();
 const baseLog = createLogger({ worker: "mm-api", environment: config.environment });
 
+/** A step slower than this is logged, to find where a stalled consumer run spends its time. */
+const SLOW_STEP_MS = 2_000;
+
 /** Queue consumers and the sweeper refuse to touch a database that is not this environment's. */
 async function assertOwnDatabase(db: D1Database): Promise<void> {
   const identity = await checkIdentity(db, config.environment);
@@ -29,7 +32,11 @@ export default {
 
   async queue(batch, workerEnv) {
     const log = baseLog.child({ queue: batch.queue });
+    const started = Date.now();
     await assertOwnDatabase(workerEnv.DB); // throwing leaves the messages for a retry
+    // Consumer runs have stalled for minutes before their first outside call (docs/decisions/0012).
+    const identityMs = Date.now() - started;
+    if (identityMs > SLOW_STEP_MS) log.warn("slow_step", { step: "database_identity", duration_ms: identityMs });
     const deps = makeDependencies(workerEnv, log);
 
     if (batch.queue.startsWith("mm-crm-sync-")) {
