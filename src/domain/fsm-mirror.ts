@@ -29,6 +29,8 @@ export interface SyncResult {
   /** "written" when the copy now matches FSM; "gone" when FSM no longer has the appointment. */
   readonly outcome: "written" | "gone";
   readonly appointmentId: string | null;
+  /** The appointment's status as written; null when it is gone. */
+  readonly status: AppointmentStatus | null;
 }
 
 /** Reads one appointment from FSM and makes the mirror match it. */
@@ -42,7 +44,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
       )
       .bind(fsmId, at)
       .first<{ id: string }>();
-    return { outcome: "gone", appointmentId: existing?.id ?? null };
+    return { outcome: "gone", appointmentId: existing?.id ?? null, status: null };
   }
 
   const personId = appointment.contactId === null ? null : await personFor(db, fsm, appointment.contactId, at);
@@ -104,7 +106,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
     );
   }
   await db.batch(statements);
-  return { outcome: "written", appointmentId: id };
+  return { outcome: "written", appointmentId: id, status };
 }
 
 /** An instant as UTC, as every other time in D1 is kept. FSM sends India's offset. */

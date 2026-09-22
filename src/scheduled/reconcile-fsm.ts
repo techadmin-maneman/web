@@ -7,11 +7,14 @@
 //   overnight   1 to 5 am India time, the whole list a page a run; then every
 //               copy the pass did not see, which FSM may have deleted; then
 //               one alert if the pass repaired anything the webhook missed
+//   hourly      visits closed in the last three days still short of their
+//               ten photographs, which FSM may have received since
 
 import type { Dependencies } from "../dependencies.ts";
 import type { Logger } from "../log.ts";
 import type { FsmAppointment } from "../providers/fsm.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import { PHOTOS_PER_VISIT } from "../domain/visit-photos.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 
 export const PAGE_SIZE = 50;
@@ -22,6 +25,9 @@ const NIGHT_END_HOUR = 5;
 const DRIFT_GRACE_MS = 10 * 60 * 1000;
 /** Copies FSM did not list, checked per run at the end of a pass. */
 const UNSEEN_LIMIT = 50;
+/** How long after a visit its photographs are looked for again, and how many visits an hour. */
+const PHOTO_RETRY_MS = 3 * 24 * 60 * 60 * 1000;
+const PHOTO_RETRY_LIMIT = 20;
 
 export type ReconcileEnv = Pick<Env, "DB" | "FSM_QUEUE">;
 
@@ -38,6 +44,10 @@ export async function reconcileFsm(env: ReconcileEnv, deps: Dependencies, log: L
 
   const latest = await deps.fsm.appointments(1, PAGE_SIZE);
   const queue = new Set(await staleOf(db, latest.appointments));
+
+  if (now.getUTCMinutes() < 5) {
+    for (const fsmId of await shortOfPhotos(db, now)) queue.add(fsmId);
+  }
 
   let nightPage: number | undefined;
   if (isNight(now)) {
@@ -168,4 +178,24 @@ async function markReconciled(db: D1Database, fsmIds: readonly string[], at: str
     .prepare(`UPDATE appointments SET reconciled_at = ?1 WHERE fsm_id IN (${placeholders})`)
     .bind(at, ...fsmIds)
     .run();
+}
+
+/** Visits closed in the last three days with fewer than ten photographs. Consultations take none. */
+async function shortOfPhotos(db: D1Database, now: Date): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT a.fsm_id FROM appointments a
+       WHERE a.status IN ('completed', 'terminated') AND a.deleted_at IS NULL AND a.type IS NOT 'consultation'
+         AND a.window_end BETWEEN ?1 AND ?2
+         AND (SELECT COUNT(*) FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id WHERE s.appointment_id = a.id) < ?3
+       ORDER BY a.window_end DESC LIMIT ?4`,
+    )
+    .bind(
+      new Date(now.getTime() - PHOTO_RETRY_MS).toISOString(),
+      now.toISOString(),
+      PHOTOS_PER_VISIT,
+      PHOTO_RETRY_LIMIT,
+    )
+    .all<{ fsm_id: string }>();
+  return results.map((row) => row.fsm_id);
 }

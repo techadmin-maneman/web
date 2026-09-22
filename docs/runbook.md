@@ -342,7 +342,13 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 
    Set the secrets before deploying with the providers switched on: the guard refuses a Worker without them.
 
-5. **The queue.** Create it once, before the first deploy that sends to it, then attach its consumer after that deploy (step 9):
+5. **The bucket and the queue.** Create both once, before the first deploy that uses them. The photographs bucket gets no lifecycle rule: a client's photograph is only deleted on purpose.
+
+   ```sh
+   W r2 bucket create mm-<t>-client-photos
+   ```
+
+   Then attach the queue's consumer after that deploy (step 9):
 
    ```sh
    W queues create mm-fsm-sync-<t>
@@ -355,6 +361,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
      - URL: `https://<public host>/api/hooks/fsm/<token>`;
      - method: POST;
      - body: form data, with three parameters from the Service Appointment: `module` (the value `Service_Appointments`), `id` (the appointment's ID), and `modified_time` (its Modified Time).
+   - **Photographs.** Until the technician app arrives, technicians attach a visit's photographs to its appointment in FSM, named for their phase and angle: `before-front.jpg`, `before-top.jpg`, `before-left.jpg`, `before-right.jpg`, `before-hair.jpg`, and the same with `after-`. Other attachments are not copied.
    - **The workflow rule.** Setup → Automation → Workflow Rules → Service Appointments → New Rule:
      - when a record is created or edited, and when it is deleted;
      - action: the webhook.

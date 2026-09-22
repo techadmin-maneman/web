@@ -3,12 +3,16 @@
 // webhooks and the reconciliation put messages here; neither is trusted for
 // the appointment's contents, only for which one changed.
 //
+// Once an appointment is closed, its photographs are copied from FSM into the
+// client-photos bucket (src/domain/visit-photos.ts).
+//
 // A failed sync is retried after 30 s, 1, 2 and 4 minutes. The fifth failure
 // alerts and gives up; the reconciliation picks the appointment up again.
 
 import { z } from "zod";
 import type { Dependencies } from "../dependencies.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
+import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { scrubString, type Logger } from "../log.ts";
 
 export const MAX_FSM_SYNC_ATTEMPTS = 5;
@@ -22,12 +26,15 @@ export const FsmSyncMessageSchema = z.object({
 });
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
+export type FsmSyncEnv = Pick<Env, "DB" | "CLIENT_PHOTOS">;
+
 export async function handleFsmSyncBatch(
   batch: MessageBatch,
-  db: D1Database,
+  env: FsmSyncEnv,
   deps: Dependencies,
   log: Logger,
 ): Promise<void> {
+  const db = env.DB;
   for (const message of batch.messages) {
     const parsed = FsmSyncMessageSchema.safeParse(message.body);
     if (!parsed.success) {
@@ -40,8 +47,17 @@ export async function handleFsmSyncBatch(
 
     try {
       const result = await syncAppointment(db, deps.fsm, fsmId, deps.now());
+      const photos =
+        result.appointmentId !== null && (result.status === "completed" || result.status === "terminated")
+          ? await exportVisitPhotos(db, env.CLIENT_PHOTOS, deps.fsm, { id: result.appointmentId, fsmId }, deps.now())
+          : null;
       if (inboxId !== undefined) await recordAttempt(db, inboxId, deps.now().toISOString(), null);
-      messageLog.info("fsm_synced", { outcome: result.outcome, appointment_id: result.appointmentId });
+      messageLog.info("fsm_synced", {
+        outcome: result.outcome,
+        appointment_id: result.appointmentId,
+        photos_exported: photos?.exported,
+        photos_unreadable: photos?.unreadable,
+      });
       message.ack();
     } catch (error) {
       const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
