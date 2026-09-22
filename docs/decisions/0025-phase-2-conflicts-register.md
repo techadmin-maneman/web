@@ -36,7 +36,7 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
     - Reconciliation runs one page per 5-minute tick.
     - The technician outbox sends at most 10 events per request.
     - No new cron is added; the account allows five.
-12. **Bot Fight Mode** (ADR 0023, 2) challenges automated traffic across the zone and cannot be skipped per path on the free plan, so Razorpay, FSM and Evolution webhooks may be challenged. That adds to the case for turning it off. **Open, before P2-M2.**
+12. **Bot Fight Mode** (ADR 0023, 2) challenges automated traffic across the zone and cannot be skipped per path on the free plan, so Razorpay, FSM and Evolution webhooks may be challenged. That adds to the case for turning it off. **Ruled 22 September 2026: turned off** by the owner.
 
 ## Phase 1 against Phase 2
 
@@ -71,6 +71,14 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
     - **Prices on the referral page.** The same figures as the site, from the price book, with no referral price.
     - **The monthly cap.** `REFERRAL_MONTHLY_CAP` is 5, reset on the calendar month in India time. Later fits are held for review, not refused.
     - **Referrals logged before January.** Credits imported from ops' log expire 365 days after the import.
+25. **Counsel's sign-off.** **Given 22 September 2026**, as the owner reports. It covers:
+    - the five consent purposes and their wording;
+    - the four referral-card lines (board F3);
+    - retention: photographs 7 days after a deletion request, invoices 8 years;
+    - our roles under the DPDP Act;
+    - rulings 2 and 3 of item 24.
+26. **The Zoho org.** The org the FSM trial runs in is the real one (ruled 22 September 2026). CRM is set up in it before production moves off the Developer Edition org (ADR 0020). Until then, staging's FSM and Books calls reach this real org, so its test records must be removed before go-live (`docs/open-points.md`).
+27. **Staging runs on placeholders.** **Ruled 22 September 2026:** "take placeholder values for everything else. This is going to staging." Where an input is still owed, staging uses a placeholder and the build carries on. Each placeholder, and every other point to settle, is listed in `docs/open-points.md`, which is cleared before anything reaches production.
 
 ## Inputs still owed
 
