@@ -131,6 +131,8 @@ export interface FsmProvider {
   rescheduleVisit(appointmentId: string, times: { start: string; end: string }): Promise<void>;
   /** Cancels a work order, and so its appointment, with a note for ops; false if FSM no longer allows it. */
   cancelVisit(workOrderId: string, note: string): Promise<boolean>;
+  /** Anonymises an erased client's contact: name, numbers, e-mail and street; the city stays for the records. */
+  eraseContact(contactId: string): Promise<void>;
 }
 
 export function createFsmProvider(
@@ -180,6 +182,7 @@ export interface StubFsm extends FsmProvider {
     readonly visits: NewFsmVisit[];
     readonly rescheduled: { appointmentId: string; start: string; end: string }[];
     readonly cancelled: { workOrderId: string; note: string }[];
+    readonly erased: string[];
   };
 }
 
@@ -194,6 +197,7 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     visits: [] as NewFsmVisit[],
     rescheduled: [] as { appointmentId: string; start: string; end: string }[],
     cancelled: [] as { workOrderId: string; note: string }[],
+    erased: [] as string[],
   };
   return {
     made,
@@ -239,6 +243,10 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       made.cancelled.push({ workOrderId, note });
       return Promise.resolve(true);
     },
+    eraseContact: (contactId) => {
+      made.erased.push(contactId);
+      return Promise.resolve();
+    },
   };
 }
 
@@ -258,5 +266,6 @@ function createUnconnectedFsm(): FsmProvider {
     createVisit: off,
     rescheduleVisit: off,
     cancelVisit: off,
+    eraseContact: off,
   };
 }

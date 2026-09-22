@@ -20,7 +20,7 @@ async function insertLead(id: string, state: string, attempts: number, createdAt
 }
 
 function sweepEnv() {
-  const queues = { crm: fakeQueue(), render: fakeQueue(), messages: fakeQueue() };
+  const queues = { crm: fakeQueue(), render: fakeQueue(), messages: fakeQueue(), fsm: fakeQueue() };
   const bindings: SweepEnv = {
     DB: env.DB,
     UPLOADS: env.UPLOADS,
@@ -28,6 +28,7 @@ function sweepEnv() {
     CRM_QUEUE: queues.crm,
     RENDER_QUEUE: queues.render,
     MESSAGE_QUEUE: queues.messages,
+    FSM_QUEUE: queues.fsm,
   };
   return { bindings, queues };
 }

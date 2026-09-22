@@ -1158,6 +1158,66 @@ The client's code, credits and fitted friends
 }
 ```
 
+### GET /api/me/export
+
+Everything held about the client, to download
+
+**200**: A JSON file, maneman-my-data.json
+
+```json
+{
+  "type": "object",
+  "additionalProperties": {}
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/grievances
+
+Raise a grievance about how the client's data is handled
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: Received
+
+```json
+{
+  "$ref": "#/components/schemas/Grievance"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -3284,6 +3344,31 @@ The client's code, credits and fitted friends
     "credits",
     "card",
     "fitted"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Grievance
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "open"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "state"
   ],
   "additionalProperties": false
 }

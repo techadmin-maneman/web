@@ -196,6 +196,27 @@
   color: var(--text);
 }
 
+/* The data card: a link that looks like its buttons, and a concern written in a few lines. */
+a.secondary {
+  margin-top: var(--sp-16);
+  text-decoration: none;
+}
+
+.card > .secondary {
+  width: 100%;
+}
+
+.card > a.secondary + .secondary {
+  margin-top: var(--sp-10);
+}
+
+textarea.input {
+  height: auto;
+  padding: var(--sp-12) var(--sp-15);
+  line-height: 1.5;
+  resize: vertical;
+}
+
 .danger {
   margin-top: var(--sp-16);
   border: var(--hairline) solid var(--error-on-paper);

@@ -388,6 +388,101 @@ Request body:
 }
 ```
 
+### GET /api/grievances
+
+Open grievances, oldest first
+
+**200**: Open grievances
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "grievances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "person_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "raised_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "person_id",
+          "name",
+          "mobile",
+          "text",
+          "raised_at"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "grievances"
+  ],
+  "additionalProperties": false
+}
+```
+
+### POST /api/grievances/{id}/resolve
+
+Record ops' answer to a grievance, and close it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/GrievanceAnswer"
+}
+```
+
+**200**: Closed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "resolved"
+      ]
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+**404**: not_found: no open grievance by that ID
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -597,6 +692,25 @@ Request body:
   "required": [
     "decision",
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### GrievanceAnswer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "response": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "response"
   ],
   "additionalProperties": false
 }

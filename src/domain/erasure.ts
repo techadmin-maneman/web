@@ -2,17 +2,22 @@
 // deleted the same day"; this is what the operators' endpoint does. See
 // docs/decisions/0019-erasure.md.
 //
-// In order: the photos and results are deleted from R2, then one D1 batch
-// blanks the person, ends their sessions, cancels their unsent messages,
-// expires their jobs and records the withdrawal. The CRM is updated afterwards
-// by the crm-sync queue. R2 goes first so that a failure part-way leaves the
-// person findable, and the request can simply be repeated.
+// In order: the photos and results are deleted from R2, with a client's visit
+// photographs (docs/decisions/0049-dpdp.md), then one D1 batch blanks the
+// person, ends their sessions, cancels their unsent messages, expires their jobs,
+// deletes their addresses and number changes, and records the withdrawal. The
+// CRM and FSM are updated afterwards, by their queues from the sweeper. R2 goes
+// first so that a failure part-way leaves the person findable, and the request
+// can simply be repeated.
 //
 // A render still running cannot store its result once its job is expired: the
 // render consumer deletes what it wrote when it finds the job has moved on. A
 // result stored between our read and the batch is deleted after the batch.
 
 import { RUNNING_STATES, type JobState } from "../config/tryon.ts";
+
+/** R2 deletes at most 1,000 keys a call. */
+const R2_DELETE_BATCH = 1000;
 import { recordEvent } from "./tryon.ts";
 
 export interface ErasureSummary {
@@ -21,9 +26,10 @@ export interface ErasureSummary {
   readonly photosDeleted: number;
   readonly resultsDeleted: number;
   readonly messagesCancelled: number;
+  readonly visitPhotosDeleted: number;
 }
 
-export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS">;
+export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS">;
 
 /** The summary, or null when no one (still unerased) has this number. */
 export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date): Promise<ErasureSummary | null> {
@@ -49,6 +55,19 @@ export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date
   const results = jobs.flatMap((job) => (job.result_key === null ? [] : [job.result_key]));
   if (photos.length > 0) await env.UPLOADS.delete(photos);
   if (results.length > 0) await env.RESULTS.delete(results);
+
+  // A client's visit photographs: kept with no lifecycle, deleted only on purpose, as now.
+  const { results: visitPhotos } = await db
+    .prepare(
+      `SELECT ph.id, ph.r2_key FROM photos ph JOIN photo_sets s ON s.id = ph.photo_set_id
+       JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1`,
+    )
+    .bind(personId)
+    .all<{ id: string; r2_key: string }>();
+  const visitKeys = visitPhotos.map((photo) => photo.r2_key);
+  for (let start = 0; start < visitKeys.length; start += R2_DELETE_BATCH) {
+    await env.CLIENT_PHOTOS.delete(visitKeys.slice(start, start + R2_DELETE_BATCH));
+  }
 
   // One withdrawal row for each purpose the person had agreed to. Consents are append-only.
   const { results: granted } = await db
@@ -92,6 +111,18 @@ export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date
     // Waiting for a pincode needs the person's number; an invite they sent stays, with the house card
     // (docs/decisions/0048-referrals.md).
     db.prepare("DELETE FROM waitlist_entries WHERE person_id = ?1").bind(personId),
+    // Phase 2's own personal data (docs/decisions/0049-dpdp.md): their visit photographs' rows, where they
+    // live, the numbers they changed between, and the words of any grievance. Visits, payments and credits
+    // stay, as records.
+    db
+      .prepare(
+        `DELETE FROM photos WHERE photo_set_id IN (SELECT s.id FROM photo_sets s
+           JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1)`,
+      )
+      .bind(personId),
+    db.prepare("DELETE FROM addresses WHERE person_id = ?1").bind(personId),
+    db.prepare("DELETE FROM number_change_requests WHERE person_id = ?1").bind(personId),
+    db.prepare("UPDATE grievances SET text = 'Erased', response = NULL WHERE person_id = ?1").bind(personId),
     // The number is replaced, not kept: a later booking from it starts afresh, with a new consent.
     db
       .prepare(
@@ -115,5 +146,6 @@ export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date
     photosDeleted: photos.length,
     resultsDeleted: results.length,
     messagesCancelled: outcome[0]?.results.length ?? 0,
+    visitPhotosDeleted: visitKeys.length,
   };
 }

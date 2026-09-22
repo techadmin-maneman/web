@@ -102,6 +102,7 @@ export const api = {
       code,
     }),
   requestDeletion: () => call<{ state: "requested"; requested_at: string }>("POST", "/api/deletion-request"),
+  raiseGrievance: (text: string) => call<{ id: string; state: "open" }>("POST", "/api/grievances", { text }),
   visits: () => call<Visits>("GET", "/api/visits"),
   visit: (id: string) => call<VisitDetail>("GET", `/api/visits/${id}`),
   photos: () => call<PhotoTimeline>("GET", "/api/photos"),
@@ -126,3 +127,5 @@ export const api = {
 /** A visit's tax invoice, as a PDF the browser opens itself. */
 export const documentUrl = (id: string) => `/api/documents/${id}`;
 export const receiptUrl = (paymentId: string) => `/api/payments/${paymentId}/receipt`;
+/** Everything held about the client, as a file the browser saves. */
+export const EXPORT_URL = "/api/me/export";

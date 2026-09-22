@@ -16,6 +16,7 @@ import { failJob } from "../domain/tryon.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
+import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { SENDING_LEASE_MS, type MessagingMessage } from "../queues/messaging.ts";
 import type { RenderMessage } from "../queues/render.ts";
 
@@ -38,7 +39,10 @@ const COUNTER_RETENTION_DAYS = 3;
 const CHALLENGE_RETENTION_MS = 24 * 60 * MINUTE_MS;
 const SESSION_RETENTION_MS = 30 * 24 * 60 * MINUTE_MS;
 
-export type SweepEnv = Pick<Env, "DB" | "CRM_QUEUE" | "RENDER_QUEUE" | "MESSAGE_QUEUE" | "UPLOADS" | "RESULTS">;
+export type SweepEnv = Pick<
+  Env,
+  "DB" | "CRM_QUEUE" | "RENDER_QUEUE" | "MESSAGE_QUEUE" | "UPLOADS" | "RESULTS" | "FSM_QUEUE"
+>;
 
 export interface SweepSummary {
   readonly leadsRequeued: number;
@@ -56,7 +60,11 @@ export async function sweep(
   env: SweepEnv,
   deps: Dependencies,
   log: Logger,
-  options: { readonly creditFloor: number },
+  options: {
+    readonly creditFloor: number;
+    /** Whether FSM is connected, so an erased person's contact there can be anonymised. */
+    readonly fsmErasure?: boolean;
+  },
 ): Promise<SweepSummary> {
   const now = deps.now();
   const before = (ms: number) => new Date(now.getTime() - ms).toISOString();
@@ -91,6 +99,23 @@ export async function sweep(
     env.CRM_QUEUE,
     erasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
   );
+
+  // Erased people whose FSM contact is still to be anonymised (docs/decisions/0049-dpdp.md).
+  if (options.fsmErasure === true) {
+    const fsmErasures = await ids(
+      db
+        .prepare(
+          `SELECT id FROM people
+         WHERE erased_at < ?1 AND fsm_contact_id IS NOT NULL AND fsm_erased_at IS NULL AND fsm_erasure_attempts < ?2
+         ORDER BY erased_at LIMIT ?3`,
+        )
+        .bind(before(PENDING_GRACE_MS), MAX_SYNC_ATTEMPTS, BATCH_LIMIT),
+    );
+    await sendAll(
+      env.FSM_QUEUE,
+      fsmErasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
+    );
+  }
 
   // Result messages that were queued and never sent.
   const messages = await ids(

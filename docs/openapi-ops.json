@@ -203,6 +203,20 @@
           "reason"
         ],
         "additionalProperties": false
+      },
+      "GrievanceAnswer": {
+        "type": "object",
+        "properties": {
+          "response": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "response"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -658,6 +672,126 @@
           },
           "404": {
             "description": "not_found: no held grant by that ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/grievances": {
+      "get": {
+        "summary": "Open grievances, oldest first",
+        "responses": {
+          "200": {
+            "description": "Open grievances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "grievances": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "person_id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "mobile": {
+                            "type": "string"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "raised_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "person_id",
+                          "name",
+                          "mobile",
+                          "text",
+                          "raised_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "grievances"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/grievances/{id}/resolve": {
+      "post": {
+        "summary": "Record ops' answer to a grievance, and close it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrievanceAnswer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Closed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "resolved"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no open grievance by that ID",
             "content": {
               "application/json": {
                 "schema": {

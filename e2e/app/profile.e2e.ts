@@ -161,6 +161,15 @@ test("offers support on WhatsApp, with the design's line", async ({ page, reques
   await expect(page.getByText("Replies within a working day. Everything in writing.")).toBeVisible();
 });
 
+test("Your data: a download of everything held, and a concern sent to ops", async ({ page, request }) => {
+  await loggedIn(page, request);
+  await expect(page.getByRole("link", { name: "Download my data" })).toHaveAttribute("href", "/api/me/export");
+  await page.getByRole("button", { name: "Raise a concern" }).click();
+  await page.getByRole("textbox", { name: "Your concern" }).fill("Please explain who sees my photographs.");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText("Received. We answer within 30 days, on WhatsApp.")).toBeVisible();
+});
+
 test("asks before requesting deletion, then says it is requested", async ({ page, request }) => {
   await loggedIn(page, request);
   await expect(

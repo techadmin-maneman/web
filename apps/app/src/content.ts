@@ -465,6 +465,18 @@ export const profile = {
     message: "Message us on WhatsApp",
     hint: "Replies within a working day. Everything in writing.",
   },
+  // PLACEHOLDER: the design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
+  data: {
+    label: "Your data",
+    body: "Download a copy of everything we hold about you, or raise a concern about how we use it.",
+    download: "Download my data",
+    raise: "Raise a concern",
+    field: "Your concern",
+    send: "Send",
+    cancel: "Not now",
+    sent: "Received. We answer within 30 days, on WhatsApp.",
+    failed: "That did not go through. Please try again.",
+  },
   deletion: {
     label: "Delete your account",
     body: "Photographs deleted within seven days. Invoices kept eight years, by law.",

@@ -12,6 +12,7 @@ import { handleRenderBatch } from "./queues/render.ts";
 import { syncBooks } from "./domain/books-sync.ts";
 import { queueReminders } from "./domain/visit-messages.ts";
 import { referralPass } from "./scheduled/referrals.ts";
+import { alertAgedDeletions } from "./domain/deletion.ts";
 import { reconcileFsm } from "./scheduled/reconcile-fsm.ts";
 import { sweep } from "./scheduled/sweeper.ts";
 
@@ -75,7 +76,10 @@ export default {
     const log = baseLog.child({ job: "sweeper" });
     await assertOwnDatabase(workerEnv.DB);
     const deps = makeDependencies(workerEnv, log);
-    await sweep(workerEnv, deps, log, { creditFloor: config.settings.tryon.creditFloor });
+    await sweep(workerEnv, deps, log, {
+      creditFloor: config.settings.tryon.creditFloor,
+      fsmErasure: config.providers.FSM_PROVIDER !== "none",
+    });
     // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md), where FSM is connected. A failure is logged and left
     // for the next run; the sweep above is done either way.
     if (config.providers.FSM_PROVIDER !== "none") {
@@ -83,6 +87,9 @@ export default {
         log.error("fsm_reconcile_failed", { error });
       });
     }
+    await alertAgedDeletions(workerEnv.DB, deps.now(), deps.alert).catch((error: unknown) => {
+      log.error("deletion_alert_failed", { error });
+    });
     const referralMessages = await referralPass(workerEnv.DB, deps.now(), log.child({ job: "referrals" })).catch(
       (error: unknown) => {
         log.error("referrals_failed", { error });

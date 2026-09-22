@@ -1975,6 +1975,26 @@
           "fitted"
         ],
         "additionalProperties": false
+      },
+      "Grievance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "state"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -3628,6 +3648,82 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Refer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/export": {
+      "get": {
+        "summary": "Everything held about the client, to download",
+        "responses": {
+          "200": {
+            "description": "A JSON file, maneman-my-data.json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/grievances": {
+      "post": {
+        "summary": "Raise a grievance about how the client's data is handled",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Grievance"
                 }
               }
             }

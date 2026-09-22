@@ -2,8 +2,9 @@
 // and write over its mirror copy (docs/decisions/0032-fsm-mirror.md). FSM's
 // webhooks and the reconciliation put them here; neither is trusted for the
 // appointment's contents, only for which one changed. Others name a booked
-// lead to send to FSM as a Request (src/domain/fsm-leads.ts), or a hold paid
-// for in the app to book as a visit (src/domain/bookings.ts).
+// lead to send to FSM as a Request (src/domain/fsm-leads.ts), a hold paid
+// for in the app to book as a visit (src/domain/bookings.ts), or an erased
+// person whose FSM contact is to be anonymised (docs/decisions/0049-dpdp.md).
 //
 // Once an appointment is closed, its photographs are copied from FSM into the
 // client-photos bucket (src/domain/visit-photos.ts).
@@ -34,6 +35,8 @@ export const FsmSyncMessageSchema = z.union([
   z.object({ lead_id: z.uuid(), request_id: z.string() }),
   /** A hold paid for, or free, to book in FSM (src/domain/bookings.ts). */
   z.object({ hold_id: z.uuid(), request_id: z.string() }),
+  /** An erased person, whose FSM contact is anonymised; the sweeper sends it. */
+  z.object({ erase_person_id: z.string().min(1), request_id: z.string() }),
 ]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
@@ -61,6 +64,16 @@ export async function handleFsmSyncBatch(
         notify: (messageId) =>
           env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
       });
+      continue;
+    }
+    if ("erase_person_id" in parsed.data) {
+      await eraseContact(
+        message,
+        parsed.data.erase_person_id,
+        db,
+        deps,
+        log.child({ request_id: parsed.data.request_id }),
+      );
       continue;
     }
     if ("lead_id" in parsed.data) {
@@ -129,6 +142,41 @@ async function bookHold(
     );
     message.ack();
   }
+}
+
+/** Anonymises an erased person's FSM contact, once; a failure is counted, and the sweeper sends it again. */
+async function eraseContact(
+  message: Message,
+  personId: string,
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+): Promise<void> {
+  const person = await db
+    .prepare("SELECT fsm_contact_id FROM people WHERE id = ?1 AND erased_at IS NOT NULL AND fsm_erased_at IS NULL")
+    .bind(personId)
+    .first<{ fsm_contact_id: string | null }>();
+  const contactId = person?.fsm_contact_id ?? null;
+  if (contactId === null) {
+    message.ack();
+    return;
+  }
+  try {
+    await deps.fsm.eraseContact(contactId);
+    await db
+      .prepare("UPDATE people SET fsm_erased_at = ?2 WHERE id = ?1")
+      .bind(personId, deps.now().toISOString())
+      .run();
+    log.info("fsm_contact_erased", { person_id: personId });
+  } catch (error) {
+    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    await db
+      .prepare("UPDATE people SET fsm_erasure_attempts = fsm_erasure_attempts + 1 WHERE id = ?1")
+      .bind(personId)
+      .run();
+    log.warn("fsm_erasure_failed", { person_id: personId, reason });
+  }
+  message.ack();
 }
 
 async function sendLead(

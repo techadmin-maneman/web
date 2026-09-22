@@ -20,6 +20,10 @@ export const AUDIT_ACTIONS = [
   "deletion.decide",
   // A held referral grant (docs/decisions/0048-referrals.md).
   "referral.decide",
+  // A client's rights over their data (docs/decisions/0049-dpdp.md).
+  "data.export",
+  "grievance.raise",
+  "grievance.resolve",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

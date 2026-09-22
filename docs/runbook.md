@@ -595,6 +595,51 @@ The photo notice promises that a person's data is deleted the same day they ask.
 
 **Zoho's history.** Blanking the fields may leave the old values in the record's timeline. If the person or legal asks for full removal, delete the record in Zoho, then delete it from the recycle bin as well. D1's lead history is unaffected.
 
+**A client's account (Phase 2).** A request from the app waits in ops' deletion requests. Processing it runs the same erasure, and also:
+
+- deletes their visit photographs from the client-photos bucket;
+- deletes their saved addresses;
+- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md).
+
+Check FSM as you check Zoho:
+
+```sql
+SELECT erased_at, fsm_erased_at, fsm_erasure_attempts FROM people WHERE id = '<person_id>';
+```
+
+A request waiting 5 days alerts ops: process it before its 7 days run out. Invoices stay in Books for 8 years, by law.
+
+---
+
+## A personal data breach
+
+A breach is any unauthorised access to, or loss or disclosure of, personal data we hold. For example:
+
+- a leaked secret or token;
+- a bucket or database opened to someone who should not have it;
+- a client's photographs or details sent to the wrong person;
+- a lost phone signed in to ops.
+
+The DPDP Act and its Rules require us to tell the Data Protection Board and each person affected, without delay, and the Board in detail within 72 hours. **Start the clock when anyone at Mane Man first learns of it.**
+
+1. **Contain, within the hour.**
+   - Revoke what leaked:
+     - rotate the secret (`W secret put … --env <env>`);
+     - revoke the Zoho, Razorpay or Evolution key in its console;
+     - sign out the ops user in Cloudflare Access;
+     - revoke client sessions with `UPDATE sessions SET revoked_at = '<now>' WHERE …`.
+   - Close the opening. Turn off a surface (`SURFACES` in `wrangler.jsonc`), and roll back a Worker version if a release caused it (below).
+2. **Keep the evidence.** Save `wrangler tail` output, the audit log rows (`SELECT * FROM audit_log WHERE created_at > …`), and the provider's own logs, to a private folder (`private/`, git-ignored). Never paste personal data into chat or email.
+3. **Assess.**
+   - What data, whose, how many people, since when.
+   - Whether photographs were involved: they are the most sensitive thing we hold.
+   - Write down what you know and what you do not.
+4. **Notify.**
+   - **The Board,** at once in brief, and in full within 72 hours: what happened, when, the data and people affected, the harm likely, what we have done, and who to contact.
+   - **Each person affected,** in plain words on WhatsApp or by phone: what happened to their data, what it may mean for them, what we have done, what they can do, and who to contact.
+   - **The Grievance Officer** leads both (`docs/open-points.md`, item 42).
+5. **Record.** Keep a note of the breach, the timeline, the decisions and the notices, for the Board and for us. Review it within two weeks, and fix what let it happen.
+
 ---
 
 ## Cities and visit days
