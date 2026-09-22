@@ -11,6 +11,10 @@ Our technician app (`tech.maneman.in`) and ops console (`ops.maneman.in`) read a
 2. Does each technician and each dispatcher working only through our apps still need an FSM user seat?
 3. Do the plan limits (200 users on Professional, 500 on Premium) apply to them?
 
+## What the published pricing says (22 September 2026)
+
+FSM is priced by appointments a month, not by users. Users cost nothing up to 20 on Free, 200 on Standard and Professional, and 500 on Premium (https://help.zoho.com/portal/en/kb/fsm/faqs/pricing-and-subscription). Technicians must still exist as FSM users, since appointments are assigned to users. That settles the cost of questions 2 and 3, but not question 1, whether the use is within the terms. Zoho's written answer is still needed.
+
 ## The answer
 
 _To be recorded: Zoho's reply, word for word, with the date and the name of the person at Zoho who gave it._
