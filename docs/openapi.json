@@ -1345,6 +1345,46 @@
           }
         }
       }
+    },
+    "/api/hooks/evolution/{token}": {
+      "post": {
+        "summary": "Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Taken, or ignored. Either way Evolution need not send it again"
+          },
+          "401": {
+            "description": "unauthorized: the token is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: receipts are not switched on (no EVOLUTION_WEBHOOK_TOKEN)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "webhooks": {}

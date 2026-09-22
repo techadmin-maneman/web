@@ -488,6 +488,28 @@ Request body:
 }
 ```
 
+### POST /api/hooks/evolution/{token}
+
+Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent
+
+**204**: Taken, or ignored. Either way Evolution need not send it again
+
+**401**: unauthorized: the token is wrong
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: receipts are not switched on (no EVOLUTION_WEBHOOK_TOKEN)
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse

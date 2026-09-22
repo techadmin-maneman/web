@@ -260,7 +260,11 @@ export function readSettings(
       baseUrl: read.text("EVOLUTION_API_URL").replace(/\/+$/, ""),
       apiKey: read.text("EVOLUTION_API_KEY"),
       instance: read.text("EVOLUTION_INSTANCE_NAME"),
+      webhookToken: read.optionalText("EVOLUTION_WEBHOOK_TOKEN"),
     };
+    if (evolution.webhookToken !== null && evolution.webhookToken.length < 32) {
+      read.problems.push("EVOLUTION_WEBHOOK_TOKEN must be at least 32 characters");
+    }
     if (evolution.baseUrl !== "" && !evolution.baseUrl.startsWith("https://")) {
       read.problems.push("EVOLUTION_API_URL must be an https:// URL");
     }
