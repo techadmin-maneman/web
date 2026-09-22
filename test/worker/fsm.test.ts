@@ -206,6 +206,56 @@ describe("FSM: clients, technicians, items and files", () => {
   });
 });
 
+describe("FSM: moving and cancelling a visit", () => {
+  it("reschedules an appointment through its action, with the new times", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/ap-1/actions/reschedule`]: () =>
+        json({ data: [{ code: "SUCCESS", message: "record updated" }] }),
+    });
+    await provider.rescheduleVisit("ap-1", { start: "2026-09-25T16:00:00+05:30", end: "2026-09-25T17:30:00+05:30" });
+    expect(calls[1]?.method).toBe("PUT");
+    expect(JSON.parse(calls[1]?.body ?? "null")).toEqual({
+      data: [
+        {
+          Scheduled_Start_Date_Time: "2026-09-25T16:00:00+05:30",
+          Scheduled_End_Date_Time: "2026-09-25T17:30:00+05:30",
+        },
+      ],
+    });
+  });
+
+  it("cancels a work order through its blueprint's Cancel, with the note FSM requires", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1/actions/blueprint/transitions`]: () =>
+        json({
+          code: "SUCCESS",
+          transitions: [
+            { id: "tr-terminate", name: "Terminate" },
+            { id: "tr-cancel", name: "Cancel" },
+          ],
+        }),
+      [`${FSM_API}/Work_Orders/wo-1/actions/blueprint`]: () => json({ code: "SUCCESS", message: "record updated" }),
+    });
+    expect(await provider.cancelVisit("wo-1", "Cancelled by the client in the app.")).toBe(true);
+    expect(calls[2]?.method).toBe("PUT");
+    expect(JSON.parse(calls[2]?.body ?? "null")).toEqual({
+      blueprint: [{ transition_id: "tr-cancel", data: { Notes: "Cancelled by the client in the app." } }],
+    });
+  });
+
+  it("answers false when the work order offers no Cancel, as a closed one does", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-2/actions/blueprint/transitions`]: () =>
+        json({ code: "SUCCESS", transitions: [{ id: "tr-print", name: "Print" }] }),
+    });
+    expect(await provider.cancelVisit("wo-2", "note")).toBe(false);
+    expect(calls).toHaveLength(2);
+  });
+});
+
 describe("FSM: the access token", () => {
   it("keeps one token in D1 for every call until a minute before it expires", async () => {
     const { fsm: provider, calls } = fsm({

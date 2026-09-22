@@ -1,6 +1,6 @@
 # 0045. Self-serve booking and prepayment
 
-- Status: accepted; moving and cancelling in progress
+- Status: accepted; moving and cancelling in ADR 0046
 - Date: 2026-09-22
 
 ## Context

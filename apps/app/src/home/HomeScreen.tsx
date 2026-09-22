@@ -1,16 +1,19 @@
 // Home (boards B1 and B2). The next visit from FSM: a consultation as B2
 // draws it, with what to expect, and any other visit as B1 draws it, with its
 // technician. A Phase 1 booking's consultation, not yet in FSM, shows as B2.
-// Until self-serve booking is on, Reschedule, Add a note and Book open
-// WhatsApp to ops with a message ready (docs/prompts/phase2-backend.md,
+// While self-serve booking is on, Reschedule opens the move sheet (C7), from
+// which the visit can be cancelled (C8). Until then, Reschedule, Add a note and
+// Book open WhatsApp to ops with a message ready (docs/prompts/phase2-backend.md,
 // "Booking"). Offline, booking and rescheduling wait for the connection (B3).
 // B1's credit tile and contextual prompt arrive with the credits (P2-M3) and
 // the pieces (P2-M4).
 
 import { shortDate } from "@maneman/web-kit/dates";
+import { useState } from "react";
 import type { Me, VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, PHASE1_WINDOWS, VISIT_TYPES, windowText, type WindowLabel } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
+import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { firstName, visitName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
@@ -31,40 +34,104 @@ export function HomeScreen() {
 function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   const visit = me.next_visit;
   if (visit?.type === "consultation") {
-    return <Consultation date={visit.date} window={visit.window_label} place={visit.place} offline={offline} />;
+    const changing = changingOf(visit, VISIT_TYPES.consultation);
+    return (
+      <Consultation
+        date={visit.date}
+        window={visit.window_label}
+        place={visit.place}
+        offline={offline}
+        changing={changing}
+      />
+    );
   }
   if (visit !== null) return <NextVisit visit={visit} offline={offline} />;
   if (me.consultation !== null) {
     const { date, window_label, place } = me.consultation;
     return (
-      <Consultation date={date} window={PHASE1_WINDOWS[window_label] ?? "morning"} place={place} offline={offline} />
+      <Consultation
+        date={date}
+        window={PHASE1_WINDOWS[window_label] ?? "morning"}
+        place={place}
+        offline={offline}
+        changing={null}
+      />
     );
   }
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext me={me} />;
   return <NothingBooked me={me} offline={offline} />;
 }
 
-function Actions({ what, date, offline }: { what: string; date: string; offline: boolean }) {
+/** A visit from FSM the client may move or cancel in the app, while self-serve booking is on. */
+function changingOf(visit: VisitSummary, what: string): ChangingVisit | null {
+  if (visit.type === null) return null;
+  return {
+    id: visit.id,
+    type: visit.type,
+    date: visit.date,
+    message: messages.reschedule(what, shortDate(visit.date)),
+  };
+}
+
+function Actions(props: { what: string; date: string; offline: boolean; changing: ChangingVisit | null }) {
+  const { what, date, offline, changing } = props;
+  const { me, refresh } = useSession();
+  const [open, setOpen] = useState(false);
+  let reschedule;
+  if (offline) {
+    reschedule = (
+      <button className={styles.action} type="button" disabled>
+        {home.reschedule}
+      </button>
+    );
+  } else if (!me.booking.self_serve || changing === null) {
+    reschedule = (
+      <a className={styles.action} href={whatsappWith(messages.reschedule(what, date))} rel="noopener">
+        {home.reschedule}
+      </a>
+    );
+  } else {
+    reschedule = (
+      <button
+        className={styles.action}
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {home.reschedule}
+      </button>
+    );
+  }
   return (
     <div className={styles.actions}>
-      {offline ? (
-        <button className={styles.action} type="button" disabled>
-          {home.reschedule}
-        </button>
-      ) : (
-        <a className={styles.action} href={whatsappWith(messages.reschedule(what, date))} rel="noopener">
-          {home.reschedule}
-        </a>
-      )}
+      {reschedule}
       <a className={styles.action} href={whatsappWith(messages.note(what, date))} rel="noopener">
         {home.note}
       </a>
+      {open && changing !== null && (
+        <ChangeSheet
+          visit={changing}
+          start="move"
+          onClose={(changed) => {
+            setOpen(false);
+            if (changed) refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
 
 /** Board B2: the consultation card on ink, and what to expect on paper. */
-function Consultation(props: { date: string; window: WindowLabel; place: string; offline: boolean }) {
+function Consultation(props: {
+  date: string;
+  window: WindowLabel;
+  place: string;
+  offline: boolean;
+  /** Null for a Phase 1 booking's consultation, not yet in FSM: ops move it. */
+  changing: ChangingVisit | null;
+}) {
   const date = shortDate(props.date);
   return (
     <>
@@ -77,7 +144,7 @@ function Consultation(props: { date: string; window: WindowLabel; place: string;
           <p className={styles.window}>{windowText(props.window)}</p>
           {props.place !== "" && <p className={styles.place}>{props.place}</p>}
           <p className={styles.free}>{home.consultation.free}</p>
-          <Actions what={VISIT_TYPES.consultation} date={date} offline={props.offline} />
+          <Actions what={VISIT_TYPES.consultation} date={date} offline={props.offline} changing={props.changing} />
         </div>
       </section>
       <section className={styles.expect} aria-labelledby="expect">
@@ -123,7 +190,7 @@ function NextVisit({ visit, offline }: { visit: VisitSummary; offline: boolean }
           </div>
         </div>
         {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
-        <Actions what={what} date={date} offline={offline} />
+        <Actions what={what} date={date} offline={offline} changing={changingOf(visit, what)} />
       </div>
     </section>
   );

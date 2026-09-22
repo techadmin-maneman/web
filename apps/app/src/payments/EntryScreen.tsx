@@ -16,7 +16,7 @@ import { useLoad } from "../lib/useLoad.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
-import { entryNamed, entryStatus, entryTitle, methodName } from "./entry.ts";
+import { chargeEvidence, entryNamed, entryStatus, entryTitle, methodName } from "./entry.ts";
 import styles from "./payments.module.css";
 
 type Missing = "invoice" | "receipt" | "voucher";
@@ -81,6 +81,9 @@ function Detail({ entry }: { entry: EntryDetail }) {
         <Fact name={rows.date} value={fullDate(entry.date)} />
         {method !== null && <Fact name={entry.kind === "refund" ? rows.destination : rows.method} value={method} />}
         <Fact name={rows.status} value={entryStatus(entry, true)} />
+        {entry.kind === "payment" && entry.charge !== null && (
+          <Fact name={payments.charge} value={chargeEvidence(entry.charge)} />
+        )}
         {entry.kind === "payment" && entry.reference !== null && (
           <Fact name={rows.reference} value={entry.reference} numeric />
         )}

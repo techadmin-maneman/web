@@ -12,7 +12,7 @@ import { logIn } from "./signed-in.ts";
 
 const tab = (page: Page, name: string) => page.getByRole("navigation").getByRole("link", { name });
 
-test("Home shows a fitted client's next visit, with the technician, and WhatsApp to move it", async ({ page }) => {
+test("Home shows a fitted client's next visit, with the technician, and Reschedule", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
@@ -21,7 +21,11 @@ test("Home shows a fitted client's next visit, with the technician, and WhatsApp
   await expect(page.getByText("Imran", { exact: true })).toBeVisible();
   await expect(page.getByText("Service visit · 90 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
+  // Self-serve booking is on locally, so Reschedule opens the move sheet (C7). This visit has no work order in
+  // FSM, so the sheet sends the client to ops on WhatsApp instead.
+  await page.getByRole("button", { name: "Reschedule" }).click();
+  const sheet = page.getByRole("dialog", { name: "This visit can no longer be changed here." });
+  await expect(sheet.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
     new RegExp(`^https://wa\\.me/\\d+\\?text=${encodeURIComponent("I would like to move my service visit on")}`),
   );

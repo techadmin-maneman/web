@@ -23,6 +23,8 @@ export type EntryDetail = Schemas["PaymentDetail"] | Schemas["RefundDetail"];
 export type Availability = Schemas["Availability"];
 export type Hold = Schemas["Hold"];
 export type Booking = Schemas["Booking"];
+export type MoveTerms = Schemas["MoveTerms"];
+export type CancelTerms = Schemas["CancelTerms"];
 export type BookableType = Me["booking"]["types"][number];
 export type BookingWindow = Hold["window"];
 
@@ -105,13 +107,20 @@ export const api = {
   photos: () => call<PhotoTimeline>("GET", "/api/photos"),
   payments: () => call<{ entries: Entry[] }>("GET", "/api/payments"),
   entry: (id: string) => call<EntryDetail>("GET", `/api/payments/${id}`),
-  availability: (type: BookableType, from?: string) =>
-    call<Availability>("GET", `/api/availability?type=${type}${from === undefined ? "" : `&from=${from}`}`),
-  hold: (type: BookableType, date: string, window: BookingWindow) =>
-    call<Hold>("POST", "/api/holds", { type, date, window }),
+  availability: (type: BookableType, moving?: string) =>
+    call<Availability>("GET", `/api/availability?type=${type}${moving === undefined ? "" : `&moving=${moving}`}`),
+  hold: (type: BookableType, date: string, window: BookingWindow, moving?: string) =>
+    call<Hold>("POST", "/api/holds", { type, date, window, ...(moving === undefined ? {} : { moving }) }),
   holdById: (id: string) => call<Hold>("GET", `/api/holds/${id}`),
   releaseHold: (id: string) => call<null>("DELETE", `/api/holds/${id}`),
   book: (holdId: string) => call<Booking>("POST", "/api/bookings", { hold_id: holdId }),
+  moveTerms: (visitId: string) => call<MoveTerms>("POST", `/api/appointments/${visitId}/reschedule`, {}),
+  startMove: (visitId: string, holdId: string) =>
+    call<Booking>("POST", `/api/appointments/${visitId}/reschedule`, { hold_id: holdId }),
+  cancelTerms: (visitId: string) =>
+    call<CancelTerms>("POST", `/api/appointments/${visitId}/cancel`, { confirm: false }),
+  cancel: (visitId: string, notice: CancelTerms["notice"]) =>
+    call<CancelTerms>("POST", `/api/appointments/${visitId}/cancel`, { confirm: true, notice }),
 };
 
 /** A visit's tax invoice, as a PDF the browser opens itself. */

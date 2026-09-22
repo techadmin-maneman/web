@@ -3,11 +3,11 @@
 // only draws it.
 
 import { ICONS } from "@maneman/brand/icons";
-import { shortDate, weekdayDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import type { Availability, BookingWindow, Hold } from "../api.ts";
+import type { Availability, BookingWindow, Hold, MoveTerms } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
-import { booking, messages, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
+import { booking, change, messages, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
 import { CHECK, CLOCK } from "../icons.ts";
 import { useCountdown } from "../lib/useCountdown.ts";
 import { firstName } from "../lib/visit.ts";
@@ -19,18 +19,6 @@ type Day = Availability["days"][number];
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const isFull = (day: Day) => day.windows.every((window) => window.with === null);
-
-/** An instant in India's time, whose date and clock the lines below read. */
-const inIndia = (instant: string) => new Date(Date.parse(instant) + 330 * 60_000);
-
-/** An instant as India's clock: "12 pm", "9:30 am". */
-function clock(instant: string): string {
-  const india = inIndia(instant);
-  const hours = india.getUTCHours();
-  const minutes = india.getUTCMinutes();
-  const hour = hours % 12 === 0 ? 12 : hours % 12;
-  return `${String(hour)}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`} ${hours < 12 ? "am" : "pm"}`;
-}
 
 /** Whole minutes and seconds: 9:42. */
 const minutesAndSeconds = (seconds: number) =>
@@ -190,27 +178,38 @@ export function WindowStep(props: {
 }
 
 /** Board C4, and C5's first fit: the held visit, what it costs, and how to pay. */
+/** What the pay step names: the visit, or, for a move, the visit moved or its late fee. */
+function itemName(hold: Hold, moving: MoveTerms | undefined): string {
+  const what = hold.type === "first_fit" && moving === undefined ? booking.pay.firstFit : VISIT_TYPES[hold.type];
+  if (moving?.cost === "free") return change.moveItem(what);
+  if (moving?.cost === "late_fee") return change.lateFeeItem(what);
+  return what;
+}
+
 export function PayStep(props: {
   hold: Hold;
+  moving?: MoveTerms | undefined;
   method: PayMethod;
   busy: boolean;
   problem: string | null;
   onMethod: (method: PayMethod) => void;
   onPay: () => void;
 }) {
-  const { hold } = props;
+  const { hold, moving } = props;
   const copy = booking.pay;
   const left = useHoldLeft(hold);
   const technician = firstName(hold.technician.name);
   const free = hold.price.amount === 0;
-  const isFirstFit = hold.type === "first_fit";
+  // A move in place keeps the visit as it was booked: only its new time, and what the move costs, are shown.
+  const inPlace = moving !== undefined && moving.cost !== "charged";
+  const isFirstFit = hold.type === "first_fit" && !inPlace;
   return (
     <>
       <Heading title={copy.title} aside={copy.held(minutesAndSeconds(left))} />
       <div className={styles.summary}>
         <div className={styles.item}>
           <div>
-            <p className={styles.itemName}>{isFirstFit ? copy.firstFit : VISIT_TYPES[hold.type]}</p>
+            <p className={styles.itemName}>{itemName(hold, moving)}</p>
             <p className={styles.itemWhen}>{`${shortDate(hold.date)}, ${WINDOW_HOURS[hold.window]}`}</p>
             {isFirstFit && <p className={styles.itemWhen}>{copy.firstFitBlock}</p>}
           </div>
@@ -220,13 +219,15 @@ export function PayStep(props: {
           </div>
         </div>
         {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
-        {hold.late_fee !== null ? (
+        {inPlace ? (
+          <p className={`${styles.line} ${styles.soft}`}>
+            {moving.paid > 0 ? change.move.free(rupees(moving.paid)) : change.move.freeNothingPaid}
+          </p>
+        ) : hold.late_fee !== null ? (
           <p className={`${styles.line} ${styles.soft}`}>{copy.lateFee(rupees(hold.late_fee.amount_ex_gst))}</p>
         ) : (
           <p className={`${styles.line} ${styles.soft}`}>
-            {copy.freeUntil(
-              `${clock(hold.free_until)}, ${shortDate(inIndia(hold.free_until).toISOString().slice(0, 10))}`,
-            )}
+            {copy.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`)}
           </p>
         )}
       </div>
@@ -260,7 +261,7 @@ export function PayStep(props: {
         </p>
       )}
       <button className={styles.primary} type="button" disabled={props.busy || left === 0} onClick={props.onPay}>
-        {free ? copy.confirm : copy.pay(rupees(hold.price.amount))}
+        {free ? (moving === undefined ? copy.confirm : change.confirmMove) : copy.pay(rupees(hold.price.amount))}
       </button>
       {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
     </>
@@ -303,13 +304,13 @@ export function ExpiredStep({ onPickAgain }: { onPickAgain: () => void }) {
 }
 
 /** Board C6: booked. */
-export function ConfirmedStep({ hold, onDone }: { hold: Hold; onDone: () => void }) {
+export function ConfirmedStep({ hold, moved, onDone }: { hold: Hold; moved: boolean; onDone: () => void }) {
   const copy = booking.confirmed;
   const technician = firstName(hold.technician.name);
   const when = `${weekdayDate(hold.date)}, ${WINDOW_HOURS[hold.window]}`;
   return (
     <div className={styles.confirmed} role="status">
-      <p className={styles.confirmedLabel}>{copy.label}</p>
+      <p className={styles.confirmedLabel}>{moved ? change.moved : copy.label}</p>
       <Icon className={styles.confirmedTick} d={ICONS.tick} size={26} />
       <p className={styles.confirmedTitle}>{when}</p>
       <p className={styles.confirmedLine}>{copy.tellsYou(technician)}</p>

@@ -127,6 +127,8 @@ const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: strin
   method,
   reference,
   refunded_amount: 0,
+  purpose: "visit",
+  charge: null,
 });
 const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
 /** Board E1's entries that exist before booking (P2-M5): the charge and the credit arrive with it. */
@@ -192,6 +194,7 @@ const hold = (type: string, price: object, lateFee: object | null) => ({
   state: "held",
   paid: false,
   visit_id: null,
+  moves_visit_id: null,
 });
 const SERVICE_HOLD = hold("service", { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 }, null);
 const FIRST_FIT_HOLD = hold(
@@ -589,6 +592,48 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
   await confirmed.close();
 }
 
+/** Boards C7 and C8: what moving or cancelling Thursday's service visit costs, shown before the client confirms. */
+async function changePairs(browser: Browser, design: Page): Promise<void> {
+  const terms = { visit_id: NEXT.id, type: "service", free_until: "2030-09-18T06:30:00.000Z", paid: 236000 };
+  const move = (notice: "free" | "late") => ({
+    ...terms,
+    notice,
+    cost: notice === "free" ? "free" : "charged",
+    price:
+      notice === "free"
+        ? { amount_ex_gst: 0, amount: 0, gst_percent: 18 }
+        : { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 },
+  });
+  const cancel = { ...terms, notice: "free", refund: 236000, kept: 0, destination: "upi", cancelled: false };
+  const api = (notice: "free" | "late"): Api => ({
+    "/api/me": json(ME_BOOKING),
+    [`/api/appointments/${NEXT.id}/reschedule`]: json(move(notice)),
+    [`/api/appointments/${NEXT.id}/cancel`]: json(cancel),
+  });
+  const version = (board: string, caption: string) =>
+    design
+      .locator(`[data-screen-label="${board}"] > div`)
+      .filter({ has: design.getByText(caption, { exact: true }) })
+      .screenshot();
+
+  // The app adds a way from C7 to C8, which the design draws but does not reach; C8 says 5 to 7 working days,
+  // as the owner ruled (ADR 0025, item 28), where the design says three to five.
+  const free = await openApp(browser, "/", api("free"), IN_2030);
+  await free.getByRole("button", { name: "Reschedule" }).click();
+  await free.getByText("Free to move. Your Rs. 2,360 carries over.").waitFor();
+  await pair(OUT, WIDTH, "c7-free", await version("Reschedule", "More than 24 hours out"), await shot(free));
+  await free.getByRole("button", { name: "Cancel the visit instead" }).click();
+  await free.getByText("Rs. 2,360 back to your UPI in 5 to 7 working days.").waitFor();
+  await pair(OUT, WIDTH, "c8-free", await version("Cancel", "More than 24 hours out"), await shot(free));
+  await free.close();
+
+  const late = await openApp(browser, "/", api("late"), IN_2030);
+  await late.getByRole("button", { name: "Reschedule" }).click();
+  await late.getByText(/^Charged\./).waitFor();
+  await pair(OUT, WIDTH, "c7-late", await version("Reschedule", "Inside 24 hours"), await shot(late));
+  await late.close();
+}
+
 const servers: Server[] = [
   await serveDirectory(APP_DIR, 4314, undefined, { spa: true }),
   await serveDirectory(DESIGN_DIR, 4313),
@@ -604,6 +649,7 @@ try {
   await profile(browser, design);
   await fitted(browser, design);
   await bookingPairs(browser, design);
+  await changePairs(browser, design);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();

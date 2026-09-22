@@ -43,7 +43,7 @@ export interface Fitted {
   readonly reference: string;
 }
 
-const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
+export const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
 
 /** Where the global setup leaves the client for the tests. */
 const HANDOVER = "MM_E2E_FITTED";
@@ -56,7 +56,8 @@ function day(days: number): { date: string; start: string; end: string } {
 
 const quote = (value: string | number | null) =>
   value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
-const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
+/** One row of SQL values, quoted. */
+export const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
 
 /** The client the global setup seeded. */
 export function fittedClient(): Fitted {

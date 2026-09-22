@@ -31,6 +31,20 @@ export function listDate(isoDate: string, thisYear: number): string {
   return isoDate.startsWith(String(thisYear)) ? full.slice(0, full.lastIndexOf(" ")) : full;
 }
 
+/** An instant as India's calendar date, YYYY-MM-DD: "2026-09-21T20:00:00Z" → "2026-09-22". */
+export function indiaDate(isoInstant: string): string {
+  return new Date(new Date(isoInstant).getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** An instant as India's clock: "2026-09-22T03:44:00Z" → "9:14 am"; on the hour, "10 am". */
+export function indiaClock(isoInstant: string): string {
+  const india = new Date(new Date(isoInstant).getTime() + 330 * 60 * 1000);
+  const hours = india.getUTCHours();
+  const minutes = india.getUTCMinutes();
+  const hour = hours % 12 === 0 ? 12 : hours % 12;
+  return `${String(hour)}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`} ${hours < 12 ? "am" : "pm"}`;
+}
+
 /** An instant as India's calendar date, with the year: "2026-11-14T08:00:00Z" → "14 Nov 2026". */
 export function longDate(isoInstant: string): string {
   // India is five and a half hours ahead of UTC, all year.

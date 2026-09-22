@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { fullDate, listDate, longDate, shortDate, weekdayDate } from "../../packages/web-kit/dates.ts";
+import {
+  fullDate,
+  indiaClock,
+  indiaDate,
+  listDate,
+  longDate,
+  shortDate,
+  weekdayDate,
+} from "../../packages/web-kit/dates.ts";
 import { rupees } from "../../packages/web-kit/money.ts";
 
 describe("web-kit dates", () => {
@@ -26,6 +34,16 @@ describe("web-kit dates", () => {
     expect(listDate("2027-08-22", 2027)).toBe("22 Aug");
     expect(listDate("2026-11-14", 2027)).toBe("14 Nov 2026");
     expect(weekdayDate("2026-09-24")).toBe("Thursday 24 Sep");
+  });
+
+  it.each([
+    ["2026-09-22T03:44:00Z", "2026-09-22", "9:14 am"],
+    ["2026-09-22T04:30:00Z", "2026-09-22", "10 am"],
+    ["2026-09-22T06:30:00Z", "2026-09-22", "12 pm"],
+    ["2026-09-21T18:35:00Z", "2026-09-22", "12:05 am"],
+  ])("reads the instant %s as India's date %s and clock %s", (instant, date, clock) => {
+    expect(indiaDate(instant)).toBe(date);
+    expect(indiaClock(instant)).toBe(clock);
   });
 });
 

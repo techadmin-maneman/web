@@ -602,7 +602,9 @@ Razorpay's webhook: payments and refunds
             "ops_assisted",
             "taken",
             "not_bookable",
-            "hold_expired"
+            "hold_expired",
+            "not_changeable",
+            "terms_changed"
           ]
         },
         "request_id": {
