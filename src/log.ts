@@ -83,7 +83,13 @@ const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 // (?<!\d) and (?!\d) stop it matching inside a longer number such as a timestamp.
 const INDIAN_MOBILE = /(?<!\d)(?:\+?91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}(?!\d)/g;
 
+// A UUID's last block is twelve hex characters, so about one in 270 is ten digits
+// starting 6-9 and would be masked as a mobile number. An ID is never a number we
+// are hiding, so a string that is exactly a UUID is left alone.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function scrubString(value: string): string {
+  if (UUID.test(value)) return value;
   return value.replace(EMAIL, REDACTED).replace(INDIAN_MOBILE, REDACTED);
 }
 
