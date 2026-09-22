@@ -41,6 +41,7 @@ GitHub gives a private repository 2,000 minutes of its runners a month. Ten jobs
 - **The jobs run on the owner's machine,** in a container: Ubuntu, as GitHub's runners are, with GitHub's runner agent and actionlint pinned and checked (`ops/runner/`). Jobs run as an unprivileged user; nothing of the machine is mounted, so a job sees only what it checks out. Its minutes are free. It needs the machine on, and Docker running.
 - **Every workflow chooses its runner by the repository variable `CI_RUNNER`:** "maneman" for the machine, anything else for GitHub's runners, so turning the variable off moves everything back within the free minutes' limits.
 - **The pull request checks are one job,** so a run costs one job's time on either.
+- **npm's cache is the runner's own,** on its disk between jobs. GitHub's cache, fetched over the network, took three to six minutes a run on the machine, and once stalled a run outright; GitHub's own runners keep using it.
 - **Nothing about what runs changed:** every check still runs on every pull request and again before every staging deploy, and production still needs its manual start, a commit on `main`, and a successful staging deploy of that commit (`deploy-production.yml`, "commit is on main and passed staging").
 
 ## Open items
