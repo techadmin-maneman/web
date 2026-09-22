@@ -727,12 +727,25 @@
               },
               "photos": {
                 "$ref": "#/components/schemas/PhotoSet"
+              },
+              "document_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The visit's invoice, for GET /api/documents/{id}, once Books has raised it."
               }
             },
             "required": [
               "duration_minutes",
               "outcome",
-              "photos"
+              "photos",
+              "document_id"
             ],
             "additionalProperties": false
           }
@@ -944,6 +957,184 @@
           "to"
         ],
         "additionalProperties": false
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ours, e.g. MM-2026-0841, once captured."
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "India's calendar date the payment was made."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In paise, GST included."
+          },
+          "refunded_amount": {
+            "type": "integer",
+            "description": "In paise: refunds Razorpay has processed."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "authorized",
+              "captured",
+              "failed",
+              "refunded",
+              "partially_refunded"
+            ]
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "upi, card, netbanking and so on."
+          },
+          "visit": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "type": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "consultation",
+                          "first_fit",
+                          "service",
+                          "replacement"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "date",
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The visit it paid for, when known."
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "date",
+          "amount",
+          "refunded_amount",
+          "status",
+          "method",
+          "visit"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Payment"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "refunds": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "created",
+                        "processed",
+                        "failed"
+                      ]
+                    },
+                    "speed": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "normal (5 to 7 working days) or instant."
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "status",
+                    "speed",
+                    "date"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "document_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The visit's invoice, for GET /api/documents/{id}, once Books has raised it."
+              }
+            },
+            "required": [
+              "refunds",
+              "document_id"
+            ],
+            "additionalProperties": false
+          }
+        ]
       }
     },
     "parameters": {}
@@ -1842,6 +2033,153 @@
           },
           "404": {
             "description": "not_found: the link is wrong, expired, or not this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments": {
+      "get": {
+        "summary": "What the client paid, newest first",
+        "responses": {
+          "200": {
+            "description": "The client's payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Payment"
+                      }
+                    }
+                  },
+                  "required": [
+                    "payments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/{id}": {
+      "get": {
+        "summary": "One of the client's payments, with its refunds",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such payment of this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}": {
+      "get": {
+        "summary": "A visit's invoice, as a PDF from Books",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The visit's ID."
+            },
+            "required": true,
+            "description": "The visit's ID.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such visit of this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_ready: Books has not raised the invoice yet; the app shows \"Document unavailable\"",
             "content": {
               "application/json": {
                 "schema": {

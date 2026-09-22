@@ -149,6 +149,8 @@ export interface VisitDetail extends VisitSummary {
   readonly duration_minutes: number | null;
   readonly outcome: "done" | "partial" | null;
   readonly photos: PhotoSet;
+  /** The visit's invoice, for GET /api/documents/{id}, once Books has raised it. */
+  readonly document_id: string | null;
 }
 
 /** One of the client's visits with its photographs; null for a visit that is not theirs. */
@@ -161,12 +163,18 @@ export async function visitDetail(
 ): Promise<VisitDetail | null> {
   const row = await db
     .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS}, v.duration_minutes, v.outcome
+      `SELECT ${APPOINTMENT_COLUMNS}, a.fsm_invoice_id, v.duration_minutes, v.outcome
        FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id LEFT JOIN visits v ON v.appointment_id = a.id
        WHERE ${LIVE} AND a.id = ?2`,
     )
     .bind(personId, visitId)
-    .first<AppointmentRow & { duration_minutes: number | null; outcome: "done" | "partial" | null }>();
+    .first<
+      AppointmentRow & {
+        fsm_invoice_id: string | null;
+        duration_minutes: number | null;
+        outcome: "done" | "partial" | null;
+      }
+    >();
   if (row === null) return null;
   const photos = await photoSets(db, [row.id], signingKey, now);
   return {
@@ -174,6 +182,7 @@ export async function visitDetail(
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     photos: photos.get(row.id) ?? { before: [], after: [] },
+    document_id: row.fsm_invoice_id === null ? null : row.id,
   };
 }
 

@@ -1025,6 +1025,175 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the client paid, newest first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The client's payments */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            payments: components["schemas"]["Payment"][];
+                        };
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the client's payments, with its refunds */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The payment */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaymentDetail"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such payment of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit's invoice, as a PDF from Books */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The PDF */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/pdf": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such visit of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_ready: Books has not raised the invoice yet; the app shows "Document unavailable" */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1202,6 +1371,8 @@ export interface components {
             duration_minutes: number | null;
             outcome: ("done" | "partial") | null;
             photos: components["schemas"]["PhotoSet"];
+            /** @description The visit's invoice, for GET /api/documents/{id}, once Books has raised it. */
+            document_id: string | null;
         };
         /** @description Each angle in the order front, top, left, right, hair; missing angles left out. */
         PhotoSet: {
@@ -1245,6 +1416,46 @@ export interface components {
                 date: string;
                 photo: components["schemas"]["PhotoLink"] | null;
             };
+        };
+        Payment: {
+            /** Format: uuid */
+            id: string;
+            /** @description Ours, e.g. MM-2026-0841, once captured. */
+            reference: string | null;
+            /**
+             * Format: date
+             * @description India's calendar date the payment was made.
+             */
+            date: string;
+            /** @description In paise, GST included. */
+            amount: number;
+            /** @description In paise: refunds Razorpay has processed. */
+            refunded_amount: number;
+            /** @enum {string} */
+            status: "authorized" | "captured" | "failed" | "refunded" | "partially_refunded";
+            /** @description upi, card, netbanking and so on. */
+            method: string | null;
+            /** @description The visit it paid for, when known. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+        };
+        PaymentDetail: components["schemas"]["Payment"] & {
+            refunds: {
+                amount: number;
+                /** @enum {string} */
+                status: "created" | "processed" | "failed";
+                /** @description normal (5 to 7 working days) or instant. */
+                speed: string | null;
+                /** Format: date */
+                date: string;
+            }[];
+            /** @description The visit's invoice, for GET /api/documents/{id}, once Books has raised it. */
+            document_id: string | null;
         };
     };
     responses: never;

@@ -651,6 +651,96 @@ A photograph, through a link that lasts 15 minutes
 }
 ```
 
+### GET /api/payments
+
+What the client paid, newest first
+
+**200**: The client's payments
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "payments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Payment"
+      }
+    }
+  },
+  "required": [
+    "payments"
+  ],
+  "additionalProperties": false
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/payments/{id}
+
+One of the client's payments, with its refunds
+
+**200**: The payment
+
+```json
+{
+  "$ref": "#/components/schemas/PaymentDetail"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such payment of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/documents/{id}
+
+A visit's invoice, as a PDF from Books
+
+**200**: The PDF
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_ready: Books has not raised the invoice yet; the app shows "Document unavailable"
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -1451,12 +1541,25 @@ A photograph, through a link that lasts 15 minutes
         },
         "photos": {
           "$ref": "#/components/schemas/PhotoSet"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The visit's invoice, for GET /api/documents/{id}, once Books has raised it."
         }
       },
       "required": [
         "duration_minutes",
         "outcome",
-        "photos"
+        "photos",
+        "document_id"
       ],
       "additionalProperties": false
     }
@@ -1688,5 +1791,193 @@ A photograph, through a link that lasts 15 minutes
     "to"
   ],
   "additionalProperties": false
+}
+```
+
+### Payment
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Ours, e.g. MM-2026-0841, once captured."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date the payment was made."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
+    "refunded_amount": {
+      "type": "integer",
+      "description": "In paise: refunds Razorpay has processed."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "authorized",
+        "captured",
+        "failed",
+        "refunded",
+        "partially_refunded"
+      ]
+    },
+    "method": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "upi, card, netbanking and so on."
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for, when known."
+    }
+  },
+  "required": [
+    "id",
+    "reference",
+    "date",
+    "amount",
+    "refunded_amount",
+    "status",
+    "method",
+    "visit"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentDetail
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/Payment"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "refunds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "integer"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "created",
+                  "processed",
+                  "failed"
+                ]
+              },
+              "speed": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "normal (5 to 7 working days) or instant."
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "amount",
+              "status",
+              "speed",
+              "date"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The visit's invoice, for GET /api/documents/{id}, once Books has raised it."
+        }
+      },
+      "required": [
+        "refunds",
+        "document_id"
+      ],
+      "additionalProperties": false
+    }
+  ]
 }
 ```

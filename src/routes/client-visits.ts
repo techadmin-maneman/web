@@ -63,6 +63,9 @@ const VisitDetailSchema = VisitSummarySchema.extend({
   duration_minutes: z.union([z.number().int(), z.null()]).openapi({ description: "From start to finish, once done." }),
   outcome: z.union([z.enum(["done", "partial"]), z.null()]),
   photos: PhotoSetSchema,
+  document_id: z
+    .union([z.uuid(), z.null()])
+    .openapi({ description: "The visit's invoice, for GET /api/documents/{id}, once Books has raised it." }),
 }).openapi("VisitDetail");
 
 const VisitsSchema = z
