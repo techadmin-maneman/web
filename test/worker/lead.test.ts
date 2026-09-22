@@ -87,13 +87,13 @@ describe("POST /api/lead: a served city", () => {
     expect(queue.sent).toEqual([{ lead_id: body.lead_id, request_id: res.headers.get("X-Request-Id") }]);
   });
 
-  it("proposes the first weekend day for a weekend window, after six for an evening", async () => {
+  it("proposes the first weekend day for a weekend window, after four for an evening", async () => {
     const res = await request(appFor(), "/api/lead", post({ ...BOOKING, first_choice_window: "weekend_pm" }), {
       CRM_QUEUE: fakeQueue(),
     });
     expect(LeadResponseSchema.parse(await res.json())).toMatchObject({
       proposed_visit_date: "2026-09-26", // Saturday
-      window_label: "after six",
+      window_label: "after four",
     });
   });
 

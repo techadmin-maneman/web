@@ -63,7 +63,7 @@ type LeadResponse = z.infer<typeof LeadResponseSchema>;
 export const leadRoute = createRoute({
   method: "post",
   path: "/api/lead",
-  summary: "Book a free measurement, or join a city's waitlist",
+  summary: "Book a free consultation, or join a city's waitlist",
   request: {
     headers: z.object({ "idempotency-key": z.string().min(8).max(200).optional() }),
     body: { required: true, content: { "application/json": { schema: LeadRequestSchema } } },

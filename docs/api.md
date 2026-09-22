@@ -62,7 +62,7 @@ The booking form's city list, in display order. Cacheable for five minutes.
 
 ### POST /api/lead
 
-Book a free measurement, or join a city's waitlist
+Book a free consultation, or join a city's waitlist
 
 Request body:
 
@@ -668,7 +668,7 @@ Evolution's delivery receipts (messages.update) for the WhatsApp messages we sen
       "type": "string",
       "enum": [
         "before noon",
-        "after six"
+        "after four"
       ],
       "description": "Served cities only."
     }

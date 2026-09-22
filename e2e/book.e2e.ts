@@ -135,11 +135,11 @@ test("booked: the API's date and window, the five rows, and a calendar file for 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Add to calendar" }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toBe("mane-man-measurement.ics");
+  expect(file.suggestedFilename()).toBe("mane-man-consultation.ics");
   const text = await (await file.createReadStream()).toArray().then((chunks) => Buffer.concat(chunks).toString());
   expect(text).toContain("DTSTART:20260925T033000Z");
   expect(text).toContain("DTEND:20260925T063000Z");
-  expect(text).toContain("SUMMARY:Mane Man measurement (time to be confirmed)");
+  expect(text).toContain("SUMMARY:Mane Man consultation (time to be confirmed)");
 });
 
 test("booked without a proposed day: no date, no calendar file", async ({ page }) => {
@@ -147,7 +147,7 @@ test("booked without a proposed day: no date, no calendar file", async ({ page }
   await visit(page, "/book");
   await fillForm(page);
   await page.getByRole("button", { name: "Request a visit" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your measurement is booked.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your consultation is booked.");
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
 });
 
@@ -198,7 +198,7 @@ test("the city list failing to load says so", async ({ page }) => {
 test("the layout is v2's as it renders: the intro, then the form card below it", async ({ page }) => {
   await mockApi(page, BOOKED);
   await visit(page, "/book");
-  const intro = await page.getByRole("heading", { name: "Book a free measurement" }).boundingBox();
+  const intro = await page.getByRole("heading", { name: "Book a free consultation" }).boundingBox();
   const card = await page.locator("form").boundingBox();
   expect(card?.y ?? 0).toBeGreaterThan((intro?.y ?? 0) + (intro?.height ?? 0));
   expect(Math.round(card?.x ?? 0)).toBe(Math.round(intro?.x ?? 0));

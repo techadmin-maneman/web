@@ -40,9 +40,9 @@ test("a served city is booked with the API's proposed day and window", async ({ 
   expect(response.status()).toBe(201);
   const lead = (await response.json()) as { proposed_visit_date: string; window_label: string };
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    new RegExp(`^[A-Z][a-z]+day, ${String(Number(lead.proposed_visit_date.slice(8)))} [A-Z][a-z]+, after six\\.$`),
+    new RegExp(`^[A-Z][a-z]+day, ${String(Number(lead.proposed_visit_date.slice(8)))} [A-Z][a-z]+, after four\\.$`),
   );
-  expect(lead.window_label).toBe("after six");
+  expect(lead.window_label).toBe("after four");
 });
 
 test("an unserved city joins the waitlist", async ({ page }) => {

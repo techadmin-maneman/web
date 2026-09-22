@@ -219,7 +219,7 @@ export const legalPages = {
     title: "Terms",
     paragraphs: [
       "These terms cover the service Mane Man Grooming Services Private Limited provides: non-surgical hair systems, measured, fitted and serviced at your home across Delhi NCR. By booking a visit or using the try-on you agree to them. We may change them; the version on this page when you book is the one that applies to that booking.",
-      "The first visit is a measurement: forty minutes, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones published on this site when you order. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
+      "The first visit is a consultation: forty minutes, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones published on this site when you order. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
       "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within fourteen days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we publish are typical, not promised.",
       "The try-on is an illustrative simulation made by software from one photograph. It is not a photograph of a result, and not a promise of how a fitted piece will look: a fitted piece is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
       "We are responsible for the care and skill of our technicians. Beyond a refit or refund under the guarantee, and except where the law provides otherwise, our liability for a visit is limited to what you paid for it. These terms are governed by the laws of India, and the courts at New Delhi have jurisdiction. For questions or complaints, message or call us on +91 90079 73247.",
@@ -280,7 +280,7 @@ export const hero = {
   title: "Hair, fitted at your home across Delhi NCR.",
   body: "A technician comes to your home, matches the piece to the hair you already have, and fits it in about ninety minutes.",
   tryOn: "See yourself with hair",
-  book: "Book a free measurement",
+  book: "Book a free consultation",
 };
 
 export const whatItIs = {
@@ -377,7 +377,7 @@ export const norwood = {
       },
     ] satisfies NorwoodStage[],
   },
-  book: "Book a free measurement",
+  book: "Book a free consultation",
 };
 
 /** A comparison cell: text, or a tick (true) or cross (false). */
@@ -427,7 +427,7 @@ export const howItWorks = {
     },
     {
       number: "02",
-      title: "Measurement at home",
+      title: "Consultation at home",
       body: "A template of your scalp taken in cling film and tape, and your hair colour matched against forty samples in daylight.",
       meta: "Forty minutes · free",
     },
@@ -519,7 +519,7 @@ export const prices = {
   ],
   example: "A standard base in the first year: ₹25,000 plus twelve service visits at ₹1,500 — ₹43,000.",
   payment: "Payment on the day of the fit. Card, UPI or bank transfer.",
-  book: "Book a free measurement",
+  book: "Book a free consultation",
   tryOn: "Or see yourself with hair first",
 };
 
@@ -554,7 +554,7 @@ export const faq = {
     },
     {
       q: "How do you match the colour and the hairline?",
-      a: "Colour is matched against forty samples in daylight at the measurement visit, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed before the piece is ordered.",
+      a: "Colour is matched against forty samples in daylight at the consultation, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed before the piece is ordered.",
     },
     {
       q: "What if I do not like it at the fit?",
@@ -576,8 +576,8 @@ export const faq = {
 };
 
 export const closing = {
-  title: "The measurement takes forty minutes and costs nothing.",
-  book: "Book a free measurement",
+  title: "The consultation takes forty minutes and costs nothing.",
+  book: "Book a free consultation",
 };
 
 // ---------------------------------------------------------------------------
@@ -738,7 +738,7 @@ export const tryOn = {
     pending: "Still working on it",
     disclaimer:
       "This is an illustrative simulation, not a photograph of a result. A fitted piece is matched to your own hair colour, density and growth pattern, and will differ.",
-    book: "Book a free measurement",
+    book: "Book a free consultation",
     download: "Download",
     whatsapp: "WhatsApp",
     copy: { before: "A copy is on its way to ", after: ". Deleted after thirty days." },
@@ -765,20 +765,20 @@ export const tryOn = {
         step: "Something went wrong",
         frame: "The simulation failed",
         title: "The simulation did not work this time.",
-        body: "The photograph looked fine; the simulation failed on our side. Try again with the same photograph or another, or book a measurement and see it in person.",
+        body: "The photograph looked fine; the simulation failed on our side. Try again with the same photograph or another, or book a consultation and see it in person.",
       },
       busy: {
         step: "Please try again shortly",
         frame: "The simulation is busy",
         title: "The simulation is busy just now.",
-        body: "Too many people are trying it at once, or it could not be reached. Please try again in a little while, or book a measurement and see it in person.",
+        body: "Too many people are trying it at once, or it could not be reached. Please try again in a little while, or book a consultation and see it in person.",
       },
       /** Only when this browser's look can no longer be shown: otherwise the page shows it again. */
       lookLimit: {
         step: "One look per visitor",
         frame: "Your look is no longer kept",
         title: "You have had your look.",
-        body: "Each visitor gets one simulation, and this browser has had its one, which is no longer kept. The measurement shows you the real thing, in person, and costs nothing.",
+        body: "Each visitor gets one simulation, and this browser has had its one, which is no longer kept. The consultation shows you the real thing, in person, and costs nothing.",
       },
     },
   },
@@ -802,7 +802,7 @@ if (visitWindows.map((window) => window.id).join() !== VISIT_WINDOWS.join()) {
 }
 
 export const booking = {
-  title: "Book a free measurement",
+  title: "Book a free consultation",
   intro:
     "Nothing is fitted on the first visit. He measures your scalp and matches your colour, then leaves. Forty minutes, nothing to pay.",
   name: "Name",
@@ -834,10 +834,10 @@ export const booking = {
   },
   booked: {
     /** When every day in reach is blacked out, the API proposes none. */
-    noDate: "Your measurement is booked.",
+    noDate: "Your consultation is booked.",
     confirmation: "He will confirm the hour on WhatsApp by tomorrow evening.",
     rows: {
-      what: { k: "What happens", v: "Measurement, not a fitting" },
+      what: { k: "What happens", v: "Consultation, not a fitting" },
       howLong: { k: "How long", v: "Forty minutes" },
       pay: { k: "To pay", v: "Nothing" },
       where: { k: "Where", v: "Your address" },
@@ -872,7 +872,7 @@ export const notFound = {
 export const pageTitles = {
   home: "Mane Man — hair, fitted at your home across Delhi NCR",
   tryOn: "See yourself with hair — Mane Man",
-  book: "Book a free measurement — Mane Man",
+  book: "Book a free consultation — Mane Man",
   privacy: "Privacy — Mane Man",
   terms: "Terms — Mane Man",
   notFound: "Not found — Mane Man",

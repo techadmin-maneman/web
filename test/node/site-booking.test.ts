@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
-import { measurementCalendar } from "../../site/src/lib/calendar.ts";
+import { consultationCalendar } from "../../site/src/lib/calendar.ts";
 
 describe("attribution", () => {
   it("keeps the campaign tags, the landing path and another site as the referrer", () => {
@@ -35,7 +35,7 @@ describe("the calendar file", () => {
   const now = new Date("2026-09-22T06:00:00Z");
 
   it("covers the morning window, 09:00 to 12:00 in India, in UTC", () => {
-    const text = measurementCalendar("2026-09-24", "before noon", "lead-1", now);
+    const text = consultationCalendar("2026-09-24", "before noon", "lead-1", now);
     expect(text).toContain("DTSTART:20260924T033000Z\r\n");
     expect(text).toContain("DTEND:20260924T063000Z\r\n");
     expect(text).toContain("UID:lead-1@maneman.in\r\n");
@@ -43,11 +43,11 @@ describe("the calendar file", () => {
     expect(text.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
   });
 
-  it("covers the evening window, 18:00 to 21:00 in India", () => {
-    const text = measurementCalendar("2026-09-24", "after six", "lead-1", now);
-    expect(text).toContain("DTSTART:20260924T123000Z");
-    expect(text).toContain("DTEND:20260924T153000Z");
-    expect(text).toContain("SUMMARY:Mane Man measurement (time to be confirmed)");
+  it("covers the evening window, 16:00 to 20:00 in India", () => {
+    const text = consultationCalendar("2026-09-24", "after four", "lead-1", now);
+    expect(text).toContain("DTSTART:20260924T103000Z");
+    expect(text).toContain("DTEND:20260924T143000Z");
+    expect(text).toContain("SUMMARY:Mane Man consultation (time to be confirmed)");
   });
 });
 

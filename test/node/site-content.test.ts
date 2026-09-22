@@ -136,7 +136,7 @@ describe("site helpers", () => {
 
   it("writes the booked headline from the proposed date and the window", () => {
     expect(bookedHeadline("2026-09-24", "before noon")).toBe("Thursday, 24 September, before noon.");
-    expect(bookedHeadline("2027-01-02", "after six")).toBe("Saturday, 2 January, after six.");
+    expect(bookedHeadline("2027-01-02", "after four")).toBe("Saturday, 2 January, after four.");
   });
 
   it("fills content holes and leaves unknown ones", () => {
