@@ -192,7 +192,9 @@ Then save it as CSV in the same place and tell me. Answering per city is enough 
 
 ### 8. Referral rulings
 
-The prompt settles most of the referral rules: 3 service visits each when a referred friend's first fit is done, credits valid 365 days, and fraud holds for review. The designs leave six questions to you. Each has a recommendation; reply "ok" or give your answer.
+**Ruled 22 September 2026: all six as recommended** (ADR 0025, item 24).
+
+The prompt settles most of the referral rules: 3 service visits each when a referred friend's first fit is done, credits valid 365 days, and fraud holds for review. The designs left these six questions to the owner.
 
 1. **Invite validity.** An invite to an unserved area stays valid for 12 months after that area launches.
    - Confirm the 12 months.

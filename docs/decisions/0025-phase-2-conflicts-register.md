@@ -64,6 +64,13 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 
 22. **Weekend capacity.** The Ops Console notes weekends at 92% against 64% on weekdays. That needs weekend headcount, not software; recorded, not built.
 23. **The profile's address.** Board G1 shows the area only ("Sector 65, Gurgaon 122018"), but the profile holds the house too. **Ruled 22 September 2026: the profile shows the whole address.**
+24. **Referral rules the designs left open.** **Ruled 22 September 2026**, as recommended in `docs/phase2-inputs.md` (section 8):
+    - **Invite validity.** An invite to an unserved area stays valid for 12 months after that area launches. If the referrer deletes their account before the friend is fitted, the friend keeps the 3 credits the invite promised. The referrer's 3 lapse, and the invite shows the house card instead of theirs.
+    - **Naming the referrer.** The invite shows the referrer's first name only, and only after they have read "your first name appears on your invite" beside the card's consent lines. `REFERRER_NAME_ON_INVITE` can switch this off everywhere.
+    - **What the referrer is told.** The landing page tells the friend that the referrer is told, by the friend's first name, when the friend is fitted. Booking through the invite is the friend's agreement. A friend who would rather not be named books on the public site, without credits. Counsel confirms this with the consents.
+    - **Prices on the referral page.** The same figures as the site, from the price book, with no referral price.
+    - **The monthly cap.** `REFERRAL_MONTHLY_CAP` is 5, reset on the calendar month in India time. Later fits are held for review, not refused.
+    - **Referrals logged before January.** Credits imported from ops' log expire 365 days after the import.
 
 ## Inputs still owed
 
