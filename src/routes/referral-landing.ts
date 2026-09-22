@@ -5,6 +5,8 @@
 //   GET  /api/pincodes/:pin           whether we come there, and the area's name
 //   POST /api/r/:code/consultation    book a free consultation through the invite
 //   POST /api/r/:code/waitlist        wait for an unserved pincode, the invite held until 12 months after launch
+//   GET  /api/og/:code.jpg?v=         the invite's preview image: the referrer's card while it is live, else the
+//                                     house card; the version in the link is what makes a revoke reach new shares
 //
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. An unknown
 // code still books or waits, without an invite.
@@ -15,6 +17,7 @@ import type { App, AppEnv } from "../app.ts";
 import { CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS } from "../config/scheduling.ts";
 import { takeOne } from "../domain/rate-limit.ts";
+import { liveCard } from "../domain/referral-cards.ts";
 import { attribute, inviteOf, type Invite } from "../domain/referrals.ts";
 import { holdSlot } from "../domain/scheduling.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -80,6 +83,20 @@ const WaitlistRequestSchema = z
     launch_alert: z.boolean().openapi({ description: '"Tell me when you launch in my area." Optional.' }),
   })
   .strict();
+
+/** The house card, a static file of the site's (site/public/images/invite-house.jpg). */
+export const HOUSE_CARD_PATH = "/images/invite-house.jpg";
+
+const ogRoute = createRoute({
+  method: "get",
+  path: "/api/og/{file}",
+  summary: "An invite's preview image",
+  request: { params: z.object({ file: z.string().regex(/^[A-Za-z0-9]{4,12}\.jpg$/) }) },
+  responses: {
+    200: { description: "The referrer's card", content: { "image/jpeg": { schema: z.string() } } },
+    302: { description: "The house card, on the site" },
+  },
+});
 
 const inviteRoute = createRoute({
   method: "get",
@@ -242,12 +259,27 @@ export function registerReferralLanding(app: App): void {
 
   app.openapi(inviteRoute, async (c) => {
     const found = await invite(c, c.req.valid("param").code);
+    // Ops' funnel counts opens; the referrer never sees them (the tracker shows fits only).
+    if (found !== null) {
+      await c.env.DB.prepare("UPDATE referral_codes SET opens = opens + 1 WHERE code = ?1").bind(found.code).run();
+    }
     return c.json(
       found === null
         ? { state: "unknown" as const, referrer_first_name: null, card: { state: "house" as const, version: 1 } }
         : { state: "valid" as const, referrer_first_name: found.referrerFirstName, card: found.card },
       200,
     );
+  });
+
+  app.openapi(ogRoute, async (c) => {
+    const code = c.req
+      .valid("param")
+      .file.replace(/\.jpg$/, "")
+      .toUpperCase();
+    const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);
+    if (card === null) return c.redirect(HOUSE_CARD_PATH, 302);
+    // A version's card never changes: a new one gets a new link.
+    return c.body(card.body, 200, { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400" });
   });
 
   app.openapi(pincodeRoute, async (c) => {

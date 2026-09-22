@@ -44,6 +44,8 @@ export const ERROR_CODES = [
   // or the 24 hours ran out between showing the terms and confirming them.
   "not_changeable",
   "terms_changed",
+  // A referral card without the client's consent to photographs on referral cards (docs/decisions/0048-referrals.md).
+  "consent_required",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

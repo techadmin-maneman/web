@@ -18,6 +18,7 @@ import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
 import { composeFriendFitted } from "../domain/referral-grants.ts";
+import { composeLaunchAlert } from "../domain/waitlist.ts";
 import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
 import { scrubString, type Logger } from "../log.ts";
 
@@ -156,7 +157,9 @@ export async function sendMessage(
         ? await composeVisitMessage(db, row.kind, row.subject_id, row.person_id)
         : row.kind === "friend_fitted"
           ? await composeFriendFitted(db, row.subject_id, row.person_id)
-          : { skip: "unknown kind" };
+          : row.kind === "launch_alert"
+            ? await composeLaunchAlert(db, row.subject_id, row.person_id, config.environment)
+            : { skip: "unknown kind" };
   if ("skip" in content) return skip(content.skip);
 
   // Claim this send; another delivery of the same message now leaves it alone.

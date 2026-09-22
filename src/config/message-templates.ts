@@ -26,6 +26,9 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   visit_moved_v1: "Hello {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
   visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
+  // When a pincode launches, to those on its waitlist who asked to be told (docs/decisions/0048-referrals.md).
+  // PLACEHOLDER COPY: {{1}} their first name, {{2}} the area, {{3}} where to book.
+  launch_alert_v1: "Hello {{1}}, we now come to {{2}}. Your free consultation can be booked here: {{3}}",
   // To a referrer, when their friend's first fit closes as done (docs/decisions/0048-referrals.md). PLACEHOLDER COPY:
   // {{1}} the referrer's first name, {{2}} the friend's, {{3}} the visits each gets, {{4}} when they expire.
   friend_fitted_v1:

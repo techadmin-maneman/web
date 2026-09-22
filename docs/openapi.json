@@ -54,7 +54,8 @@
                   "not_bookable",
                   "hold_expired",
                   "not_changeable",
-                  "terms_changed"
+                  "terms_changed",
+                  "consent_required"
                 ]
               },
               "request_id": {
@@ -969,6 +970,37 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/og/{file}": {
+      "get": {
+        "summary": "An invite's preview image",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9]{4,12}\\.jpg$"
+            },
+            "required": true,
+            "name": "file",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The referrer's card",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "The house card, on the site"
           }
         }
       }

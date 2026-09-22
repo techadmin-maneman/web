@@ -1,6 +1,6 @@
 # 0048. Referrals and the waitlist
 
-- Status: accepted; cards, the landing page and ops' waitlist views to follow in P2-M3
+- Status: accepted; the landing page and the app's Refer screens follow in P2-F3
 - Date: 2026-09-22
 
 ## Context
@@ -65,6 +65,25 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 - `GET /api/referrals/held` lists the held grants, with the rules each met.
 - `POST /api/referrals/:id/decision` approves, and the credits and message follow, or rejects with a reason.
 - Each decision is audited (`referral.decide`).
+
+**The card** (`src/domain/referral-cards.ts`) is a 1200 x 630 JPEG under 300 KB, composed on the client's phone from their first fit's photographs.
+
+- `PUT /api/refer/card` stores it, only with their consent to photographs on referral cards, as the code's next version; `DELETE /api/refer/card` takes it down.
+- **Every upload or revoke is a new version,** because WhatsApp caches a link's preview by its URL: a revoke reaches new shares only.
+- **`GET /api/og/:code.jpg`** is the preview: the client's card while it is live, and otherwise the house card, a static file of the site's. It is served by mm-api, so the path stays under `/api`, and the versioned link makes it safe to cache for a day.
+- **A card comes down by itself** when the consent is switched off, and when the client is erased: it is made of their photographs.
+- The house card is a placeholder until the owner gives us a licensed one (`docs/open-points.md`, item 43).
+
+**The waitlist and a launch** (`src/domain/waitlist.ts`), on the ops surface:
+
+- `GET /api/waitlist` lists each pincode with someone waiting: how many, the longest wait, how many came through an invite, and how many asked to be told.
+- `POST /api/pincodes/:pin/launch` first answers what it would send. Confirmed, it marks the pincode served from the day given and queues a launch alert for each person who asked for one and still consents.
+  - The alerts leave ten a minute, so a launch does not flood the number.
+  - Nobody is told twice: the entry keeps when it was alerted.
+  - The launch is audited.
+- `GET /api/referrers` gives ops each referrer's figures: opens, consultations, fits, grants and the credits spent. Opens are counted on the invite; the referrer never sees them (the tracker shows fits only).
+
+**The pre-January log** is imported by `scripts/import-referrals.ts` from ops' CSV, into people, codes, attributions and the ledger. Credits imported expire 365 days after the import (ruling 6). Running it again writes nothing twice: a person and a referral keep the same IDs, from their numbers.
 
 **Afterwards, on the same cron:**
 

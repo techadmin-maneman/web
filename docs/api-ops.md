@@ -483,6 +483,209 @@ Request body:
 }
 ```
 
+### GET /api/waitlist
+
+Who is waiting, by pincode, the longest wait first
+
+**200**: Areas with someone waiting
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "areas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "served": {
+            "type": "boolean"
+          },
+          "launched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "waiting": {
+            "type": "integer"
+          },
+          "oldest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referred": {
+            "type": "integer"
+          },
+          "alerts": {
+            "type": "integer",
+            "description": "How many asked to be told when we launch."
+          }
+        },
+        "required": [
+          "pincode",
+          "area",
+          "city",
+          "served",
+          "launched_at",
+          "waiting",
+          "oldest",
+          "referred",
+          "alerts"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "areas"
+  ],
+  "additionalProperties": false
+}
+```
+
+### POST /api/pincodes/{pin}/launch
+
+Launch a pincode: without confirm, what it would send; with it, the launch
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PincodeLaunch"
+}
+```
+
+**200**: What it would send, or what it sent
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincode": {
+      "type": "string"
+    },
+    "waiting": {
+      "type": "integer"
+    },
+    "alerts": {
+      "type": "integer"
+    },
+    "launched": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "pincode",
+    "waiting",
+    "alerts",
+    "launched"
+  ],
+  "additionalProperties": false
+}
+```
+
+**404**: not_found: we have no such pincode
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/referrers
+
+Every referrer's figures, the busiest first
+
+**200**: Referrers
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "referrers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "opens": {
+            "type": "integer"
+          },
+          "consultations": {
+            "type": "integer"
+          },
+          "fits": {
+            "type": "integer"
+          },
+          "granted": {
+            "type": "integer"
+          },
+          "redeemed": {
+            "type": "integer",
+            "description": "Credits of theirs spent on visits."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "opens",
+          "consultations",
+          "fits",
+          "granted",
+          "redeemed"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "referrers"
+  ],
+  "additionalProperties": false
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -525,7 +728,8 @@ Request body:
             "not_bookable",
             "hold_expired",
             "not_changeable",
-            "terms_changed"
+            "terms_changed",
+            "consent_required"
           ]
         },
         "request_id": {
@@ -711,6 +915,28 @@ Request body:
   },
   "required": [
     "response"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PincodeLaunch
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "confirm": {
+      "type": "boolean"
+    },
+    "launch_on": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date it starts; today if left out."
+    }
+  },
+  "required": [
+    "confirm"
   ],
   "additionalProperties": false
 }

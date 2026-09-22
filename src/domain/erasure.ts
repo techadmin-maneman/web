@@ -15,6 +15,7 @@
 // result stored between our read and the batch is deleted after the batch.
 
 import { RUNNING_STATES, type JobState } from "../config/tryon.ts";
+import { revokeCard } from "./referral-cards.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
@@ -29,7 +30,7 @@ export interface ErasureSummary {
   readonly visitPhotosDeleted: number;
 }
 
-export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS">;
+export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS" | "REFERRAL_CARDS">;
 
 /** The summary, or null when no one (still unerased) has this number. */
 export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date): Promise<ErasureSummary | null> {
@@ -65,6 +66,8 @@ export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date
     .bind(personId)
     .all<{ id: string; r2_key: string }>();
   const visitKeys = visitPhotos.map((photo) => photo.r2_key);
+  // Their referral card is made of their photographs: their invite shows the house card from now on.
+  await revokeCard(db, env.REFERRAL_CARDS, personId, now);
   for (let start = 0; start < visitKeys.length; start += R2_DELETE_BATCH) {
     await env.CLIENT_PHOTOS.delete(visitKeys.slice(start, start + R2_DELETE_BATCH));
   }

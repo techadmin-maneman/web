@@ -140,6 +140,14 @@ An invite: valid or unknown
 }
 ```
 
+### GET /api/og/{file}
+
+An invite's preview image
+
+**200**: The referrer's card
+
+**302**: The house card, on the site
+
 ### GET /api/pincodes/{pin}
 
 Whether we come to a pincode
@@ -855,7 +863,8 @@ Razorpay's webhook: payments and refunds
             "not_bookable",
             "hold_expired",
             "not_changeable",
-            "terms_changed"
+            "terms_changed",
+            "consent_required"
           ]
         },
         "request_id": {

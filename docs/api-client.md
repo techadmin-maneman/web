@@ -1138,6 +1138,65 @@ Request body:
 }
 ```
 
+### PUT /api/refer/card
+
+Upload the client's referral card: the body is the JPEG itself
+
+**200**: Stored as the card's next version
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "additionalProperties": false
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: consent_required: the client has not agreed to photographs on referral cards
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: photo_invalid_file: not a 1200 x 630 JPEG under 300 KB
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### DELETE /api/refer/card
+
+Take the client's card down: new opens show the house card
+
+**204**: Revoked, or there was none
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/refer
 
 The client's code, credits and fitted friends
@@ -1260,7 +1319,8 @@ Request body:
             "not_bookable",
             "hold_expired",
             "not_changeable",
-            "terms_changed"
+            "terms_changed",
+            "consent_required"
           ]
         },
         "request_id": {

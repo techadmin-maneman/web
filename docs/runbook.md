@@ -611,6 +611,29 @@ A request waiting 5 days alerts ops: process it before its 7 days run out. Invoi
 
 ---
 
+## The service area and the referral log
+
+**The pincodes we serve** are loaded from `data/pincodes/ncr-pincodes.csv` (docs/decisions/0048-referrals.md). Fill in its `served` and `launch_on` columns, then:
+
+```sh
+node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging's placeholder (open point 21)
+node scripts/import-pincodes.ts production                             # the file's own columns
+```
+
+Run it again whenever the file changes: each pincode's row is replaced.
+
+**Launching a pincode** is ops' own, in the console: it says how many are waiting and how many will be told, then marks the pincode served and sends the alerts, ten a minute. Nobody is told twice.
+
+**Ops' log of referrals before January** is imported once, from a CSV in git-ignored `private/`:
+
+```sh
+node scripts/import-referrals.ts production --file private/referrals-before-january.csv
+```
+
+It writes people, codes, attributions and the credits, and can be run again safely. Staging uses the synthetic sample in `data/referrals/`.
+
+---
+
 ## A personal data breach
 
 A breach is any unauthorised access to, or loss or disclosure of, personal data we hold. For example:

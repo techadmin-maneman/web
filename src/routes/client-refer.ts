@@ -2,12 +2,15 @@
 // balance, and the tracker, which shows completed fits only: each friend's first name and the month they were
 // fitted, never opens, consultations or pending referrals.
 //
-//   GET /api/refer
+//   GET    /api/refer
+//   PUT    /api/refer/card    the client's card: a 1200 x 630 JPEG under 300 KB, with their consent to cards
+//   DELETE /api/refer/card    the revoke: new opens show the house card
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { creditBalance } from "../domain/credits.ts";
+import { MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
 import { referralCodeOf } from "../domain/referrals.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -44,8 +47,65 @@ const referRoute = createRoute({
   },
 });
 
+const cardRoute = createRoute({
+  method: "put",
+  path: "/api/refer/card",
+  summary: "Upload the client's referral card: the body is the JPEG itself",
+  responses: {
+    200: {
+      description: "Stored as the card's next version",
+      content: { "application/json": { schema: z.object({ version: z.number().int() }).strict() } },
+    },
+    401: errorResponse("session_required"),
+    409: errorResponse("consent_required: the client has not agreed to photographs on referral cards"),
+    422: errorResponse("photo_invalid_file: not a 1200 x 630 JPEG under 300 KB"),
+  },
+});
+
+const revokeRoute = createRoute({
+  method: "delete",
+  path: "/api/refer/card",
+  summary: "Take the client's card down: new opens show the house card",
+  responses: { 204: { description: "Revoked, or there was none" }, 401: errorResponse("session_required") },
+});
+
 export function registerClientRefer(app: App): void {
   app.use("/api/refer", requireClientSession);
+  app.use("/api/refer/*", requireClientSession);
+
+  app.openapi(cardRoute, async (c) => {
+    const session = c.var.clientSession;
+    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const db = c.env.DB;
+    const now = c.var.deps.now();
+    if (Number(c.req.header("Content-Length") ?? "0") > MAX_CARD_BYTES) {
+      return c.json(errorBody("photo_invalid_file", c.var.requestId), 422);
+    }
+    const person = await db
+      .prepare("SELECT name FROM people WHERE id = ?1")
+      .bind(session.subjectId)
+      .first<{ name: string }>();
+    const code = await referralCodeOf(db, session.subjectId, person?.name ?? "", now);
+    const stored = await storeCard(db, c.env.REFERRAL_CARDS, {
+      personId: session.subjectId,
+      code,
+      bytes: new Uint8Array(await c.req.arrayBuffer()),
+      now,
+    });
+    if ("problem" in stored) {
+      return stored.problem === "no_consent"
+        ? c.json(errorBody("consent_required", c.var.requestId), 409)
+        : c.json(errorBody("photo_invalid_file", c.var.requestId), 422);
+    }
+    return c.json({ version: stored.version }, 200);
+  });
+
+  app.openapi(revokeRoute, async (c) => {
+    const session = c.var.clientSession;
+    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    await revokeCard(c.env.DB, c.env.REFERRAL_CARDS, session.subjectId, c.var.deps.now());
+    return c.body(null, 204);
+  });
 
   app.openapi(referRoute, async (c) => {
     const session = c.var.clientSession;

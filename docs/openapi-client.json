@@ -54,7 +54,8 @@
                   "not_bookable",
                   "hold_expired",
                   "not_changeable",
-                  "terms_changed"
+                  "terms_changed",
+                  "consent_required"
                 ]
               },
               "request_id": {
@@ -3627,6 +3628,80 @@
           },
           "503": {
             "description": "unavailable: FSM did not answer; nothing changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/refer/card": {
+      "put": {
+        "summary": "Upload the client's referral card: the body is the JPEG itself",
+        "responses": {
+          "200": {
+            "description": "Stored as the card's next version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "consent_required: the client has not agreed to photographs on referral cards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "photo_invalid_file: not a 1200 x 630 JPEG under 300 KB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Take the client's card down: new opens show the house card",
+        "responses": {
+          "204": {
+            "description": "Revoked, or there was none"
+          },
+          "401": {
+            "description": "session_required",
             "content": {
               "application/json": {
                 "schema": {
