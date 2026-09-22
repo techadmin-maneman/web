@@ -9,6 +9,7 @@ import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
+import { syncBooks } from "./domain/books-sync.ts";
 import { reconcileFsm } from "./scheduled/reconcile-fsm.ts";
 import { sweep } from "./scheduled/sweeper.ts";
 
@@ -79,6 +80,20 @@ export default {
       await reconcileFsm(workerEnv, deps, log.child({ job: "fsm_reconcile" })).catch((error: unknown) => {
         log.error("fsm_reconcile_failed", { error });
       });
+    }
+    if (config.providers.FSM_PROVIDER !== "none" && config.providers.BOOKS_PROVIDER !== "none") {
+      const booksLog = log.child({ job: "books_sync" });
+      const options = {
+        refundAccountId: config.settings.zohoFsm?.booksRefundAccountId ?? null,
+        labelAsTest: config.environment !== "production",
+      };
+      await syncBooks(workerEnv.DB, deps.fsm, deps.books, options, deps.now(), booksLog)
+        .then((done) => {
+          if (done.recorded + done.applied + done.refunded > 0) booksLog.info("books_synced", done);
+        })
+        .catch((error: unknown) => {
+          booksLog.error("books_sync_failed", { error });
+        });
     }
   },
 } satisfies ExportedHandler<Env>;

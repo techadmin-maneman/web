@@ -96,7 +96,7 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await expect(page.getByAltText(`Hairline, after the visit, ${fullDate(client.firstFit.date)}`)).toHaveCount(0);
 });
 
-test("Payments: one list of payments and refunds, an entry's invoice, and a document not ready", async ({ page }) => {
+test("Payments: one list of payments and refunds, an entry's documents, and a document not ready", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Payments").click();
@@ -114,20 +114,25 @@ test("Payments: one list of payments and refunds, an entry's invoice, and a docu
   await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
   await expect(page.getByText("Rs. 2,000 including GST at 0%")).toBeVisible();
   await expect(page.getByText(client.reference)).toBeVisible();
-  const invoice = page.getByRole("link", { name: "Tax invoice" });
-  await expect(invoice).toHaveAttribute("href", `/api/documents/${client.service.id}`);
-  // Fetched by the page, whose app.localhost only the browser resolves.
-  const served = await page.evaluate(
-    async (path) => (await fetch(path)).headers.get("Content-Type"),
-    `/api/documents/${client.service.id}`,
-  );
-  expect(served).toBe("application/pdf");
+  const documents = {
+    "Tax invoice": `/api/documents/${client.service.id}`,
+    Receipt: `/api/payments/${client.servicePayment}/receipt`,
+  };
+  for (const [name, path] of Object.entries(documents)) {
+    await expect(page.getByRole("link", { name })).toHaveAttribute("href", path);
+    // Fetched by the page, whose app.localhost only the browser resolves.
+    const served = await page.evaluate(async (url) => (await fetch(url)).headers.get("Content-Type"), path);
+    expect(served).toBe("application/pdf");
+  }
 
+  await page.getByRole("link", { name: "Back to payments" }).click();
+  await entries.nth(2).click();
+  await expect(page.getByRole("heading", { level: 1, name: "First fit" })).toBeVisible();
   await page.getByRole("button", { name: "Receipt" }).click();
   await expect(page.getByText("The receipt is not ready yet.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Notify me" })).toHaveAttribute(
     "href",
-    new RegExp(encodeURIComponent(`Please send me the receipt for ${client.reference}.`)),
+    new RegExp(encodeURIComponent(`Please send me the receipt for first fit on ${fullDate(client.firstFit.date)}.`)),
   );
 
   await page.getByRole("link", { name: "Back to payments" }).click();
@@ -164,7 +169,8 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await page.goto("/payments");
   await expect(page.getByRole("main").getByRole("link")).toHaveCount(3);
   await scan();
-  await page.getByRole("main").getByRole("link").nth(1).click();
+  // The first fit's payment, whose receipt Books has not issued yet.
+  await page.getByRole("main").getByRole("link").nth(2).click();
   await page.getByRole("button", { name: "Receipt" }).click();
   await expect(page.getByText("Notify me")).toBeVisible();
   await scan();

@@ -8,7 +8,7 @@ import { ICONS } from "@maneman/brand/icons";
 import { fullDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
-import { api, documentUrl, type EntryDetail } from "../api.ts";
+import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { messages, payments } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
@@ -95,7 +95,12 @@ function Detail({ entry }: { entry: EntryDetail }) {
               missing="invoice"
               entry={named}
             />
-            <Document name={payments.receipt} href={entry.documents.receipt} missing="receipt" entry={named} />
+            <Document
+              name={payments.receipt}
+              href={entry.documents.receipt === null ? null : receiptUrl(entry.documents.receipt)}
+              missing="receipt"
+              entry={named}
+            />
           </>
         ) : (
           <Document name={payments.voucher} href={entry.voucher} missing="voucher" entry={named} />

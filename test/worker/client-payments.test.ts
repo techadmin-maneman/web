@@ -128,6 +128,35 @@ describe("GET /api/payments", () => {
   });
 });
 
+describe("GET /api/payments/:id/receipt", () => {
+  const recorded = (id: string, booksPaymentId: string) =>
+    env.DB.prepare("UPDATE payments SET books_payment_id = ?1 WHERE id = ?2").bind(booksPaymentId, id).run();
+
+  it("offers the receipt once Books has the payment, and streams it", async () => {
+    await payment(PAY_OLD, P1, null, "2026-09-01T06:00:00.000Z");
+    expect((await get(`/api/payments/${PAY_OLD}/receipt`)).status).toBe(409);
+    await recorded(PAY_OLD, "stub-payment-1");
+    expect(await (await get(`/api/payments/${PAY_OLD}`)).json()).toMatchObject({
+      documents: { invoice: null, receipt: PAY_OLD },
+    });
+    const response = await get(`/api/payments/${PAY_OLD}/receipt`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("application/pdf");
+    expect(response.headers.get("Content-Disposition")).toBe('inline; filename="receipt.pdf"');
+    expect(await response.text()).toMatch(/^%PDF-1\.4/);
+  });
+
+  it("says not ready while Books cannot find it, and not found for another client's payment", async () => {
+    await payment(PAY_OLD, P1, null, "2026-09-01T06:00:00.000Z");
+    await recorded(PAY_OLD, "gone-1");
+    expect((await get(`/api/payments/${PAY_OLD}/receipt`)).status).toBe(409);
+    await person("p2", "+919810000002");
+    await payment(PAY_NEW, "p2", null, "2026-09-01T06:00:00.000Z");
+    await recorded(PAY_NEW, "stub-payment-2");
+    expect((await get(`/api/payments/${PAY_NEW}/receipt`)).status).toBe(404);
+  });
+});
+
 describe("GET /api/documents/:id", () => {
   it("streams a visit's invoice from Books", async () => {
     await visit(VISIT, P1, "stub-41");

@@ -116,3 +116,4 @@ export const api = {
 
 /** A visit's tax invoice, as a PDF the browser opens itself. */
 export const documentUrl = (id: string) => `/api/documents/${id}`;
+export const receiptUrl = (paymentId: string) => `/api/payments/${paymentId}/receipt`;

@@ -41,6 +41,8 @@ export interface FsmContact {
   /** As FSM holds it; the mirror turns it into E.164. */
   readonly mobile: string | null;
   readonly email: string | null;
+  /** The same client in Books, once FSM's sync has put them there. */
+  readonly booksCustomerId?: string | null;
 }
 
 /** A service resource: the technician FSM assigns appointments to. */
