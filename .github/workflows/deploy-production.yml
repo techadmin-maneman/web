@@ -122,7 +122,13 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Migrate the production database
-        run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-prod --env production --remote
+        run: |
+          for attempt in 1 2 3; do
+            node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-prod --env production --remote && exit 0
+            echo "migrations: attempt $attempt failed; Cloudflare may have dropped the reply"
+            sleep 15
+          done
+          exit 1
 
       - name: Check the database is production's
         run: node scripts/mark-database.ts production

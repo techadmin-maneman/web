@@ -48,7 +48,13 @@ jobs:
           npm run check:config -- --require-provisioned
 
       - name: Migrate the staging database
-        run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-staging --env staging --remote
+        run: |
+          for attempt in 1 2 3; do
+            node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-staging --env staging --remote && exit 0
+            echo "migrations: attempt $attempt failed; Cloudflare may have dropped the reply"
+            sleep 15
+          done
+          exit 1
 
       - name: Check the database is staging's
         run: node scripts/mark-database.ts staging

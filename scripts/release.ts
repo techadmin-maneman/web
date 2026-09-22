@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { z } from "zod";
+import { isConnectionLost } from "./lib/cloudflare-api.ts";
 import { isWorkerName, WORKERS, workerNamed, type WorkerName as Worker } from "./lib/workers.ts";
 
 type Environment = "staging" | "production";
@@ -35,18 +36,6 @@ const VersionList = z.array(
 
 /** Cloudflare's error code for "This Worker does not exist on your account". */
 const WORKER_NOT_FOUND = "code: 10007";
-
-/**
- * How a dropped reply from Cloudflare's API reads. The upload itself is taken: the version
- * is on the account, and only the answer was lost, so its ID is asked for again rather than
- * the deploy failing (docs/decisions/0006-deployment-pipeline.md).
- */
-const CONNECTION_LOST = ["terminated", "fetch failed", "socket hang up", "ECONNRESET"];
-
-function isConnectionLost(error: unknown): boolean {
-  const said = error instanceof Error && "stderr" in error ? String(error.stderr) : "";
-  return CONNECTION_LOST.some((phrase) => said.includes(phrase));
-}
 
 function wrangler(worker: Worker, environment: Environment, args: string[], extraEnv: Record<string, string> = {}) {
   return execFileSync(

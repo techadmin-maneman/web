@@ -11,6 +11,7 @@
 import { execFileSync } from "node:child_process";
 import { z } from "zod";
 import { EXPECTED_DATABASE_NAME, isEnvironmentName } from "../src/config/environments.ts";
+import { retryingLostReplies } from "./lib/cloudflare-api.ts";
 
 const environment = process.argv[2];
 if (!isEnvironmentName(environment)) {
@@ -28,10 +29,12 @@ const wranglerTarget =
 const QueryOutput = z.array(z.object({ results: z.array(z.object({ database_name: z.string() })) }));
 
 function runSql(sql: string): unknown {
-  const output = execFileSync(
-    process.execPath,
-    ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...wranglerTarget, "--json", "--command", sql],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
+  const output = retryingLostReplies("database identity", () =>
+    execFileSync(
+      process.execPath,
+      ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...wranglerTarget, "--json", "--command", sql],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
+    ),
   );
   return JSON.parse(output);
 }
