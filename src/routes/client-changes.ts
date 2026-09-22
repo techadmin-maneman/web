@@ -15,6 +15,7 @@ import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelVisit, changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import type { MessagingMessage } from "../queues/messaging.ts";
 import { BookingSchema, moveTermsFor, PriceSchema, startCheckout } from "./client-booking.ts";
 
 const NoticeSchema = z
@@ -27,6 +28,8 @@ const termsOf = (terms: ChangeTerms) => ({
   notice: terms.notice,
   free_until: terms.freeUntil.toISOString(),
   paid: terms.payment?.paid ?? 0,
+  // A credit comes back when changing is free, and is lost inside 24 hours.
+  credit: terms.credit === null ? null : terms.notice === "free" ? ("restored" as const) : ("lost" as const),
 });
 
 const common = {
@@ -35,6 +38,9 @@ const common = {
   notice: NoticeSchema,
   free_until: z.iso.datetime(),
   paid: z.number().int().openapi({ description: "In paise: what the visit's payment holds, carried over or kept." }),
+  credit: z.union([z.enum(["restored", "lost"]), z.null()]).openapi({
+    description: "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late).",
+  }),
 };
 
 const MoveTermsSchema = z
@@ -175,7 +181,9 @@ export function registerClientChanges(app: App): void {
 
     let outcome;
     try {
-      outcome = await cancelVisit(c.env.DB, deps, terms, now, {
+      const notify = (messageId: string) =>
+        c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
+      outcome = await cancelVisit(c.env.DB, { ...deps, notify }, terms, now, {
         labelAsTest: c.var.config.environment !== "production",
         log,
       });

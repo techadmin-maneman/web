@@ -209,6 +209,13 @@ export const booking = {
     // PLACEHOLDER: a free consultation has no payment; the design draws the credit board's button.
     free: "Free",
     confirm: "Confirm visit",
+    // Board C5: a service-visit credit covers it.
+    credit: {
+      zero: "Rs. 0",
+      used: "1 visit credit used",
+      remaining: (left: number) => `${String(left)} remaining`,
+      note: "Cancel inside 24 hours and the credit is gone.",
+    },
   },
   failed: {
     label: "Payment failed",
@@ -255,6 +262,7 @@ export const change = {
     freeNothingPaid: "Free to move.",
     lateFee: (fee: string) => `Moving inside 24 hours costs ${fee}. The balance carries over.`,
     cancelInstead: "Cancel the visit instead",
+    creditCharged: "Charged. The credit is not returned and the new visit is paid separately.",
   },
   cancel: {
     title: (visit: string) => `Cancel ${visit}`,
@@ -267,6 +275,11 @@ export const change = {
     charged: (amount: string) => `Charged. The ${amount} is not refunded.`,
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",
+    creditBack: "Your credit comes back.",
+    // Board C8, inside 24 hours, for a credit booking.
+    creditUsed: (left: string | null, expiry: string) =>
+      left === null ? "Your credit is used." : `Your credit is used. ${left} left, expiring ${expiry}.`,
+    acceptCredit: "Cancel and use credit",
     done: "Cancelled",
     doneLine: (visit: string) => `${visit} is cancelled.`,
     close: "Done",
@@ -413,13 +426,18 @@ export const profile = {
   },
   given: (date: string) => `Given ${date}`,
   notGiven: "Not given",
-  /** The four lines the design shows before a card is turned on (F3); the consent's notice carries them. */
+  /**
+   * The four lines the design shows before a card is turned on (F3), and the naming line the owner ruled beside
+   * them; the consent's notice carries them all.
+   */
   referralCards: {
     lines: [
       "Anyone you send this card to can see your photographs.",
       "They can forward it, and so can anyone who receives it.",
       "You can switch it off at any time, and new opens will show our house example instead.",
       "Cards already delivered stay in people’s chats. We cannot take those back.",
+      // The owner's ruling: a referrer is named on their invite only after reading this (ADR 0025, item 24).
+      "Your first name appears on your invite.",
     ],
     // PLACEHOLDER
     confirm: "Switch on",
@@ -446,6 +464,18 @@ export const profile = {
     label: "Support",
     message: "Message us on WhatsApp",
     hint: "Replies within a working day. Everything in writing.",
+  },
+  // PLACEHOLDER: the design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
+  data: {
+    label: "Your data",
+    body: "Download a copy of everything we hold about you, or raise a concern about how we use it.",
+    download: "Download my data",
+    raise: "Raise a concern",
+    field: "Your concern",
+    send: "Send",
+    cancel: "Not now",
+    sent: "Received. We answer within 30 days, on WhatsApp.",
+    failed: "That did not go through. Please try again.",
   },
   deletion: {
     label: "Delete your account",

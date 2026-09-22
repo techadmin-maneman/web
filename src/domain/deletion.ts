@@ -91,3 +91,29 @@ export async function decideDeletion(
     .run();
   return "decided";
 }
+
+/** Ops are told when a request has waited this long, so it is processed within its 7 days. */
+export const DELETION_ALERT_AFTER_MS = 5 * 24 * 60 * 60 * 1000;
+
+/** Alerts ops, once per request, about deletion requests nearing the end of their 7 days. */
+export async function alertAgedDeletions(
+  db: D1Database,
+  now: Date,
+  alert: (message: string) => Promise<void>,
+): Promise<number> {
+  const aged = await db
+    .prepare(
+      `UPDATE deletion_requests SET alerted_at = ?2
+       WHERE state = 'requested' AND alerted_at IS NULL AND created_at < ?1 RETURNING id`,
+    )
+    .bind(new Date(now.getTime() - DELETION_ALERT_AFTER_MS).toISOString(), now.toISOString())
+    .all<{ id: string }>();
+  const count = aged.results.length;
+  if (count > 0) {
+    await alert(
+      `${String(count)} account deletion request(s) have waited 5 days. Each must be processed within 7 ` +
+        "(ops console, deletion requests).",
+    );
+  }
+  return count;
+}

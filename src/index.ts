@@ -7,9 +7,12 @@ import { byHost } from "./http/surfaces.ts";
 import { createLogger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
-import { handleMessagingBatch } from "./queues/messaging.ts";
+import { handleMessagingBatch, type MessagingMessage } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
 import { syncBooks } from "./domain/books-sync.ts";
+import { queueReminders } from "./domain/visit-messages.ts";
+import { referralPass } from "./scheduled/referrals.ts";
+import { alertAgedDeletions } from "./domain/deletion.ts";
 import { reconcileFsm } from "./scheduled/reconcile-fsm.ts";
 import { sweep } from "./scheduled/sweeper.ts";
 
@@ -73,13 +76,44 @@ export default {
     const log = baseLog.child({ job: "sweeper" });
     await assertOwnDatabase(workerEnv.DB);
     const deps = makeDependencies(workerEnv, log);
-    await sweep(workerEnv, deps, log, { creditFloor: config.settings.tryon.creditFloor });
+    await sweep(workerEnv, deps, log, {
+      creditFloor: config.settings.tryon.creditFloor,
+      fsmErasure: config.providers.FSM_PROVIDER !== "none",
+    });
     // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md), where FSM is connected. A failure is logged and left
     // for the next run; the sweep above is done either way.
     if (config.providers.FSM_PROVIDER !== "none") {
       await reconcileFsm(workerEnv, deps, log.child({ job: "fsm_reconcile" })).catch((error: unknown) => {
         log.error("fsm_reconcile_failed", { error });
       });
+    }
+    await alertAgedDeletions(workerEnv.DB, deps.now(), deps.alert).catch((error: unknown) => {
+      log.error("deletion_alert_failed", { error });
+    });
+    const referralMessages = await referralPass(workerEnv.DB, deps.now(), log.child({ job: "referrals" })).catch(
+      (error: unknown) => {
+        log.error("referrals_failed", { error });
+        return [];
+      },
+    );
+    if (referralMessages.length > 0) {
+      await workerEnv.MESSAGE_QUEUE.sendBatch(
+        referralMessages.map((id) => ({
+          body: { message_id: id, request_id: "referrals" } satisfies MessagingMessage,
+        })),
+      );
+    }
+    if (config.settings.messaging.enabled) {
+      const reminders = await queueReminders(workerEnv.DB, deps.now()).catch((error: unknown) => {
+        log.error("visit_reminders_failed", { error });
+        return [];
+      });
+      if (reminders.length > 0) {
+        await workerEnv.MESSAGE_QUEUE.sendBatch(
+          reminders.map((id) => ({ body: { message_id: id, request_id: "reminders" } satisfies MessagingMessage })),
+        );
+        log.info("visit_reminders_queued", { count: reminders.length });
+      }
     }
     if (config.providers.FSM_PROVIDER !== "none" && config.providers.BOOKS_PROVIDER !== "none") {
       const booksLog = log.child({ job: "books_sync" });

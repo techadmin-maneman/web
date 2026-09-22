@@ -23,6 +23,7 @@ import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES } from "../policy/consents.ts";
+import { revokeCard } from "../domain/referral-cards.ts";
 
 /** Number changes a client may start in a day. */
 const NUMBER_CHANGES_PER_DAY = 3;
@@ -285,6 +286,8 @@ export function registerClientProfile(app: App): void {
         now,
       ),
     ]);
+    // "You can switch it off at any time, and new opens will show our house example instead."
+    if (purpose === "photos_referral_cards" && !granted) await revokeCard(db, c.env.REFERRAL_CARDS, personId, now);
     return c.json({ purpose, granted, since: now.toISOString() }, 200);
   });
 

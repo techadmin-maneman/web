@@ -1138,6 +1138,145 @@ Request body:
 }
 ```
 
+### PUT /api/refer/card
+
+Upload the client's referral card: the body is the JPEG itself
+
+**200**: Stored as the card's next version
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "additionalProperties": false
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: consent_required: the client has not agreed to photographs on referral cards
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: photo_invalid_file: not a 1200 x 630 JPEG under 300 KB
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### DELETE /api/refer/card
+
+Take the client's card down: new opens show the house card
+
+**204**: Revoked, or there was none
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/refer
+
+The client's code, credits and fitted friends
+
+**200**: Their referrals
+
+```json
+{
+  "$ref": "#/components/schemas/Refer"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/me/export
+
+Everything held about the client, to download
+
+**200**: A JSON file, maneman-my-data.json
+
+```json
+{
+  "type": "object",
+  "additionalProperties": {}
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/grievances
+
+Raise a grievance about how the client's data is handled
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: Received
+
+```json
+{
+  "$ref": "#/components/schemas/Grievance"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -1180,7 +1319,8 @@ Request body:
             "not_bookable",
             "hold_expired",
             "not_changeable",
-            "terms_changed"
+            "terms_changed",
+            "consent_required"
           ]
         },
         "request_id": {
@@ -1480,8 +1620,15 @@ Request body:
       "description": "The next visit that has not happened, from FSM: a consultation for a lead."
     },
     "credits": {
-      "type": "null",
-      "description": "The credit tile: balance and earliest expiry. Arrives with the credit ledger (P2-M3)."
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Credits"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The credit tile: balance and earliest expiry; null with none left."
     },
     "prompt": {
       "type": "null",
@@ -1642,6 +1789,37 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Display name and initials only."
+}
+```
+
+### Credits
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer",
+      "description": "Service-visit credits left."
+    },
+    "earliest_expiry": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the soonest expire."
+    }
+  },
+  "required": [
+    "visits",
+    "earliest_expiry"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -2865,6 +3043,27 @@ Request body:
         }
       ],
       "description": "The visit this hold moves; null for a new booking."
+    },
+    "credit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "remaining": {
+              "type": "integer",
+              "description": "Credits left once this one is used."
+            }
+          },
+          "required": [
+            "remaining"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A service-visit credit covers it, so payment is skipped (board C5)."
     }
   },
   "required": [
@@ -2882,7 +3081,8 @@ Request body:
     "state",
     "paid",
     "visit_id",
-    "moves_visit_id"
+    "moves_visit_id",
+    "credit"
   ],
   "additionalProperties": false
 }
@@ -3002,6 +3202,21 @@ Request body:
       "type": "integer",
       "description": "In paise: what the visit's payment holds, carried over or kept."
     },
+    "credit": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "restored",
+            "lost"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late)."
+    },
     "cost": {
       "type": "string",
       "enum": [
@@ -3028,6 +3243,7 @@ Request body:
     "notice",
     "free_until",
     "paid",
+    "credit",
     "cost",
     "price"
   ],
@@ -3070,6 +3286,21 @@ Request body:
       "type": "integer",
       "description": "In paise: what the visit's payment holds, carried over or kept."
     },
+    "credit": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "restored",
+            "lost"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late)."
+    },
     "refund": {
       "type": "integer",
       "description": "In paise: what goes back to the payment's source."
@@ -3100,10 +3331,104 @@ Request body:
     "notice",
     "free_until",
     "paid",
+    "credit",
     "refund",
     "kept",
     "destination",
     "cancelled"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Refer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "link": {
+      "type": "string",
+      "description": "The invite link to share: maneman.in/r/<code>."
+    },
+    "credits": {
+      "$ref": "#/components/schemas/Credits"
+    },
+    "card": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "house",
+            "personal"
+          ]
+        },
+        "version": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "state",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "fitted": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "month": {
+            "type": "string",
+            "description": "YYYY-MM, in India."
+          }
+        },
+        "required": [
+          "first_name",
+          "month"
+        ]
+      },
+      "description": "Friends whose first fit closed as done, most recent first."
+    }
+  },
+  "required": [
+    "code",
+    "link",
+    "credits",
+    "card",
+    "fitted"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Grievance
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "open"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "state"
   ],
   "additionalProperties": false
 }

@@ -246,21 +246,30 @@ describe("POST /api/lead: the staging test token", () => {
   const REAL_SECRET = "0x4AAAAAAA-the-real-widget-secret";
   const TEST_SECRET = "1x0000000000000000000000000000000AA";
 
-  /** The body of the siteverify request the Worker sent for this token. */
-  async function siteverifyBody(token: string, acceptTurnstileTestToken: boolean): Promise<string> {
+  /** The lead's answer, and the body of any siteverify request the Worker sent for this token. */
+  async function siteverify(
+    token: string,
+    acceptTurnstileTestToken: boolean,
+  ): Promise<{ status: number; body: string }> {
     const turnstile = fakeFetch({ [TURNSTILE_URL]: turnstilePasses });
     const app = appFor("local", fakeDependencies({ fetch: turnstile.fetch }), {
       turnstileSecret: REAL_SECRET,
       acceptTurnstileTestToken,
     });
-    await request(app, "/api/lead", post({ ...BOOKING, turnstile_token: token }), { CRM_QUEUE: fakeQueue() });
-    return turnstile.calls[0]?.body ?? "";
+    const res = await request(app, "/api/lead", post({ ...BOOKING, turnstile_token: token }), {
+      CRM_QUEUE: fakeQueue(),
+    });
+    return { status: res.status, body: turnstile.calls[0]?.body ?? "" };
   }
 
-  it("checks Cloudflare's dummy token against the always-pass test secret when the switch is on", async () => {
-    const body = await siteverifyBody("XXXX.DUMMY.TOKEN.XXXX", true);
-    expect(body).toContain(TEST_SECRET);
-    expect(body).not.toContain(REAL_SECRET);
+  const siteverifyBody = async (token: string, on: boolean) => (await siteverify(token, on)).body;
+
+  // Cloudflare's test secret passes that token by definition, so asking decides nothing and only
+  // makes the tests and the staging proofs depend on reaching Cloudflare.
+  it("passes Cloudflare's dummy token without asking Cloudflare, when the switch is on", async () => {
+    const { status, body } = await siteverify("XXXX.DUMMY.TOKEN.XXXX", true);
+    expect(status).toBe(201);
+    expect(body).toBe("");
   });
 
   it("checks every other token, and the dummy token when the switch is off, against the real secret", async () => {

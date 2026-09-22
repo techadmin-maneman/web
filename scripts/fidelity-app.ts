@@ -195,6 +195,7 @@ const hold = (type: string, price: object, lateFee: object | null) => ({
   paid: false,
   visit_id: null,
   moves_visit_id: null,
+  credit: null,
 });
 const SERVICE_HOLD = hold("service", { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 }, null);
 const FIRST_FIT_HOLD = hold(
@@ -551,6 +552,16 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
     .screenshot();
   await pair(OUT, WIDTH, "c5-first-fit", await firstFitFrame, await shot(firstFit));
   await firstFit.close();
+
+  // A service visit a credit covers: the design's two credits, one used.
+  const credited = await openApp(browser, "/visits", api({ ...SERVICE_HOLD, credit: { remaining: 1 } }), IN_2030);
+  await throughTheSheet(credited, false);
+  const creditFrame = design
+    .locator('[data-screen-label="Booking · credit"] > div')
+    .filter({ has: design.getByText("Credit covers it · payment skipped", { exact: true }) })
+    .screenshot();
+  await pair(OUT, WIDTH, "c5-credit", await creditFrame, await shot(credited));
+  await credited.close();
 
   const failed = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030, fakeCheckout("failed"));
   await throughTheSheet(failed, false);

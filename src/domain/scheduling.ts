@@ -222,13 +222,15 @@ export async function holdSlot(
     date: string;
     window: BookingWindow;
     price: Price;
+    /** Paid for with a service-visit credit instead of money (ADR 0033). */
+    useCredit?: boolean;
     /** A move in place, which keeps the visit's technician; or a new visit replacing it. */
     moves?: { readonly visit: Moving; readonly kind: "move" | "replace" };
   },
   now: Date,
   holdSeconds: number,
 ): Promise<Hold | null> {
-  const { personId, type, date, window, price, moves } = input;
+  const { personId, type, date, window, price, moves, useCredit = false } = input;
   const moving = moves?.kind === "move" ? moves.visit : null;
   const [technicians, regular, held] = await Promise.all([
     techniciansFor(db, moving),
@@ -258,8 +260,9 @@ export async function holdSlot(
         db
           .prepare(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
-               amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14)`,
+               amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
+               use_credit)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15)`,
           )
           .bind(
             id,
@@ -276,6 +279,7 @@ export async function holdSlot(
             at,
             moves?.visit.visitId ?? null,
             moves?.kind ?? null,
+            useCredit ? 1 : 0,
           ),
         ...claimsOf(start, type, window).map((claim) =>
           db

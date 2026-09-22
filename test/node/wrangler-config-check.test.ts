@@ -31,7 +31,7 @@ describe("mm-api wrangler config", () => {
     [
       "staging drops its buckets",
       ["env.staging.r2_buckets", DELETE],
-      "env.staging: r2_buckets is not redeclared (the top level declares UPLOADS, RESULTS, CLIENT_PHOTOS)",
+      "env.staging: r2_buckets is not redeclared (the top level declares UPLOADS, RESULTS, CLIENT_PHOTOS, REFERRAL_CARDS)",
     ],
     ["production drops its vars", ["env.production.vars", DELETE], "env.production: vars is not redeclared"],
     [

@@ -19,6 +19,7 @@ import type { App, AppEnv } from "../app.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS, WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { startBooking } from "../domain/bookings.ts";
+import { creditBalance } from "../domain/credits.ts";
 import { priceOf, type Price } from "../domain/price-book.ts";
 import {
   activeTechnicians,
@@ -94,6 +95,14 @@ const HoldSchema = z
     moves_visit_id: z
       .union([z.uuid(), z.null()])
       .openapi({ description: "The visit this hold moves; null for a new booking." }),
+    credit: z
+      .union([
+        z
+          .object({ remaining: z.number().int().openapi({ description: "Credits left once this one is used." }) })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({ description: "A service-visit credit covers it, so payment is skipped (board C5)." }),
   })
   .strict()
   .openapi("Hold");
@@ -220,6 +229,8 @@ interface HoldRow {
   technician_initials: string;
   appointment_id: string | null;
   moves_appointment_id: string | null;
+  use_credit: number;
+  person_id: string;
   paid: number;
 }
 
@@ -243,12 +254,21 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     paid: row.paid === 1,
     visit_id: row.appointment_id,
     moves_visit_id: row.moves_appointment_id,
+    credit:
+      row.use_credit === 1
+        ? {
+            remaining: Math.max(
+              0,
+              (await creditBalance(db, row.person_id, now)).visits - (row.state === "held" ? 1 : 0),
+            ),
+          }
+        : null,
   };
 }
 
 const HOLD_QUERY = `SELECT h.id, h.type, h.date, h.window_label, h.start_unit, h.amount, h.amount_ex_gst, h.gst_percent,
     h.state, h.expires_at, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
-    h.moves_appointment_id,
+    h.moves_appointment_id, h.use_credit, h.person_id,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
   FROM slot_holds h JOIN technicians t ON t.id = h.technician_id WHERE h.id = ?1 AND h.person_id = ?2`;
 
@@ -378,9 +398,14 @@ export function registerClientBooking(app: App): void {
       move === null
         ? undefined
         : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
+    // A new service visit, or one replacing a moved one, is paid with a credit whenever the client has one.
+    const useCredit =
+      type === "service" &&
+      moves?.kind !== "move" &&
+      (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
     const hold = await holdSlot(
       c.env.DB,
-      { personId: session.subjectId, type, date, window, price, ...(moves === undefined ? {} : { moves }) },
+      { personId: session.subjectId, type, date, window, price, useCredit, ...(moves === undefined ? {} : { moves }) },
       now,
       HOLD_SECONDS,
     );
