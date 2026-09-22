@@ -191,6 +191,8 @@
   --norwood-gap: clamp(12px, 1.6vw, 20px);
   --norwood-flow-basis: 150px;
   --norwood-flow-max: 210px;
+  /* Five late cards at their widest: the late row's width, from the left edge. */
+  --norwood-flow-row-max: calc(5 * var(--norwood-flow-max) + 4 * var(--norwood-gap));
   --norwood-card-pad: clamp(14px, 1.6vw, 20px);
   --norwood-late-gap: clamp(40px, 5vw, 64px);
   --norwood-late-pad: clamp(32px, 4vw, 48px);

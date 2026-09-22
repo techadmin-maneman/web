@@ -360,7 +360,7 @@ Request body:
 
 ### GET /api/tryon/result/{job_id}
 
-The result, for the session the gate set
+The result, for the gate's session or the browser that made the look
 
 **200**: Ready
 
@@ -378,7 +378,7 @@ The result, for the session the gate set
 }
 ```
 
-**403**: session_required: no session, or not this job's
+**403**: session_required: neither the gate's session nor this browser's look is this job's
 
 ```json
 {
@@ -399,6 +399,26 @@ The result, for the session the gate set
 ```json
 {
   "$ref": "#/components/schemas/ResultFailed"
+}
+```
+
+### GET /api/tryon/look
+
+The look this browser already has, from its mm_look cookie
+
+**200**: The browser's look
+
+```json
+{
+  "$ref": "#/components/schemas/Look"
+}
+```
+
+**404**: not_found: this browser has no look, or its result has been deleted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
@@ -1037,6 +1057,68 @@ Request body:
   "required": [
     "state",
     "failure_code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Look
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "awaiting_upload",
+        "queued",
+        "rendering",
+        "downloading",
+        "ready",
+        "failed",
+        "expired"
+      ]
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "crown",
+        "receding",
+        "advanced"
+      ]
+    },
+    "preset": {
+      "type": "string",
+      "enum": [
+        "full-natural-short",
+        "full-straight-medium",
+        "medium-natural-short",
+        "medium-receded-medium",
+        "light-natural-short",
+        "light-receded-cropped"
+      ]
+    },
+    "failure_code": {
+      "type": "string",
+      "enum": [
+        "photo_unreadable",
+        "photo_invalid_file",
+        "render_failed",
+        "busy"
+      ],
+      "description": "Only when state is failed."
+    }
+  },
+  "required": [
+    "job_id",
+    "state",
+    "stage",
+    "preset"
   ],
   "additionalProperties": false
 }

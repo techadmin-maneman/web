@@ -1,12 +1,14 @@
 // The try-on's two cookies. mm_tryon, set by the gate, lets a person see their
 // result for 30 minutes; its value is the session's ID, and D1 says what it
-// may see. mm_look names the browser's render, for one look per visitor.
+// may see. mm_look names the browser's render, signed so it cannot be made
+// up: it keeps the browser to one look, and lets it see that look again.
 
 import type { Context } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import type { AppEnv } from "../app.ts";
 import { LOOK_COOKIE, LOOK_COOKIE_TTL_MS, SESSION_COOKIE, SESSION_TTL_MS } from "../config/tryon.ts";
 import { loadSession, type SessionRow } from "../domain/tryon.ts";
+import { signToken, verifyToken } from "../lib/signed-token.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -32,8 +34,10 @@ export function setSessionCookie(c: Context<AppEnv>, sessionId: string): void {
  * Best-effort only: clearing cookies gets round it. The daily ceiling is the
  * hard limit on spend.
  */
-export function setLookCookie(c: Context<AppEnv>, jobId: string): void {
-  setCookie(c, LOOK_COOKIE, jobId, {
+export async function setLookCookie(c: Context<AppEnv>, jobId: string): Promise<void> {
+  const expiresAt = new Date(c.var.deps.now().getTime() + LOOK_COOKIE_TTL_MS);
+  const value = await signToken(c.var.config.settings.tryon.linkSigningKey, "look", jobId, expiresAt);
+  setCookie(c, LOOK_COOKIE, value, {
     httpOnly: true,
     secure: true,
     sameSite: "Strict",
@@ -42,8 +46,10 @@ export function setLookCookie(c: Context<AppEnv>, jobId: string): void {
   });
 }
 
-/** The job the browser's mm_look cookie names, if it is a UUID. */
-export function lookCookieJob(c: Context<AppEnv>): string | null {
-  const jobId = getCookie(c, LOOK_COOKIE);
-  return jobId !== undefined && UUID.test(jobId) ? jobId : null;
+/** The job the browser's mm_look cookie names, if the cookie is genuine and unexpired. */
+export async function lookCookieJob(c: Context<AppEnv>): Promise<string | null> {
+  const value = getCookie(c, LOOK_COOKIE);
+  if (value === undefined) return null;
+  const jobId = await verifyToken(c.var.config.settings.tryon.linkSigningKey, "look", value, c.var.deps.now());
+  return jobId !== null && UUID.test(jobId) ? jobId : null;
 }

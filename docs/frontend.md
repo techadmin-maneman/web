@@ -63,7 +63,7 @@ The site calls `mm-api` on its own host, `/api/*`. The request and response type
 - **Idempotency.** Each submission attempt sends a new `Idempotency-Key`.
 - **Attribution.** The first page of a visit stores its campaign tags, referring site and landing path in `sessionStorage` (`site/src/lib/attribution.ts`). Never a query string.
 
-- **The try-on.** `site/src/lib/tryon.ts` chains the calls. Continue on the consent screen prepares the photograph (`photo.ts`: resize, re-encode and the hair colour from `hair-colour.ts`) and uploads it; Generate starts the render once the upload is done; the gate claims the result while it renders; the result screen asks for it every 3 seconds. `tryon-errors.ts` decides which error the visitor sees.
+- **The try-on.** `site/src/lib/tryon.ts` chains the calls. Continue on the consent screen prepares the photograph (`photo.ts`: resize, re-encode and the hair colour from `hair-colour.ts`) and uploads it; Generate starts the render once the upload is done; the gate, if the visitor gives a number, claims the result while it renders; the result screen asks for it every 3 seconds. A browser that has had its look is shown it again (`GET /api/tryon/look`, ADR 0024). `tryon-errors.ts` decides which error the visitor sees.
 
 The browser tests run the site against a local `mm-api` with stub providers (`playwright.config.ts`). Run `node scripts/ensure-dev-vars.ts && npm run db:local` once first.
 

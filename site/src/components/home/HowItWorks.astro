@@ -60,10 +60,18 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
     padding: var(--how-step-pad) 0;
     border-bottom: var(--hairline) solid var(--paper-line);
   }
+  /* v2 sits the title on the number's baseline; the owner asked for the text to start at the number's top. */
   .text {
     display: flex;
     gap: var(--how-number-gap);
-    align-items: baseline;
+    align-items: flex-start;
+  }
+  /* Trimmed to the capitals, so the tops of the number and the title line up exactly; the title keeps its space below. */
+  .number {
+    text-box: trim-both cap alphabetic;
+  }
+  h3 {
+    text-box: trim-start cap alphabetic;
   }
   .number {
     font-family: var(--font-serif);

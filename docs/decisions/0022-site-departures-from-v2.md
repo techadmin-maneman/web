@@ -67,13 +67,13 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 
 ## The try-on (F3)
 
-18. **The error screen.** v2 has one error screen, for a photograph that cannot be read. The prompt has `render_failed` and `busy` replace only its heading and body, and the site does the same for four kinds of error:
+18. **The error screen.** v2 has one error screen, for a photograph that cannot be read. The prompt has `render_failed` and `busy` replace its heading and body, and the site uses the screen for four kinds of error:
     - a photograph the browser, the API or the renderer cannot use: v2's words;
     - a failed render;
     - a busy service, which also covers the rate limits, a failed Turnstile check and an API that cannot be reached;
-    - one look per visitor (`look_limit_reached`).
+    - one look per visitor, now only when that look can no longer be shown (33).
 
-    v2's frame label ("Cannot read the photograph") and step label ("Cannot use this photograph") stay for every kind, though they blame the photograph for errors that are not its fault. **Raised for a design pass.** The one-look screen hides _Choose another_, since there is no second photograph to choose, and keeps _Book a visit instead_. The text is in `site.ts`.
+    v2's step label ("Cannot use this photograph") and frame label ("Cannot read the photograph") blamed the photograph for every kind. **The owner ruled on 22 September 2026 that they must not:** each kind now has its own step label, frame label, heading and body, and only the photograph's are v2's. The one-look screen has no _Choose another_. The text is in `site.ts`.
 
 19. **When an error shows.** A refused upload shows as soon as it happens, while the visitor is still choosing a stage or a look, rather than after Generate. A failed render shows during processing, on the gate, or on the result screen.
 
@@ -115,3 +115,13 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
     - a black suit counts as scenery, which takes black hair out of the sample.
 
     The render comes out right for dark hair, since `unknown` goes to `pro_black`. It would be wrong for grey or white hair in a photograph like it. **Raised:** improving the detector means departing from the harness.
+
+## The owner's review of staging (22 September 2026)
+
+32. **The number at the gate is optional.** The gate's approved copy says the result opens "either way", but v2's form required the name and the number. **Ruling: the copy wins.** Both fields left empty open the result; either one filled in needs both, and the claim then saves the lead and sends the WhatsApp copy. The API change behind it is in ADR 0024.
+
+33. **A returning visitor sees their look.** v2 has no such screen: a second photograph ended on "You have had your look." Now the page shows the first look again, on the result screen, as the result alone, since the photograph is not kept. The title is "The look you had." with a line saying each visitor gets one simulation. Download and WhatsApp work as usual. The error screen appears only once that look has expired.
+
+34. **The Norwood scale's late stages start at the left edge.** v2 centres stages III to VII, and on a phone leaves VII alone in the middle of its row. **Ruling: align them.** The late cards are a grid from the left edge, at v2's card size. Each row of cards shares one title height (CSS subgrid), so the descriptions start level however the titles wrap.
+
+35. **How it works: the text starts at the top of the number.** v2 sits each title on the baseline of its large number, so the text starts below the number's top. **Ruling: top-align.** The title's capitals now line up with the number's, trimmed with `text-box`, which Chrome and Safari support. Other browsers align the two boxes, a few pixels apart.

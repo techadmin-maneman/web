@@ -514,6 +514,63 @@
         ],
         "additionalProperties": false
       },
+      "Look": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "awaiting_upload",
+              "queued",
+              "rendering",
+              "downloading",
+              "ready",
+              "failed",
+              "expired"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "crown",
+              "receding",
+              "advanced"
+            ]
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "full-natural-short",
+              "full-straight-medium",
+              "medium-natural-short",
+              "medium-receded-medium",
+              "light-natural-short",
+              "light-receded-cropped"
+            ]
+          },
+          "failure_code": {
+            "type": "string",
+            "enum": [
+              "photo_unreadable",
+              "photo_invalid_file",
+              "render_failed",
+              "busy"
+            ],
+            "description": "Only when state is failed."
+          }
+        },
+        "required": [
+          "job_id",
+          "state",
+          "stage",
+          "preset"
+        ],
+        "additionalProperties": false
+      },
       "ErasureResponse": {
         "type": "object",
         "properties": {
@@ -1070,7 +1127,7 @@
     },
     "/api/tryon/result/{job_id}": {
       "get": {
-        "summary": "The result, for the session the gate set",
+        "summary": "The result, for the gate's session or the browser that made the look",
         "parameters": [
           {
             "schema": {
@@ -1104,7 +1161,7 @@
             }
           },
           "403": {
-            "description": "session_required: no session, or not this job's",
+            "description": "session_required: neither the gate's session nor this browser's look is this job's",
             "content": {
               "application/json": {
                 "schema": {
@@ -1129,6 +1186,33 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultFailed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tryon/look": {
+      "get": {
+        "summary": "The look this browser already has, from its mm_look cookie",
+        "responses": {
+          "200": {
+            "description": "The browser's look",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Look"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: this browser has no look, or its result has been deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

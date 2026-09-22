@@ -19,6 +19,7 @@ const PAGES = [
   "/try?state=processing",
   "/try?state=gate",
   "/try?state=result",
+  "/try?state=result&kind=returning",
   "/try?state=error",
   "/try?state=error&kind=lookLimit",
   "/book",
@@ -51,6 +52,7 @@ for (const path of PAGES) {
 
 test("the forms' error states meet WCAG 2.2 AA", async ({ page }) => {
   await visit(page, "/try?state=gate");
+  await page.getByLabel("Mobile").fill("98100");
   await page.getByRole("button", { name: "Show me the result" }).click();
   await expect(page.getByText("Tell us what to call you.")).toBeVisible();
   expect(await violations(page)).toEqual([]);

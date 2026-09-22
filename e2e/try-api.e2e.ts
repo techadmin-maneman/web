@@ -33,7 +33,24 @@ test("a drawn photograph is rendered, and claimed before the render finishes", a
   await expect(page.getByText("A copy is on its way to", { exact: false })).toBeVisible();
 });
 
-test("the browser that has had its look is refused a second photograph", async ({ page }) => {
+test("the number is optional: the render shows with no gate, and no lead is made", async ({ page }) => {
+  test.setTimeout(120_000);
+  await fakeTurnstile(page);
+  await page.clock.install();
+  await visit(page, "/try");
+  await throughToGenerate(page);
+  await page.clock.runFor(20_000);
+  const claims: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/api/tryon/claim")) claims.push(request.url());
+  });
+  await page.getByRole("button", { name: "Show me the result" }).click();
+  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible({ timeout: 90_000 });
+  expect(claims).toEqual([]);
+});
+
+test("the browser that has had its look is shown it again, not a second render", async ({ page }) => {
+  test.setTimeout(120_000);
   await fakeTurnstile(page);
   await page.clock.install();
   await visit(page, "/try");
@@ -41,7 +58,7 @@ test("the browser that has had its look is refused a second photograph", async (
   await throughToGenerate(page);
   expect((await generated).status()).toBe(202);
 
-  // The render set the mm_look cookie; a second photograph is refused before it is uploaded.
+  // The render set the mm_look cookie; a second photograph is refused, and the first look shown.
   await visit(page, "/try");
   await page
     .locator('input[type="file"]')
@@ -51,5 +68,6 @@ test("the browser that has had its look is refused a second photograph", async (
   const refused = page.waitForResponse("**/api/tryon/upload-url");
   await page.getByRole("button", { name: "Continue" }).click();
   expect((await refused).status()).toBe(403);
-  await expect(page.getByRole("heading", { name: "You have had your look." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The look you had." })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible({ timeout: 90_000 });
 });
