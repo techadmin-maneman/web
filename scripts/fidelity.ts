@@ -11,11 +11,11 @@
 // Writes docs/fidelity/<width>/<nn>-<name>.jpg: the design on the left, the
 // build on the right. Differences in type, spacing, colour or order are defects.
 
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { rmSync, writeFileSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
-import sharp from "sharp";
+import { pair as pairIn, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
 const WIDTHS = [390, 1440] as const;
@@ -24,13 +24,6 @@ const DESIGN_DIR = resolve("design");
 const SITE = "http://127.0.0.1:4311";
 const DESIGN = "http://127.0.0.1:4312/Mane%20Man%20Site%20v2.dc.html";
 const OUT = resolve("docs/fidelity");
-
-const LIBRARIES: Readonly<Record<string, string>> = {
-  "https://unpkg.com/react@18.3.1/umd/react.production.min.js": "node_modules/react/umd/react.production.min.js",
-  "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":
-    "node_modules/react-dom/umd/react-dom.production.min.js",
-  "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js": "node_modules/@babel/standalone/babel.min.js",
-};
 
 /** v2's city list, as GET /api/cities answers it. */
 const CITIES = [
@@ -61,9 +54,6 @@ const HOME_SECTIONS = [
   "closing",
 ] as const;
 
-const STILL =
-  "html { scroll-behavior: auto !important; } *, *::before, *::after { transition: none !important; animation: none !important; caret-color: transparent !important; }";
-
 async function preparePage(browser: Browser, width: number): Promise<Page> {
   // The site's content security policy would refuse the style that stills the page; screenshots set it aside.
   const page = await browser.newPage({ viewport: { width, height: 900 }, bypassCSP: true });
@@ -73,15 +63,7 @@ async function preparePage(browser: Browser, width: number): Promise<Page> {
   await page.route("https://challenges.cloudflare.com/turnstile/**", (route) =>
     route.fulfill({ contentType: "text/javascript", body: 'window.turnstile = { render: () => "fake", reset() {} };' }),
   );
-  await page.route("https://unpkg.com/**", async (route) => {
-    const file = LIBRARIES[route.request().url()];
-    if (file === undefined) return route.abort();
-    return route.fulfill({
-      body: readFileSync(file),
-      contentType: "text/javascript",
-      headers: { "Access-Control-Allow-Origin": "*" },
-    });
-  });
+  await routeDesignLibraries(page);
   return page;
 }
 
@@ -157,39 +139,9 @@ async function shoot(page: Page, selector: string | null): Promise<Buffer> {
   return element.screenshot();
 }
 
-/** The two screenshots side by side, the design on the left. */
-async function pair(width: number, name: string, design: Buffer, built: Buffer): Promise<void> {
-  const scale = width > 1000 ? 0.5 : 1;
-  const [left, right] = await Promise.all(
-    [design, built].map(async (image) => {
-      const meta = await sharp(image).metadata();
-      const scaled = await sharp(image)
-        .resize({ width: Math.round(meta.width * scale) })
-        .toBuffer({ resolveWithObject: true });
-      return scaled;
-    }),
-  );
-  if (left === undefined || right === undefined) throw new Error("screenshot missing");
-  const gap = 16;
-  const label = 28;
-  const height = Math.max(left.info.height, right.info.height) + label;
-  const total = left.info.width + gap + right.info.width;
-  const caption = Buffer.from(
-    `<svg width="${String(total)}" height="${String(label)}"><style>text{font:14px sans-serif;fill:#5F5851}</style>` +
-      `<text x="4" y="19">design · ${name} · ${String(width)} px</text>` +
-      `<text x="${String(left.info.width + gap + 4)}" y="19">built</text></svg>`,
-  );
-  const dir = `${OUT}/${String(width)}`;
-  mkdirSync(dir, { recursive: true });
-  await sharp({ create: { width: total, height, channels: 3, background: "#ffffff" } })
-    .composite([
-      { input: caption, top: 0, left: 0 },
-      { input: left.data, top: label, left: 0 },
-      { input: right.data, top: label, left: left.info.width + gap },
-    ])
-    .jpeg({ quality: 70 })
-    .toFile(`${dir}/${name}.jpg`);
-  console.log(`  ${String(width)} ${name}`);
+/** The two screenshots side by side, in docs/fidelity/<width>. */
+function pair(width: number, name: string, design: Buffer, built: Buffer): Promise<void> {
+  return pairIn(`${OUT}/${String(width)}`, width, name, design, built);
 }
 
 // ---- The screens ------------------------------------------------------------
@@ -322,14 +274,14 @@ async function run(browser: Browser, width: number): Promise<void> {
 const servers: Server[] = [await serveDirectory(SITE_DIR, 4311), await serveDirectory(DESIGN_DIR, 4312)];
 const browser = await chromium.launch();
 try {
-  rmSync(OUT, { recursive: true, force: true });
+  for (const width of WIDTHS) rmSync(`${OUT}/${String(width)}`, { recursive: true, force: true });
   for (const width of WIDTHS) {
     console.log(`fidelity: ${String(width)} px`);
     await run(browser, width);
   }
   writeFileSync(
     `${OUT}/README.md`,
-    "# Fidelity screenshots\n\nMade by `npm run fidelity`: the design on the left, the build on the right, at 390 and 1440 px. The method, including Phase 2's boards, is in `docs/fidelity-method.md`.\n",
+    "# Fidelity screenshots\n\nThe design on the left, the build on the right. `npm run fidelity` makes the public site's, at 390 and 1440 px; `npm run fidelity:app` makes the client app's, in `client-app/`. The method, including Phase 2's boards, is in `docs/fidelity-method.md`.\n",
   );
   console.log(`fidelity: written to ${OUT}`);
 } finally {

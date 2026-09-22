@@ -33,6 +33,7 @@
     "dev:app": "node node_modules/vite/bin/vite.js --config apps/app/vite.config.ts",
     "check:site": "node scripts/build-site.ts --check",
     "fidelity": "node scripts/fidelity.ts",
+    "fidelity:app": "node scripts/fidelity-app.ts",
     "test:e2e": "playwright test",
     "lighthouse": "node scripts/lighthouse.ts",
     "fonts": "node scripts/subset-fonts.ts"

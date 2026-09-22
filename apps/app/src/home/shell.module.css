@@ -93,6 +93,11 @@
   overscroll-behavior: contain;
 }
 
+/* Under the profile's header the page starts 24 px down (board G1), where Home's starts 28 (B2). */
+.titledPage {
+  padding-top: var(--sp-24);
+}
+
 /* Installed on an iPhone, the app runs to the bottom edge (viewport-fit=cover): the tabs' ground does too, and their row keeps clear of the home indicator. */
 .tabs {
   display: grid;

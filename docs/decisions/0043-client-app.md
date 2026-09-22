@@ -54,7 +54,7 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
 ## Consequences
 
 - **The first load is 70.9 KB of gzipped JavaScript,** under half the budget, before the screens after login are added.
-- **This step builds the shell and board A1 only.** The login (A1–A3), Home, the tabs, Profile (G1–G2), and the manifest and service worker follow below. Their fidelity pairs against the boards follow in P2-F1.5.
+- **This step builds the shell and board A1 only.** The login (A1–A3), Home, the tabs, Profile (G1–G2), and the manifest and service worker follow below. Their fidelity pairs against the boards follow in P2-F1.5, below.
 - **A new Worker's first deploy is a bootstrap** (runbook, step 5): `mm-app-staging` was bootstrapped on 22 September 2026. `mm-app-production` waits for the go-ahead.
 - **The static server can now keep the Host header** (`keepHost`). The public site's tests do not use it and are unchanged.
 
@@ -90,3 +90,14 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
 - **Board B3's three states.** Loading is the design's two blocks, used while the profile loads. Offline is the ink banner, shown for a kept Home and whenever the connection drops. The error is the design's, with Try again and Message us.
   - **The error leaves out the design's "Your visit is still booked."** When the app cannot reach the API it cannot know that there is a visit. The line returns with Home's own visit data (P2-F2).
 - **Tests.** The app's browser tests block service workers, since one would answer requests a test fakes; `e2e/app/pwa.e2e.ts` allows them and covers installability (Chrome's own check), the offline Home, the kept files, and logout. The JavaScript budget counts the service worker: 79.8 KB gzipped in all.
+
+## Fidelity pairs (P2-F1.5)
+
+- **`npm run fidelity:app` pairs each frame P2-F1 builds with the app in the same state** (`scripts/fidelity-app.ts`, method in `docs/fidelity-method.md`). The API is answered with the design's own example, so no mm-api is needed. The Phase 1 harness now shares its library routing and pairing (`scripts/lib/fidelity.ts`), and its screenshots are unchanged.
+- **Defects the pairs found, now fixed:**
+  - the tab bar scrolled away on a long page (fixed in P2-F1.4);
+  - A2's automatic-reading line used the WhatsApp glyph where the design draws its bubble alone;
+  - A2's countdown kept a paragraph's default margins;
+  - A3's box kept 20 px above its line, where the design keeps 30;
+  - the profile's page started 28 px below its header, where G1 has 24.
+- **The known differences that stand** are listed in `docs/fidelity-method.md`. One is a question for the owner: the profile shows the whole address, the design only the area.
