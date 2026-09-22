@@ -160,6 +160,7 @@ describe("a number change", () => {
     });
     expect(await (await verify(body.request_id, "new", codeTo(NEW))).json()).toMatchObject({ state: "awaiting_ops" });
     expect((await profile()).number_change).toEqual({
+      request_id: body.request_id,
       state: "awaiting_ops",
       new_mobile: "+91 98xxx x0003",
       old_verified: true,

@@ -259,6 +259,9 @@
               "nothing_booked"
             ]
           },
+          "name": {
+            "type": "string"
+          },
           "first_name": {
             "type": "string"
           },
@@ -299,6 +302,7 @@
         },
         "required": [
           "state",
+          "name",
           "first_name",
           "initials",
           "consultation"
@@ -316,7 +320,14 @@
             "description": "Masked: +91 98xxx x4417."
           },
           "address": {
-            "$ref": "#/components/schemas/Address"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "consents": {
             "type": "array",
@@ -354,7 +365,14 @@
             "description": "The five purposes, in order. Off until the client first switches one on."
           },
           "number_change": {
-            "$ref": "#/components/schemas/NumberChange"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "deletion": {
             "type": [
@@ -391,10 +409,7 @@
         "additionalProperties": false
       },
       "Address": {
-        "type": [
-          "object",
-          "null"
-        ],
+        "type": "object",
         "properties": {
           "line1": {
             "type": "string",
@@ -442,11 +457,12 @@
         "additionalProperties": false
       },
       "NumberChange": {
-        "type": [
-          "object",
-          "null"
-        ],
+        "type": "object",
         "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
           "state": {
             "type": "string",
             "enum": [
@@ -466,6 +482,7 @@
           }
         },
         "required": [
+          "request_id",
           "state",
           "new_mobile",
           "old_verified",
@@ -1085,6 +1102,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
                     "state": {
                       "type": "string",
                       "enum": [
@@ -1110,6 +1131,7 @@
                     }
                   },
                   "required": [
+                    "request_id",
                     "state",
                     "new_mobile",
                     "old_verified",

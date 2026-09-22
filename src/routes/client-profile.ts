@@ -46,6 +46,7 @@ const AddressSchema = z
 
 const NumberChangeSchema = z
   .object({
+    request_id: z.uuid(),
     state: z.enum(["verifying", "awaiting_ops"]),
     new_mobile: z.string().openapi({ description: "Masked, as the design shows it: +91 98xxx x4417." }),
     old_verified: z.boolean(),
@@ -58,7 +59,8 @@ export const ProfileSchema = z
   .object({
     name: z.string(),
     mobile: z.string().openapi({ description: "Masked: +91 98xxx x4417." }),
-    address: AddressSchema.nullable(),
+    // A union, not .nullable(): that would make the Address component itself nullable, request bodies and all.
+    address: z.union([AddressSchema, z.null()]),
     consents: z
       .array(
         z
@@ -66,7 +68,7 @@ export const ProfileSchema = z
           .strict(),
       )
       .openapi({ description: "The five purposes, in order. Off until the client first switches one on." }),
-    number_change: NumberChangeSchema.nullable(),
+    number_change: z.union([NumberChangeSchema, z.null()]),
     deletion: z
       .object({ state: z.literal("requested"), requested_at: z.iso.datetime() })
       .strict()
@@ -184,6 +186,7 @@ export const deletionRoute = createRoute({
 
 function numberChangeBody(change: NumberChange) {
   return {
+    request_id: change.id,
     state: change.state === "awaiting_ops" ? ("awaiting_ops" as const) : ("verifying" as const),
     new_mobile: maskedMobile(change.newMobileE164),
     old_verified: change.oldVerified,
