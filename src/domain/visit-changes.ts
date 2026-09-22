@@ -23,6 +23,7 @@ import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/razorpay.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { windowAt } from "./scheduling.ts";
+import { visitMessage } from "./visit-messages.ts";
 
 export interface ChangeableVisit {
   readonly id: string;
@@ -156,7 +157,13 @@ export type Cancelled =
  */
 export async function cancelVisit(
   db: D1Database,
-  deps: { fsm: FsmProvider; payments: PaymentsProvider; alert: (message: string) => Promise<void> },
+  deps: {
+    fsm: FsmProvider;
+    payments: PaymentsProvider;
+    alert: (message: string) => Promise<void>;
+    /** Queues the cancel's confirmation to the client. */
+    notify?: (messageId: string) => Promise<unknown>;
+  },
   terms: ChangeTerms,
   now: Date,
   { labelAsTest, log }: { labelAsTest: boolean; log: Logger },
@@ -199,10 +206,18 @@ export async function cancelVisit(
     await db.prepare("DELETE FROM visit_changes WHERE id = ?1").bind(changeId).run();
     return { kind: "not_changeable" };
   }
-  await db
-    .prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2")
-    .bind(at, visit.id)
-    .run();
+  const message = visitMessage(db, {
+    personId: visit.personId,
+    appointmentId: visit.id,
+    kind: "cancel_confirmation",
+    now,
+  });
+  await db.batch([
+    db
+      .prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2")
+      .bind(at, visit.id),
+    message.statement,
+  ]);
 
   if (payment !== null && cancel.refund > 0) {
     try {
@@ -219,5 +234,6 @@ export async function cancelVisit(
       await deps.alert(`A cancelled visit's refund failed; refund ${String(cancel.refund / 100)} rupees by hand.`);
     }
   }
+  await deps.notify?.(message.id);
   return { kind: "cancelled", refund: cancel.refund, kept: cancel.kept };
 }

@@ -15,6 +15,7 @@ import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelVisit, changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import type { MessagingMessage } from "../queues/messaging.ts";
 import { BookingSchema, moveTermsFor, PriceSchema, startCheckout } from "./client-booking.ts";
 
 const NoticeSchema = z
@@ -175,7 +176,9 @@ export function registerClientChanges(app: App): void {
 
     let outcome;
     try {
-      outcome = await cancelVisit(c.env.DB, deps, terms, now, {
+      const notify = (messageId: string) =>
+        c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
+      outcome = await cancelVisit(c.env.DB, { ...deps, notify }, terms, now, {
         labelAsTest: c.var.config.environment !== "production",
         log,
       });

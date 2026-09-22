@@ -7,9 +7,10 @@ import { byHost } from "./http/surfaces.ts";
 import { createLogger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
-import { handleMessagingBatch } from "./queues/messaging.ts";
+import { handleMessagingBatch, type MessagingMessage } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
 import { syncBooks } from "./domain/books-sync.ts";
+import { queueReminders } from "./domain/visit-messages.ts";
 import { reconcileFsm } from "./scheduled/reconcile-fsm.ts";
 import { sweep } from "./scheduled/sweeper.ts";
 
@@ -80,6 +81,18 @@ export default {
       await reconcileFsm(workerEnv, deps, log.child({ job: "fsm_reconcile" })).catch((error: unknown) => {
         log.error("fsm_reconcile_failed", { error });
       });
+    }
+    if (config.settings.messaging.enabled) {
+      const reminders = await queueReminders(workerEnv.DB, deps.now()).catch((error: unknown) => {
+        log.error("visit_reminders_failed", { error });
+        return [];
+      });
+      if (reminders.length > 0) {
+        await workerEnv.MESSAGE_QUEUE.sendBatch(
+          reminders.map((id) => ({ body: { message_id: id, request_id: "reminders" } satisfies MessagingMessage })),
+        );
+        log.info("visit_reminders_queued", { count: reminders.length });
+      }
     }
     if (config.providers.FSM_PROVIDER !== "none" && config.providers.BOOKS_PROVIDER !== "none") {
       const booksLog = log.child({ job: "books_sync" });

@@ -35,12 +35,13 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 
 ## Messages and copy
 
-| #   | Point                       | Staging uses                                                                      | Before production                                                             |
-| --- | --------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 17  | Login codes by SMS          | WhatsApp only; SMS off                                                            | DLT registration and MSG91 (section 11).                                      |
-| 18  | A dedicated WhatsApp number | The shared Evolution instance, whose webhook goes to n8n, so no delivery receipts | A Mane Man number on its own instance, with its webhook to us (plan input 2). |
-| 19  | Message texts               | Placeholder wording in `src/config/message-templates.ts`                          | The owner approves each text.                                                 |
-| 20  | App copy                    | Lines marked PLACEHOLDER in `apps/app/src/content.ts` and the other apps          | The owner approves each line.                                                 |
+| #   | Point                       | Staging uses                                                                                                                                                                                   | Before production                                                                                       |
+| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 17  | Login codes by SMS          | WhatsApp only; SMS off                                                                                                                                                                         | DLT registration and MSG91 (section 11).                                                                |
+| 18  | A dedicated WhatsApp number | The shared Evolution instance, whose webhook goes to n8n, so no delivery receipts                                                                                                              | A Mane Man number on its own instance, with its webhook to us (plan input 2).                           |
+| 19  | Message texts               | Placeholder wording in `src/config/message-templates.ts`                                                                                                                                       | The owner approves each text.                                                                           |
+| 40  | Messages about visits       | Booking, reminder (from 6 pm the day before), move and cancel messages, sent only to clients who switched on WhatsApp about visits in their profile; nothing in booking asks for it (ADR 0047) | The owner approves the texts and the reminder's time, and decides whether booking asks for the consent. |
+| 20  | App copy                    | Lines marked PLACEHOLDER in `apps/app/src/content.ts` and the other apps                                                                                                                       | The owner approves each line.                                                                           |
 
 ## Service and operations
 
