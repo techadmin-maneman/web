@@ -55,22 +55,35 @@ export function App() {
     void check();
   }, [check]);
 
-  /** Home fetched again without the blank wait: after the profile changes it, or when the connection is back. */
+  /**
+   * Home fetched again without the blank wait: after the profile changes it, or when the connection is
+   * back. True if the answer came fresh from the API.
+   */
   const refresh = useCallback(async () => {
     const answer = await api.me();
-    if (answer.ok) setSession({ kind: "in", me: answer.body, offline: answer.cached });
+    if (answer.ok) {
+      setSession((now) => (now.kind === "in" ? { kind: "in", me: answer.body, offline: answer.cached } : now));
+    }
+    return answer.ok && !answer.cached;
   }, []);
 
   useEffect(() => {
     const lost = () => {
       setSession((now) => (now.kind === "in" ? { ...now, offline: true } : now));
     };
-    const back = () => void refresh();
+    // A connection is often not usable the moment it returns, so Home is tried a few times.
+    const back = async () => {
+      for (const wait of [0, 1_000, 3_000, 10_000]) {
+        await new Promise((resolve) => setTimeout(resolve, wait));
+        if (await refresh()) return;
+      }
+    };
     window.addEventListener("offline", lost);
-    window.addEventListener("online", back);
+    const onBack = () => void back();
+    window.addEventListener("online", onBack);
     return () => {
       window.removeEventListener("offline", lost);
-      window.removeEventListener("online", back);
+      window.removeEventListener("online", onBack);
     };
   }, [refresh]);
 
