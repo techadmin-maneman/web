@@ -20,6 +20,21 @@ test("opens from Home's button, with the client's name and a way back", async ({
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
 });
 
+test("keeps the tabs at the foot of the screen, and scrolls only the page, however long it is", async ({
+  page,
+  request,
+}) => {
+  await loggedIn(page, request);
+  const tabs = await page.getByRole("navigation").boundingBox();
+  expect((tabs?.y ?? 0) + (tabs?.height ?? 0)).toBe(844);
+  const heights = await page.evaluate(() => ({
+    document: document.documentElement.scrollHeight,
+    page: document.querySelector("main")?.scrollHeight ?? 0,
+  }));
+  expect(heights.document).toBe(844);
+  expect(heights.page).toBeGreaterThan(844);
+});
+
 test("shows board B3's loading shape while the profile comes", async ({ page, request }) => {
   await signIn(page, request);
   let release: () => void = () => undefined;

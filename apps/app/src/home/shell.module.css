@@ -4,9 +4,9 @@
  * focused control could be hidden (WCAG 2.4.11).
  */
 
+/* The screen's height, not flex: 1, which would let a long page stretch it and carry the tabs away. */
 .shell {
   display: flex;
-  flex: 1;
   flex-direction: column;
   height: 100dvh;
   background: var(--paper);
