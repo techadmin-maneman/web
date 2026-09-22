@@ -303,6 +303,7 @@ describe("the session", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       state: "lead",
+      name: "Arjun Mehta",
       first_name: "Arjun",
       initials: "AM",
       consultation: { date: "2026-09-24", window_label: "after four", place: "Gurgaon" },

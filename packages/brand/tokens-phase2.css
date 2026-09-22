@@ -18,5 +18,6 @@
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
   --tap-row: 64px; /* rows, tabs, the code's boxes */
   --sp-64: 64px;
+  --switch-width: 46px; /* a consent's switch (board G1) */
   --tracking-number: 0.04em; /* a mobile number, spaced for reading */
 }

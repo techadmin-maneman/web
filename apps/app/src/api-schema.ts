@@ -675,6 +675,8 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** Format: uuid */
+                            request_id: string;
                             /** @enum {string} */
                             state: "verifying" | "awaiting_ops";
                             /** @description Masked, as the design shows it: +91 98xxx x4417. */
@@ -829,6 +831,7 @@ export interface components {
         Me: {
             /** @enum {string} */
             state: "lead" | "nothing_booked";
+            name: string;
             first_name: string;
             /** @description For the profile's button: the first letters of the first and last names. */
             initials: string;
@@ -846,7 +849,7 @@ export interface components {
             name: string;
             /** @description Masked: +91 98xxx x4417. */
             mobile: string;
-            address: components["schemas"]["Address"];
+            address: components["schemas"]["Address"] | null;
             /** @description The five purposes, in order. Off until the client first switches one on. */
             consents: {
                 /** @enum {string} */
@@ -855,7 +858,7 @@ export interface components {
                 /** Format: date-time */
                 since: string | null;
             }[];
-            number_change: components["schemas"]["NumberChange"];
+            number_change: components["schemas"]["NumberChange"] | null;
             deletion: {
                 /** @enum {string} */
                 state: "requested";
@@ -871,15 +874,17 @@ export interface components {
             pincode: string;
             /** @description For the technician, from the day before the visit: gate code, parking. */
             access_notes: string | null;
-        } | null;
+        };
         NumberChange: {
+            /** Format: uuid */
+            request_id: string;
             /** @enum {string} */
             state: "verifying" | "awaiting_ops";
             /** @description Masked, as the design shows it: +91 98xxx x4417. */
             new_mobile: string;
             old_verified: boolean;
             new_verified: boolean;
-        } | null;
+        };
         ConsentSwitch: {
             granted: boolean;
         };

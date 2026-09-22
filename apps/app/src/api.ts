@@ -7,13 +7,17 @@ type Schemas = components["schemas"];
 export type LoginChallenge = Schemas["LoginChallenge"];
 export type LoginVerify = Schemas["LoginVerify"];
 export type Me = Schemas["Me"];
+export type Profile = Schemas["Profile"];
+export type Address = Schemas["Address"];
+export type NumberChange = Schemas["NumberChange"];
+export type ConsentPurpose = Profile["consents"][number]["purpose"];
 
 /** A failed call carries the API's error code, or "offline" when it never reached the API. */
 export type Answer<T> =
   | { readonly ok: true; readonly status: number; readonly body: T }
   | { readonly ok: false; readonly status: number; readonly code: string };
 
-async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<Answer<T>> {
+async function call<T>(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<Answer<T>> {
   let response: Response;
   try {
     response = await fetch(path, {
@@ -42,4 +46,19 @@ export const api = {
     call<LoginVerify>("POST", "/api/auth/verify", { challenge_id: challengeId, code }),
   logout: () => call<null>("POST", "/api/auth/logout"),
   me: () => call<Me>("GET", "/api/me"),
+  profile: () => call<Profile>("GET", "/api/profile"),
+  saveAddress: (address: Address) => call<Address>("PATCH", "/api/profile/address", address),
+  switchConsent: (purpose: ConsentPurpose, granted: boolean) =>
+    call<{ purpose: ConsentPurpose; granted: boolean; since: string }>("PATCH", `/api/consents/${purpose}`, {
+      granted,
+    }),
+  startNumberChange: (newMobile: string) =>
+    call<{ request_id: string; expires_in_s: number }>("POST", "/api/number-change", { new_mobile: newMobile }),
+  verifyNumberChange: (requestId: string, number: "old" | "new", code: string) =>
+    call<NumberChange & { attempts_left: number | null }>("POST", "/api/number-change/verify", {
+      request_id: requestId,
+      number,
+      code,
+    }),
+  requestDeletion: () => call<{ state: "requested"; requested_at: string }>("POST", "/api/deletion-request"),
 };

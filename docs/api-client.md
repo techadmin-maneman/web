@@ -440,6 +440,10 @@ Request body:
 {
   "type": "object",
   "properties": {
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
     "state": {
       "type": "string",
       "enum": [
@@ -465,6 +469,7 @@ Request body:
     }
   },
   "required": [
+    "request_id",
     "state",
     "new_mobile",
     "old_verified",
@@ -810,6 +815,9 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
         "nothing_booked"
       ]
     },
+    "name": {
+      "type": "string"
+    },
     "first_name": {
       "type": "string"
     },
@@ -850,6 +858,7 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
   },
   "required": [
     "state",
+    "name",
     "first_name",
     "initials",
     "consultation"
@@ -872,7 +881,14 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
       "description": "Masked: +91 98xxx x4417."
     },
     "address": {
-      "$ref": "#/components/schemas/Address"
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Address"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "consents": {
       "type": "array",
@@ -910,7 +926,14 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
       "description": "The five purposes, in order. Off until the client first switches one on."
     },
     "number_change": {
-      "$ref": "#/components/schemas/NumberChange"
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/NumberChange"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "deletion": {
       "type": [
@@ -952,10 +975,7 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
 
 ```json
 {
-  "type": [
-    "object",
-    "null"
-  ],
+  "type": "object",
   "properties": {
     "line1": {
       "type": "string",
@@ -1008,11 +1028,12 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
 
 ```json
 {
-  "type": [
-    "object",
-    "null"
-  ],
+  "type": "object",
   "properties": {
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
     "state": {
       "type": "string",
       "enum": [
@@ -1032,6 +1053,7 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
     }
   },
   "required": [
+    "request_id",
     "state",
     "new_mobile",
     "old_verified",

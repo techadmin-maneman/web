@@ -12,6 +12,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 export const MeSchema = z
   .object({
     state: z.enum(["lead", "nothing_booked"]),
+    name: z.string(),
     first_name: z.string(),
     initials: z
       .string()
@@ -67,6 +68,7 @@ export function registerClientMe(app: App): void {
     return c.json(
       {
         state: booking === null ? ("nothing_booked" as const) : ("lead" as const),
+        name: person.name,
         first_name: person.name.trim().split(/\s+/)[0] ?? "",
         initials: initialsOf(person.name),
         consultation:

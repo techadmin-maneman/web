@@ -19,7 +19,7 @@ type Session =
   | { readonly kind: "failed" }
   | { readonly kind: "in"; readonly me: Me };
 
-function pageFor(page: Page, me: Me, onLogout: () => void) {
+function pageFor(page: Page, me: Me, onLogout: () => void, onChanged: () => void) {
   switch (page) {
     case "/":
       return <HomeScreen me={me} />;
@@ -32,7 +32,7 @@ function pageFor(page: Page, me: Me, onLogout: () => void) {
     case "/refer":
       return <EmptyScreen which="refer" />;
     case "/profile":
-      return <ProfileScreen firstName={me.first_name} onLogout={onLogout} />;
+      return <ProfileScreen onLogout={onLogout} onChanged={onChanged} />;
   }
 }
 
@@ -50,6 +50,12 @@ export function App() {
   useEffect(() => {
     void check();
   }, [check]);
+
+  /** After the profile changes what Home shows, such as the address: fetched again, without the blank wait. */
+  const refresh = useCallback(async () => {
+    const answer = await api.me();
+    if (answer.ok) setSession({ kind: "in", me: answer.body });
+  }, []);
 
   // The page's ground follows the screen: ink for the login, paper once in.
   useEffect(() => {
@@ -78,8 +84,13 @@ export function App() {
       return <Login onSignedIn={() => void check()} />;
     case "in":
       return (
-        <Shell page={page} initials={session.me.initials}>
-          {pageFor(page, session.me, () => void logout())}
+        <Shell page={page} initials={session.me.initials} {...(page === "/profile" ? { name: session.me.name } : {})}>
+          {pageFor(
+            page,
+            session.me,
+            () => void logout(),
+            () => void refresh(),
+          )}
         </Shell>
       );
   }

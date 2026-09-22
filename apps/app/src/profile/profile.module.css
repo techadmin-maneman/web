@@ -1,22 +1,349 @@
-.name {
-  margin: var(--sp-18) 0 0;
-  font-size: var(--fs-17);
+/* Boards G1 and G2, on paper. */
+
+.hidden {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.logout {
-  width: 100%;
-  height: var(--btn-lg);
-  margin-top: var(--sp-32);
-  border: var(--hairline) solid var(--paper-line);
+.label,
+.cardLabel {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  color: var(--text-muted);
+}
+
+.label {
+  font-size: var(--fs-15);
+}
+
+.block {
+  margin-top: var(--sp-12);
+  padding: var(--sp-16) 0;
+  border-top: var(--hairline) solid var(--text);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.block p,
+.form p {
+  margin: 0;
+}
+
+.address {
+  font-size: var(--fs-16);
+  line-height: 1.55;
+}
+
+.muted {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-top: var(--sp-12);
+  padding: 0;
+  border: 0;
   background: none;
   font: inherit;
-  font-size: var(--fs-16);
-  font-weight: 500;
+  font-size: var(--fs-15);
   color: var(--text);
   cursor: pointer;
 }
 
-.logout:focus-visible {
+.link span {
+  padding-bottom: var(--sp-3);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-14);
+  margin-top: var(--sp-12);
+  padding-top: var(--sp-16);
+  border-top: var(--hairline) solid var(--text);
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  margin-top: var(--sp-14);
+}
+
+.form .formField {
+  margin-top: 0;
+}
+
+.formLabel {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.input,
+.numberInput {
+  height: var(--btn-lg);
+  padding: 0 var(--sp-15);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-16);
+  color: var(--text);
+}
+
+.input:focus,
+.numberField:focus-within {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+.numberField {
+  display: flex;
+  height: var(--btn-lg);
+  margin-top: var(--sp-16);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--white);
+}
+
+.prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-15);
+  border-right: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-16);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.numberInput {
+  flex: 1;
+  min-width: 0;
+  height: auto;
+  border: 0;
+  background: none;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.numberInput::placeholder {
+  color: var(--paper-placeholder);
+}
+
+.error {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-15);
+  line-height: 1.55;
+  color: var(--error-on-paper);
+}
+
+.row {
+  display: flex;
+  gap: var(--sp-10);
+}
+
+.primary,
+.secondary,
+.danger,
+.logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--sp-48);
+  padding: 0 var(--sp-18);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.primary {
+  flex: 1;
+  width: 100%;
+  margin-top: var(--sp-14);
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.row .primary,
+.row .secondary {
+  margin-top: 0;
+}
+
+.secondary {
+  flex: 1;
+  border: var(--hairline) solid var(--paper-line);
+  background: none;
+  color: var(--text);
+}
+
+.danger {
+  margin-top: var(--sp-16);
+  border: var(--hairline) solid var(--error-on-paper);
+  background: none;
+  color: var(--error-on-paper);
+}
+
+.row .danger {
+  margin-top: 0;
+}
+
+.consents {
+  margin: var(--sp-12) 0 0;
+  padding: 0;
+  border-top: var(--hairline) solid var(--text);
+  list-style: none;
+}
+
+.consent {
+  padding: var(--sp-16) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.consentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  min-height: calc(var(--tap-row) - 2 * var(--sp-16));
+}
+
+.consentRow p {
+  margin: 0;
+}
+
+.consentName {
+  font-size: var(--fs-16);
+  line-height: 1.4;
+}
+
+.consentRow .consentWhen {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* The switch, square as the design draws it: ink with a paper knob when on, white with a line knob when off. */
+.switch {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-start;
+  width: var(--switch-width);
+  height: var(--sp-26);
+  padding: var(--sp-2);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--white);
+  cursor: pointer;
+}
+
+.knob {
+  width: var(--sp-20);
+  height: var(--sp-20);
+  background: var(--paper-line);
+}
+
+.switch[aria-checked="true"] {
+  justify-content: flex-end;
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.switch[aria-checked="true"] .knob {
+  background: var(--paper);
+}
+
+.confirm {
+  margin-top: var(--sp-14);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin: 0 0 var(--sp-14);
+  padding-left: var(--sp-18);
+  font-size: var(--fs-15);
+  line-height: 1.55;
+  color: var(--text-soft);
+}
+
+.card {
+  padding: var(--sp-20);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+}
+
+.cardLabel {
+  margin-bottom: var(--sp-14);
+  font-size: var(--fs-14);
+}
+
+.cardBody {
+  margin: 0;
+  font-size: var(--fs-16);
+  line-height: 1.6;
+}
+
+.cardHint {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.whatsapp {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-14);
+  min-height: var(--btn-lg);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink);
+  font-size: var(--fs-16);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.whatsapp svg {
+  color: var(--ink);
+}
+
+.logout {
+  width: 100%;
+  border: var(--hairline) solid var(--paper-line);
+  background: none;
+  color: var(--text);
+}
+
+.failed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  font-size: var(--fs-16);
+}
+
+.failed p {
+  margin: 0;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible,
+.danger:focus-visible,
+.logout:focus-visible,
+.link:focus-visible,
+.switch:focus-visible,
+.whatsapp:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--sp-3);
 }

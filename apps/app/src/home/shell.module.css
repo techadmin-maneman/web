@@ -1,18 +1,19 @@
-/* Board B's frame: the header, the page, and the tab bar, on paper. */
+/*
+ * Board B's frame: the header, the page, and the tab bar, on paper. Only the
+ * page scrolls, so nothing passes under the header or the tabs, where a
+ * focused control could be hidden (WCAG 2.4.11).
+ */
 
 .shell {
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
   background: var(--paper);
   color: var(--text);
 }
 
 .header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -44,17 +45,38 @@
   text-decoration: none;
 }
 
+.titled {
+  justify-content: flex-start;
+  gap: var(--sp-14);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: calc(-1 * var(--sp-11));
+  color: var(--text);
+}
+
+.name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+}
+
 .page {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: var(--sp-26);
+  min-height: 0;
   padding: var(--sp-28) var(--sp-20);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .tabs {
-  position: sticky;
-  bottom: 0;
   display: grid;
   flex-shrink: 0;
   grid-template-columns: repeat(5, 1fr);
@@ -79,6 +101,7 @@
 }
 
 .avatar:focus-visible,
+.back:focus-visible,
 .tab:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: calc(-1 * var(--rule-strong));

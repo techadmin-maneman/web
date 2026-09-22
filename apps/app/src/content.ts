@@ -143,9 +143,80 @@ export const empty = {
 } as const;
 
 export const profile = {
-  title: "Profile",
   back: "Back",
-  // PLACEHOLDER: the profile (boards G1 and G2) follows; logging out is its last line.
+  where: "Where we come",
+  editAddress: "Edit address and access notes",
+  // PLACEHOLDER: the design draws the profile with an address already given, and no form.
+  noAddress: "No address yet. We confirm it with you before your visit.",
+  addAddress: "Add your address and access notes",
+  form: {
+    line1: "House, flat or building",
+    line2: "Street (optional)",
+    locality: "Sector or area",
+    city: "City",
+    pincode: "Pincode",
+    accessNotes: "Access notes (optional)",
+    accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
+    save: "Save",
+    cancel: "Cancel",
+    invalid: "Fill in the house, the area, the city and a six-digit pincode.",
+  },
+  agreed: "What you have agreed to",
+  purposes: {
+    photos_own_record: "Photographs for your own record",
+    photos_referral_cards: "Photographs on referral cards",
+    photos_marketing: "Photographs in our marketing",
+    whatsapp_visits: "WhatsApp about your visits",
+    // PLACEHOLDER: the design's profile lists four; the fifth is the waitlist's launch alert.
+    whatsapp_launches: "WhatsApp about launches",
+  },
+  given: (date: string) => `Given ${date}`,
+  notGiven: "Not given",
+  /** The four lines the design shows before a card is turned on (F3); the consent's notice carries them. */
+  referralCards: {
+    lines: [
+      "Anyone you send this card to can see your photographs.",
+      "They can forward it, and so can anyone who receives it.",
+      "You can switch it off at any time, and new opens will show our house example instead.",
+      "Cards already delivered stay in people’s chats. We cannot take those back.",
+    ],
+    // PLACEHOLDER
+    confirm: "Switch on",
+    cancel: "Keep it off",
+  },
+  change: {
+    label: "Change mobile number",
+    body: "A code goes to both numbers, then we confirm with you before it takes effect.",
+    prefix: "+91",
+    placeholder: "New number",
+    start: "Start the change",
+    // PLACEHOLDER from here: the design draws the start only.
+    invalid: "Enter a ten-digit mobile number, not the one you use now.",
+    codes: "Enter the code sent to each number.",
+    oldCode: "Code sent to your current number",
+    newCode: (number: string) => `Code sent to ${number}`,
+    check: "Check the codes",
+    proven: "Code accepted.",
+    waiting: (number: string) => `We will confirm the change to ${number} with you, then it takes effect.`,
+    failed: "That did not go through. Please try again.",
+    limited: "You have started three changes today. Please try again tomorrow.",
+  },
+  support: {
+    label: "Support",
+    message: "Message us on WhatsApp",
+    hint: "Replies within a working day. Everything in writing.",
+  },
+  deletion: {
+    label: "Delete your account",
+    body: "Photographs deleted within seven days. Invoices kept eight years, by law.",
+    request: "Request deletion",
+    // PLACEHOLDER: the design draws the button only.
+    confirm: "Ask us to delete your account? We will confirm on WhatsApp before anything is deleted.",
+    yes: "Yes, request deletion",
+    no: "Keep my account",
+    requested: (date: string) => `Deletion requested on ${date}. We will confirm on WhatsApp.`,
+  },
+  // PLACEHOLDER: the design has no logout; it ends the session on this device.
   logout: "Log out",
 } as const;
 
