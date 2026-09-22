@@ -1,12 +1,15 @@
 // A payment or a refund, as the payments screens write it (boards E1 to E3).
 
-import { fullDate, listDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import type { Entry } from "../api.ts";
 import { payments } from "../content.ts";
 import { visitName } from "../lib/visit.ts";
 
-/** What it paid for: the visit's kind. */
-export const entryWhat = (entry: Entry) => (entry.visit === null ? payments.payment : visitName(entry.visit.type));
+/** What it paid for: the visit's kind, or its late fee. */
+export function entryWhat(entry: Entry): string {
+  const what = entry.visit === null ? payments.payment : visitName(entry.visit.type);
+  return entry.kind === "payment" && entry.purpose === "late_fee" ? payments.lateFeeOf(what) : what;
+}
 
 /** The page's title: a refund says so. */
 export const entryTitle = (entry: Entry) =>
@@ -27,8 +30,17 @@ export function entryMeta(entry: Entry, thisYear: number): string {
   return `${date} · ${entry.kind === "refund" ? payments.refundTo(method) : method}`;
 }
 
-/** "Paid", "Refund processing"; on the entry's own page, with how long a refund takes. */
+/** A charge's evidence: "cancelled 9:14 am, visit was 10 am", with the dates on different days. */
+export function chargeEvidence(charge: NonNullable<Extract<Entry, { kind: "payment" }>["charge"]>): string {
+  const sameDay = indiaDate(charge.at) === indiaDate(charge.visit_started_at);
+  const when = (instant: string) =>
+    sameDay ? indiaClock(instant) : `${shortDate(indiaDate(instant))}, ${indiaClock(instant)}`;
+  return payments.evidence(charge.change, when(charge.at), when(charge.visit_started_at));
+}
+
+/** "Paid", "Refund processing", "Charged"; on the entry's own page, with how long a refund takes. */
 export function entryStatus(entry: Entry, withSpeed = false): string {
+  if (entry.kind === "payment" && entry.charge !== null && entry.status === "captured") return payments.charged;
   const status = payments.status[entry.status];
   const speed =
     entry.kind === "refund" && entry.status === "created" && entry.speed !== null

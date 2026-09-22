@@ -8,7 +8,7 @@ import { ICONS } from "@maneman/brand/icons";
 import { fullDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
-import { api, documentUrl, type EntryDetail } from "../api.ts";
+import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { messages, payments } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
@@ -16,7 +16,7 @@ import { useLoad } from "../lib/useLoad.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
-import { entryNamed, entryStatus, entryTitle, methodName } from "./entry.ts";
+import { chargeEvidence, entryNamed, entryStatus, entryTitle, methodName } from "./entry.ts";
 import styles from "./payments.module.css";
 
 type Missing = "invoice" | "receipt" | "voucher";
@@ -81,6 +81,9 @@ function Detail({ entry }: { entry: EntryDetail }) {
         <Fact name={rows.date} value={fullDate(entry.date)} />
         {method !== null && <Fact name={entry.kind === "refund" ? rows.destination : rows.method} value={method} />}
         <Fact name={rows.status} value={entryStatus(entry, true)} />
+        {entry.kind === "payment" && entry.charge !== null && (
+          <Fact name={payments.charge} value={chargeEvidence(entry.charge)} />
+        )}
         {entry.kind === "payment" && entry.reference !== null && (
           <Fact name={rows.reference} value={entry.reference} numeric />
         )}
@@ -95,7 +98,12 @@ function Detail({ entry }: { entry: EntryDetail }) {
               missing="invoice"
               entry={named}
             />
-            <Document name={payments.receipt} href={entry.documents.receipt} missing="receipt" entry={named} />
+            <Document
+              name={payments.receipt}
+              href={entry.documents.receipt === null ? null : receiptUrl(entry.documents.receipt)}
+              missing="receipt"
+              entry={named}
+            />
           </>
         ) : (
           <Document name={payments.voucher} href={entry.voucher} missing="voucher" entry={named} />

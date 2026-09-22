@@ -367,6 +367,11 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
      - action: the webhook.
    - **On staging,** the hooks path already has the Access bypass (step 12, point 3).
 
+7. **The refund account.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"). Refunds need the account Books pays them from, which must be a bank account: Books refuses Undeposited Funds.
+   - In Books: Banking → Add Bank or Credit Card → Bank, named "Razorpay", in INR.
+   - Open it; its ID is the number at the end of the address.
+   - Set it as `BOOKS_REFUND_ACCOUNT_ID` in the environment's vars in `wrangler.jsonc`, then deploy. It is not a secret.
+
 ### 11c. Razorpay
 
 Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-payments-mirror.md). Staging uses test keys, which take no real money.

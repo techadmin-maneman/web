@@ -2,10 +2,11 @@
 // (docs/decisions/0045-self-serve-booking.md). A sheet rises: the date, the
 // window, then paying through Razorpay Checkout. Paid, the sheet waits while
 // Razorpay's webhook confirms and the visit is booked in FSM, polling the hold.
-// Closed before paying, the hold is let go.
+// Closed before paying, the hold is let go. Moving a visit (board C7) takes the
+// same steps, with its own technician and at what the move costs.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Availability, type BookableType, type BookingWindow, type Hold } from "../api.ts";
+import { api, type Availability, type BookableType, type BookingWindow, type Hold, type MoveTerms } from "../api.ts";
 import { booking } from "../content.ts";
 import { pay, type PayMethod } from "./checkout.ts";
 import { ConfirmedStep, DateStep, ExpiredStep, FailedStep, PayStep, WaitStep, WindowStep } from "./steps.tsx";
@@ -28,7 +29,17 @@ type Step =
 const POLL_MS = 2_000;
 const POLL_FOR_MS = 60_000;
 
-export function BookingSheet({ type, onClose }: { type: BookableType; onClose: (booked: boolean) => void }) {
+export function BookingSheet({
+  type,
+  moving,
+  onClose,
+}: {
+  type: BookableType;
+  /** The visit being moved, and what moving it costs. */
+  moving?: MoveTerms;
+  onClose: (booked: boolean) => void;
+}) {
+  const movingId = moving?.visit_id;
   const dialog = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<Step>({ kind: "loading" });
   const [availability, setAvailability] = useState<Availability | null>(null);
@@ -41,7 +52,7 @@ export function BookingSheet({ type, onClose }: { type: BookableType; onClose: (
 
   const load = useCallback(async () => {
     setStep({ kind: "loading" });
-    const answer = await api.availability(type);
+    const answer = await api.availability(type, movingId);
     if (!answer.ok) {
       setStep({ kind: "broken" });
       return;
@@ -50,7 +61,7 @@ export function BookingSheet({ type, onClose }: { type: BookableType; onClose: (
     setDate(null);
     setChosenWindow(null);
     setStep({ kind: "date" });
-  }, [type]);
+  }, [type, movingId]);
 
   useEffect(() => {
     dialog.current?.showModal();
@@ -101,12 +112,12 @@ export function BookingSheet({ type, onClose }: { type: BookableType; onClose: (
     if (date === null || chosenWindow === null) return;
     setBusy(true);
     setProblem(null);
-    const answer = await api.hold(type, date, chosenWindow);
+    const answer = await api.hold(type, date, chosenWindow, movingId);
     setBusy(false);
     if (answer.ok) setStep({ kind: "pay", hold: answer.body });
     else if (answer.code === "taken") {
       setProblem(booking.window.taken);
-      const fresh = await api.availability(type);
+      const fresh = await api.availability(type, movingId);
       if (fresh.ok) setAvailability(fresh.body);
       setChosenWindow(null);
     } else setProblem(booking.failedToStart);
@@ -115,7 +126,7 @@ export function BookingSheet({ type, onClose }: { type: BookableType; onClose: (
   const payFor = async (hold: Hold, how: PayMethod) => {
     setBusy(true);
     setProblem(null);
-    const started = await api.book(hold.id);
+    const started = movingId === undefined ? await api.book(hold.id) : await api.startMove(movingId, hold.id);
     if (!started.ok) {
       setBusy(false);
       if (started.code === "hold_expired") setStep({ kind: "expired" });
@@ -173,6 +184,7 @@ export function BookingSheet({ type, onClose }: { type: BookableType; onClose: (
       {step.kind === "pay" && (
         <PayStep
           hold={step.hold}
+          moving={moving}
           method={method}
           busy={busy}
           problem={problem}
@@ -193,7 +205,7 @@ export function BookingSheet({ type, onClose }: { type: BookableType; onClose: (
       )}
       {step.kind === "expired" && <ExpiredStep onPickAgain={() => void load()} />}
       {step.kind === "confirming" && <WaitStep text={booking.confirming} />}
-      {step.kind === "confirmed" && <ConfirmedStep hold={step.hold} onDone={close} />}
+      {step.kind === "confirmed" && <ConfirmedStep hold={step.hold} moved={moving !== undefined} onDone={close} />}
       {step.kind === "slow" && <WaitStep text={booking.slow} onClose={close} />}
       {step.kind === "refunded" && <WaitStep text={booking.refunded} onClose={close} />}
     </dialog>

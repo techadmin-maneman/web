@@ -356,8 +356,11 @@ describe("validateStaticConfig: Zoho FSM and Books", () => {
       accountsHost: "accounts.zoho.in",
       apiHost: "www.zohoapis.in",
       booksOrgId: "60088931635",
+      booksRefundAccountId: null,
       webhookToken: null,
     });
+    const withAccount = validateStaticConfig({ ...stagingBase, BOOKS_REFUND_ACCOUNT_ID: "bank-7" });
+    expect(withAccount.settings.zohoFsm?.booksRefundAccountId).toBe("bank-7");
   });
 
   it("requires every FSM secret when either is Zoho, and the Books organisation only for Books", () => {

@@ -1128,6 +1128,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/{id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A payment's receipt, as a PDF from Books */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The PDF */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/pdf": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such payment of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_ready: the payment is not in Books yet; the app shows "Document unavailable" */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}": {
         parameters: {
             query?: never;
@@ -1208,6 +1273,8 @@ export interface paths {
                     type: "consultation" | "first_fit" | "service" | "replacement";
                     /** @description The first day; tomorrow if left out, or if earlier. */
                     from?: string;
+                    /** @description One of the client's visits, to move: its own type. */
+                    moving?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1233,7 +1300,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description ops_assisted: self-serve booking is off */
+                /** @description ops_assisted: self-serve booking is off; or not_changeable: the visit can no longer be moved */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1287,6 +1354,11 @@ export interface paths {
                         date: string;
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
+                        /**
+                         * Format: uuid
+                         * @description One of the client's visits, to move instead.
+                         */
+                        moving?: string;
                     };
                 };
             };
@@ -1309,7 +1381,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: nobody is free in that window now; or ops_assisted */
+                /** @description taken: nobody is free in that window now; not_changeable; or ops_assisted */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1499,6 +1571,168 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/appointments/{id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** What moving a visit costs, or start the move a hold makes */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * Format: uuid
+                         * @description A hold made with `moving` for this visit; left out, the terms only.
+                         */
+                        hold_id?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description The terms */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MoveTerms"];
+                    };
+                };
+                /** @description The move is started */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such hold for moving this visit */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_changeable; hold_expired; or ops_assisted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/appointments/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** What cancelling a visit gives back, or cancel it on those terms */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        confirm: boolean;
+                        /**
+                         * @description With confirm: the notice the client was shown.
+                         * @enum {string}
+                         */
+                        notice?: "free" | "late";
+                    };
+                };
+            };
+            responses: {
+                /** @description The terms, or the cancelled visit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CancelTerms"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_changeable; terms_changed: the notice is not the one shown, so show the terms again; or ops_assisted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: FSM did not answer; nothing changed */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1506,7 +1740,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -1765,6 +1999,28 @@ export interface components {
             reference: string | null;
             /** @description In paise: refunds Razorpay has processed. */
             refunded_amount: number;
+            /**
+             * @description What it paid for: the visit, or a late fee.
+             * @enum {string}
+             */
+            purpose: "visit" | "late_fee";
+            /** @description Kept under the 24-hour rule, with its evidence: "cancelled 9:14 am, visit was 10 am". */
+            charge: {
+                /** @enum {string} */
+                change: "cancelled" | "moved";
+                /**
+                 * Format: date-time
+                 * @description When the client cancelled or moved the visit.
+                 */
+                at: string;
+                /**
+                 * Format: date-time
+                 * @description When the visit was to start.
+                 */
+                visit_started_at: string;
+                /** @description In paise: what was kept. */
+                amount: number;
+            } | null;
         };
         RefundEntry: {
             /**
@@ -1806,8 +2062,8 @@ export interface components {
             documents: {
                 /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it. */
                 invoice: string | null;
-                /** @description The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3). */
-                receipt: null;
+                /** @description The payment's receipt, for GET /api/payments/{id}/receipt, once the payment is recorded in Books. */
+                receipt: string | null;
             };
         } & {
             /**
@@ -1886,6 +2142,8 @@ export interface components {
             paid: boolean;
             /** @description The visit it became, once booked. */
             visit_id: string | null;
+            /** @description The visit this hold moves; null for a new booking. */
+            moves_visit_id: string | null;
         };
         Booking: {
             /** Format: uuid */
@@ -1904,6 +2162,50 @@ export interface components {
                     contact: string;
                 };
             } | null;
+        };
+        MoveTerms: {
+            /** Format: uuid */
+            visit_id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /**
+             * @description free: more than 24 hours before the window starts; late: inside 24 hours.
+             * @enum {string}
+             */
+            notice: "free" | "late";
+            /** Format: date-time */
+            free_until: string;
+            /** @description In paise: what the visit's payment holds, carried over or kept. */
+            paid: number;
+            /**
+             * @description free: the payment carries over; late_fee: the late fee is paid, then the payment carries over; charged: the payment is kept, and the new visit is paid separately.
+             * @enum {string}
+             */
+            cost: "free" | "late_fee" | "charged";
+            price: components["schemas"]["Price"] & unknown;
+        };
+        CancelTerms: {
+            /** Format: uuid */
+            visit_id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /**
+             * @description free: more than 24 hours before the window starts; late: inside 24 hours.
+             * @enum {string}
+             */
+            notice: "free" | "late";
+            /** Format: date-time */
+            free_until: string;
+            /** @description In paise: what the visit's payment holds, carried over or kept. */
+            paid: number;
+            /** @description In paise: what goes back to the payment's source. */
+            refund: number;
+            /** @description In paise: what is kept as a charge. */
+            kept: number;
+            /** @description The payment's method: upi, card and so on. */
+            destination: string | null;
+            /** @description false: the terms only; true: the visit is cancelled. */
+            cancelled: boolean;
         };
     };
     responses: never;

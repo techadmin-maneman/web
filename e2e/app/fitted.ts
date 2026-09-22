@@ -38,11 +38,12 @@ export interface Fitted {
   readonly next: FittedVisit;
   readonly service: FittedVisit;
   readonly firstFit: FittedVisit;
-  /** The service visit's payment reference. */
+  /** The service visit's payment, which Books has recorded, and its reference. */
+  readonly servicePayment: string;
   readonly reference: string;
 }
 
-const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
+export const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
 
 /** Where the global setup leaves the client for the tests. */
 const HANDOVER = "MM_E2E_FITTED";
@@ -55,7 +56,8 @@ function day(days: number): { date: string; start: string; end: string } {
 
 const quote = (value: string | number | null) =>
   value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
-const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
+/** One row of SQL values, quoted. */
+export const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
 
 /** The client the global setup seeded. */
 export function fittedClient(): Fitted {
@@ -111,9 +113,9 @@ export async function seedFitted(): Promise<void> {
        ${row(id(), visits.service, service.start, service.end, 85, "done", now)},
        ${row(id(), visits.firstFit, firstFit.start, firstFit.end, 150, "done", now)};`,
     `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
-       status, captured_at, created_at, updated_at) VALUES
-       ${row(servicePaid, reference, person, visits.service, `pay_${servicePaid}`, 200000, "INR", "upi", "captured", service.end, service.end, now)},
-       ${row(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, 3000000, "INR", "card", "captured", firstFit.end, firstFit.end, now)};`,
+       status, captured_at, created_at, updated_at, books_payment_id) VALUES
+       ${row(servicePaid, reference, person, visits.service, `pay_${servicePaid}`, 200000, "INR", "upi", "captured", service.end, service.end, now, `stub-e2e-${servicePaid}`)},
+       ${row(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, 3000000, "INR", "card", "captured", firstFit.end, firstFit.end, now, null)};`,
     `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, updated_at)
        VALUES ${row(id(), servicePaid, `rfnd_${servicePaid}`, 100000, "created", "normal", day(-18).end, now)};`,
   ];
@@ -169,6 +171,7 @@ export async function seedFitted(): Promise<void> {
     next: { id: visits.next, date: next.date },
     service: { id: visits.service, date: service.date },
     firstFit: { id: visits.firstFit, date: firstFit.date },
+    servicePayment: servicePaid,
     reference,
   };
   process.env[HANDOVER] = JSON.stringify(client);

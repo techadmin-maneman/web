@@ -1,55 +1,16 @@
 // Booking in the app (boards C2 to C6) for the fitted client of
-// e2e/app/fitted.ts, against the local mm-api, whose payments are a stub.
-// Razorpay's Checkout script is replaced by one that pays or fails at once,
-// and Razorpay's confirmation, which reaches only a real webhook, is shown by
-// answering the hold's poll as booked.
+// e2e/app/fitted.ts, against the local mm-api, with Razorpay faked
+// (e2e/app/checkout-fakes.ts).
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another.
 test.describe.configure({ mode: "serial" });
-
-/** Checkout that pays, or fails, as soon as it opens. */
-async function fakeCheckout(page: Page, outcome: "paid" | "failed"): Promise<void> {
-  await page.route("https://checkout.razorpay.com/v1/checkout.js", (route) =>
-    route.fulfill({
-      contentType: "text/javascript",
-      body: `window.Razorpay = function (options) {
-        const failed = [];
-        this.on = (event, handler) => { if (event === "payment.failed") failed.push(handler); };
-        this.open = () => setTimeout(() => ${
-          outcome === "paid"
-            ? 'options.handler({ razorpay_payment_id: "pay_fake" })'
-            : "failed.forEach((handler) => handler({}))"
-        }, 50);
-      };`,
-    }),
-  );
-}
-
-/**
- * The hold's poll answered as Razorpay's webhook and FSM would leave it: paid and booked. The hold is the one the
- * page was given; only the browser resolves app.localhost, so the test cannot fetch it again itself.
- */
-async function confirmedByRazorpay(page: Page): Promise<void> {
-  let hold: Record<string, unknown> = {};
-  page.on("response", (response) => {
-    if (response.request().method() === "POST" && response.url().endsWith("/api/holds")) {
-      void response.json().then((body: Record<string, unknown>) => {
-        hold = body;
-      });
-    }
-  });
-  await page.route(/\/api\/holds\/[0-9a-f-]{36}$/, (route) =>
-    route.request().method() === "GET"
-      ? route.fulfill({ json: { ...hold, state: "booked", paid: true, visit_id: crypto.randomUUID() } })
-      : route.fallback(),
-  );
-}
 
 async function toPayment(page: Page): Promise<void> {
   await logIn(page, fittedClient().mobile);

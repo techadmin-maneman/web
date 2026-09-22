@@ -82,6 +82,8 @@ Run through the API against the org the owner confirmed as the real one, while i
    - Creating an appointment works. Each work order's service line can be in **one appointment only**.
    - **Rescheduling must use `PUT /Service_Appointments/{id}/actions/reschedule`.** A plain edit of the times answers "record updated" but changes nothing.
    - The transitions offered are Dispatch, Cancel, Terminate and Reschedule.
+   - **Cancelling is a blueprint transition** (tried 22 September 2026): `GET /{module}/{id}/actions/blueprint/transitions` lists each with its ID, and `PUT /{module}/{id}/actions/blueprint` with `{ blueprint: [{ transition_id, data: { Notes } }] }` makes it. The note is mandatory. There is no `/actions/cancel`.
+   - Cancelling an appointment sends its work order back to "New", and its service line can take a new appointment. **Cancelling the work order cancels its appointments too**, which is what ADR 0046 uses.
    - **FSM accepted an overlapping appointment** for the same technician even with `$allow_overlapping: false`, so the org's "Allow overlapping appointments" setting is on. Our own clash check (`slot_claims`, ADR 0034) is needed either way. Turning the setting off is an open point.
    - An asset needs a `Product` (a part item) and keeps our label in `Asset_Number`.
    - Items are deleted at `/Products/{id}`, not `/Service_And_Parts/{id}`. Other records delete at their module's path.

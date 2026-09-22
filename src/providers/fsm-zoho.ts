@@ -14,6 +14,10 @@
 //   POST /fsm/v1/Requests                              { data: { Requests: [{ id }], Service_Line_Items: [...] } }
 //   POST /fsm/v1/Work_Orders                           { data: { Work_Orders: [{ id }], Service_Line_Items: [{ id }] } }
 //   POST /fsm/v1/Service_Appointments                  { data: [{ id }] }
+//   PUT  /fsm/v1/Service_Appointments/{id}/actions/reschedule    new times; a plain edit changes nothing
+//   GET  /fsm/v1/Work_Orders/{id}/actions/blueprint/transitions  { transitions: [{ id, name }] }
+//   PUT  /fsm/v1/Work_Orders/{id}/actions/blueprint              a transition, with its mandatory note;
+//        cancelling a work order cancels its appointments
 //
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
@@ -69,6 +73,7 @@ const Contact = z.object({
   Mobile: z.string().nullish(),
   Phone: z.string().nullish(),
   Email: z.string().nullish(),
+  ZBilling_Id: z.string().nullish(),
 });
 
 const User = z.object({
@@ -91,6 +96,9 @@ const Addresses = z.object({
 const Created = z.object({
   data: z.union([z.array(z.object({ id: z.string() })), z.record(z.string(), z.array(z.object({ id: z.string() })))]),
 });
+
+/** A blueprint's next steps from a record's state; a closed record offers none. */
+const Transitions = z.object({ transitions: z.array(z.object({ id: z.string(), name: z.string() })).default([]) });
 
 /** A new contact's street, until the client gives their address. */
 const ADDRESS_TO_CONFIRM = "To be confirmed with the client";
@@ -128,7 +136,13 @@ function appointmentFrom(record: z.infer<typeof Appointment>): FsmAppointment {
 function contactFrom(record: z.infer<typeof Contact>): FsmContact {
   const name =
     record.Full_Name ?? [record.First_Name, record.Last_Name].filter((part) => typeof part === "string").join(" ");
-  return { id: record.id, name, mobile: record.Mobile ?? record.Phone ?? null, email: record.Email ?? null };
+  return {
+    id: record.id,
+    name,
+    mobile: record.Mobile ?? record.Phone ?? null,
+    email: record.Email ?? null,
+    booksCustomerId: record.ZBilling_Id ?? null,
+  };
 }
 
 /** FSM and Books share one access token (migrations/0010_zoho_tokens.sql). */
@@ -162,7 +176,7 @@ export function createZohoFsmClient(settings: ZohoFsmSettings, deps: Dependencie
   return async function request(
     step: string,
     path: string,
-    write?: { method: "POST"; body: unknown },
+    write?: { method: "POST" | "PUT"; body: unknown },
   ): Promise<Response> {
     for (const forceRefresh of [false, true]) {
       const token = await tokens.get(forceRefresh);
@@ -373,6 +387,26 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
         $Service_Resources: [visit.technicianId],
       });
       return { workOrderId: order.Work_Orders ?? "", appointmentId };
+    },
+
+    async rescheduleVisit(appointmentId, times) {
+      await request("reschedule", `/fsm/v1/Service_Appointments/${appointmentId}/actions/reschedule`, {
+        method: "PUT",
+        body: { data: [{ Scheduled_Start_Date_Time: times.start, Scheduled_End_Date_Time: times.end }] },
+      });
+    },
+
+    // Cancelling is a transition of the work order's blueprint, offered only while the work order is open.
+    async cancelVisit(workOrderId, note) {
+      const path = `/Work_Orders/${workOrderId}/actions/blueprint`;
+      const { transitions } = Transitions.parse(await json("cancel_transitions", `${path}/transitions`));
+      const cancel = transitions.find((transition) => transition.name === "Cancel");
+      if (cancel === undefined) return false;
+      await request("cancel", `/fsm/v1${path}`, {
+        method: "PUT",
+        body: { blueprint: [{ transition_id: cancel.id, data: { Notes: note } }] },
+      });
+      return true;
     },
   };
 }

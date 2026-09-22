@@ -6,7 +6,8 @@
 // them in FSM or a hold became one. A technician holds one live job per
 // window. A hold writes its claims in one batch, and the claims' key stops two
 // holds taking the same time; once a hold is booked, its visit in the mirror
-// takes the time instead.
+// takes the time instead. A visit being moved keeps its technician, and its
+// own time does not count against the move (docs/decisions/0046-moving-and-cancelling.md).
 
 import {
   BOOKING_WINDOWS,
@@ -69,6 +70,12 @@ export interface Technician {
   readonly initials: string;
 }
 
+/** Who can take a booking: every active technician, or, for a move, the visit's own. */
+async function techniciansFor(db: D1Database, moving: Moving | null): Promise<Technician[]> {
+  const technicians = await activeTechnicians(db);
+  return moving === null ? technicians : technicians.filter((technician) => technician.id === moving.technicianId);
+}
+
 /** Technicians FSM lists as active. Leave from FSM's availability arrives with dispatch (P2-M4). */
 export async function activeTechnicians(db: D1Database): Promise<Technician[]> {
   const { results } = await db
@@ -89,12 +96,19 @@ export async function regularTechnician(db: D1Database, personId: string): Promi
   return row?.technician_id ?? null;
 }
 
+/** A visit being moved: only its technician can take the move, and its own time is left out. */
+export interface Moving {
+  readonly visitId: string;
+  readonly technicianId: string;
+}
+
 /** What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. */
 export async function occupancy(
   db: D1Database,
   from: string,
   to: string,
   now: Date,
+  exceptVisitId: string | null = null,
 ): Promise<(technicianId: string, date: string) => Day> {
   const days = new Map<string, Day>();
   const dayOf = (technicianId: string, date: string) => {
@@ -122,9 +136,9 @@ export async function occupancy(
     .prepare(
       `SELECT technician_id, type, window_start FROM appointments
        WHERE deleted_at IS NULL AND technician_id IS NOT NULL AND status IN ('scheduled', 'dispatched', 'in_progress')
-         AND window_start >= ?1 AND window_start < ?2`,
+         AND window_start >= ?1 AND window_start < ?2 AND id IS NOT ?3`,
     )
-    .bind(indiaInstant(from, "00:00").toISOString(), indiaInstant(addDays(to, 1), "00:00").toISOString())
+    .bind(indiaInstant(from, "00:00").toISOString(), indiaInstant(addDays(to, 1), "00:00").toISOString(), exceptVisitId)
     .all<{ technician_id: string; type: VisitType | null; window_start: string }>();
   for (const visit of visits.results) {
     const starts = new Date(visit.window_start);
@@ -166,12 +180,13 @@ export async function availability(
   from: string,
   days: number,
   now: Date,
+  moving: Moving | null = null,
 ): Promise<{ date: string; windows: WindowOffer[] }[]> {
   const to = addDays(from, days - 1);
   const [technicians, regular, held] = await Promise.all([
-    activeTechnicians(db),
-    regularTechnician(db, personId),
-    occupancy(db, from, to, now),
+    techniciansFor(db, moving),
+    moving === null ? regularTechnician(db, personId) : moving.technicianId,
+    occupancy(db, from, to, now, moving?.visitId ?? null),
   ]);
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(from, index);
@@ -201,15 +216,24 @@ export interface Hold {
  */
 export async function holdSlot(
   db: D1Database,
-  input: { personId: string; type: VisitType; date: string; window: BookingWindow; price: Price },
+  input: {
+    personId: string;
+    type: VisitType;
+    date: string;
+    window: BookingWindow;
+    price: Price;
+    /** A move in place, which keeps the visit's technician; or a new visit replacing it. */
+    moves?: { readonly visit: Moving; readonly kind: "move" | "replace" };
+  },
   now: Date,
   holdSeconds: number,
 ): Promise<Hold | null> {
-  const { personId, type, date, window, price } = input;
+  const { personId, type, date, window, price, moves } = input;
+  const moving = moves?.kind === "move" ? moves.visit : null;
   const [technicians, regular, held] = await Promise.all([
-    activeTechnicians(db),
-    regularTechnician(db, personId),
-    occupancy(db, date, date, now),
+    techniciansFor(db, moving),
+    moving === null ? regularTechnician(db, personId) : moving.technicianId,
+    occupancy(db, date, date, now, moving?.visitId ?? null),
   ]);
   const candidates = technicians
     .map((technician) => ({ technician, start: placement(held(technician.id, date), window, type) }))
@@ -234,8 +258,8 @@ export async function holdSlot(
         db
           .prepare(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
-               amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12)`,
+               amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14)`,
           )
           .bind(
             id,
@@ -250,6 +274,8 @@ export async function holdSlot(
             price.gst_percent,
             expiresAt,
             at,
+            moves?.visit.visitId ?? null,
+            moves?.kind ?? null,
           ),
         ...claimsOf(start, type, window).map((claim) =>
           db

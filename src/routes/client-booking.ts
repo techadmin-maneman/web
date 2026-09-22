@@ -8,6 +8,10 @@
 //   GET    /api/holds/:id                  a hold: lapsed, paid, or booked as a visit
 //   DELETE /api/holds/:id                  let it go
 //   POST   /api/bookings                   book a hold: Checkout's order, or, if free, straight to FSM
+//
+// With `moving`, availability and a hold are for moving one of the client's
+// visits (docs/decisions/0046-moving-and-cancelling.md): with its technician,
+// priced at what the move costs now.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -15,7 +19,7 @@ import type { App, AppEnv } from "../app.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS, WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { startBooking } from "../domain/bookings.ts";
-import { priceOf, type Price, type PriceItem } from "../domain/price-book.ts";
+import { priceOf, type Price } from "../domain/price-book.ts";
 import {
   activeTechnicians,
   availability,
@@ -23,14 +27,16 @@ import {
   holdSlot,
   regularTechnician,
   visitTimes,
+  type Moving,
 } from "../domain/scheduling.ts";
+import { changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
-import { FREE_CHANGE_NOTICE_HOURS } from "../policy/moving-a-visit.ts";
+import { FREE_CHANGE_NOTICE_HOURS, LATE_FEES } from "../policy/moving-a-visit.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
-const PriceSchema = z
+export const PriceSchema = z
   .object({
     amount_ex_gst: z.number().int().openapi({ description: "In paise, before GST: the main figure." }),
     amount: z.number().int().openapi({ description: "In paise, GST included: what the client pays." }),
@@ -85,11 +91,14 @@ const HoldSchema = z
     state: z.enum(["held", "expired", "booked", "released"]),
     paid: z.boolean().openapi({ description: "Razorpay has confirmed the payment; the visit is being booked." }),
     visit_id: z.union([z.uuid(), z.null()]).openapi({ description: "The visit it became, once booked." }),
+    moves_visit_id: z
+      .union([z.uuid(), z.null()])
+      .openapi({ description: "The visit this hold moves; null for a new booking." }),
   })
   .strict()
   .openapi("Hold");
 
-const BookingSchema = z
+export const BookingSchema = z
   .object({
     hold_id: z.uuid(),
     checkout: z
@@ -120,12 +129,13 @@ const availabilityRoute = createRoute({
     query: z.object({
       type: z.enum(VISIT_TYPES),
       from: z.iso.date().optional().openapi({ description: "The first day; tomorrow if left out, or if earlier." }),
+      moving: z.uuid().optional().openapi({ description: "One of the client's visits, to move: its own type." }),
     }),
   },
   responses: {
     200: { description: "Each day's three windows", content: { "application/json": { schema: AvailabilitySchema } } },
     401: errorResponse("session_required"),
-    409: errorResponse("ops_assisted: self-serve booking is off"),
+    409: errorResponse("ops_assisted: self-serve booking is off; or not_changeable: the visit can no longer be moved"),
     422: errorResponse("not_bookable: the client may not book this kind of visit"),
   },
 });
@@ -138,7 +148,14 @@ const holdRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: z.object({ type: z.enum(VISIT_TYPES), date: z.iso.date(), window: z.enum(BOOKING_WINDOWS) }).strict(),
+          schema: z
+            .object({
+              type: z.enum(VISIT_TYPES),
+              date: z.iso.date(),
+              window: z.enum(BOOKING_WINDOWS),
+              moving: z.uuid().optional().openapi({ description: "One of the client's visits, to move instead." }),
+            })
+            .strict(),
         },
       },
     },
@@ -146,7 +163,7 @@ const holdRoute = createRoute({
   responses: {
     201: { description: "Held", content: { "application/json": { schema: HoldSchema } } },
     401: errorResponse("session_required"),
-    409: errorResponse("taken: nobody is free in that window now; or ops_assisted"),
+    409: errorResponse("taken: nobody is free in that window now; not_changeable; or ops_assisted"),
     422: errorResponse("not_bookable: this kind of visit, or that day, is not open to the client"),
   },
 });
@@ -188,12 +205,6 @@ const releaseRoute = createRoute({
   },
 });
 
-/** The late fee for moving a visit of this type inside 24 hours, if it has one. */
-const LATE_FEES: Partial<Record<VisitType, PriceItem>> = {
-  first_fit: "late_fee_first_fit",
-  replacement: "late_fee_replacement",
-};
-
 interface HoldRow {
   id: string;
   type: VisitType;
@@ -208,6 +219,7 @@ interface HoldRow {
   technician_name: string;
   technician_initials: string;
   appointment_id: string | null;
+  moves_appointment_id: string | null;
   paid: number;
 }
 
@@ -230,11 +242,13 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     state: row.state === "held" && row.expires_at <= now.toISOString() ? ("expired" as const) : row.state,
     paid: row.paid === 1,
     visit_id: row.appointment_id,
+    moves_visit_id: row.moves_appointment_id,
   };
 }
 
 const HOLD_QUERY = `SELECT h.id, h.type, h.date, h.window_label, h.start_unit, h.amount, h.amount_ex_gst, h.gst_percent,
     h.state, h.expires_at, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
+    h.moves_appointment_id,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
   FROM slot_holds h JOIN technicians t ON t.id = h.technician_id WHERE h.id = ?1 AND h.person_id = ?2`;
 
@@ -246,6 +260,66 @@ async function bookable(c: Context<AppEnv>, personId: string, type: VisitType, o
   const db = c.env.DB;
   if (!(await bookableTypes(db, personId)).includes(type)) return null;
   return priceOf(db, type, on);
+}
+
+/**
+ * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it
+ * can no longer be moved in the app. A visit FSM has no technician for yet is ops' to move.
+ */
+export async function moveTermsFor(
+  c: Context<AppEnv>,
+  personId: string,
+  visitId: string,
+  type: VisitType | null,
+  on?: string,
+): Promise<{ terms: ChangeTerms; moving: Moving } | null> {
+  const now = c.var.deps.now();
+  const visit = await changeableVisit(c.env.DB, personId, visitId, now);
+  if (visit === null || (type !== null && visit.type !== type) || visit.technicianId === null) return null;
+  return {
+    terms: await changeTerms(c.env.DB, visit, now, on),
+    moving: { visitId: visit.id, technicianId: visit.technicianId },
+  };
+}
+
+/** Starts paying for a live hold: what Checkout opens with, or null for one that is free and on its way to FSM. */
+export async function startCheckout(c: Context<AppEnv>, holdId: string, personId: string) {
+  const { deps, requestId } = c.var;
+  const started = await startBooking(c.env.DB, deps.payments, holdId, personId, deps.now());
+  if (started === null) return null;
+  if (started.kind === "free") {
+    await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
+    return { hold_id: holdId, checkout: null };
+  }
+  const row = await c.env.DB.prepare(
+    `SELECT h.type, h.amount, h.date, h.move_kind, p.name, p.mobile_e164
+     FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE h.id = ?1`,
+  )
+    .bind(holdId)
+    .first<{
+      type: VisitType;
+      amount: number;
+      date: string;
+      move_kind: "move" | "replace" | null;
+      name: string;
+      mobile_e164: string;
+    }>();
+  if (row === null) return null;
+  const name = FSM_SERVICE_NAMES[row.type];
+  const description =
+    row.move_kind === "move" ? `Moving your ${name.toLowerCase()} to ${row.date}` : `${name}, ${row.date}`;
+  return {
+    hold_id: holdId,
+    checkout: {
+      key_id: c.var.config.settings.razorpay?.keyId ?? "",
+      order_id: started.orderId,
+      amount: row.amount,
+      currency: "INR" as const,
+      name: "Mane Man",
+      description,
+      prefill: { name: row.name, contact: row.mobile_e164 },
+    },
+  };
 }
 
 export function registerClientBooking(app: App): void {
@@ -260,16 +334,20 @@ export function registerClientBooking(app: App): void {
   app.openapi(availabilityRoute, async (c) => {
     const session = c.var.clientSession;
     if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
-    const { type, from } = c.req.valid("query");
+    const { type, from, moving: movingId } = c.req.valid("query");
     const now = c.var.deps.now();
     const first = firstBookableDay(now);
     const start = from === undefined || from < first ? first : from;
-    const price = await bookable(c, session.subjectId, type, start);
+    const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, start);
+    if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
+    const price = move === null ? await bookable(c, session.subjectId, type, start) : move.terms.move.price;
     if (price === null) return c.json(errorBody("not_bookable", c.var.requestId), 422);
     const db = c.env.DB;
+    // A move in place keeps the visit's technician; a charged move books a new visit with anyone.
+    const moving = move === null || move.terms.move.cost === "charged" ? null : move.moving;
     const [days, regularId, technicians] = await Promise.all([
-      availability(db, session.subjectId, type, start, BOOKING_DAYS, now),
-      regularTechnician(db, session.subjectId),
+      availability(db, session.subjectId, type, start, BOOKING_DAYS, now, moving),
+      moving === null ? regularTechnician(db, session.subjectId) : moving.technicianId,
       activeTechnicians(db),
     ]);
     const regular = technicians.find((technician) => technician.id === regularId);
@@ -287,16 +365,22 @@ export function registerClientBooking(app: App): void {
   app.openapi(holdRoute, async (c) => {
     const session = c.var.clientSession;
     if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
-    const { type, date, window } = c.req.valid("json");
+    const { type, date, window, moving: movingId } = c.req.valid("json");
     const now = c.var.deps.now();
     const first = firstBookableDay(now);
-    const price = await bookable(c, session.subjectId, type, date);
+    const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, date);
+    if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
+    const price = move === null ? await bookable(c, session.subjectId, type, date) : move.terms.move.price;
     if (price === null || date < first || date > addDays(first, BOOKING_DAYS - 1)) {
       return c.json(errorBody("not_bookable", c.var.requestId), 422);
     }
+    const moves =
+      move === null
+        ? undefined
+        : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
     const hold = await holdSlot(
       c.env.DB,
-      { personId: session.subjectId, type, date, window, price },
+      { personId: session.subjectId, type, date, window, price, ...(moves === undefined ? {} : { moves }) },
       now,
       HOLD_SECONDS,
     );
@@ -318,36 +402,9 @@ export function registerClientBooking(app: App): void {
   app.openapi(bookingRoute, async (c) => {
     const session = c.var.clientSession;
     if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
-    const holdId = c.req.valid("json").hold_id;
-    const { deps, requestId } = c.var;
-    const started = await startBooking(c.env.DB, deps.payments, holdId, session.subjectId, deps.now());
-    if (started === null) return c.json(errorBody("hold_expired", requestId), 409);
-    if (started.kind === "free") {
-      await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
-      return c.json({ hold_id: holdId, checkout: null }, 201);
-    }
-    const row = await c.env.DB.prepare(
-      `SELECT h.type, h.amount, h.date, p.name, p.mobile_e164 FROM slot_holds h JOIN people p ON p.id = h.person_id
-       WHERE h.id = ?1`,
-    )
-      .bind(holdId)
-      .first<{ type: VisitType; amount: number; date: string; name: string; mobile_e164: string }>();
-    if (row === null) return c.json(errorBody("hold_expired", requestId), 409);
-    return c.json(
-      {
-        hold_id: holdId,
-        checkout: {
-          key_id: c.var.config.settings.razorpay?.keyId ?? "",
-          order_id: started.orderId,
-          amount: row.amount,
-          currency: "INR" as const,
-          name: "Mane Man",
-          description: `${FSM_SERVICE_NAMES[row.type]}, ${row.date}`,
-          prefill: { name: row.name, contact: row.mobile_e164 },
-        },
-      },
-      201,
-    );
+    const booking = await startCheckout(c, c.req.valid("json").hold_id, session.subjectId);
+    if (booking === null) return c.json(errorBody("hold_expired", c.var.requestId), 409);
+    return c.json(booking, 201);
   });
 
   app.openapi(releaseRoute, async (c) => {

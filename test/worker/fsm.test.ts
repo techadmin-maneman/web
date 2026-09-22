@@ -22,6 +22,7 @@ const SETTINGS: ZohoFsmSettings = {
   apiHost: "www.zohoapis.in",
   booksOrgId: "60088931635",
   webhookToken: null,
+  booksRefundAccountId: null,
 };
 
 const BOOKS_API = "https://www.zohoapis.in/books/v3";
@@ -115,17 +116,21 @@ describe("FSM: appointments", () => {
 });
 
 describe("FSM: clients, technicians, items and files", () => {
-  it("reads a client's name, mobile number and e-mail", async () => {
+  it("reads a client's name, mobile number and e-mail, and their Books customer once FSM has synced them", async () => {
     const { fsm: provider } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${FSM_API}/Contacts/contact-1`]: () => json({ data: [fsmContactRecord()] }),
+      [`${FSM_API}/Contacts/contact-2`]: () =>
+        json({ data: [fsmContactRecord({ id: "contact-2", ZBilling_Id: "books-customer-9" })] }),
     });
     expect(await provider.contact("contact-1")).toEqual({
       id: "contact-1",
       name: "Rohit Malhotra",
       mobile: "+919810000001",
       email: "rohit@example.com",
+      booksCustomerId: null,
     });
+    expect((await provider.contact("contact-2"))?.booksCustomerId).toBe("books-customer-9");
   });
 
   it("lists technicians as their service resources, active only when both the user and resource are", async () => {
@@ -201,6 +206,56 @@ describe("FSM: clients, technicians, items and files", () => {
   });
 });
 
+describe("FSM: moving and cancelling a visit", () => {
+  it("reschedules an appointment through its action, with the new times", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/ap-1/actions/reschedule`]: () =>
+        json({ data: [{ code: "SUCCESS", message: "record updated" }] }),
+    });
+    await provider.rescheduleVisit("ap-1", { start: "2026-09-25T16:00:00+05:30", end: "2026-09-25T17:30:00+05:30" });
+    expect(calls[1]?.method).toBe("PUT");
+    expect(JSON.parse(calls[1]?.body ?? "null")).toEqual({
+      data: [
+        {
+          Scheduled_Start_Date_Time: "2026-09-25T16:00:00+05:30",
+          Scheduled_End_Date_Time: "2026-09-25T17:30:00+05:30",
+        },
+      ],
+    });
+  });
+
+  it("cancels a work order through its blueprint's Cancel, with the note FSM requires", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1/actions/blueprint/transitions`]: () =>
+        json({
+          code: "SUCCESS",
+          transitions: [
+            { id: "tr-terminate", name: "Terminate" },
+            { id: "tr-cancel", name: "Cancel" },
+          ],
+        }),
+      [`${FSM_API}/Work_Orders/wo-1/actions/blueprint`]: () => json({ code: "SUCCESS", message: "record updated" }),
+    });
+    expect(await provider.cancelVisit("wo-1", "Cancelled by the client in the app.")).toBe(true);
+    expect(calls[2]?.method).toBe("PUT");
+    expect(JSON.parse(calls[2]?.body ?? "null")).toEqual({
+      blueprint: [{ transition_id: "tr-cancel", data: { Notes: "Cancelled by the client in the app." } }],
+    });
+  });
+
+  it("answers false when the work order offers no Cancel, as a closed one does", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-2/actions/blueprint/transitions`]: () =>
+        json({ code: "SUCCESS", transitions: [{ id: "tr-print", name: "Print" }] }),
+    });
+    expect(await provider.cancelVisit("wo-2", "note")).toBe(false);
+    expect(calls).toHaveLength(2);
+  });
+});
+
 describe("FSM: the access token", () => {
   it("keeps one token in D1 for every call until a minute before it expires", async () => {
     const { fsm: provider, calls } = fsm({
@@ -259,7 +314,8 @@ describe("Books: invoices", () => {
             invoice_number: "INV-000041",
             date: "2026-09-24",
             total: 2360.5,
-            status: "paid",
+            balance: 1000,
+            status: "sent",
           },
         }),
     });
@@ -268,7 +324,8 @@ describe("Books: invoices", () => {
       number: "INV-000041",
       date: "2026-09-24",
       total: 236050,
-      status: "paid",
+      balance: 100000,
+      status: "sent",
     });
     expect(new URL(calls[1]?.url ?? "").searchParams.get("organization_id")).toBe("60088931635");
   });
@@ -287,6 +344,90 @@ describe("Books: invoices", () => {
   });
 });
 
+describe("Books: payments, receipts and refunds", () => {
+  const body = (call: { body: string } | undefined) => JSON.parse(call?.body ?? "null") as unknown;
+
+  it("records a payment in rupees, against the client's customer, and returns its ID", async () => {
+    const { books, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/customerpayments`]: () => json({ code: 0, payment: { payment_id: "bp-1" } }, 201),
+    });
+    const id = await books.recordPayment({
+      customerId: "books-customer-9",
+      amount: 3000050,
+      date: "2026-09-21",
+      reference: "MM-2026-0841",
+      description: "Staging test: Razorpay payment pay_test41",
+    });
+    expect(id).toBe("bp-1");
+    expect(calls[1]?.method).toBe("POST");
+    expect(new URL(calls[1]?.url ?? "").searchParams.get("organization_id")).toBe("60088931635");
+    expect(body(calls[1])).toEqual({
+      customer_id: "books-customer-9",
+      payment_mode: "Razorpay",
+      amount: 30000.5,
+      date: "2026-09-21",
+      reference_number: "MM-2026-0841",
+      description: "Staging test: Razorpay payment pay_test41",
+    });
+  });
+
+  it("streams a payment's receipt, and answers null for one Books does not have", async () => {
+    const { books, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/customerpayments/bp-1`]: () =>
+        new Response("%PDF-1.4", { headers: { "Content-Type": "application/pdf" } }),
+      [`${BOOKS_API}/customerpayments/missing`]: () => json({ code: 1002, message: "Payment does not exist." }, 404),
+    });
+    expect(await new Response((await books.receiptPdf("bp-1"))?.body).text()).toBe("%PDF-1.4");
+    expect(new URL(calls[1]?.url ?? "").searchParams.get("accept")).toBe("pdf");
+    expect(await books.receiptPdf("missing")).toBeNull();
+  });
+
+  it("applies a payment to an invoice, in rupees", async () => {
+    const { books, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/invoices/inv-1/credits`]: () => json({ code: 0, message: "Payment applied." }),
+    });
+    await books.applyToInvoice("bp-1", "inv-1", 3000000);
+    expect(calls[1]?.method).toBe("POST");
+    expect(body(calls[1])).toEqual({ invoice_payments: [{ payment_id: "bp-1", amount_applied: 30000 }] });
+  });
+
+  it("records a refund from the given account, and returns its ID", async () => {
+    const { books, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/customerpayments/bp-1/refunds`]: () =>
+        json({ code: 0, payment_refund: { payment_refund_id: "br-1" } }, 201),
+    });
+    const id = await books.recordRefund("bp-1", {
+      amount: 100000,
+      date: "2026-09-22",
+      reference: "rfnd_test7",
+      description: "Staging test: Razorpay refund rfnd_test7",
+      fromAccountId: "bank-7",
+    });
+    expect(id).toBe("br-1");
+    expect(body(calls[1])).toEqual({
+      date: "2026-09-22",
+      refund_mode: "Razorpay",
+      amount: 1000,
+      from_account_id: "bank-7",
+      reference_number: "rfnd_test7",
+      description: "Staging test: Razorpay refund rfnd_test7",
+    });
+  });
+
+  it("fails loudly when Books refuses a payment", async () => {
+    const { books } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/customerpayments`]: () => json({ code: 1002, message: "Customer does not exist." }, 400),
+    });
+    const payment = { customerId: "x", amount: 100, date: "2026-09-21", reference: "r", description: "d" };
+    await expect(books.recordPayment(payment)).rejects.toThrow(/400/);
+  });
+});
+
 describe("the stand-ins", () => {
   it("the stub FSM answers from the world it is given, pages it by last change, and reaches nothing", async () => {
     const appointment = { ...(await stubAppointment()), id: "ap-2", modifiedAt: "2026-09-23T09:00:00+05:30" };
@@ -302,11 +443,16 @@ describe("the stand-ins", () => {
     expect(await stub.appointment("nope")).toBeNull();
   });
 
-  it("the stub Books has every stub- invoice as a blank PDF", async () => {
+  it("the stub Books has every stub- invoice as a blank PDF, and a receipt for every payment it records", async () => {
     const books = createStubBooks();
     expect((await books.invoice("stub-41"))?.number).toBe("INV-000041");
     expect(await new Response((await books.invoicePdf("stub-41"))?.body).text()).toMatch(/^%PDF-1\.4/);
     expect(await books.invoicePdf("real-1")).toBeNull();
+    const payment = { customerId: "c", amount: 100, date: "2026-09-21", reference: "r", description: "d" };
+    const recorded = await books.recordPayment(payment);
+    expect(await new Response((await books.receiptPdf(recorded))?.body).text()).toMatch(/^%PDF-1\.4/);
+    expect(await books.receiptPdf("real-1")).toBeNull();
+    expect(books.made.payments).toEqual([payment]);
   });
 
   it("none refuses every call plainly", async () => {

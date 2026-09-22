@@ -41,6 +41,8 @@ export interface FsmContact {
   /** As FSM holds it; the mirror turns it into E.164. */
   readonly mobile: string | null;
   readonly email: string | null;
+  /** The same client in Books, once FSM's sync has put them there. */
+  readonly booksCustomerId?: string | null;
 }
 
 /** A service resource: the technician FSM assigns appointments to. */
@@ -125,6 +127,10 @@ export interface FsmProvider {
   createRequest(request: NewFsmRequest): Promise<string>;
   /** Books a visit: a work order and its appointment, assigned to the technician. */
   createVisit(visit: NewFsmVisit): Promise<{ workOrderId: string; appointmentId: string }>;
+  /** Moves an appointment to new times, with the same technician. ISO 8601 with India's offset. */
+  rescheduleVisit(appointmentId: string, times: { start: string; end: string }): Promise<void>;
+  /** Cancels a work order, and so its appointment, with a note for ops; false if FSM no longer allows it. */
+  cancelVisit(workOrderId: string, note: string): Promise<boolean>;
 }
 
 export function createFsmProvider(
@@ -172,6 +178,8 @@ export interface StubFsm extends FsmProvider {
     readonly contacts: NewFsmContact[];
     readonly requests: NewFsmRequest[];
     readonly visits: NewFsmVisit[];
+    readonly rescheduled: { appointmentId: string; start: string; end: string }[];
+    readonly cancelled: { workOrderId: string; note: string }[];
   };
 }
 
@@ -180,7 +188,13 @@ export interface StubFsm extends FsmProvider {
  * under IDs no other stub gives, since a new stub answers each local request.
  */
 export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
-  const made = { contacts: [] as NewFsmContact[], requests: [] as NewFsmRequest[], visits: [] as NewFsmVisit[] };
+  const made = {
+    contacts: [] as NewFsmContact[],
+    requests: [] as NewFsmRequest[],
+    visits: [] as NewFsmVisit[],
+    rescheduled: [] as { appointmentId: string; start: string; end: string }[],
+    cancelled: [] as { workOrderId: string; note: string }[],
+  };
   return {
     made,
     appointment: (id) => Promise.resolve(world.appointments.find((appointment) => appointment.id === id) ?? null),
@@ -217,6 +231,14 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       const id = crypto.randomUUID();
       return Promise.resolve({ workOrderId: `stub-work-order-${id}`, appointmentId: `stub-appointment-${id}` });
     },
+    rescheduleVisit: (appointmentId, times) => {
+      made.rescheduled.push({ appointmentId, ...times });
+      return Promise.resolve();
+    },
+    cancelVisit: (workOrderId, note) => {
+      made.cancelled.push({ workOrderId, note });
+      return Promise.resolve(true);
+    },
   };
 }
 
@@ -234,5 +256,7 @@ function createUnconnectedFsm(): FsmProvider {
     createContact: off,
     createRequest: off,
     createVisit: off,
+    rescheduleVisit: off,
+    cancelVisit: off,
   };
 }

@@ -2,13 +2,15 @@
 // "Read endpoints"), from the payments mirror (docs/decisions/0044-payments-mirror.md)
 // and Zoho Books (docs/decisions/0032-fsm-mirror.md).
 //
-//   GET /api/payments          one list of payments and refunds, newest first
-//   GET /api/payments/:id      one entry: a payment with its documents, or a refund with its destination
-//   GET /api/documents/:id     a visit's invoice, as a PDF from Books
+//   GET /api/payments                one list of payments and refunds, newest first
+//   GET /api/payments/:id            one entry: a payment with its documents, or a refund with its destination
+//   GET /api/payments/:id/receipt    a payment's receipt, as a PDF from Books
+//   GET /api/documents/:id           a visit's invoice, as a PDF from Books
 //
 // Amounts are in paise, as Razorpay charged them, GST included; each carries
 // its ex-GST part, which the app shows as the main figure. A failed attempt is
-// not a payment and is left out. Charges arrive with booking (P2-M5).
+// not a payment and is left out. A payment kept under the 24-hour rule is a
+// charge, and carries its evidence (docs/decisions/0046-moving-and-cancelling.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
@@ -42,6 +44,22 @@ const PaymentEntrySchema = z
     method: z.union([z.string(), z.null()]).openapi({ description: "upi, card, netbanking and so on." }),
     reference: z.union([z.string(), z.null()]).openapi({ description: "Ours, e.g. MM-2026-0841, once captured." }),
     refunded_amount: z.number().int().openapi({ description: "In paise: refunds Razorpay has processed." }),
+    purpose: z.enum(["visit", "late_fee"]).openapi({ description: "What it paid for: the visit, or a late fee." }),
+    charge: z
+      .union([
+        z
+          .object({
+            change: z.enum(["cancelled", "moved"]),
+            at: z.iso.datetime().openapi({ description: "When the client cancelled or moved the visit." }),
+            visit_started_at: z.iso.datetime().openapi({ description: "When the visit was to start." }),
+            amount: z.number().int().openapi({ description: "In paise: what was kept." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description: 'Kept under the 24-hour rule, with its evidence: "cancelled 9:14 am, visit was 10 am".',
+      }),
   })
   .strict()
   .openapi("PaymentEntry");
@@ -69,8 +87,9 @@ const PaymentDetailSchema = PaymentEntrySchema.extend({
       invoice: z
         .union([z.uuid(), z.null()])
         .openapi({ description: "The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it." }),
-      receipt: z.null().openapi({
-        description: "The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3).",
+      receipt: z.union([z.uuid(), z.null()]).openapi({
+        description:
+          "The payment's receipt, for GET /api/payments/{id}/receipt, once the payment is recorded in Books.",
       }),
     })
     .strict(),
@@ -112,6 +131,19 @@ const entryRoute = createRoute({
   },
 });
 
+const receiptRoute = createRoute({
+  method: "get",
+  path: "/api/payments/{id}/receipt",
+  summary: "A payment's receipt, as a PDF from Books",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "The PDF", content: { "application/pdf": { schema: z.string() } } },
+    401: errorResponse("session_required"),
+    404: errorResponse("not_found: no such payment of this client's"),
+    409: errorResponse('not_ready: the payment is not in Books yet; the app shows "Document unavailable"'),
+  },
+});
+
 const documentRoute = createRoute({
   method: "get",
   path: "/api/documents/{id}",
@@ -140,6 +172,12 @@ interface PaymentRow extends VisitColumns {
   status: "authorized" | "captured" | "refunded" | "partially_refunded";
   method: string | null;
   fsm_invoice_id: string | null;
+  books_payment_id: string | null;
+  kind: "visit" | "late_fee";
+  charged_change: "moved" | "replaced" | "cancelled" | null;
+  charged_at: string | null;
+  charged_visit_start: string | null;
+  charged_amount: number | null;
 }
 
 interface RefundRow extends VisitColumns {
@@ -154,9 +192,13 @@ interface RefundRow extends VisitColumns {
 
 const VISIT_JOIN = `LEFT JOIN appointments a ON a.id = p.appointment_id AND a.deleted_at IS NULL`;
 
+// The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee.
 const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.refunded_amount, p.status, p.method,
-    a.id AS appointment_id, a.window_start, a.type, a.fsm_invoice_id
+    p.books_payment_id, p.kind, a.id AS appointment_id, a.window_start, a.type, a.fsm_invoice_id,
+    c.kind AS charged_change, c.created_at AS charged_at, c.was_start AS charged_visit_start,
+    c.kept_amount AS charged_amount
   FROM payments p ${VISIT_JOIN}
+  LEFT JOIN visit_changes c ON c.payment_id = p.id AND c.notice = 'late' AND c.kept_amount > 0
   WHERE p.person_id = ?1 AND p.status != 'failed'`;
 
 const REFUND_QUERY = `SELECT r.id, r.payment_id, r.created_at, r.amount, r.status, r.speed, p.method,
@@ -185,6 +227,16 @@ const paymentOf = (row: PaymentRow) => ({
   method: row.method,
   reference: row.reference,
   refunded_amount: row.refunded_amount,
+  purpose: row.kind,
+  charge:
+    row.charged_change === null || row.charged_at === null || row.charged_visit_start === null
+      ? null
+      : {
+          change: row.charged_change === "cancelled" ? ("cancelled" as const) : ("moved" as const),
+          at: row.charged_at,
+          visit_started_at: row.charged_visit_start,
+          amount: row.charged_amount ?? 0,
+        },
 });
 
 const refundOf = (row: RefundRow) => ({
@@ -227,11 +279,26 @@ export function registerClientPayments(app: App): void {
     const payment = await db.prepare(`${PAYMENT_QUERY} AND p.id = ?2`).bind(session.subjectId, id).first<PaymentRow>();
     if (payment !== null) {
       const invoice = payment.fsm_invoice_id === null ? null : payment.appointment_id;
-      return c.json({ ...paymentOf(payment), documents: { invoice, receipt: null } }, 200);
+      const receipt = payment.books_payment_id === null ? null : payment.id;
+      return c.json({ ...paymentOf(payment), documents: { invoice, receipt } }, 200);
     }
     const refund = await db.prepare(`${REFUND_QUERY} AND r.id = ?2`).bind(session.subjectId, id).first<RefundRow>();
     if (refund === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json({ ...refundOf(refund), voucher: null }, 200);
+  });
+
+  app.openapi(receiptRoute, async (c) => {
+    const session = c.var.clientSession;
+    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const payment = await c.env.DB.prepare(
+      "SELECT books_payment_id FROM payments WHERE id = ?1 AND person_id = ?2 AND status != 'failed'",
+    )
+      .bind(c.req.valid("param").id, session.subjectId)
+      .first<{ books_payment_id: string | null }>();
+    if (payment === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    const pdf = payment.books_payment_id === null ? null : await c.var.deps.books.receiptPdf(payment.books_payment_id);
+    if (pdf === null) return c.json(errorBody("not_ready", c.var.requestId), 409);
+    return pdfResponse(pdf.body, "receipt.pdf");
   });
 
   app.openapi(documentRoute, async (c) => {
@@ -245,12 +312,15 @@ export function registerClientPayments(app: App): void {
     if (visit === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const pdf = visit.fsm_invoice_id === null ? null : await c.var.deps.books.invoicePdf(visit.fsm_invoice_id);
     if (pdf === null) return c.json(errorBody("not_ready", c.var.requestId), 409);
-    return new Response(pdf.body, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": 'inline; filename="invoice.pdf"',
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return pdfResponse(pdf.body, "invoice.pdf");
   });
 }
+
+const pdfResponse = (body: ReadableStream<Uint8Array>, filename: string) =>
+  new Response(body, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${filename}"`,
+      "Cache-Control": "private, no-store",
+    },
+  });
