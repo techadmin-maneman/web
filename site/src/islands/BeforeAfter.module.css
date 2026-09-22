@@ -7,8 +7,10 @@
 .teaser {
   height: var(--teaser-frame-h);
 }
+/* The photograph's own shape, until one has loaded (site/src/lib/frame-aspect.ts). */
 .result {
-  height: var(--result-frame-h);
+  aspect-ratio: var(--frame-aspect, 4 / 3);
+  max-height: var(--result-frame-max-h);
 }
 .from46 {
   --position: 46%;
@@ -28,7 +30,8 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* Contained, never cropped: a face must not lose its hairline to the frame. */
+  object-fit: contain;
 }
 .before {
   clip-path: inset(0 calc(100% - var(--position)) 0 0);
