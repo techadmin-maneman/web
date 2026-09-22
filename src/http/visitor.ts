@@ -4,12 +4,7 @@
 import type { Context } from "hono";
 import type { AppEnv } from "../app.ts";
 import { saltedHash } from "../lib/hash.ts";
-import {
-  TURNSTILE_ALWAYS_PASS_SECRET,
-  TURNSTILE_TEST_TOKEN,
-  verifyTurnstile,
-  type TurnstileResult,
-} from "../providers/turnstile.ts";
+import { TURNSTILE_TEST_TOKEN, verifyTurnstile, type TurnstileResult } from "../providers/turnstile.ts";
 
 export interface Visitor {
   /** For Turnstile only; never stored or logged. */
@@ -22,12 +17,19 @@ export async function visitorOf(c: Context<AppEnv>): Promise<Visitor> {
   return { ip, ipHash: await saltedHash(c.var.config.settings.ipHashSalt, ip ?? "unknown") };
 }
 
-/** Staging also accepts Cloudflare's dummy token (docs/decisions/0011-lead-api.md). */
+/**
+ * Local and staging also accept Cloudflare's dummy token (docs/decisions/0011-lead-api.md),
+ * and answer it here rather than asking Cloudflare: its test secret passes that token by
+ * definition, so the round trip decides nothing and only adds an internet dependency. A slow
+ * or refused siteverify answered "unavailable", which failed browser tests and staging proofs
+ * for no reason of ours. Production never accepts the token (the guard refuses the switch),
+ * and every real token is checked with the real secret, everywhere.
+ */
 export function checkTurnstile(c: Context<AppEnv>, token: string, visitor: Visitor): Promise<TurnstileResult> {
   const { settings } = c.var.config;
-  const isTestToken = settings.acceptTurnstileTestToken && token === TURNSTILE_TEST_TOKEN;
+  if (settings.acceptTurnstileTestToken && token === TURNSTILE_TEST_TOKEN) return Promise.resolve("passed");
   return verifyTurnstile({
-    secret: isTestToken ? TURNSTILE_ALWAYS_PASS_SECRET : settings.turnstileSecret,
+    secret: settings.turnstileSecret,
     token,
     ip: visitor.ip,
     fetch: c.var.deps.fetch,

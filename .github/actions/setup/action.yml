@@ -3,9 +3,11 @@ description: Node from .nvmrc and a clean install from the lockfile.
 runs:
   using: composite
   steps:
+    # npm's cache: GitHub's on its own runners; on ours (docs/decisions/0006-deployment-pipeline.md, "The runner") the one on the
+    # runner's disk, which lasts between jobs, since fetching GitHub's took minutes and could stall.
     - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: .nvmrc
-        cache: npm
+        cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
     - run: npm ci
       shell: bash
