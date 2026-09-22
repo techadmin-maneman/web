@@ -1,8 +1,9 @@
 // Zoho FSM, the system of record for field work, behind an interface
 // (docs/decisions/0032-fsm-mirror.md). Callers use FsmProvider; only this file
 // knows which implementation runs, and only src/providers/fsm-zoho.ts knows
-// FSM's API. Reads feed the D1 mirror. The only writes so far put a booked
-// lead into FSM, as a contact and a Request for ops to schedule.
+// FSM's API. Reads feed the D1 mirror. Writes put a booked lead into FSM, as a
+// contact and a Request for ops to schedule, and a visit a client booked and
+// paid for in the app, as a work order and its appointment.
 
 import type { ZohoFsmSettings } from "../config/settings.ts";
 import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES } from "../config/visit-types.ts";
@@ -96,6 +97,18 @@ export interface NewFsmRequest {
   readonly preferenceNote: string;
 }
 
+/** A visit to book in FSM: a work order for the service, and its appointment with the technician. */
+export interface NewFsmVisit {
+  readonly contactId: string;
+  readonly summary: string;
+  readonly serviceId: string;
+  /** The technician's service resource in FSM. */
+  readonly technicianId: string;
+  /** ISO 8601 with India's offset, as FSM takes it. */
+  readonly start: string;
+  readonly end: string;
+}
+
 export interface FsmProvider {
   appointment(id: string): Promise<FsmAppointment | null>;
   /** One page of appointments, most recently changed first, for the reconciliation. */
@@ -110,6 +123,8 @@ export interface FsmProvider {
   createContact(contact: NewFsmContact): Promise<string>;
   /** Adds a Request against a contact's service address; returns its FSM ID. */
   createRequest(request: NewFsmRequest): Promise<string>;
+  /** Books a visit: a work order and its appointment, assigned to the technician. */
+  createVisit(visit: NewFsmVisit): Promise<{ workOrderId: string; appointmentId: string }>;
 }
 
 export function createFsmProvider(
@@ -153,12 +168,16 @@ export const EMPTY_FSM: StubFsmWorld = {
 
 /** The stub, and what was written to it, for tests to read. */
 export interface StubFsm extends FsmProvider {
-  readonly made: { readonly contacts: NewFsmContact[]; readonly requests: NewFsmRequest[] };
+  readonly made: {
+    readonly contacts: NewFsmContact[];
+    readonly requests: NewFsmRequest[];
+    readonly visits: NewFsmVisit[];
+  };
 }
 
 /** Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it. */
 export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
-  const made = { contacts: [] as NewFsmContact[], requests: [] as NewFsmRequest[] };
+  const made = { contacts: [] as NewFsmContact[], requests: [] as NewFsmRequest[], visits: [] as NewFsmVisit[] };
   return {
     made,
     appointment: (id) => Promise.resolve(world.appointments.find((appointment) => appointment.id === id) ?? null),
@@ -190,6 +209,11 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       made.requests.push(request);
       return Promise.resolve(`stub-request-${String(made.requests.length)}`);
     },
+    createVisit: (visit) => {
+      made.visits.push(visit);
+      const n = String(made.visits.length);
+      return Promise.resolve({ workOrderId: `stub-work-order-${n}`, appointmentId: `stub-appointment-${n}` });
+    },
   };
 }
 
@@ -206,5 +230,6 @@ function createUnconnectedFsm(): FsmProvider {
     download: off,
     createContact: off,
     createRequest: off,
+    createVisit: off,
   };
 }

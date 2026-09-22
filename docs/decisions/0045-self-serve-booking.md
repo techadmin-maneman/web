@@ -1,6 +1,6 @@
 # 0045. Self-serve booking and prepayment
 
-- Status: accepted; in progress
+- Status: accepted; moving and cancelling in progress
 - Date: 2026-09-22
 
 ## Context
@@ -19,7 +19,16 @@ The prompt's P2-M5: "availability, holds, Razorpay checkout, credit redemption, 
 
 **A hold** (`POST /api/holds`) takes the window for ten minutes: the regular technician if free, else whoever has least that day. It carries the price at that moment, the late fee a first fit or replacement would cost to move inside 24 hours, and when moving stops being free (24 hours before the window opens). A client has one hold at a time; a new one lets the old go.
 
-**Payment and the write to FSM** arrive in the next change: a Razorpay order for the hold, Checkout in the app, and, once Razorpay's webhook confirms the capture, the visit written to FSM, with a refund if FSM refuses it or the hold had lapsed.
+**Paying** (`POST /api/bookings`, `src/domain/bookings.ts`): the hold's Razorpay order, made once, whose notes carry the hold and the person, and what Checkout opens with. A free visit, a consultation, skips payment and goes straight to the queue.
+
+**Razorpay's webhook is the authority** (ADR 0044). On a capture whose notes name a hold, the hook puts the hold on the fsm-sync queue. The consumer then:
+
+- books the visit in FSM: the person's contact (added if they have none), a work order for the service, and its appointment with the hold's technician, from its half-slot for its length;
+- then, in one batch, the visit in the mirror, the hold booked, its claims let go, and the payment linked to the visit;
+- refunds the payment in full instead, if it was captured after the hold had lapsed. The refund is claimed on the hold first (`refunded_at`, migration 0017), so a repeated message cannot refund twice;
+- retries a failure four times over seven minutes, then refunds the payment and alerts ops.
+
+The app polls `GET /api/holds/:id`, which says when the hold is paid and which visit it became.
 
 ## Consequences
 

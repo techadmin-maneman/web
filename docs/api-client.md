@@ -936,6 +936,52 @@ Let a hold go
 }
 ```
 
+### POST /api/bookings
+
+Book a held window: pay through Checkout, or, if free, book it at once
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "hold_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: Started
+
+```json
+{
+  "$ref": "#/components/schemas/Booking"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: hold_expired: the hold lapsed, was let go, or is booked already; or ops_assisted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -2546,6 +2592,22 @@ Let a hold go
         "booked",
         "released"
       ]
+    },
+    "paid": {
+      "type": "boolean",
+      "description": "Razorpay has confirmed the payment; the visit is being booked."
+    },
+    "visit_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it became, once booked."
     }
   },
   "required": [
@@ -2560,7 +2622,88 @@ Let a hold go
     "late_fee",
     "free_until",
     "expires_at",
-    "state"
+    "state",
+    "paid",
+    "visit_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Booking
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "checkout": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "key_id": {
+              "type": "string"
+            },
+            "order_id": {
+              "type": "string"
+            },
+            "amount": {
+              "type": "integer"
+            },
+            "currency": {
+              "type": "string",
+              "enum": [
+                "INR"
+              ]
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "prefill": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "contact": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "contact"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "key_id",
+            "order_id",
+            "amount",
+            "currency",
+            "name",
+            "description",
+            "prefill"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What Razorpay Checkout opens with; null for a free visit, booked without paying."
+    }
+  },
+  "required": [
+    "hold_id",
+    "checkout"
   ],
   "additionalProperties": false
 }

@@ -7,15 +7,7 @@
 import { windowLabel, type VisitWindow } from "../config/booking.ts";
 import { FSM_SERVICE_NAMES } from "../config/visit-types.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-
-/** The state each served city is in, with its GST code, for the contact's place of supply. */
-const STATES: Readonly<Record<string, { state: string; code: string }>> = {
-  Gurgaon: { state: "Haryana", code: "HR" },
-  Faridabad: { state: "Haryana", code: "HR" },
-  Delhi: { state: "Delhi", code: "DL" },
-  Noida: { state: "Uttar Pradesh", code: "UP" },
-  Ghaziabad: { state: "Uttar Pradesh", code: "UP" },
-};
+import { fsmContactOf } from "./fsm-contacts.ts";
 
 /** The two windows a Phase 1 booking offers, in Phase 2's words (docs/decisions/0040-phase-1-alignment.md). */
 const WINDOWS = { "before noon": "Morning, 9 am to 12 pm", "after four": "Evening, 4 to 8 pm" } as const;
@@ -28,9 +20,6 @@ interface LeadRow {
   fsm_request_id: string | null;
   person_id: string;
   name: string;
-  mobile_e164: string;
-  email: string | null;
-  fsm_contact_id: string | null;
   erased_at: string | null;
 }
 
@@ -49,7 +38,7 @@ export async function sendLeadToFsm(
   const lead = await db
     .prepare(
       `SELECT l.source, l.city, l.first_choice_window, l.proposed_visit_date, l.fsm_request_id,
-              p.id AS person_id, p.name, p.mobile_e164, p.email, p.fsm_contact_id, p.erased_at
+              p.id AS person_id, p.name, p.erased_at
        FROM leads l JOIN people p ON p.id = l.person_id WHERE l.id = ?1`,
     )
     .bind(leadId)
@@ -58,7 +47,7 @@ export async function sendLeadToFsm(
   if (lead.erased_at !== null || lead.source !== "form" || lead.city === null) return "not_a_booking";
   if (lead.fsm_request_id !== null) return "already_sent";
 
-  const contactId = lead.fsm_contact_id ?? (await addContact(db, fsm, lead, lead.city));
+  const contactId = await fsmContactOf(db, fsm, lead.person_id, lead.city);
   const consultation = (await fsm.items()).find((item) => item.name === FSM_SERVICE_NAMES.consultation);
   if (consultation === undefined) throw new Error("FSM has no Consultation service item: run scripts/setup-fsm.ts");
 
@@ -71,24 +60,4 @@ export async function sendLeadToFsm(
   });
   await db.prepare("UPDATE leads SET fsm_request_id = ?1 WHERE id = ?2").bind(requestId, leadId).run();
   return "sent";
-}
-
-async function addContact(db: D1Database, fsm: FsmProvider, lead: LeadRow, city: string): Promise<string> {
-  const [first, ...rest] = lead.name.trim().split(/\s+/);
-  const place = STATES[city];
-  const contactId = await fsm.createContact({
-    firstName: rest.length === 0 ? null : (first ?? null),
-    lastName: rest.length === 0 ? lead.name.trim() : rest.join(" "),
-    mobile: lead.mobile_e164,
-    email: lead.email,
-    city,
-    state: place?.state ?? null,
-    stateCode: place?.code ?? null,
-  });
-  // Kept at once, so a retry after a failed Request does not add the contact twice.
-  await db
-    .prepare("UPDATE people SET fsm_contact_id = ?1 WHERE id = ?2 AND fsm_contact_id IS NULL")
-    .bind(contactId, lead.person_id)
-    .run();
-  return contactId;
 }

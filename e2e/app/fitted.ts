@@ -112,10 +112,10 @@ export async function seedFitted(): Promise<void> {
        ${row(id(), visits.firstFit, firstFit.start, firstFit.end, 150, "done", now)};`,
     `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
        status, captured_at, created_at, updated_at) VALUES
-       ${row(servicePaid, reference, person, visits.service, `pay_${servicePaid}`, 210000, "INR", "upi", "captured", service.end, service.end, now)},
-       ${row(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, 3150000, "INR", "card", "captured", firstFit.end, firstFit.end, now)};`,
+       ${row(servicePaid, reference, person, visits.service, `pay_${servicePaid}`, 200000, "INR", "upi", "captured", service.end, service.end, now)},
+       ${row(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, 3000000, "INR", "card", "captured", firstFit.end, firstFit.end, now)};`,
     `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, updated_at)
-       VALUES ${row(id(), servicePaid, `rfnd_${servicePaid}`, 105000, "created", "normal", day(-18).end, now)};`,
+       VALUES ${row(id(), servicePaid, `rfnd_${servicePaid}`, 100000, "created", "normal", day(-18).end, now)};`,
   ];
 
   const taken = [

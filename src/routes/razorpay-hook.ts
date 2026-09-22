@@ -17,6 +17,7 @@ import {
   type RazorpayPayment,
   type RazorpayRefund,
 } from "../domain/payments.ts";
+import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { saltedHash, secretsMatch, sha256Hex } from "../lib/hash.ts";
 
@@ -41,6 +42,13 @@ export const razorpayHookRoute = createRoute({
     409: errorResponse("not_ready: a refund for a payment not yet recorded; Razorpay retries it"),
   },
 });
+
+/** The hold a payment was for, from the notes our order gave it. */
+function holdOfNotes(notes: RazorpayPayment["notes"]): string | null {
+  if (notes === null || notes === undefined || Array.isArray(notes)) return null;
+  const holdId = notes.hold_id;
+  return typeof holdId === "string" && /^[0-9a-f-]{36}$/.test(holdId) ? holdId : null;
+}
 
 export function registerRazorpayHook(app: App): void {
   app.openapi(razorpayHookRoute, async (c) => {
@@ -81,6 +89,11 @@ export function registerRazorpayHook(app: App): void {
       const payment = payload.payment.entity as unknown as RazorpayPayment;
       const status = paymentStatusOf(event, payment);
       if (status !== null) await recordPayment(db, payment, status, config.settings.ipHashSalt, now);
+      // Paid for a hold in the app: the booking is written to FSM from the queue (src/domain/bookings.ts).
+      const holdId = holdOfNotes(payment.notes);
+      if (status === "captured" && holdId !== null) {
+        await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
+      }
     } else if (payload?.refund !== undefined) {
       const recorded = await recordRefund(db, payload.refund.entity as unknown as RazorpayRefund, now);
       // Its payment's event has not arrived yet. Not kept as seen, so Razorpay's retry is applied.
