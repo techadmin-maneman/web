@@ -68,8 +68,7 @@ async function deliver(event: object, eventId: string, options: { secret?: strin
   });
 }
 
-const payment = () =>
-  env.DB.prepare("SELECT * FROM payments WHERE razorpay_payment_id = 'pay_1'").first();
+const payment = () => env.DB.prepare("SELECT * FROM payments WHERE razorpay_payment_id = 'pay_1'").first();
 
 async function person(mobile: string) {
   const id = crypto.randomUUID();
