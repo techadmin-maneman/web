@@ -1,0 +1,54 @@
+/* Board A2's six boxes: ink lines, the next box in gilt while the field has focus, oxblood when wrong. */
+
+.field {
+  position: relative;
+  margin-top: var(--sp-36);
+}
+
+/* The real field lies over the boxes, unseen, so a tap anywhere on them types into it. */
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  font-size: var(--fs-16);
+  caret-color: transparent;
+}
+
+.boxes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--sp-9);
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--tap-row);
+  border: var(--hairline) solid var(--ink-line);
+  font-size: var(--fs-24);
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+.field:focus-within .box[data-next="true"] {
+  border-color: var(--gilt);
+}
+
+.field[data-invalid="true"] .box {
+  border-color: var(--error-on-ink);
+}
+
+.caret {
+  display: none;
+  width: var(--hairline);
+  height: var(--sp-26);
+  background: var(--paper);
+}
+
+.field:focus-within .caret {
+  display: block;
+}

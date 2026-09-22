@@ -315,6 +315,7 @@ export function registerClientProfile(app: App): void {
       newMobileE164: newMobile,
       pepper: config.settings.login.codePepper,
       now,
+      fixedCode: config.settings.login.fixedCode,
     });
     await recordAudit(
       db,

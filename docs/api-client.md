@@ -813,6 +813,10 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
     "first_name": {
       "type": "string"
     },
+    "initials": {
+      "type": "string",
+      "description": "For the profile's button: the first letters of the first and last names."
+    },
     "consultation": {
       "type": [
         "object",
@@ -829,11 +833,16 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
             "before noon",
             "after four"
           ]
+        },
+        "place": {
+          "type": "string",
+          "description": "Where it is: the saved address (locality, city and pincode), else the booking's city."
         }
       },
       "required": [
         "date",
-        "window_label"
+        "window_label",
+        "place"
       ],
       "additionalProperties": false,
       "description": "The booked consultation: its proposed date and window, to be confirmed on WhatsApp."
@@ -842,6 +851,7 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
   "required": [
     "state",
     "first_name",
+    "initials",
     "consultation"
   ],
   "additionalProperties": false

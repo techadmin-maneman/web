@@ -269,6 +269,24 @@ describe("validateStaticConfig: try-on and messaging", () => {
   });
 });
 
+describe("validateStaticConfig: the local fixed login code", () => {
+  it("is taken locally, for the browser tests", () => {
+    const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS, OTP_FIXED_CODE: "123456" };
+    expect(validateStaticConfig(local).settings.login.fixedCode).toBe("123456");
+  });
+
+  it("is refused in staging and production, where every code would be known", () => {
+    for (const environment of ["staging", "production"]) {
+      expect(problemsOf({ ...production, ENVIRONMENT: environment, OTP_FIXED_CODE: "123456" })).toContain(
+        "OTP_FIXED_CODE is set outside local: every login code would be known",
+      );
+    }
+    expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS, OTP_FIXED_CODE: "1234" })).toEqual([
+      "OTP_FIXED_CODE must be six digits",
+    ]);
+  });
+});
+
 describe("validateStaticConfig: Cloudflare Access", () => {
   it("reads the team domain, and needs no ops audience where the ops surface is switched off", () => {
     const { ACCESS_OPS_AUD: _omitted, ...withoutAudience } = production;

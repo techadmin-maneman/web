@@ -19,6 +19,7 @@ export default defineConfig(
       "playwright-report/",
       "src/worker-configuration.d.ts",
       "site/src/lib/api-schema.ts",
+      "apps/app/src/api-schema.ts",
     ],
   },
   eslint.configs.recommended,

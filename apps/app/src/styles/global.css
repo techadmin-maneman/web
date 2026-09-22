@@ -26,6 +26,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Signed in, the screens are on paper, and so is the page around the column. */
+body[data-ground="paper"] {
+  background: var(--paper);
+}
+
 /* On a wider screen the design's column is centred, not stretched. */
 #root {
   display: flex;
