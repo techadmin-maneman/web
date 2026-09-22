@@ -14,3 +14,6 @@ site/.astro/
 test-results/
 playwright-report/
 lighthouse/
+
+# Files the owner supplies that hold personal data, such as ops' referral log. Never committed.
+private/
