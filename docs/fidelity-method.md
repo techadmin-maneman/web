@@ -34,12 +34,12 @@ The board's own furniture is not part of the product: the canvas (`#CFCABE`), ca
 
 These differences are known and stand:
 
-| Pair     | Difference                                                                                     | Why                                                                                                  |
-| -------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| A1       | The design shows the typed number masked                                                       | A client sees the digits they type                                                                   |
-| A2       | "If +91 98xxx x4417 has a booking with us, a code is on its way on WhatsApp", and a link to A3 | The owner's neutral ruling (ADR 0030)                                                                |
-| A3       | Titled "No booking on this number?"                                                            | The same ruling                                                                                      |
-| B3 error | No "Your visit is still booked.", and centred on the screen                                    | Until Home has its own visit data (P2-F2), the app cannot know there is a visit (ADR 0043)           |
-| G1       | The address includes the house; the design shows the area only                                 | **An open question for the owner:** the form asks for the house, and the profile shows what it holds |
-| G1       | A fifth consent, "WhatsApp about launches"                                                     | The waitlist's launch alert (ADR 0042); its wording is a placeholder                                 |
-| G2       | The cards sit inside the page's 20 px margins                                                  | The design draws them on their own, 390 px wide                                                      |
+| Pair     | Difference                                                                                     | Why                                                                                               |
+| -------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| A1       | The design shows the typed number masked                                                       | A client sees the digits they type                                                                |
+| A2       | "If +91 98xxx x4417 has a booking with us, a code is on its way on WhatsApp", and a link to A3 | The owner's neutral ruling (ADR 0030)                                                             |
+| A3       | Titled "No booking on this number?"                                                            | The same ruling                                                                                   |
+| B3 error | No "Your visit is still booked.", and centred on the screen                                    | Until Home has its own visit data (P2-F2), the app cannot know there is a visit (ADR 0043)        |
+| G1       | The address includes the house; the design shows the area only                                 | The owner ruled on 22 September 2026 that the profile shows the whole address (ADR 0025, item 23) |
+| G1       | A fifth consent, "WhatsApp about launches"                                                     | The waitlist's launch alert (ADR 0042); its wording is a placeholder                              |
+| G2       | The cards sit inside the page's 20 px margins                                                  | The design draws them on their own, 390 px wide                                                   |

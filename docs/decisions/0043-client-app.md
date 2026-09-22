@@ -100,4 +100,4 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
   - A2's countdown kept a paragraph's default margins;
   - A3's box kept 20 px above its line, where the design keeps 30;
   - the profile's page started 28 px below its header, where G1 has 24.
-- **The known differences that stand** are listed in `docs/fidelity-method.md`. One is a question for the owner: the profile shows the whole address, the design only the area.
+- **The known differences that stand** are listed in `docs/fidelity-method.md`. One was the owner's to rule: the profile shows the whole address, where the design shows only the area. They ruled on 22 September 2026 to keep the whole address (ADR 0025, item 23).
