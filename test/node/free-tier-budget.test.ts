@@ -1,10 +1,13 @@
 // No ceiling in the committed config may take the account past 80% of a free
-// allowance. Raising one past it fails here (docs/decisions/0009).
+// allowance, counting the share set aside for Phase 2. Raising one past it
+// fails here (docs/decisions/0009, 0039).
 
 import { describe, expect, it } from "vitest";
 import {
   FREE_TIER,
   overBudget,
+  PHASE_2_ALLOWANCE,
+  photoRunwayVisits,
   queueOperationsPerRender,
   worstCaseUsage,
   type Ceilings,
@@ -30,8 +33,19 @@ function ceilingsOf(environment: "staging" | "production"): Ceilings {
 const committed = [ceilingsOf("staging"), ceilingsOf("production")];
 
 describe("free-tier budget", () => {
-  it("keeps the committed ceilings, staging and production together, under 80% of every free allowance", () => {
+  it("keeps the committed ceilings, staging and production together, with Phase 2's share, under 80% of every free allowance", () => {
     expect(overBudget(worstCaseUsage(committed))).toEqual([]);
+  });
+
+  it("has no room for Phase 2's photographs if the try-on kept its results for thirty days", () => {
+    const [staging, production] = committed as [Ceilings, Ceilings];
+    const thirtyDays = worstCaseUsage([staging, { ...production, resultRetentionDays: 30 }]);
+    expect(overBudget(thirtyDays)).toEqual([expect.stringMatching(/^R2 storage/) as string]);
+  });
+
+  it("gives Phase 2 room for about 1,500 visits' photographs, beside the referral cards", () => {
+    expect(PHASE_2_ALLOWANCE.r2StorageBytes).toBe(4e9);
+    expect(photoRunwayVisits()).toBe(1_480);
   });
 
   it("counts a render polled to the give-up time, its download retries, its message and its CRM sync", () => {

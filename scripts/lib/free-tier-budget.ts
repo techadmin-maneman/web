@@ -1,7 +1,9 @@
 // The worst case the try-on can cost Cloudflare, from the ceilings in each
-// environment's config. test/node/free-tier-budget.test.ts holds it under 80%
-// of the free allowances, so no ceiling can be raised past the free tier
-// without the build failing (docs/decisions/0009-stay-inside-cloudflare-free-tier.md).
+// environment's config, plus the share set aside for Phase 2.
+// test/node/free-tier-budget.test.ts holds the two together under 80% of the
+// free allowances, so no ceiling can be raised past the free tier, or into
+// Phase 2's share, without the build failing
+// (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, 0039-phase-2-budget.md).
 //
 // Staging and production share one Cloudflare account, and so one allowance.
 
@@ -25,6 +27,30 @@ export const FREE_TIER = {
 } as const;
 
 export const HEADROOM = 0.8;
+
+/**
+ * Phase 2's share of the same allowances (docs/decisions/0039-phase-2-budget.md).
+ * Nothing in Phase 2 has a ceiling in config yet, so its share is set aside here.
+ */
+export const PHASE_2_ALLOWANCE = {
+  /** FSM webhook hints read back from the queue, and the Phase 2 messages. */
+  queueOperationsPerDay: 2_000,
+  /** Clients' photographs, which are never deleted, and referral cards. */
+  r2StorageBytes: 4e9,
+  r2ClassAPerMonth: 100_000,
+  r2ClassBPerMonth: 1_000_000,
+} as const;
+
+/** A visit's photographs: five before and five after, each re-encoded on the phone to about 250 KB. */
+export const PHOTOS_PER_VISIT = 10;
+export const PHOTO_BYTES = 250_000;
+/** Referral cards: one 1200×630 JPEG of at most 300 KB per referrer, for up to a thousand referrers. */
+export const REFERRAL_CARDS_BYTES = 1_000 * 300_000;
+
+/** How many visits' photographs fit in Phase 2's R2 share, after the referral cards. */
+export function photoRunwayVisits(): number {
+  return Math.floor((PHASE_2_ALLOWANCE.r2StorageBytes - REFERRAL_CARDS_BYTES) / (PHOTOS_PER_VISIT * PHOTO_BYTES));
+}
 const DAYS_PER_MONTH = 31;
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** The sweeper runs every 5 minutes, so a photo can outlive its retention by one run. */
@@ -89,17 +115,27 @@ export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
   };
 }
 
-/** Each use over 80% of its allowance, as a readable line; empty when all fit. */
-export function overBudget(usage: Usage): string[] {
+/**
+ * Each use over 80% of its allowance once Phase 2's share is added, as a
+ * readable line; empty when all fit.
+ */
+export function overBudget(usage: Usage, reserved: Usage = PHASE_2_ALLOWANCE): string[] {
   const lines: string[] = [];
-  const check = (name: string, used: number, allowance: number): void => {
-    if (used > allowance * HEADROOM) {
-      lines.push(`${name}: ${String(Math.round(used))} is over 80% of the free ${String(allowance)}`);
+  const check = (name: string, used: number, set: number, allowance: number): void => {
+    if (used + set > allowance * HEADROOM) {
+      lines.push(
+        `${name}: ${String(Math.round(used))}, with Phase 2's ${String(set)}, is over 80% of the free ${String(allowance)}`,
+      );
     }
   };
-  check("Queues operations a day", usage.queueOperationsPerDay, FREE_TIER.queueOperationsPerDay);
-  check("R2 storage (bytes)", usage.r2StorageBytes, FREE_TIER.r2StorageBytes);
-  check("R2 Class A operations a month", usage.r2ClassAPerMonth, FREE_TIER.r2ClassAPerMonth);
-  check("R2 Class B operations a month", usage.r2ClassBPerMonth, FREE_TIER.r2ClassBPerMonth);
+  check(
+    "Queues operations a day",
+    usage.queueOperationsPerDay,
+    reserved.queueOperationsPerDay,
+    FREE_TIER.queueOperationsPerDay,
+  );
+  check("R2 storage (bytes)", usage.r2StorageBytes, reserved.r2StorageBytes, FREE_TIER.r2StorageBytes);
+  check("R2 Class A operations a month", usage.r2ClassAPerMonth, reserved.r2ClassAPerMonth, FREE_TIER.r2ClassAPerMonth);
+  check("R2 Class B operations a month", usage.r2ClassBPerMonth, reserved.r2ClassBPerMonth, FREE_TIER.r2ClassBPerMonth);
   return lines;
 }
