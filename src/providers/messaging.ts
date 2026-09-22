@@ -14,9 +14,19 @@ export type SendResult =
       readonly detail: string;
     };
 
+export interface OutboundMessage {
+  /** The recipient, as E.164. */
+  readonly to: string;
+  /** A template in src/config/message-templates.ts. */
+  readonly template: string;
+  /** The template's {{1}}, {{2}}, …, in order. */
+  readonly params: readonly string[];
+  /** A publicly reachable image to send with the text. */
+  readonly mediaUrl?: string;
+}
+
 export interface MessagingProvider {
-  /** Sends an approved template to an E.164 number, with an image header when mediaUrl is given. */
-  sendTemplate(to: string, templateName: string, params: readonly string[], mediaUrl?: string): Promise<SendResult>;
+  send(message: OutboundMessage): Promise<SendResult>;
 }
 
 export function createMessagingProvider(
@@ -29,8 +39,8 @@ export function createMessagingProvider(
 /** Local and test stand-in: sends nothing, logs no number, reports success. */
 export function createStubMessaging(log: Logger): MessagingProvider {
   return {
-    sendTemplate: (_to, templateName, params, mediaUrl) => {
-      log.info("messaging_stub_send", { template: templateName, params: params.length, media: mediaUrl !== undefined });
+    send: ({ template, params, mediaUrl }) => {
+      log.info("messaging_stub_send", { template, params: params.length, media: mediaUrl !== undefined });
       return Promise.resolve({ ok: true, providerMessageId: `stub-${crypto.randomUUID()}` });
     },
   };

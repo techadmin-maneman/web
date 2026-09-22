@@ -212,7 +212,18 @@ describe("validateStaticConfig: try-on and messaging", () => {
       baseUrl: "https://bridge.example",
       apiKey: "evolution-key",
       instance: "maneman",
+      webhookToken: null,
     });
+  });
+
+  it("takes an optional webhook token for Evolution's delivery receipts, long enough to be a secret", () => {
+    const token = "a-webhook-token-of-at-least-thirty-two-chars";
+    expect(
+      validateStaticConfig({ ...production, EVOLUTION_WEBHOOK_TOKEN: token }).settings.messaging.evolution,
+    ).toMatchObject({ webhookToken: token });
+    expect(problemsOf({ ...production, EVOLUTION_WEBHOOK_TOKEN: "short" })).toEqual([
+      "EVOLUTION_WEBHOOK_TOKEN must be at least 32 characters",
+    ]);
   });
 
   it("refuses a short signing key, an unknown colour route, template or retention", () => {

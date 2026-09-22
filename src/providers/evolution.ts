@@ -17,6 +17,8 @@ export interface EvolutionSettings {
   readonly baseUrl: string;
   readonly apiKey: string;
   readonly instance: string;
+  /** The secret in the delivery-receipt webhook's path. Unset, the webhook answers 404. */
+  readonly webhookToken: string | null;
 }
 
 /**
@@ -31,9 +33,9 @@ export function createEvolutionMessaging(
   deps: { fetch: typeof fetch },
 ): MessagingProvider {
   return {
-    async sendTemplate(to, templateName, params, mediaUrl): Promise<SendResult> {
-      const text = renderMessage(templateName, params);
-      if (text === null) return { ok: false, transient: false, detail: `unknown template ${templateName}` };
+    async send({ to, template, params, mediaUrl }): Promise<SendResult> {
+      const text = renderMessage(template, params);
+      if (text === null) return { ok: false, transient: false, detail: `unknown template ${template}` };
 
       const number = to.replace(/\D/g, ""); // "+919810000000" -> "919810000000"
       const [path, body] =
