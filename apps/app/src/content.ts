@@ -209,6 +209,13 @@ export const booking = {
     // PLACEHOLDER: a free consultation has no payment; the design draws the credit board's button.
     free: "Free",
     confirm: "Confirm visit",
+    // Board C5: a service-visit credit covers it.
+    credit: {
+      zero: "Rs. 0",
+      used: "1 visit credit used",
+      remaining: (left: number) => `${String(left)} remaining`,
+      note: "Cancel inside 24 hours and the credit is gone.",
+    },
   },
   failed: {
     label: "Payment failed",
@@ -255,6 +262,7 @@ export const change = {
     freeNothingPaid: "Free to move.",
     lateFee: (fee: string) => `Moving inside 24 hours costs ${fee}. The balance carries over.`,
     cancelInstead: "Cancel the visit instead",
+    creditCharged: "Charged. The credit is not returned and the new visit is paid separately.",
   },
   cancel: {
     title: (visit: string) => `Cancel ${visit}`,
@@ -267,6 +275,11 @@ export const change = {
     charged: (amount: string) => `Charged. The ${amount} is not refunded.`,
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",
+    creditBack: "Your credit comes back.",
+    // Board C8, inside 24 hours, for a credit booking.
+    creditUsed: (left: string | null, expiry: string) =>
+      left === null ? "Your credit is used." : `Your credit is used. ${left} left, expiring ${expiry}.`,
+    acceptCredit: "Cancel and use credit",
     done: "Cancelled",
     doneLine: (visit: string) => `${visit} is cancelled.`,
     close: "Done",

@@ -2195,6 +2195,11 @@ export interface components {
             visit_id: string | null;
             /** @description The visit this hold moves; null for a new booking. */
             moves_visit_id: string | null;
+            /** @description A service-visit credit covers it, so payment is skipped (board C5). */
+            credit: {
+                /** @description Credits left once this one is used. */
+                remaining: number;
+            } | null;
         };
         Booking: {
             /** Format: uuid */
@@ -2228,6 +2233,8 @@ export interface components {
             free_until: string;
             /** @description In paise: what the visit's payment holds, carried over or kept. */
             paid: number;
+            /** @description For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late). */
+            credit: ("restored" | "lost") | null;
             /**
              * @description free: the payment carries over; late_fee: the late fee is paid, then the payment carries over; charged: the payment is kept, and the new visit is paid separately.
              * @enum {string}
@@ -2249,6 +2256,8 @@ export interface components {
             free_until: string;
             /** @description In paise: what the visit's payment holds, carried over or kept. */
             paid: number;
+            /** @description For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late). */
+            credit: ("restored" | "lost") | null;
             /** @description In paise: what goes back to the payment's source. */
             refund: number;
             /** @description In paise: what is kept as a charge. */

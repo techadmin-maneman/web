@@ -2923,6 +2923,27 @@ The client's code, credits and fitted friends
         }
       ],
       "description": "The visit this hold moves; null for a new booking."
+    },
+    "credit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "remaining": {
+              "type": "integer",
+              "description": "Credits left once this one is used."
+            }
+          },
+          "required": [
+            "remaining"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A service-visit credit covers it, so payment is skipped (board C5)."
     }
   },
   "required": [
@@ -2940,7 +2961,8 @@ The client's code, credits and fitted friends
     "state",
     "paid",
     "visit_id",
-    "moves_visit_id"
+    "moves_visit_id",
+    "credit"
   ],
   "additionalProperties": false
 }
@@ -3060,6 +3082,21 @@ The client's code, credits and fitted friends
       "type": "integer",
       "description": "In paise: what the visit's payment holds, carried over or kept."
     },
+    "credit": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "restored",
+            "lost"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late)."
+    },
     "cost": {
       "type": "string",
       "enum": [
@@ -3086,6 +3123,7 @@ The client's code, credits and fitted friends
     "notice",
     "free_until",
     "paid",
+    "credit",
     "cost",
     "price"
   ],
@@ -3128,6 +3166,21 @@ The client's code, credits and fitted friends
       "type": "integer",
       "description": "In paise: what the visit's payment holds, carried over or kept."
     },
+    "credit": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "restored",
+            "lost"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late)."
+    },
     "refund": {
       "type": "integer",
       "description": "In paise: what goes back to the payment's source."
@@ -3158,6 +3211,7 @@ The client's code, credits and fitted friends
     "notice",
     "free_until",
     "paid",
+    "credit",
     "refund",
     "kept",
     "destination",

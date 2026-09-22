@@ -21,8 +21,22 @@ A referral earns each side 3 service-visit credits, which expire 365 days after 
 
 **The balance is summed** (`creditBalance`) over grants still in date, with the soonest expiry for the credit tile. **Spending takes the grant that expires soonest** (`redeemCredit`).
 
+## Spending (P2-M3)
+
+**A credit covers a service visit whenever the client has one,** as board C5 draws it ("Credit covers it · payment skipped"). This applies to a new service visit, or one replacing a visit moved inside 24 hours.
+
+- The hold says so (`credit: { remaining }`), and booking skips payment.
+- Once the visit is booked, one credit is redeemed for it, from the grant that expires soonest.
+- If a credit was spent elsewhere in the minutes between, the visit stands, as ops would let it.
+- First fits, replacements and consultations are never covered: the credits are service visits.
+
+**Changing a visit paid with a credit** (ADR 0046):
+
+- Cancelling more than 24 hours out restores the credit, to the grant it came from.
+- Cancelling inside 24 hours loses it ("a credit booking loses the credit").
+- A free move keeps it with the visit. A late move of a service visit is charged, and the credit is not returned.
+
 ## Consequences
 
 - Credits appear on Home (`GET /api/me`) and the Refer tab (`GET /api/refer`) once there is a balance.
-- Redeeming at booking, restoring on a free cancel, the daily expiry, and clawbacks arrive with the grant (P2-M3).
 - An erased person's ledger stays: it is a record of money's worth, like their payments.

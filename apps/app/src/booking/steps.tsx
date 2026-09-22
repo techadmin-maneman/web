@@ -199,7 +199,8 @@ export function PayStep(props: {
   const copy = booking.pay;
   const left = useHoldLeft(hold);
   const technician = firstName(hold.technician.name);
-  const free = hold.price.amount === 0;
+  const covered = hold.credit !== null;
+  const free = hold.price.amount === 0 || covered;
   // A move in place keeps the visit as it was booked: only its new time, and what the move costs, are shown.
   const inPlace = moving !== undefined && moving.cost !== "charged";
   const isFirstFit = hold.type === "first_fit" && !inPlace;
@@ -214,10 +215,19 @@ export function PayStep(props: {
             {isFirstFit && <p className={styles.itemWhen}>{copy.firstFitBlock}</p>}
           </div>
           <div className={styles.money}>
-            <p className={styles.amount}>{free ? copy.free : rupees(hold.price.amount_ex_gst)}</p>
+            {covered && <p className={styles.was}>{rupees(hold.price.amount_ex_gst)}</p>}
+            <p className={styles.amount}>
+              {covered ? copy.credit.zero : free ? copy.free : rupees(hold.price.amount_ex_gst)}
+            </p>
             {!free && <p className={styles.incl}>{copy.incl(rupees(hold.price.amount))}</p>}
           </div>
         </div>
+        {hold.credit !== null && (
+          <p className={styles.creditLine}>
+            <span>{copy.credit.used}</span>
+            <span>{copy.credit.remaining(hold.credit.remaining)}</span>
+          </p>
+        )}
         {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
         {inPlace ? (
           <p className={`${styles.line} ${styles.soft}`}>
@@ -226,9 +236,12 @@ export function PayStep(props: {
         ) : hold.late_fee !== null ? (
           <p className={`${styles.line} ${styles.soft}`}>{copy.lateFee(rupees(hold.late_fee.amount_ex_gst))}</p>
         ) : (
-          <p className={`${styles.line} ${styles.soft}`}>
-            {copy.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`)}
-          </p>
+          // A credit's own note, below, says what cancelling late costs.
+          !covered && (
+            <p className={`${styles.line} ${styles.soft}`}>
+              {copy.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`)}
+            </p>
+          )
         )}
       </div>
       {!free && (
@@ -264,6 +277,7 @@ export function PayStep(props: {
         {free ? (moving === undefined ? copy.confirm : change.confirmMove) : copy.pay(rupees(hold.price.amount))}
       </button>
       {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
+      {covered && <p className={styles.moneyNote}>{copy.credit.note}</p>}
     </>
   );
 }

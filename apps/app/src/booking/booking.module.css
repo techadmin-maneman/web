@@ -289,6 +289,33 @@
   font-variant-numeric: lining-nums tabular-nums;
 }
 
+/* Board C5: a credit covers it, so the price is struck through. */
+.was {
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.was + .amount {
+  margin-top: var(--sp-8);
+}
+
+.creditLine {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  padding: var(--sp-16) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-15);
+}
+
+.creditLine span:last-child {
+  color: var(--text-muted);
+}
+
 .sheet .incl {
   margin-top: var(--sp-5);
   font-size: var(--fs-13);

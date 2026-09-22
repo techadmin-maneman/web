@@ -109,6 +109,8 @@ export interface ChangeTerms {
   readonly move: { readonly cost: MoveCost; readonly price: Price };
   /** In paise: what cancelling gives back, and what it keeps. */
   readonly cancel: { readonly refund: number; readonly kept: number };
+  /** For a visit paid with a credit, the grant it came from; cancelling gives it back only when free. */
+  readonly credit: { readonly grantId: string } | null;
 }
 
 /**
@@ -134,6 +136,14 @@ export async function changeTerms(
   const movePrice =
     cost === "late_fee" ? (lateFee ?? ZERO(gst)) : cost === "charged" ? (visitPrice ?? ZERO(gst)) : ZERO(gst);
 
+  const redeemed = await db
+    .prepare(
+      `SELECT r.grant_id FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = ?1
+         AND NOT EXISTS (SELECT 1 FROM credit_ledger x WHERE x.kind = 'restore' AND x.source_id = ?1)`,
+    )
+    .bind(visit.id)
+    .first<{ grant_id: string }>();
+
   const refunding = cancelRefund(visit.type, notice);
   const refund =
     refunding === "all" ? paid : refunding === "all_but_fee" ? Math.max(0, paid - (lateFee?.amount ?? 0)) : 0;
@@ -144,6 +154,7 @@ export async function changeTerms(
     payment,
     move: { cost, price: movePrice },
     cancel: { refund, kept: paid - refund },
+    credit: redeemed === null ? null : { grantId: redeemed.grant_id },
   };
 }
 
@@ -212,11 +223,23 @@ export async function cancelVisit(
     kind: "cancel_confirmation",
     now,
   });
+  const restore =
+    terms.credit !== null && notice === "free"
+      ? [
+          db
+            .prepare(
+              `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+               VALUES (?1, ?2, 'restore', 1, ?3, 'appointment', ?4, ?5)`,
+            )
+            .bind(crypto.randomUUID(), visit.personId, terms.credit.grantId, visit.id, at),
+        ]
+      : [];
   await db.batch([
     db
       .prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2")
       .bind(at, visit.id),
     message.statement,
+    ...restore,
   ]);
 
   if (payment !== null && cancel.refund > 0) {

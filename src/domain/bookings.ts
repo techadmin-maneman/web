@@ -16,6 +16,7 @@ import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/razorpay.ts";
 import { fsmContactOf } from "./fsm-contacts.ts";
 import { visitTimes } from "./scheduling.ts";
+import { redeemCredit } from "./credits.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage } from "./visit-messages.ts";
 
@@ -40,6 +41,7 @@ interface HoldRow {
   razorpay_order_id: string | null;
   moves_appointment_id: string | null;
   move_kind: "move" | "replace" | null;
+  use_credit: number;
 }
 
 async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
@@ -47,7 +49,7 @@ async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
     .prepare(
       `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.date, h.start_unit, h.technician_id,
               t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at, h.razorpay_order_id,
-              h.moves_appointment_id, h.move_kind
+              h.moves_appointment_id, h.move_kind, h.use_credit
        FROM slot_holds h JOIN technicians t ON t.id = h.technician_id JOIN people p ON p.id = h.person_id
        WHERE h.id = ?1`,
     )
@@ -67,7 +69,7 @@ export async function startBooking(
 ): Promise<Started | null> {
   const hold = await holdOf(db, holdId);
   if (hold?.person_id !== personId || hold.state !== "held" || hold.expires_at <= now.toISOString()) return null;
-  if (hold.amount === 0) return { kind: "free" };
+  if (hold.amount === 0 || hold.use_credit === 1) return { kind: "free" };
   if (hold.razorpay_order_id !== null) return { kind: "pay", orderId: hold.razorpay_order_id };
   const order = await payments.createOrder({
     amount: hold.amount,
@@ -120,7 +122,7 @@ export async function confirmBooking(
     return "already_booked";
   }
   const payment = await capturedFor(db, hold.razorpay_order_id);
-  if (hold.amount > 0 && payment === null) return "not_paid";
+  if (hold.amount > 0 && hold.use_credit !== 1 && payment === null) return "not_paid";
 
   const lapsed = hold.state === "released" || (payment?.captured_at ?? now.toISOString()) > hold.expires_at;
   if (lapsed) {
@@ -181,6 +183,11 @@ export async function confirmBooking(
     .prepare("SELECT id FROM appointments WHERE fsm_id = ?1")
     .bind(booked.appointmentId)
     .first<{ id: string }>();
+  if (visit !== null && hold.use_credit === 1) {
+    // Checked when the hold was made; a credit spent meanwhile leaves the visit booked, as ops would.
+    const redeem = await redeemCredit(db, hold.person_id, visit.id, now);
+    await redeem?.run();
+  }
   if (visit !== null) {
     const kind =
       hold.move_kind === "replace"

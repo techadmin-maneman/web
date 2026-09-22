@@ -121,7 +121,15 @@ export async function composeVisitMessage(
       )
       .bind(appointmentId)
       .first<{ amount: number; reference: string | null }>();
-    if (payment === null) return { skip: "no captured payment for the visit" };
+    if (payment === null) {
+      const credit = await db
+        .prepare("SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_id = ?1")
+        .bind(appointmentId)
+        .first();
+      return credit === null
+        ? { skip: "no captured payment for the visit" }
+        : { template: "visit_booked_credit_v1", params };
+    }
     if (payment.reference === null) return { skip: "the payment has no reference yet" };
     params[5] = rupees(payment.amount);
     params[6] = payment.reference;
@@ -135,6 +143,11 @@ export async function composeVisitMessage(
     .bind(appointmentId)
     .first<{ refund_amount: number; method: string | null }>();
   if (cancelled === null) return { skip: "the visit was not cancelled by the client" };
+  const restored = await db
+    .prepare("SELECT 1 FROM credit_ledger WHERE kind = 'restore' AND source_id = ?1")
+    .bind(appointmentId)
+    .first();
+  if (restored !== null) return { template: "visit_cancelled_credit_v1", params };
   if (cancelled.refund_amount === 0) return { template: "visit_cancelled_v1", params };
   params[5] = rupees(cancelled.refund_amount);
   params[7] = DESTINATIONS[cancelled.method ?? ""] ?? "payment method";
