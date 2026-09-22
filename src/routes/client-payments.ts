@@ -9,7 +9,8 @@
 //
 // Amounts are in paise, as Razorpay charged them, GST included; each carries
 // its ex-GST part, which the app shows as the main figure. A failed attempt is
-// not a payment and is left out. Charges arrive with booking (P2-M5).
+// not a payment and is left out. A payment kept under the 24-hour rule is a
+// charge, and carries its evidence (docs/decisions/0046-moving-and-cancelling.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
@@ -43,6 +44,22 @@ const PaymentEntrySchema = z
     method: z.union([z.string(), z.null()]).openapi({ description: "upi, card, netbanking and so on." }),
     reference: z.union([z.string(), z.null()]).openapi({ description: "Ours, e.g. MM-2026-0841, once captured." }),
     refunded_amount: z.number().int().openapi({ description: "In paise: refunds Razorpay has processed." }),
+    purpose: z.enum(["visit", "late_fee"]).openapi({ description: "What it paid for: the visit, or a late fee." }),
+    charge: z
+      .union([
+        z
+          .object({
+            change: z.enum(["cancelled", "moved"]),
+            at: z.iso.datetime().openapi({ description: "When the client cancelled or moved the visit." }),
+            visit_started_at: z.iso.datetime().openapi({ description: "When the visit was to start." }),
+            amount: z.number().int().openapi({ description: "In paise: what was kept." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description: 'Kept under the 24-hour rule, with its evidence: "cancelled 9:14 am, visit was 10 am".',
+      }),
   })
   .strict()
   .openapi("PaymentEntry");
@@ -156,6 +173,11 @@ interface PaymentRow extends VisitColumns {
   method: string | null;
   fsm_invoice_id: string | null;
   books_payment_id: string | null;
+  kind: "visit" | "late_fee";
+  charged_change: "moved" | "replaced" | "cancelled" | null;
+  charged_at: string | null;
+  charged_visit_start: string | null;
+  charged_amount: number | null;
 }
 
 interface RefundRow extends VisitColumns {
@@ -170,9 +192,13 @@ interface RefundRow extends VisitColumns {
 
 const VISIT_JOIN = `LEFT JOIN appointments a ON a.id = p.appointment_id AND a.deleted_at IS NULL`;
 
+// The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee.
 const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.refunded_amount, p.status, p.method,
-    p.books_payment_id, a.id AS appointment_id, a.window_start, a.type, a.fsm_invoice_id
+    p.books_payment_id, p.kind, a.id AS appointment_id, a.window_start, a.type, a.fsm_invoice_id,
+    c.kind AS charged_change, c.created_at AS charged_at, c.was_start AS charged_visit_start,
+    c.kept_amount AS charged_amount
   FROM payments p ${VISIT_JOIN}
+  LEFT JOIN visit_changes c ON c.payment_id = p.id AND c.notice = 'late' AND c.kept_amount > 0
   WHERE p.person_id = ?1 AND p.status != 'failed'`;
 
 const REFUND_QUERY = `SELECT r.id, r.payment_id, r.created_at, r.amount, r.status, r.speed, p.method,
@@ -201,6 +227,16 @@ const paymentOf = (row: PaymentRow) => ({
   method: row.method,
   reference: row.reference,
   refunded_amount: row.refunded_amount,
+  purpose: row.kind,
+  charge:
+    row.charged_change === null || row.charged_at === null || row.charged_visit_start === null
+      ? null
+      : {
+          change: row.charged_change === "cancelled" ? ("cancelled" as const) : ("moved" as const),
+          at: row.charged_at,
+          visit_started_at: row.charged_visit_start,
+          amount: row.charged_amount ?? 0,
+        },
 });
 
 const refundOf = (row: RefundRow) => ({

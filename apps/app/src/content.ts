@@ -236,6 +236,53 @@ export const booking = {
   close: "Close",
 } as const;
 
+/**
+ * Moving or cancelling a visit (boards C7 and C8; docs/decisions/0046-moving-and-cancelling.md). The consequence
+ * shows before the client confirms. The design writes refunds as "three to five working days"; the owner ruled
+ * the app says 5 to 7 (ADR 0025, item 28).
+ */
+export const change = {
+  visit: (weekday: string) => `${weekday}'s visit`,
+  move: {
+    title: (visit: string) => `Move ${visit}`,
+    free: (amount: string) => `Free to move. Your ${amount} carries over.`,
+    charged: (amount: string) => `Charged. The ${amount} is not refunded and the new visit is paid separately.`,
+    pick: "Pick a new date",
+    accept: "Move and accept charge",
+    keep: "Keep it",
+    // PLACEHOLDER from here to the end of move: nothing paid, board C5's late-fee line, and the way to C8,
+    // which the design draws but does not reach.
+    freeNothingPaid: "Free to move.",
+    lateFee: (fee: string) => `Moving inside 24 hours costs ${fee}. The balance carries over.`,
+    cancelInstead: "Cancel the visit instead",
+  },
+  cancel: {
+    title: (visit: string) => `Cancel ${visit}`,
+    refund: (amount: string, destination: string) => `${amount} back to your ${destination} in 5 to 7 working days.`,
+    confirm: "Cancel visit",
+    keep: "Keep it",
+    // PLACEHOLDER from here to the end of cancel.
+    lessFee: (fee: string, amount: string, destination: string) =>
+      `The late fee of ${fee} is kept. ${amount} back to your ${destination} in 5 to 7 working days.`,
+    charged: (amount: string) => `Charged. The ${amount} is not refunded.`,
+    nothingPaid: "Nothing was paid, so nothing is charged.",
+    accept: "Cancel and accept charge",
+    done: "Cancelled",
+    doneLine: (visit: string) => `${visit} is cancelled.`,
+    close: "Done",
+  },
+  // PLACEHOLDER: what came of a change that did not go through.
+  termsChanged: "The 24 hours have just run out. This is what it costs now.",
+  notChangeable: "This visit can no longer be changed here.",
+  message: "Message us",
+  failed: "That did not go through, and nothing has changed. Please try again.",
+  moved: "Moved",
+  moveItem: (what: string) => `${what} · moved`,
+  lateFeeItem: (what: string) => `Late fee · ${what.toLowerCase()}`,
+  confirmMove: "Confirm the move",
+  destination: "UPI",
+} as const;
+
 export const photos = {
   title: "Photos",
   compare: "Compare",
@@ -263,6 +310,12 @@ export const payments = {
   // PLACEHOLDER: an entry that paid for no visit we know of.
   payment: "Payment",
   refundOf: (what: string) => `${what} · refund`,
+  // PLACEHOLDER: a late fee's name, and a charge's row; the evidence is the design's ("cancelled 9:14 am, visit
+  // was 10 am"), with the dates when the two fall on different days.
+  lateFeeOf: (what: string) => `${what} · late fee`,
+  charge: "Charge",
+  charged: "Charged",
+  evidence: (change: "cancelled" | "moved", at: string, visit: string) => `${change} ${at}, visit was ${visit}`,
   refundTo: (method: string) => `refund to ${method}`,
   /** A payment's status, and a refund's. */
   status: {

@@ -819,7 +819,7 @@ The windows open for a kind of visit over 14 days
 }
 ```
 
-**409**: ops_assisted: self-serve booking is off
+**409**: ops_assisted: self-serve booking is off; or not_changeable: the visit can no longer be moved
 
 ```json
 {
@@ -865,6 +865,11 @@ Request body:
         "afternoon",
         "evening"
       ]
+    },
+    "moving": {
+      "type": "string",
+      "format": "uuid",
+      "description": "One of the client's visits, to move instead."
     }
   },
   "required": [
@@ -892,7 +897,7 @@ Request body:
 }
 ```
 
-**409**: taken: nobody is free in that window now; or ops_assisted
+**409**: taken: nobody is free in that window now; not_changeable; or ops_assisted
 
 ```json
 {
@@ -1012,6 +1017,127 @@ Request body:
 }
 ```
 
+### POST /api/appointments/{id}/reschedule
+
+What moving a visit costs, or start the move a hold makes
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "A hold made with `moving` for this visit; left out, the terms only."
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+**200**: The terms
+
+```json
+{
+  "$ref": "#/components/schemas/MoveTerms"
+}
+```
+
+**201**: The move is started
+
+```json
+{
+  "$ref": "#/components/schemas/Booking"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such hold for moving this visit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable; hold_expired; or ops_assisted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/appointments/{id}/cancel
+
+What cancelling a visit gives back, or cancel it on those terms
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "confirm": {
+      "type": "boolean"
+    },
+    "notice": {
+      "type": "string",
+      "enum": [
+        "free",
+        "late"
+      ],
+      "description": "With confirm: the notice the client was shown."
+    }
+  },
+  "required": [
+    "confirm"
+  ],
+  "additionalProperties": false
+}
+```
+
+**200**: The terms, or the cancelled visit
+
+```json
+{
+  "$ref": "#/components/schemas/CancelTerms"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable; terms_changed: the notice is not the one shown, so show the terms again; or ops_assisted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: FSM did not answer; nothing changed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -1052,7 +1178,9 @@ Request body:
             "ops_assisted",
             "taken",
             "not_bookable",
-            "hold_expired"
+            "hold_expired",
+            "not_changeable",
+            "terms_changed"
           ]
         },
         "request_id": {
@@ -2212,6 +2340,55 @@ Request body:
     "refunded_amount": {
       "type": "integer",
       "description": "In paise: refunds Razorpay has processed."
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "visit",
+        "late_fee"
+      ],
+      "description": "What it paid for: the visit, or a late fee."
+    },
+    "charge": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "change": {
+              "type": "string",
+              "enum": [
+                "cancelled",
+                "moved"
+              ]
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the client cancelled or moved the visit."
+            },
+            "visit_started_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the visit was to start."
+            },
+            "amount": {
+              "type": "integer",
+              "description": "In paise: what was kept."
+            }
+          },
+          "required": [
+            "change",
+            "at",
+            "visit_started_at",
+            "amount"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Kept under the 24-hour rule, with its evidence: \"cancelled 9:14 am, visit was 10 am\"."
     }
   },
   "required": [
@@ -2225,7 +2402,9 @@ Request body:
     "status",
     "method",
     "reference",
-    "refunded_amount"
+    "refunded_amount",
+    "purpose",
+    "charge"
   ],
   "additionalProperties": false
 }
@@ -2674,6 +2853,18 @@ Request body:
         }
       ],
       "description": "The visit it became, once booked."
+    },
+    "moves_visit_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit this hold moves; null for a new booking."
     }
   },
   "required": [
@@ -2690,7 +2881,8 @@ Request body:
     "expires_at",
     "state",
     "paid",
-    "visit_id"
+    "visit_id",
+    "moves_visit_id"
   ],
   "additionalProperties": false
 }
@@ -2770,6 +2962,148 @@ Request body:
   "required": [
     "hold_id",
     "checkout"
+  ],
+  "additionalProperties": false
+}
+```
+
+### MoveTerms
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "notice": {
+      "type": "string",
+      "enum": [
+        "free",
+        "late"
+      ],
+      "description": "free: more than 24 hours before the window starts; late: inside 24 hours."
+    },
+    "free_until": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "paid": {
+      "type": "integer",
+      "description": "In paise: what the visit's payment holds, carried over or kept."
+    },
+    "cost": {
+      "type": "string",
+      "enum": [
+        "free",
+        "late_fee",
+        "charged"
+      ],
+      "description": "free: the payment carries over; late_fee: the late fee is paid, then the payment carries over; charged: the payment is kept, and the new visit is paid separately."
+    },
+    "price": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/Price"
+        },
+        {
+          "description": "What is paid now to move: nothing, the late fee, or the new visit."
+        }
+      ]
+    }
+  },
+  "required": [
+    "visit_id",
+    "type",
+    "notice",
+    "free_until",
+    "paid",
+    "cost",
+    "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CancelTerms
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "notice": {
+      "type": "string",
+      "enum": [
+        "free",
+        "late"
+      ],
+      "description": "free: more than 24 hours before the window starts; late: inside 24 hours."
+    },
+    "free_until": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "paid": {
+      "type": "integer",
+      "description": "In paise: what the visit's payment holds, carried over or kept."
+    },
+    "refund": {
+      "type": "integer",
+      "description": "In paise: what goes back to the payment's source."
+    },
+    "kept": {
+      "type": "integer",
+      "description": "In paise: what is kept as a charge."
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The payment's method: upi, card and so on."
+    },
+    "cancelled": {
+      "type": "boolean",
+      "description": "false: the terms only; true: the visit is cancelled."
+    }
+  },
+  "required": [
+    "visit_id",
+    "type",
+    "notice",
+    "free_until",
+    "paid",
+    "refund",
+    "kept",
+    "destination",
+    "cancelled"
   ],
   "additionalProperties": false
 }

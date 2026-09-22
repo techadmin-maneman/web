@@ -17,6 +17,7 @@ import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
 import { registerClientProfile } from "./routes/client-profile.ts";
 import { registerClientBooking } from "./routes/client-booking.ts";
+import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
 import { registerErasure } from "./routes/erasure.ts";
@@ -83,6 +84,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientVisits,
     registerClientPayments,
     registerClientBooking,
+    registerClientChanges,
   ],
   ops: [registerHealth, registerOpsProfile],
   tech: [registerHealth],
