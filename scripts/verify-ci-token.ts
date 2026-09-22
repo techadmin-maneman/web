@@ -5,12 +5,20 @@
 //   node --env-file=.env.ci-staging scripts/verify-ci-token.ts staging
 //   node --env-file=.env.ci-production scripts/verify-ci-token.ts production
 //
-// The env file holds CLOUDFLARE_API_TOKEN and, for staging, CF_ACCESS_CLIENT_ID
-// and CF_ACCESS_CLIENT_SECRET. No value is ever printed.
+// The env file holds CLOUDFLARE_API_TOKEN, CF_ACCESS_CLIENT_ID and
+// CF_ACCESS_CLIENT_SECRET: staging's token for every staging host, production's
+// (mm-ci-production) for the hosts production keeps behind Access. No value is
+// ever printed.
 
 import { execFileSync } from "node:child_process";
 import { z } from "zod";
-import { EXPECTED_DATABASE_NAME, HOSTNAME, ZONE_ID, type RemoteEnvironmentName } from "../src/config/environments.ts";
+import {
+  EXPECTED_DATABASE_NAME,
+  HOSTNAME,
+  SURFACE_HOSTS,
+  ZONE_ID,
+  type RemoteEnvironmentName,
+} from "../src/config/environments.ts";
 import { readJsonc } from "./lib/jsonc.ts";
 import { WORKERS } from "./lib/workers.ts";
 
@@ -168,7 +176,8 @@ try {
   report("FAIL", "wrangler", `cannot read the deployment: ${reason ?? ""}`);
 }
 
-// Access: staging needs the service token; production must stay public.
+// Access: staging needs the service token; production's site must stay public,
+// while its ops console lets in production's token and no one else.
 
 /** Who answered: the Worker, the Access login, or a Cloudflare challenge in front of both. */
 function describe(response: Response): string {
@@ -206,6 +215,29 @@ if (environment === "staging") {
 } else {
   const response = await fetch(healthUrl, { redirect: "manual" });
   report(response.status === 200 ? "PASS" : "FAIL", "public health check", describe(response));
+
+  const opsUrl = `https://${SURFACE_HOSTS.production.ops}/`;
+  const accessId = process.env.CF_ACCESS_CLIENT_ID ?? "";
+  const accessSecret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
+  if (accessId === "" || accessSecret === "") {
+    report("FAIL", "Access service token", "CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET are not both set");
+  } else if (!accessId.endsWith(".access")) {
+    report("FAIL", "Access service token", "CF_ACCESS_CLIENT_ID should end in .access; it looks cut short");
+  } else {
+    const withToken = await fetch(opsUrl, {
+      headers: { "CF-Access-Client-Id": accessId, "CF-Access-Client-Secret": accessSecret },
+      redirect: "manual",
+    });
+    // Until the ops Worker is deployed, Cloudflare answers for the missing origin: Access let the token through.
+    const through =
+      !(withToken.headers.get("location") ?? "").includes("cloudflareaccess.com") &&
+      withToken.headers.get("cf-mitigated") !== "challenge";
+    report(through ? "PASS" : "FAIL", "Access service token (ops)", describe(withToken));
+  }
+
+  const withoutToken = await fetch(opsUrl, { redirect: "manual" });
+  const sentToLogin = (withoutToken.headers.get("location") ?? "").includes("cloudflareaccess.com");
+  report(sentToLogin ? "PASS" : "FAIL", "Access without a token (ops)", describe(withoutToken));
 }
 
 const failed = outcomes.filter((outcome) => outcome === "FAIL").length;
