@@ -1,0 +1,49 @@
+# 0044. The payments mirror
+
+- Status: accepted
+- Date: 2026-09-22
+
+## Context
+
+P2-M2 includes "the payments mirror from Razorpay webhooks". The client app's Payments tab (boards E1 to E3) lists what a client paid and what was refunded. The fraud rules of P2-M3 compare how a referrer and a friend paid.
+
+Razorpay is the record of money (`docs/phase2-inputs.md`, section 4). The research found:
+
+- Webhooks are signed: `X-Razorpay-Signature` is the HMAC-SHA256 of the raw body under the webhook secret.
+- They are delivered at least once and not in order, and must be answered within five seconds.
+- `X-Razorpay-Event-Id` identifies each event.
+- No card fingerprint is given to a merchant (ADR 0025, item 21). The UPI handle is given.
+
+Checkout, orders and refunds from our side arrive with self-serve booking (P2-M5).
+
+## Decision
+
+**`POST /api/hooks/razorpay`, on the public host with the other webhooks.**
+
+- It checks the signature over the raw body before anything else. Without `RAZORPAY_WEBHOOK_SECRET` the route answers 404, as the other hooks do without their secret.
+- Each event is kept once in `razorpay_events`, by its event ID. A repeat is acknowledged and changes nothing.
+
+**`payments` and `refunds` follow the events** (migration 0014, `src/domain/payments.ts`).
+
+- **A payment's state only moves forward:** failed, authorized, captured, partially refunded, refunded. An authorization arriving after its capture changes nothing. A late authorization does overtake a failure, as Razorpay's late authorisations can.
+- **A refund's processed amount** sets the payment's refunded total and state.
+  - A refund for a payment not yet recorded is answered 409 and not marked seen, so Razorpay's retry is applied once the payment has arrived.
+- **A captured payment gets our reference,** "MM-2026-0841": the next number of its India year. It is given in one statement, so two captures at once cannot share a number.
+- **The person** is the one named in our order's notes (from P2-M5), or else the one whose mobile number paid. The mirror never creates a person from a payment. The appointment is the one named in the notes.
+
+**What is kept.** Amounts are kept in paise, with the method (UPI, card and so on) and the card network.
+
+- **No card data** of any kind.
+- **The UPI handle only as an HMAC** under `IP_HASH_SALT`. The fraud rules can compare it; no one can read it.
+
+**Keys.** `PAYMENTS_PROVIDER` is `razorpay` on staging, with test keys, `stub` locally, and `none` in production until Phase 2's release.
+
+- The key ID is a var: it is public, since Checkout uses it in the browser.
+- The key secret and the webhook secret are secrets.
+- The guard refuses a live key anywhere but production, and a test key in production.
+
+## Consequences
+
+- **Staging takes no real money.** Its keys are Razorpay's test keys.
+- **The webhook is created in Razorpay's dashboard** (runbook, step 11c), since Razorpay offers merchants no API for it.
+- **Live mode** waits for P2-M5: KYC, live keys and a live webhook (`docs/open-points.md`, item 6).

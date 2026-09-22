@@ -568,7 +568,8 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
             "access_required",
             "code_expired",
             "too_early",
-            "number_in_use"
+            "number_in_use",
+            "not_ready"
           ]
         },
         "request_id": {

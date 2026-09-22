@@ -28,6 +28,7 @@ export const LOCAL_SETTINGS: Settings = {
   erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   zohoFsm: null,
+  razorpay: null,
   access: null,
   login: {
     codePepper: "test-login-code-pepper-that-is-long-enough",
@@ -63,6 +64,7 @@ export const LOCAL_CONFIG: StaticConfig = {
     SMS_PROVIDER: "stub",
     FSM_PROVIDER: "stub",
     BOOKS_PROVIDER: "stub",
+    PAYMENTS_PROVIDER: "stub",
   },
   settings: LOCAL_SETTINGS,
 };

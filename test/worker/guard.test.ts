@@ -9,6 +9,7 @@ const REAL = {
   SMS_PROVIDER: "none",
   FSM_PROVIDER: "none",
   BOOKS_PROVIDER: "none",
+  PAYMENTS_PROVIDER: "none",
 };
 const STUBS = {
   IMAGE_PROVIDER: "stub",
@@ -18,6 +19,7 @@ const STUBS = {
   SMS_PROVIDER: "stub",
   FSM_PROVIDER: "stub",
   BOOKS_PROVIDER: "stub",
+  PAYMENTS_PROVIDER: "stub",
 };
 
 /** Vars and secrets every environment needs, with valid values. */
@@ -121,7 +123,7 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(7);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(8);
   });
 
   it("refuses a missing or unknown provider", () => {
@@ -374,6 +376,27 @@ describe("validateStaticConfig: Zoho FSM and Books", () => {
   it("refuses a Zoho host given as a URL", () => {
     expect(problemsOf({ ...stagingBase, ZOHO_FSM_API_HOST: "https://www.zohoapis.in" })).toEqual([
       "ZOHO_FSM_API_HOST must be a Zoho hostname, without https://",
+    ]);
+  });
+});
+
+describe("validateStaticConfig: Razorpay", () => {
+  const RAZORPAY = { PAYMENTS_PROVIDER: "razorpay", RAZORPAY_KEY_SECRET: "key-secret" };
+
+  it("reads the key, its secret and an optional webhook secret", () => {
+    const staging = validateStaticConfig({ ...stagingBase, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_test_abc" });
+    expect(staging.settings.razorpay).toEqual({ keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: null });
+  });
+
+  it("refuses a live key outside production, where it would take real money", () => {
+    expect(problemsOf({ ...stagingBase, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_live_abc" })).toEqual([
+      "RAZORPAY_KEY_ID is a live key outside production: it would take real money",
+    ]);
+  });
+
+  it("refuses a test key in production", () => {
+    expect(problemsOf({ ...production, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_test_abc" })).toEqual([
+      "RAZORPAY_KEY_ID is not a live key in production",
     ]);
   });
 });

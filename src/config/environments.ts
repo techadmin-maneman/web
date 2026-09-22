@@ -98,5 +98,8 @@ export const PROVIDER_VARS = {
   // production is until Phase 2's release.
   FSM_PROVIDER: ["zoho", "stub", "none"],
   BOOKS_PROVIDER: ["zoho", "stub", "none"],
+  // Razorpay, for payments (docs/decisions/0044-payments-mirror.md): test keys on staging, none in production until
+  // Phase 2's release.
+  PAYMENTS_PROVIDER: ["razorpay", "stub", "none"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;

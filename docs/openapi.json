@@ -47,7 +47,8 @@
                   "access_required",
                   "code_expired",
                   "too_early",
-                  "number_in_use"
+                  "number_in_use",
+                  "not_ready"
                 ]
               },
               "request_id": {
@@ -1418,6 +1419,46 @@
           },
           "404": {
             "description": "not_found: FSM's webhook is not switched on (no FSM_WEBHOOK_TOKEN)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hooks/razorpay": {
+      "post": {
+        "summary": "Razorpay's webhook: payments and refunds",
+        "responses": {
+          "200": {
+            "description": "Taken, or ignored. Either way Razorpay need not send it again"
+          },
+          "401": {
+            "description": "unauthorized: the signature does not match",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: the webhook is not switched on (no RAZORPAY_WEBHOOK_SECRET)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_ready: a refund for a payment not yet recorded; Razorpay retries it",
             "content": {
               "application/json": {
                 "schema": {
