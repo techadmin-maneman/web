@@ -12,6 +12,7 @@ import { execFileSync } from "node:child_process";
 import { z } from "zod";
 import { EXPECTED_DATABASE_NAME, HOSTNAME, ZONE_ID, type RemoteEnvironmentName } from "../src/config/environments.ts";
 import { readJsonc } from "./lib/jsonc.ts";
+import { WORKERS } from "./lib/workers.ts";
 
 const environment = process.argv[2];
 if (environment !== "staging" && environment !== "production") {
@@ -109,18 +110,23 @@ if (accountToken.ok) {
   );
 }
 
-expectAllowed(`reads mm-api-${environment}`, await readDeployments(`mm-api-${environment}`));
-expectAllowed(`reads mm-site-${environment}`, await readDeployments(`mm-site-${environment}`));
-expectDenied(
-  `reads mm-api-${otherEnvironment}`,
-  await readDeployments(`mm-api-${otherEnvironment}`),
-  "the token should only reach its own environment's Workers",
-);
-expectDenied(
-  `reads mm-site-${otherEnvironment}`,
-  await readDeployments(`mm-site-${otherEnvironment}`),
-  "the token should only reach its own environment's Workers",
-);
+// Every Worker in the registry, so a new app's Worker is checked as soon as it is listed. A token can
+// only name a Worker that exists, so one not yet bootstrapped fails here until it is, and is added.
+for (const worker of WORKERS) {
+  const result = await readDeployments(`${worker.name}-${environment}`);
+  report(
+    result.ok ? "PASS" : "FAIL",
+    `reads ${worker.name}-${environment}`,
+    result.ok
+      ? "allowed"
+      : `denied (HTTP ${String(result.status)}): add it to the token's Specified Workers (runbook, step 6)`,
+  );
+  expectDenied(
+    `reads ${worker.name}-${otherEnvironment}`,
+    await readDeployments(`${worker.name}-${otherEnvironment}`),
+    "the token should only reach its own environment's Workers",
+  );
+}
 
 // The row already exists and cannot change, so this insert does nothing; it only proves the token may write.
 const expectedName = EXPECTED_DATABASE_NAME[environment];
