@@ -109,12 +109,17 @@ jobs:
         run: |
           api=$(node scripts/release.ts current --worker mm-api --env production)
           site=$(node scripts/release.ts current --worker mm-site --env production)
+          # Empty until mm-app is bootstrapped in production (docs/runbook.md, step 11).
+          app=$(node scripts/release.ts current --worker mm-app --env production || true)
           if [ -z "$api" ] || [ -z "$site" ]; then
             echo "::error::Production has never been deployed, so there is nothing to roll back to. Bootstrap it first (docs/runbook.md)."
             exit 1
           fi
-          echo "api=$api" >> "$GITHUB_OUTPUT"
-          echo "site=$site" >> "$GITHUB_OUTPUT"
+          {
+            echo "api=$api"
+            echo "site=$site"
+            echo "app=$app"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Migrate the production database
         run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-prod --env production --remote
@@ -166,6 +171,19 @@ jobs:
           version=$(node scripts/release.ts upload --worker mm-site --env production --tag "$SHA")
           node scripts/release.ts deploy --worker mm-site --env production --split "$version@100" --message "release $SHA"
 
+      # mm-app has no route in production until the client surface is switched on there (docs/decisions/0043).
+      # Its first deploy is a bootstrap (docs/runbook.md, step 5); until then this step does nothing.
+      - name: Deploy mm-app
+        id: app
+        run: |
+          if [ -z "${{ steps.before.outputs.app }}" ]; then
+            echo "::notice::mm-app-production is not bootstrapped yet, so it is not deployed."
+            exit 0
+          fi
+          npm run build:app -- --env production
+          version=$(node scripts/release.ts upload --worker mm-app --env production --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-app --env production --split "$version@100" --message "release $SHA"
+
       - name: Final smoke
         run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"
 
@@ -186,6 +204,10 @@ jobs:
           if [ "${{ steps.site.outcome }}" != "skipped" ]; then
             node scripts/release.ts deploy --worker mm-site --env production \
               --split "${{ steps.before.outputs.site }}@100" --message "rollback of $SHA"
+          fi
+          if [ "${{ steps.app.outcome }}" == "success" ] && [ -n "${{ steps.before.outputs.app }}" ]; then
+            node scripts/release.ts deploy --worker mm-app --env production \
+              --split "${{ steps.before.outputs.app }}@100" --message "rollback of $SHA"
           fi
           npm run smoke -- --base https://maneman.in --environment production \
             --version-id "${{ steps.before.outputs.api }}"

@@ -129,9 +129,11 @@ jobs:
         run: |
           node scripts/ensure-dev-vars.ts
           npm run db:local
-      - name: Build the site (local)
-        run: npm run build:site -- --env local
-      - name: Browser tests at 390 and 1440 px, against a local mm-api with stub providers
+      - name: Build the site and the client app (local)
+        run: |
+          npm run build:site -- --env local
+          npm run build:app -- --env local
+      - name: Browser tests at 390 and 1440 px, and the client app at 390, against a local mm-api with stub providers
         run: npm run test:e2e
       # After the browser tests, so nothing else competes for the runner's CPU.
       - name: Lighthouse on /, /try and /book, mobile profile, against the budgets

@@ -1,0 +1,10 @@
+{
+  "name": "@maneman/web-kit",
+  "private": true,
+  "version": "0.0.0",
+  "description": "What the Phase 2 apps share beyond the brand: their security headers.",
+  "type": "module",
+  "exports": {
+    "./headers": "./headers.ts"
+  }
+}

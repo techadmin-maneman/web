@@ -1,5 +1,5 @@
 /*
- * The colours the Phase 2 surfaces add to tokens.css, which they load first.
+ * The colours and sizes the Phase 2 surfaces add to tokens.css, which they load first.
  * This layer only adds names; it never redefines one of tokens.css's
  * (test/node/brand-package.test.ts). Each value is drawn in a Phase 2 spec
  * board (design/phase2), not only in the Prototype, whose colours the boards
@@ -10,4 +10,12 @@
   --text-quiet: #4a453c; /* a window's hours beside its name, on white */
   --paper-shade: #ded7c8; /* loading blocks; a full window; leave and replacement cells */
   --brass-text: #7a5b24; /* brass for small text on paper: "Prepaid", the busiest day */
+
+  /* The apps' sizes (docs/prompts/phase2-frontend.md, "Layout and targets"). */
+  --app-column: 390px; /* the design's width; wider screens centre it */
+  --fs-app-title: 34px; /* a screen's title */
+  /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
+  --tap-row: 64px; /* rows, tabs, the code's boxes */
+  --sp-64: 64px;
+  --tracking-number: 0.04em; /* a mobile number, spaced for reading */
 }

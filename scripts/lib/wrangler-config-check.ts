@@ -12,6 +12,7 @@ import {
   ZONE_NAME,
   type EnvironmentName,
   type RemoteEnvironmentName,
+  type Surface,
 } from "../../src/config/environments.ts";
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
@@ -377,47 +378,86 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
   return problems;
 }
 
-/** mm-site is static assets and routes only: no bindings, no code. */
-export function checkSiteConfig(config: JsonObject): string[] {
+interface StaticWorker {
+  /** The Worker's base name, e.g. mm-site. */
+  readonly name: string;
+  /** How problems are labelled, e.g. "site". */
+  readonly label: string;
+  /** How a path with no file is answered. */
+  readonly notFoundHandling: "404-page" | "single-page-application";
+  /** The routes each remote environment must have, exactly. */
+  readonly routes: (environment: RemoteEnvironmentName) => readonly string[];
+}
+
+/** A static Worker is assets and routes only: no bindings, no code. */
+function checkStaticConfig(config: JsonObject, worker: StaticWorker): string[] {
   const problems: string[] = [];
   if (config.routes !== undefined || config.route !== undefined) {
-    problems.push("site top level: routes must not be declared at the top level");
+    problems.push(`${worker.label} top level: routes must not be declared at the top level`);
   }
 
-  const blocks: [string, JsonObject][] = [["site top level", config]];
+  const blocks: [string, JsonObject][] = [[`${worker.label} top level`, config]];
   for (const environment of REMOTE_ENVIRONMENTS) {
-    const label = `site env.${environment}`;
+    const label = `${worker.label} env.${environment}`;
     const block = environmentBlock(config, environment);
     if (block === undefined) {
       problems.push(`${label} is missing`);
       continue;
     }
     blocks.push([label, block]);
-    problems.push(...checkInheritableKeys(block, environment, "mm-site", label));
-    problems.push(...checkRoutes(block, [`${HOSTNAME[environment]}/*`], label));
+    problems.push(...checkInheritableKeys(block, environment, worker.name, label));
+    problems.push(...checkRoutes(block, worker.routes(environment), label));
     if (!isObject(block.assets)) problems.push(`${label}: assets must be declared explicitly`);
   }
 
   for (const [label, block] of blocks) {
     for (const { key } of NON_INHERITABLE_KEYS) {
       if (read(block, key) !== undefined) {
-        problems.push(`${label}: mm-site must not declare ${key}; mm-api owns every binding`);
+        problems.push(`${label}: ${worker.name} must not declare ${key}; mm-api owns every binding`);
       }
     }
-    if (block.main !== undefined) problems.push(`${label}: mm-site is assets-only and must not declare main`);
+    if (block.main !== undefined) problems.push(`${label}: ${worker.name} is assets-only and must not declare main`);
+    const handling = read(block, "assets.not_found_handling");
+    if (isObject(block.assets) && handling !== worker.notFoundHandling) {
+      problems.push(`${label}: assets.not_found_handling must be "${worker.notFoundHandling}"`);
+    }
   }
   return problems;
 }
 
-/** Both Workers of an environment deploy to the same Cloudflare account. */
-export function checkAccountsAgree(api: JsonObject, site: JsonObject): string[] {
+/** mm-site answers everything on the public host that mm-api does not. */
+export function checkSiteConfig(config: JsonObject): string[] {
+  return checkStaticConfig(config, {
+    name: "mm-site",
+    label: "site",
+    notFoundHandling: "404-page",
+    routes: (environment) => [`${HOSTNAME[environment]}/*`],
+  });
+}
+
+/**
+ * A Phase 2 app (docs/decisions/0043-client-app.md) answers every path on its
+ * surface's host that mm-api does not, and only once the surface is switched on.
+ */
+export function checkSpaConfig(config: JsonObject, worker: { name: string; surface: Surface }): string[] {
+  return checkStaticConfig(config, {
+    name: worker.name,
+    label: worker.name,
+    notFoundHandling: "single-page-application",
+    routes: (environment) =>
+      ENABLED_SURFACES[environment].includes(worker.surface) ? [`${SURFACE_HOSTS[environment][worker.surface]}/*`] : [],
+  });
+}
+
+/** Every Worker of an environment deploys to the same account as mm-api. */
+export function checkAccountsAgree(api: JsonObject, other: JsonObject, otherName = "mm-site"): string[] {
   const problems: string[] = [];
   for (const environment of REMOTE_ENVIRONMENTS) {
     const apiAccount = environmentBlock(api, environment)?.account_id ?? null;
-    const siteAccount = environmentBlock(site, environment)?.account_id ?? null;
-    if (apiAccount !== siteAccount) {
+    const otherAccount = environmentBlock(other, environment)?.account_id ?? null;
+    if (apiAccount !== otherAccount) {
       problems.push(
-        `env.${environment}: mm-api and mm-site deploy to different accounts (${JSON.stringify(apiAccount)} vs ${JSON.stringify(siteAccount)})`,
+        `env.${environment}: mm-api and ${otherName} deploy to different accounts (${JSON.stringify(apiAccount)} vs ${JSON.stringify(otherAccount)})`,
       );
     }
   }

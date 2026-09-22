@@ -1,0 +1,36 @@
+/*
+ * The client app's base: the brand tokens, the Phase 2 layer and the fonts
+ * (packages/brand), and the one column the design is drawn at. Components
+ * style themselves in their own .module.css, with tokens only.
+ */
+
+@import "@maneman/brand/tokens.css";
+@import "@maneman/brand/tokens-phase2.css";
+@import "@maneman/brand/fonts.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* On a wider screen the design's column is centred, not stretched. */
+#root {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--app-column);
+  min-height: 100dvh;
+  margin: 0 auto;
+}

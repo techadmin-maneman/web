@@ -8,7 +8,7 @@
 
 import { parseArgs } from "node:util";
 import { readJsonc } from "./lib/jsonc.ts";
-import { checkAccountsAgree, checkApiConfig, checkSiteConfig } from "./lib/wrangler-config-check.ts";
+import { checkAccountsAgree, checkApiConfig, checkSiteConfig, checkSpaConfig } from "./lib/wrangler-config-check.ts";
 import { STATIC_WORKERS } from "./lib/workers.ts";
 
 const { values } = parseArgs({
@@ -26,10 +26,15 @@ const problems = [
   ...checkApiConfig(api, { requireProvisioned: values["require-provisioned"] }),
   ...checkSiteConfig(site),
   ...checkAccountsAgree(api, site),
-  // Each static Worker in the registry needs its own check; mm-site is the only one so far.
-  ...STATIC_WORKERS.filter((worker) => worker.name !== "mm-site").map(
-    (worker) => `${worker.name}: no config check yet for a ${worker.kind} Worker`,
-  ),
+  // Each single-page app in the registry, against its own surface.
+  ...STATIC_WORKERS.filter((worker) => worker.kind === "spa").flatMap((worker) => {
+    if (worker.surface === undefined) return [`${worker.name}: a single-page app must name its surface`];
+    const config = readJsonc(worker.config);
+    return [
+      ...checkSpaConfig(config, { name: worker.name, surface: worker.surface }),
+      ...checkAccountsAgree(api, config, worker.name),
+    ];
+  }),
 ];
 
 const expected = values["expect-problem"];
@@ -49,4 +54,6 @@ if (problems.length > 0) {
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
-console.log(`wrangler config check passed: ${values.api}, ${values.site}`);
+console.log(
+  `wrangler config check passed: ${[values.api, values.site, ...STATIC_WORKERS.filter((w) => w.kind === "spa").map((w) => w.config)].join(", ")}`,
+);
