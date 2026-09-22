@@ -112,6 +112,11 @@ export interface Settings {
    * Access, so it can be tested before any page renders the real widget.
    */
   readonly acceptTurnstileTestToken: boolean;
+  /**
+   * Clients book, move and cancel in the app, and pay through Razorpay (docs/decisions/0045-self-serve-booking.md).
+   * Off, the booking routes answer 409 ops_assisted and the app opens WhatsApp instead.
+   */
+  readonly selfServeBooking: boolean;
   readonly ipHashSalt: string;
   /** Where alerts are posted. Optional locally only. */
   readonly alertWebhookUrl: string | null;
@@ -232,6 +237,10 @@ export function readSettings(
     read.problems.push("TURNSTILE_SECRET is a Cloudflare test secret in production");
   }
   const acceptTurnstileTestToken = read.flag("TURNSTILE_ACCEPT_TEST_TOKEN");
+  const selfServeBooking = read.flag("SELF_SERVE_BOOKING");
+  if (selfServeBooking && providers.PAYMENTS_PROVIDER === "none") {
+    read.problems.push("SELF_SERVE_BOOKING needs a PAYMENTS_PROVIDER: clients would book without paying");
+  }
   if (environment === "production" && acceptTurnstileTestToken) {
     read.problems.push("TURNSTILE_ACCEPT_TEST_TOKEN is on in production");
   }
@@ -389,6 +398,7 @@ export function readSettings(
     leadIpDailyLimit: read.count("LEAD_IP_DAILY_LIMIT"),
     turnstileSecret,
     acceptTurnstileTestToken,
+    selfServeBooking,
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),

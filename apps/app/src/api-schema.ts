@@ -1194,6 +1194,250 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The windows open for a kind of visit over 14 days */
+        get: {
+            parameters: {
+                query: {
+                    type: "consultation" | "first_fit" | "service" | "replacement";
+                    /** @description The first day; tomorrow if left out, or if earlier. */
+                    from?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Each day's three windows */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Availability"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description ops_assisted: self-serve booking is off */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the client may not book this kind of visit */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hold a window for ten minutes while the client pays */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        type: "consultation" | "first_fit" | "service" | "replacement";
+                        /** Format: date */
+                        date: string;
+                        /** @enum {string} */
+                        window: "morning" | "afternoon" | "evening";
+                    };
+                };
+            };
+            responses: {
+                /** @description Held */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Hold"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description taken: nobody is free in that window now; or ops_assisted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: this kind of visit, or that day, is not open to the client */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/holds/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the client's holds */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The hold */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Hold"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description ops_assisted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Let a hold go */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Let go, or already gone */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description ops_assisted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1201,7 +1445,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -1514,6 +1758,63 @@ export interface components {
              * @enum {string}
              */
             kind: "refund";
+        };
+        Availability: {
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            price: components["schemas"]["Price"];
+            /** @description Whoever did the client's latest visit. */
+            regular: {
+                name: string;
+                initials: string;
+            } | null;
+            days: {
+                /** Format: date */
+                date: string;
+                windows: {
+                    /** @enum {string} */
+                    window: "morning" | "afternoon" | "evening";
+                    /** @description Who would come: the regular technician, another, or nobody (full). */
+                    with: ("regular" | "another") | null;
+                }[];
+            }[];
+        };
+        Price: {
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
+            gst_percent: number;
+        };
+        Hold: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            technician: {
+                name: string;
+                initials: string;
+            };
+            price: components["schemas"]["Price"];
+            /** @description What moving it inside 24 hours costs: a first fit's or a replacement's late fee. */
+            late_fee: components["schemas"]["Price"] | null;
+            /**
+             * Format: date-time
+             * @description Until then, moving or cancelling is free.
+             */
+            free_until: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** @enum {string} */
+            state: "held" | "expired" | "booked" | "released";
         };
     };
     responses: never;

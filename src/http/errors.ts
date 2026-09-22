@@ -34,6 +34,12 @@ export const ERROR_CODES = [
   "number_in_use",
   // A Razorpay refund for a payment not yet recorded: Razorpay retries it (docs/decisions/0044-payments-mirror.md).
   "not_ready",
+  // Booking (docs/decisions/0045-self-serve-booking.md): self-serve is off and ops book instead; the time was taken;
+  // the client may not book that kind of visit or that day; the hold has lapsed.
+  "ops_assisted",
+  "taken",
+  "not_bookable",
+  "hold_expired",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
