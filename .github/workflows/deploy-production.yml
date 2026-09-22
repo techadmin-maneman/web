@@ -1,10 +1,10 @@
 # Production release, started by hand for a commit on main that passed staging.
 #
 #   migrate -> upload the new mm-api version -> send it 10% of traffic -> smoke it
-#   -> wait -> smoke it again -> 100% -> smoke -> deploy mm-site -> smoke
+#   -> wait -> smoke it again -> 100% -> smoke -> deploy mm-site and mm-app -> smoke
 #
-# If anything fails after traffic starts moving, both Workers go back to the
-# versions that were serving before. Migrations are not rolled back; every
+# If anything fails after traffic starts moving, every Worker deployed goes back
+# to the version that was serving before. Migrations are not rolled back; every
 # migration works with the previous code (docs/decisions/0006-deployment-pipeline.md).
 #
 # Runs in the GitHub Environment "production". Required reviewers get added
