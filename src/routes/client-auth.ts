@@ -12,7 +12,6 @@
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../app.ts";
-import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import {
   createChallenge,
   findEligiblePerson,
@@ -23,14 +22,13 @@ import {
 } from "../domain/login.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
-import { afterResponse } from "../http/after-response.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { scrubString } from "../log.ts";
 import { MAX_SENDS_PER_CHALLENGE, newCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 
@@ -149,33 +147,6 @@ function challengeBody(c: Ctx, challenge: Challenge, now: Date) {
   };
 }
 
-/** Sends the code once the response has gone. A challenge without a person sends nothing. */
-async function sendAfterResponse(c: Ctx, mobileE164: string | null, channel: CodeChannel, code: string) {
-  if (mobileE164 === null) return;
-  const { log, deps, config } = c.var;
-  const { allowlist } = config.settings.messaging;
-  const work = (async () => {
-    if (allowlist.length > 0 && !allowlist.includes(mobileE164)) {
-      log.info("login_code_skipped", { channel, reason: "number not on the allowlist" });
-      return;
-    }
-    const result = await deps.codes.send(channel, mobileE164, code);
-    if (result.ok) log.info("login_code_sent", { channel });
-    else log.warn("login_code_failed", { channel, detail: scrubString(result.detail).slice(0, 200) });
-  })().catch((error: unknown) => {
-    log.error("login_code_error", { channel, error });
-  });
-  await afterResponse(c, work);
-}
-
-/** One more code today, counted across every number; false once the ceiling is reached. */
-async function withinCeiling(c: Ctx, now: Date): Promise<boolean> {
-  const { login } = c.var.config.settings;
-  if (await takeFromCeiling(c.env.DB, "login_code", login.codeDailyCeiling, now)) return true;
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, "login_code", login.codeDailyCeiling, now);
-  return false;
-}
-
 async function mobileOf(db: D1Database, personId: string | null): Promise<string | null> {
   if (personId === null) return null;
   return db
@@ -209,12 +180,12 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
       limit: limits.codeMobileDailyLimit,
     }));
   if (!withinNumber) return c.json(errorBody("rate_limited", requestId), 429);
-  if (!(await withinCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
+  if (!(await withinCodeCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
 
   const person = await findEligiblePerson(db, mobileE164);
   const code = newCode();
   const challenge = await createChallenge(db, { personId: person?.id ?? null, code, pepper: limits.codePepper, now });
-  await sendAfterResponse(c, person?.mobileE164 ?? null, "whatsapp", code);
+  await sendCodeAfterResponse(c, person?.mobileE164 ?? null, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
 };
 
@@ -229,11 +200,11 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   const allowedAt = channel === "sms" ? smsOfferedAt(challenge.createdAt) : whatsappResendAt(challenge.lastSentAt);
   if (now < allowedAt) return c.json(errorBody("too_early", requestId), 429);
   if (challenge.sends >= MAX_SENDS_PER_CHALLENGE) return c.json(errorBody("rate_limited", requestId), 429);
-  if (!(await withinCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
+  if (!(await withinCodeCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
 
   const code = newCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
-  await sendAfterResponse(c, await mobileOf(db, challenge.personId), channel, code);
+  await sendCodeAfterResponse(c, await mobileOf(db, challenge.personId), channel, code);
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };
   return c.json(challengeBody(c, sent, now), 202);
 }

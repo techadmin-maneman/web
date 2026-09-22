@@ -8,6 +8,8 @@ docs/openapi.json
 docs/api.md
 docs/openapi-client.json
 docs/api-client.md
+docs/openapi-ops.json
+docs/api-ops.md
 src/worker-configuration.d.ts
 # The design exports: read-only reference (docs/frontend.md, design/phase2/README.md).
 design/
