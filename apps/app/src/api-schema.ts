@@ -1032,7 +1032,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** What the client paid, newest first */
+        /** The client's payments and refunds, newest first */
         get: {
             parameters: {
                 query?: never;
@@ -1042,14 +1042,14 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The client's payments */
+                /** @description One list of payments and refunds */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            payments: components["schemas"]["Payment"][];
+                            entries: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
                         };
                     };
                 };
@@ -1079,7 +1079,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One of the client's payments, with its refunds */
+        /** One of the client's entries: a payment with its documents, or a refund */
         get: {
             parameters: {
                 query?: never;
@@ -1091,13 +1091,13 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The payment */
+                /** @description The entry */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PaymentDetail"];
+                        "application/json": components["schemas"]["PaymentDetail"] | components["schemas"]["RefundDetail"];
                     };
                 };
                 /** @description session_required */
@@ -1109,7 +1109,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such payment of this client's */
+                /** @description not_found: no such payment or refund of this client's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1370,6 +1370,8 @@ export interface components {
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
             outcome: ("done" | "partial") | null;
+            /** @description What the technician did, from the job sheet (P2-M4). */
+            what_was_done: null;
             photos: components["schemas"]["PhotoSet"];
             /** @description The visit's invoice, for GET /api/documents/{id}, once Books has raised it. */
             document_id: string | null;
@@ -1417,24 +1419,25 @@ export interface components {
                 photo: components["schemas"]["PhotoLink"] | null;
             };
         };
-        Payment: {
+        PaymentEntry: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "payment";
             /** Format: uuid */
             id: string;
-            /** @description Ours, e.g. MM-2026-0841, once captured. */
-            reference: string | null;
             /**
              * Format: date
-             * @description India's calendar date the payment was made.
+             * @description India's calendar date it was made.
              */
             date: string;
             /** @description In paise, GST included. */
             amount: number;
-            /** @description In paise: refunds Razorpay has processed. */
-            refunded_amount: number;
-            /** @enum {string} */
-            status: "authorized" | "captured" | "failed" | "refunded" | "partially_refunded";
-            /** @description upi, card, netbanking and so on. */
-            method: string | null;
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description The GST rate the amount includes. */
+            gst_percent: number;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -1443,19 +1446,74 @@ export interface components {
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             } | null;
+            /** @enum {string} */
+            status: "authorized" | "captured" | "refunded" | "partially_refunded";
+            /** @description upi, card, netbanking and so on. */
+            method: string | null;
+            /** @description Ours, e.g. MM-2026-0841, once captured. */
+            reference: string | null;
+            /** @description In paise: refunds Razorpay has processed. */
+            refunded_amount: number;
         };
-        PaymentDetail: components["schemas"]["Payment"] & {
-            refunds: {
-                amount: number;
-                /** @enum {string} */
-                status: "created" | "processed" | "failed";
-                /** @description normal (5 to 7 working days) or instant. */
-                speed: string | null;
+        RefundEntry: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "refund";
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            payment_id: string;
+            /**
+             * Format: date
+             * @description India's calendar date it was made.
+             */
+            date: string;
+            /** @description In paise, GST included. */
+            amount: number;
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description The GST rate the amount includes. */
+            gst_percent: number;
+            /** @description The visit it paid for, when known. */
+            visit: {
+                /** Format: uuid */
+                id: string;
                 /** Format: date */
                 date: string;
-            }[];
-            /** @description The visit's invoice, for GET /api/documents/{id}, once Books has raised it. */
-            document_id: string | null;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @enum {string} */
+            status: "created" | "processed" | "failed";
+            /** @description Where the money goes back to: the payment's method. */
+            destination: string | null;
+            /** @description normal (5 to 7 working days) or instant. */
+            speed: string | null;
+        };
+        PaymentDetail: components["schemas"]["PaymentEntry"] & {
+            documents: {
+                /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it. */
+                invoice: string | null;
+                /** @description The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3). */
+                receipt: null;
+            };
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "payment";
+        };
+        RefundDetail: components["schemas"]["RefundEntry"] & {
+            /** @description The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3). */
+            voucher: null;
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "refund";
         };
     };
     responses: never;

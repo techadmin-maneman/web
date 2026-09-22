@@ -50,18 +50,43 @@ beforeEach(async () => {
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: P1, deviceLabel: null, now: NOW })}`;
 });
 
+async function refund(id: string, paymentId: string, status: "created" | "processed", createdAt: string) {
+  await env.DB.prepare(
+    `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, updated_at)
+     VALUES (?1, ?2, ?3, 236000, ?4, 'normal', ?5, ?5)`,
+  )
+    .bind(id, paymentId, `rfnd_${id}`, status, createdAt)
+    .run();
+}
+
+const REFUND = "55555555-5555-4555-8555-555555555555";
+
 describe("GET /api/payments", () => {
-  it("lists the client's payments newest first, with the visit each paid for", async () => {
+  it("lists payments and refunds as one list, newest first, each with its ex-GST figure", async () => {
     await visit(VISIT, P1, "stub-41");
     await payment(PAY_OLD, P1, VISIT, "2026-09-01T06:00:00.000Z");
     await payment(PAY_NEW, P1, null, "2026-09-15T06:00:00.000Z");
-    const { payments } = await (await get("/api/payments")).json<{ payments: Record<string, unknown>[] }>();
-    expect(payments).toEqual([
-      expect.objectContaining({ id: PAY_NEW, date: "2026-09-15", visit: null }),
+    await refund(REFUND, PAY_OLD, "created", "2026-09-10T06:00:00.000Z");
+    const { entries } = await (await get("/api/payments")).json<{ entries: Record<string, unknown>[] }>();
+    expect(entries).toEqual([
+      expect.objectContaining({ kind: "payment", id: PAY_NEW, date: "2026-09-15", visit: null }),
       expect.objectContaining({
+        kind: "refund",
+        id: REFUND,
+        payment_id: PAY_OLD,
+        amount: 236000,
+        amount_ex_gst: 200000,
+        status: "created",
+        destination: "upi",
+        speed: "normal",
+      }),
+      expect.objectContaining({
+        kind: "payment",
         id: PAY_OLD,
         reference: "MM-2026-0001",
         amount: 3540000,
+        amount_ex_gst: 3000000,
+        gst_percent: 18,
         status: "captured",
         method: "upi",
         visit: { id: VISIT, date: "2026-09-10", type: "first_fit" },
@@ -69,27 +94,37 @@ describe("GET /api/payments", () => {
     ]);
   });
 
-  it("shows one payment with its refunds and its visit's invoice", async () => {
+  it("leaves out a failed attempt", async () => {
+    await payment(PAY_OLD, P1, null, "2026-09-01T06:00:00.000Z");
+    await env.DB.prepare("UPDATE payments SET status = 'failed' WHERE id = ?1").bind(PAY_OLD).run();
+    expect((await (await get("/api/payments")).json<{ entries: unknown[] }>()).entries).toEqual([]);
+    expect((await get(`/api/payments/${PAY_OLD}`)).status).toBe(404);
+  });
+
+  it("shows a payment with its visit's invoice, and a refund with its destination", async () => {
     await visit(VISIT, P1, "stub-41");
     await payment(PAY_OLD, P1, VISIT, "2026-09-01T06:00:00.000Z");
-    await env.DB.prepare(
-      `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, processed_at, updated_at)
-       VALUES ('r1', ?1, 'rfnd_1', 1000000, 'processed', 'normal', '2026-09-02T06:00:00.000Z', '2026-09-05T06:00:00.000Z', ?2)`,
-    )
-      .bind(PAY_OLD, NOW.toISOString())
-      .run();
-    const detail = await (await get(`/api/payments/${PAY_OLD}`)).json<Record<string, unknown>>();
-    expect(detail).toMatchObject({
-      refunds: [{ amount: 1000000, status: "processed", speed: "normal", date: "2026-09-02" }],
-      document_id: VISIT,
+    await refund(REFUND, PAY_OLD, "processed", "2026-09-02T06:00:00.000Z");
+    expect(await (await get(`/api/payments/${PAY_OLD}`)).json()).toMatchObject({
+      kind: "payment",
+      documents: { invoice: VISIT, receipt: null },
+    });
+    expect(await (await get(`/api/payments/${REFUND}`)).json()).toMatchObject({
+      kind: "refund",
+      date: "2026-09-02",
+      status: "processed",
+      destination: "upi",
+      voucher: null,
     });
   });
 
-  it("does not show another client's payment", async () => {
+  it("does not show another client's payment or refund", async () => {
     await person("p2", "+919810000002");
     await payment(PAY_OLD, "p2", null, "2026-09-01T06:00:00.000Z");
+    await refund(REFUND, PAY_OLD, "created", "2026-09-02T06:00:00.000Z");
     expect((await get(`/api/payments/${PAY_OLD}`)).status).toBe(404);
-    expect((await (await get("/api/payments")).json<{ payments: unknown[] }>()).payments).toEqual([]);
+    expect((await get(`/api/payments/${REFUND}`)).status).toBe(404);
+    expect((await (await get("/api/payments")).json<{ entries: unknown[] }>()).entries).toEqual([]);
   });
 });
 

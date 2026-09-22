@@ -148,6 +148,8 @@ export interface VisitDetail extends VisitSummary {
   /** From FSM's actual start to end; null until the visit is done. */
   readonly duration_minutes: number | null;
   readonly outcome: "done" | "partial" | null;
+  /** What the technician did; arrives with the job sheet (P2-M4). */
+  readonly what_was_done: null;
   readonly photos: PhotoSet;
   /** The visit's invoice, for GET /api/documents/{id}, once Books has raised it. */
   readonly document_id: string | null;
@@ -181,6 +183,7 @@ export async function visitDetail(
     ...summaryOf(row, await placeOf(db, personId)),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
+    what_was_done: null,
     photos: photos.get(row.id) ?? { before: [], after: [] },
     document_id: row.fsm_invoice_id === null ? null : row.id,
   };

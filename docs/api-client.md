@@ -653,23 +653,37 @@ A photograph, through a link that lasts 15 minutes
 
 ### GET /api/payments
 
-What the client paid, newest first
+The client's payments and refunds, newest first
 
-**200**: The client's payments
+**200**: One list of payments and refunds
 
 ```json
 {
   "type": "object",
   "properties": {
-    "payments": {
+    "entries": {
       "type": "array",
       "items": {
-        "$ref": "#/components/schemas/Payment"
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PaymentEntry"
+          },
+          {
+            "$ref": "#/components/schemas/RefundEntry"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "payment": "#/components/schemas/PaymentEntry",
+            "refund": "#/components/schemas/RefundEntry"
+          }
+        }
       }
     }
   },
   "required": [
-    "payments"
+    "entries"
   ],
   "additionalProperties": false
 }
@@ -685,13 +699,27 @@ What the client paid, newest first
 
 ### GET /api/payments/{id}
 
-One of the client's payments, with its refunds
+One of the client's entries: a payment with its documents, or a refund
 
-**200**: The payment
+**200**: The entry
 
 ```json
 {
-  "$ref": "#/components/schemas/PaymentDetail"
+  "oneOf": [
+    {
+      "$ref": "#/components/schemas/PaymentDetail"
+    },
+    {
+      "$ref": "#/components/schemas/RefundDetail"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "kind",
+    "mapping": {
+      "payment": "#/components/schemas/PaymentDetail",
+      "refund": "#/components/schemas/RefundDetail"
+    }
+  }
 }
 ```
 
@@ -703,7 +731,7 @@ One of the client's payments, with its refunds
 }
 ```
 
-**404**: not_found: no such payment of this client's
+**404**: not_found: no such payment or refund of this client's
 
 ```json
 {
@@ -1539,6 +1567,10 @@ A visit's invoice, as a PDF from Books
             }
           ]
         },
+        "what_was_done": {
+          "type": "null",
+          "description": "What the technician did, from the job sheet (P2-M4)."
+        },
         "photos": {
           "$ref": "#/components/schemas/PhotoSet"
         },
@@ -1558,6 +1590,7 @@ A visit's invoice, as a PDF from Books
       "required": [
         "duration_minutes",
         "outcome",
+        "what_was_done",
         "photos",
         "document_id"
       ],
@@ -1794,60 +1827,38 @@ A visit's invoice, as a PDF from Books
 }
 ```
 
-### Payment
+### PaymentEntry
 
 ```json
 {
   "type": "object",
   "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "payment"
+      ]
+    },
     "id": {
       "type": "string",
       "format": "uuid"
     },
-    "reference": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "Ours, e.g. MM-2026-0841, once captured."
-    },
     "date": {
       "type": "string",
       "format": "date",
-      "description": "India's calendar date the payment was made."
+      "description": "India's calendar date it was made."
     },
     "amount": {
       "type": "integer",
       "description": "In paise, GST included."
     },
-    "refunded_amount": {
+    "amount_ex_gst": {
       "type": "integer",
-      "description": "In paise: refunds Razorpay has processed."
+      "description": "In paise, before GST: the main figure."
     },
-    "status": {
-      "type": "string",
-      "enum": [
-        "authorized",
-        "captured",
-        "failed",
-        "refunded",
-        "partially_refunded"
-      ]
-    },
-    "method": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "upi, card, netbanking and so on."
+    "gst_percent": {
+      "type": "number",
+      "description": "The GST rate the amount includes."
     },
     "visit": {
       "anyOf": [
@@ -1891,17 +1902,183 @@ A visit's invoice, as a PDF from Books
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "authorized",
+        "captured",
+        "refunded",
+        "partially_refunded"
+      ]
+    },
+    "method": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "upi, card, netbanking and so on."
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Ours, e.g. MM-2026-0841, once captured."
+    },
+    "refunded_amount": {
+      "type": "integer",
+      "description": "In paise: refunds Razorpay has processed."
     }
   },
   "required": [
+    "kind",
     "id",
-    "reference",
     "date",
     "amount",
-    "refunded_amount",
+    "amount_ex_gst",
+    "gst_percent",
+    "visit",
     "status",
     "method",
-    "visit"
+    "reference",
+    "refunded_amount"
+  ],
+  "additionalProperties": false
+}
+```
+
+### RefundEntry
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "refund"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "payment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date it was made."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "gst_percent": {
+      "type": "number",
+      "description": "The GST rate the amount includes."
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for, when known."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "processed",
+        "failed"
+      ]
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where the money goes back to: the payment's method."
+    },
+    "speed": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "normal (5 to 7 working days) or instant."
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "payment_id",
+    "date",
+    "amount",
+    "amount_ex_gst",
+    "gst_percent",
+    "visit",
+    "status",
+    "destination",
+    "speed"
   ],
   "additionalProperties": false
 }
@@ -1913,68 +2090,65 @@ A visit's invoice, as a PDF from Books
 {
   "allOf": [
     {
-      "$ref": "#/components/schemas/Payment"
+      "$ref": "#/components/schemas/PaymentEntry"
     },
     {
       "type": "object",
       "properties": {
-        "refunds": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "amount": {
-                "type": "integer"
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "created",
-                  "processed",
-                  "failed"
-                ]
-              },
-              "speed": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "description": "normal (5 to 7 working days) or instant."
-              },
-              "date": {
-                "type": "string",
-                "format": "date"
-              }
+        "documents": {
+          "type": "object",
+          "properties": {
+            "invoice": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it."
             },
-            "required": [
-              "amount",
-              "status",
-              "speed",
-              "date"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "document_id": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "uuid"
-            },
-            {
-              "type": "null"
+            "receipt": {
+              "type": "null",
+              "description": "The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3)."
             }
+          },
+          "required": [
+            "invoice",
+            "receipt"
           ],
-          "description": "The visit's invoice, for GET /api/documents/{id}, once Books has raised it."
+          "additionalProperties": false
         }
       },
       "required": [
-        "refunds",
-        "document_id"
+        "documents"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
+```
+
+### RefundDetail
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/RefundEntry"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "voucher": {
+          "type": "null",
+          "description": "The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3)."
+        }
+      },
+      "required": [
+        "voucher"
       ],
       "additionalProperties": false
     }

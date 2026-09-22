@@ -62,6 +62,7 @@ const PhotoSetSchema = z
 const VisitDetailSchema = VisitSummarySchema.extend({
   duration_minutes: z.union([z.number().int(), z.null()]).openapi({ description: "From start to finish, once done." }),
   outcome: z.union([z.enum(["done", "partial"]), z.null()]),
+  what_was_done: z.null().openapi({ description: "What the technician did, from the job sheet (P2-M4)." }),
   photos: PhotoSetSchema,
   document_id: z
     .union([z.uuid(), z.null()])

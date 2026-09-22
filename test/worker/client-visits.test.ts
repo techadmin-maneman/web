@@ -178,7 +178,7 @@ describe("GET /api/visits/:id and the photographs", () => {
       outcome: string;
       photos: { before: { angle: string; url: string }[]; after: { angle: string; url: string }[] };
     }>();
-    expect(visit).toMatchObject({ duration_minutes: 70, outcome: "done" });
+    expect(visit).toMatchObject({ duration_minutes: 70, outcome: "done", what_was_done: null });
     expect(visit.photos.before.map((photo) => photo.angle)).toEqual(["front"]);
 
     const url = visit.photos.after[0]?.url ?? "";
