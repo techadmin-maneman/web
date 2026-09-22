@@ -1,0 +1,21 @@
+// The same-origin rule the Phase 2 surfaces enforce on writes
+// (docs/decisions/0026-hosts-and-surfaces.md).
+
+import { createMiddleware } from "hono/factory";
+import type { AppEnv } from "../app.ts";
+import { errorBody } from "./errors.ts";
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Refuses a write whose Origin is not the page's own. The Phase 2 surfaces
+ * carry session cookies, and every *.maneman.in host counts as the same site,
+ * so SameSite=Lax alone would let one surface's page post to another's API.
+ */
+export const requireSameOrigin = createMiddleware<AppEnv>(async (c, next) => {
+  if (SAFE_METHODS.has(c.req.method)) return next();
+  const origin = c.req.header("Origin");
+  if (origin === new URL(c.req.url).origin) return next();
+  c.var.log.warn("cross_origin_write_refused", { has_origin: origin !== undefined });
+  return c.json(errorBody("forbidden_origin", c.var.requestId), 403);
+});

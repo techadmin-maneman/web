@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp, type App } from "../../src/app.ts";
-import { EXPECTED_DATABASE_NAME, type EnvironmentName } from "../../src/config/environments.ts";
+import { EXPECTED_DATABASE_NAME, type EnvironmentName, type Surface } from "../../src/config/environments.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import type { StaticConfig } from "../../src/guard.ts";
@@ -134,8 +134,9 @@ export function appFor(
   environment: EnvironmentName = "local",
   deps: Dependencies = fakeDependencies(),
   settings: Partial<Settings> = {},
+  surface: Surface = "public",
 ): App {
-  return createApp({ ...LOCAL_CONFIG, environment, settings: { ...LOCAL_SETTINGS, ...settings } }, () => deps);
+  return createApp({ ...LOCAL_CONFIG, environment, settings: { ...LOCAL_SETTINGS, ...settings } }, () => deps, surface);
 }
 
 export function request(app: App, path: string, init?: RequestInit, bindings: Partial<Env> = {}): Promise<Response> {

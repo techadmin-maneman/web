@@ -1,7 +1,9 @@
 import { env } from "cloudflare:workers";
-import { createApp } from "./app.ts";
+import { createApp, type App } from "./app.ts";
+import { ENABLED_SURFACES, type Surface } from "./config/environments.ts";
 import { productionDependencies } from "./dependencies.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
+import { byHost } from "./http/surfaces.ts";
 import { createLogger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
@@ -13,8 +15,11 @@ import { sweep } from "./scheduled/sweeper.ts";
 // Cloudflare rejects the upload and wrangler dev refuses to start.
 const config = validateStaticConfig(env as unknown as Record<string, unknown>);
 
-const app = createApp(config);
 const makeDependencies = productionDependencies(config);
+/** One app per switched-on surface, chosen by the request's host (docs/decisions/0026). */
+const apps = new Map<Surface, App>(
+  ENABLED_SURFACES[config.environment].map((surface) => [surface, createApp(config, makeDependencies, surface)]),
+);
 const checkIdentity = createCachedIdentityCheck();
 const baseLog = createLogger({ worker: "mm-api", environment: config.environment });
 
@@ -28,7 +33,7 @@ async function assertOwnDatabase(db: D1Database): Promise<void> {
 }
 
 export default {
-  fetch: app.fetch,
+  fetch: byHost(apps, config.environment),
 
   async queue(batch, workerEnv) {
     const log = baseLog.child({ queue: batch.queue });

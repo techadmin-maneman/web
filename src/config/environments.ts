@@ -29,10 +29,46 @@ export const RESOURCE_TOKEN: Readonly<Record<EnvironmentName, string>> = {
   production: "prod",
 };
 
-/** Public hostname per remote environment. */
+/**
+ * The sites mm-api answers on (docs/decisions/0026-hosts-and-surfaces.md):
+ * the public site, and Phase 2's client app, ops console and technician app.
+ * Each is its own app with its own routes, chosen by the request's host.
+ */
+export const SURFACES = ["public", "client", "ops", "tech"] as const;
+export type Surface = (typeof SURFACES)[number];
+
+/** Each surface's hostname per remote environment. Staging's are one level deep, for the free certificate. */
+export const SURFACE_HOSTS: Readonly<Record<RemoteEnvironmentName, Readonly<Record<Surface, string>>>> = {
+  staging: {
+    public: "staging.maneman.in",
+    client: "app-staging.maneman.in",
+    ops: "ops-staging.maneman.in",
+    tech: "tech-staging.maneman.in",
+  },
+  production: {
+    public: "maneman.in",
+    client: "app.maneman.in",
+    ops: "ops.maneman.in",
+    tech: "tech.maneman.in",
+  },
+};
+
+/**
+ * The surfaces switched on in each environment. A remote surface is switched
+ * on once its DNS record and its Cloudflare Access application exist; then it
+ * gets its route (the config check requires one per switched-on surface).
+ * Locally every surface answers, on localhost and on app., ops. and tech.localhost.
+ */
+export const ENABLED_SURFACES: Readonly<Record<EnvironmentName, readonly Surface[]>> = {
+  local: SURFACES,
+  staging: ["public"],
+  production: ["public"],
+};
+
+/** The public site's hostname per remote environment. */
 export const HOSTNAME: Readonly<Record<RemoteEnvironmentName, string>> = {
-  staging: "staging.maneman.in",
-  production: "maneman.in",
+  staging: SURFACE_HOSTS.staging.public,
+  production: SURFACE_HOSTS.production.public,
 };
 
 /** Where links in messages point, e.g. a WhatsApp copy's result link. */

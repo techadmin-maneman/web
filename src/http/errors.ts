@@ -23,6 +23,8 @@ export const ERROR_CODES = [
   "look_limit_reached",
   // Erasure (docs/decisions/0019-erasure.md).
   "unauthorized",
+  // Phase 2 surfaces: a write from another page's origin (docs/decisions/0026-hosts-and-surfaces.md).
+  "forbidden_origin",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
