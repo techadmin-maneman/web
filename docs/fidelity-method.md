@@ -47,7 +47,7 @@ These differences are known and stand:
 | C9, D1   | The photographs carry no captions; C9 has no "What was done"                                   | The prompt: "no captions"; what was done arrives with the job sheet (P2-M4)                       |
 | D3       | The photograph opens large in a sheet, above the download line, with Close                     | A tap on a thumbnail shows the photograph; the board draws the download line alone                |
 | E1       | Newest first, and no charge or credit                                                          | The board lists its entries in no order; charges and credits arrive with P2-M5 and P2-M3          |
-| E2       | "UPI", without the UPI app                                                                     | Razorpay does not always say which app paid (`docs/open-points.md`, item 37)                      |
+| E2       | "UPI", without the UPI app                                                                     | Razorpay does not always say which app paid; the owner ruled to show "UPI" (ADR 0025, item 29)    |
 | E3       | The pair shows the receipt's line, a placeholder                                               | Receipts wait for the invoicing route (`docs/open-points.md`, item 35)                            |
 | G1       | The address includes the house; the design shows the area only                                 | The owner ruled on 22 September 2026 that the profile shows the whole address (ADR 0025, item 23) |
 | G1       | A fifth consent, "WhatsApp about launches"                                                     | The waitlist's launch alert (ADR 0042); its wording is a placeholder                              |

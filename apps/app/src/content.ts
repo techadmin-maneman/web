@@ -207,7 +207,7 @@ export const payments = {
   },
   /**
    * How long a refund takes, beside "Refund processing". The design says "3 to 5 working days"; Razorpay's
-   * normal refunds take 5 to 7, so that is what the app says (docs/open-points.md).
+   * normal refunds take 5 to 7, and the owner ruled the app says so (ADR 0025, item 28).
    */
   speed: { normal: "5 to 7 working days" } as Readonly<Record<string, string>>,
   /** A method as a list's meta line writes it ("22 Aug · UPI"), and as the detail's row does ("UPI"). */

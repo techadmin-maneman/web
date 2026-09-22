@@ -17,7 +17,6 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 | 7   | Late fees, the refund route, a late-cancelled credit | The design's figures and rules                                                                                                                               | The owner confirms them (P2-M5).                                                                                     |
 | 8   | Self-serve booking                                   | Off: booking goes through WhatsApp                                                                                                                           | The owner switches on `SELF_SERVE_BOOKING` (P2-M5).                                                                  |
 | 35  | Receipts and refund vouchers                         | The app lists them on each payment and refund (board E2), but they are never ready: its Notify me asks ops on WhatsApp                                       | Settle the invoicing route (section 6). The API then serves each document, and Notify me tells the client itself.    |
-| 36  | How long a refund takes                              | The app says "5 to 7 working days", Razorpay's time for a normal refund; the design says "3 to 5"                                                            | The owner confirms the wording, or turns on instant refunds.                                                         |
 
 ## Zoho
 
@@ -34,13 +33,12 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 
 ## Messages and copy
 
-| #   | Point                       | Staging uses                                                                                                             | Before production                                                                              |
-| --- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| 17  | Login codes by SMS          | WhatsApp only; SMS off                                                                                                   | DLT registration and MSG91 (section 11).                                                       |
-| 18  | A dedicated WhatsApp number | The shared Evolution instance, whose webhook goes to n8n, so no delivery receipts                                        | A Mane Man number on its own instance, with its webhook to us (plan input 2).                  |
-| 19  | Message texts               | Placeholder wording in `src/config/message-templates.ts`                                                                 | The owner approves each text.                                                                  |
-| 20  | App copy                    | Lines marked PLACEHOLDER in `apps/app/src/content.ts` and the other apps                                                 | The owner approves each line.                                                                  |
-| 37  | The UPI app on a payment    | Board E2 names it ("UPI · Google Pay"); the app shows "UPI", since Razorpay's payment does not always say which app paid | The owner decides whether it matters; if it does, the mirror keeps it where Razorpay gives it. |
+| #   | Point                       | Staging uses                                                                      | Before production                                                             |
+| --- | --------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 17  | Login codes by SMS          | WhatsApp only; SMS off                                                            | DLT registration and MSG91 (section 11).                                      |
+| 18  | A dedicated WhatsApp number | The shared Evolution instance, whose webhook goes to n8n, so no delivery receipts | A Mane Man number on its own instance, with its webhook to us (plan input 2). |
+| 19  | Message texts               | Placeholder wording in `src/config/message-templates.ts`                          | The owner approves each text.                                                 |
+| 20  | App copy                    | Lines marked PLACEHOLDER in `apps/app/src/content.ts` and the other apps          | The owner approves each line.                                                 |
 
 ## Service and operations
 
@@ -74,3 +72,5 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 - **Bot Fight Mode is off.** 22 September 2026 (ADR 0025, item 12).
 - **The Zoho org the trial runs in is the real one.** 22 September 2026 (ADR 0025, item 26).
 - **The FSM trial findings** are recorded, apart from webhooks (`docs/decisions/fsm-trial.md`).
+- **How long a refund takes (item 36).** The app says "5 to 7 working days", Razorpay's time for a normal refund. Ruled 22 September 2026 (ADR 0025, item 28).
+- **The UPI app on a payment (item 37).** The app shows "UPI" alone. Ruled 22 September 2026 (ADR 0025, item 29).
