@@ -1438,6 +1438,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Book a held window: pay through Checkout, or, if free, book it at once */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        hold_id: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Started */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description hold_expired: the hold lapsed, was let go, or is booked already; or ops_assisted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1815,6 +1876,28 @@ export interface components {
             expires_at: string;
             /** @enum {string} */
             state: "held" | "expired" | "booked" | "released";
+            /** @description Razorpay has confirmed the payment; the visit is being booked. */
+            paid: boolean;
+            /** @description The visit it became, once booked. */
+            visit_id: string | null;
+        };
+        Booking: {
+            /** Format: uuid */
+            hold_id: string;
+            /** @description What Razorpay Checkout opens with; null for a free visit, booked without paying. */
+            checkout: {
+                key_id: string;
+                order_id: string;
+                amount: number;
+                /** @enum {string} */
+                currency: "INR";
+                name: string;
+                description: string;
+                prefill: {
+                    name: string;
+                    contact: string;
+                };
+            } | null;
         };
     };
     responses: never;

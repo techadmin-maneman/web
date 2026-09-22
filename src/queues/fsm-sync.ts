@@ -1,18 +1,20 @@
 // The fsm-sync consumer. Most messages name an FSM appointment to read afresh
 // and write over its mirror copy (docs/decisions/0032-fsm-mirror.md). FSM's
 // webhooks and the reconciliation put them here; neither is trusted for the
-// appointment's contents, only for which one changed. The others name a
-// booked lead to send to FSM as a Request (src/domain/fsm-leads.ts).
+// appointment's contents, only for which one changed. Others name a booked
+// lead to send to FSM as a Request (src/domain/fsm-leads.ts), or a hold paid
+// for in the app to book as a visit (src/domain/bookings.ts).
 //
 // Once an appointment is closed, its photographs are copied from FSM into the
 // client-photos bucket (src/domain/visit-photos.ts).
 //
 // A failure is retried after 30 s, 1, 2 and 4 minutes. The fifth alerts and
-// gives up; the reconciliation picks an appointment up again, and ops can
-// enter a lead in FSM by hand.
+// gives up; the reconciliation picks an appointment up again, ops can enter a
+// lead in FSM by hand, and a booking FSM would not take is refunded.
 
 import { z } from "zod";
 import type { Dependencies } from "../dependencies.ts";
+import { confirmBooking, giveBack } from "../domain/bookings.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
@@ -29,6 +31,8 @@ export const FsmSyncMessageSchema = z.union([
     request_id: z.string(),
   }),
   z.object({ lead_id: z.uuid(), request_id: z.string() }),
+  /** A hold paid for, or free, to book in FSM (src/domain/bookings.ts). */
+  z.object({ hold_id: z.uuid(), request_id: z.string() }),
 ]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
@@ -47,6 +51,12 @@ export async function handleFsmSyncBatch(
     if (!parsed.success) {
       log.error("fsm_sync_bad_message", { message_id: message.id });
       message.ack();
+      continue;
+    }
+    if ("hold_id" in parsed.data) {
+      await bookHold(message, parsed.data.hold_id, db, deps, log.child({ request_id: parsed.data.request_id }), {
+        labelAsTest,
+      });
       continue;
     }
     if ("lead_id" in parsed.data) {
@@ -86,6 +96,34 @@ export async function handleFsmSyncBatch(
         message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
       }
     }
+  }
+}
+
+async function bookHold(
+  message: Message,
+  holdId: string,
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+  options: { labelAsTest: boolean },
+): Promise<void> {
+  try {
+    const outcome = await confirmBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options);
+    log.info("booking", { hold_id: holdId, outcome });
+    message.ack();
+  } catch (error) {
+    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    log.warn("booking_failed", { hold_id: holdId, attempt: message.attempts, reason });
+    if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
+      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      return;
+    }
+    await giveBack(db, deps.payments, holdId, deps.now(), "FSM would not take the booking");
+    await deps.alert(
+      `Booking ${holdId} could not be written to FSM after ${String(message.attempts)} attempts: ${reason}. ` +
+        "The client's payment has been refunded.",
+    );
+    message.ack();
   }
 }
 

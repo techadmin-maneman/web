@@ -12,6 +12,7 @@ import { createCrmProvider, type CrmProvider } from "./providers/crm.ts";
 import { createFsmProvider, type FsmProvider } from "./providers/fsm.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
+import { createPaymentsProvider, type PaymentsProvider } from "./providers/razorpay.ts";
 
 export interface Dependencies {
   readonly fetch: typeof fetch;
@@ -30,6 +31,8 @@ export interface Dependencies {
   readonly fsm: FsmProvider;
   /** Zoho Books, for invoices and receipts. */
   readonly books: BooksProvider;
+  /** Razorpay, for orders and refunds. */
+  readonly payments: PaymentsProvider;
 }
 
 export type DependencyFactory = (env: Env, log: Logger) => Dependencies;
@@ -73,6 +76,10 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
         db: env.DB,
         fetch: httpFetch,
         now,
+        log,
+      }),
+      payments: createPaymentsProvider(config.providers.PAYMENTS_PROVIDER, settings.razorpay, {
+        fetch: httpFetch,
         log,
       }),
     };

@@ -12,6 +12,8 @@
 //   GET /fsm/v1/Territories                            { data: [territory] }
 //   POST /fsm/v1/Contacts                              { data: { Contacts: [{ id }] } }
 //   POST /fsm/v1/Requests                              { data: { Requests: [{ id }], Service_Line_Items: [...] } }
+//   POST /fsm/v1/Work_Orders                           { data: { Work_Orders: [{ id }], Service_Line_Items: [{ id }] } }
+//   POST /fsm/v1/Service_Appointments                  { data: [{ id }] }
 //
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
@@ -27,6 +29,7 @@ import type {
   FsmTechnician,
   NewFsmContact,
   NewFsmRequest,
+  NewFsmVisit,
 } from "./fsm.ts";
 import { createTokenCache, type TokenStore, ZohoError, zohoErrorFrom, zohoSend } from "./zoho-http.ts";
 
@@ -84,8 +87,10 @@ const Addresses = z.object({
   Billing_Address: z.object({ id: z.string() }),
 });
 
-/** What a create answers: the new record under its module's name. */
-const Created = z.object({ data: z.record(z.string(), z.array(z.object({ id: z.string() }))) });
+/** What a create answers: the new records under their modules' names, or, for an appointment, a list. */
+const Created = z.object({
+  data: z.union([z.array(z.object({ id: z.string() })), z.record(z.string(), z.array(z.object({ id: z.string() })))]),
+});
 
 /** A new contact's street, until the client gives their address. */
 const ADDRESS_TO_CONFIRM = "To be confirmed with the client";
@@ -193,12 +198,23 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
     return z.array(schema).parse(list ?? []);
   }
 
-  /** Adds one record to a module and returns its ID. */
-  async function create(step: string, module: string, record: Record<string, unknown>): Promise<string> {
+  /** Adds one record to a module; returns the new IDs by module, the record's own under `module`. */
+  async function createWith(
+    step: string,
+    module: string,
+    record: Record<string, unknown>,
+  ): Promise<Record<string, string | undefined>> {
     const response = await request(step, `/fsm/v1/${module}`, { method: "POST", body: { data: [record] } });
-    const id = Created.parse(await response.json()).data[module]?.[0]?.id;
-    if (id === undefined) throw new ZohoError(response.status, "NO_ID", `${step} answered without the new ID`);
-    return id;
+    const { data } = Created.parse(await response.json());
+    const ids = Array.isArray(data)
+      ? { [module]: data[0]?.id }
+      : Object.fromEntries(Object.entries(data).map(([name, records]) => [name, records[0]?.id]));
+    if (ids[module] === undefined) throw new ZohoError(response.status, "NO_ID", `${step} answered without the new ID`);
+    return ids;
+  }
+
+  async function create(step: string, module: string, record: Record<string, unknown>): Promise<string> {
+    return (await createWith(step, module, record))[module] ?? "";
   }
 
   let territory: Promise<string> | null = null;
@@ -330,6 +346,33 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
           },
         ],
       });
+    },
+
+    // The appointment is made on the work order's service line, which the work order's answer names.
+    async createVisit(visit: NewFsmVisit) {
+      const [contact] = records(await json("visit_contact", `/Contacts/${visit.contactId}`), "data", Addresses);
+      if (contact === undefined) throw new ZohoError(404, "NO_CONTACT", "the visit's contact is not in FSM");
+      const territory = await firstTerritory();
+      const order = await createWith("create_work_order", "Work_Orders", {
+        Summary: visit.summary,
+        Type: "Service",
+        Contact: visit.contactId,
+        Territory: territory,
+        Service_Address: { id: contact.Service_Address.id },
+        Billing_Address: { id: contact.Billing_Address.id },
+        Service_Line_Items: [{ Service: visit.serviceId, Quantity: 1, Sequence: 1 }],
+      });
+      const line = order.Service_Line_Items;
+      if (line === undefined) throw new ZohoError(201, "NO_LINE", "the work order answered without its service line");
+      const appointmentId = await create("create_appointment", "Service_Appointments", {
+        Summary: visit.summary,
+        Scheduled_Start_Date_Time: visit.start,
+        Scheduled_End_Date_Time: visit.end,
+        Territory: territory,
+        $Service_Line_Items: [line],
+        $Service_Resources: [visit.technicianId],
+      });
+      return { workOrderId: order.Work_Orders ?? "", appointmentId };
     },
   };
 }

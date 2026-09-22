@@ -1,3 +1,4 @@
+import { createStubPayments } from "../../src/providers/razorpay.ts";
 import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp, type App } from "../../src/app.ts";
@@ -169,6 +170,7 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     sentCodes,
     fsm: createStubFsm(),
     books: createStubBooks(),
+    payments: createStubPayments(),
     ...overrides,
   };
 }
