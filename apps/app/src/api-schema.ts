@@ -1733,6 +1733,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/refer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's code, credits and fitted friends */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their referrals */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Refer"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1816,8 +1861,8 @@ export interface components {
             } | null;
             /** @description The next visit that has not happened, from FSM: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
-            /** @description The credit tile: balance and earliest expiry. Arrives with the credit ledger (P2-M3). */
-            credits: null;
+            /** @description The credit tile: balance and earliest expiry; null with none left. */
+            credits: components["schemas"]["Credits"] | null;
             /** @description The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4). */
             prompt: null;
             booking: {
@@ -1853,6 +1898,12 @@ export interface components {
         Technician: {
             name: string;
             initials: string;
+        };
+        Credits: {
+            /** @description Service-visit credits left. */
+            visits: number;
+            /** @description When the soonest expire. */
+            earliest_expiry: string | null;
         };
         Profile: {
             name: string;
@@ -2206,6 +2257,23 @@ export interface components {
             destination: string | null;
             /** @description false: the terms only; true: the visit is cancelled. */
             cancelled: boolean;
+        };
+        Refer: {
+            code: string;
+            /** @description The invite link to share: maneman.in/r/<code>. */
+            link: string;
+            credits: components["schemas"]["Credits"];
+            card: {
+                /** @enum {string} */
+                state: "house" | "personal";
+                version: number;
+            };
+            /** @description Friends whose first fit closed as done, most recent first. */
+            fitted: {
+                first_name: string;
+                /** @description YYYY-MM, in India. */
+                month: string;
+            }[];
         };
     };
     responses: never;

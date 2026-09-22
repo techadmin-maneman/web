@@ -120,8 +120,8 @@ describe("PATCH /api/consents/:purpose", () => {
     // Each switch is its own row, with the notice version the client saw.
     const rows = await env.DB.prepare("SELECT granted, notice_version FROM consents ORDER BY created_at, rowid").all();
     expect(rows.results).toEqual([
-      { granted: 1, notice_version: "photos-referral-cards-v1" },
-      { granted: 0, notice_version: "photos-referral-cards-v1" },
+      { granted: 1, notice_version: "photos-referral-cards-v2" },
+      { granted: 0, notice_version: "photos-referral-cards-v2" },
     ]);
     expect(await auditActions()).toEqual(["consent.switch", "consent.switch"]);
   });

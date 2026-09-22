@@ -26,6 +26,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     turnstileSecret: "",
     acceptTurnstileTestToken: false,
     selfServeBooking: false,
+    referrerNameOnInvite: false,
     ipHashSalt: "",
     alertWebhookUrl: null,
     leadWebhookUrl: null,

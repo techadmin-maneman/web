@@ -319,8 +319,15 @@
             "description": "The next visit that has not happened, from FSM: a consultation for a lead."
           },
           "credits": {
-            "type": "null",
-            "description": "The credit tile: balance and earliest expiry. Arrives with the credit ledger (P2-M3)."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Credits"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The credit tile: balance and earliest expiry; null with none left."
           },
           "prompt": {
             "type": "null",
@@ -471,6 +478,32 @@
         ],
         "additionalProperties": false,
         "description": "Display name and initials only."
+      },
+      "Credits": {
+        "type": "object",
+        "properties": {
+          "visits": {
+            "type": "integer",
+            "description": "Service-visit credits left."
+          },
+          "earliest_expiry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the soonest expire."
+          }
+        },
+        "required": [
+          "visits",
+          "earliest_expiry"
+        ],
+        "additionalProperties": false
       },
       "Profile": {
         "type": "object",
@@ -1823,6 +1856,69 @@
           "kept",
           "destination",
           "cancelled"
+        ],
+        "additionalProperties": false
+      },
+      "Refer": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "link": {
+            "type": "string",
+            "description": "The invite link to share: maneman.in/r/<code>."
+          },
+          "credits": {
+            "$ref": "#/components/schemas/Credits"
+          },
+          "card": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "house",
+                  "personal"
+                ]
+              },
+              "version": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "state",
+              "version"
+            ],
+            "additionalProperties": false
+          },
+          "fitted": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "first_name": {
+                  "type": "string"
+                },
+                "month": {
+                  "type": "string",
+                  "description": "YYYY-MM, in India."
+                }
+              },
+              "required": [
+                "first_name",
+                "month"
+              ]
+            },
+            "description": "Friends whose first fit closed as done, most recent first."
+          }
+        },
+        "required": [
+          "code",
+          "link",
+          "credits",
+          "card",
+          "fitted"
         ],
         "additionalProperties": false
       }
@@ -3457,6 +3553,33 @@
           },
           "503": {
             "description": "unavailable: FSM did not answer; nothing changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/refer": {
+      "get": {
+        "summary": "The client's code, credits and fitted friends",
+        "responses": {
+          "200": {
+            "description": "Their referrals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
             "content": {
               "application/json": {
                 "schema": {

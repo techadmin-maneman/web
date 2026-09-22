@@ -68,6 +68,19 @@ export const NOTICES: readonly Notice[] = [
     ],
   },
   {
+    // The four lines, and the naming line the owner ruled beside them (ADR 0025, item 24).
+    version: "photos-referral-cards-v2",
+    purpose: "photos_referral_cards",
+    text: [
+      "Photographs on referral cards",
+      "Anyone you send this card to can see your photographs.",
+      "They can forward it, and so can anyone who receives it.",
+      "You can switch it off at any time, and new opens will show our house example instead.",
+      "Cards already delivered stay in people’s chats. We cannot take those back.",
+      "Your first name appears on your invite.",
+    ],
+  },
+  {
     version: "photos-marketing-v1",
     purpose: "photos_marketing",
     text: ["Photographs in our marketing"],
@@ -83,7 +96,21 @@ export const NOTICES: readonly Notice[] = [
     purpose: "whatsapp_launches",
     text: ["Tell me when you launch in my area."],
   },
+  // The referral landing's own lines (design/phase2/Referral and Waitlist, C2 and C3; ADR 0048).
+  {
+    version: "referral-consultation-v1",
+    purpose: "whatsapp_visits",
+    text: ["You may contact me on WhatsApp about this consultation."],
+  },
+  {
+    version: "waitlist-v1",
+    purpose: "contact",
+    text: ["You may contact me about this request."],
+  },
 ];
+
+/** The lines the referral landing shows, by what they are given for. */
+export const LANDING_NOTICES = { consultation: "referral-consultation-v1", waitlist: "waitlist-v1" } as const;
 
 /** The version shown today for each purpose. */
 export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
@@ -91,7 +118,7 @@ export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
   tryon_photo: "photo-v1",
   result_delivery: "gate-v1",
   photos_own_record: "photos-own-record-v1",
-  photos_referral_cards: "photos-referral-cards-v1",
+  photos_referral_cards: "photos-referral-cards-v2",
   photos_marketing: "photos-marketing-v1",
   whatsapp_visits: "whatsapp-visits-v1",
   whatsapp_launches: "whatsapp-launches-v1",

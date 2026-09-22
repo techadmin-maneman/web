@@ -24,6 +24,7 @@ export const LOCAL_SETTINGS: Settings = {
   turnstileSecret: TURNSTILE_TEST_SECRET,
   acceptTurnstileTestToken: false,
   selfServeBooking: true,
+  referrerNameOnInvite: true,
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
   leadWebhookUrl: null,

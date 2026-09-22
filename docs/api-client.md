@@ -1138,6 +1138,26 @@ Request body:
 }
 ```
 
+### GET /api/refer
+
+The client's code, credits and fitted friends
+
+**200**: Their referrals
+
+```json
+{
+  "$ref": "#/components/schemas/Refer"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -1480,8 +1500,15 @@ Request body:
       "description": "The next visit that has not happened, from FSM: a consultation for a lead."
     },
     "credits": {
-      "type": "null",
-      "description": "The credit tile: balance and earliest expiry. Arrives with the credit ledger (P2-M3)."
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Credits"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The credit tile: balance and earliest expiry; null with none left."
     },
     "prompt": {
       "type": "null",
@@ -1642,6 +1669,37 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Display name and initials only."
+}
+```
+
+### Credits
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer",
+      "description": "Service-visit credits left."
+    },
+    "earliest_expiry": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the soonest expire."
+    }
+  },
+  "required": [
+    "visits",
+    "earliest_expiry"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -3104,6 +3162,74 @@ Request body:
     "kept",
     "destination",
     "cancelled"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Refer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "link": {
+      "type": "string",
+      "description": "The invite link to share: maneman.in/r/<code>."
+    },
+    "credits": {
+      "$ref": "#/components/schemas/Credits"
+    },
+    "card": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "house",
+            "personal"
+          ]
+        },
+        "version": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "state",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "fitted": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "month": {
+            "type": "string",
+            "description": "YYYY-MM, in India."
+          }
+        },
+        "required": [
+          "first_name",
+          "month"
+        ]
+      },
+      "description": "Friends whose first fit closed as done, most recent first."
+    }
+  },
+  "required": [
+    "code",
+    "link",
+    "credits",
+    "card",
+    "fitted"
   ],
   "additionalProperties": false
 }

@@ -122,6 +122,8 @@ export interface Settings {
    * Off, the booking routes answer 409 ops_assisted and the app opens WhatsApp instead.
    */
   readonly selfServeBooking: boolean;
+  /** The referrer's first name on their invite, for those who agreed to it (ADR 0025, item 24). */
+  readonly referrerNameOnInvite: boolean;
   readonly ipHashSalt: string;
   /** Where alerts are posted. Optional locally only. */
   readonly alertWebhookUrl: string | null;
@@ -405,6 +407,7 @@ export function readSettings(
     turnstileSecret,
     acceptTurnstileTestToken,
     selfServeBooking,
+    referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),

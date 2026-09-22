@@ -89,6 +89,9 @@ export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date
     db
       .prepare("UPDATE otp_challenges SET voided_at = ?2, code_hash = NULL WHERE person_id = ?1 AND voided_at IS NULL")
       .bind(personId, at),
+    // Waiting for a pincode needs the person's number; an invite they sent stays, with the house card
+    // (docs/decisions/0048-referrals.md).
+    db.prepare("DELETE FROM waitlist_entries WHERE person_id = ?1").bind(personId),
     // The number is replaced, not kept: a later booking from it starts afresh, with a new consent.
     db
       .prepare(

@@ -413,13 +413,18 @@ export const profile = {
   },
   given: (date: string) => `Given ${date}`,
   notGiven: "Not given",
-  /** The four lines the design shows before a card is turned on (F3); the consent's notice carries them. */
+  /**
+   * The four lines the design shows before a card is turned on (F3), and the naming line the owner ruled beside
+   * them; the consent's notice carries them all.
+   */
   referralCards: {
     lines: [
       "Anyone you send this card to can see your photographs.",
       "They can forward it, and so can anyone who receives it.",
       "You can switch it off at any time, and new opens will show our house example instead.",
       "Cards already delivered stay in people’s chats. We cannot take those back.",
+      // The owner's ruling: a referrer is named on their invite only after reading this (ADR 0025, item 24).
+      "Your first name appears on your invite.",
     ],
     // PLACEHOLDER
     confirm: "Switch on",
