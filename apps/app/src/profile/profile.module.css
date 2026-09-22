@@ -1,5 +1,13 @@
 /* Boards G1 and G2, on paper. */
 
+/* Under the profile's header the page starts 24 px down (board G1). */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-26);
+  padding: var(--sp-24) var(--sp-20);
+}
+
 .hidden {
   position: absolute;
   width: var(--sr-only-size);

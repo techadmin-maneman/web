@@ -3,43 +3,61 @@
 // the app keeps no token of its own. Offline, Home is the last one the service
 // worker kept (board B3), until the connection is back.
 
-import { useCallback, useEffect, useState } from "react";
-import { api, forgetHome, type Me } from "./api.ts";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { api, forgetHome, keptHome, type Me } from "./api.ts";
 import { HomeScreen } from "./home/HomeScreen.tsx";
-import { Shell } from "./home/Shell.tsx";
-import { EmptyScreen, VisitsScreen } from "./home/TabScreens.tsx";
+import { ReferScreen } from "./home/TabScreens.tsx";
 import { Login } from "./login/Login.tsx";
+import { EntryScreen } from "./payments/EntryScreen.tsx";
+import { PaymentsScreen } from "./payments/PaymentsScreen.tsx";
+import { CompareScreen } from "./photos/CompareScreen.tsx";
+import { PhotosScreen } from "./photos/PhotosScreen.tsx";
 import { ProfileScreen } from "./profile/ProfileScreen.tsx";
-import { go, usePage, type Page } from "./route.ts";
+import { go, routeOf, usePath, type Route } from "./route.ts";
+import { SessionContext } from "./session.ts";
 import { LoadFailed } from "./states/LoadFailed.tsx";
+import { VisitScreen } from "./visits/VisitScreen.tsx";
+import { VisitsScreen } from "./visits/VisitsScreen.tsx";
 import styles from "./app.module.css";
 
 type Session =
   | { readonly kind: "checking" }
   | { readonly kind: "out" }
-  | { readonly kind: "failed" }
+  | { readonly kind: "failed"; readonly booked: boolean }
   | { readonly kind: "in"; readonly me: Me; readonly offline: boolean };
 
-function pageFor(page: Page, me: Me, offline: boolean, onLogout: () => void, onChanged: () => void) {
-  switch (page) {
-    case "/":
-      return <HomeScreen me={me} offline={offline} />;
-    case "/visits":
-      return <VisitsScreen me={me} />;
-    case "/photos":
-      return <EmptyScreen which="photos" />;
-    case "/payments":
-      return <EmptyScreen which="payments" />;
-    case "/refer":
-      return <EmptyScreen which="refer" />;
-    case "/profile":
+function pageFor(route: Route, onLogout: () => void, onChanged: () => void) {
+  switch (route.page) {
+    case "home":
+      return <HomeScreen />;
+    case "visits":
+      return <VisitsScreen />;
+    case "visit":
+      return <VisitScreen id={route.id} />;
+    case "photos":
+      return <PhotosScreen />;
+    case "compare":
+      return <CompareScreen />;
+    case "payments":
+      return <PaymentsScreen />;
+    case "entry":
+      return <EntryScreen id={route.id} />;
+    case "refer":
+      return <ReferScreen />;
+    case "profile":
       return <ProfileScreen onLogout={onLogout} onChanged={onChanged} />;
   }
 }
 
+/** Whether a Home the phone kept shows a visit, so board B3's error can say it is still booked. */
+async function stillBooked(): Promise<boolean> {
+  const kept = await keptHome().catch(() => null);
+  return kept !== null && (kept.next_visit !== null || kept.consultation !== null);
+}
+
 export function App() {
   const [session, setSession] = useState<Session>({ kind: "checking" });
-  const page = usePage();
+  const path = usePath();
 
   const check = useCallback(async () => {
     setSession({ kind: "checking" });
@@ -48,7 +66,7 @@ export function App() {
     else if (answer.status === 401) {
       await forgetHome();
       setSession({ kind: "out" });
-    } else setSession({ kind: "failed" });
+    } else setSession({ kind: "failed", booked: await stillBooked() });
   }, []);
 
   useEffect(() => {
@@ -103,25 +121,21 @@ export function App() {
     case "checking":
       return <div className={styles.checking} aria-busy="true" />;
     case "failed":
-      return <LoadFailed onRetry={() => void check()} />;
+      return <LoadFailed booked={session.booked} onRetry={() => void check()} />;
     case "out":
       return <Login onSignedIn={() => void check()} />;
     case "in":
       return (
-        <Shell
-          page={page}
-          initials={session.me.initials}
-          offline={session.offline}
-          {...(page === "/profile" ? { name: session.me.name } : {})}
-        >
-          {pageFor(
-            page,
-            session.me,
-            session.offline,
-            () => void logout(),
-            () => void refresh(),
-          )}
-        </Shell>
+        <SessionContext value={{ me: session.me, offline: session.offline }}>
+          {/* Keyed by the path, so each page opens at its top with its own data. */}
+          <Fragment key={path}>
+            {pageFor(
+              routeOf(path),
+              () => void logout(),
+              () => void refresh(),
+            )}
+          </Fragment>
+        </SessionContext>
       );
   }
 }

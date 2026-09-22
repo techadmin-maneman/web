@@ -1,60 +1,95 @@
-// The signed-in app: the header with the mark and the profile button, the
-// page, and the five tabs (design/phase2/Client App, board B). Tabs change
-// the page in place; Profile sits behind the button on Home.
+// The signed-in app's frame (design/phase2/Client App, boards B to G): a
+// header, the page, anything the page keeps above the tabs, and the five tabs.
+// The header is Home's mark and profile button, a tab's title, or a way back
+// with the page's title. Each page pads itself, as its board does.
 
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import type { ReactNode } from "react";
 import { Mark } from "../components/Mark.tsx";
 import { Icon } from "../components/Icon.tsx";
-import { home, profile, states, tabs } from "../content.ts";
+import { home, states, tabs } from "../content.ts";
 import { TAB_ICONS } from "../icons.ts";
-import { go, type Page } from "../route.ts";
+import { go, type Tab } from "../route.ts";
+import { useSession } from "../session.ts";
 import styles from "./shell.module.css";
 
+export type Header =
+  | { readonly kind: "home" }
+  | { readonly kind: "tab"; readonly title: string; readonly action?: ReactNode }
+  | { readonly kind: "back"; readonly title: string; readonly to: string; readonly label: string };
+
 interface Props {
-  readonly page: Page;
-  readonly initials: string;
-  /** The profile's header (board G1): back to Home, and the client's name. */
-  readonly name?: string;
-  /** Board B3's offline state: what the page shows is the last update the phone kept. */
-  readonly offline: boolean;
+  readonly header: Header;
+  /** The tab the page sits under, marked in the bar; the profile sits under none. */
+  readonly tab: Tab | null;
+  /** Kept between the page and the tabs, as board C1's "Book your next visit". */
+  readonly footer?: ReactNode;
   readonly children: ReactNode;
 }
 
-export function Shell({ page, initials, name, offline, children }: Props) {
+/** A link within the app: the path changes without a reload. */
+export function AppLink({
+  to,
+  className,
+  label,
+  children,
+}: {
+  to: string;
+  className?: string;
+  label?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className={styles.shell}>
-      {name === undefined ? (
+    <a
+      className={className}
+      href={to}
+      aria-label={label}
+      onClick={(event) => {
+        event.preventDefault();
+        go(to);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
+function PageHeader({ header }: { header: Header }) {
+  const { me } = useSession();
+  switch (header.kind) {
+    case "home":
+      return (
         <header className={styles.header}>
           <Mark className={styles.mark} />
-          <a
-            className={styles.avatar}
-            href="/profile"
-            aria-label={home.profile}
-            onClick={(event) => {
-              event.preventDefault();
-              go("/profile");
-            }}
-          >
-            {initials}
-          </a>
+          <AppLink className={styles.avatar} to="/profile" label={home.profile}>
+            {me.initials}
+          </AppLink>
         </header>
-      ) : (
+      );
+    case "tab":
+      return (
+        <header className={styles.header}>
+          <h1 className={styles.tabTitle}>{header.title}</h1>
+          {header.action}
+        </header>
+      );
+    case "back":
+      return (
         <header className={`${styles.header} ${styles.titled}`}>
-          <a
-            className={styles.back}
-            href="/"
-            aria-label={profile.back}
-            onClick={(event) => {
-              event.preventDefault();
-              go("/");
-            }}
-          >
+          <AppLink className={styles.back} to={header.to} label={header.label}>
             <Icon d={ICONS.back} size={22} />
-          </a>
-          <span className={styles.name}>{name}</span>
+          </AppLink>
+          <h1 className={styles.name}>{header.title}</h1>
         </header>
-      )}
+      );
+  }
+}
+
+export function Shell({ header, tab, footer, children }: Props) {
+  const { offline } = useSession();
+  return (
+    <div className={styles.shell}>
+      <PageHeader header={header} />
       {/* Always in the page, so a screen reader hears the banner come and go. */}
       <div role="status">
         {offline && (
@@ -64,24 +99,22 @@ export function Shell({ page, initials, name, offline, children }: Props) {
           </p>
         )}
       </div>
-      {/* Keyed by the page, so each page opens at its top. */}
-      <main key={page} className={name === undefined ? styles.page : `${styles.page} ${styles.titledPage}`}>
-        {children}
-      </main>
+      <main className={styles.page}>{children}</main>
+      {footer !== undefined && <div className={styles.footer}>{footer}</div>}
       <nav className={styles.tabs}>
-        {tabs.map((tab) => (
+        {tabs.map((each) => (
           <a
-            key={tab.page}
+            key={each.page}
             className={styles.tab}
-            href={tab.page}
-            aria-current={tab.page === page ? "page" : undefined}
+            href={each.page}
+            aria-current={each.page === tab ? "page" : undefined}
             onClick={(event) => {
               event.preventDefault();
-              go(tab.page);
+              go(each.page);
             }}
           >
-            <Icon d={TAB_ICONS[tab.icon]} size={21} />
-            <span>{tab.label}</span>
+            <Icon d={TAB_ICONS[each.icon]} size={21} />
+            <span>{each.label}</span>
           </a>
         ))}
       </nav>

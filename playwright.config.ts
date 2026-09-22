@@ -13,6 +13,7 @@ const local = process.env.CI === undefined;
 export default defineConfig({
   testDir: "e2e",
   testMatch: "**/*.e2e.ts",
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !local,
   retries: local ? 0 : 1,
@@ -33,6 +34,8 @@ export default defineConfig({
         // The client app's login: every code is this one locally (docs/decisions/0030), and the limits are raised.
         "--var OTP_FIXED_CODE:246810",
         "--var OTP_IP_HOURLY_LIMIT:10000",
+        // The read surfaces' tests share one fitted client (e2e/global-setup.ts), each logging in.
+        "--var OTP_MOBILE_DAILY_LIMIT:10000",
         "--var OTP_DAILY_CEILING:10000",
       ].join(" "),
       url: "http://127.0.0.1:8787/api/health",
@@ -71,6 +74,8 @@ export default defineConfig({
         // A service worker would answer requests that page.route() means to fake. The offline
         // tests (e2e/app/pwa.e2e.ts) allow it.
         serviceWorkers: "block",
+        // The app's fades and sheets stand still, so axe never reads a page halfway in.
+        reducedMotion: "reduce",
       },
     },
   ],

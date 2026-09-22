@@ -76,7 +76,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   const tabs = page.getByRole("navigation");
 
   await tabs.getByRole("link", { name: "Visits" }).click();
-  await expect(page.getByText("Consultation · Morning, 9 am to 12 pm")).toBeVisible();
+  await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Your photographs start at your first fit.")).toBeVisible();

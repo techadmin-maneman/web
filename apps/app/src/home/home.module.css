@@ -1,4 +1,11 @@
-/* Board B2: the consultation card on ink, and what to expect on paper. */
+/* Boards B1 and B2: the next visit's card on ink; what to expect on paper. */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-26);
+  padding: var(--sp-28) var(--sp-20);
+}
 
 .label {
   margin: 0;
@@ -38,6 +45,43 @@
   font-size: var(--fs-15);
   line-height: 1.55;
   color: var(--ink-soft);
+}
+
+/* Board B1: the technician's initials and name, and the visit's kind and length. */
+.technician {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-14);
+  margin-top: var(--sp-20);
+  padding-top: var(--sp-20);
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+.initials {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-md);
+  height: var(--btn-md);
+  background: var(--ink-night);
+  font-family: var(--font-serif);
+  font-size: var(--fs-17);
+  color: var(--ink-muted);
+}
+
+.card .who {
+  font-size: var(--fs-16);
+  color: var(--paper);
+}
+
+.card .length {
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.card .who + .length {
+  margin-top: var(--sp-3);
 }
 
 .card .free {

@@ -1,6 +1,8 @@
 // The client app takes every colour, size and space from packages/brand, as the
 // public site does (test/node/site-tokens.test.ts): no stylesheet writes a raw
-// value, and every token one uses is defined in tokens.css or tokens-phase2.css.
+// value, and every token one uses is defined in tokens.css or tokens-phase2.css,
+// or is a property the stylesheet declares for itself, as the compare's divider
+// position is.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -42,8 +44,9 @@ describe("the client app's design tokens", () => {
 
   it.each(stylesheets)("%s uses only tokens that are defined", (path) => {
     const css = readFileSync(path, "utf8");
+    const own = new Set(tokenNames(path));
     const used = [...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((match) => match[1] ?? "");
-    expect(used.filter((name) => !defined.has(name))).toEqual([]);
+    expect(used.filter((name) => !defined.has(name) && !own.has(name))).toEqual([]);
   });
 
   it.each(components)("%s sets no inline style, which the policy would refuse", (path) => {

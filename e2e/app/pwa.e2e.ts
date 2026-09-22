@@ -77,6 +77,20 @@ test("opens offline on the last Home, with board B3's banner, and Reschedule wai
   await expect(page.getByRole("link", { name: "Reschedule" })).toBeVisible();
 });
 
+test("says the visit is still booked when the API fails and the phone kept Home", async ({ page, request }) => {
+  await signIn(page, request);
+  await keepHome(page);
+  // The context's route reaches the service worker's own requests too.
+  await page
+    .context()
+    .route("**/api/me", (route) =>
+      route.fulfill({ status: 503, json: { error: { code: "unavailable", message: "Down for a moment." } } }),
+    );
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "We could not load your visit." })).toBeVisible();
+  await expect(page.getByText("Your visit is still booked.")).toBeVisible();
+});
+
 test("shows the banner when the connection drops while the app is open", async ({ page, request }) => {
   await signIn(page, request);
   await page.context().setOffline(true);
