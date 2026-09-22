@@ -18,6 +18,7 @@
 //   GET  /fsm/v1/Work_Orders/{id}/actions/blueprint/transitions  { transitions: [{ id, name }] }
 //   PUT  /fsm/v1/Work_Orders/{id}/actions/blueprint              a transition, with its mandatory note;
 //        cancelling a work order cancels its appointments
+//   PUT  /fsm/v1/Contacts/{id}                                   fields to change, the service address by its ID
 //
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
@@ -407,6 +408,28 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
         body: { blueprint: [{ transition_id: cancel.id, data: { Notes: note } }] },
       });
       return true;
+    },
+
+    // Tried on the real org on 22 September 2026: the name, numbers and e-mail clear, and the street can be
+    // overwritten through the service address's ID; the city stays.
+    async eraseContact(contactId) {
+      const [contact] = records(await json("erase_contact_read", `/Contacts/${contactId}`), "data", Addresses);
+      if (contact === undefined) return;
+      await request("erase_contact", `/fsm/v1/Contacts/${contactId}`, {
+        method: "PUT",
+        body: {
+          data: [
+            {
+              First_Name: null,
+              Last_Name: "Erased",
+              Mobile: null,
+              Phone: null,
+              Email: null,
+              Service_Address: { id: contact.Service_Address.id, Street_1: "Erased", Street_2: null },
+            },
+          ],
+        },
+      });
     },
   };
 }

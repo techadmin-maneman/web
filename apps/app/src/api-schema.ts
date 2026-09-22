@@ -1733,6 +1733,241 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/refer/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upload the client's referral card: the body is the JPEG itself */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Stored as the card's next version */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            version: number;
+                        };
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description consent_required: the client has not agreed to photographs on referral cards */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description photo_invalid_file: not a 1200 x 630 JPEG under 300 KB */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /** Take the client's card down: new opens show the house card */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Revoked, or there was none */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/refer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's code, credits and fitted friends */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their referrals */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Refer"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything held about the client, to download */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A JSON file, maneman-my-data.json */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/grievances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Raise a grievance about how the client's data is handled */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        text: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Received */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Grievance"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1740,7 +1975,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -1816,8 +2051,8 @@ export interface components {
             } | null;
             /** @description The next visit that has not happened, from FSM: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
-            /** @description The credit tile: balance and earliest expiry. Arrives with the credit ledger (P2-M3). */
-            credits: null;
+            /** @description The credit tile: balance and earliest expiry; null with none left. */
+            credits: components["schemas"]["Credits"] | null;
             /** @description The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4). */
             prompt: null;
             booking: {
@@ -1853,6 +2088,12 @@ export interface components {
         Technician: {
             name: string;
             initials: string;
+        };
+        Credits: {
+            /** @description Service-visit credits left. */
+            visits: number;
+            /** @description When the soonest expire. */
+            earliest_expiry: string | null;
         };
         Profile: {
             name: string;
@@ -2144,6 +2385,11 @@ export interface components {
             visit_id: string | null;
             /** @description The visit this hold moves; null for a new booking. */
             moves_visit_id: string | null;
+            /** @description A service-visit credit covers it, so payment is skipped (board C5). */
+            credit: {
+                /** @description Credits left once this one is used. */
+                remaining: number;
+            } | null;
         };
         Booking: {
             /** Format: uuid */
@@ -2177,6 +2423,8 @@ export interface components {
             free_until: string;
             /** @description In paise: what the visit's payment holds, carried over or kept. */
             paid: number;
+            /** @description For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late). */
+            credit: ("restored" | "lost") | null;
             /**
              * @description free: the payment carries over; late_fee: the late fee is paid, then the payment carries over; charged: the payment is kept, and the new visit is paid separately.
              * @enum {string}
@@ -2198,6 +2446,8 @@ export interface components {
             free_until: string;
             /** @description In paise: what the visit's payment holds, carried over or kept. */
             paid: number;
+            /** @description For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late). */
+            credit: ("restored" | "lost") | null;
             /** @description In paise: what goes back to the payment's source. */
             refund: number;
             /** @description In paise: what is kept as a charge. */
@@ -2206,6 +2456,29 @@ export interface components {
             destination: string | null;
             /** @description false: the terms only; true: the visit is cancelled. */
             cancelled: boolean;
+        };
+        Refer: {
+            code: string;
+            /** @description The invite link to share: maneman.in/r/<code>. */
+            link: string;
+            credits: components["schemas"]["Credits"];
+            card: {
+                /** @enum {string} */
+                state: "house" | "personal";
+                version: number;
+            };
+            /** @description Friends whose first fit closed as done, most recent first. */
+            fitted: {
+                first_name: string;
+                /** @description YYYY-MM, in India. */
+                month: string;
+            }[];
+        };
+        Grievance: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            state: "open";
         };
     };
     responses: never;

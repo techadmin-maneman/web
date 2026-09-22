@@ -16,7 +16,15 @@ import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/razorpay.ts";
 import { fsmContactOf } from "./fsm-contacts.ts";
 import { visitTimes } from "./scheduling.ts";
+import { redeemCredit } from "./credits.ts";
 import { visitPayment } from "./visit-changes.ts";
+import { visitMessage } from "./visit-messages.ts";
+
+export interface ConfirmOptions {
+  readonly labelAsTest: boolean;
+  /** Queues a message about the visit once its row is written (src/domain/visit-messages.ts). */
+  readonly notify?: (messageId: string) => Promise<unknown>;
+}
 
 interface HoldRow {
   id: string;
@@ -33,6 +41,7 @@ interface HoldRow {
   razorpay_order_id: string | null;
   moves_appointment_id: string | null;
   move_kind: "move" | "replace" | null;
+  use_credit: number;
 }
 
 async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
@@ -40,7 +49,7 @@ async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
     .prepare(
       `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.date, h.start_unit, h.technician_id,
               t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at, h.razorpay_order_id,
-              h.moves_appointment_id, h.move_kind
+              h.moves_appointment_id, h.move_kind, h.use_credit
        FROM slot_holds h JOIN technicians t ON t.id = h.technician_id JOIN people p ON p.id = h.person_id
        WHERE h.id = ?1`,
     )
@@ -60,7 +69,7 @@ export async function startBooking(
 ): Promise<Started | null> {
   const hold = await holdOf(db, holdId);
   if (hold?.person_id !== personId || hold.state !== "held" || hold.expires_at <= now.toISOString()) return null;
-  if (hold.amount === 0) return { kind: "free" };
+  if (hold.amount === 0 || hold.use_credit === 1) return { kind: "free" };
   if (hold.razorpay_order_id !== null) return { kind: "pay", orderId: hold.razorpay_order_id };
   const order = await payments.createOrder({
     amount: hold.amount,
@@ -103,7 +112,7 @@ export async function confirmBooking(
   payments: PaymentsProvider,
   holdId: string,
   now: Date,
-  { labelAsTest }: { labelAsTest: boolean },
+  { labelAsTest, notify }: ConfirmOptions,
 ): Promise<Confirmed> {
   const hold = await holdOf(db, holdId);
   if (hold === null) throw new Error("no such hold to book");
@@ -113,14 +122,14 @@ export async function confirmBooking(
     return "already_booked";
   }
   const payment = await capturedFor(db, hold.razorpay_order_id);
-  if (hold.amount > 0 && payment === null) return "not_paid";
+  if (hold.amount > 0 && hold.use_credit !== 1 && payment === null) return "not_paid";
 
   const lapsed = hold.state === "released" || (payment?.captured_at ?? now.toISOString()) > hold.expires_at;
   if (lapsed) {
     await giveBack(db, payments, hold.id, now, "the hold had lapsed");
     return payment === null ? "lapsed" : "refunded";
   }
-  if (hold.move_kind === "move") return moveInPlace(db, fsm, payments, hold, now);
+  if (hold.move_kind === "move") return moveInPlace(db, fsm, payments, hold, now, notify);
 
   const contactId = await fsmContactOf(db, fsm, hold.person_id);
   const service = (await fsm.items()).find((item) => item.name === FSM_SERVICE_NAMES[hold.type]);
@@ -169,6 +178,27 @@ export async function confirmBooking(
       .bind(booked.appointmentId, at, hold.razorpay_order_id),
   ]);
   if (hold.move_kind === "replace") await retireReplaced(db, fsm, hold, now, labelAsTest);
+
+  const visit = await db
+    .prepare("SELECT id FROM appointments WHERE fsm_id = ?1")
+    .bind(booked.appointmentId)
+    .first<{ id: string }>();
+  if (visit !== null && hold.use_credit === 1) {
+    // Checked when the hold was made; a credit spent meanwhile leaves the visit booked, as ops would.
+    const redeem = await redeemCredit(db, hold.person_id, visit.id, now);
+    await redeem?.run();
+  }
+  if (visit !== null) {
+    const kind =
+      hold.move_kind === "replace"
+        ? "reschedule_confirmation"
+        : hold.type === "consultation"
+          ? "consultation_confirmation"
+          : "payment_receipt";
+    const message = visitMessage(db, { personId: hold.person_id, appointmentId: visit.id, kind, now });
+    await message.statement.run();
+    await notify?.(message.id);
+  }
   return "booked";
 }
 
@@ -179,6 +209,7 @@ async function moveInPlace(
   payments: PaymentsProvider,
   hold: HoldRow,
   now: Date,
+  notify: ConfirmOptions["notify"],
 ): Promise<Confirmed> {
   const visit = await db
     .prepare(
@@ -196,6 +227,12 @@ async function moveInPlace(
 
   const at = now.toISOString();
   const lateFee = "(SELECT id FROM payments WHERE razorpay_order_id = ?1)";
+  const message = visitMessage(db, {
+    personId: hold.person_id,
+    appointmentId: visit.id,
+    kind: "reschedule_confirmation",
+    now,
+  });
   await db.batch([
     db
       .prepare("UPDATE appointments SET window_start = ?1, window_end = ?2, synced_at = ?3 WHERE id = ?4")
@@ -228,7 +265,9 @@ async function moveInPlace(
         hold.id,
         at,
       ),
+    message.statement,
   ]);
+  await notify?.(message.id);
   return "booked";
 }
 

@@ -5,7 +5,7 @@
 import { ICONS } from "@maneman/brand/icons";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type NumberChange, type Profile } from "../api.ts";
+import { api, EXPORT_URL, type NumberChange, type Profile } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { login, profile, whatsapp } from "../content.ts";
 import { mobileDigits } from "../login/mobile.ts";
@@ -156,6 +156,88 @@ export function SupportCard() {
         <span>{copy.message}</span>
       </a>
       <p className={styles.cardHint}>{copy.hint}</p>
+    </section>
+  );
+}
+
+/** The client's rights over their data: a copy of it, and a way to raise a concern (docs/decisions/0049-dpdp.md). */
+export function DataCard() {
+  const copy = profile.data;
+  const [writing, setWriting] = useState(false);
+  const [text, setText] = useState("");
+  const [state, setState] = useState<"idle" | "sent" | "failed">("idle");
+
+  async function send() {
+    const answer = await api.raiseGrievance(text);
+    setState(answer.ok ? "sent" : "failed");
+    if (answer.ok) setWriting(false);
+  }
+
+  return (
+    <section className={styles.card} aria-labelledby="data">
+      <h2 className={styles.cardLabel} id="data">
+        {copy.label}
+      </h2>
+      <p className={styles.cardBody}>{copy.body}</p>
+      <a className={styles.secondary} href={EXPORT_URL} download>
+        {copy.download}
+      </a>
+      {state === "sent" ? (
+        <p className={styles.cardHint} role="status">
+          {copy.sent}
+        </p>
+      ) : writing ? (
+        <form
+          className={styles.confirm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void send();
+          }}
+        >
+          <label className={styles.formField}>
+            <span className={styles.formLabel}>{copy.field}</span>
+            <textarea
+              className={styles.input}
+              rows={4}
+              maxLength={2000}
+              required
+              value={text}
+              onChange={(event) => {
+                setText(event.target.value);
+              }}
+            />
+          </label>
+          {state === "failed" && (
+            <p className={styles.error} role="alert">
+              {copy.failed}
+            </p>
+          )}
+          <div className={styles.row}>
+            <button className={styles.primary} type="submit" disabled={text.trim() === ""}>
+              {copy.send}
+            </button>
+            <button
+              className={styles.secondary}
+              type="button"
+              onClick={() => {
+                setWriting(false);
+              }}
+            >
+              {copy.cancel}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button
+          className={styles.secondary}
+          type="button"
+          onClick={() => {
+            setWriting(true);
+          }}
+        >
+          {copy.raise}
+        </button>
+      )}
     </section>
   );
 }

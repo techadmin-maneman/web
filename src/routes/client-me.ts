@@ -9,11 +9,13 @@ import type { App } from "../app.ts";
 import { WINDOW_LABELS, windowLabel, type VisitWindow } from "../config/booking.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { isFitted, nextVisit } from "../domain/client-visits.ts";
+import { creditBalance } from "../domain/credits.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { currentAddress } from "../domain/profile.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { initialsOf } from "../lib/names.ts";
+import { CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
 
 export const MeSchema = z
@@ -41,9 +43,9 @@ export const MeSchema = z
     next_visit: z
       .union([VisitSummarySchema, z.null()])
       .openapi({ description: "The next visit that has not happened, from FSM: a consultation for a lead." }),
-    credits: z.null().openapi({
-      description: "The credit tile: balance and earliest expiry. Arrives with the credit ledger (P2-M3).",
-    }),
+    credits: z
+      .union([CreditsSchema, z.null()])
+      .openapi({ description: "The credit tile: balance and earliest expiry; null with none left." }),
     prompt: z
       .null()
       .openapi({ description: "The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4)." }),
@@ -82,6 +84,7 @@ export function registerClientMe(app: App): void {
 
     const now = c.var.deps.now();
     const upcoming = await nextVisit(db, session.subjectId, now);
+    const credits = await creditBalance(db, session.subjectId, now);
     const fitted = await isFitted(db, session.subjectId);
     const booking = await db
       .prepare(
@@ -115,7 +118,7 @@ export function registerClientMe(app: App): void {
             ? null
             : { date: proposal.proposed_visit_date, window_label: windowLabel(proposal.first_choice_window), place },
         next_visit: upcoming,
-        credits: null,
+        credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         prompt: null,
         booking: {
           self_serve: c.var.config.settings.selfServeBooking,

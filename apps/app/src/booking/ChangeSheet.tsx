@@ -3,13 +3,14 @@
 // sheet's date and window, then pays whatever the move costs. Cancelling is confirmed on the terms shown; if the
 // 24 hours ran out meanwhile, the new terms are shown instead.
 
-import { weekdayDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type BookableType, type CancelTerms, type MoveTerms } from "../api.ts";
+import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
 import { booking, change } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { methodName } from "../payments/entry.ts";
+import { useSession } from "../session.ts";
 import { BookingSheet } from "./BookingSheet.tsx";
 import styles from "./booking.module.css";
 
@@ -31,8 +32,12 @@ type Step =
   | { readonly kind: "unchangeable" }
   | { readonly kind: "broken" };
 
+/** Board C8's "One left": the credits the client still has, in words. */
+const COUNTS = ["One", "Two", "Three", "Four", "Five", "Six"];
+
 /** What moving costs, in the design's words. */
 function moveLine(terms: MoveTerms): string {
+  if (terms.cost === "charged" && terms.credit !== null) return change.move.creditCharged;
   if (terms.cost === "charged") return change.move.charged(rupees(terms.paid));
   if (terms.cost === "late_fee") return change.move.lateFee(rupees(terms.price.amount));
   return terms.paid > 0 ? change.move.free(rupees(terms.paid)) : change.move.freeNothingPaid;
@@ -41,8 +46,15 @@ function moveLine(terms: MoveTerms): string {
 /** The terms' line: ruled above when the change is free, and marked in red when it costs. */
 const termsClass = (costs: boolean) => (costs ? `${styles.terms} ${styles.charged}` : styles.terms);
 
-/** What cancelling gives back, and what it keeps. */
-function cancelLine(terms: CancelTerms): string {
+/** What cancelling gives back, and what it keeps; for a credit booking, what becomes of the credit. */
+function cancelLine(terms: CancelTerms, credits: Me["credits"]): string {
+  if (terms.credit === "restored") return change.cancel.creditBack;
+  if (terms.credit === "lost") {
+    const left = credits === null ? null : (COUNTS[credits.visits - 1] ?? String(credits.visits));
+    const soonest = credits?.earliest_expiry ?? null;
+    const expiry = soonest === null ? "" : fullDate(indiaDate(soonest));
+    return change.cancel.creditUsed(left, expiry);
+  }
   const destination = methodName(terms.destination, "long") ?? change.destination;
   if (terms.refund > 0 && terms.kept > 0) {
     return change.cancel.lessFee(rupees(terms.kept), rupees(terms.refund), destination);
@@ -58,6 +70,7 @@ export function ChangeSheet(props: {
   onClose: (changed: boolean) => void;
 }) {
   const { visit, onClose } = props;
+  const { me } = useSession();
   const dialog = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<Step>({ kind: "loading" });
   const [busy, setBusy] = useState(false);
@@ -160,7 +173,9 @@ export function ChangeSheet(props: {
               {change.termsChanged}
             </p>
           )}
-          <p className={termsClass(step.terms.kept > 0)}>{cancelLine(step.terms)}</p>
+          <p className={termsClass(step.terms.kept > 0 || step.terms.credit === "lost")}>
+            {cancelLine(step.terms, me.credits)}
+          </p>
           {problem !== null && (
             <p className={styles.problem} role="alert">
               {problem}
@@ -168,7 +183,11 @@ export function ChangeSheet(props: {
           )}
           <div className={styles.pair}>
             <button className={styles.primary} type="button" disabled={busy} onClick={() => void cancel(step.terms)}>
-              {step.terms.kept > 0 ? change.cancel.accept : change.cancel.confirm}
+              {step.terms.credit === "lost"
+                ? change.cancel.acceptCredit
+                : step.terms.kept > 0
+                  ? change.cancel.accept
+                  : change.cancel.confirm}
             </button>
             <button className={styles.secondary} type="button" onClick={close}>
               {change.cancel.keep}
@@ -182,7 +201,7 @@ export function ChangeSheet(props: {
           <h2 className={styles.outcome} id="change-title">
             {change.cancel.doneLine(name)}
           </h2>
-          <p className={styles.outcomeLine}>{cancelLine(step.terms)}</p>
+          <p className={styles.outcomeLine}>{cancelLine(step.terms, me.credits)}</p>
           <button className={styles.secondary} type="button" onClick={close}>
             {change.cancel.close}
           </button>

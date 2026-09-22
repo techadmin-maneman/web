@@ -2,8 +2,9 @@
 // and write over its mirror copy (docs/decisions/0032-fsm-mirror.md). FSM's
 // webhooks and the reconciliation put them here; neither is trusted for the
 // appointment's contents, only for which one changed. Others name a booked
-// lead to send to FSM as a Request (src/domain/fsm-leads.ts), or a hold paid
-// for in the app to book as a visit (src/domain/bookings.ts).
+// lead to send to FSM as a Request (src/domain/fsm-leads.ts), a hold paid
+// for in the app to book as a visit (src/domain/bookings.ts), or an erased
+// person whose FSM contact is to be anonymised (docs/decisions/0049-dpdp.md).
 //
 // Once an appointment is closed, its photographs are copied from FSM into the
 // client-photos bucket (src/domain/visit-photos.ts).
@@ -14,11 +15,12 @@
 
 import { z } from "zod";
 import type { Dependencies } from "../dependencies.ts";
-import { confirmBooking, giveBack } from "../domain/bookings.ts";
+import { confirmBooking, giveBack, type ConfirmOptions } from "../domain/bookings.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { scrubString, type Logger } from "../log.ts";
+import type { MessagingMessage } from "./messaging.ts";
 
 export const MAX_FSM_SYNC_ATTEMPTS = 5;
 const FIRST_RETRY_DELAY_SECONDS = 30;
@@ -33,10 +35,12 @@ export const FsmSyncMessageSchema = z.union([
   z.object({ lead_id: z.uuid(), request_id: z.string() }),
   /** A hold paid for, or free, to book in FSM (src/domain/bookings.ts). */
   z.object({ hold_id: z.uuid(), request_id: z.string() }),
+  /** An erased person, whose FSM contact is anonymised; the sweeper sends it. */
+  z.object({ erase_person_id: z.string().min(1), request_id: z.string() }),
 ]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
-export type FsmSyncEnv = Pick<Env, "DB" | "CLIENT_PHOTOS">;
+export type FsmSyncEnv = Pick<Env, "DB" | "CLIENT_PHOTOS" | "MESSAGE_QUEUE">;
 
 export async function handleFsmSyncBatch(
   batch: MessageBatch,
@@ -54,9 +58,22 @@ export async function handleFsmSyncBatch(
       continue;
     }
     if ("hold_id" in parsed.data) {
-      await bookHold(message, parsed.data.hold_id, db, deps, log.child({ request_id: parsed.data.request_id }), {
+      const requestId = parsed.data.request_id;
+      await bookHold(message, parsed.data.hold_id, db, deps, log.child({ request_id: requestId }), {
         labelAsTest,
+        notify: (messageId) =>
+          env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
       });
+      continue;
+    }
+    if ("erase_person_id" in parsed.data) {
+      await eraseContact(
+        message,
+        parsed.data.erase_person_id,
+        db,
+        deps,
+        log.child({ request_id: parsed.data.request_id }),
+      );
       continue;
     }
     if ("lead_id" in parsed.data) {
@@ -105,7 +122,7 @@ async function bookHold(
   db: D1Database,
   deps: Dependencies,
   log: Logger,
-  options: { labelAsTest: boolean },
+  options: ConfirmOptions,
 ): Promise<void> {
   try {
     const outcome = await confirmBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options);
@@ -125,6 +142,41 @@ async function bookHold(
     );
     message.ack();
   }
+}
+
+/** Anonymises an erased person's FSM contact, once; a failure is counted, and the sweeper sends it again. */
+async function eraseContact(
+  message: Message,
+  personId: string,
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+): Promise<void> {
+  const person = await db
+    .prepare("SELECT fsm_contact_id FROM people WHERE id = ?1 AND erased_at IS NOT NULL AND fsm_erased_at IS NULL")
+    .bind(personId)
+    .first<{ fsm_contact_id: string | null }>();
+  const contactId = person?.fsm_contact_id ?? null;
+  if (contactId === null) {
+    message.ack();
+    return;
+  }
+  try {
+    await deps.fsm.eraseContact(contactId);
+    await db
+      .prepare("UPDATE people SET fsm_erased_at = ?2 WHERE id = ?1")
+      .bind(personId, deps.now().toISOString())
+      .run();
+    log.info("fsm_contact_erased", { person_id: personId });
+  } catch (error) {
+    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    await db
+      .prepare("UPDATE people SET fsm_erasure_attempts = fsm_erasure_attempts + 1 WHERE id = ?1")
+      .bind(personId)
+      .run();
+    log.warn("fsm_erasure_failed", { person_id: personId, reason });
+  }
+  message.ack();
 }
 
 async function sendLead(

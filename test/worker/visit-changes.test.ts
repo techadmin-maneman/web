@@ -113,6 +113,7 @@ describe("POST /api/appointments/:id/cancel", () => {
       notice: "free",
       free_until: "2026-09-23T06:30:00.000Z",
       paid: 200000,
+      credit: null,
       refund: 200000,
       kept: 0,
       destination: "upi",
@@ -221,6 +222,7 @@ describe("POST /api/appointments/:id/reschedule: the terms", () => {
       notice: "free",
       free_until: "2026-09-23T06:30:00.000Z",
       paid: 200000,
+      credit: null,
       cost: "free",
       price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 },
     });

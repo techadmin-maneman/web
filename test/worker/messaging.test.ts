@@ -7,7 +7,7 @@ import { createLogger } from "../../src/log.ts";
 import { createEvolutionMessaging } from "../../src/providers/evolution.ts";
 import type { MessagingProvider, SendResult } from "../../src/providers/messaging.ts";
 import { MAX_SEND_ATTEMPTS } from "../../src/config/pipeline.ts";
-import { handleMessagingBatch, sendResultMessage } from "../../src/queues/messaging.ts";
+import { handleMessagingBatch, sendMessage } from "../../src/queues/messaging.ts";
 import {
   LOCAL_CONFIG,
   LOCAL_SETTINGS,
@@ -67,7 +67,7 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     const { provider, sent } = recordingProvider();
 
-    expect(await sendResultMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1")).toEqual({});
+    expect(await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1")).toEqual({});
 
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun Mehta"] });
@@ -93,7 +93,7 @@ describe("messaging: sending a result", () => {
   ])("skips, sending nothing, when %s", async (_label, settings, reason) => {
     await queuedMessage();
     const { provider, sent } = recordingProvider();
-    await sendResultMessage(env.DB, settings, fakeDependencies({ messaging: provider }), log, "m1");
+    await sendMessage(env.DB, settings, fakeDependencies({ messaging: provider }), log, "m1");
     expect(sent).toEqual([]);
     expect(await message()).toMatchObject({ state: "skipped", last_error: reason });
   });
@@ -101,7 +101,7 @@ describe("messaging: sending a result", () => {
   it("sends to a number on the allowlist", async () => {
     await queuedMessage();
     const { provider, sent } = recordingProvider();
-    await sendResultMessage(
+    await sendMessage(
       env.DB,
       config({ allowlist: ["+919810000001"] }),
       fakeDependencies({ messaging: provider }),
@@ -115,7 +115,7 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     await env.DB.prepare("UPDATE people SET erased_at = ?").bind(NOW.toISOString()).run();
     const { provider, sent } = recordingProvider();
-    await sendResultMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
+    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
     expect(sent).toEqual([]);
     expect(await message()).toMatchObject({ state: "skipped", last_error: "person erased" });
   });
@@ -132,7 +132,7 @@ describe("messaging: sending a result", () => {
         .bind(id, NOW.toISOString(), NOW.toISOString())
         .run();
     }
-    for (const id of ["m1", "m2", "m3", "m4"]) await sendResultMessage(env.DB, config(), deps, log, id);
+    for (const id of ["m1", "m2", "m3", "m4"]) await sendMessage(env.DB, config(), deps, log, id);
     expect(sent).toHaveLength(3);
     expect(await message("m4")).toMatchObject({ state: "skipped", last_error: "daily message limit reached" });
   });
@@ -141,10 +141,10 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     const { provider, sent } = recordingProvider();
     await env.DB.prepare("UPDATE outbound_messages SET sending_at = ?").bind(NOW.toISOString()).run();
-    await sendResultMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
+    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
     await env.DB.prepare("UPDATE outbound_messages SET state = 'sent'").run();
-    await sendResultMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
-    expect(await sendResultMessage(env.DB, config(), fakeDependencies(), log, "missing")).toEqual({});
+    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
+    expect(await sendMessage(env.DB, config(), fakeDependencies(), log, "missing")).toEqual({});
     expect(sent).toEqual([]);
   });
 
@@ -154,9 +154,9 @@ describe("messaging: sending a result", () => {
     const deps = fakeDependencies({ messaging: provider });
 
     for (let attempt = 1; attempt < MAX_SEND_ATTEMPTS; attempt++) {
-      expect(await sendResultMessage(env.DB, config(), deps, log, "m1")).toEqual({ retryAfterSeconds: 30 });
+      expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({ retryAfterSeconds: 30 });
     }
-    expect(await sendResultMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
 
     expect(await message()).toMatchObject({
       state: "failed",
@@ -170,7 +170,7 @@ describe("messaging: sending a result", () => {
     await queuedMessage();
     const { provider } = recordingProvider({ ok: false, transient: false, detail: "HTTP 400 BAD_REQUEST" });
     const deps = fakeDependencies({ messaging: provider });
-    expect(await sendResultMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
     expect(await message()).toMatchObject({ state: "failed", attempts: 1 });
     expect(deps.alerts).toHaveLength(1);
   });

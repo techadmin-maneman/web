@@ -18,6 +18,12 @@ import { registerClientMe } from "./routes/client-me.ts";
 import { registerClientProfile } from "./routes/client-profile.ts";
 import { registerClientBooking } from "./routes/client-booking.ts";
 import { registerClientChanges } from "./routes/client-changes.ts";
+import { registerClientData } from "./routes/client-data.ts";
+import { registerClientRefer } from "./routes/client-refer.ts";
+import { registerOpsGrievances } from "./routes/ops-grievances.ts";
+import { registerOpsReferrals } from "./routes/ops-referrals.ts";
+import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
+import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
 import { registerErasure } from "./routes/erasure.ts";
@@ -66,6 +72,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerHealth,
     registerCities,
     registerLead,
+    registerReferralLanding,
     registerTryonUpload,
     registerTryonGenerate,
     registerTryonClaim,
@@ -85,8 +92,10 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientPayments,
     registerClientBooking,
     registerClientChanges,
+    registerClientRefer,
+    registerClientData,
   ],
-  ops: [registerHealth, registerOpsProfile],
+  ops: [registerHealth, registerOpsProfile, registerOpsReferrals, registerOpsGrievances, registerOpsWaitlist],
   tech: [registerHealth],
 };
 

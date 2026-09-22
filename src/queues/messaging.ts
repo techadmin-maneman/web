@@ -1,6 +1,7 @@
 // The messaging consumer: the only caller of the WhatsApp provider. It sends a
 // person the result they asked for at the gate, as the result template with a
-// signed result link that expires an hour after sending.
+// signed result link that expires an hour after sending; and a client's messages
+// about their visits (src/domain/visit-messages.ts).
 //
 // Skipped, never sent: messaging off, a person erased, a number outside the
 // staging allowlist, or the daily cap reached. A transient failure is retried
@@ -16,6 +17,9 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
+import { composeFriendFitted } from "../domain/referral-grants.ts";
+import { composeLaunchAlert } from "../domain/waitlist.ts";
+import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
 import { scrubString, type Logger } from "../log.ts";
 
 export const MessagingMessageSchema = z.object({ message_id: z.uuid(), request_id: z.string() });
@@ -45,7 +49,7 @@ export async function handleMessagingBatch(
 
     let next: Next;
     try {
-      next = await sendResultMessage(db, config, deps, messageLog, parsed.data.message_id);
+      next = await sendMessage(db, config, deps, messageLog, parsed.data.message_id);
     } catch (error) {
       messageLog.error("messaging_step_error", { error });
       next = { retryAfterSeconds: RETRY_DELAY_SECONDS };
@@ -58,29 +62,70 @@ export async function handleMessagingBatch(
 interface MessageRow {
   state: string;
   attempts: number;
+  kind: string;
+  subject_id: string;
+  person_id: string;
   mobile_e164: string;
   name: string;
   erased_at: string | null;
-  result_key: string | null;
-  job_state: string | null;
 }
 
-export async function sendResultMessage(
+/** What to send: a template, its params, and for the try-on result its image's link, made fresh for each try. */
+type Content =
+  | { readonly template: string; readonly params: string[]; readonly mediaUrl?: () => Promise<string> }
+  | { readonly skip: string };
+
+const isVisitKind = (kind: string): kind is VisitMessageKind =>
+  (VISIT_MESSAGE_KINDS as readonly string[]).includes(kind);
+
+/** The try-on result: the person's result image, within the daily cap on result messages to one number. */
+async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
+  const { messaging, tryon, ipHashSalt } = config.settings;
+  const job = await db
+    .prepare("SELECT result_key, state FROM tryon_jobs WHERE id = ?1")
+    .bind(row.subject_id)
+    .first<{ result_key: string | null; state: string }>();
+  if (job?.state !== "ready" || job.result_key === null) return { skip: "no result to send" };
+  if (row.attempts === 0) {
+    const withinCap = await takeOne(db, {
+      scope: "message:result:mobile",
+      key: await saltedHash(ipHashSalt, `mobile:${row.mobile_e164}`),
+      window: indiaDate(now),
+      limit: tryon.resultMessageMobileDailyLimit,
+    });
+    if (!withinCap) return { skip: "daily message limit reached" };
+  }
+  const resultKey = job.result_key;
+  return {
+    template: messaging.resultTemplate,
+    params: [row.name],
+    // The provider fetches the image when it sends.
+    mediaUrl: async () => {
+      const token = await signToken(
+        tryon.linkSigningKey,
+        "result",
+        resultKey,
+        new Date(now.getTime() + RESULT_LINK_MESSAGE_TTL_MS),
+      );
+      return `${PUBLIC_ORIGIN[config.environment]}/api/result/${token}`;
+    },
+  };
+}
+
+export async function sendMessage(
   db: D1Database,
   config: StaticConfig,
   deps: Dependencies,
   log: Logger,
   messageId: string,
 ): Promise<Next> {
-  const { messaging, tryon, ipHashSalt } = config.settings;
+  const { messaging } = config.settings;
   const now = deps.now();
 
   const row = await db
     .prepare(
-      `SELECT m.state, m.attempts, p.mobile_e164, p.name, p.erased_at, j.result_key, j.state AS job_state
-       FROM outbound_messages m
-       JOIN people p ON p.id = m.person_id
-       LEFT JOIN tryon_jobs j ON j.id = m.subject_id
+      `SELECT m.state, m.attempts, m.kind, m.subject_id, m.person_id, p.mobile_e164, p.name, p.erased_at
+       FROM outbound_messages m JOIN people p ON p.id = m.person_id
        WHERE m.id = ?1`,
     )
     .bind(messageId)
@@ -96,7 +141,7 @@ export async function sendResultMessage(
       .prepare("UPDATE outbound_messages SET state = 'skipped', last_error = ?2 WHERE id = ?1 AND state = 'queued'")
       .bind(messageId, reason)
       .run();
-    log.info("message_skipped", { reason });
+    log.info("message_skipped", { kind: row.kind, reason });
     return {};
   };
 
@@ -105,16 +150,17 @@ export async function sendResultMessage(
   if (messaging.allowlist.length > 0 && !messaging.allowlist.includes(row.mobile_e164)) {
     return skip("number not on the allowlist");
   }
-  if (row.job_state !== "ready" || row.result_key === null) return skip("no result to send");
-  if (row.attempts === 0) {
-    const withinCap = await takeOne(db, {
-      scope: "message:result:mobile",
-      key: await saltedHash(ipHashSalt, `mobile:${row.mobile_e164}`),
-      window: indiaDate(now),
-      limit: tryon.resultMessageMobileDailyLimit,
-    });
-    if (!withinCap) return skip("daily message limit reached");
-  }
+  const content: Content =
+    row.kind === "tryon_result"
+      ? await resultContent(db, config, row, now)
+      : isVisitKind(row.kind)
+        ? await composeVisitMessage(db, row.kind, row.subject_id, row.person_id)
+        : row.kind === "friend_fitted"
+          ? await composeFriendFitted(db, row.subject_id, row.person_id)
+          : row.kind === "launch_alert"
+            ? await composeLaunchAlert(db, row.subject_id, row.person_id, config.environment)
+            : { skip: "unknown kind" };
+  if ("skip" in content) return skip(content.skip);
 
   // Claim this send; another delivery of the same message now leaves it alone.
   const claim = await db
@@ -127,19 +173,11 @@ export async function sendResultMessage(
     .first<{ attempts: number }>();
   if (claim === null) return {};
 
-  // A fresh link for every attempt: the provider fetches the image when it sends.
-  const token = await signToken(
-    tryon.linkSigningKey,
-    "result",
-    row.result_key,
-    new Date(now.getTime() + RESULT_LINK_MESSAGE_TTL_MS),
-  );
-  const mediaUrl = `${PUBLIC_ORIGIN[config.environment]}/api/result/${token}`;
   const result = await deps.messaging.send({
     to: row.mobile_e164,
-    template: messaging.resultTemplate,
-    params: [row.name],
-    mediaUrl,
+    template: content.template,
+    params: content.params,
+    ...(content.mediaUrl === undefined ? {} : { mediaUrl: await content.mediaUrl() }),
   });
 
   if (result.ok) {
@@ -170,6 +208,6 @@ export async function sendResultMessage(
     .bind(messageId, detail)
     .run();
   log.error("message_failed", { attempts: claim.attempts, detail });
-  await deps.alert(`Result message ${messageId} failed after ${String(claim.attempts)} attempts: ${detail}`);
+  await deps.alert(`Message ${messageId} (${row.kind}) failed after ${String(claim.attempts)} attempts: ${detail}`);
   return {};
 }

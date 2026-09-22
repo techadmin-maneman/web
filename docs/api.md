@@ -128,6 +128,265 @@ Request body:
 }
 ```
 
+### GET /api/r/{code}
+
+An invite: valid or unknown
+
+**200**: The invite
+
+```json
+{
+  "$ref": "#/components/schemas/Invite"
+}
+```
+
+### GET /api/og/{file}
+
+An invite's preview image
+
+**200**: The referrer's card
+
+**302**: The house card, on the site
+
+### GET /api/pincodes/{pin}
+
+Whether we come to a pincode
+
+**200**: Served or not
+
+```json
+{
+  "$ref": "#/components/schemas/PincodeAnswer"
+}
+```
+
+**400**: invalid_request: "That is not a six-digit Indian pincode."
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/r/{code}/consultation
+
+Book a free consultation through an invite
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "mobile": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^[1-8]\\d{5}$",
+      "description": "A six-digit Indian pincode."
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "consent": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"You may contact me on WhatsApp about this consultation.\""
+    }
+  },
+  "required": [
+    "name",
+    "mobile",
+    "turnstile_token",
+    "pincode",
+    "date",
+    "window",
+    "consent"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: Booked
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralConsultation"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: that window has gone; ops_assisted: booking goes through WhatsApp for now
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the pincode is not served, or the day is not open
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Turnstile could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/r/{code}/waitlist
+
+Wait for an unserved pincode
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "mobile": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^[1-8]\\d{5}$",
+      "description": "A six-digit Indian pincode."
+    },
+    "contact_consent": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"You may contact me about this request.\" Required."
+    },
+    "launch_alert": {
+      "type": "boolean",
+      "description": "\"Tell me when you launch in my area.\" Optional."
+    }
+  },
+  "required": [
+    "name",
+    "mobile",
+    "turnstile_token",
+    "pincode",
+    "contact_consent",
+    "launch_alert"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: On the list
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralWaitlist"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: that pincode is served; book instead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Turnstile could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/tryon/upload-url
 
 Record the photo consent and get a link to upload one photo
@@ -604,7 +863,8 @@ Razorpay's webhook: payments and refunds
             "not_bookable",
             "hold_expired",
             "not_changeable",
-            "terms_changed"
+            "terms_changed",
+            "consent_required"
           ]
         },
         "request_id": {
@@ -852,6 +1112,176 @@ Razorpay's webhook: payments and refunds
   },
   "additionalProperties": false,
   "description": "Where the visitor came from, as the page saw it. All optional."
+}
+```
+
+### Invite
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "valid",
+        "unknown"
+      ]
+    },
+    "referrer_first_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Only if the referrer agreed to be named, and naming is on (REFERRER_NAME_ON_INVITE)."
+    },
+    "card": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "house",
+            "personal"
+          ]
+        },
+        "version": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "state",
+        "version"
+      ],
+      "additionalProperties": false,
+      "description": "Which card the invite shows, and its version for the preview's URL."
+    }
+  },
+  "required": [
+    "state",
+    "referrer_first_name",
+    "card"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PincodeAnswer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincode": {
+      "type": "string"
+    },
+    "served": {
+      "type": "boolean"
+    },
+    "area": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for a pincode we do not know."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "pincode",
+    "served",
+    "area",
+    "city"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReferralConsultation
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "booked"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "area": {
+      "type": "string"
+    },
+    "credits": {
+      "type": "boolean",
+      "description": "Whether the invite's 3 service visits apply."
+    }
+  },
+  "required": [
+    "state",
+    "date",
+    "window",
+    "area",
+    "credits"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReferralWaitlist
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "area": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "credits": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "area",
+    "credits"
+  ],
+  "additionalProperties": false
 }
 ```
 

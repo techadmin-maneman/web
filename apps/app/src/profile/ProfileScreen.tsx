@@ -9,7 +9,7 @@ import { useSession } from "../session.ts";
 import { AddressSection } from "./AddressSection.tsx";
 import { Loading } from "../states/Loading.tsx";
 import { ConsentList } from "./ConsentList.tsx";
-import { DeletionCard, NumberChangeCard, SupportCard } from "./AccountCards.tsx";
+import { DataCard, DeletionCard, NumberChangeCard, SupportCard } from "./AccountCards.tsx";
 import styles from "./profile.module.css";
 
 export function ProfileScreen({ onLogout, onChanged }: { onLogout: () => void; onChanged: () => void }) {
@@ -48,6 +48,7 @@ export function ProfileScreen({ onLogout, onChanged }: { onLogout: () => void; o
           <ConsentList consents={loaded.consents} />
           <NumberChangeCard change={loaded.number_change} onChanged={() => void load()} />
           <SupportCard />
+          <DataCard />
           <DeletionCard deletion={loaded.deletion} onRequested={() => void load()} />
           <button className={styles.logout} type="button" onClick={onLogout}>
             {profile.logout}

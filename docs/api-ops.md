@@ -251,6 +251,441 @@ Request body:
 }
 ```
 
+### GET /api/referrals/held
+
+Referral grants held for review, oldest first
+
+**200**: Held grants
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referrer": {
+            "type": "object",
+            "properties": {
+              "person_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "person_id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "referred": {
+            "type": "object",
+            "properties": {
+              "person_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "person_id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "fitted_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "shared_address",
+                "shared_upi",
+                "monthly_cap",
+                "same_mobile"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "referrer",
+          "referred",
+          "fitted_on",
+          "signals"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "held"
+  ],
+  "additionalProperties": false
+}
+```
+
+### POST /api/referrals/{id}/decision
+
+Approve a held grant, or reject it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralDecision"
+}
+```
+
+**200**: Decided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "rejected"
+      ]
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: a rejection needs a reason
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no held grant by that ID
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/grievances
+
+Open grievances, oldest first
+
+**200**: Open grievances
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "grievances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "person_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "raised_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "person_id",
+          "name",
+          "mobile",
+          "text",
+          "raised_at"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "grievances"
+  ],
+  "additionalProperties": false
+}
+```
+
+### POST /api/grievances/{id}/resolve
+
+Record ops' answer to a grievance, and close it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/GrievanceAnswer"
+}
+```
+
+**200**: Closed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "resolved"
+      ]
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+**404**: not_found: no open grievance by that ID
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/waitlist
+
+Who is waiting, by pincode, the longest wait first
+
+**200**: Areas with someone waiting
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "areas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "served": {
+            "type": "boolean"
+          },
+          "launched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "waiting": {
+            "type": "integer"
+          },
+          "oldest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referred": {
+            "type": "integer"
+          },
+          "alerts": {
+            "type": "integer",
+            "description": "How many asked to be told when we launch."
+          }
+        },
+        "required": [
+          "pincode",
+          "area",
+          "city",
+          "served",
+          "launched_at",
+          "waiting",
+          "oldest",
+          "referred",
+          "alerts"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "areas"
+  ],
+  "additionalProperties": false
+}
+```
+
+### POST /api/pincodes/{pin}/launch
+
+Launch a pincode: without confirm, what it would send; with it, the launch
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PincodeLaunch"
+}
+```
+
+**200**: What it would send, or what it sent
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincode": {
+      "type": "string"
+    },
+    "waiting": {
+      "type": "integer"
+    },
+    "alerts": {
+      "type": "integer"
+    },
+    "launched": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "pincode",
+    "waiting",
+    "alerts",
+    "launched"
+  ],
+  "additionalProperties": false
+}
+```
+
+**404**: not_found: we have no such pincode
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/referrers
+
+Every referrer's figures, the busiest first
+
+**200**: Referrers
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "referrers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "opens": {
+            "type": "integer"
+          },
+          "consultations": {
+            "type": "integer"
+          },
+          "fits": {
+            "type": "integer"
+          },
+          "granted": {
+            "type": "integer"
+          },
+          "redeemed": {
+            "type": "integer",
+            "description": "Credits of theirs spent on visits."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "opens",
+          "consultations",
+          "fits",
+          "granted",
+          "redeemed"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "referrers"
+  ],
+  "additionalProperties": false
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -293,7 +728,8 @@ Request body:
             "not_bookable",
             "hold_expired",
             "not_changeable",
-            "terms_changed"
+            "terms_changed",
+            "consent_required"
           ]
         },
         "request_id": {
@@ -430,6 +866,77 @@ Request body:
   "required": [
     "decision",
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReferralDecision
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approve",
+        "reject"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Required to reject."
+    }
+  },
+  "required": [
+    "decision",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### GrievanceAnswer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "response": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "response"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PincodeLaunch
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "confirm": {
+      "type": "boolean"
+    },
+    "launch_on": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date it starts; today if left out."
+    }
+  },
+  "required": [
+    "confirm"
   ],
   "additionalProperties": false
 }

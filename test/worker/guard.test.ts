@@ -30,6 +30,7 @@ const SETTINGS = {
   TURNSTILE_SECRET: "0x4AAAAAAAreal-looking-secret",
   TURNSTILE_ACCEPT_TEST_TOKEN: "false",
   SELF_SERVE_BOOKING: "false",
+  REFERRER_NAME_ON_INVITE: "true",
   IP_HASH_SALT: "a-salt-of-at-least-thirty-two-characters",
   TRYON_UPLOAD_IP_HOURLY_LIMIT: "5",
   TRYON_GENERATE_IP_HOURLY_LIMIT: "5",

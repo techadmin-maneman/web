@@ -112,7 +112,10 @@ test("lists the five consents off, and switches one on with its date and off aga
   );
 });
 
-test("shows the referral card's four lines before that consent can be switched on", async ({ page, request }) => {
+test("shows the referral card's lines, and the naming line, before that consent can be switched on", async ({
+  page,
+  request,
+}) => {
   await loggedIn(page, request);
   const cards = page.getByRole("switch", { name: "Photographs on referral cards" });
   await cards.click();
@@ -120,6 +123,7 @@ test("shows the referral card's four lines before that consent can be switched o
   await expect(
     page.getByText("Cards already delivered stay in people’s chats. We cannot take those back."),
   ).toBeVisible();
+  await expect(page.getByText("Your first name appears on your invite.")).toBeVisible();
   await page.getByRole("button", { name: "Keep it off" }).click();
   await expect(cards).toHaveAttribute("aria-checked", "false");
 
@@ -155,6 +159,15 @@ test("offers support on WhatsApp, with the design's line", async ({ page, reques
     "https://wa.me/919007973247",
   );
   await expect(page.getByText("Replies within a working day. Everything in writing.")).toBeVisible();
+});
+
+test("Your data: a download of everything held, and a concern sent to ops", async ({ page, request }) => {
+  await loggedIn(page, request);
+  await expect(page.getByRole("link", { name: "Download my data" })).toHaveAttribute("href", "/api/me/export");
+  await page.getByRole("button", { name: "Raise a concern" }).click();
+  await page.getByRole("textbox", { name: "Your concern" }).fill("Please explain who sees my photographs.");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText("Received. We answer within 30 days, on WhatsApp.")).toBeVisible();
 });
 
 test("asks before requesting deletion, then says it is requested", async ({ page, request }) => {
