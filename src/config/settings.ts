@@ -53,8 +53,12 @@ export interface ZohoSettings {
   readonly accountsHost: string;
   /** e.g. www.zohoapis.in */
   readonly apiHost: string;
-  /** The lead assignment rule applied to new bookings. */
-  readonly larId: string;
+  /**
+   * The lead assignment rule applied to new bookings, where the org has one.
+   * Null where it has none: Zoho then leaves the record with the API user, and
+   * an org without a rule must not stop the Worker from starting.
+   */
+  readonly larId: string | null;
 }
 
 /** The Zoho client FSM and Books share, in the real org (ADR 0025, item 26). */
@@ -270,7 +274,7 @@ export function readSettings(
       refreshToken: read.text("ZOHO_REFRESH_TOKEN"),
       accountsHost: read.text("ZOHO_ACCOUNTS_HOST"),
       apiHost: read.text("ZOHO_API_HOST"),
-      larId: read.text("ZOHO_LAR_ID"),
+      larId: read.optionalText("ZOHO_LAR_ID"),
     };
     for (const [name, host] of [
       ["ZOHO_ACCOUNTS_HOST", zoho.accountsHost],

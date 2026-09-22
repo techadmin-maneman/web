@@ -1,6 +1,6 @@
 # 0020. Production uses the Zoho test org, for now
 
-- Status: accepted
+- Status: superseded by [0050](0050-crm-in-the-real-org.md) on 22 September 2026
 - Date: 2026-09-21
 
 ## Context

@@ -168,6 +168,8 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `ERASURE_SECRET`                                                            | 32 or more random characters, generated like `IP_HASH_SALT`. Authorises `POST /api/erasure`. Keep one copy, in the git-ignored `.env.erasure-<env>` file that ops use for erasures ("Erasure within the day").                                                                                                                      |
 | `MESSAGING_ALLOWLIST`                                                       | Staging: the founders' mobile numbers, comma-separated. Only these receive messages. A secret, so the numbers stay out of git.                                                                                                                                                                                                      |
 
+**A required secret set to an empty value stops the Worker.** The settings reader counts an empty string as unset, the identity guard then refuses to start, and every request answers Cloudflare's error 1105 until it is set again. A secret change deploys a new version by itself, so the break is immediate; check `/api/health` after any `secret bulk`.
+
 To set several at once without typing them into a terminal, put them in a git-ignored file at the repository root, such as `.env.worker-staging`, with one `NAME="value"` per line. Then:
 
 ```sh
@@ -191,7 +193,16 @@ The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-p
 
 ### 8. Zoho
 
-Staging uses a Zoho CRM **Developer Edition** org, production the real org. Do this once per org. For now production shares staging's org; `docs/decisions/0020-production-on-the-zoho-test-org.md` says how to move it to its own.
+Both environments use the real org (`docs/decisions/0050-crm-in-the-real-org.md`), which also holds FSM and Books. Do this once per org.
+
+Steps 1 and 2 are what `scripts/setup-crm.ts` does, where the refresh token's scope includes `ZohoCRM.settings.fields.ALL`:
+
+```sh
+node --env-file=.env.crm-<env> scripts/setup-crm.ts --check   # read-only
+node --env-file=.env.crm-<env> scripts/setup-crm.ts           # creates what is missing
+```
+
+Zoho names a new field from its label, so the script reads each one back: the sync writes the API name and nothing else. Steps 3 and 4 have no API and stay by hand.
 
 1. **Fields.** Setup → Customization → Modules and Fields → Leads → Standard layout. Add these fields; their API names must match exactly:
 
@@ -207,7 +218,7 @@ Staging uses a Zoho CRM **Developer Edition** org, production the real org. Do t
    | UTM Source (`UTM_Source`), UTM Campaign (`UTM_Campaign`) | Single line |                                                                    |
 
 2. **Pick-list values.** Lead Status: add `New`, `Waitlist` and `Try-on — delivery only` (with the em dash). Lead Source: add `Booking form`, `Waitlist` and `Try-on`.
-3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that assigns new bookings to technicians. Its ID becomes `ZOHO_LAR_ID`; `scripts/check-zoho-setup.ts` (step 6) lists it.
+3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that gives each new booking an owner. Its ID becomes `ZOHO_LAR_ID`; `scripts/check-zoho-setup.ts` (step 6) lists it. An org may have none: leave `ZOHO_LAR_ID` unset and Zoho leaves each record with the API user.
 4. **Workflows.** Setup → Automation → Workflow Rules → Leads:
    - on create, when Lead Status is New: notify the assigned technician and ops;
    - on edit, when Contact Consent becomes true: assign an owner. This covers a try-on customer who later books; Zoho has no assignment rule on update.
