@@ -46,6 +46,27 @@ This ADR grows with P2-M2. Its first part is the connection.
 - `scripts/setup-fsm.ts` creates those items and the Standard base part where they are missing, at the designs' prices.
 - The prices are placeholders (`docs/open-points.md`, item 1). The app's prices come from the price book in D1; the items' prices only price FSM's own invoices.
 
+### The mirror (P2-M2.2)
+
+- **FSM is the record; D1 holds copies** (migration 0011). A copy is never edited on its own; it is rewritten from FSM whenever FSM changes. The copies are:
+  - `appointments`: each with its visit type, window, lead technician, status and place;
+  - `visits`: what a closed appointment became;
+  - `technicians`: display name and initials only;
+  - `fsm_items`: the catalogue, to read visit types.
+- **One appointment at a time** (`src/domain/fsm-mirror.ts`). The mirror reads the appointment afresh from FSM and writes over its copy, with its client, technician and type, in one batch. It asks FSM for the client, the technician list or the catalogue only when it meets one it does not know.
+- **The client is matched by mobile number, once.** After that the person carries the FSM contact's ID. A contact whose number matches no one becomes a new person, since ops add clients in FSM too; they are not contactable until they consent. A contact with no usable number stays unknown.
+- **Times are kept in UTC,** as everywhere else in D1. FSM sends India's offset.
+- **Statuses** are stored in our words: scheduled, dispatched, in progress, completed, cancelled or terminated, with FSM's own word alongside. A word the mirror does not know is kept as "other". Completed makes a visit that is done; terminated, a partial one. The partial reason waits for the job-sheet template.
+- **An appointment FSM no longer has is marked gone,** not deleted.
+- **Webhooks are hints.**
+  - FSM's workflow rule posts the appointment's ID and modified time to `POST /api/hooks/fsm/<token>`, as JSON or a form.
+  - FSM does not sign webhooks, so the secret is in the URL, as Evolution's is. Without `FSM_WEBHOOK_TOKEN` the route answers 404.
+  - Each hint is kept once in `webhook_inbox`. FSM sends no event ID, so a repeat is the same record at the same modified time.
+  - The hint goes on the `fsm-sync` queue, whose consumer reads the appointment afresh.
+  - A failed read is retried after 30 s, 1, 2 and 4 minutes; the fifth failure alerts, and the reconciliation picks it up.
+- **The queue fits the Phase 2 budget** (ADR 0039): 2,000 queue operations a day for FSM hints and messages.
+- **An erased person stays erased.** Their FSM contact still leads to their row, which erasure has blanked. Deleting the client in FSM itself is P2-M6's.
+
 ## Consequences
 
 - **Staging reads and writes the real org.** Its catalogue was created there on 22 September 2026. Its test records must be removed before go-live (`docs/open-points.md`, item 10).

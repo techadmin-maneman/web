@@ -30,7 +30,8 @@
     "producers": [
       { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
       { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-local" },
-      { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" }
+      { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" },
+      { "binding": "FSM_QUEUE", "queue": "mm-fsm-sync-local" }
     ],
     // crm-sync asks for one batch at a time; Queues does not guarantee it (docs/decisions/0012-zoho-sync.md).
     "consumers": [
@@ -51,6 +52,14 @@
       {
         "queue": "mm-messaging-local",
         "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "max_concurrency": 1
+      },
+      // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
+      {
+        "queue": "mm-fsm-sync-local",
+        "max_batch_size": 10,
         "max_batch_timeout": 5,
         "max_retries": 5,
         "max_concurrency": 1
@@ -127,7 +136,8 @@
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-staging" },
           { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-staging" },
-          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-staging" }
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-staging" },
+          { "binding": "FSM_QUEUE", "queue": "mm-fsm-sync-staging" }
         ],
         "consumers": [
           {
@@ -147,6 +157,14 @@
           {
             "queue": "mm-messaging-staging",
             "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 5,
+            "max_concurrency": 1
+          },
+          // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
+          {
+            "queue": "mm-fsm-sync-staging",
+            "max_batch_size": 10,
             "max_batch_timeout": 5,
             "max_retries": 5,
             "max_concurrency": 1
@@ -218,7 +236,8 @@
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-prod" },
           { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-prod" },
-          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" }
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" },
+          { "binding": "FSM_QUEUE", "queue": "mm-fsm-sync-prod" }
         ],
         "consumers": [
           {
@@ -238,6 +257,14 @@
           {
             "queue": "mm-messaging-prod",
             "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 5,
+            "max_concurrency": 1
+          },
+          // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
+          {
+            "queue": "mm-fsm-sync-prod",
+            "max_batch_size": 10,
             "max_batch_timeout": 5,
             "max_retries": 5,
             "max_concurrency": 1

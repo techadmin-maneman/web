@@ -342,6 +342,24 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 
    Set the secrets before deploying with the providers switched on: the guard refuses a Worker without them.
 
+5. **The queue.** Create it once, before the first deploy that sends to it, then attach its consumer after that deploy (step 9):
+
+   ```sh
+   W queues create mm-fsm-sync-<t>
+   npm run apply-triggers -- --env <env>
+   ```
+
+6. **FSM's webhook** keeps the mirror current within seconds. Without it, the mirror waits for the reconciliation.
+   - **The token.** Make one and set it: `openssl rand -hex 24 | W secret put FSM_WEBHOOK_TOKEN --env <env>`.
+   - **The webhook.** In FSM, Setup → Automation → Webhooks → New Webhook:
+     - URL: `https://<public host>/api/hooks/fsm/<token>`;
+     - method: POST;
+     - body: form data, with three parameters from the Service Appointment: `module` (the value `Service_Appointments`), `id` (the appointment's ID), and `modified_time` (its Modified Time).
+   - **The workflow rule.** Setup → Automation → Workflow Rules → Service Appointments → New Rule:
+     - when a record is created or edited, and when it is deleted;
+     - action: the webhook.
+   - **On staging,** the hooks path already has the Access bypass (step 12, point 3).
+
 ### 12. WhatsApp delivery receipts (Evolution)
 
 Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md). The no-show evidence depends on these receipts. Until this is set up, the route answers 404 and no receipts are recorded.

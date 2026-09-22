@@ -21,6 +21,7 @@ const SETTINGS: ZohoFsmSettings = {
   accountsHost: "accounts.zoho.in",
   apiHost: "www.zohoapis.in",
   booksOrgId: "60088931635",
+  webhookToken: null,
 };
 
 const BOOKS_API = "https://www.zohoapis.in/books/v3";
@@ -62,6 +63,8 @@ describe("FSM: appointments", () => {
       actualEnd: null,
       technicianIds: ["sr-1"],
       serviceIds: ["item-service-visit"],
+      serviceCity: "Gurgaon",
+      servicePincode: "122018",
       invoiceId: null,
       modifiedAt: "2026-09-22T14:27:15+05:30",
     });

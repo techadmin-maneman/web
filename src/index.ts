@@ -6,6 +6,7 @@ import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
 import { createLogger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
+import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
 import { sweep } from "./scheduled/sweeper.ts";
@@ -52,6 +53,10 @@ export default {
       await handleRenderBatch(batch, workerEnv, deps, log, {
         resultRetentionDays: config.settings.tryon.resultRetentionDays,
       });
+      return;
+    }
+    if (batch.queue.startsWith("mm-fsm-sync-")) {
+      await handleFsmSyncBatch(batch, workerEnv.DB, deps, log);
       return;
     }
     if (batch.queue.startsWith("mm-messaging-")) {

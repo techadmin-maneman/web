@@ -41,6 +41,7 @@ const Appointment = z.object({
   Appointments_X_Services: z
     .array(z.object({ Service_Line_Item: z.object({ Service: z.string().nullish() }).nullish() }))
     .nullish(),
+  Service_Address: z.object({ Service_City: z.string().nullish(), Service_Zip_Code: z.string().nullish() }).nullish(),
   Invoice_Id: z.string().nullish(),
   Modified_Time: z.string(),
 });
@@ -89,6 +90,8 @@ function appointmentFrom(record: z.infer<typeof Appointment>): FsmAppointment {
     serviceIds: (record.Appointments_X_Services ?? []).flatMap((line) =>
       typeof line.Service_Line_Item?.Service === "string" ? [line.Service_Line_Item.Service] : [],
     ),
+    serviceCity: record.Service_Address?.Service_City ?? null,
+    servicePincode: record.Service_Address?.Service_Zip_Code ?? null,
     invoiceId: record.Invoice_Id ?? null,
     modifiedAt: record.Modified_Time,
   };
