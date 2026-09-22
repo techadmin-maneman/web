@@ -20,7 +20,8 @@ export async function findEligiblePerson(db: D1Database, mobileE164: string): Pr
     .prepare(
       `SELECT p.id FROM people p
        WHERE p.mobile_e164 = ?1 AND p.erased_at IS NULL
-         AND EXISTS (SELECT 1 FROM leads l WHERE l.person_id = p.id AND l.proposed_visit_date IS NOT NULL)`,
+         AND (EXISTS (SELECT 1 FROM leads l WHERE l.person_id = p.id AND l.proposed_visit_date IS NOT NULL)
+           OR EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = p.id AND a.deleted_at IS NULL))`,
     )
     .bind(mobileE164)
     .first<{ id: string }>();

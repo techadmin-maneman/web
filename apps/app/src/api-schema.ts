@@ -763,6 +763,268 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's visits, upcoming and past */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Upcoming soonest first; past newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Visits"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the client's visits, with its photographs */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The visit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VisitDetail"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such visit of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's photographs, by visit, newest first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visits that have photographs */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PhotoTimeline"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/photos/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One angle from two of the client's visits, to compare */
+        get: {
+            parameters: {
+                query: {
+                    from: string;
+                    to: string;
+                    angle: "front" | "top" | "left" | "right" | "hair";
+                    phase?: "before" | "after";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Both photographs, or null where a visit has none of that angle */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PhotoCompare"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: a visit that is not this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/photos/file/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A photograph, through a link that lasts 15 minutes */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the link is wrong, expired, or not this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -770,7 +1032,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -830,12 +1092,12 @@ export interface components {
         };
         Me: {
             /** @enum {string} */
-            state: "lead" | "nothing_booked";
+            state: "fitted" | "lead" | "nothing_booked";
             name: string;
             first_name: string;
             /** @description For the profile's button: the first letters of the first and last names. */
             initials: string;
-            /** @description The booked consultation: its proposed date and window, to be confirmed on WhatsApp. */
+            /** @description A Phase 1 booking's proposed consultation, to be confirmed on WhatsApp. Null once the mirror has the visit. */
             consultation: {
                 /** Format: date */
                 date: string;
@@ -844,6 +1106,39 @@ export interface components {
                 /** @description Where it is: the saved address (locality, city and pincode), else the booking's city. */
                 place: string;
             } | null;
+            /** @description The next visit that has not happened, from FSM: a consultation for a lead. */
+            next_visit: components["schemas"]["VisitSummary"] | null;
+            /** @description The credit tile: balance and earliest expiry. Arrives with the credit ledger (P2-M3). */
+            credits: null;
+            /** @description The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4). */
+            prompt: null;
+        };
+        VisitSummary: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's calendar date.
+             */
+            date: string;
+            /** @enum {string} */
+            window_label: "morning" | "afternoon" | "evening";
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            length_minutes: number;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @enum {string} */
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            technician: components["schemas"]["Technician"] | null;
+            /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
+            place: string;
+        };
+        /** @description Display name and initials only. */
+        Technician: {
+            name: string;
+            initials: string;
         };
         Profile: {
             name: string;
@@ -897,6 +1192,59 @@ export interface components {
             /** @enum {string} */
             number: "old" | "new";
             code: string;
+        };
+        Visits: {
+            upcoming: components["schemas"]["VisitSummary"][];
+            past: components["schemas"]["VisitSummary"][];
+        };
+        VisitDetail: components["schemas"]["VisitSummary"] & {
+            /** @description From start to finish, once done. */
+            duration_minutes: number | null;
+            outcome: ("done" | "partial") | null;
+            photos: components["schemas"]["PhotoSet"];
+        };
+        /** @description Each angle in the order front, top, left, right, hair; missing angles left out. */
+        PhotoSet: {
+            before: components["schemas"]["PhotoLink"][];
+            after: components["schemas"]["PhotoLink"][];
+        };
+        PhotoLink: {
+            /** @enum {string} */
+            angle: "front" | "top" | "left" | "right" | "hair";
+            /** @description Lasts 15 minutes; only the signed-in client can open it. */
+            url: string;
+            width: number | null;
+            height: number | null;
+        };
+        PhotoTimeline: {
+            visits: {
+                /** Format: uuid */
+                visit_id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                photos: components["schemas"]["PhotoSet"];
+            }[];
+        };
+        PhotoCompare: {
+            /** @enum {string} */
+            angle: "front" | "top" | "left" | "right" | "hair";
+            /** @enum {string} */
+            phase: "before" | "after";
+            from: {
+                /** Format: uuid */
+                visit_id: string;
+                /** Format: date */
+                date: string;
+                photo: components["schemas"]["PhotoLink"] | null;
+            };
+            to: {
+                /** Format: uuid */
+                visit_id: string;
+                /** Format: date */
+                date: string;
+                photo: components["schemas"]["PhotoLink"] | null;
+            };
         };
     };
     responses: never;
