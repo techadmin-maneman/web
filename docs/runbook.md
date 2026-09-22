@@ -302,6 +302,46 @@ openssl rand -hex 32 | W secret put OTP_PEPPER --env <env>
 
 Changing it later voids every code in flight; sessions are unaffected. SMS stays off (`SMS_PROVIDER` is `none`) until a DLT-registered provider is set up.
 
+### 11b. Zoho FSM and Books
+
+The client surface reads visits from Zoho FSM and documents from Zoho Books (docs/decisions/0032-fsm-mirror.md). Both are in the real org (ADR 0025, item 26) and share one API client, separate from the CRM's.
+
+1. **The client.** In `https://api-console.zoho.in`, as an administrator of the org: Add Client → Self Client. On **Generate Code**, use the scopes in `docs/phase2-inputs.md`, section 3. Exchange the code for a refresh token within its 10 minutes:
+
+   ```sh
+   curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
+   ```
+
+2. **The file.** Put the values in `.env.fsm-<env>`. Git ignores it.
+
+   ```sh
+   ZOHO_FSM_CLIENT_ID=...
+   ZOHO_FSM_CLIENT_SECRET=...
+   ZOHO_FSM_REFRESH_TOKEN=...
+   ZOHO_FSM_ACCOUNTS_HOST=accounts.zoho.in
+   ZOHO_FSM_API_HOST=www.zohoapis.in
+   ZOHO_BOOKS_ORG_ID=...
+   ```
+
+   The Books organisation ID is on Books → Settings → Organisation Profile.
+
+3. **The org.** Check it, then create what is missing: a service item for each visit type and the base part, at placeholder prices until the price book is set (`docs/open-points.md`, item 1).
+
+   ```sh
+   node --env-file=.env.fsm-<env> scripts/setup-fsm.ts --check
+   node --env-file=.env.fsm-<env> scripts/setup-fsm.ts
+   ```
+
+4. **The Worker.** Set the three secrets, then set the hosts and `ZOHO_BOOKS_ORG_ID` in `wrangler.jsonc`, with `FSM_PROVIDER` and `BOOKS_PROVIDER` as `zoho`.
+
+   ```sh
+   W secret put ZOHO_FSM_CLIENT_ID --env <env>
+   W secret put ZOHO_FSM_CLIENT_SECRET --env <env>
+   W secret put ZOHO_FSM_REFRESH_TOKEN --env <env>
+   ```
+
+   Set the secrets before deploying with the providers switched on: the guard refuses a Worker without them.
+
 ### 12. WhatsApp delivery receipts (Evolution)
 
 Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md). The no-show evidence depends on these receipts. Until this is set up, the route answers 404 and no receipts are recorded.

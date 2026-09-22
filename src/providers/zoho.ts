@@ -13,6 +13,7 @@ import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../config/booking.ts";
 import type { ZohoSettings } from "../config/settings.ts";
 import type { Logger } from "../log.ts";
 import type { CrmLead, CrmProvider, LeadSource, LeadStatus } from "./crm.ts";
+import { createTokenCache, type TokenStore, ZohoError, zohoErrorFrom, zohoSend } from "./zoho-http.ts";
 import {
   assertStatusAllowed,
   shouldAssign,
@@ -21,33 +22,11 @@ import {
   statusForUpdate,
 } from "./crm-rules.ts";
 
-/**
- * No one waits on these calls; the queue consumer makes them. On staging a
- * token refresh once took over 10 s, and a slow answer beats a retry that may
- * duplicate a record Zoho did create. See docs/decisions/0012-zoho-sync.md.
- */
-const TIMEOUT_MS = 20_000;
-/** Refresh a token this long before Zoho would expire it. */
-const TOKEN_MARGIN_MS = 60_000;
-
 export const LEAD_SOURCE_NAMES: Readonly<Record<LeadSource, string>> = {
   form: "Booking form",
   waitlist: "Waitlist",
   tryon: "Try-on",
 };
-
-/** A failed Zoho call. The message never includes record data. */
-export class ZohoError extends Error {
-  override readonly name = "ZohoError";
-  readonly status: number;
-  readonly code: string;
-
-  constructor(status: number, code: string, message: string) {
-    super(`Zoho ${String(status)} ${code}: ${message}`);
-    this.status = status;
-    this.code = code;
-  }
-}
 
 interface ZohoDependencies {
   readonly db: D1Database;
@@ -147,35 +126,14 @@ export function noteFor(lead: CrmLead): { title: string; content: string } {
 
 type Step = "token" | "search" | "insert" | "update" | "note";
 
-/**
- * One HTTP request to Zoho, timed and logged by step. The URL is never logged:
- * the token URL carries the client secret. A timeout becomes a ZohoError that
- * names the step, so last_sync_error says which call was slow.
- */
-async function send(deps: ZohoDependencies, step: Step, url: string, init: RequestInit): Promise<Response> {
-  const started = Date.now();
-  try {
-    const response = await deps.fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
-    deps.log.info("zoho_call", { step, status: response.status, duration_ms: Date.now() - started });
-    return response;
-  } catch (error) {
-    const reason = error instanceof Error ? error.name : "unknown";
-    deps.log.warn("zoho_call", { step, status: 0, reason, duration_ms: Date.now() - started });
-    if (reason === "TimeoutError") {
-      throw new ZohoError(0, "TIMEOUT", `${step} got no answer within ${String(TIMEOUT_MS / 1000)} s`);
-    }
-    throw error;
-  }
-}
-
 function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
-  const tokens = createTokenCache(settings, deps);
+  const tokens = createTokenCache(settings, crmTokenStore(deps.db), deps);
 
   /** One API call. On 401 the token is refreshed once and the call repeated. */
   async function call(step: Step, method: string, path: string, body?: unknown): Promise<unknown> {
     for (const forceRefresh of [false, true]) {
       const token = await tokens.get(forceRefresh);
-      const response = await send(deps, step, `https://${settings.apiHost}${path}`, {
+      const response = await zohoSend(deps, step, `https://${settings.apiHost}${path}`, {
         method,
         headers: { Authorization: `Zoho-oauthtoken ${token}`, "Content-Type": "application/json" },
         body: body === undefined ? null : JSON.stringify(body),
@@ -184,7 +142,7 @@ function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
       if (response.status === 204) return null;
 
       const json: unknown = await response.json().catch(() => null);
-      if (!response.ok) throw errorFrom(response.status, json);
+      if (!response.ok) throw zohoErrorFrom(response.status, json);
       return json;
     }
     throw new ZohoError(401, "AUTHENTICATION_FAILURE", "rejected a freshly refreshed token");
@@ -236,63 +194,23 @@ function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
   };
 }
 
-/** Access tokens live an hour; one is shared by every invocation through D1. */
-function createTokenCache(settings: ZohoSettings, deps: ZohoDependencies) {
+/** The CRM's access token, in its own one-row table (migrations/0002_lead_path.sql). */
+function crmTokenStore(db: D1Database): TokenStore {
   return {
-    async get(forceRefresh: boolean): Promise<string> {
-      if (!forceRefresh) {
-        const cached = await deps.db
-          .prepare("SELECT access_token, expires_at FROM zoho_token WHERE id = 1")
-          .first<{ access_token: string; expires_at: string }>();
-        if (cached !== null && Date.parse(cached.expires_at) - deps.now().getTime() > TOKEN_MARGIN_MS) {
-          return cached.access_token;
-        }
-      }
-
-      const query = new URLSearchParams({
-        refresh_token: settings.refreshToken,
-        client_id: settings.clientId,
-        client_secret: settings.clientSecret,
-        grant_type: "refresh_token",
-      });
-      const response = await send(
-        deps,
-        "token",
-        `https://${settings.accountsHost}/oauth/v2/token?${query.toString()}`,
-        {
-          method: "POST",
-        },
-      );
-      const json = (await response.json().catch(() => null)) as {
-        access_token?: string;
-        expires_in?: number;
-        error?: string;
-      } | null;
-      if (typeof json?.access_token !== "string") {
-        throw new ZohoError(
-          response.status,
-          json?.error ?? "TOKEN_REFRESH_FAILED",
-          "could not refresh the access token",
-        );
-      }
-
-      const expiresAt = new Date(deps.now().getTime() + (json.expires_in ?? 3600) * 1000).toISOString();
-      await deps.db
+    async read() {
+      const row = await db
+        .prepare("SELECT access_token, expires_at FROM zoho_token WHERE id = 1")
+        .first<{ access_token: string; expires_at: string }>();
+      return row === null ? null : { accessToken: row.access_token, expiresAt: row.expires_at };
+    },
+    async write(accessToken, expiresAt) {
+      await db
         .prepare(
           `INSERT INTO zoho_token (id, access_token, expires_at) VALUES (1, ?1, ?2)
            ON CONFLICT (id) DO UPDATE SET access_token = excluded.access_token, expires_at = excluded.expires_at`,
         )
-        .bind(json.access_token, expiresAt)
+        .bind(accessToken, expiresAt)
         .run();
-      return json.access_token;
     },
   };
-}
-
-function errorFrom(status: number, json: unknown): ZohoError {
-  const body = json as { code?: unknown; message?: unknown; data?: { code?: unknown; message?: unknown }[] } | null;
-  const detail = body?.data?.[0] ?? body;
-  const code = typeof detail?.code === "string" ? detail.code : "HTTP_ERROR";
-  const message = typeof detail?.message === "string" ? detail.message : "request failed";
-  return new ZohoError(status, code, message);
 }

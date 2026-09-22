@@ -93,5 +93,10 @@ export const PROVIDER_VARS = {
   // Login codes by SMS need a DLT-registered provider. Until one is chosen, "none": the app offers WhatsApp only
   // (docs/decisions/0030-one-time-codes.md). "none" is not a stub, so production may hold it.
   SMS_PROVIDER: ["none", "stub"],
+  // Zoho FSM, the system of record for field work, and Zoho Books, for invoices and receipts
+  // (docs/decisions/0032-fsm-mirror.md). "none" until the client surface is switched on where it runs, as
+  // production is until Phase 2's release.
+  FSM_PROVIDER: ["zoho", "stub", "none"],
+  BOOKS_PROVIDER: ["zoho", "stub", "none"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;

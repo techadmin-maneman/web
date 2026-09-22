@@ -68,6 +68,12 @@
     // The stub needs no audience.
     "ACCESS_OPS_AUD": "",
     "SMS_PROVIDER": "stub",
+    // Zoho FSM and Books (docs/decisions/0032-fsm-mirror.md). The stubs reach nothing.
+    "FSM_PROVIDER": "stub",
+    "BOOKS_PROVIDER": "stub",
+    "ZOHO_FSM_ACCOUNTS_HOST": "",
+    "ZOHO_FSM_API_HOST": "",
+    "ZOHO_BOOKS_ORG_ID": "",
     // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
     "OTP_MOBILE_DAILY_LIMIT": "5",
     "OTP_IP_HOURLY_LIMIT": "10",
@@ -158,6 +164,13 @@
         // The ops-staging Access application's audience tag.
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "SMS_PROVIDER": "none",
+        // Zoho FSM and Books, in the real org (ADR 0025, item 26; docs/decisions/0032-fsm-mirror.md).
+        // The client's ID, secret and refresh token are the secrets ZOHO_FSM_CLIENT_ID, _SECRET and _REFRESH_TOKEN.
+        "FSM_PROVIDER": "zoho",
+        "BOOKS_PROVIDER": "zoho",
+        "ZOHO_FSM_ACCOUNTS_HOST": "accounts.zoho.in",
+        "ZOHO_FSM_API_HOST": "www.zohoapis.in",
+        "ZOHO_BOOKS_ORG_ID": "60088931635",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
         "OTP_IP_HOURLY_LIMIT": "10",
@@ -242,6 +255,12 @@
         // The ops Access application's audience tag; unused until ops is switched on in production.
         "ACCESS_OPS_AUD": "aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773",
         "SMS_PROVIDER": "none",
+        // Zoho FSM and Books stay off until Phase 2's release (docs/open-points.md).
+        "FSM_PROVIDER": "none",
+        "BOOKS_PROVIDER": "none",
+        "ZOHO_FSM_ACCOUNTS_HOST": "",
+        "ZOHO_FSM_API_HOST": "",
+        "ZOHO_BOOKS_ORG_ID": "",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
         "OTP_IP_HOURLY_LIMIT": "10",
