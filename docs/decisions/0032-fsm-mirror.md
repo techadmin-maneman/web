@@ -67,6 +67,18 @@ This ADR grows with P2-M2. Its first part is the connection.
 - **The queue fits the Phase 2 budget** (ADR 0039): 2,000 queue operations a day for FSM hints and messages.
 - **An erased person stays erased.** Their FSM contact still leads to their row, which erasure has blanked. Deleting the client in FSM itself is P2-M6's.
 
+### The reconciliation (P2-M2.3)
+
+The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcile-fsm.ts`, migration 0012). It runs with the sweeper on the existing five-minute cron, and adds no cron of its own. It only puts appointments on the `fsm-sync` queue: the consumer reads them afresh, as it does for a webhook.
+
+- **Every run** reads the first page of FSM's appointments, the 50 changed most recently, and queues each whose copy is missing or older than FSM's. A missed webhook is repaired within five minutes.
+- **Overnight,** from 1 am to 5 am India time, it also walks the whole list, one page a run, and marks each copy it sees.
+- **At the end of the pass,** it queues every copy the pass did not see, 50 a run. FSM may have deleted those; the consumer marks them gone if it did.
+- **Then it alerts once** if the pass repaired anything. A copy less than 10 minutes behind FSM does not count, since its webhook may still be on the way.
+- **The place in the list** is `sync_cursors`, one row. A new night starts a new pass. A pass that has not finished by 5 am starts again the next night, which covers 2,400 appointments; more would need a longer night.
+- **A failure is logged and left for the next run.** The sweep that runs first is unaffected.
+- **Cost:** a run is one FSM call, plus the night's pages: about 300 calls a day, against FSM's 5,000 on the trial and 50,000 on Professional. Only copies that are behind are queued, within ADR 0039's queue allowance.
+
 ## Consequences
 
 - **Staging reads and writes the real org.** Its catalogue was created there on 22 September 2026. Its test records must be removed before go-live (`docs/open-points.md`, item 10).

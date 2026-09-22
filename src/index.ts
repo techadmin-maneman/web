@@ -9,6 +9,7 @@ import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
+import { reconcileFsm } from "./scheduled/reconcile-fsm.ts";
 import { sweep } from "./scheduled/sweeper.ts";
 
 // Runs at module load. A Worker without a valid ENVIRONMENT, missing a secret
@@ -70,6 +71,14 @@ export default {
   async scheduled(_controller, workerEnv) {
     const log = baseLog.child({ job: "sweeper" });
     await assertOwnDatabase(workerEnv.DB);
-    await sweep(workerEnv, makeDependencies(workerEnv, log), log, { creditFloor: config.settings.tryon.creditFloor });
+    const deps = makeDependencies(workerEnv, log);
+    await sweep(workerEnv, deps, log, { creditFloor: config.settings.tryon.creditFloor });
+    // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md), where FSM is connected. A failure is logged and left
+    // for the next run; the sweep above is done either way.
+    if (config.providers.FSM_PROVIDER !== "none") {
+      await reconcileFsm(workerEnv, deps, log.child({ job: "fsm_reconcile" })).catch((error: unknown) => {
+        log.error("fsm_reconcile_failed", { error });
+      });
+    }
   },
 } satisfies ExportedHandler<Env>;
