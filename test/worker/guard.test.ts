@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, validateStaticConfig } from "../../src/guard.ts";
 
-const REAL = { IMAGE_PROVIDER: "ailabtools", CRM_PROVIDER: "zoho", MESSAGING_PROVIDER: "evolution" };
-const STUBS = { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub" };
+const REAL = {
+  IMAGE_PROVIDER: "ailabtools",
+  CRM_PROVIDER: "zoho",
+  MESSAGING_PROVIDER: "evolution",
+  ACCESS_PROVIDER: "cloudflare",
+};
+const STUBS = { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub", ACCESS_PROVIDER: "stub" };
 
 /** Vars and secrets every environment needs, with valid values. */
 const SETTINGS = {
@@ -26,6 +31,7 @@ const SETTINGS = {
   ERASURE_SECRET: "an-erasure-secret-of-at-least-thirty-two-characters",
   MESSAGING_ENABLED: "false",
   WA_RESULT_TEMPLATE: "tryon_result_v1",
+  ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
 };
 const IMAGE = { AILAB_API_KEY: "ailab-key" };
 const EVOLUTION = {
@@ -85,7 +91,7 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(3);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(4);
   });
 
   it("refuses a missing or unknown provider", () => {
@@ -237,5 +243,33 @@ describe("validateStaticConfig: try-on and messaging", () => {
       "MESSAGING_ALLOWLIST has an entry that is not an Indian mobile number",
       "MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging",
     ]);
+  });
+});
+
+describe("validateStaticConfig: Cloudflare Access", () => {
+  it("reads the team domain, and needs no ops audience while the ops surface is switched off", () => {
+    const config = validateStaticConfig(production);
+    expect(config.settings.access).toEqual({ teamDomain: "summer-math-0275.cloudflareaccess.com", opsAudience: null });
+  });
+
+  it("refuses the stub in staging as well as production, since staff identity is always verified there", () => {
+    expect(problemsOf({ ...production, ENVIRONMENT: "staging", ACCESS_PROVIDER: "stub" })).toEqual([
+      "ACCESS_PROVIDER is a stub in staging: staff identity is verified everywhere but locally",
+    ]);
+    expect(problemsOf({ ...production, ACCESS_PROVIDER: "stub" })).toEqual(["ACCESS_PROVIDER is a stub in production"]);
+  });
+
+  it("needs a team domain on Access's own domain", () => {
+    const { ACCESS_TEAM_DOMAIN: _omitted, ...withoutDomain } = production;
+    expect(problemsOf(withoutDomain)).toEqual(["ACCESS_TEAM_DOMAIN is not set"]);
+    expect(problemsOf({ ...production, ACCESS_TEAM_DOMAIN: "https://summer-math-0275.cloudflareaccess.com" })).toEqual([
+      "ACCESS_TEAM_DOMAIN must be a cloudflareaccess.com hostname, without https://",
+    ]);
+  });
+
+  it("needs the ops audience wherever the ops surface is switched on", () => {
+    const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS, ACCESS_PROVIDER: "cloudflare" };
+    expect(problemsOf(local)).toEqual(["ACCESS_OPS_AUD is not set"]);
+    expect(validateStaticConfig({ ...local, ACCESS_OPS_AUD: "aud-tag" }).settings.access?.opsAudience).toBe("aud-tag");
   });
 });

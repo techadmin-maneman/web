@@ -5,7 +5,9 @@ import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
 import type { Surface } from "./config/environments.ts";
 import { productionDependencies, type Dependencies, type DependencyFactory } from "./dependencies.ts";
+import { auditCall } from "./domain/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
+import { requireAccess, type AccessIdentity } from "./http/access.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
 import { createLogger, type Logger } from "./log.ts";
@@ -28,6 +30,8 @@ export type AppEnv = {
     deps: Dependencies;
     checkIdentity: IdentityCheck;
     surface: Surface;
+    /** Set on the ops surface by requireAccess. */
+    accessIdentity?: AccessIdentity;
   };
 };
 
@@ -76,6 +80,8 @@ export function createApp(
   const dependencies = makeDependencies ?? productionDependencies(config);
   app.use("*", requestContext(config, dependencies, createCachedIdentityCheck(), surface));
   app.use("/api/*", requireOwnDatabase);
+  // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031).
+  if (surface === "ops") app.use("/api/*", requireAccess, auditCall);
   // The public site's writes are guarded by Turnstile; the Phase 2 surfaces carry session cookies.
   if (surface !== "public") app.use("/api/*", requireSameOrigin);
 
