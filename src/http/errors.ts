@@ -30,6 +30,8 @@ export const ERROR_CODES = [
   // The client app's login (docs/decisions/0030-one-time-codes.md): the challenge is closed, or it is too soon to resend.
   "code_expired",
   "too_early",
+  // A number change ops cannot confirm: another person holds the new number (docs/decisions/0042-client-profile.md).
+  "number_in_use",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

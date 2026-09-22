@@ -1,0 +1,478 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1",
+    "title": "Mane Man API: the ops console",
+    "description": "mm-api on the ops console's host (docs/decisions/0026-hosts-and-surfaces.md), served at https://{host}/api/*, behind Cloudflare Access. Every call needs a valid Access token and is recorded in the audit log under its identity (docs/decisions/0031-access-and-audit.md). Every response carries an X-Request-Id header."
+  },
+  "servers": [
+    {
+      "url": "https://ops.maneman.in",
+      "description": "production"
+    },
+    {
+      "url": "https://ops-staging.maneman.in",
+      "description": "staging (Cloudflare Access)"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "not_found",
+                  "invalid_request",
+                  "turnstile_failed",
+                  "rate_limited",
+                  "idempotency_in_progress",
+                  "idempotency_key_reused",
+                  "environment_mismatch",
+                  "unavailable",
+                  "internal_error",
+                  "busy",
+                  "photo_invalid_file",
+                  "upload_already_received",
+                  "upload_missing",
+                  "session_required",
+                  "job_not_claimable",
+                  "look_limit_reached",
+                  "unauthorized",
+                  "forbidden_origin",
+                  "access_required",
+                  "code_expired",
+                  "too_early",
+                  "number_in_use"
+                ]
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "invalid_request only: the fields that failed validation, never their values."
+              }
+            },
+            "required": [
+              "code",
+              "request_id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unavailable"
+            ]
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "local",
+              "staging",
+              "production"
+            ]
+          },
+          "version_id": {
+            "type": "string",
+            "description": "Cloudflare Worker version ID serving this request."
+          },
+          "version_tag": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Tag given at upload: the git commit SHA in remote environments."
+          },
+          "d1": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unmarked",
+              "mismatch",
+              "unreachable"
+            ],
+            "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+          }
+        },
+        "required": [
+          "status",
+          "environment",
+          "version_id",
+          "version_tag",
+          "d1"
+        ],
+        "additionalProperties": false
+      },
+      "NumberChangeDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "confirm",
+              "reject"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "Required to reject; kept with the decision."
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "DeletionDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "delete",
+              "reject"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "Required to reject; kept with the decision."
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Environment, version and database reachability",
+        "responses": {
+          "200": {
+            "description": "Healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unreachable or belongs to another environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/number-changes": {
+      "get": {
+        "summary": "Number changes waiting for ops: both numbers proven by code",
+        "responses": {
+          "200": {
+            "description": "Oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "changes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "person_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "old_mobile": {
+                            "type": "string"
+                          },
+                          "new_mobile": {
+                            "type": "string"
+                          },
+                          "requested_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "person_id",
+                          "name",
+                          "old_mobile",
+                          "new_mobile",
+                          "requested_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "changes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/number-changes/{id}/decision": {
+      "post": {
+        "summary": "Confirm a number change, which then takes effect, or reject it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NumberChangeDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "confirmed",
+                        "rejected"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a rejection needs a reason",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no change waiting for ops by that ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "number_in_use: another person holds the new number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deletion-requests": {
+      "get": {
+        "summary": "Deletion requests waiting for ops",
+        "responses": {
+          "200": {
+            "description": "Oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "person_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "mobile": {
+                            "type": "string"
+                          },
+                          "requested_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "person_id",
+                          "name",
+                          "mobile",
+                          "requested_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "requests"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deletion-requests/{id}/decision": {
+      "post": {
+        "summary": "Delete the account now (photographs, results and details), or reject the request",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletionDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "done",
+                        "rejected"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a rejection needs a reason",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no request waiting for ops by that ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

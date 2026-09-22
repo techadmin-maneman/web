@@ -23,7 +23,7 @@ export interface ErasureSummary {
   readonly messagesCancelled: number;
 }
 
-type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS">;
+export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS">;
 
 /** The summary, or null when no one (still unerased) has this number. */
 export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date): Promise<ErasureSummary | null> {

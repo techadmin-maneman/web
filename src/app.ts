@@ -15,10 +15,12 @@ import { createLogger, type Logger } from "./log.ts";
 import { registerCities } from "./routes/cities.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
+import { registerClientProfile } from "./routes/client-profile.ts";
 import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
+import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerTryonClaim } from "./routes/tryon-claim.ts";
 import { registerTryonGenerate } from "./routes/tryon-generate.ts";
 import { registerTryonResult } from "./routes/tryon-result.ts";
@@ -50,8 +52,8 @@ const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);
 
 /**
  * Each surface's routes (docs/decisions/0026-hosts-and-surfaces.md). A route
- * answers only on its own surface's host; anywhere else it is a 404. The ops
- * and technician surfaces have only their health check until their milestones.
+ * answers only on its own surface's host; anywhere else it is a 404. The
+ * technician surface has only its health check until P2-M4.
  */
 const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>> = {
   public: [
@@ -66,8 +68,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
   ],
-  client: [registerHealth, registerClientAuth, registerClientMe],
-  ops: [registerHealth],
+  client: [registerHealth, registerClientAuth, registerClientMe, registerClientProfile],
+  ops: [registerHealth, registerOpsProfile],
   tech: [registerHealth],
 };
 

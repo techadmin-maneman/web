@@ -3,14 +3,17 @@
 
 import { describe, expect, it } from "vitest";
 import clientMarkdown from "../../docs/api-client.md?raw";
+import opsMarkdown from "../../docs/api-ops.md?raw";
 import publicMarkdown from "../../docs/api.md?raw";
 import clientDocument from "../../docs/openapi-client.json";
+import opsDocument from "../../docs/openapi-ops.json";
 import publicDocument from "../../docs/openapi.json";
 import { buildOpenApiDocument, readResponse, renderApiMarkdown, type DocumentedSurface } from "../../src/openapi.ts";
 
 const COMMITTED: readonly [DocumentedSurface, unknown, string][] = [
   ["public", publicDocument, publicMarkdown],
   ["client", clientDocument, clientMarkdown],
+  ["ops", opsDocument, opsMarkdown],
 ];
 
 describe.each(COMMITTED)("the %s surface's API documentation", (surface, document, markdown) => {
