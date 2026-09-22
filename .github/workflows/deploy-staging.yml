@@ -25,7 +25,7 @@ jobs:
   deploy:
     name: deploy staging
     needs: checks
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     environment:
       name: staging
