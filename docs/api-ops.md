@@ -287,7 +287,11 @@ Request body:
             "code_expired",
             "too_early",
             "number_in_use",
-            "not_ready"
+            "not_ready",
+            "ops_assisted",
+            "taken",
+            "not_bookable",
+            "hold_expired"
           ]
         },
         "request_id": {

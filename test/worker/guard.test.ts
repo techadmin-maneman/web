@@ -29,6 +29,7 @@ const SETTINGS = {
   LEAD_IP_DAILY_LIMIT: "20",
   TURNSTILE_SECRET: "0x4AAAAAAAreal-looking-secret",
   TURNSTILE_ACCEPT_TEST_TOKEN: "false",
+  SELF_SERVE_BOOKING: "false",
   IP_HASH_SALT: "a-salt-of-at-least-thirty-two-characters",
   TRYON_UPLOAD_IP_HOURLY_LIMIT: "5",
   TRYON_GENERATE_IP_HOURLY_LIMIT: "5",
@@ -184,6 +185,12 @@ describe("validateStaticConfig: settings and secrets", () => {
     ]);
     const staging = { ...stagingBase, TURNSTILE_ACCEPT_TEST_TOKEN: "true" };
     expect(validateStaticConfig(staging).settings.acceptTurnstileTestToken).toBe(true);
+  });
+
+  it("refuses self-serve booking without a way to take payment", () => {
+    expect(problemsOf({ ...production, SELF_SERVE_BOOKING: "true" })).toEqual([
+      "SELF_SERVE_BOOKING needs a PAYMENTS_PROVIDER: clients would book without paying",
+    ]);
   });
 
   it("requires an https alert webhook in remote environments, and not locally", () => {

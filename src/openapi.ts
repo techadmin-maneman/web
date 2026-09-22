@@ -25,6 +25,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     leadIpDailyLimit: 20,
     turnstileSecret: "",
     acceptTurnstileTestToken: false,
+    selfServeBooking: false,
     ipHashSalt: "",
     alertWebhookUrl: null,
     leadWebhookUrl: null,

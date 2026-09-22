@@ -9,3 +9,8 @@ export const GST_PERCENT = 5;
 export function exGst(amount: number, percent: number = GST_PERCENT): number {
   return Math.round((amount * 100) / (100 + percent));
 }
+
+/** An ex-GST amount with GST added, in paise. */
+export function withGst(amountExGst: number, percent: number): number {
+  return Math.round((amountExGst * (100 + percent)) / 100);
+}

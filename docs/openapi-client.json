@@ -48,7 +48,11 @@
                   "code_expired",
                   "too_early",
                   "number_in_use",
-                  "not_ready"
+                  "not_ready",
+                  "ops_assisted",
+                  "taken",
+                  "not_bookable",
+                  "hold_expired"
                 ]
               },
               "request_id": {
@@ -1271,6 +1275,230 @@
             "additionalProperties": false
           }
         ]
+      },
+      "Availability": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "price": {
+            "$ref": "#/components/schemas/Price"
+          },
+          "regular": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "initials": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "initials"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whoever did the client's latest visit."
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "windows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "window": {
+                        "type": "string",
+                        "enum": [
+                          "morning",
+                          "afternoon",
+                          "evening"
+                        ]
+                      },
+                      "with": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "regular",
+                              "another"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Who would come: the regular technician, another, or nobody (full)."
+                      }
+                    },
+                    "required": [
+                      "window",
+                      "with"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "date",
+                "windows"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "type",
+          "price",
+          "regular",
+          "days"
+        ],
+        "additionalProperties": false
+      },
+      "Price": {
+        "type": "object",
+        "properties": {
+          "amount_ex_gst": {
+            "type": "integer",
+            "description": "In paise, before GST: the main figure."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In paise, GST included: what the client pays."
+          },
+          "gst_percent": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "amount_ex_gst",
+          "amount",
+          "gst_percent"
+        ],
+        "additionalProperties": false
+      },
+      "Hold": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "morning",
+              "afternoon",
+              "evening"
+            ]
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "technician": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "initials": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "initials"
+            ],
+            "additionalProperties": false
+          },
+          "price": {
+            "$ref": "#/components/schemas/Price"
+          },
+          "late_fee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What moving it inside 24 hours costs: a first fit's or a replacement's late fee."
+          },
+          "free_until": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Until then, moving or cancelling is free."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "held",
+              "expired",
+              "booked",
+              "released"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "window",
+          "starts_at",
+          "ends_at",
+          "technician",
+          "price",
+          "late_fee",
+          "free_until",
+          "expires_at",
+          "state"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -2344,6 +2572,262 @@
           },
           "409": {
             "description": "not_ready: Books has not raised the invoice yet; the app shows \"Document unavailable\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/availability": {
+      "get": {
+        "summary": "The windows open for a kind of visit over 14 days",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "The first day; tomorrow if left out, or if earlier."
+            },
+            "required": false,
+            "description": "The first day; tomorrow if left out, or if earlier.",
+            "name": "from",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each day's three windows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Availability"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ops_assisted: self-serve booking is off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "not_bookable: the client may not book this kind of visit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/holds": {
+      "post": {
+        "summary": "Hold a window for ten minutes while the client pays",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "consultation",
+                      "first_fit",
+                      "service",
+                      "replacement"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "window": {
+                    "type": "string",
+                    "enum": [
+                      "morning",
+                      "afternoon",
+                      "evening"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "date",
+                  "window"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hold"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "taken: nobody is free in that window now; or ops_assisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "not_bookable: this kind of visit, or that day, is not open to the client",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/holds/{id}": {
+      "get": {
+        "summary": "One of the client's holds",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The hold",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hold"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ops_assisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Let a hold go",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Let go, or already gone"
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ops_assisted",
             "content": {
               "application/json": {
                 "schema": {

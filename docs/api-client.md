@@ -769,6 +769,173 @@ A visit's invoice, as a PDF from Books
 }
 ```
 
+### GET /api/availability
+
+The windows open for a kind of visit over 14 days
+
+**200**: Each day's three windows
+
+```json
+{
+  "$ref": "#/components/schemas/Availability"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: ops_assisted: self-serve booking is off
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the client may not book this kind of visit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/holds
+
+Hold a window for ten minutes while the client pays
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "date",
+    "window"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: Held
+
+```json
+{
+  "$ref": "#/components/schemas/Hold"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: nobody is free in that window now; or ops_assisted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: this kind of visit, or that day, is not open to the client
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/holds/{id}
+
+One of the client's holds
+
+**200**: The hold
+
+```json
+{
+  "$ref": "#/components/schemas/Hold"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: ops_assisted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### DELETE /api/holds/{id}
+
+Let a hold go
+
+**204**: Let go, or already gone
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: ops_assisted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -805,7 +972,11 @@ A visit's invoice, as a PDF from Books
             "code_expired",
             "too_early",
             "number_in_use",
-            "not_ready"
+            "not_ready",
+            "ops_assisted",
+            "taken",
+            "not_bookable",
+            "hold_expired"
           ]
         },
         "request_id": {
@@ -2153,5 +2324,244 @@ A visit's invoice, as a PDF from Books
       "additionalProperties": false
     }
   ]
+}
+```
+
+### Availability
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "price": {
+      "$ref": "#/components/schemas/Price"
+    },
+    "regular": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "initials": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "initials"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whoever did the client's latest visit."
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "windows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "window": {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                },
+                "with": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "regular",
+                        "another"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Who would come: the regular technician, another, or nobody (full)."
+                }
+              },
+              "required": [
+                "window",
+                "with"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "date",
+          "windows"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "type",
+    "price",
+    "regular",
+    "days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Price
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
+    "gst_percent": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "amount_ex_gst",
+    "amount",
+    "gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Hold
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ends_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "technician": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "initials": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "initials"
+      ],
+      "additionalProperties": false
+    },
+    "price": {
+      "$ref": "#/components/schemas/Price"
+    },
+    "late_fee": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What moving it inside 24 hours costs: a first fit's or a replacement's late fee."
+    },
+    "free_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Until then, moving or cancelling is free."
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "held",
+        "expired",
+        "booked",
+        "released"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "type",
+    "date",
+    "window",
+    "starts_at",
+    "ends_at",
+    "technician",
+    "price",
+    "late_fee",
+    "free_until",
+    "expires_at",
+    "state"
+  ],
+  "additionalProperties": false
 }
 ```

@@ -87,6 +87,7 @@
     "ZOHO_BOOKS_ORG_ID": "",
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
     "PAYMENTS_PROVIDER": "stub",
+    "SELF_SERVE_BOOKING": "true",
     "RAZORPAY_KEY_ID": "",
     // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
     "OTP_MOBILE_DAILY_LIMIT": "5",
@@ -198,6 +199,7 @@
         "ZOHO_BOOKS_ORG_ID": "60088931635",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
+        "SELF_SERVE_BOOKING": "true",
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
@@ -302,6 +304,7 @@
         "ZOHO_BOOKS_ORG_ID": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
+        "SELF_SERVE_BOOKING": "false",
         "RAZORPAY_KEY_ID": "",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
