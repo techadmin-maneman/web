@@ -4,6 +4,8 @@
   display: flex;
   flex: 1;
   flex-direction: column;
+  /* Clear of an iPhone's home indicator when installed (viewport-fit=cover). */
+  padding-bottom: env(safe-area-inset-bottom);
   background: var(--ink);
 }
 

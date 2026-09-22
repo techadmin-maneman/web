@@ -93,11 +93,13 @@
   overscroll-behavior: contain;
 }
 
+/* Installed on an iPhone, the app runs to the bottom edge (viewport-fit=cover): the tabs' ground does too, and their row keeps clear of the home indicator. */
 .tabs {
   display: grid;
   flex-shrink: 0;
   grid-template-columns: repeat(5, 1fr);
-  height: var(--tap-row);
+  height: calc(var(--tap-row) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   border-top: var(--hairline) solid var(--paper-line);
   background: var(--paper-light);
 }
