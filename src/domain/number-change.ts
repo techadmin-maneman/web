@@ -72,7 +72,7 @@ export interface StartedChange {
 /** Starts a change, withdrawing any the client had under way, with a code for each number. */
 export async function startNumberChange(
   db: D1Database,
-  options: { personId: string; newMobileE164: string; pepper: string; now: Date },
+  options: { personId: string; newMobileE164: string; pepper: string; now: Date; fixedCode?: string | null },
 ): Promise<StartedChange> {
   const id = crypto.randomUUID();
   const at = options.now.toISOString();
@@ -92,7 +92,7 @@ export async function startNumberChange(
   ]);
 
   const codeFor = async (which: WhichNumber) => {
-    const code = newCode();
+    const code = options.fixedCode ?? newCode();
     const challenge = await createChallenge(db, {
       personId: options.personId,
       code,

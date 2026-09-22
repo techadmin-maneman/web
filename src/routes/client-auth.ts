@@ -183,7 +183,7 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   if (!(await withinCodeCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
 
   const person = await findEligiblePerson(db, mobileE164);
-  const code = newCode();
+  const code = limits.fixedCode ?? newCode();
   const challenge = await createChallenge(db, { personId: person?.id ?? null, code, pepper: limits.codePepper, now });
   await sendCodeAfterResponse(c, person?.mobileE164 ?? null, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
@@ -202,7 +202,7 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   if (challenge.sends >= MAX_SENDS_PER_CHALLENGE) return c.json(errorBody("rate_limited", requestId), 429);
   if (!(await withinCodeCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = newCode();
+  const code = config.settings.login.fixedCode ?? newCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
   await sendCodeAfterResponse(c, await mobileOf(db, challenge.personId), channel, code);
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };

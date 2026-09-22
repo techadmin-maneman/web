@@ -304,7 +304,8 @@ describe("the session", () => {
     expect(await res.json()).toEqual({
       state: "lead",
       first_name: "Arjun",
-      consultation: { date: "2026-09-24", window_label: "after four" },
+      initials: "AM",
+      consultation: { date: "2026-09-24", window_label: "after four", place: "Gurgaon" },
     });
   });
 

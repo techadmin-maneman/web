@@ -31,6 +31,7 @@ export const LOCAL_SETTINGS: Settings = {
     codeMobileDailyLimit: 5,
     codeIpHourlyLimit: 10,
     codeDailyCeiling: 300,
+    fixedCode: null,
   },
   tryon: {
     uploadIpHourlyLimit: 5,

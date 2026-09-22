@@ -14,6 +14,7 @@
   /* The apps' sizes (docs/prompts/phase2-frontend.md, "Layout and targets"). */
   --app-column: 390px; /* the design's width; wider screens centre it */
   --fs-app-title: 34px; /* a screen's title */
+  --fs-app-title-long: 32px; /* a longer title, as board A3's */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
   --tap-row: 64px; /* rows, tabs, the code's boxes */
   --sp-64: 64px;

@@ -30,6 +30,10 @@ export default defineConfig({
         "--var UPLOAD_DAILY_CEILING:10000",
         "--var RENDER_DAILY_CEILING:10000",
         "--var RESULT_READ_DAILY_CEILING:10000",
+        // The client app's login: every code is this one locally (docs/decisions/0030), and the limits are raised.
+        "--var OTP_FIXED_CODE:246810",
+        "--var OTP_IP_HOURLY_LIMIT:10000",
+        "--var OTP_DAILY_CEILING:10000",
       ].join(" "),
       url: "http://127.0.0.1:8787/api/health",
       reuseExistingServer: local,

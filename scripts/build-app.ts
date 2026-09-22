@@ -1,10 +1,12 @@
 // Builds the client app for one environment into apps/app/dist/<environment>,
-// with its _headers (docs/decisions/0043-client-app.md).
+// with its _headers (docs/decisions/0043-client-app.md), and fails if its
+// JavaScript is over the prompt's 150 KB gzipped.
 //
 //   npm run build:app -- --env staging
 
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { parseArgs } from "node:util";
 import { headersFile } from "@maneman/web-kit/headers";
 import { CLIENT_APP_POLICY } from "../apps/app/headers.ts";
@@ -24,3 +26,14 @@ execFileSync(
   { env: { ...process.env, MM_ENV: environment }, stdio: "inherit" },
 );
 writeFileSync(`apps/app/dist/${environment}/_headers`, headersFile(CLIENT_APP_POLICY));
+
+/** "Client app: first load under 150 KB of gzipped JavaScript" (docs/prompts/phase2-frontend.md). */
+const BUDGET_BYTES = 150 * 1024;
+const assets = `apps/app/dist/${environment}/assets`;
+const scripts = readdirSync(assets).filter((file) => file.endsWith(".js"));
+const gzipped = scripts.reduce((total, file) => total + gzipSync(readFileSync(`${assets}/${file}`)).length, 0);
+console.log(`app JavaScript: ${(gzipped / 1024).toFixed(1)} KB gzipped, of a ${String(BUDGET_BYTES / 1024)} KB budget`);
+if (gzipped > BUDGET_BYTES) {
+  console.error("the client app's JavaScript is over its budget");
+  process.exit(1);
+}

@@ -5,6 +5,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { WINDOW_LABELS, windowLabel, type VisitWindow } from "../config/booking.ts";
+import { currentAddress } from "../domain/profile.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 
@@ -12,8 +13,17 @@ export const MeSchema = z
   .object({
     state: z.enum(["lead", "nothing_booked"]),
     first_name: z.string(),
+    initials: z
+      .string()
+      .openapi({ description: "For the profile's button: the first letters of the first and last names." }),
     consultation: z
-      .object({ date: z.iso.date(), window_label: z.enum(WINDOW_LABELS) })
+      .object({
+        date: z.iso.date(),
+        window_label: z.enum(WINDOW_LABELS),
+        place: z.string().openapi({
+          description: "Where it is: the saved address (locality, city and pincode), else the booking's city.",
+        }),
+      })
       .strict()
       .nullable()
       .openapi({ description: "The booked consultation: its proposed date and window, to be confirmed on WhatsApp." }),
@@ -46,22 +56,36 @@ export function registerClientMe(app: App): void {
 
     const booking = await db
       .prepare(
-        `SELECT proposed_visit_date, first_choice_window FROM leads
+        `SELECT proposed_visit_date, first_choice_window, city FROM leads
          WHERE person_id = ?1 AND proposed_visit_date IS NOT NULL ORDER BY created_at DESC LIMIT 1`,
       )
       .bind(session.subjectId)
-      .first<{ proposed_visit_date: string; first_choice_window: VisitWindow }>();
+      .first<{ proposed_visit_date: string; first_choice_window: VisitWindow; city: string | null }>();
+    const address = booking === null ? null : await currentAddress(db, session.subjectId);
+    const place = address === null ? (booking?.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
 
     return c.json(
       {
         state: booking === null ? ("nothing_booked" as const) : ("lead" as const),
         first_name: person.name.trim().split(/\s+/)[0] ?? "",
+        initials: initialsOf(person.name),
         consultation:
           booking === null
             ? null
-            : { date: booking.proposed_visit_date, window_label: windowLabel(booking.first_choice_window) },
+            : { date: booking.proposed_visit_date, window_label: windowLabel(booking.first_choice_window), place },
       },
       200,
     );
   });
+}
+
+/** "Rohit Malhotra" → "RM"; one name gives one letter. */
+function initialsOf(name: string): string {
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word !== "");
+  const first = words[0] ?? "";
+  const last = words.length > 1 ? (words.at(-1) ?? "") : "";
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
 }

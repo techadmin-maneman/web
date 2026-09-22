@@ -71,6 +71,11 @@ export interface LoginSettings {
   readonly codeIpHourlyLimit: number;
   /** Codes sent a day across every number: the hard limit on what a flood of requests can send. */
   readonly codeDailyCeiling: number;
+  /**
+   * Locally only, every code is this one, so the browser tests can log in
+   * through the stub messaging provider. The guard refuses it anywhere else.
+   */
+  readonly fixedCode: string | null;
 }
 
 export interface Settings {
@@ -251,7 +256,13 @@ export function readSettings(
     codeMobileDailyLimit: read.count("OTP_MOBILE_DAILY_LIMIT"),
     codeIpHourlyLimit: read.count("OTP_IP_HOURLY_LIMIT"),
     codeDailyCeiling: read.count("OTP_DAILY_CEILING"),
+    fixedCode: read.optionalText("OTP_FIXED_CODE"),
   };
+  if (login.fixedCode !== null && environment !== "local") {
+    read.problems.push("OTP_FIXED_CODE is set outside local: every login code would be known");
+  } else if (login.fixedCode !== null && !/^\d{6}$/.test(login.fixedCode)) {
+    read.problems.push("OTP_FIXED_CODE must be six digits");
+  }
 
   const tryon: TryonSettings = {
     uploadIpHourlyLimit: read.count("TRYON_UPLOAD_IP_HOURLY_LIMIT"),

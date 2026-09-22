@@ -1,0 +1,22 @@
+.name {
+  margin: var(--sp-18) 0 0;
+  font-size: var(--fs-17);
+}
+
+.logout {
+  width: 100%;
+  height: var(--btn-lg);
+  margin-top: var(--sp-32);
+  border: var(--hairline) solid var(--paper-line);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-16);
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.logout:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}

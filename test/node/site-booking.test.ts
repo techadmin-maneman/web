@@ -51,15 +51,16 @@ describe("the calendar file", () => {
   });
 });
 
-describe("the site's API types", () => {
-  it("are generated from docs/openapi.json, unchanged (npm run openapi)", { timeout: 60_000 }, () => {
+describe.each([
+  ["the site's", "docs/openapi.json", "site/src/lib/api-schema.ts"],
+  ["the client app's", "docs/openapi-client.json", "apps/app/src/api-schema.ts"],
+])("%s API types", (_label, document, committed) => {
+  it(`are generated from ${document}, unchanged (npm run openapi)`, { timeout: 60_000 }, () => {
     const out = join(mkdtempSync(join(tmpdir(), "api-schema-")), "api-schema.ts");
-    const run = spawnSync(
-      process.execPath,
-      ["node_modules/openapi-typescript/bin/cli.js", "docs/openapi.json", "--output", out],
-      { encoding: "utf8" },
-    );
+    const run = spawnSync(process.execPath, ["node_modules/openapi-typescript/bin/cli.js", document, "--output", out], {
+      encoding: "utf8",
+    });
     expect(run.status).toBe(0);
-    expect(readFileSync("site/src/lib/api-schema.ts", "utf8")).toBe(readFileSync(out, "utf8"));
+    expect(readFileSync(committed, "utf8")).toBe(readFileSync(out, "utf8"));
   });
 });

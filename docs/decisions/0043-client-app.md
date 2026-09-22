@@ -57,3 +57,16 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
 - **This step builds the shell and board A1 only.** The login (A1–A3), Home, the tabs, Profile (G1–G2), and the manifest and service worker follow, each with its fidelity pairs.
 - **A new Worker's first deploy is a bootstrap** (runbook, step 5): `mm-app-staging` was bootstrapped on 22 September 2026. `mm-app-production` waits for the go-ahead.
 - **The static server can now keep the Host header** (`keepHost`). The public site's tests do not use it and are unchanged.
+
+## The login and Home (P2-F1.2)
+
+- **Neutral, as the owner ruled (ADR 0030).** Every number reaches A2. Its line reads "If +91 98xxx x4417 has a booking with us, a code is on its way on WhatsApp", where the design has "Sent on WhatsApp to …". A3 is reached by the client's choice, through a link on A2, and its title becomes a question: "No booking on this number?".
+- **The code's boxes are one field.** A single `inputmode="numeric" autocomplete="one-time-code"` input lies unseen over the six boxes, which only draw what is typed.
+  - The fifth wrong code voids it, in the design's words ("That code did not match. Two attempts left.").
+  - **A wrong code's borders are in the error colour for ink (`--error-on-ink`), not oxblood.** The design asks for oxblood, but `#8A3A2E` on the ink ground is about 2.1:1, under the 3:1 WCAG 2.2 asks of the boundary that shows the error.
+  - WebOTP is asked for whenever the code goes by SMS.
+  - The resend's countdown is shown, not spoken.
+- **Home, for a lead, is board B2.** The consultation's date, window and place come from `GET /api/me`, which gains `place` (the saved address, else the booking's city) and `initials` for the profile button. While self-serve booking is off, Reschedule and Add a note open WhatsApp to ops with a message ready, as the prompt's `409 ops_assisted` fallback would.
+- **The tabs.** Visits lists the consultation. Photos, Payments and Refer show the design's empty states. The tab glyphs, from the design's tab bar, are in `apps/app/src/icons.ts`, pinned by `test/node/app-content.test.ts`.
+- **Placeholder copy.** `apps/app/src/content.ts` marks the lines the design does not draw: A1's errors, A2's neutral line, the void and failed states, the WhatsApp messages, and Home with nothing booked. Each awaits the owner's wording.
+- **Tests log in for real.** Locally only, `OTP_FIXED_CODE` makes every code a known one, so the browser tests go from a booking made through the public API to Home. The guard refuses it in staging and production.
