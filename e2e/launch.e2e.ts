@@ -29,7 +29,7 @@ test("the home page loads under 60 KB of JavaScript, gzipped, and none of the tr
 const ROUTES = [
   { path: "/", title: "Mane Man — hair, fitted at your home across Delhi NCR" },
   { path: "/try", title: "See yourself with hair — Mane Man" },
-  { path: "/book", title: "Book a free measurement — Mane Man" },
+  { path: "/book", title: "Book a free consultation — Mane Man" },
   { path: "/privacy", title: "Privacy — Mane Man" },
   { path: "/terms", title: "Terms — Mane Man" },
 ];

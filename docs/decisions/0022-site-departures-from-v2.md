@@ -125,3 +125,7 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 34. **The Norwood scale's late stages start at the left edge.** v2 centres stages III to VII, and on a phone leaves VII alone in the middle of its row. **Ruling: align them.** The late cards are a grid from the left edge, at v2's card size. Each row of cards shares one title height (CSS subgrid), so the descriptions start level however the titles wrap.
 
 35. **How it works: the text starts at the top of the number.** v2 sits each title on the baseline of its large number, so the text starts below the number's top. **Ruling: top-align.** The title's capitals now line up with the number's, trimmed with `text-box`, which Chrome and Safari support. Other browsers align the two boxes, a few pixels apart.
+
+## Phase 2's rulings (22 September 2026)
+
+36. **"Consultation", and an evening of 4 to 8.** v2 names the first visit a "measurement" and offers evenings "after six". Phase 2 names it a consultation and offers evenings from 4 to 8 pm, and the owner ruled that Phase 2 wins. Every place the site names the visit, the booked page's headline and the calendar file follow (ADR 0040). The verb "measures" stays where the copy says what happens at the visit.

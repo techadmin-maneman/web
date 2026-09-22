@@ -20,12 +20,13 @@ export const LOSS_EXTENT_NAMES: Readonly<Record<LossExtent, string>> = {
   advanced: "Advanced",
 };
 
-export const WINDOW_LABELS = ["before noon", "after six"] as const;
+/** Morning is 9 am to noon; evening is 4 to 8 pm, Phase 2's evening window (docs/decisions/0040-phase-1-alignment.md). */
+export const WINDOW_LABELS = ["before noon", "after four"] as const;
 export type WindowLabel = (typeof WINDOW_LABELS)[number];
 
 /** The end of the booked page's headline: "Thursday, 24 September, before noon." */
 export function windowLabel(window: VisitWindow): WindowLabel {
-  return window.endsWith("_am") ? "before noon" : "after six";
+  return window.endsWith("_am") ? "before noon" : "after four";
 }
 
 export function isWeekendWindow(window: VisitWindow): boolean {

@@ -103,7 +103,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Book a free measurement, or join a city's waitlist */
+        /** Book a free consultation, or join a city's waitlist */
         post: {
             parameters: {
                 query?: never;
@@ -850,7 +850,7 @@ export interface components {
              * @description Served cities only.
              * @enum {string}
              */
-            window_label?: "before noon" | "after six";
+            window_label?: "before noon" | "after four";
         };
         LeadRequest: {
             name: string;

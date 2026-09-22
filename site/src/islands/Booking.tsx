@@ -13,7 +13,7 @@ import type { LossExtent, VisitWindow } from "../../../src/config/booking.ts";
 import { booking, stageOptions, visitWindows } from "../content/site.ts";
 import { track } from "../lib/analytics.ts";
 import { fetchCities, submitLead, type City, type ErrorCode, type LeadResponse } from "../lib/api.ts";
-import { measurementCalendar } from "../lib/calendar.ts";
+import { consultationCalendar } from "../lib/calendar.ts";
 import { bookedHeadline } from "../lib/dates.ts";
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobile, isCompleteMobile } from "../lib/phone.ts";
@@ -38,7 +38,7 @@ const SAMPLE_BOOKED: LeadResponse = {
   lead_id: "00000000-0000-4000-8000-000000000000",
   served: true,
   proposed_visit_date: "2026-09-24",
-  window_label: "after six",
+  window_label: "after four",
 };
 
 /** What the visitor is told when the API refuses; field errors show by their fields instead. */
@@ -371,9 +371,9 @@ function Booked(props: { result: LeadResponse; mobile: string; heading: { curren
             class="btn btn--lg btn--ink"
             onClick={() => {
               downloadFile(
-                "mane-man-measurement.ics",
+                "mane-man-consultation.ics",
                 "text/calendar",
-                measurementCalendar(date, windowLabel, props.result.lead_id, new Date()),
+                consultationCalendar(date, windowLabel, props.result.lead_id, new Date()),
               );
             }}
           >

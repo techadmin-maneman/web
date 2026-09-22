@@ -120,7 +120,7 @@ test.describe("home sections", () => {
     await page.goto("/");
     const hero = page.locator('[data-section="hero"]');
     await expect(hero.getByRole("link", { name: "See yourself with hair" })).toHaveAttribute("href", "/try");
-    await expect(hero.getByRole("link", { name: "Book a free measurement" })).toHaveAttribute("href", "/book");
+    await expect(hero.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
   });
 
   test("the hero footage is muted, looped, inline and fetches metadata only", async ({ page }) => {
@@ -138,13 +138,13 @@ test.describe("home sections", () => {
     expect(await page.locator(".label", { hasText: /^Placeholder$/ }).count()).toBeGreaterThan(10);
   });
 
-  test("Norwood: two early stages, five we fit, then Book a free measurement", async ({ page }) => {
+  test("Norwood: two early stages, five we fit, then Book a free consultation", async ({ page }) => {
     await page.goto("/");
     const norwood = page.locator('[data-section="norwood"]');
     await expect(norwood.locator(".early > li")).toHaveCount(2);
     await expect(norwood.locator(".flow > li")).toHaveCount(5);
     await expect(norwood.getByText("A system here would cover hair you still have.")).toBeVisible();
-    await expect(norwood.getByRole("link", { name: "Book a free measurement" })).toHaveAttribute("href", "/book");
+    await expect(norwood.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
   });
 
   test("comparison: seven rows, ticks and crosses read as Yes and No", async ({ page }) => {
@@ -191,7 +191,7 @@ test.describe("home sections", () => {
     const table = page.getByRole("table", { name: "Published prices" });
     await expect(table.getByRole("row")).toHaveCount(4);
     const prices = page.locator('[data-section="prices"]');
-    await expect(prices.getByRole("link", { name: "Book a free measurement" })).toHaveAttribute("href", "/book");
+    await expect(prices.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
     await expect(prices.getByRole("link", { name: "Or see yourself with hair first" })).toHaveAttribute("href", "/try");
   });
 
@@ -205,11 +205,11 @@ test.describe("home sections", () => {
     await expect(items.nth(0)).not.toHaveAttribute("open", "");
   });
 
-  test("the closing band books a free measurement", async ({ page }) => {
+  test("the closing band books a free consultation", async ({ page }) => {
     await page.goto("/");
     const closing = page.locator('[data-section="closing"]');
-    await expect(closing).toContainText("The measurement takes forty minutes and costs nothing.");
-    await expect(closing.getByRole("link", { name: "Book a free measurement" })).toHaveAttribute("href", "/book");
+    await expect(closing).toContainText("The consultation takes forty minutes and costs nothing.");
+    await expect(closing.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
   });
 });
 

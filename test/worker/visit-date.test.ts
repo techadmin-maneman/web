@@ -49,7 +49,7 @@ describe("proposeVisitDate", () => {
 
   it("labels mornings and evenings as the design does", () => {
     expect(windowLabel("weekday_am")).toBe("before noon");
-    expect(windowLabel("weekend_pm")).toBe("after six");
+    expect(windowLabel("weekend_pm")).toBe("after four");
   });
 });
 

@@ -155,7 +155,7 @@
             "type": "string",
             "enum": [
               "before noon",
-              "after six"
+              "after four"
             ],
             "description": "Served cities only."
           }
@@ -688,7 +688,7 @@
     },
     "/api/lead": {
       "post": {
-        "summary": "Book a free measurement, or join a city's waitlist",
+        "summary": "Book a free consultation, or join a city's waitlist",
         "parameters": [
           {
             "schema": {
