@@ -71,6 +71,18 @@
         {
           "pattern": "staging.maneman.in/api/*",
           "zone_name": "maneman.in"
+        },
+        {
+          "pattern": "app-staging.maneman.in/api/*",
+          "zone_name": "maneman.in"
+        },
+        {
+          "pattern": "ops-staging.maneman.in/api/*",
+          "zone_name": "maneman.in"
+        },
+        {
+          "pattern": "tech-staging.maneman.in/api/*",
+          "zone_name": "maneman.in"
         }
       ],
       "d1_databases": [

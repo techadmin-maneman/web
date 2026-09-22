@@ -115,20 +115,29 @@ describe("mm-api wrangler config", () => {
   });
 
   it("fails when a route points at the other environment's host", () => {
-    expect(api(["env.staging.routes.0.pattern", "maneman.in/api/*"])).toContain(
-      'env.staging: routes must be exactly [{ pattern: "staging.maneman.in/api/*", zone_name: "maneman.in" }]',
+    expect(api(["env.production.routes.0.pattern", "staging.maneman.in/api/*"])).toContain(
+      'env.production: routes must be exactly [{ pattern: "maneman.in/api/*", zone_name: "maneman.in" }]',
     );
+  });
+
+  it("fails when a switched-on surface has no route", () => {
+    expect(api(["env.staging.routes.2", DELETE])).toContain("env.staging: routes must be exactly");
   });
 
   it("fails when a route serves a surface that is not switched on", () => {
-    const route = { pattern: "app-staging.maneman.in/api/*", zone_name: "maneman.in" };
-    expect(api(["env.staging.routes.1", route])).toContain(
-      'env.staging: routes must be exactly [{ pattern: "staging.maneman.in/api/*", zone_name: "maneman.in" }]',
+    const route = { pattern: "app.maneman.in/api/*", zone_name: "maneman.in" };
+    expect(api(["env.production.routes.1", route])).toContain(
+      'env.production: routes must be exactly [{ pattern: "maneman.in/api/*", zone_name: "maneman.in" }]',
     );
   });
 
-  it("wants one /api/* route for each switched-on surface, which today is the public site alone", () => {
-    expect(apiRoutePatterns("staging")).toEqual(["staging.maneman.in/api/*"]);
+  it("wants one /api/* route for each switched-on surface: all four on staging, the public site alone in production", () => {
+    expect(apiRoutePatterns("staging")).toEqual([
+      "staging.maneman.in/api/*",
+      "app-staging.maneman.in/api/*",
+      "ops-staging.maneman.in/api/*",
+      "tech-staging.maneman.in/api/*",
+    ]);
     expect(apiRoutePatterns("production")).toEqual(["maneman.in/api/*"]);
   });
 

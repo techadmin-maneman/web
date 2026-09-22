@@ -33,6 +33,10 @@ The public site (`mm-site`) is built, edited and published as `docs/frontend.md`
 | 8. Zoho org, fields, secrets                | done: Developer Edition               | done: staging's org, for now (ADR 0020)         |
 | 9. Triggers (cron and all three consumers)  | done                                  | done                                            |
 | 10. Access bypass for result links          | done                                  | not applicable                                  |
+| 11. Phase 2 hosts: DNS, Access              | done                                  | done (all three behind Access until go-live)    |
+| 11. Phase 2 surfaces switched on            | done (22 September 2026)              | not yet: waits for the production go-ahead      |
+| 12. Evolution receipts: token, bypass       | done                                  | not yet                                         |
+| 12. Evolution receipts: the webhook         | open: the shared instance's webhook   | not yet                                         |
 
 ### 1. Resources
 
@@ -68,6 +72,20 @@ In Cloudflare Zero Trust:
 2. Access → Service credentials → Service tokens → Create `mm-ci-staging`. Copy the client ID and secret; the secret is shown once.
 3. On the same application, add a second policy: action **Service Auth**, include the service token `mm-ci-staging`.
 4. Store the token in GitHub as the `staging` environment secrets `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` (step 6).
+5. Phase 2's staging hosts (`app-staging`, `ops-staging`, `tech-staging`) each get the same two policies: the founders, and Service Auth for `mm-ci-staging` (step 11).
+
+In production only the ops console (`ops.maneman.in`) stays behind Access. Its CI token is its own, so a staging credential never opens production:
+
+1. Access → Service credentials → Service tokens → Create `mm-ci-production`. Copy the client ID and secret; the secret is shown once.
+2. On the `ops.maneman.in` application, add a **Service Auth** policy that includes `mm-ci-production`, and take `mm-ci-staging` off it.
+3. Store it as the `production` environment's secrets:
+
+   ```sh
+   gh secret set CF_ACCESS_CLIENT_ID --env production      # prompts for the client ID
+   gh secret set CF_ACCESS_CLIENT_SECRET --env production  # prompts for the secret
+   ```
+
+`app.maneman.in` and `tech.maneman.in` are behind Access only until go-live. Clients and technicians sign in with their own codes, so at go-live their Access applications are deleted.
 
 ### 4. Database
 

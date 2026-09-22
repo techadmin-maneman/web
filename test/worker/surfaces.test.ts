@@ -34,11 +34,18 @@ describe("surfaceOf", () => {
     expect(surfaceOf("shop.localhost", "local")).toBe("public");
   });
 
-  it("on staging, serves the public host alone until the other surfaces are switched on", () => {
+  it("on staging, gives each surface its own host", () => {
     expect(surfaceOf("staging.maneman.in", "staging")).toBe("public");
-    expect(surfaceOf("app-staging.maneman.in", "staging")).toBeNull();
-    expect(surfaceOf("ops-staging.maneman.in", "staging")).toBeNull();
-    expect(surfaceOf("tech-staging.maneman.in", "staging")).toBeNull();
+    expect(surfaceOf("app-staging.maneman.in", "staging")).toBe("client");
+    expect(surfaceOf("ops-staging.maneman.in", "staging")).toBe("ops");
+    expect(surfaceOf("tech-staging.maneman.in", "staging")).toBe("tech");
+  });
+
+  it("in production, serves the public host alone until the other surfaces are switched on", () => {
+    expect(surfaceOf("maneman.in", "production")).toBe("public");
+    expect(surfaceOf("app.maneman.in", "production")).toBeNull();
+    expect(surfaceOf("ops.maneman.in", "production")).toBeNull();
+    expect(surfaceOf("tech.maneman.in", "production")).toBeNull();
   });
 
   it("never answers for the other environment's host, or a host that is not ours", () => {
@@ -99,7 +106,7 @@ describe("byHost, on staging", () => {
   });
 
   it.each([
-    "https://app-staging.maneman.in/api/health",
+    "https://app.maneman.in/api/health",
     "https://maneman.in/api/health",
     "https://staging.maneman.in.example.com/api/health",
   ])("answers %s with a bare 404, never reaching an app", async (url) => {
