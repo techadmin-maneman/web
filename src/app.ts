@@ -19,6 +19,7 @@ import { registerClientProfile } from "./routes/client-profile.ts";
 import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerFsmHook } from "./routes/fsm-hook.ts";
+import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
@@ -69,6 +70,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
     registerFsmHook,
+    registerRazorpayHook,
   ],
   client: [registerHealth, registerClientAuth, registerClientMe, registerClientProfile],
   ops: [registerHealth, registerOpsProfile],

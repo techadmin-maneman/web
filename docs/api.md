@@ -532,6 +532,36 @@ FSM's webhook: an appointment was created, edited or deleted
 }
 ```
 
+### POST /api/hooks/razorpay
+
+Razorpay's webhook: payments and refunds
+
+**200**: Taken, or ignored. Either way Razorpay need not send it again
+
+**401**: unauthorized: the signature does not match
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the webhook is not switched on (no RAZORPAY_WEBHOOK_SECRET)
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_ready: a refund for a payment not yet recorded; Razorpay retries it
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -567,7 +597,8 @@ FSM's webhook: an appointment was created, edited or deleted
             "access_required",
             "code_expired",
             "too_early",
-            "number_in_use"
+            "number_in_use",
+            "not_ready"
           ]
         },
         "request_id": {

@@ -85,6 +85,9 @@
     "ZOHO_FSM_ACCOUNTS_HOST": "",
     "ZOHO_FSM_API_HOST": "",
     "ZOHO_BOOKS_ORG_ID": "",
+    // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
+    "PAYMENTS_PROVIDER": "stub",
+    "RAZORPAY_KEY_ID": "",
     // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
     "OTP_MOBILE_DAILY_LIMIT": "5",
     "OTP_IP_HOURLY_LIMIT": "10",
@@ -193,6 +196,9 @@
         "ZOHO_FSM_ACCOUNTS_HOST": "accounts.zoho.in",
         "ZOHO_FSM_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
+        // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
+        "PAYMENTS_PROVIDER": "razorpay",
+        "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
         "OTP_IP_HOURLY_LIMIT": "10",
@@ -294,6 +300,9 @@
         "ZOHO_FSM_ACCOUNTS_HOST": "",
         "ZOHO_FSM_API_HOST": "",
         "ZOHO_BOOKS_ORG_ID": "",
+        // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
+        "PAYMENTS_PROVIDER": "none",
+        "RAZORPAY_KEY_ID": "",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
         "OTP_IP_HOURLY_LIMIT": "10",

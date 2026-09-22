@@ -32,6 +32,8 @@ export const ERROR_CODES = [
   "too_early",
   // A number change ops cannot confirm: another person holds the new number (docs/decisions/0042-client-profile.md).
   "number_in_use",
+  // A Razorpay refund for a payment not yet recorded: Razorpay retries it (docs/decisions/0044-payments-mirror.md).
+  "not_ready",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

@@ -72,6 +72,15 @@ export interface ZohoFsmSettings {
   readonly webhookToken: string | null;
 }
 
+/** Razorpay (docs/decisions/0044-payments-mirror.md). */
+export interface RazorpaySettings {
+  /** Public: Checkout takes it in the browser. rzp_test_ on staging, rzp_live_ in production. */
+  readonly keyId: string;
+  readonly keySecret: string;
+  /** Signs the webhook's events. Without it the webhook answers 404. */
+  readonly webhookSecret: string | null;
+}
+
 export interface AccessSettings {
   /** The Cloudflare Access team domain, e.g. summer-math-0275.cloudflareaccess.com. */
   readonly teamDomain: string;
@@ -114,6 +123,8 @@ export interface Settings {
   readonly zoho: ZohoSettings | null;
   /** Present when FSM_PROVIDER or BOOKS_PROVIDER is "zoho". */
   readonly zohoFsm: ZohoFsmSettings | null;
+  /** Present when PAYMENTS_PROVIDER is "razorpay". */
+  readonly razorpay: RazorpaySettings | null;
   /** Present when ACCESS_PROVIDER is "cloudflare". */
   readonly access: AccessSettings | null;
   readonly login: LoginSettings;
@@ -277,6 +288,22 @@ export function readSettings(
     }
   }
 
+  let razorpay: RazorpaySettings | null = null;
+  if (providers.PAYMENTS_PROVIDER === "razorpay") {
+    razorpay = {
+      keyId: read.text("RAZORPAY_KEY_ID"),
+      keySecret: read.text("RAZORPAY_KEY_SECRET"),
+      webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET"),
+    };
+    // Test keys move no money; live keys must never be anywhere else.
+    if (environment === "production" && !razorpay.keyId.startsWith("rzp_live_") && razorpay.keyId !== "") {
+      read.problems.push("RAZORPAY_KEY_ID is not a live key in production");
+    }
+    if (environment !== "production" && razorpay.keyId.startsWith("rzp_live_")) {
+      read.problems.push("RAZORPAY_KEY_ID is a live key outside production: it would take real money");
+    }
+  }
+
   let access: AccessSettings | null = null;
   if (providers.ACCESS_PROVIDER === "cloudflare") {
     const teamDomain = read.text("ACCESS_TEAM_DOMAIN");
@@ -368,6 +395,7 @@ export function readSettings(
     erasureSecret: read.key("ERASURE_SECRET"),
     zoho,
     zohoFsm,
+    razorpay,
     access,
     login,
     tryon,

@@ -367,6 +367,29 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
      - action: the webhook.
    - **On staging,** the hooks path already has the Access bypass (step 12, point 3).
 
+### 11c. Razorpay
+
+Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-payments-mirror.md). Staging uses test keys, which take no real money.
+
+1. **The keys.** Follow `docs/phase2-inputs.md`, section 4. The key ID goes in `wrangler.jsonc` as `RAZORPAY_KEY_ID`, since it is public, with `PAYMENTS_PROVIDER` set to `razorpay`. The key secret is a secret:
+
+   ```sh
+   W secret put RAZORPAY_KEY_SECRET --env <env>
+   ```
+
+2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay:
+
+   ```sh
+   openssl rand -hex 24
+   W secret put RAZORPAY_WEBHOOK_SECRET --env <env>
+   ```
+
+3. **The webhook,** in Razorpay's dashboard, in the mode that matches the keys: Account & Settings → Webhooks → Add New Webhook.
+   - URL: `https://<public host>/api/hooks/razorpay`.
+   - Secret: the one from point 2.
+   - Events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`.
+   - On staging, the hooks path already has its Access bypass (step 12, point 3).
+
 ### 12. WhatsApp delivery receipts (Evolution)
 
 Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md). The no-show evidence depends on these receipts. Until this is set up, the route answers 404 and no receipts are recorded.

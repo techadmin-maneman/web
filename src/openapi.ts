@@ -17,6 +17,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     SMS_PROVIDER: "stub",
     FSM_PROVIDER: "stub",
     BOOKS_PROVIDER: "stub",
+    PAYMENTS_PROVIDER: "stub",
   },
   settings: {
     visitLeadDays: 2,
@@ -30,6 +31,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     erasureSecret: "",
     zoho: null,
     zohoFsm: null,
+    razorpay: null,
     access: null,
     login: { codePepper: "", codeMobileDailyLimit: 0, codeIpHourlyLimit: 0, codeDailyCeiling: 0, fixedCode: null },
     tryon: {
