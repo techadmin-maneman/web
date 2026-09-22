@@ -32,6 +32,7 @@ const SETTINGS = {
   MESSAGING_ENABLED: "false",
   WA_RESULT_TEMPLATE: "tryon_result_v1",
   ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
+  ACCESS_OPS_AUD: "ops-audience-tag",
 };
 const IMAGE = { AILAB_API_KEY: "ailab-key" };
 const EVOLUTION = {
@@ -258,8 +259,9 @@ describe("validateStaticConfig: try-on and messaging", () => {
 });
 
 describe("validateStaticConfig: Cloudflare Access", () => {
-  it("reads the team domain, and needs no ops audience while the ops surface is switched off", () => {
-    const config = validateStaticConfig(production);
+  it("reads the team domain, and needs no ops audience where the ops surface is switched off", () => {
+    const { ACCESS_OPS_AUD: _omitted, ...withoutAudience } = production;
+    const config = validateStaticConfig(withoutAudience);
     expect(config.settings.access).toEqual({ teamDomain: "summer-math-0275.cloudflareaccess.com", opsAudience: null });
   });
 
@@ -278,9 +280,12 @@ describe("validateStaticConfig: Cloudflare Access", () => {
     ]);
   });
 
-  it("needs the ops audience wherever the ops surface is switched on", () => {
-    const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS, ACCESS_PROVIDER: "cloudflare" };
+  it("needs the ops audience wherever the ops surface is switched on, which includes staging", () => {
+    const { ACCESS_OPS_AUD: _omitted, ...withoutAudience } = SETTINGS;
+    const local = { ENVIRONMENT: "local", ...STUBS, ...withoutAudience, ACCESS_PROVIDER: "cloudflare" };
     expect(problemsOf(local)).toEqual(["ACCESS_OPS_AUD is not set"]);
+    const { ACCESS_OPS_AUD: _alsoOmitted, ...productionWithoutAudience } = production;
+    expect(problemsOf({ ...productionWithoutAudience, ENVIRONMENT: "staging" })).toContain("ACCESS_OPS_AUD is not set");
     expect(validateStaticConfig({ ...local, ACCESS_OPS_AUD: "aud-tag" }).settings.access?.opsAudience).toBe("aud-tag");
   });
 });

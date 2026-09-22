@@ -61,7 +61,8 @@ export const SURFACE_HOSTS: Readonly<Record<RemoteEnvironmentName, Readonly<Reco
  */
 export const ENABLED_SURFACES: Readonly<Record<EnvironmentName, readonly Surface[]>> = {
   local: SURFACES,
-  staging: ["public"],
+  // Switched on 22 September 2026, once each host had its DNS record and Access application.
+  staging: SURFACES,
   production: ["public"],
 };
 

@@ -65,6 +65,8 @@
     "MESSAGING_PROVIDER": "stub",
     "ACCESS_PROVIDER": "stub",
     "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
+    // The stub needs no audience.
+    "ACCESS_OPS_AUD": "",
     "VISIT_LEAD_DAYS": "2",
     "LEAD_MOBILE_DAILY_LIMIT": "5",
     "LEAD_IP_DAILY_LIMIT": "20",
@@ -91,7 +93,13 @@
       "observability": { "enabled": true },
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
       "triggers": { "crons": ["*/5 * * * *"] },
-      "routes": [{ "pattern": "staging.maneman.in/api/*", "zone_name": "maneman.in" }],
+      // One per switched-on surface (docs/decisions/0026-hosts-and-surfaces.md).
+      "routes": [
+        { "pattern": "staging.maneman.in/api/*", "zone_name": "maneman.in" },
+        { "pattern": "app-staging.maneman.in/api/*", "zone_name": "maneman.in" },
+        { "pattern": "ops-staging.maneman.in/api/*", "zone_name": "maneman.in" },
+        { "pattern": "tech-staging.maneman.in/api/*", "zone_name": "maneman.in" }
+      ],
       "d1_databases": [
         {
           "binding": "DB",
@@ -142,6 +150,8 @@
         "MESSAGING_PROVIDER": "evolution",
         "ACCESS_PROVIDER": "cloudflare",
         "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
+        // The ops-staging Access application's audience tag.
+        "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "VISIT_LEAD_DAYS": "2",
         "LEAD_MOBILE_DAILY_LIMIT": "5",
         "LEAD_IP_DAILY_LIMIT": "20",
@@ -219,6 +229,8 @@
         "MESSAGING_PROVIDER": "evolution",
         "ACCESS_PROVIDER": "cloudflare",
         "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
+        // The ops Access application's audience tag; unused until ops is switched on in production.
+        "ACCESS_OPS_AUD": "aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773",
         "VISIT_LEAD_DAYS": "2",
         "LEAD_MOBILE_DAILY_LIMIT": "5",
         "LEAD_IP_DAILY_LIMIT": "20",
