@@ -239,6 +239,295 @@ The Home card: who the client is and what is booked
 }
 ```
 
+### GET /api/profile
+
+The profile: name, number, address, consents, and any number change or deletion under way
+
+**200**: The profile
+
+```json
+{
+  "$ref": "#/components/schemas/Profile"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PATCH /api/profile/address
+
+Replace the address visits go to, with its access notes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/Address"
+}
+```
+
+**200**: Saved
+
+```json
+{
+  "$ref": "#/components/schemas/Address"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PATCH /api/consents/{purpose}
+
+Switch one consent on or off. Each switch is kept, with its date
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ConsentSwitch"
+}
+```
+
+**200**: Switched
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "photos_own_record",
+        "photos_referral_cards",
+        "photos_marketing",
+        "whatsapp_visits",
+        "whatsapp_launches"
+      ]
+    },
+    "granted": {
+      "type": "boolean"
+    },
+    "since": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "purpose",
+    "granted",
+    "since"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/number-change
+
+Start a number change: a code goes to both numbers. Starting again withdraws the last one
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NumberChangeStart"
+}
+```
+
+**202**: Codes on their way to both numbers
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expires_in_s": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "request_id",
+    "expires_in_s"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: not an Indian mobile number, or the number already in use here
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: three changes a day
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/number-change/verify
+
+One number's code. With both numbers proven, the change waits for ops to confirm
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NumberChangeVerify"
+}
+```
+
+**200**: Checked. attempts_left is null when the code was right
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "verifying",
+        "awaiting_ops"
+      ]
+    },
+    "new_mobile": {
+      "type": "string",
+      "description": "Masked, as the design shows it: +91 98xxx x4417."
+    },
+    "old_verified": {
+      "type": "boolean"
+    },
+    "new_verified": {
+      "type": "boolean"
+    },
+    "attempts_left": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "state",
+    "new_mobile",
+    "old_verified",
+    "new_verified",
+    "attempts_left"
+  ],
+  "additionalProperties": false
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**410**: code_expired: the code or the change is closed; start again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/deletion-request
+
+Ask for the account to be deleted. Ops process it; asking twice makes one request
+
+**202**: Requested
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "requested"
+      ]
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "state",
+    "requested_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -273,7 +562,8 @@ The Home card: who the client is and what is booked
             "forbidden_origin",
             "access_required",
             "code_expired",
-            "too_early"
+            "too_early",
+            "number_in_use"
           ]
         },
         "request_id": {
@@ -553,6 +843,255 @@ The Home card: who the client is and what is booked
     "state",
     "first_name",
     "consultation"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Profile
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "mobile": {
+      "type": "string",
+      "description": "Masked: +91 98xxx x4417."
+    },
+    "address": {
+      "$ref": "#/components/schemas/Address"
+    },
+    "consents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "photos_own_record",
+              "photos_referral_cards",
+              "photos_marketing",
+              "whatsapp_visits",
+              "whatsapp_launches"
+            ]
+          },
+          "granted": {
+            "type": "boolean"
+          },
+          "since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "purpose",
+          "granted",
+          "since"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The five purposes, in order. Off until the client first switches one on."
+    },
+    "number_change": {
+      "$ref": "#/components/schemas/NumberChange"
+    },
+    "deletion": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "requested"
+          ]
+        },
+        "requested_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "state",
+        "requested_at"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "name",
+    "mobile",
+    "address",
+    "consents",
+    "number_change",
+    "deletion"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Address
+
+```json
+{
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "line1": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "line2": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "locality": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    },
+    "access_notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "For the technician, from the day before the visit: gate code, parking."
+    }
+  },
+  "required": [
+    "line1",
+    "line2",
+    "locality",
+    "city",
+    "pincode",
+    "access_notes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NumberChange
+
+```json
+{
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "verifying",
+        "awaiting_ops"
+      ]
+    },
+    "new_mobile": {
+      "type": "string",
+      "description": "Masked, as the design shows it: +91 98xxx x4417."
+    },
+    "old_verified": {
+      "type": "boolean"
+    },
+    "new_verified": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "state",
+    "new_mobile",
+    "old_verified",
+    "new_verified"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ConsentSwitch
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "granted": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "granted"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NumberChangeStart
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "new_mobile": {
+      "type": "string",
+      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+    }
+  },
+  "required": [
+    "new_mobile"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NumberChangeVerify
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "number": {
+      "type": "string",
+      "enum": [
+        "old",
+        "new"
+      ]
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    }
+  },
+  "required": [
+    "request_id",
+    "number",
+    "code"
   ],
   "additionalProperties": false
 }

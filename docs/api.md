@@ -544,7 +544,8 @@ Evolution's delivery receipts (messages.update) for the WhatsApp messages we sen
             "forbidden_origin",
             "access_required",
             "code_expired",
-            "too_early"
+            "too_early",
+            "number_in_use"
           ]
         },
         "request_id": {

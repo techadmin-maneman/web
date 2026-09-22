@@ -27,6 +27,9 @@ export async function findEligiblePerson(db: D1Database, mobileE164: string): Pr
   return row === null ? null : { id: row.id, mobileE164 };
 }
 
+/** What a code is for: logging in, or proving each of the two numbers in a number change. */
+export type ChallengePurpose = "login" | "number_change_old" | "number_change_new";
+
 export interface Challenge {
   readonly id: string;
   readonly personId: string | null;
@@ -65,36 +68,57 @@ function challengeOf(row: ChallengeRow): Challenge {
 const codeHashOf = (pepper: string, challengeId: string, code: string) => saltedHash(pepper, `${challengeId}:${code}`);
 
 /**
- * A new login challenge. With a person, it holds the hash of `code`; without
- * one (a number with no booking) it holds nothing, so no code ever matches.
+ * A new challenge. With a person, it holds the hash of `code`; without one (a
+ * login for a number with no booking) it holds nothing, so no code ever matches.
  */
 export async function createChallenge(
   db: D1Database,
-  options: { personId: string | null; code: string; pepper: string; now: Date },
+  options: {
+    personId: string | null;
+    code: string;
+    pepper: string;
+    now: Date;
+    purpose?: ChallengePurpose;
+    numberChangeId?: string;
+  },
 ): Promise<Challenge> {
   const id = crypto.randomUUID();
   const at = options.now.toISOString();
   const codeHash = options.personId === null ? null : await codeHashOf(options.pepper, id, options.code);
   const row = await db
     .prepare(
-      `INSERT INTO otp_challenges (id, created_at, person_id, purpose, channel, code_hash, last_sent_at, expires_at)
-       VALUES (?1, ?2, ?3, 'login', 'whatsapp', ?4, ?2, ?5)
+      `INSERT INTO otp_challenges
+         (id, created_at, person_id, purpose, channel, code_hash, last_sent_at, expires_at, number_change_id)
+       VALUES (?1, ?2, ?3, ?4, 'whatsapp', ?5, ?2, ?6, ?7)
        RETURNING id, person_id, channel, created_at, last_sent_at, sends, attempts, expires_at`,
     )
-    .bind(id, at, options.personId, codeHash, new Date(options.now.getTime() + CODE_TTL_MS).toISOString())
+    .bind(
+      id,
+      at,
+      options.personId,
+      options.purpose ?? "login",
+      codeHash,
+      new Date(options.now.getTime() + CODE_TTL_MS).toISOString(),
+      options.numberChangeId ?? null,
+    )
     .first<ChallengeRow>();
   if (row === null) throw new Error("challenge not written");
   return challengeOf(row);
 }
 
-/** A login challenge that can still be answered: not expired, verified or void. */
-export async function openChallenge(db: D1Database, id: string, now: Date): Promise<Challenge | null> {
+/** A challenge that can still be answered: not expired, verified or void. */
+export async function openChallenge(
+  db: D1Database,
+  id: string,
+  now: Date,
+  purpose: ChallengePurpose = "login",
+): Promise<Challenge | null> {
   const row = await db
     .prepare(
       `SELECT id, person_id, channel, created_at, last_sent_at, sends, attempts, expires_at FROM otp_challenges
-       WHERE id = ?1 AND purpose = 'login' AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2`,
+       WHERE id = ?1 AND purpose = ?3 AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2`,
     )
-    .bind(id, now.toISOString())
+    .bind(id, now.toISOString(), purpose)
     .first<ChallengeRow>();
   return row === null ? null : challengeOf(row);
 }
@@ -125,16 +149,21 @@ export type Verification =
  */
 export async function verifyCode(
   db: D1Database,
-  options: { challengeId: string; code: string; pepper: string; now: Date },
+  options: { challengeId: string; code: string; pepper: string; now: Date; purpose?: ChallengePurpose },
 ): Promise<Verification> {
   const counted = await db
     .prepare(
       `UPDATE otp_challenges SET attempts = attempts + 1
-       WHERE id = ?1 AND purpose = 'login' AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2
+       WHERE id = ?1 AND purpose = ?4 AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2
          AND attempts < ?3
        RETURNING person_id, code_hash, attempts`,
     )
-    .bind(options.challengeId, options.now.toISOString(), ONE_TIME_CODE.wrongAttemptsBeforeVoid)
+    .bind(
+      options.challengeId,
+      options.now.toISOString(),
+      ONE_TIME_CODE.wrongAttemptsBeforeVoid,
+      options.purpose ?? "login",
+    )
     .first<{ person_id: string | null; code_hash: string | null; attempts: number }>();
   if (counted === null) return { outcome: "closed" };
 

@@ -10,7 +10,15 @@ import type { AccessIdentity } from "../http/access.ts";
 import { errorBody } from "../http/errors.ts";
 
 /** Every action the log records. Phase 2 milestones add theirs here. */
-export const AUDIT_ACTIONS = ["ops.call"] as const;
+export const AUDIT_ACTIONS = [
+  "ops.call",
+  // The client's profile (docs/decisions/0042-client-profile.md).
+  "consent.switch",
+  "number_change.request",
+  "number_change.decide",
+  "deletion.request",
+  "deletion.decide",
+] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export type AuditActor = {
@@ -28,8 +36,9 @@ export interface AuditEntry {
   readonly detail?: Readonly<Record<string, string | number | boolean>>;
 }
 
-export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date): Promise<void> {
-  await db
+/** The entry as a statement, to run in one batch with the action it records: both happen, or neither. */
+export function auditStatement(db: D1Database, entry: AuditEntry, now: Date): D1PreparedStatement {
+  return db
     .prepare(
       `INSERT INTO audit_log (at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id, detail)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
@@ -44,8 +53,11 @@ export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date):
       entry.subject?.id ?? null,
       entry.requestId,
       entry.detail === undefined ? null : JSON.stringify(entry.detail),
-    )
-    .run();
+    );
+}
+
+export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date): Promise<void> {
+  await auditStatement(db, entry, now).run();
 }
 
 export function actorOf(identity: AccessIdentity): AuditActor {

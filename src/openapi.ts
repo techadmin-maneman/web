@@ -51,6 +51,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
 export const DOCUMENTED_SURFACES = {
   public: { json: "docs/openapi.json", markdown: "docs/api.md" },
   client: { json: "docs/openapi-client.json", markdown: "docs/api-client.md" },
+  ops: { json: "docs/openapi-ops.json", markdown: "docs/api-ops.md" },
 } as const satisfies Partial<Record<Surface, { json: string; markdown: string }>>;
 export type DocumentedSurface = keyof typeof DOCUMENTED_SURFACES;
 
@@ -64,6 +65,13 @@ const INFO: Readonly<Record<DocumentedSurface, { title: string; description: str
     description:
       "mm-api on the client app's host (docs/decisions/0026-hosts-and-surfaces.md), served at https://{host}/api/*. " +
       "Every route but /api/health and /api/auth/* needs the mm_app session cookie, and every write needs the page's own Origin. " +
+      "Every response carries an X-Request-Id header.",
+  },
+  ops: {
+    title: "Mane Man API: the ops console",
+    description:
+      "mm-api on the ops console's host (docs/decisions/0026-hosts-and-surfaces.md), served at https://{host}/api/*, behind Cloudflare Access. " +
+      "Every call needs a valid Access token and is recorded in the audit log under its identity (docs/decisions/0031-access-and-audit.md). " +
       "Every response carries an X-Request-Id header.",
   },
 };
