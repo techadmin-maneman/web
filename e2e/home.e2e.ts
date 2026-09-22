@@ -232,12 +232,22 @@ test.describe("other pages", () => {
     await expect(page.locator("header")).toBeVisible();
   });
 
-  test("privacy has its two paragraphs; terms still shows a visible placeholder", async ({ page }) => {
+  test("privacy and terms carry their text, with no placeholder tag", async ({ page }) => {
     await page.goto("/privacy");
     await expect(page.locator("article p")).toHaveCount(2);
     await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
     await page.goto("/terms");
-    await expect(page.locator(".label", { hasText: "Placeholder" })).toBeVisible();
+    await expect(page.locator("article p")).toHaveCount(5);
+    await expect(page.getByText("the courts at New Delhi have jurisdiction", { exact: false })).toBeVisible();
+    await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
+  });
+
+  test("the footer's phone number is the business line", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("link", { name: "Phone · +91 90079 73247" })).toHaveAttribute(
+      "href",
+      "tel:+919007973247",
+    );
   });
 
   test("every page says it is mm-site, and is not indexed outside production", async ({ page }) => {

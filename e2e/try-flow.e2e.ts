@@ -24,6 +24,8 @@ interface Answer {
   readonly status: number;
   readonly json?: unknown;
   readonly image?: Buffer;
+  /** Holds the request this long first, as a request stuck on the way would be. */
+  readonly holdMs?: number;
 }
 
 function callOf(request: Request): Call | null {
@@ -78,6 +80,12 @@ async function mockApi(page: Page, answers: Partial<Record<Call, Answer | Answer
       return;
     }
     seen.push(request);
+    if (answer.holdMs !== undefined) {
+      await new Promise((done) => setTimeout(done, answer.holdMs));
+      // The page has given up on it by now.
+      await route.fulfill({ status: answer.status, json: answer.json }).catch(() => undefined);
+      return;
+    }
     if (answer.image !== undefined) {
       await route.fulfill({ status: answer.status, contentType: "image/png", body: answer.image });
     } else if (answer.json === undefined) {
@@ -159,6 +167,23 @@ test("the whole try-on: uploaded during the choices, the gate before the render 
     "try_on_completed",
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
+});
+
+test("a result request stuck on the way is dropped, and the next poll shows the result", async ({ page }) => {
+  test.setTimeout(60_000);
+  await mockApi(page, {
+    result: [
+      { status: 202, json: { state: "rendering" }, holdMs: 40_000 },
+      { status: 200, json: { url: "/api/result/signed", expires_at: new Date(Date.now() + 300_000).toISOString() } },
+    ],
+  });
+  await visit(page, "/try");
+  await throughToGenerate(page);
+  await page.clock.runFor(20_000);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill(MOBILE);
+  await page.getByRole("button", { name: "Show me the result" }).click();
+  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible({ timeout: 20_000 });
 });
 
 test("no WhatsApp line when messaging is off", async ({ page }) => {
