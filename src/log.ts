@@ -40,6 +40,11 @@ const PERSONAL_FIELDS = [
   "provider_result_url",
   "result_url",
   "signed_url",
+  // Evolution's webhook bodies name the recipient's chat, and our own number.
+  "remote_jid",
+  "participant",
+  "sender",
+  "number",
 ];
 
 const SECRET_FIELDS = [
@@ -55,6 +60,9 @@ const SECRET_FIELDS = [
   "client_secret",
   "password",
   "signature",
+  "webhook_token",
+  // The webhook URL Evolution echoes back, which holds our webhook token.
+  "destination",
 ];
 
 /** "Mobile_E164" -> "mobilee164" */

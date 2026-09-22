@@ -266,6 +266,35 @@ To switch one on:
 
 5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
 
+### 12. WhatsApp delivery receipts (Evolution)
+
+Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md). The no-show evidence depends on these receipts. Until this is set up, the route answers 404 and no receipts are recorded.
+
+1. **The token.** Make a random value of at least 32 characters, e.g. `openssl rand -hex 24`, and set it on the Worker with `W secret put EVOLUTION_WEBHOOK_TOKEN --env <env>`. Use a different value in each environment.
+2. **Evolution's webhook**, on the instance the Worker sends from:
+   - URL: `https://<host>/api/hooks/evolution/<token>`;
+   - events: **`MESSAGES_UPDATE` only**;
+   - "webhook by events": off.
+
+   Every event is a request against the free plan's daily allowance, so send no others.
+
+3. **On staging, an Access bypass** for the hooks, as in step 10:
+   - Zero Trust → Access → Applications → Add → Self-hosted;
+   - domain `staging.maneman.in`, path `api/hooks/`;
+   - policy: **Bypass**, **Everyone**.
+
+   Each hook checks its own secret.
+
+4. **Check it.** Send a try-on result to an allowlisted handset and open the message. Then:
+
+   ```sql
+   SELECT state, sent_at, delivered_at, read_at FROM outbound_messages ORDER BY created_at DESC LIMIT 5;
+   ```
+
+   `delivered_at` and `read_at` should be filled within seconds. If they stay empty, look in Workers Logs:
+   - `evolution_hook_unauthorized`: the token in Evolution's URL is wrong;
+   - no `evolution_receipts` line at all: Access or Bot Fight Mode is stopping the webhook.
+
 ---
 
 ## Staying on the free tier
