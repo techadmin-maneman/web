@@ -421,6 +421,24 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
 
 ---
 
+## The CI runner
+
+GitHub Actions jobs run on the owner's machine, in a container (docs/decisions/0006-deployment-pipeline.md, "The runner"). The machine must be on, with Docker Desktop running; the container starts with Docker.
+
+- **Check it:** `docker logs --tail 5 maneman-runner` ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` as Idle or Active.
+- **Set it up again** (a new machine, or after removing it). Build the image, take a registration token (it lasts an hour), and start the container once with it; the registration is kept in the `maneman-runner` volume. Then start it again without the token, so the token is not left in the container's settings:
+
+  ```sh
+  docker build -t maneman-runner:2.337.0 ops/runner
+  token=$(gh api -X POST repos/techadmin-maneman/web/actions/runners/registration-token -q .token)
+  docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g     -v maneman-runner:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web -e RUNNER_TOKEN="$token"     maneman-runner:2.337.0
+  docker rm -f maneman-runner   # once the logs say "Listening for Jobs"
+  docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g     -v maneman-runner:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web maneman-runner:2.337.0
+  ```
+
+- **Move the jobs back to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They are then within GitHub's free minutes, about ten runs a day.
+- **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
+
 ## Staying on the free tier
 
 The rules are in `docs/decisions/0009-stay-inside-cloudflare-free-tier.md`. The account is on Workers Free, where everything except R2 stops at its limit instead of billing.
