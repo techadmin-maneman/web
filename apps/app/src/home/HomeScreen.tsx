@@ -10,6 +10,7 @@
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Me, VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, PHASE1_WINDOWS, VISIT_TYPES, windowText, type WindowLabel } from "../content.ts";
+import { BookButton } from "../booking/BookButton.tsx";
 import { firstName, visitName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
@@ -39,7 +40,8 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
       <Consultation date={date} window={PHASE1_WINDOWS[window_label] ?? "morning"} place={place} offline={offline} />
     );
   }
-  return me.state === "fitted" ? <NothingNext offline={offline} /> : <NothingBooked offline={offline} />;
+  if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext me={me} />;
+  return <NothingBooked me={me} offline={offline} />;
 }
 
 function Actions({ what, date, offline }: { what: string; date: string; offline: boolean }) {
@@ -127,36 +129,32 @@ function NextVisit({ visit, offline }: { visit: VisitSummary; offline: boolean }
   );
 }
 
-/** A fitted client with no visit booked: a way to book the next. */
-function NothingNext({ offline }: { offline: boolean }) {
+/** A client with no visit booked who may book the next: a service visit, or a first fit after the consultation. */
+function NothingNext({ me }: { me: Me }) {
+  const firstFit = me.booking.types.includes("first_fit");
   return (
     <section className={styles.nothing} aria-labelledby="next">
       <h1 className={styles.label} id="next">
         {home.next.label}
       </h1>
       <p>{home.next.none}</p>
-      {offline ? (
-        <button className={styles.book} type="button" disabled>
-          {home.next.book}
-        </button>
-      ) : (
-        <a className={styles.book} href={whatsappWith(messages.book)} rel="noopener">
-          {home.next.book}
-        </a>
-      )}
+      <BookButton
+        className={styles.book}
+        label={firstFit ? home.next.bookFirstFit : home.next.book}
+        message={firstFit ? messages.bookFirstFit : messages.book}
+      />
     </section>
   );
 }
 
-function NothingBooked({ offline }: { offline: boolean }) {
+/** Nothing booked yet: a consultation, in the app where self-serve booking is on, else on the public site. */
+function NothingBooked({ me, offline }: { me: Me; offline: boolean }) {
   return (
     <section className={styles.nothing}>
       <h1 className={styles.nothingTitle}>{home.nothing.title}</h1>
       <p>{home.nothing.body}</p>
-      {offline ? (
-        <button className={styles.book} type="button" disabled>
-          {home.nothing.book}
-        </button>
+      {me.booking.self_serve || offline ? (
+        <BookButton className={styles.book} label={home.nothing.book} message={messages.book} />
       ) : (
         <a className={styles.book} href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}>
           {home.nothing.book}

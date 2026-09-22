@@ -50,22 +50,22 @@ describe("sendLeadToFsm", () => {
         stateCode: "HR",
       },
     ]);
+    const saved = await env.DB.prepare(
+      "SELECT p.fsm_contact_id, l.fsm_request_id FROM leads l JOIN people p ON p.id = l.person_id WHERE l.id = ?1",
+    )
+      .bind(LEAD)
+      .first<{ fsm_contact_id: string; fsm_request_id: string }>();
+    expect(saved?.fsm_contact_id).toMatch(/^stub-contact-/);
+    expect(saved?.fsm_request_id).toMatch(/^stub-request-/);
     expect(fsm.made.requests).toEqual([
       {
-        contactId: "stub-contact-1",
+        contactId: saved?.fsm_contact_id,
         summary: "Staging test: Consultation for Rohit Malhotra",
         serviceId: "item-consult",
         preferredDate: "2026-09-24",
         preferenceNote: "Evening, 4 to 8 pm",
       },
     ]);
-    const saved = await env.DB.prepare(
-      "SELECT p.fsm_contact_id, l.fsm_request_id FROM leads l JOIN people p ON p.id = l.person_id WHERE l.id = ?1",
-    )
-      .bind(LEAD)
-      .first();
-    expect(saved).toEqual({ fsm_contact_id: "stub-contact-1", fsm_request_id: "stub-request-1" });
-
     expect(await sendLeadToFsm(env.DB, fsm, LEAD, { labelAsTest: true })).toBe("already_sent");
     expect(fsm.made.requests).toHaveLength(1);
   });

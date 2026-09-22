@@ -126,7 +126,7 @@ export function App() {
       return <Login onSignedIn={() => void check()} />;
     case "in":
       return (
-        <SessionContext value={{ me: session.me, offline: session.offline }}>
+        <SessionContext value={{ me: session.me, offline: session.offline, refresh: () => void refresh() }}>
           {/* Keyed by the path, so each page opens at its top with its own data. */}
           <Fragment key={path}>
             {pageFor(

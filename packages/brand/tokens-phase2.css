@@ -15,12 +15,15 @@
   --app-column: 390px; /* the design's width; wider screens centre it */
   --fs-app-title: 34px; /* a screen's title */
   --fs-app-title-long: 32px; /* a longer title, as board A3's */
+  --fs-19: 19px; /* a day's number in the date strip (board C2) */
   --fs-20: 20px; /* a visit's date over its photographs (board D1) */
   --fs-21: 21px; /* an entry's amount in the payments list (board E1) */
   --fs-26: 26px; /* an upcoming visit's date (board C1) */
+  --fs-28: 28px; /* a confirmed booking's day and window (board C6) */
   --fs-40: 40px; /* an entry's amount on its own page (board E2) */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
   --tap-row: 64px; /* rows, tabs, the code's boxes */
+  --sp-40: 40px; /* the regular technician's initials beside the windows (board C3) */
   --sp-64: 64px;
   --switch-width: 46px; /* a consent's switch (board G1) */
   --skeleton-label: 120px; /* the loading state's label (board B3) */

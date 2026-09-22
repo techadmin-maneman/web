@@ -45,6 +45,7 @@ const ME = {
   next_visit: null,
   credits: null,
   prompt: null,
+  booking: { self_serve: false, types: ["consultation"] },
 };
 
 // ---- Fitted (P2-F2) --------------------------------------------------------------
@@ -76,7 +77,13 @@ const PAST = [
 ] as const;
 const [AUGUST, JULY, , NOVEMBER] = PAST;
 
-const ME_FITTED = { ...ME, state: "fitted", consultation: null, next_visit: NEXT };
+const ME_FITTED = {
+  ...ME,
+  state: "fitted",
+  consultation: null,
+  next_visit: NEXT,
+  booking: { self_serve: false, types: ["service", "replacement"] },
+};
 
 const ANGLES = ["front", "top", "left", "right", "hair"];
 /** The five angles after a visit, each answered with a block of `ink` (see PHOTO_FILES). */
@@ -147,6 +154,79 @@ const ENTRY = { ...SERVICE_PAID, documents: { invoice: AUGUST.id, receipt: null 
 /** The clock for the payments: in 2027, so its entries drop the year, as E1's do. */
 const IN_2027 = new Date("2027-09-20T05:00:00Z");
 
+// ---- Booking (P2-F5) ----------------------------------------------------------------
+
+/** Booking on: the design's strip runs Mon 16 to Sun 29 Sep, with the 17th, 24th and 28th full. */
+const ME_BOOKING = { ...ME_FITTED, booking: { self_serve: true, types: ["service", "replacement"] } };
+const FULL_DAYS = new Set([1, 8, 12]);
+const AVAILABILITY = {
+  type: "service",
+  price: { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 },
+  regular: IMRAN,
+  days: Array.from({ length: 14 }, (_, index) => ({
+    date: `2030-09-${String(16 + index)}`,
+    windows: FULL_DAYS.has(index)
+      ? ["morning", "afternoon", "evening"].map((window) => ({ window, with: null }))
+      : [
+          { window: "morning", with: null },
+          { window: "afternoon", with: "regular" },
+          { window: "evening", with: "another" },
+        ],
+  })),
+};
+/** The clock for booking: Monday 16 September 2030, the strip's first day. */
+const IN_2030 = new Date("2030-09-16T05:00:00Z");
+const hold = (type: string, price: object, lateFee: object | null) => ({
+  id: "b0000000-0000-4000-8000-000000000001",
+  type,
+  date: "2030-09-19",
+  window: "afternoon",
+  starts_at: "2030-09-19T06:30:00.000Z",
+  ends_at: "2030-09-19T08:00:00.000Z",
+  technician: IMRAN,
+  price,
+  late_fee: lateFee,
+  free_until: "2030-09-18T06:30:00.000Z",
+  // Board C4 shows 9:42 left.
+  expires_at: new Date(IN_2030.getTime() + 582_000).toISOString(),
+  state: "held",
+  paid: false,
+  visit_id: null,
+});
+const SERVICE_HOLD = hold("service", { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 }, null);
+const FIRST_FIT_HOLD = hold(
+  "first_fit",
+  { amount_ex_gst: 3000000, amount: 3540000, gst_percent: 18 },
+  { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 },
+);
+const BOOKING = {
+  hold_id: SERVICE_HOLD.id,
+  checkout: {
+    key_id: "rzp_test_fidelity",
+    order_id: "order_fidelity",
+    amount: 236000,
+    currency: "INR",
+    name: "Mane Man",
+    description: "Service visit, 2030-09-19",
+    prefill: { name: "Rohit Malhotra", contact: "+919800044417" },
+  },
+};
+
+/** Razorpay's Checkout, replaced by one that pays or fails as it opens. */
+function fakeCheckout(outcome: "paid" | "failed") {
+  return (route: Route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `window.Razorpay = function (options) {
+        const failed = [];
+        this.on = (event, handler) => { if (event === "payment.failed") failed.push(handler); };
+        this.open = () => setTimeout(() => ${
+          outcome === "paid" ? "options.handler({})" : "failed.forEach((handler) => handler({}))"
+        }, 10);
+      };`,
+    });
+}
+
 const PROFILE = {
   name: "Rohit Malhotra",
   mobile: "+91 98xxx x4417",
@@ -205,7 +285,13 @@ async function openDesign(browser: Browser): Promise<Page> {
 }
 
 /** The app with its API answered from `api` (anything else unauthorised), 44 px shorter than a frame. */
-async function openApp(browser: Browser, path: string, api: Api, now?: Date): Promise<Page> {
+async function openApp(
+  browser: Browser,
+  path: string,
+  api: Api,
+  now?: Date,
+  checkout?: (route: Route) => Promise<void>,
+): Promise<Page> {
   // The app's policy would refuse the style that stills the page; screenshots set it aside.
   const page = await browser.newPage({
     viewport: { width: WIDTH, height: FRAME_HEIGHT - STATUS_BAR },
@@ -213,6 +299,7 @@ async function openApp(browser: Browser, path: string, api: Api, now?: Date): Pr
     serviceWorkers: "block",
   });
   await page.clock.install(now === undefined ? {} : { time: now });
+  if (checkout !== undefined) await page.route("https://checkout.razorpay.com/v1/checkout.js", checkout);
   await page.route("**/api/**", (route) => {
     const answer = api[new URL(route.request().url()).pathname] ?? signedOut;
     return answer(route);
@@ -425,6 +512,83 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await lead.close();
 }
 
+async function bookingPairs(browser: Browser, design: Page): Promise<void> {
+  const api = (holdAnswer: object, polled: object = holdAnswer): Api => ({
+    "/api/me": json(ME_BOOKING),
+    "/api/visits": json({ upcoming: [], past: PAST }),
+    "/api/availability": json(AVAILABILITY),
+    "/api/holds": json(holdAnswer),
+    "/api/bookings": json(BOOKING),
+    [`/api/holds/${SERVICE_HOLD.id}`]: json(polled),
+  });
+
+  /** From Visits to the sheet's pay step, shooting each board on the way. */
+  async function throughTheSheet(app: Page, shots: boolean): Promise<void> {
+    await app.getByRole("button", { name: "Book your next visit" }).click();
+    await app.getByRole("radio", { name: "Thursday 19 Sep" }).click();
+    if (shots) await pair(OUT, WIDTH, "c2-date", await frame(design, "Booking · date"), await shot(app));
+    await app.getByRole("button", { name: "Continue" }).click();
+    await app.getByRole("radio", { name: /Afternoon/ }).click();
+    if (shots) await pair(OUT, WIDTH, "c3-window", await frame(design, "Booking · window"), await shot(app));
+    await app.getByRole("button", { name: "Continue to payment" }).click();
+    await app.getByRole("heading", { name: "Pay and confirm" }).waitFor();
+  }
+
+  // C4's saved card ("Card ending 4417") is Checkout's to offer; the app offers card payment as "Card".
+  const service = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030);
+  await throughTheSheet(service, true);
+  await pair(OUT, WIDTH, "c4-pay", await frame(design, "Booking · pay"), await shot(service));
+  await service.close();
+
+  const firstFit = await openApp(browser, "/visits", api(FIRST_FIT_HOLD), IN_2030);
+  await throughTheSheet(firstFit, false);
+  const firstFitFrame = design
+    .locator('[data-screen-label="Booking · credit"] > div')
+    .filter({ has: design.getByText("First fit · guarantee line added", { exact: true }) })
+    .screenshot();
+  await pair(OUT, WIDTH, "c5-first-fit", await firstFitFrame, await shot(firstFit));
+  await firstFit.close();
+
+  const failed = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030, fakeCheckout("failed"));
+  await throughTheSheet(failed, false);
+  await failed.getByRole("button", { name: /^Pay/ }).click();
+  await failed.getByText("The payment did not go through.").waitFor();
+  await pair(
+    OUT,
+    WIDTH,
+    "c6-failed",
+    await stateFrame(design, "Payment failed", "Booking · pay states"),
+    await shot(failed),
+  );
+  await failed.close();
+
+  const expired = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030);
+  await throughTheSheet(expired, false);
+  await expired.clock.fastForward("10:00");
+  await expired.getByText("That slot has gone back.").waitFor();
+  await pair(
+    OUT,
+    WIDTH,
+    "c6-expired",
+    await stateFrame(design, "Hold expired", "Booking · pay states"),
+    await shot(expired),
+  );
+  await expired.close();
+
+  const booked = { ...SERVICE_HOLD, state: "booked", paid: true, visit_id: NEXT.id };
+  const confirmed = await openApp(browser, "/visits", api(SERVICE_HOLD, booked), IN_2030, fakeCheckout("paid"));
+  await throughTheSheet(confirmed, false);
+  await confirmed.getByRole("button", { name: /^Pay/ }).click();
+  await confirmed.clock.fastForward("00:03");
+  await confirmed.getByText("Imran messages you the day before.").waitFor();
+  const confirmedFrame = design
+    .locator('[data-screen-label="Booking · pay states"] > div')
+    .filter({ has: design.getByText("Confirmed", { exact: true }) })
+    .screenshot();
+  await pair(OUT, WIDTH, "c6-confirmed", await confirmedFrame, await shot(confirmed));
+  await confirmed.close();
+}
+
 const servers: Server[] = [
   await serveDirectory(APP_DIR, 4314, undefined, { spa: true }),
   await serveDirectory(DESIGN_DIR, 4313),
@@ -439,6 +603,7 @@ try {
   await states(browser, design);
   await profile(browser, design);
   await fitted(browser, design);
+  await bookingPairs(browser, design);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();

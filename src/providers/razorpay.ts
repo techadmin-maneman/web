@@ -78,7 +78,7 @@ export interface StubPayments extends PaymentsProvider {
   };
 }
 
-/** Local and test stand-in: takes no money and reaches nothing. */
+/** Local and test stand-in: takes no money and reaches nothing. Its IDs are unique, as a new stub answers each request. */
 export function createStubPayments(): StubPayments {
   const made = {
     orders: [] as { amount: number; receipt: string; notes: Record<string, string> }[],
@@ -88,11 +88,11 @@ export function createStubPayments(): StubPayments {
     made,
     createOrder: (order) => {
       made.orders.push(order);
-      return Promise.resolve({ id: `order_stub${String(made.orders.length)}` });
+      return Promise.resolve({ id: `order_stub_${crypto.randomUUID()}` });
     },
     refund: (paymentId, refund) => {
       made.refunds.push({ paymentId, amount: refund.amount });
-      return Promise.resolve({ id: `rfnd_stub${String(made.refunds.length)}` });
+      return Promise.resolve({ id: `rfnd_stub_${crypto.randomUUID()}` });
     },
   };
 }

@@ -1586,6 +1586,12 @@ export interface components {
             credits: null;
             /** @description The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4). */
             prompt: null;
+            booking: {
+                /** @description Booking in the app is on; off, the app opens WhatsApp. */
+                self_serve: boolean;
+                /** @description What the client may book now. */
+                types: ("consultation" | "first_fit" | "service" | "replacement")[];
+            };
         };
         VisitSummary: {
             /** Format: uuid */

@@ -310,6 +310,7 @@ describe("the session", () => {
       next_visit: null,
       credits: null,
       prompt: null,
+      booking: { self_serve: true, types: ["consultation"] },
     });
   });
 

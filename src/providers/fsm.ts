@@ -175,7 +175,10 @@ export interface StubFsm extends FsmProvider {
   };
 }
 
-/** Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it. */
+/**
+ * Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it,
+ * under IDs no other stub gives, since a new stub answers each local request.
+ */
 export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   const made = { contacts: [] as NewFsmContact[], requests: [] as NewFsmRequest[], visits: [] as NewFsmVisit[] };
   return {
@@ -203,16 +206,16 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     },
     createContact: (contact) => {
       made.contacts.push(contact);
-      return Promise.resolve(`stub-contact-${String(made.contacts.length)}`);
+      return Promise.resolve(`stub-contact-${crypto.randomUUID()}`);
     },
     createRequest: (request) => {
       made.requests.push(request);
-      return Promise.resolve(`stub-request-${String(made.requests.length)}`);
+      return Promise.resolve(`stub-request-${crypto.randomUUID()}`);
     },
     createVisit: (visit) => {
       made.visits.push(visit);
-      const n = String(made.visits.length);
-      return Promise.resolve({ workOrderId: `stub-work-order-${n}`, appointmentId: `stub-appointment-${n}` });
+      const id = crypto.randomUUID();
+      return Promise.resolve({ workOrderId: `stub-work-order-${id}`, appointmentId: `stub-appointment-${id}` });
     },
   };
 }
