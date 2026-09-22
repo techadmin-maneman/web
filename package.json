@@ -3,6 +3,9 @@
   "private": true,
   "description": "Mane Man web: the mm-api Worker, the mm-site public site, and the Phase 2 surfaces, with migrations and pipeline.",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "engines": {
     "node": ">=24.11.0"
   },
@@ -44,8 +47,6 @@
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20260921.1",
     "@eslint/js": "10.0.1",
-    "@fontsource/eb-garamond": "5.3.0",
-    "@fontsource/instrument-sans": "5.3.0",
     "@playwright/test": "1.63.0",
     "@types/node": "24.13.6",
     "@vitest/coverage-istanbul": "4.1.11",

@@ -15,7 +15,7 @@ import { track } from "../lib/analytics.ts";
 import { fetchCities, submitLead, type City, type ErrorCode, type LeadResponse } from "../lib/api.ts";
 import { measurementCalendar } from "../lib/calendar.ts";
 import { bookedHeadline } from "../lib/dates.ts";
-import { ICONS } from "../lib/icons.ts";
+import { ICONS } from "@maneman/brand/icons";
 import { formatMobile, isCompleteMobile } from "../lib/phone.ts";
 import { fill } from "../lib/text.ts";
 import { downloadFile } from "../lib/download.ts";

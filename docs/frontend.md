@@ -20,7 +20,7 @@ npm run check:site                     # type-checks the .astro templates
 | ----------------------------------------- | -------------------------------------------------------- |
 | Every string and image name               | `site/src/content/site.ts`                               |
 | The design's placeholder material, frozen | `site/src/content/design-placeholders.ts`                |
-| Colours, sizes, spaces                    | `site/src/styles/tokens.css`                             |
+| Colours, sizes, spaces, fonts, icons      | `packages/brand` (shared with the Phase 2 apps)          |
 | Pages                                     | `site/src/pages`                                         |
 | Home sections, header, footer             | `site/src/components`                                    |
 | The try-on, the booking form, the slider  | `site/src/islands` (Preact)                              |
@@ -87,7 +87,7 @@ The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a G
 
 - **Headers.** The build writes `_headers`: the content security policy, HSTS, the referrer policy, and the camera allowed on `/try` only. Inline scripts and styles are allowed by hash, computed from the built pages, so nothing needs listing by hand. Never add a `style` attribute or a `data:` URL: the policy refuses both, and the browser tests fail.
 - **Lighthouse.** `npm run lighthouse` audits the local build's `/`, `/try` and `/book` against the budgets, and CI runs it after the browser tests. Reports go to `lighthouse/`.
-- **Fonts.** ₹ is drawn from a one-glyph file. If the site starts using another character outside latin, add it in `scripts/subset-fonts.ts`, run `npm run fonts`, and take it out of the latin-ext ranges in `fonts.css`.
+- **Fonts.** ₹ is drawn from a one-glyph file. If the site starts using another character outside latin, add it in `scripts/subset-fonts.ts`, run `npm run fonts`, and take it out of the latin-ext ranges in `packages/brand/fonts.css`.
 
 ## Going live in production
 

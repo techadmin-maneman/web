@@ -3,7 +3,8 @@
 // sharing a `name` behave as one group, so this needs no script.
 import { faq, whatsapp } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
-import { ICONS, whatsappLink } from "../../lib/icons.ts";
+import { ICONS } from "@maneman/brand/icons";
+import { whatsappLink } from "../../lib/whatsapp.ts";
 
 // One expression, so no line break can put a space before the full stop.
 const link = isShown(whatsapp) ? whatsappLink(whatsapp.number) : null;

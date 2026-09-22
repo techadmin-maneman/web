@@ -16,7 +16,7 @@ import { looks, notices, stageOptions, tryOn } from "../content/site.ts";
 import { track } from "../lib/analytics.ts";
 import { claimResult, fetchLook, fetchResult, jobStatus, type ClaimResponse } from "../lib/api.ts";
 import { downloadFile } from "../lib/download.ts";
-import { ICONS } from "../lib/icons.ts";
+import { ICONS } from "@maneman/brand/icons";
 import { formatMobile, isCompleteMobile } from "../lib/phone.ts";
 import { preparePhoto, type PreparedPhoto } from "../lib/photo.ts";
 import { startRender, startUpload, type Outcome, type Uploaded } from "../lib/tryon.ts";

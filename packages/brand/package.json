@@ -1,0 +1,18 @@
+{
+  "name": "@maneman/brand",
+  "private": true,
+  "version": "0.0.0",
+  "description": "The tokens, fonts, icons and brand drawings every Mane Man front end shares.",
+  "type": "module",
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./tokens-phase2.css": "./tokens-phase2.css",
+    "./fonts.css": "./fonts.css",
+    "./icons": "./icons.ts",
+    "./marks": "./marks.ts"
+  },
+  "dependencies": {
+    "@fontsource/eb-garamond": "5.3.0",
+    "@fontsource/instrument-sans": "5.3.0"
+  }
+}

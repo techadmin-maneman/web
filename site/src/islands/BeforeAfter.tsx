@@ -7,7 +7,7 @@
 
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { ICONS } from "../lib/icons.ts";
+import { ICONS } from "@maneman/brand/icons";
 import styles from "./BeforeAfter.module.css";
 
 interface Props {
