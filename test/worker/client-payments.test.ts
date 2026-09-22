@@ -30,7 +30,7 @@ async function payment(id: string, personId: string, appointmentId: string | nul
   await env.DB.prepare(
     `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
        status, created_at, updated_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, 3150000, 'INR', 'upi', 'captured', ?6, ?6)`,
+     VALUES (?1, ?2, ?3, ?4, ?5, 3000000, 'INR', 'upi', 'captured', ?6, ?6)`,
   )
     .bind(id, `MM-2026-${id.slice(-4)}`, personId, appointmentId, `pay_${id}`, createdAt)
     .run();
@@ -53,7 +53,7 @@ beforeEach(async () => {
 async function refund(id: string, paymentId: string, status: "created" | "processed", createdAt: string) {
   await env.DB.prepare(
     `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, updated_at)
-     VALUES (?1, ?2, ?3, 210000, ?4, 'normal', ?5, ?5)`,
+     VALUES (?1, ?2, ?3, 200000, ?4, 'normal', ?5, ?5)`,
   )
     .bind(id, paymentId, `rfnd_${id}`, status, createdAt)
     .run();
@@ -74,7 +74,7 @@ describe("GET /api/payments", () => {
         kind: "refund",
         id: REFUND,
         payment_id: PAY_OLD,
-        amount: 210000,
+        amount: 200000,
         amount_ex_gst: 200000,
         status: "created",
         destination: "upi",
@@ -84,9 +84,9 @@ describe("GET /api/payments", () => {
         kind: "payment",
         id: PAY_OLD,
         reference: "MM-2026-0001",
-        amount: 3150000,
+        amount: 3000000,
         amount_ex_gst: 3000000,
-        gst_percent: 5,
+        gst_percent: 0,
         status: "captured",
         method: "upi",
         visit: { id: VISIT, date: "2026-09-10", type: "first_fit" },

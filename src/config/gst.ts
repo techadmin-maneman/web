@@ -1,9 +1,9 @@
-// GST on what Mane Man sells. A placeholder at 5% on everything, as the owner
-// set for staging on 22 September 2026, until the CA's answers set each item's
-// rate and code (docs/open-points.md, item 2); the price book (P2-M5) then
-// carries a rate per item.
+// GST on what Mane Man sells, for a payment the price book did not price. Off
+// (0%) until production: the owner switched GST off in Books on 22 September
+// 2026 so billing works end to end on staging, and turns it on for production
+// with the real GSTIN and the CA's rates (docs/open-points.md, items 2 and 3).
 
-export const GST_PERCENT = 5;
+export const GST_PERCENT = 0;
 
 /** The part of a GST-inclusive amount before GST, in paise. */
 export function exGst(amount: number, percent: number = GST_PERCENT): number {
