@@ -16,9 +16,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { z } from "zod";
+import { isWorkerName, WORKERS, workerNamed, type WorkerName as Worker } from "./lib/workers.ts";
 
-const CONFIG_FILE = { "mm-api": "wrangler.jsonc", "mm-site": "site/wrangler.jsonc" } as const;
-type Worker = keyof typeof CONFIG_FILE;
 type Environment = "staging" | "production";
 
 /** What `wrangler deployments status --json` prints. */
@@ -35,7 +34,7 @@ const WORKER_NOT_FOUND = "code: 10007";
 function wrangler(worker: Worker, environment: Environment, args: string[], extraEnv: Record<string, string> = {}) {
   return execFileSync(
     process.execPath,
-    ["node_modules/wrangler/bin/wrangler.js", ...args, "--config", CONFIG_FILE[worker], "--env", environment],
+    ["node_modules/wrangler/bin/wrangler.js", ...args, "--config", workerNamed(worker).config, "--env", environment],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...extraEnv } },
   );
 }
@@ -86,7 +85,8 @@ function deploySplit(worker: Worker, environment: Environment, splits: string[],
 // ---------------------------------------------------------------------------
 
 function usage(): never {
-  console.error("usage: release.ts <current|upload|deploy> --worker <mm-api|mm-site> --env <staging|production> …");
+  const names = WORKERS.map((entry) => entry.name).join("|");
+  console.error(`usage: release.ts <current|upload|deploy> --worker <${names}> --env <staging|production> …`);
   process.exit(2);
 }
 
@@ -103,7 +103,7 @@ const { positionals, values } = parseArgs({
 
 const worker = values.worker;
 const environment = values.env;
-if (worker !== "mm-api" && worker !== "mm-site") usage();
+if (!isWorkerName(worker)) usage();
 if (environment !== "staging" && environment !== "production") usage();
 
 const command = positionals[0] ?? "";

@@ -518,7 +518,8 @@ Request body:
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
-            "unauthorized"
+            "unauthorized",
+            "forbidden_origin"
           ]
         },
         "request_id": {

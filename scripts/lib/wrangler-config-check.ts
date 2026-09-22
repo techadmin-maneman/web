@@ -3,10 +3,12 @@
 // fine. See docs/decisions/0005-environment-isolation-in-wrangler-config.md.
 
 import {
+  ENABLED_SURFACES,
   EXPECTED_DATABASE_NAME,
   HOSTNAME,
   REMOTE_ENVIRONMENTS,
   RESOURCE_TOKEN,
+  SURFACE_HOSTS,
   ZONE_NAME,
   type EnvironmentName,
   type RemoteEnvironmentName,
@@ -274,18 +276,25 @@ function checkInheritableKeys(
   return problems;
 }
 
-/** Exactly one route: the expected pattern on the maneman.in zone. */
-function checkRoutes(block: JsonObject, expectedPattern: string, label: string): string[] {
+/** Exactly the expected routes, each once, on the maneman.in zone and none a custom domain. */
+function checkRoutes(block: JsonObject, expectedPatterns: readonly string[], label: string): string[] {
   if (block.routes === undefined) return []; // reported by checkInheritableKeys
 
   const routes = Array.isArray(block.routes) ? block.routes : [];
-  const [route] = objectsIn(routes);
+  const objects = objectsIn(routes);
+  const patterns = objects.map((route) => route.pattern);
   const ok =
-    routes.length === 1 &&
-    route?.pattern === expectedPattern &&
-    route.zone_name === ZONE_NAME &&
-    route.custom_domain === undefined;
-  return ok ? [] : [`${label}: routes must be exactly [{ pattern: "${expectedPattern}", zone_name: "${ZONE_NAME}" }]`];
+    objects.length === routes.length &&
+    routes.length === expectedPatterns.length &&
+    expectedPatterns.every((pattern) => patterns.includes(pattern)) &&
+    objects.every((route) => route.zone_name === ZONE_NAME && route.custom_domain === undefined);
+  const expected = expectedPatterns.map((pattern) => `{ pattern: "${pattern}", zone_name: "${ZONE_NAME}" }`);
+  return ok ? [] : [`${label}: routes must be exactly [${expected.join(", ")}]`];
+}
+
+/** mm-api answers /api/* on the host of every surface switched on in the environment. */
+export function apiRoutePatterns(environment: RemoteEnvironmentName): string[] {
+  return ENABLED_SURFACES[environment].map((surface) => `${SURFACE_HOSTS[environment][surface]}/api/*`);
 }
 
 /** Only binding kinds that cannot bill on the Workers Free plan. */
@@ -355,7 +364,7 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
       continue;
     }
     problems.push(...checkInheritableKeys(block, environment, "mm-api", label));
-    problems.push(...checkRoutes(block, `${HOSTNAME[environment]}/api/*`, label));
+    problems.push(...checkRoutes(block, apiRoutePatterns(environment), label));
     problems.push(...checkRedeclared(config, block, label));
     problems.push(...checkOwnResources(block, environment, label));
     problems.push(...checkFreeTier(block, label));
@@ -385,7 +394,7 @@ export function checkSiteConfig(config: JsonObject): string[] {
     }
     blocks.push([label, block]);
     problems.push(...checkInheritableKeys(block, environment, "mm-site", label));
-    problems.push(...checkRoutes(block, `${HOSTNAME[environment]}/*`, label));
+    problems.push(...checkRoutes(block, [`${HOSTNAME[environment]}/*`], label));
     if (!isObject(block.assets)) problems.push(`${label}: assets must be declared explicitly`);
   }
 

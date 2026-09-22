@@ -3,9 +3,11 @@ import type { MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
+import type { Surface } from "./config/environments.ts";
 import { productionDependencies, type Dependencies, type DependencyFactory } from "./dependencies.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
+import { requireSameOrigin } from "./http/origin.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { registerCities } from "./routes/cities.ts";
 import { registerErasure } from "./routes/erasure.ts";
@@ -25,6 +27,7 @@ export type AppEnv = {
     config: StaticConfig;
     deps: Dependencies;
     checkIdentity: IdentityCheck;
+    surface: Surface;
   };
 };
 
@@ -35,7 +38,32 @@ export const REQUEST_ID_HEADER = "X-Request-Id";
 /** Routes that report on the database themselves instead of being blocked by it. */
 const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);
 
-export function createApp(config: StaticConfig, makeDependencies?: DependencyFactory): App {
+/**
+ * Each surface's routes (docs/decisions/0026-hosts-and-surfaces.md). A route
+ * answers only on its own surface's host; anywhere else it is a 404. The
+ * Phase 2 surfaces have only their health check until their milestones.
+ */
+const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>> = {
+  public: [
+    registerHealth,
+    registerCities,
+    registerLead,
+    registerTryonUpload,
+    registerTryonGenerate,
+    registerTryonClaim,
+    registerTryonResult,
+    registerErasure,
+  ],
+  client: [registerHealth],
+  ops: [registerHealth],
+  tech: [registerHealth],
+};
+
+export function createApp(
+  config: StaticConfig,
+  makeDependencies?: DependencyFactory,
+  surface: Surface = "public",
+): App {
   const app = new OpenAPIHono<AppEnv>({
     // A request that fails its zod schema: name the fields, never echo their values.
     defaultHook: (result, c) => {
@@ -46,18 +74,13 @@ export function createApp(config: StaticConfig, makeDependencies?: DependencyFac
   });
 
   const dependencies = makeDependencies ?? productionDependencies(config);
-  app.use("*", requestContext(config, dependencies, createCachedIdentityCheck()));
+  app.use("*", requestContext(config, dependencies, createCachedIdentityCheck(), surface));
   app.use("/api/*", requireOwnDatabase);
+  // The public site's writes are guarded by Turnstile; the Phase 2 surfaces carry session cookies.
+  if (surface !== "public") app.use("/api/*", requireSameOrigin);
 
   app.openAPIRegistry.register("ErrorResponse", ErrorResponseSchema);
-  registerHealth(app);
-  registerCities(app);
-  registerLead(app);
-  registerTryonUpload(app);
-  registerTryonGenerate(app);
-  registerTryonClaim(app);
-  registerTryonResult(app);
-  registerErasure(app);
+  for (const register of SURFACE_ROUTES[surface]) register(app);
 
   app.notFound((c) => c.json(errorBody("not_found", c.var.requestId), 404));
   app.onError((error, c) => {
@@ -77,8 +100,9 @@ function requestContext(
   config: StaticConfig,
   makeDependencies: DependencyFactory,
   checkIdentity: IdentityCheck,
+  surface: Surface,
 ): MiddlewareHandler<AppEnv> {
-  const baseLog = createLogger({ worker: "mm-api", environment: config.environment });
+  const baseLog = createLogger({ worker: "mm-api", environment: config.environment, surface });
 
   return createMiddleware<AppEnv>(async (c, next) => {
     const started = Date.now();
@@ -89,6 +113,7 @@ function requestContext(
     c.set("config", config);
     c.set("deps", makeDependencies(c.env, log));
     c.set("checkIdentity", checkIdentity);
+    c.set("surface", surface);
 
     await next();
 

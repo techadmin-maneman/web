@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
 import {
   PLACEHOLDER_DATABASE_ID,
+  apiRoutePatterns,
   checkAccountsAgree,
   checkApiConfig,
   checkSiteConfig,
@@ -117,6 +118,18 @@ describe("mm-api wrangler config", () => {
     expect(api(["env.staging.routes.0.pattern", "maneman.in/api/*"])).toContain(
       'env.staging: routes must be exactly [{ pattern: "staging.maneman.in/api/*", zone_name: "maneman.in" }]',
     );
+  });
+
+  it("fails when a route serves a surface that is not switched on", () => {
+    const route = { pattern: "app-staging.maneman.in/api/*", zone_name: "maneman.in" };
+    expect(api(["env.staging.routes.1", route])).toContain(
+      'env.staging: routes must be exactly [{ pattern: "staging.maneman.in/api/*", zone_name: "maneman.in" }]',
+    );
+  });
+
+  it("wants one /api/* route for each switched-on surface, which today is the public site alone", () => {
+    expect(apiRoutePatterns("staging")).toEqual(["staging.maneman.in/api/*"]);
+    expect(apiRoutePatterns("production")).toEqual(["maneman.in/api/*"]);
   });
 
   it.each<[string, Edit, string]>([
