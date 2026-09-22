@@ -739,6 +739,36 @@ One of the client's entries: a payment with its documents, or a refund
 }
 ```
 
+### GET /api/payments/{id}/receipt
+
+A payment's receipt, as a PDF from Books
+
+**200**: The PDF
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such payment of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_ready: the payment is not in Books yet; the app shows "Document unavailable"
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/documents/{id}
 
 A visit's invoice, as a PDF from Books
@@ -2356,8 +2386,16 @@ Request body:
               "description": "The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it."
             },
             "receipt": {
-              "type": "null",
-              "description": "The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3)."
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The payment's receipt, for GET /api/payments/{id}/receipt, once the payment is recorded in Books."
             }
           },
           "required": [

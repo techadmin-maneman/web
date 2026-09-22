@@ -68,6 +68,11 @@ export interface ZohoFsmSettings {
   readonly apiHost: string;
   /** The Books organisation invoices and receipts are in. Present when BOOKS_PROVIDER is "zoho". */
   readonly booksOrgId: string | null;
+  /**
+   * The Books account refunds are paid from: the one Razorpay settles into. Without it, refunds are not recorded
+   * in Books and their vouchers wait (docs/open-points.md).
+   */
+  readonly booksRefundAccountId: string | null;
   /** The secret in FSM's webhook URL. Without it the webhook answers 404, and the reconciliation alone keeps the mirror. */
   readonly webhookToken: string | null;
 }
@@ -285,6 +290,7 @@ export function readSettings(
       apiHost: read.text("ZOHO_FSM_API_HOST"),
       booksOrgId: providers.BOOKS_PROVIDER === "zoho" ? read.text("ZOHO_BOOKS_ORG_ID") : null,
       webhookToken: read.optionalText("FSM_WEBHOOK_TOKEN"),
+      booksRefundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
     };
     if (zohoFsm.webhookToken !== null && zohoFsm.webhookToken.length < 32) {
       read.problems.push("FSM_WEBHOOK_TOKEN must be at least 32 characters");

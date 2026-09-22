@@ -47,3 +47,29 @@ Checkout, orders and refunds from our side arrive with self-serve booking (P2-M5
 - **Staging takes no real money.** Its keys are Razorpay's test keys.
 - **The webhook is created in Razorpay's dashboard** (runbook, step 11c), since Razorpay offers merchants no API for it.
 - **Live mode** waits for P2-M5: KYC, live keys and a live webhook (`docs/open-points.md`, item 6).
+
+## Receipts in Books (P2-M2, 22 September 2026)
+
+A client who pays in advance is owed a receipt, then the tax invoice with the payment set against it, and a refund voucher if money goes back (plan input 11). The owner chose Books for these, and to record staging's test payments there (22 September 2026). FSM's invoices already reach Books, which is linked to FSM and syncs both ways every two to three hours.
+
+**Each captured payment is recorded in Books** as a customer payment (`src/domain/books-sync.ts`).
+
+- It goes against the client's Books customer: the FSM contact's `ZBilling_Id`, which FSM's sync fills in. Until the client reaches Books, the payment waits.
+- The mode is "Razorpay"; the reference is ours (MM-2026-0841). On staging the description begins "Staging test:" (`docs/open-points.md`, item 10).
+- **Books' own receipt is the receipt.** `GET /api/payments/{id}/receipt` streams its PDF; `documents.receipt` gives the payment's ID once Books has it.
+
+**Applied to the visit's invoice** once Books has sent it, up to what the invoice still owes. A draft waits. A paid or void invoice, or an application Books refuses, is logged for ops and not tried again.
+
+**A processed refund is recorded against its payment,** from `BOOKS_REFUND_ACCOUNT_ID`, the bank account Razorpay settles into. Books refuses a refund from Undeposited Funds, and our token cannot create accounts, so the owner creates it (runbook 11b, step 7). While the var is empty, refunds are not recorded (`docs/open-points.md`, item 39). The refund voucher stays null in the API: Books' refund has no PDF of its own that we have found.
+
+**On the five-minute cron,** after the FSM reconciliation, never in the payment's path, so Books is never on the way to a booking.
+
+- Each pass takes up to five of each, oldest first.
+- A record found not ready (no Books customer, a draft invoice) or refused waits an hour before Books is asked again, which keeps us well inside Books' daily API allowance.
+- Any other failure is logged, and the next pass tries again.
+
+### Consequences
+
+- A first payment's receipt can take up to three hours: FSM's sync must first put the client into Books.
+- Staging's test payments are in the real Books org, labelled, until they are removed before go-live (`docs/open-points.md`, item 10).
+- With GST at 0% on staging, a receipt carries no tax. When GST goes on, the CA says whether an advance needs tax on its receipt; Books can take it on the customer payment (`docs/open-points.md`, item 35).

@@ -130,4 +130,33 @@ describe("scheduled handler", () => {
     });
     expect(logs.lines().some((line) => line.event === "sweep")).toBe(true);
   });
+
+  it("offers captured payments to Books", async () => {
+    await markDatabase();
+    const now = new Date().toISOString();
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id) VALUES ('p-1', ?1, '+919810000001', 'Rohit Malhotra', 'c-1')",
+    )
+      .bind(now)
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, status, captured_at, created_at,
+         updated_at)
+       VALUES ('pay-1', 'p-1', 'pay_test1', 200000, 'INR', 'captured', ?1, ?1, ?1)`,
+    )
+      .bind(now)
+      .run();
+    await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), {
+      ...env,
+      CRM_QUEUE: fakeQueue(),
+      RENDER_QUEUE: fakeQueue(),
+      MESSAGE_QUEUE: fakeQueue(),
+      FSM_QUEUE: fakeQueue(),
+    });
+    // The stub FSM has no such client in Books yet, so the payment waits its hour.
+    const payment = await env.DB.prepare("SELECT books_checked_at FROM payments WHERE id = 'pay-1'").first<{
+      books_checked_at: string | null;
+    }>();
+    expect(payment?.books_checked_at).not.toBeNull();
+  });
 });

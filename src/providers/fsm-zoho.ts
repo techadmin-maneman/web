@@ -69,6 +69,7 @@ const Contact = z.object({
   Mobile: z.string().nullish(),
   Phone: z.string().nullish(),
   Email: z.string().nullish(),
+  ZBilling_Id: z.string().nullish(),
 });
 
 const User = z.object({
@@ -128,7 +129,13 @@ function appointmentFrom(record: z.infer<typeof Appointment>): FsmAppointment {
 function contactFrom(record: z.infer<typeof Contact>): FsmContact {
   const name =
     record.Full_Name ?? [record.First_Name, record.Last_Name].filter((part) => typeof part === "string").join(" ");
-  return { id: record.id, name, mobile: record.Mobile ?? record.Phone ?? null, email: record.Email ?? null };
+  return {
+    id: record.id,
+    name,
+    mobile: record.Mobile ?? record.Phone ?? null,
+    email: record.Email ?? null,
+    booksCustomerId: record.ZBilling_Id ?? null,
+  };
 }
 
 /** FSM and Books share one access token (migrations/0010_zoho_tokens.sql). */

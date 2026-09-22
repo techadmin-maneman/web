@@ -85,6 +85,7 @@
     "ZOHO_FSM_ACCOUNTS_HOST": "",
     "ZOHO_FSM_API_HOST": "",
     "ZOHO_BOOKS_ORG_ID": "",
+    "BOOKS_REFUND_ACCOUNT_ID": "",
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
     "PAYMENTS_PROVIDER": "stub",
     "SELF_SERVE_BOOKING": "true",
@@ -197,6 +198,7 @@
         "ZOHO_FSM_ACCOUNTS_HOST": "accounts.zoho.in",
         "ZOHO_FSM_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
+        "BOOKS_REFUND_ACCOUNT_ID": "",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
         "SELF_SERVE_BOOKING": "true",
@@ -302,6 +304,7 @@
         "ZOHO_FSM_ACCOUNTS_HOST": "",
         "ZOHO_FSM_API_HOST": "",
         "ZOHO_BOOKS_ORG_ID": "",
+        "BOOKS_REFUND_ACCOUNT_ID": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",

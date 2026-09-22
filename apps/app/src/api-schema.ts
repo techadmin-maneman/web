@@ -1128,6 +1128,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/{id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A payment's receipt, as a PDF from Books */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The PDF */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/pdf": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such payment of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_ready: the payment is not in Books yet; the app shows "Document unavailable" */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}": {
         parameters: {
             query?: never;
@@ -1806,8 +1871,8 @@ export interface components {
             documents: {
                 /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it. */
                 invoice: string | null;
-                /** @description The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3). */
-                receipt: null;
+                /** @description The payment's receipt, for GET /api/payments/{id}/receipt, once the payment is recorded in Books. */
+                receipt: string | null;
             };
         } & {
             /**
