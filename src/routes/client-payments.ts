@@ -69,11 +69,9 @@ const PaymentDetailSchema = PaymentEntrySchema.extend({
       invoice: z
         .union([z.uuid(), z.null()])
         .openapi({ description: "The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it." }),
-      receipt: z
-        .null()
-        .openapi({
-          description: "The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3).",
-        }),
+      receipt: z.null().openapi({
+        description: "The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3).",
+      }),
     })
     .strict(),
 }).openapi("PaymentDetail");
