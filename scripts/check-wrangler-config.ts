@@ -9,6 +9,7 @@
 import { parseArgs } from "node:util";
 import { readJsonc } from "./lib/jsonc.ts";
 import { checkAccountsAgree, checkApiConfig, checkSiteConfig } from "./lib/wrangler-config-check.ts";
+import { STATIC_WORKERS } from "./lib/workers.ts";
 
 const { values } = parseArgs({
   options: {
@@ -25,6 +26,10 @@ const problems = [
   ...checkApiConfig(api, { requireProvisioned: values["require-provisioned"] }),
   ...checkSiteConfig(site),
   ...checkAccountsAgree(api, site),
+  // Each static Worker in the registry needs its own check; mm-site is the only one so far.
+  ...STATIC_WORKERS.filter((worker) => worker.name !== "mm-site").map(
+    (worker) => `${worker.name}: no config check yet for a ${worker.kind} Worker`,
+  ),
 ];
 
 const expected = values["expect-problem"];
