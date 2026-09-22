@@ -90,7 +90,7 @@ describe("GET /api/availability", () => {
       regular: object;
       days: { date: string; windows: { window: string; with: string | null }[] }[];
     }>();
-    expect(body.price).toEqual({ amount_ex_gst: 200000, amount: 210000, gst_percent: 5 });
+    expect(body.price).toEqual({ amount_ex_gst: 200000, amount: 200000, gst_percent: 0 });
     expect(body.regular).toEqual({ name: "Imran Qureshi", initials: "IQ" });
     expect(body.days).toHaveLength(14);
     expect(body.days[0]).toEqual({
@@ -146,7 +146,7 @@ describe("POST /api/holds", () => {
       starts_at: "2026-09-22T06:30:00.000Z",
       ends_at: "2026-09-22T08:00:00.000Z",
       technician: { name: "Imran Qureshi", initials: "IQ" },
-      price: { amount_ex_gst: 200000, amount: 210000, gst_percent: 5 },
+      price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
       late_fee: null,
       // Moving is free until 24 hours before the window opens.
       free_until: "2026-09-21T06:30:00.000Z",
@@ -181,8 +181,8 @@ describe("POST /api/holds", () => {
     const lead = await client(true);
     const answer = await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" });
     expect(await answer.json()).toMatchObject({
-      price: { amount_ex_gst: 3000000, amount: 3150000 },
-      late_fee: { amount_ex_gst: 400000, amount: 420000 },
+      price: { amount_ex_gst: 3000000, amount: 3000000 },
+      late_fee: { amount_ex_gst: 400000, amount: 400000 },
       ends_at: "2026-09-24T06:30:00.000Z",
     });
     expect((await hold(lead, { type: "first_fit", date: "2026-10-30", window: "morning" })).status).toBe(422);

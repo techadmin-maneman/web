@@ -91,7 +91,7 @@ describe("POST /api/bookings", () => {
       checkout: {
         key_id: "",
         order_id: expect.stringMatching(/^order_stub_/) as string,
-        amount: 210000,
+        amount: 200000,
         currency: "INR",
         name: "Mane Man",
         description: "Service visit, 2026-09-22",
@@ -99,7 +99,7 @@ describe("POST /api/bookings", () => {
       },
     });
     expect(payments.made.orders).toEqual([
-      { amount: 210000, receipt: holdId, notes: { hold_id: holdId, person_id: PERSON } },
+      { amount: 200000, receipt: holdId, notes: { hold_id: holdId, person_id: PERSON } },
     ]);
     // Asked again, the same order.
     await post(app, "/api/bookings", { hold_id: holdId });
@@ -172,7 +172,7 @@ describe("confirmBooking", () => {
     const later = new Date(NOW.getTime() + 12 * 60_000);
     expect(await confirmBooking(env.DB, fsm, payments, holdId, later, { labelAsTest: true })).toBe("refunded");
     expect(await confirmBooking(env.DB, fsm, payments, holdId, later, { labelAsTest: true })).toBe("refunded");
-    expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 210000 }]);
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 200000 }]);
     expect(fsm.made.visits).toEqual([]);
   });
 
@@ -201,7 +201,7 @@ describe("confirmBooking", () => {
     const fifth = batchOf(5);
     await handleFsmSyncBatch(fifth as unknown as MessageBatch, env, deps, createLogger());
     expect(fifth.messages[0]?.ack).toHaveBeenCalled();
-    expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 210000 }]);
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 200000 }]);
     expect(deps.alerts).toEqual([expect.stringMatching(/could not be written to FSM.*refunded/)]);
   });
 });
@@ -221,7 +221,7 @@ describe("Razorpay's capture of a hold's payment", () => {
         payment: {
           entity: {
             id: "pay_9",
-            amount: 210000,
+            amount: 200000,
             currency: "INR",
             status: "captured",
             order_id: "order_9",

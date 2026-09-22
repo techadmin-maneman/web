@@ -105,14 +105,14 @@ test("Payments: one list of payments and refunds, an entry's invoice, and a docu
   await expect(entries.nth(0)).toContainText("refund to UPI");
   await expect(entries.nth(0)).toContainText("Refund processing");
   await expect(entries.nth(1)).toContainText("Rs. 2,000");
-  await expect(entries.nth(1)).toContainText("Rs. 2,100 incl.");
+  await expect(entries.nth(1)).toContainText("Rs. 2,000 incl.");
   await expect(entries.nth(1)).toContainText("Paid");
   await expect(entries.nth(2)).toContainText("First fit");
   await expect(entries.nth(2)).toContainText("Rs. 30,000");
 
   await entries.nth(1).click();
   await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
-  await expect(page.getByText("Rs. 2,100 including GST at 5%")).toBeVisible();
+  await expect(page.getByText("Rs. 2,000 including GST at 0%")).toBeVisible();
   await expect(page.getByText(client.reference)).toBeVisible();
   const invoice = page.getByRole("link", { name: "Tax invoice" });
   await expect(invoice).toHaveAttribute("href", `/api/documents/${client.service.id}`);

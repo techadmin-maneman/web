@@ -72,16 +72,16 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(pay.getByText(/^Slot held \d:\d\d$/)).toBeVisible();
   await expect(pay.getByText("Rs. 2,000", { exact: true })).toBeVisible();
-  await expect(pay.getByText("Rs. 2,100 incl. GST")).toBeVisible();
+  await expect(pay.getByText("Rs. 2,000 incl. GST")).toBeVisible();
   await expect(pay.getByText(/^Free to move until .+\. After that it is charged\.$/)).toBeVisible();
   await expect(pay.getByRole("radio", { name: "UPI · any app" })).toHaveAttribute("aria-checked", "true");
   await expect(pay.getByText("Imran never handles money.")).toBeVisible();
 
-  await pay.getByRole("button", { name: "Pay Rs. 2,100" }).click();
+  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const confirmed = page.getByRole("dialog").getByRole("status");
   await expect(confirmed.getByText("Confirmed")).toBeVisible();
   await expect(confirmed.getByText("Imran messages you the day before.")).toBeVisible();
-  await expect(confirmed.getByText("Rs. 2,100")).toBeVisible();
+  await expect(confirmed.getByText("Rs. 2,000")).toBeVisible();
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 });
@@ -89,7 +89,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
 test("says so when the payment fails, with the hold still counting", async ({ page }) => {
   await fakeCheckout(page, "failed");
   await toPayment(page);
-  await page.getByRole("button", { name: "Pay Rs. 2,100" }).click();
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const failed = page.getByRole("dialog").getByRole("alert");
   await expect(failed.getByText("The payment did not go through.")).toBeVisible();
   await expect(failed.getByText(/^Slot held \d:\d\d more\.$/)).toBeVisible();
