@@ -33,6 +33,7 @@ export default defineConfig(
           "./tsconfig.node.json",
           "./tsconfig.browser.json",
           "./site/tsconfig.json",
+          "./site/tsconfig.worker.json",
           "./apps/app/tsconfig.json",
           "./apps/app/sw/tsconfig.json",
         ],

@@ -25,6 +25,7 @@ export type Hold = Schemas["Hold"];
 export type Booking = Schemas["Booking"];
 export type MoveTerms = Schemas["MoveTerms"];
 export type CancelTerms = Schemas["CancelTerms"];
+export type Refer = Schemas["Refer"];
 export type BookableType = Me["booking"]["types"][number];
 export type BookingWindow = Hold["window"];
 
@@ -103,6 +104,8 @@ export const api = {
     }),
   requestDeletion: () => call<{ state: "requested"; requested_at: string }>("POST", "/api/deletion-request"),
   raiseGrievance: (text: string) => call<{ id: string; state: "open" }>("POST", "/api/grievances", { text }),
+  refer: () => call<Refer>("GET", "/api/refer"),
+  revokeCard: () => call<null>("DELETE", "/api/refer/card"),
   visits: () => call<Visits>("GET", "/api/visits"),
   visit: (id: string) => call<VisitDetail>("GET", `/api/visits/${id}`),
   photos: () => call<PhotoTimeline>("GET", "/api/photos"),
@@ -127,5 +130,25 @@ export const api = {
 /** A visit's tax invoice, as a PDF the browser opens itself. */
 export const documentUrl = (id: string) => `/api/documents/${id}`;
 export const receiptUrl = (paymentId: string) => `/api/payments/${paymentId}/receipt`;
+/** The client's own referral card, as the phone composed it. */
+export async function putCard(card: Blob): Promise<Answer<{ version: number }>> {
+  try {
+    const response = await fetch("/api/refer/card", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "image/jpeg" },
+      body: card,
+    });
+    if (response.ok) {
+      const body = (await response.json()) as { version: number };
+      return { ok: true, status: response.status, body, cached: false };
+    }
+    const error = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
+    return { ok: false, status: response.status, code: error?.error?.code ?? "unknown" };
+  } catch {
+    return { ok: false, status: 0, code: "offline" };
+  }
+}
+
 /** Everything held about the client, as a file the browser saves. */
 export const EXPORT_URL = "/api/me/export";

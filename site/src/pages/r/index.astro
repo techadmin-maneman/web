@@ -1,0 +1,20 @@
+---
+// The referral landing, served for every /r/:code by the mm-site Worker
+// (site/src/worker.ts, docs/decisions/0027-referral-landing.md). One page
+// answers every code: the Worker rewrites the preview tags and writes the
+// invite onto #invite before the browser, or WhatsApp's crawler, sees it.
+//
+// It is never indexed: an invite is one person's, and its address holds a code.
+import { referral, inviteTitle } from "../../content/referral.ts";
+import Invite from "../../islands/Invite.tsx";
+import Site from "../../layouts/Site.astro";
+import { ENVIRONMENT, IS_PRODUCTION } from "../../lib/build.ts";
+import { TURNSTILE_SITE_KEYS } from "../../lib/turnstile.ts";
+---
+
+<Site title={inviteTitle(null)} description={referral.page.description} noindex>
+  <!-- data-invite carries the invite the Worker looked up; empty where it did not. -->
+  <div id="invite" data-invite="">
+    <Invite client:load turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
+  </div>
+</Site>
