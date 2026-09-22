@@ -36,7 +36,7 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
     - Reconciliation runs one page per 5-minute tick.
     - The technician outbox sends at most 10 events per request.
     - No new cron is added; the account allows five.
-12. **Bot Fight Mode** (ADR 0023, 2) challenges automated traffic across the zone and cannot be skipped per path on the free plan, so Razorpay, FSM and Evolution webhooks may be challenged. That adds to the case for turning it off. **Open, before P2-M2.**
+12. **Bot Fight Mode** (ADR 0023, 2) challenges automated traffic across the zone and cannot be skipped per path on the free plan, so Razorpay, FSM and Evolution webhooks may be challenged. That adds to the case for turning it off. **Ruled 22 September 2026: turned off** by the owner.
 
 ## Phase 1 against Phase 2
 
@@ -64,6 +64,21 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 
 22. **Weekend capacity.** The Ops Console notes weekends at 92% against 64% on weekdays. That needs weekend headcount, not software; recorded, not built.
 23. **The profile's address.** Board G1 shows the area only ("Sector 65, Gurgaon 122018"), but the profile holds the house too. **Ruled 22 September 2026: the profile shows the whole address.**
+24. **Referral rules the designs left open.** **Ruled 22 September 2026**, as recommended in `docs/phase2-inputs.md` (section 8):
+    - **Invite validity.** An invite to an unserved area stays valid for 12 months after that area launches. If the referrer deletes their account before the friend is fitted, the friend keeps the 3 credits the invite promised. The referrer's 3 lapse, and the invite shows the house card instead of theirs.
+    - **Naming the referrer.** The invite shows the referrer's first name only, and only after they have read "your first name appears on your invite" beside the card's consent lines. `REFERRER_NAME_ON_INVITE` can switch this off everywhere.
+    - **What the referrer is told.** The landing page tells the friend that the referrer is told, by the friend's first name, when the friend is fitted. Booking through the invite is the friend's agreement. A friend who would rather not be named books on the public site, without credits. Counsel confirms this with the consents.
+    - **Prices on the referral page.** The same figures as the site, from the price book, with no referral price.
+    - **The monthly cap.** `REFERRAL_MONTHLY_CAP` is 5, reset on the calendar month in India time. Later fits are held for review, not refused.
+    - **Referrals logged before January.** Credits imported from ops' log expire 365 days after the import.
+25. **Counsel's sign-off.** **Given 22 September 2026**, as the owner reports. It covers:
+    - the five consent purposes and their wording;
+    - the four referral-card lines (board F3);
+    - retention: photographs 7 days after a deletion request, invoices 8 years;
+    - our roles under the DPDP Act;
+    - rulings 2 and 3 of item 24.
+26. **The Zoho org.** The org the FSM trial runs in is the real one (ruled 22 September 2026). CRM is set up in it before production moves off the Developer Edition org (ADR 0020). Until then, staging's FSM and Books calls reach this real org, so its test records must be removed before go-live (`docs/open-points.md`).
+27. **Staging runs on placeholders.** **Ruled 22 September 2026:** "take placeholder values for everything else. This is going to staging." Where an input is still owed, staging uses a placeholder and the build carries on. Each placeholder, and every other point to settle, is listed in `docs/open-points.md`, which is cleared before anything reaches production.
 
 ## Inputs still owed
 

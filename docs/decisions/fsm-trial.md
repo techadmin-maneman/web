@@ -1,6 +1,6 @@
 # Zoho FSM trial findings
 
-- Status: **pending**. The owner supplies the findings; P2-M2 cannot start without them.
+- Status: **answered on 22 September 2026**, from the documentation and a trial run against the real org (below). Webhooks are confirmed in P2-M2.
 - Referenced by: `docs/prompts/phase2-backend.md` ("Before you start", point 2)
 
 The Phase 2 backend reads field operations from Zoho FSM and writes them back to it. Where the trial finds a capability missing, the build stops and an ADR records the fallback. The roadmap's fallbacks are our own availability logic and our own photo-capture PWA.
@@ -54,3 +54,40 @@ These are what the published documentation says. Each still needs confirming aga
    - Its API does not document one.
 9. **The job-sheet template.** The forms are built in FSM's settings, not through the API. The owner writes the template.
 10. **Technicians and zones.** The people assigned to appointments come from FSM's users. Zones are territories. Users cost nothing up to 200 on Standard and Professional ([KB]faqs/pricing-and-subscription).
+
+## Trial results (22 September 2026)
+
+Run through the API against the org the owner confirmed as the real one, while it was still empty. Every test record was named "Mane Man API test", used an `example.com` address, and was deleted afterwards. Books was checked read-only.
+
+1. **Host and scopes.**
+   - A Self Client's refresh token works on `accounts.zoho.in`, and the token names `www.zohoapis.in` as its API domain. FSM answers on both `fsm.zoho.in/fsm/v1` and `www.zohoapis.in/fsm/v1`.
+   - `ZohoFSM.modules.all` does not cover time sheets, which need `ZohoFSM.modules.TimeSheets.READ` of their own.
+   - An empty list answers **204 with no body**, not 200 with an empty list.
+   - A create answers `data[0].details.id`, but a file upload answers a single `data` object with `file_id`.
+2. **Limits.**
+   - Every FSM answer carries `x-ratelimit-limit` (2,500 on the trial), `x-ratelimit-remaining` and `x-ratelimit-reset`.
+   - Zoho allows **10 new access tokens per 10 minutes** per refresh token, and refuses more with "Access Denied". The integration must cache its access token for the hour it lasts.
+   - Books allows 1,000 calls a day on its trial (`x-rate-limit-*` headers).
+3. **Webhooks.** Not tested: webhooks are set up in FSM's settings, not through the API, and need a receiving route. That is tested in P2-M2 once the route exists.
+4. **Reading.** Contacts, work orders, appointments, assets, territories, users (with each user's service resource and territory) and job-sheet forms all read as documented. Work orders and appointments carry `Status`, `Billing_Status`, `Retainer_Received` and `Invoice_Id`.
+   - **FSM geocodes service addresses itself** (`Service_Latitude`, `Service_Longitude`).
+5. **Photographs.**
+   - A JPEG and a WebP were uploaded to `/files`, attached to a work order, and listed.
+   - Both downloaded through `/files?file_id=` **byte for byte identical**, with the right content type.
+6. **Availability.**
+   - `getAvailableServiceResources` returns each technician with `is_available` and any `conflicting_appointments`.
+   - `Available_TimeSlots` returns free slots of the asked length (90 minutes tried), and leaves out booked time.
+   - The working day is FSM's own setting: slots began at 09:00.
+7. **Writes.**
+   - Creating an appointment works. Each work order's service line can be in **one appointment only**.
+   - **Rescheduling must use `PUT /Service_Appointments/{id}/actions/reschedule`.** A plain edit of the times answers "record updated" but changes nothing.
+   - The transitions offered are Dispatch, Cancel, Terminate and Reschedule.
+   - **FSM accepted an overlapping appointment** for the same technician even with `$allow_overlapping: false`, so the org's "Allow overlapping appointments" setting is on. Our own clash check (`slot_claims`, ADR 0034) is needed either way. Turning the setting off is an open point.
+   - An asset needs a `Product` (a part item) and keeps our label in `Asset_Number`.
+   - Items are deleted at `/Products/{id}`, not `/Service_And_Parts/{id}`. Other records delete at their module's path.
+   - No idempotency key is offered anywhere.
+8. **Books.**
+   - The organisation exists (Delhi, financial year from April, Premium trial), and its retainer invoice, customer payment, invoice, credit note, contact and item endpoints answer.
+   - **GST is not set up yet:** there is no GSTIN and no tax rates, so no GST document can be issued until it is.
+9. **The job-sheet template.** None exists yet (`meta/job_sheet_forms` is empty). It is built in FSM's settings.
+10. **Technicians and zones.** The org has one user (the owner, an active service resource of type Agent) and one territory, "Mane Man".

@@ -4,6 +4,14 @@ What P2-M2 (the FSM mirror and read surfaces) and P2-M3 (referral and waitlist) 
 
 Longest lead times first: DLT registration (1–2 weeks), counsel, and the CA's GST answers. Start those now.
 
+**Status, 22 September 2026.** Received:
+
+- Zoho trial access and the Razorpay test keys.
+- Counsel's sign-off and the referral rulings.
+- Bot Fight Mode is off.
+
+Staging now proceeds on placeholders for everything else (ADR 0025, item 27). `docs/open-points.md` lists what is still owed before production.
+
 ## How to hand things over
 
 - **Secrets** (API keys, webhook secrets, refresh tokens, auth keys). Save them in a file at the repository root on this computer, named as each section says (for example `.env.razorpay-staging`), one `NAME=value` per line. Git ignores every `.env.*` file. Then tell me the file name; I set the values on the Workers without printing them. Never paste a secret into chat, email or WhatsApp.
@@ -65,7 +73,7 @@ One set for the trial now. Staging and production get their own sets once the re
 3. Open the **Generate Code** tab and enter these scopes, comma-separated:
 
    ```
-   ZohoFSM.modules.all,ZohoFSM.files.CREATE,ZohoFSM.files.READ,ZohoFSM.users.READ,ZohoFSM.meta.JobSheets.READ,ZohoBooks.contacts.ALL,ZohoBooks.invoices.ALL,ZohoBooks.customerpayments.ALL,ZohoBooks.creditnotes.ALL,ZohoBooks.settings.READ
+   ZohoFSM.modules.all,ZohoFSM.modules.TimeSheets.ALL,ZohoFSM.files.CREATE,ZohoFSM.files.READ,ZohoFSM.users.READ,ZohoFSM.meta.JobSheets.READ,ZohoBooks.contacts.ALL,ZohoBooks.invoices.ALL,ZohoBooks.customerpayments.ALL,ZohoBooks.creditnotes.ALL,ZohoBooks.settings.READ
    ```
 
 4. Choose the longest duration (10 minutes), add a description ("Mane Man API"), and choose the organisation. Copy the **grant code**.
@@ -192,7 +200,9 @@ Then save it as CSV in the same place and tell me. Answering per city is enough 
 
 ### 8. Referral rulings
 
-The prompt settles most of the referral rules: 3 service visits each when a referred friend's first fit is done, credits valid 365 days, and fraud holds for review. The designs leave six questions to you. Each has a recommendation; reply "ok" or give your answer.
+**Ruled 22 September 2026: all six as recommended** (ADR 0025, item 24).
+
+The prompt settles most of the referral rules: 3 service visits each when a referred friend's first fit is done, credits valid 365 days, and fraud holds for review. The designs left these six questions to the owner.
 
 1. **Invite validity.** An invite to an unserved area stays valid for 12 months after that area launches.
    - Confirm the 12 months.
