@@ -3,29 +3,11 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import type { APIRequestContext, Page } from "@playwright/test";
-import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
-
-const CODE = "246810";
+import { expect, randomMobile, test } from "../support.ts";
+import { CODE, signIn } from "./signed-in.ts";
 
 async function loggedIn(page: Page, request: APIRequestContext): Promise<string> {
-  const mobile = randomMobile();
-  const booking = await request.post("http://127.0.0.1:8787/api/lead", {
-    data: {
-      name: "Rohit Malhotra",
-      mobile,
-      city: "Gurgaon",
-      first_choice_window: "weekday_pm",
-      loss_extent: "receding",
-      consent: true,
-      turnstile_token: DUMMY_TOKEN,
-    },
-  });
-  expect(booking.status()).toBe(201);
-  await page.goto("/");
-  await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
-  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
-  await page.getByRole("textbox", { name: "The six-digit code" }).fill(CODE);
-  await page.getByRole("button", { name: "Continue" }).click();
+  const mobile = await signIn(page, request);
   await page.getByRole("link", { name: "Your profile" }).click();
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
   return mobile;
@@ -36,6 +18,22 @@ test("opens from Home's button, with the client's name and a way back", async ({
   await expect(page.getByRole("banner")).toContainText("Rohit Malhotra");
   await page.getByRole("link", { name: "Back" }).click();
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+});
+
+test("shows board B3's loading shape while the profile comes", async ({ page, request }) => {
+  await signIn(page, request);
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/profile", async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.getByRole("link", { name: "Your profile" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Loading" })).toBeAttached();
+  release();
+  await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
 });
 
 test("takes an address and its access notes, and shows them", async ({ page, request }) => {
@@ -155,7 +153,7 @@ test("asks before requesting deletion, then says it is requested", async ({ page
 
   await page.getByRole("button", { name: "Request deletion" }).click();
   await page.getByRole("button", { name: "Yes, request deletion" }).click();
-  await expect(page.getByRole("status")).toHaveText(
+  await expect(page.getByRole("status").filter({ hasText: "Deletion requested" })).toHaveText(
     /^Deletion requested on \d{1,2} [A-Z][a-z]{2} \d{4}\. We will confirm on WhatsApp\.$/,
   );
 });

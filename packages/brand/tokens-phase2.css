@@ -19,5 +19,7 @@
   --tap-row: 64px; /* rows, tabs, the code's boxes */
   --sp-64: 64px;
   --switch-width: 46px; /* a consent's switch (board G1) */
+  --skeleton-label: 120px; /* the loading state's label (board B3) */
+  --skeleton-card: 150px; /* and its card */
   --tracking-number: 0.04em; /* a mobile number, spaced for reading */
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type Profile } from "../api.ts";
 import { errors, profile } from "../content.ts";
 import { AddressSection } from "./AddressSection.tsx";
+import { Loading } from "../states/Loading.tsx";
 import { ConsentList } from "./ConsentList.tsx";
 import { DeletionCard, NumberChangeCard, SupportCard } from "./AccountCards.tsx";
 import styles from "./profile.module.css";
@@ -27,7 +28,7 @@ export function ProfileScreen({ onLogout, onChanged }: { onLogout: () => void; o
     void load();
   }, [load]);
 
-  if (loaded === null) return <div aria-busy="true" />;
+  if (loaded === null) return <Loading />;
   if (loaded === "failed") {
     return (
       <div className={styles.failed} role="alert">

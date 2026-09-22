@@ -61,10 +61,17 @@
   justify-content: center;
   min-height: var(--sp-48);
   border: var(--hairline) solid var(--ink-line);
+  background: none;
+  font: inherit;
   font-size: var(--fs-15);
   font-weight: 500;
   color: var(--paper);
   text-decoration: none;
+}
+
+/* Offline (board B3): Reschedule waits for the connection. */
+.action:disabled {
+  color: var(--ink-muted);
 }
 
 .action:focus-visible {
@@ -127,9 +134,16 @@
   align-items: center;
   justify-content: center;
   height: var(--btn-lg);
+  border: 0;
   background: var(--ink);
+  font: inherit;
   font-size: var(--fs-16);
   font-weight: 500;
   color: var(--paper);
   text-decoration: none;
+}
+
+.book:disabled {
+  background: var(--paper-shade);
+  color: var(--text-quiet);
 }

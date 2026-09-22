@@ -54,7 +54,7 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
 ## Consequences
 
 - **The first load is 70.9 KB of gzipped JavaScript,** under half the budget, before the screens after login are added.
-- **This step builds the shell and board A1 only.** The login (A1–A3), Home, the tabs, Profile (G1–G2), and the manifest and service worker follow, each with its fidelity pairs.
+- **This step builds the shell and board A1 only.** The login (A1–A3), Home, the tabs, Profile (G1–G2), and the manifest and service worker follow below. Their fidelity pairs against the boards follow in P2-F1.5.
 - **A new Worker's first deploy is a bootstrap** (runbook, step 5): `mm-app-staging` was bootstrapped on 22 September 2026. `mm-app-production` waits for the go-ahead.
 - **The static server can now keep the Host header** (`keepHost`). The public site's tests do not use it and are unchanged.
 
@@ -70,3 +70,21 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
 - **The tabs.** Visits lists the consultation. Photos, Payments and Refer show the design's empty states. The tab glyphs, from the design's tab bar, are in `apps/app/src/icons.ts`, pinned by `test/node/app-content.test.ts`.
 - **Placeholder copy.** `apps/app/src/content.ts` marks the lines the design does not draw: A1's errors, A2's neutral line, the void and failed states, the WhatsApp messages, and Home with nothing booked. Each awaits the owner's wording.
 - **Tests log in for real.** Locally only, `OTP_FIXED_CODE` makes every code a known one, so the browser tests go from a booking made through the public API to Home. The guard refuses it in staging and production.
+
+## The profile (P2-F1.3)
+
+- **Boards G1 and G2,** on the profile API (ADR 0042). The design draws no address form, so its fields follow G2's number field. Switching on referral cards first shows the card's four lines (board F3), so the consent recorded is one the client has read.
+- **Only the page scrolls.** The header and the tabs sit outside the scrolling page, so nothing passes under them and no focused control can be hidden there (WCAG 2.4.11). Each page opens at its top.
+
+## The PWA and board B3 (P2-F1.4)
+
+- **The manifest and icons are drawn at build time** (`apps/app/pwa.ts`), from the brand kit: the favicon drawing on ink, as the kit's README asks for home-screen icons, at 192 and 512 px, a maskable 512 with the crown inside the circle a launcher may crop to, and the 180 px Apple touch icon. Install prompts are left to the browser.
+- **The service worker is hand-written** (`apps/app/sw/sw.ts`), a second Vite entry served as `/sw.js`, so its scope is the whole app. The build writes in the list of files it keeps and a version, a hash of those files, so a new build installs afresh and drops the old files.
+  - **Pages** come from the network, and offline from the kept app.
+  - **The app's own files** come from what it kept at install.
+  - **`GET /api/me`, Home's data,** comes from the network and is kept. With no network, the kept copy is answered, marked `Mm-Served-From: cache`, and the app shows B3's offline banner over it. Booking and rescheduling are disabled until the connection is back.
+  - **No other API answer is kept,** so no photograph or document ever is.
+- **The kept Home is the one personal thing on the phone.** The app deletes it at logout and whenever the API says the session has ended, rather than leaving it to the service worker, which does not see a page loaded around it (a hard reload).
+- **Board B3's three states.** Loading is the design's two blocks, used while the profile loads. Offline is the ink banner, shown for a kept Home and whenever the connection drops. The error is the design's, with Try again and Message us.
+  - **The error leaves out the design's "Your visit is still booked."** When the app cannot reach the API it cannot know that there is a visit. The line returns with Home's own visit data (P2-F2).
+- **Tests.** The app's browser tests block service workers, since one would answer requests a test fakes; `e2e/app/pwa.e2e.ts` allows them and covers installability (Chrome's own check), the offline Home, the kept files, and logout. The JavaScript budget counts the service worker: 79.8 KB gzipped in all.

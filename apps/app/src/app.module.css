@@ -1,32 +1,6 @@
-/* While the session is checked, and if the API cannot be reached. Board B3's designed states follow. */
+/* While the session is checked. */
 
 .checking {
   flex: 1;
   background: var(--ink);
-}
-
-.failed {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--sp-20);
-  padding: var(--sp-24);
-  background: var(--ink);
-  font-size: var(--fs-16);
-  color: var(--paper);
-}
-
-.failed p {
-  margin: 0;
-}
-
-.retry {
-  height: var(--btn-lg);
-  border: 0;
-  background: var(--paper);
-  font: inherit;
-  font-weight: 500;
-  color: var(--ink);
-  cursor: pointer;
 }

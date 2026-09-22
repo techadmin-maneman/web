@@ -37,6 +37,7 @@ const TYPES: Readonly<Record<string, string>> = {
   ".mp4": "video/mp4",
   ".txt": "text/plain; charset=utf-8",
   ".json": "application/json",
+  ".webmanifest": "application/manifest+json",
   ".xml": "application/xml",
 };
 

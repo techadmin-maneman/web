@@ -1,8 +1,11 @@
 // The client app's build (docs/decisions/0043-client-app.md). One build per
 // environment, into dist/<environment>; scripts/build-app.ts adds _headers.
+// The service worker is a second entry, served as /sw.js so its scope is the
+// whole app.
 
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { pwa } from "./pwa.ts";
 
 const environment = process.env.MM_ENV ?? "local";
 
@@ -20,7 +23,7 @@ const identify: Plugin = {
 
 export default defineConfig({
   root: import.meta.dirname,
-  plugins: [react(), identify],
+  plugins: [react(), identify, pwa()],
   define: { "import.meta.env.MM_ENV": JSON.stringify(environment) },
   build: {
     outDir: `dist/${environment}`,
@@ -28,6 +31,10 @@ export default defineConfig({
     // No data: URLs: the content security policy allows none.
     assetsInlineLimit: 0,
     sourcemap: false,
+    rolldownOptions: {
+      input: { index: `${import.meta.dirname}/index.html`, sw: `${import.meta.dirname}/sw/sw.ts` },
+      output: { entryFileNames: (chunk) => (chunk.name === "sw" ? "sw.js" : "assets/[name]-[hash].js") },
+    },
   },
   server: {
     port: 5173,
