@@ -54,7 +54,7 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 17. **Ops boards D1, D2 and D3.** The Ops Console draws payments and a dispute (D1), tasks (D2) and technicians (D3). The design README says to build every section, and neither prompt covers them. D1 is the no-show and late-cancellation dispute queue the front-end prompt implies; D2 is the queue that partial outcomes feed; D3 is the roster, which carries device revocation. They are built in P2-F4, with their backend in P2-M4.
 18. **Six technician steps.** The steps are before photographs, checklist, consumables, piece, after photographs and outcome. Board B3 draws steps 3 and 4 together, and the outcome is labelled "Step 6".
 19. **Service visit length.** The Client App shows 90 minutes (B1) and the Referral landing "An hour" (C5). **Open, before P2-M4.**
-20. **"Number not recognised" (A3)** tells anyone whether a number belongs to a Mane Man client. A neutral line ("if this number has a booking, a code is on its way") would not. **Open, before P2-F1.**
+20. **"Number not recognised" (A3)** tells anyone whether a number belongs to a Mane Man client. A neutral line ("if this number has a booking, a code is on its way") would not. **Ruled 22 September 2026: neutral.** The login answers every number alike (ADR 0030), departing from the prompt's `404 not_recognised`.
 21. **The card fingerprint.** The fraud rules name a UPI handle or card fingerprint. Razorpay may not expose a card fingerprint to our account; without it the rules use the UPI handle, the address and the mobile number. Confirmed at P2-M2.
 22. **Weekend capacity.** The Ops Console notes weekends at 92% against 64% on weekdays. That needs weekend headcount, not software; recorded, not built.
 

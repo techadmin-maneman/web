@@ -1,0 +1,595 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1",
+    "title": "Mane Man API: the client app",
+    "description": "mm-api on the client app's host (docs/decisions/0026-hosts-and-surfaces.md), served at https://{host}/api/*. Every route but /api/health and /api/auth/* needs the mm_app session cookie, and every write needs the page's own Origin. Every response carries an X-Request-Id header."
+  },
+  "servers": [
+    {
+      "url": "https://app.maneman.in",
+      "description": "production"
+    },
+    {
+      "url": "https://app-staging.maneman.in",
+      "description": "staging (Cloudflare Access)"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "not_found",
+                  "invalid_request",
+                  "turnstile_failed",
+                  "rate_limited",
+                  "idempotency_in_progress",
+                  "idempotency_key_reused",
+                  "environment_mismatch",
+                  "unavailable",
+                  "internal_error",
+                  "busy",
+                  "photo_invalid_file",
+                  "upload_already_received",
+                  "upload_missing",
+                  "session_required",
+                  "job_not_claimable",
+                  "look_limit_reached",
+                  "unauthorized",
+                  "forbidden_origin",
+                  "access_required",
+                  "code_expired",
+                  "too_early"
+                ]
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "invalid_request only: the fields that failed validation, never their values."
+              }
+            },
+            "required": [
+              "code",
+              "request_id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unavailable"
+            ]
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "local",
+              "staging",
+              "production"
+            ]
+          },
+          "version_id": {
+            "type": "string",
+            "description": "Cloudflare Worker version ID serving this request."
+          },
+          "version_tag": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Tag given at upload: the git commit SHA in remote environments."
+          },
+          "d1": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unmarked",
+              "mismatch",
+              "unreachable"
+            ],
+            "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+          }
+        },
+        "required": [
+          "status",
+          "environment",
+          "version_id",
+          "version_tag",
+          "d1"
+        ],
+        "additionalProperties": false
+      },
+      "LoginChallenge": {
+        "type": "object",
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "whatsapp",
+              "sms"
+            ],
+            "description": "How the current code was sent."
+          },
+          "expires_in_s": {
+            "type": "integer"
+          },
+          "resend_in_s": {
+            "type": "integer",
+            "description": "Seconds until the code may be sent again on WhatsApp."
+          },
+          "sms_in_s": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Seconds until SMS may be asked for instead; null while SMS is unavailable."
+          }
+        },
+        "required": [
+          "challenge_id",
+          "channel",
+          "expires_in_s",
+          "resend_in_s",
+          "sms_in_s"
+        ],
+        "additionalProperties": false
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+            "example": "98100 00000"
+          }
+        },
+        "required": [
+          "mobile"
+        ],
+        "additionalProperties": false
+      },
+      "LoginChallengeRequest": {
+        "type": "object",
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "challenge_id"
+        ],
+        "additionalProperties": false
+      },
+      "LoginVerify": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "verified": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "first_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "verified",
+              "first_name"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "verified": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              },
+              "attempts_left": {
+                "type": "integer",
+                "description": "0 means the code is now void."
+              }
+            },
+            "required": [
+              "verified",
+              "attempts_left"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "LoginVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          }
+        },
+        "required": [
+          "challenge_id",
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "lead",
+              "nothing_booked"
+            ]
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "consultation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "window_label": {
+                "type": "string",
+                "enum": [
+                  "before noon",
+                  "after four"
+                ]
+              }
+            },
+            "required": [
+              "date",
+              "window_label"
+            ],
+            "additionalProperties": false,
+            "description": "The booked consultation: its proposed date and window, to be confirmed on WhatsApp."
+          }
+        },
+        "required": [
+          "state",
+          "first_name",
+          "consultation"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Environment, version and database reachability",
+        "responses": {
+          "200": {
+            "description": "Healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unreachable or belongs to another environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/otp": {
+      "post": {
+        "summary": "Send a login code on WhatsApp. The answer is the same whether or not the number has a booking",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "A code is on its way, if this number has a booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginChallenge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: too many codes for this number today, or from this address this hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: today's ceiling on codes is reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/otp/resend": {
+      "post": {
+        "summary": "Send a fresh code on WhatsApp, 30 seconds after the last one",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginChallengeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "A code is on its way, if this number has a booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginChallenge"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "code_expired: start again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "too_early, or rate_limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/otp/sms": {
+      "post": {
+        "summary": "Send a fresh code by SMS instead, 30 seconds after the first",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginChallengeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "A code is on its way, if this number has a booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginChallenge"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: SMS is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "code_expired: start again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "too_early, or rate_limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/verify": {
+      "post": {
+        "summary": "Check a code. The right one opens a session (the mm_app cookie)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginVerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Right, with a session; or wrong, with the attempts left",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginVerify"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "code_expired: expired, used, or void after five wrong codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "End this session",
+        "responses": {
+          "204": {
+            "description": "Logged out"
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "summary": "The Home card: who the client is and what is booked",
+        "responses": {
+          "200": {
+            "description": "The Home card",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

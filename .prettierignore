@@ -6,6 +6,8 @@ package-lock.json
 # Generated; the contract test compares them with the schemas byte for byte.
 docs/openapi.json
 docs/api.md
+docs/openapi-client.json
+docs/api-client.md
 src/worker-configuration.d.ts
 # The design exports: read-only reference (docs/frontend.md, design/phase2/README.md).
 design/

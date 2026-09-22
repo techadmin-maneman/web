@@ -6,6 +6,7 @@ import type { StaticConfig } from "./guard.ts";
 import { createAccessVerifier, type AccessVerifier } from "./http/access.ts";
 import type { Logger } from "./log.ts";
 import { createAlert, createLeadNotice, type Alert, type LeadNotice } from "./providers/alerts.ts";
+import { createCodeSender, type CodeSender } from "./providers/codes.ts";
 import { createCrmProvider, type CrmProvider } from "./providers/crm.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
@@ -21,6 +22,8 @@ export interface Dependencies {
   readonly notifyLead: LeadNotice;
   /** Checks the Cloudflare Access token on the ops surface. */
   readonly access: AccessVerifier;
+  /** Sends the client app's login codes. */
+  readonly codes: CodeSender;
 }
 
 export type DependencyFactory = (env: Env, log: Logger) => Dependencies;
@@ -33,12 +36,13 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
   // Built once per isolate, so Access's signing keys are fetched once, not per request.
   const access = createAccessVerifier(settings.access, { fetch: httpFetch, now });
   return (env, log) => {
+    const messaging = createMessagingProvider(settings.messaging.evolution, { fetch: httpFetch, log });
     return {
       fetch: httpFetch,
       now,
       crm: createCrmProvider(settings.zoho, { db: env.DB, fetch: httpFetch, now, log }),
       image: createImageProvider(settings.tryon.ailabApiKey, { fetch: httpFetch, now }),
-      messaging: createMessagingProvider(settings.messaging.evolution, { fetch: httpFetch, log }),
+      messaging,
       alert: createAlert({
         webhookUrl: settings.alertWebhookUrl,
         environment: config.environment,
@@ -52,6 +56,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
         log,
       }),
       access,
+      codes: createCodeSender(config.providers.SMS_PROVIDER, { messaging, log }),
     };
   };
 }

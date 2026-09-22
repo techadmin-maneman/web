@@ -34,6 +34,9 @@ const BATCH_LIMIT = 100;
 const IDEMPOTENCY_TTL_MS = 24 * 60 * MINUTE_MS;
 /** Rate-limit windows are at most a day; keep two more for inspection. */
 const COUNTER_RETENTION_DAYS = 3;
+/** A login code is kept a day past its expiry, for the logs to be read against; a session 30 days past its end. */
+const CHALLENGE_RETENTION_MS = 24 * 60 * MINUTE_MS;
+const SESSION_RETENTION_MS = 30 * 24 * 60 * MINUTE_MS;
 
 export type SweepEnv = Pick<Env, "DB" | "CRM_QUEUE" | "RENDER_QUEUE" | "MESSAGE_QUEUE" | "UPLOADS" | "RESULTS">;
 
@@ -167,6 +170,8 @@ export async function sweep(
     db.prepare("DELETE FROM idempotency WHERE created_at < ?1").bind(before(IDEMPOTENCY_TTL_MS)),
     db.prepare("DELETE FROM counters WHERE window_start < ?1").bind(addDays(indiaDate(now), -COUNTER_RETENTION_DAYS)),
     db.prepare("DELETE FROM tryon_sessions WHERE expires_at < ?1").bind(now.toISOString()),
+    db.prepare("DELETE FROM otp_challenges WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
+    db.prepare("DELETE FROM sessions WHERE expires_at < ?1 OR revoked_at < ?1").bind(before(SESSION_RETENTION_MS)),
   ]);
 
   // Once an hour: an exhausted balance would otherwise fail every try-on quietly.

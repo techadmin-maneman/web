@@ -7,7 +7,15 @@ import type { Alert } from "../providers/alerts.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { takeOne } from "./rate-limit.ts";
 
-export type Ceiling = "upload" | "render" | "result_read";
+export type Ceiling = "upload" | "render" | "result_read" | "login_code";
+
+/** What stops while a ceiling is reached, for its alert. */
+const STOPPED: Readonly<Record<Ceiling, string>> = {
+  upload: "try-ons",
+  render: "try-ons",
+  result_read: "try-ons",
+  login_code: "client app login codes",
+};
 
 /** Counts one use against today's ceiling; false once the ceiling is reached. */
 export function takeFromCeiling(db: D1Database, ceiling: Ceiling, limit: number, now: Date): Promise<boolean> {
@@ -24,6 +32,6 @@ export async function alertCeilingReached(
   const first = await takeOne(db, { scope: "alert:ceiling", key: ceiling, window: indiaDate(now), limit: 1 });
   if (first)
     await alert(
-      `The daily ${ceiling} ceiling (${String(limit)}) is reached; try-ons answer "busy" until midnight IST.`,
+      `The daily ${ceiling} ceiling (${String(limit)}) is reached; ${STOPPED[ceiling]} answer "busy" until midnight IST.`,
     );
 }

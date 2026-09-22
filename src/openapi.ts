@@ -3,12 +3,19 @@
 // contract test fails when a committed copy is stale.
 
 import { createApp } from "./app.ts";
+import { SURFACE_HOSTS, type Surface } from "./config/environments.ts";
 import type { StaticConfig } from "./guard.ts";
 
 /** Only the routes are read from this app, so its settings are placeholders. */
 const DOCUMENTATION_CONFIG: StaticConfig = {
   environment: "local",
-  providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub", ACCESS_PROVIDER: "stub" },
+  providers: {
+    IMAGE_PROVIDER: "stub",
+    CRM_PROVIDER: "stub",
+    MESSAGING_PROVIDER: "stub",
+    ACCESS_PROVIDER: "stub",
+    SMS_PROVIDER: "stub",
+  },
   settings: {
     visitLeadDays: 2,
     leadMobileDailyLimit: 5,
@@ -21,6 +28,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     erasureSecret: "",
     zoho: null,
     access: null,
+    login: { codePepper: "", codeMobileDailyLimit: 0, codeIpHourlyLimit: 0, codeDailyCeiling: 0 },
     tryon: {
       uploadIpHourlyLimit: 0,
       generateIpHourlyLimit: 0,
@@ -39,22 +47,37 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
   },
 };
 
-export const OPENAPI_INFO = {
-  title: "Mane Man API",
-  version: "1",
-  description: "mm-api, served at https://{host}/api/*. Every response carries an X-Request-Id header.",
-} as const;
+/** The surfaces with routes of their own to document, and where each document is written. */
+export const DOCUMENTED_SURFACES = {
+  public: { json: "docs/openapi.json", markdown: "docs/api.md" },
+  client: { json: "docs/openapi-client.json", markdown: "docs/api-client.md" },
+} as const satisfies Partial<Record<Surface, { json: string; markdown: string }>>;
+export type DocumentedSurface = keyof typeof DOCUMENTED_SURFACES;
+
+const INFO: Readonly<Record<DocumentedSurface, { title: string; description: string }>> = {
+  public: {
+    title: "Mane Man API",
+    description: "mm-api, served at https://{host}/api/*. Every response carries an X-Request-Id header.",
+  },
+  client: {
+    title: "Mane Man API: the client app",
+    description:
+      "mm-api on the client app's host (docs/decisions/0026-hosts-and-surfaces.md), served at https://{host}/api/*. " +
+      "Every route but /api/health and /api/auth/* needs the mm_app session cookie, and every write needs the page's own Origin. " +
+      "Every response carries an X-Request-Id header.",
+  },
+};
 
 export type OpenApiDocument = ReturnType<ReturnType<typeof createApp>["getOpenAPI31Document"]>;
 
-export function buildOpenApiDocument(): OpenApiDocument {
-  const app = createApp(DOCUMENTATION_CONFIG);
+export function buildOpenApiDocument(surface: DocumentedSurface = "public"): OpenApiDocument {
+  const app = createApp(DOCUMENTATION_CONFIG, undefined, surface);
   return app.getOpenAPI31Document({
     openapi: "3.1.0",
-    info: OPENAPI_INFO,
+    info: { version: "1", ...INFO[surface] },
     servers: [
-      { url: "https://maneman.in", description: "production" },
-      { url: "https://staging.maneman.in", description: "staging (Cloudflare Access)" },
+      { url: `https://${SURFACE_HOSTS.production[surface]}`, description: "production" },
+      { url: `https://${SURFACE_HOSTS.staging[surface]}`, description: "staging (Cloudflare Access)" },
     ],
   });
 }
