@@ -10,6 +10,8 @@ import { createLogger } from "../../src/log.ts";
 import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
 import { createImageProvider } from "../../src/providers/image.ts";
 import type { CodeChannel } from "../../src/providers/codes.ts";
+import { createStubBooks } from "../../src/providers/books.ts";
+import { createStubFsm } from "../../src/providers/fsm.ts";
 import { createStubMessaging } from "../../src/providers/messaging.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
@@ -25,6 +27,7 @@ export const LOCAL_SETTINGS: Settings = {
   leadWebhookUrl: null,
   erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
+  zohoFsm: null,
   access: null,
   login: {
     codePepper: "test-login-code-pepper-that-is-long-enough",
@@ -58,6 +61,8 @@ export const LOCAL_CONFIG: StaticConfig = {
     MESSAGING_PROVIDER: "stub",
     ACCESS_PROVIDER: "stub",
     SMS_PROVIDER: "stub",
+    FSM_PROVIDER: "stub",
+    BOOKS_PROVIDER: "stub",
   },
   settings: LOCAL_SETTINGS,
 };
@@ -159,6 +164,8 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
       },
     },
     sentCodes,
+    fsm: createStubFsm(),
+    books: createStubBooks(),
     ...overrides,
   };
 }

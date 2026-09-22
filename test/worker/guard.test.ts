@@ -7,6 +7,8 @@ const REAL = {
   MESSAGING_PROVIDER: "evolution",
   ACCESS_PROVIDER: "cloudflare",
   SMS_PROVIDER: "none",
+  FSM_PROVIDER: "none",
+  BOOKS_PROVIDER: "none",
 };
 const STUBS = {
   IMAGE_PROVIDER: "stub",
@@ -14,6 +16,8 @@ const STUBS = {
   MESSAGING_PROVIDER: "stub",
   ACCESS_PROVIDER: "stub",
   SMS_PROVIDER: "stub",
+  FSM_PROVIDER: "stub",
+  BOOKS_PROVIDER: "stub",
 };
 
 /** Vars and secrets every environment needs, with valid values. */
@@ -61,7 +65,21 @@ const ZOHO = {
   ZOHO_LAR_ID: "4876876000000123",
 };
 
+/** FSM and Books on Zoho, as staging has them: the client surface is on there. */
+const ZOHO_FSM = {
+  FSM_PROVIDER: "zoho",
+  BOOKS_PROVIDER: "zoho",
+  ZOHO_FSM_CLIENT_ID: "1000.FSMCLIENT",
+  ZOHO_FSM_CLIENT_SECRET: "fsm-secret",
+  ZOHO_FSM_REFRESH_TOKEN: "1000.fsm-refresh",
+  ZOHO_FSM_ACCOUNTS_HOST: "accounts.zoho.in",
+  ZOHO_FSM_API_HOST: "www.zohoapis.in",
+  ZOHO_BOOKS_ORG_ID: "60088931635",
+};
+
 const production = { ENVIRONMENT: "production", ...REAL, ...SETTINGS, ...ALERTS, ...ZOHO, ...IMAGE, ...EVOLUTION };
+/** Staging has the client surface on, so FSM and Books are connected there. */
+const stagingBase = { ...production, ENVIRONMENT: "staging", ...ZOHO_FSM };
 
 function problemsOf(env: Record<string, unknown>): readonly string[] {
   try {
@@ -89,7 +107,7 @@ describe("validateStaticConfig: environment and providers", () => {
   });
 
   it("allows staging to hold a stub, for a provider not yet chosen", () => {
-    const staging = { ...production, ENVIRONMENT: "staging", MESSAGING_PROVIDER: "stub" };
+    const staging = { ...stagingBase, MESSAGING_PROVIDER: "stub" };
     expect(validateStaticConfig(staging).environment).toBe("staging");
   });
 
@@ -103,7 +121,7 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(5);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(7);
   });
 
   it("refuses a missing or unknown provider", () => {
@@ -162,7 +180,7 @@ describe("validateStaticConfig: settings and secrets", () => {
     expect(problemsOf({ ...production, TURNSTILE_ACCEPT_TEST_TOKEN: "yes" })).toEqual([
       'TURNSTILE_ACCEPT_TEST_TOKEN must be "true" or "false"',
     ]);
-    const staging = { ...production, ENVIRONMENT: "staging", TURNSTILE_ACCEPT_TEST_TOKEN: "true" };
+    const staging = { ...stagingBase, TURNSTILE_ACCEPT_TEST_TOKEN: "true" };
     expect(validateStaticConfig(staging).settings.acceptTurnstileTestToken).toBe(true);
   });
 
@@ -256,7 +274,7 @@ describe("validateStaticConfig: try-on and messaging", () => {
   });
 
   it("insists on an allowlist while staging messaging is on, and reads it as E.164", () => {
-    const staging = { ...production, ENVIRONMENT: "staging", MESSAGING_ENABLED: "true" };
+    const staging = { ...stagingBase, MESSAGING_ENABLED: "true" };
     expect(problemsOf(staging)).toEqual([
       "MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging",
     ]);
@@ -295,7 +313,7 @@ describe("validateStaticConfig: Cloudflare Access", () => {
   });
 
   it("refuses the stub in staging as well as production, since staff identity is always verified there", () => {
-    expect(problemsOf({ ...production, ENVIRONMENT: "staging", ACCESS_PROVIDER: "stub" })).toEqual([
+    expect(problemsOf({ ...stagingBase, ACCESS_PROVIDER: "stub" })).toEqual([
       "ACCESS_PROVIDER is a stub in staging: staff identity is verified everywhere but locally",
     ]);
     expect(problemsOf({ ...production, ACCESS_PROVIDER: "stub" })).toEqual(["ACCESS_PROVIDER is a stub in production"]);
@@ -316,5 +334,45 @@ describe("validateStaticConfig: Cloudflare Access", () => {
     const { ACCESS_OPS_AUD: _alsoOmitted, ...productionWithoutAudience } = production;
     expect(problemsOf({ ...productionWithoutAudience, ENVIRONMENT: "staging" })).toContain("ACCESS_OPS_AUD is not set");
     expect(validateStaticConfig({ ...local, ACCESS_OPS_AUD: "aud-tag" }).settings.access?.opsAudience).toBe("aud-tag");
+  });
+});
+
+describe("validateStaticConfig: Zoho FSM and Books", () => {
+  it("reads the FSM client, its hosts and the Books organisation in staging", () => {
+    const fsm = validateStaticConfig(stagingBase).settings.zohoFsm;
+    expect(fsm).toEqual({
+      clientId: "1000.FSMCLIENT",
+      clientSecret: "fsm-secret",
+      refreshToken: "1000.fsm-refresh",
+      accountsHost: "accounts.zoho.in",
+      apiHost: "www.zohoapis.in",
+      booksOrgId: "60088931635",
+    });
+  });
+
+  it("requires every FSM secret when either is Zoho, and the Books organisation only for Books", () => {
+    const { ZOHO_FSM_CLIENT_SECRET: _secret, ZOHO_BOOKS_ORG_ID: _org, ...partial } = stagingBase;
+    expect(problemsOf(partial)).toEqual(["ZOHO_FSM_CLIENT_SECRET is not set", "ZOHO_BOOKS_ORG_ID is not set"]);
+    const fsmOnly = validateStaticConfig({ ...partial, ZOHO_FSM_CLIENT_SECRET: "s", BOOKS_PROVIDER: "stub" });
+    expect(fsmOnly.settings.zohoFsm?.booksOrgId).toBeNull();
+  });
+
+  it("needs nothing from Zoho for the stubs or for none", () => {
+    expect(validateStaticConfig({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS }).settings.zohoFsm).toBeNull();
+    expect(validateStaticConfig(production).settings.zohoFsm).toBeNull();
+  });
+
+  it("refuses none where the client surface is on, and allows it where the surface is off", () => {
+    expect(problemsOf({ ...stagingBase, FSM_PROVIDER: "none", BOOKS_PROVIDER: "none" })).toEqual([
+      'FSM_PROVIDER is "none" while the client surface is on: visits and documents come from Zoho',
+      'BOOKS_PROVIDER is "none" while the client surface is on: visits and documents come from Zoho',
+    ]);
+    expect(problemsOf(production)).toEqual([]);
+  });
+
+  it("refuses a Zoho host given as a URL", () => {
+    expect(problemsOf({ ...stagingBase, ZOHO_FSM_API_HOST: "https://www.zohoapis.in" })).toEqual([
+      "ZOHO_FSM_API_HOST must be a Zoho hostname, without https://",
+    ]);
   });
 });

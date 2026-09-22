@@ -6,8 +6,10 @@ import type { StaticConfig } from "./guard.ts";
 import { createAccessVerifier, type AccessVerifier } from "./http/access.ts";
 import type { Logger } from "./log.ts";
 import { createAlert, createLeadNotice, type Alert, type LeadNotice } from "./providers/alerts.ts";
+import { createBooksProvider, type BooksProvider } from "./providers/books.ts";
 import { createCodeSender, type CodeSender } from "./providers/codes.ts";
 import { createCrmProvider, type CrmProvider } from "./providers/crm.ts";
+import { createFsmProvider, type FsmProvider } from "./providers/fsm.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
 
@@ -24,6 +26,10 @@ export interface Dependencies {
   readonly access: AccessVerifier;
   /** Sends the client app's login codes. */
   readonly codes: CodeSender;
+  /** Zoho FSM, the system of record for field work. */
+  readonly fsm: FsmProvider;
+  /** Zoho Books, for invoices and receipts. */
+  readonly books: BooksProvider;
 }
 
 export type DependencyFactory = (env: Env, log: Logger) => Dependencies;
@@ -57,6 +63,18 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       }),
       access,
       codes: createCodeSender(config.providers.SMS_PROVIDER, { messaging, log }),
+      fsm: createFsmProvider(config.providers.FSM_PROVIDER, settings.zohoFsm, {
+        db: env.DB,
+        fetch: httpFetch,
+        now,
+        log,
+      }),
+      books: createBooksProvider(config.providers.BOOKS_PROVIDER, settings.zohoFsm, {
+        db: env.DB,
+        fetch: httpFetch,
+        now,
+        log,
+      }),
     };
   };
 }

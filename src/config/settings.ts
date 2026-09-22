@@ -57,6 +57,19 @@ export interface ZohoSettings {
   readonly larId: string;
 }
 
+/** The Zoho client FSM and Books share, in the real org (ADR 0025, item 26). */
+export interface ZohoFsmSettings {
+  readonly clientId: string;
+  readonly clientSecret: string;
+  readonly refreshToken: string;
+  /** e.g. accounts.zoho.in */
+  readonly accountsHost: string;
+  /** e.g. www.zohoapis.in, where FSM answers at /fsm/v1 and Books at /books/v3. */
+  readonly apiHost: string;
+  /** The Books organisation invoices and receipts are in. Present when BOOKS_PROVIDER is "zoho". */
+  readonly booksOrgId: string | null;
+}
+
 export interface AccessSettings {
   /** The Cloudflare Access team domain, e.g. summer-math-0275.cloudflareaccess.com. */
   readonly teamDomain: string;
@@ -97,6 +110,8 @@ export interface Settings {
   readonly erasureSecret: string;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
+  /** Present when FSM_PROVIDER or BOOKS_PROVIDER is "zoho". */
+  readonly zohoFsm: ZohoFsmSettings | null;
   /** Present when ACCESS_PROVIDER is "cloudflare". */
   readonly access: AccessSettings | null;
   readonly login: LoginSettings;
@@ -238,6 +253,24 @@ export function readSettings(
     }
   }
 
+  let zohoFsm: ZohoFsmSettings | null = null;
+  if (providers.FSM_PROVIDER === "zoho" || providers.BOOKS_PROVIDER === "zoho") {
+    zohoFsm = {
+      clientId: read.text("ZOHO_FSM_CLIENT_ID"),
+      clientSecret: read.text("ZOHO_FSM_CLIENT_SECRET"),
+      refreshToken: read.text("ZOHO_FSM_REFRESH_TOKEN"),
+      accountsHost: read.text("ZOHO_FSM_ACCOUNTS_HOST"),
+      apiHost: read.text("ZOHO_FSM_API_HOST"),
+      booksOrgId: providers.BOOKS_PROVIDER === "zoho" ? read.text("ZOHO_BOOKS_ORG_ID") : null,
+    };
+    for (const [name, host] of [
+      ["ZOHO_FSM_ACCOUNTS_HOST", zohoFsm.accountsHost],
+      ["ZOHO_FSM_API_HOST", zohoFsm.apiHost],
+    ] as const) {
+      if (host !== "" && !ZOHO_HOST.test(host)) read.problems.push(`${name} must be a Zoho hostname, without https://`);
+    }
+  }
+
   let access: AccessSettings | null = null;
   if (providers.ACCESS_PROVIDER === "cloudflare") {
     const teamDomain = read.text("ACCESS_TEAM_DOMAIN");
@@ -251,6 +284,11 @@ export function readSettings(
   }
 
   const clientOn = environment !== undefined && ENABLED_SURFACES[environment].includes("client");
+  for (const variable of ["FSM_PROVIDER", "BOOKS_PROVIDER"] as const) {
+    if (clientOn && providers[variable] === "none") {
+      read.problems.push(`${variable} is "none" while the client surface is on: visits and documents come from Zoho`);
+    }
+  }
   const login: LoginSettings = {
     codePepper: clientOn ? read.key("OTP_PEPPER") : (read.optionalText("OTP_PEPPER") ?? ""),
     codeMobileDailyLimit: read.count("OTP_MOBILE_DAILY_LIMIT"),
@@ -323,6 +361,7 @@ export function readSettings(
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
     erasureSecret: read.key("ERASURE_SECRET"),
     zoho,
+    zohoFsm,
     access,
     login,
     tryon,
