@@ -162,6 +162,7 @@
 }
 
 .countdown {
+  margin: 0;
   font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
   color: var(--ink-muted);
@@ -239,9 +240,10 @@
   color: var(--ink-soft);
 }
 
+/* The design's box keeps 30 px above its line and 20 below. */
 .helpBox {
   margin-top: var(--sp-32);
-  padding: var(--sp-20);
+  padding: var(--sp-30) var(--sp-20) var(--sp-20);
   border: var(--hairline) solid var(--ink-line);
   font-size: var(--fs-15);
   line-height: 1.65;

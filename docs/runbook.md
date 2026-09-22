@@ -111,7 +111,7 @@ npm run smoke -- --base https://<host> --environment <env>
 Cloudflare dashboard → Manage Account → Account API Tokens → Create Token → Custom token, one per environment:
 
 - Name `mm-ci-<env>`.
-- Workers: role **Editor**, scope **Specified Workers**: `mm-api-<env>` and `mm-site-<env>`.
+- Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>` and `mm-app-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step fails with "No access to the specified service".
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also reach production's database; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - No zone permissions.
 

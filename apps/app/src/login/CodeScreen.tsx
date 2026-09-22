@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { LoginChallenge } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { login } from "../content.ts";
+import { BUBBLE } from "../icons.ts";
 import { useCountdown } from "../lib/useCountdown.ts";
 import { CodeField } from "./CodeField.tsx";
 import styles from "./login.module.css";
@@ -93,7 +94,7 @@ export function CodeScreen(props: Props) {
           </p>
         )}
         <div className={styles.automatic}>
-          <Icon d={ICONS.whatsapp} size={17} />
+          <Icon d={BUBBLE} size={17} />
           {copy.automatic}
         </div>
         <div className={styles.links}>

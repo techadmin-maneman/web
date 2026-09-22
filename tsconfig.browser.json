@@ -11,6 +11,8 @@
     "e2e/**/*.ts",
     "playwright.config.ts",
     "scripts/fidelity.ts",
+    "scripts/fidelity-app.ts",
+    "scripts/lib/fidelity.ts",
     "scripts/serve-site.ts",
     "scripts/serve-app.ts",
     "scripts/lighthouse.ts",

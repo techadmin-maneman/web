@@ -65,7 +65,7 @@ export function Shell({ page, initials, name, offline, children }: Props) {
         )}
       </div>
       {/* Keyed by the page, so each page opens at its top. */}
-      <main key={page} className={styles.page}>
+      <main key={page} className={name === undefined ? styles.page : `${styles.page} ${styles.titledPage}`}>
         {children}
       </main>
       <nav className={styles.tabs}>

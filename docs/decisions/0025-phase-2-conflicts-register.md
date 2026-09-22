@@ -57,6 +57,7 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 20. **"Number not recognised" (A3)** tells anyone whether a number belongs to a Mane Man client. A neutral line ("if this number has a booking, a code is on its way") would not. **Ruled 22 September 2026: neutral.** The login answers every number alike (ADR 0030), departing from the prompt's `404 not_recognised`.
 21. **The card fingerprint.** The fraud rules name a UPI handle or card fingerprint. Razorpay may not expose a card fingerprint to our account; without it the rules use the UPI handle, the address and the mobile number. Confirmed at P2-M2.
 22. **Weekend capacity.** The Ops Console notes weekends at 92% against 64% on weekdays. That needs weekend headcount, not software; recorded, not built.
+23. **The profile's address.** Board G1 shows the area only ("Sector 65, Gurgaon 122018"), but the profile holds the house too. **Ruled 22 September 2026: the profile shows the whole address.**
 
 ## Inputs still owed
 
