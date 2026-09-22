@@ -51,11 +51,11 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 
 ## Content
 
-12. **The WhatsApp number** is the business number the owner gave, +91 90079 73247, on every `wa.me` link and in the footer. The footer's phone number is still v2's placeholder, so it shows in staging and not in production.
+12. **The WhatsApp number** is the business number the owner gave, +91 90079 73247, on every `wa.me` link and in the footer. The footer's phone number is the same line, +91 90079 73247, as the owner gave it on 22 September 2026.
 
-13. **The privacy notice** was drafted from how the backend actually handles data, and the owner approved it with the three consent notices on 22 September 2026. It names the services that process data for Mane Man: Cloudflare, Zoho CRM, AILabTools and WhatsApp. The photo notice's "Shared with: Nobody outside Mane Man." row, approved as it stands, does not mention AILabTools. Counsel should reconcile the two.
+13. **The privacy notice** was drafted from how the backend actually handles data, and the owner approved it with the three consent notices on 22 September 2026. It names the services that process data for Mane Man: Cloudflare, Zoho CRM, AILabTools and WhatsApp. The photo notice's "Shared with: Nobody outside Mane Man." row does not mention AILabTools. The owner confirmed on 22 September 2026 that legal has checked the two together and approves both as they stand.
 
-14. **The terms** are still a placeholder, and production cannot publish without them.
+14. **The terms** were drafted from what the site already publishes: the free measurement, the prices and payment, the fourteen-day guarantee and the try-on's rules. They add the few things terms need: the eighteen-or-over rule for the try-on, the limit of liability, and Indian law with the courts at New Delhi. The owner approved them on 22 September 2026. With them, the production build passes the publish gate.
 
 15. **The Norwood fallback drawings.** Content can switch the Norwood cards to v2's line drawings (`_nwOld`) when the photographs are not cleared. v2 keeps each stage's bald region, but not the head drawing it was clipped to, so the fallback shows the regions alone. It needs a design pass before it is used.
 
@@ -108,3 +108,10 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 29. **The address is tidied on arrival.** A link carrying query parameters other than campaign tags loses them from the address bar before any analytics tag reads it. The campaign tags stay, as do the preview switches outside production.
 
 30. **The try-on countdown's contrast.** v2 draws the countdown in `#2A3A56` on `#0E1728`, a contrast of 1.6:1. That is under the 3:1 WCAG 2.2 AA asks of large text. The countdown is hidden from screen readers, which hear each finished step instead, but a sighted visitor with low vision may not read it. **Raised, not changed:** `#56678A` would reach 3.2:1. It is the one element the axe checks skip.
+
+31. **The hair-colour detector reads some portraits as `unknown`.** The owner's own straight-on photograph, dark hair on a white background above a black suit, reads as `unknown`, and so is rendered black, which suits it. The detector is the harness's, unchanged:
+    - thinning hair over the scalp reads as skin, so the head box starts too high;
+    - a plain background makes the crown sample look flat;
+    - a black suit counts as scenery, which takes black hair out of the sample.
+
+    The render comes out right for dark hair, since `unknown` goes to `pro_black`. It would be wrong for grey or white hair in a photograph like it. **Raised:** improving the detector means departing from the harness.

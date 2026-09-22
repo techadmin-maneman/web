@@ -93,7 +93,7 @@ The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a G
 
 Production still serves `site/placeholder/production`. To go live:
 
-1. Publish or leave out every placeholder block, supply the privacy and terms text, and have counsel approve the three notices, until `npm run build:site -- --env production` passes.
+1. Keep `npm run build:site -- --env production` passing. It has passed since 22 September 2026, when the terms and the phone number were published; `test/node/site-production-gate.test.ts` checks it.
 2. Add production's analytics IDs, and decide on Bot Fight Mode (docs/decisions/0023-launch-hardening.md, 2).
 3. In `site/wrangler.jsonc`, point production's `assets.directory` at `./dist/production`.
 4. In `deploy-production.yml`, build the production site before "Deploy mm-site".

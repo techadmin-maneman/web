@@ -18,6 +18,12 @@ export type FailureCode = Schemas["ResultFailed"]["failure_code"];
 export type ClaimRequest = Schemas["ClaimRequest"];
 export type ClaimResponse = Schemas["ClaimResponse"];
 
+/**
+ * How long a poll waits for its answer. A request stuck on the way is dropped,
+ * and the next poll goes out, rather than holding up everything after it.
+ */
+const POLL_TIMEOUT_MS = 10_000;
+
 /** An answer from the API: the body, or the error code and the fields it names. */
 export type Answer<T> =
   | { readonly ok: true; readonly body: T }
@@ -70,7 +76,7 @@ export function generateLook(request: GenerateRequest): Promise<Answer<JobStatus
 }
 
 export function jobStatus(jobId: string): Promise<Answer<JobStatus>> {
-  return call<JobStatus>(`/api/tryon/status/${jobId}`);
+  return call<JobStatus>(`/api/tryon/status/${jobId}`, { signal: AbortSignal.timeout(POLL_TIMEOUT_MS) });
 }
 
 /** The gate. It sets the session cookie that fetchResult needs. */
@@ -88,7 +94,7 @@ export type ResultAnswer =
 export async function fetchResult(jobId: string): Promise<ResultAnswer> {
   let response: Response;
   try {
-    response = await fetch(`/api/tryon/result/${jobId}`);
+    response = await fetch(`/api/tryon/result/${jobId}`, { signal: AbortSignal.timeout(POLL_TIMEOUT_MS) });
   } catch {
     return { kind: "error", code: "network" };
   }

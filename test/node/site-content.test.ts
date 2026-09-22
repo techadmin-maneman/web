@@ -73,17 +73,17 @@ describe("content", () => {
     }
   });
 
-  it("publishes only blocks whose material is real: the WhatsApp number and the privacy notice", () => {
+  it("publishes only blocks whose material is real: the business number, the privacy notice and the terms", () => {
     const published = Object.entries(BLOCKS)
       .filter(([, block]) => block.publish)
       .map(([name]) => name);
-    expect(published).toEqual(["whatsapp", "privacy"]);
+    expect(published).toEqual(["whatsapp", "phone", "privacy", "terms"]);
   });
 });
 
 describe("the publish gate", () => {
-  it("blocks production today only for the terms text", () => {
-    expect(publishProblems()).toEqual(["the terms page is not published: production needs its text"]);
+  it("lets production through: every published block is real and every notice approved", () => {
+    expect(publishProblems()).toEqual([]);
   });
 
   it("stops a notice that is not approved", () => {

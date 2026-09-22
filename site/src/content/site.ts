@@ -61,11 +61,11 @@ export const whatsapp = {
   label: "WhatsApp · +91 90079 73247",
 };
 
-/** The footer's phone number, still v2's placeholder. */
+/** The footer's phone number: the business number, the owner's on 22 September 2026. */
 export const phone = {
-  publish: false,
-  number: "+911244002200",
-  label: "Phone · +91 124 400 2200",
+  publish: true,
+  number: "+919007973247",
+  label: "Phone · +91 90079 73247",
 };
 
 export const heroFootage = {
@@ -213,10 +213,17 @@ export const legalPages = {
       "The site sets two cookies of its own, both for the try-on: one keeps your session for thirty minutes, the other remembers for thirty days that you have had your one look. We count visits with Cloudflare Web Analytics, and measure our advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse. Under India's Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased: message us on WhatsApp at +91 90079 73247 and we erase it the same day.",
     ],
   },
+  // Drafted from the site's published prices, guarantee and try-on rules; the owner approved it on 22 September 2026.
   terms: {
-    publish: false,
+    publish: true,
     title: "Terms",
-    paragraphs: ["Placeholder. The terms are supplied later."],
+    paragraphs: [
+      "These terms cover the service Mane Man Grooming Services Private Limited provides: non-surgical hair systems, measured, fitted and serviced at your home across Delhi NCR. By booking a visit or using the try-on you agree to them. We may change them; the version on this page when you book is the one that applies to that booking.",
+      "The first visit is a measurement: forty minutes, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones published on this site when you order. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
+      "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within fourteen days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we publish are typical, not promised.",
+      "The try-on is an illustrative simulation made by software from one photograph. It is not a photograph of a result, and not a promise of how a fitted piece will look: a fitted piece is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
+      "We are responsible for the care and skill of our technicians. Beyond a refit or refund under the guarantee, and except where the law provides otherwise, our liability for a visit is limited to what you paid for it. These terms are governed by the laws of India, and the courts at New Delhi have jurisdiction. For questions or complaints, message or call us on +91 90079 73247.",
+    ],
   },
 };
 
