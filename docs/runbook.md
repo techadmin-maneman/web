@@ -237,6 +237,35 @@ A WhatsApp copy carries a link to `/api/result/…`, which the Evolution bridge 
 
 Access applies the most specific path, so the rest of staging stays behind the founders' login.
 
+### 11. Switching on a Phase 2 surface
+
+Each Phase 2 surface is switched on per environment, once its host exists (docs/decisions/0026-hosts-and-surfaces.md):
+
+| Surface        | Staging                   | Production        |
+| -------------- | ------------------------- | ----------------- |
+| Client app     | `app-staging.maneman.in`  | `app.maneman.in`  |
+| Ops console    | `ops-staging.maneman.in`  | `ops.maneman.in`  |
+| Technician app | `tech-staging.maneman.in` | `tech.maneman.in` |
+
+To switch one on:
+
+1. **DNS.** Add a record of type `AAAA`, named after the host (e.g. `ops-staging`), with IPv6 address `100::`, **Proxied**.
+2. **Access.**
+   - The ops console is behind Access in both environments. On staging, the client and technician apps are behind it as well.
+   - Add a Self-hosted application for the host, with an Allow policy for the people who should reach it.
+   - Add a **Service Auth** policy that includes `mm-ci-<env>`, so the smoke tests get through.
+3. **The ops audience tag** (ops console only).
+   - Copy the application's **Application Audience (AUD) Tag** from its overview.
+   - In `wrangler.jsonc`, set it as `ACCESS_OPS_AUD` in the environment's `vars`, and as `""` in the other blocks so every block names the same vars.
+   - The Worker checks every ops token against this tag (docs/decisions/0031-access-and-audit.md). It refuses to start with the ops surface switched on and no tag.
+4. **The code**, in one pull request:
+   - add the surface to `ENABLED_SURFACES` in `src/config/environments.ts`;
+   - add `<host>/api/*` to the environment's `routes` in `wrangler.jsonc`.
+
+   The config check fails if either comes without the other.
+
+5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
+
 ---
 
 ## Staying on the free tier

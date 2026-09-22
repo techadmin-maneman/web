@@ -87,5 +87,7 @@ export const PROVIDER_VARS = {
   CRM_PROVIDER: ["zoho", "stub"],
   // Evolution for now; an official BSP later (docs/decisions/0016-whatsapp-through-evolution.md).
   MESSAGING_PROVIDER: ["evolution", "stub"],
+  // Verifies the Cloudflare Access token on the ops surface (docs/decisions/0031-access-and-audit.md).
+  ACCESS_PROVIDER: ["cloudflare", "stub"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;

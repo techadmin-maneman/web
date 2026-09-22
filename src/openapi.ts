@@ -8,7 +8,7 @@ import type { StaticConfig } from "./guard.ts";
 /** Only the routes are read from this app, so its settings are placeholders. */
 const DOCUMENTATION_CONFIG: StaticConfig = {
   environment: "local",
-  providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub" },
+  providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub", ACCESS_PROVIDER: "stub" },
   settings: {
     visitLeadDays: 2,
     leadMobileDailyLimit: 5,
@@ -20,6 +20,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     leadWebhookUrl: null,
     erasureSecret: "",
     zoho: null,
+    access: null,
     tryon: {
       uploadIpHourlyLimit: 0,
       generateIpHourlyLimit: 0,
