@@ -90,7 +90,7 @@ describe("POST /api/bookings", () => {
       hold_id: holdId,
       checkout: {
         key_id: "",
-        order_id: "order_stub1",
+        order_id: expect.stringMatching(/^order_stub_/) as string,
         amount: 200000,
         currency: "INR",
         name: "Mane Man",
@@ -145,7 +145,7 @@ describe("confirmBooking", () => {
       },
     ]);
     const visit = await env.DB.prepare(
-      "SELECT id, status, technician_id FROM appointments WHERE fsm_id = 'stub-appointment-1'",
+      "SELECT id, status, technician_id FROM appointments WHERE fsm_id LIKE 'stub-appointment-%'",
     ).first<{ id: string }>();
     expect(visit).toMatchObject({ status: "scheduled", technician_id: "t1" });
     const paid = await env.DB.prepare(

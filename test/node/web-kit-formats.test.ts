@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fullDate, listDate, longDate, shortDate } from "../../packages/web-kit/dates.ts";
+import { fullDate, listDate, longDate, shortDate, weekdayDate } from "../../packages/web-kit/dates.ts";
 import { rupees } from "../../packages/web-kit/money.ts";
 
 describe("web-kit dates", () => {
@@ -25,6 +25,7 @@ describe("web-kit dates", () => {
     expect(fullDate("2026-11-04")).toBe("4 Nov 2026");
     expect(listDate("2027-08-22", 2027)).toBe("22 Aug");
     expect(listDate("2026-11-14", 2027)).toBe("14 Nov 2026");
+    expect(weekdayDate("2026-09-24")).toBe("Thursday 24 Sep");
   });
 });
 

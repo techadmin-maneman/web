@@ -33,7 +33,8 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await tab(page, "Visits").click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
   await expect(page.getByText("Service visit · 12 to 4 pm · Imran")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Book your next visit" })).toHaveAttribute("href", /^https:\/\/wa\.me\//);
+  // Self-serve booking is on locally: the footer opens the booking sheet (e2e/app/booking.e2e.ts).
+  await expect(page.getByRole("button", { name: "Book your next visit" })).toBeVisible();
 
   const past = page.getByRole("main").getByRole("link");
   await expect(past).toHaveCount(2);

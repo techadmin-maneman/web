@@ -140,6 +140,32 @@ describe("GET /api/me, from the mirror", () => {
     expect(me).toMatchObject({ state: "fitted", next_visit: { type: "service", date: "2026-09-24" } });
   });
 
+  it("drops a Phase 1 booking's proposal once FSM has a visit for the person, and offers the first fit", async () => {
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, ?2, 'Rohit Malhotra')",
+    )
+      .bind(NOW.toISOString(), MOBILE)
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, proposed_visit_date,
+         sync_state, request_id)
+       VALUES ('l1', 'p1', ?1, 'form', 'Gurgaon', 'weekday_am', 'crown', '2026-09-10', 'synced', 'r1')`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await mirror(
+      [done("ap-done", "2026-09-10")].map((appointment) => ({ ...appointment, serviceIds: ["item-consult"] })),
+    );
+    await signIn();
+    const me = await (await get("/api/me")).json<Record<string, unknown>>();
+    expect(me).toMatchObject({
+      state: "lead",
+      consultation: null,
+      next_visit: null,
+      booking: { self_serve: true, types: ["first_fit"] },
+    });
+  });
+
   it("lets a client ops added only in FSM log in", async () => {
     await mirror([fsmAppointment("ap-next")]);
     expect(await findEligiblePerson(env.DB, MOBILE)).not.toBeNull();

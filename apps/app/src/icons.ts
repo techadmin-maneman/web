@@ -16,3 +16,9 @@ export const BUBBLE =
 
 /** A past visit's row opens its detail (board C1). */
 export const CHEVRON = "M9 5 L16 12 L9 19";
+
+/** Beside board C4's "Slot held": a clock face. */
+export const CLOCK = "M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M12 7.5 V12 L15 14.5";
+
+/** In board C4's chosen way to pay. */
+export const CHECK = "M5 13 L10 18 L19 6";

@@ -7,12 +7,12 @@
 import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Me, type Visits } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
-import { messages, PHASE1_WINDOWS, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
+import { BookButton } from "../booking/BookButton.tsx";
+import { home, messages, PHASE1_WINDOWS, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { CHEVRON } from "../icons.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { technicianOf, visitName } from "../lib/visit.ts";
-import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
@@ -76,26 +76,22 @@ function VisitList({ list, consultation }: { list: Visits; consultation: Me["con
   );
 }
 
-function Book({ offline }: { offline: boolean }) {
-  return offline ? (
-    <button className={styles.book} type="button" disabled>
-      {visits.book}
-    </button>
-  ) : (
-    <a className={styles.book} href={whatsappWith(messages.book)} rel="noopener">
-      {visits.book}
-    </a>
-  );
-}
-
 export function VisitsScreen() {
-  const { me, offline } = useSession();
+  const { me } = useSession();
   const [loaded, retry] = useLoad(api.visits);
+  const firstFit = me.booking.types.includes("first_fit");
+  const book = (
+    <BookButton
+      className={styles.book}
+      label={firstFit ? home.next.bookFirstFit : visits.book}
+      message={firstFit ? messages.bookFirstFit : messages.book}
+    />
+  );
   return (
     <Shell
       header={{ kind: "tab", title: visits.title }}
       tab="/visits"
-      {...(me.state === "fitted" ? { footer: <Book offline={offline} /> } : {})}
+      {...(me.state === "fitted" || firstFit ? { footer: book } : {})}
     >
       {loaded.state === "loading" ? (
         <Loading />

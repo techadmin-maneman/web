@@ -1328,6 +1328,33 @@ Request body:
     "prompt": {
       "type": "null",
       "description": "The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4)."
+    },
+    "booking": {
+      "type": "object",
+      "properties": {
+        "self_serve": {
+          "type": "boolean",
+          "description": "Booking in the app is on; off, the app opens WhatsApp."
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "description": "What the client may book now."
+        }
+      },
+      "required": [
+        "self_serve",
+        "types"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -1338,7 +1365,8 @@ Request body:
     "consultation",
     "next_visit",
     "credits",
-    "prompt"
+    "prompt",
+    "booking"
   ],
   "additionalProperties": false
 }

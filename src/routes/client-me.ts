@@ -7,7 +7,9 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { WINDOW_LABELS, windowLabel, type VisitWindow } from "../config/booking.ts";
+import { VISIT_TYPES } from "../config/visit-types.ts";
 import { isFitted, nextVisit } from "../domain/client-visits.ts";
+import { bookableTypes } from "../domain/scheduling.ts";
 import { currentAddress } from "../domain/profile.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -45,6 +47,12 @@ export const MeSchema = z
     prompt: z
       .null()
       .openapi({ description: "The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4)." }),
+    booking: z
+      .object({
+        self_serve: z.boolean().openapi({ description: "Booking in the app is on; off, the app opens WhatsApp." }),
+        types: z.array(z.enum(VISIT_TYPES)).openapi({ description: "What the client may book now." }),
+      })
+      .strict(),
   })
   .strict()
   .openapi("Me");
@@ -82,7 +90,14 @@ export function registerClientMe(app: App): void {
       )
       .bind(session.subjectId)
       .first<{ proposed_visit_date: string; first_choice_window: VisitWindow; city: string | null }>();
-    const address = booking === null || upcoming !== null ? null : await currentAddress(db, session.subjectId);
+    // A Phase 1 booking's proposal stands only until FSM has any visit for the person.
+    const inFsm =
+      (await db
+        .prepare("SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL LIMIT 1")
+        .bind(session.subjectId)
+        .first()) !== null;
+    const proposal = inFsm ? null : booking;
+    const address = proposal === null ? null : await currentAddress(db, session.subjectId);
     const place = address === null ? (booking?.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
 
     return c.json(
@@ -96,12 +111,16 @@ export function registerClientMe(app: App): void {
         first_name: person.name.trim().split(/\s+/)[0] ?? "",
         initials: initialsOf(person.name),
         consultation:
-          booking === null || upcoming !== null
+          proposal === null
             ? null
-            : { date: booking.proposed_visit_date, window_label: windowLabel(booking.first_choice_window), place },
+            : { date: proposal.proposed_visit_date, window_label: windowLabel(proposal.first_choice_window), place },
         next_visit: upcoming,
         credits: null,
         prompt: null,
+        booking: {
+          self_serve: c.var.config.settings.selfServeBooking,
+          types: await bookableTypes(db, session.subjectId),
+        },
       },
       200,
     );

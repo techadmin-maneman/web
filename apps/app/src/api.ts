@@ -20,6 +20,11 @@ export type PhotoTimeline = Schemas["PhotoTimeline"];
 export type Angle = PhotoLink["angle"];
 export type Entry = Schemas["PaymentEntry"] | Schemas["RefundEntry"];
 export type EntryDetail = Schemas["PaymentDetail"] | Schemas["RefundDetail"];
+export type Availability = Schemas["Availability"];
+export type Hold = Schemas["Hold"];
+export type Booking = Schemas["Booking"];
+export type BookableType = Me["booking"]["types"][number];
+export type BookingWindow = Hold["window"];
 
 /**
  * A failed call carries the API's error code, or "offline" when it never reached
@@ -46,7 +51,7 @@ export async function keptHome(): Promise<Me | null> {
   return kept === undefined ? null : ((await kept.json()) as Me);
 }
 
-async function call<T>(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<Answer<T>> {
+async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<Answer<T>> {
   let response: Response;
   try {
     response = await fetch(path, {
@@ -100,6 +105,13 @@ export const api = {
   photos: () => call<PhotoTimeline>("GET", "/api/photos"),
   payments: () => call<{ entries: Entry[] }>("GET", "/api/payments"),
   entry: (id: string) => call<EntryDetail>("GET", `/api/payments/${id}`),
+  availability: (type: BookableType, from?: string) =>
+    call<Availability>("GET", `/api/availability?type=${type}${from === undefined ? "" : `&from=${from}`}`),
+  hold: (type: BookableType, date: string, window: BookingWindow) =>
+    call<Hold>("POST", "/api/holds", { type, date, window }),
+  holdById: (id: string) => call<Hold>("GET", `/api/holds/${id}`),
+  releaseHold: (id: string) => call<null>("DELETE", `/api/holds/${id}`),
+  book: (holdId: string) => call<Booking>("POST", "/api/bookings", { hold_id: holdId }),
 };
 
 /** A visit's tax invoice, as a PDF the browser opens itself. */

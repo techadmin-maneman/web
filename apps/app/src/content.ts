@@ -115,6 +115,8 @@ export const messages = {
   reschedule: (what: string, date: string) => `I would like to move my ${what.toLowerCase()} on ${date}.`,
   note: (what: string, date: string) => `A note about my ${what.toLowerCase()} on ${date}: `,
   book: "I would like to book my next visit.",
+  // PLACEHOLDER
+  bookFirstFit: "I would like to book my first fit.",
   document: (what: string, reference: string) => `Please send me the ${what.toLowerCase()} for ${reference}.`,
 } as const;
 
@@ -132,6 +134,8 @@ export const home = {
     // PLACEHOLDER: the design draws no Home for a fitted client with nothing booked.
     none: "No visit booked.",
     book: "Book your next visit",
+    // PLACEHOLDER: a lead whose consultation is done.
+    bookFirstFit: "Book your first fit",
   },
   expect: {
     label: "What to expect",
@@ -164,6 +168,72 @@ export const visits = {
     type: "Type",
     done: "What was done",
   },
+} as const;
+
+/** Booking in the app (boards C2 to C6), while self-serve booking is on. */
+export const booking = {
+  step: (n: number) => `Step ${String(n)} of 3`,
+  date: {
+    title: "Pick a date",
+    available: "Available",
+    full: "Full",
+    continue: "Continue",
+  },
+  window: {
+    title: "Pick a window",
+    full: "Full",
+    regularFree: (name: string) => `${name} free`,
+    another: "Another technician",
+    regularLine: (name: string) => `${name}, your regular technician, is free.`,
+    // PLACEHOLDER: the design draws the window step with the regular technician free.
+    anotherLine: (name: string) => `${name} is not free then. Another technician will come.`,
+    continue: "Continue to payment",
+    // PLACEHOLDER
+    taken: "That window has just gone. Pick another.",
+  },
+  pay: {
+    title: "Pay and confirm",
+    held: (time: string) => `Slot held ${time}`,
+    incl: (amount: string) => `${amount} incl. GST`,
+    freeUntil: (when: string) => `Free to move until ${when}. After that it is charged.`,
+    with: "Pay with",
+    upi: "UPI · any app",
+    // PLACEHOLDER: the design draws a saved card ("Card ending 4417"); Checkout asks for the card.
+    card: "Card",
+    pay: (amount: string) => `Pay ${amount}`,
+    neverHandlesMoney: (name: string) => `${name} never handles money.`,
+    firstFit: "First fit · standard",
+    firstFitBlock: "Two slots · 3 hours",
+    guarantee: (name: string) => `If the fit is not right, ${name} stops and you are refunded in full.`,
+    lateFee: (amount: string) => `Moving inside 24 hours costs ${amount}. The balance carries over.`,
+    // PLACEHOLDER: a free consultation has no payment; the design draws the credit board's button.
+    free: "Free",
+    confirm: "Confirm visit",
+  },
+  failed: {
+    label: "Payment failed",
+    title: "The payment did not go through.",
+    held: (time: string) => `Slot held ${time} more.`,
+    retry: "Try again",
+    another: "Another method",
+  },
+  expired: {
+    title: "That slot has gone back.",
+    pickAgain: "Pick again",
+  },
+  confirmed: {
+    label: "Confirmed",
+    tellsYou: (name: string) => `${name} messages you the day before.`,
+    paid: "Paid",
+    note: (name: string) => `Add a note for ${name}`,
+    // PLACEHOLDER from here to the end.
+    close: "Done",
+  },
+  confirming: "Confirming your visit.",
+  slow: "This is taking longer than usual. We will message you on WhatsApp when the visit is booked.",
+  refunded: "We could not book that visit, so your payment is being refunded in full.",
+  failedToStart: "That did not go through. Please try again.",
+  close: "Close",
 } as const;
 
 export const photos = {

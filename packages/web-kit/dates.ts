@@ -3,6 +3,7 @@
 // when a consent was given, is shown as India's date.
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
 /** "2026-09-24" → "Thu 24 Sep". */
@@ -10,6 +11,12 @@ export function shortDate(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);
   const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
   return `${DAYS[date.getUTCDay()] ?? ""} ${String(date.getUTCDate())} ${MONTHS[date.getUTCMonth()] ?? ""}`;
+}
+
+/** "2026-09-24" → "Thursday 24 Sep", as board C3 heads the day. */
+export function weekdayDate(isoDate: string): string {
+  const day = new Date(`${isoDate}T00:00:00Z`).getUTCDay();
+  return `${WEEKDAYS[day] ?? ""} ${shortDate(isoDate).slice(4)}`;
 }
 
 /** "2027-08-22" → "22 Aug 2027". */

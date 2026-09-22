@@ -11,6 +11,8 @@ export interface AppPolicy {
   readonly frames?: readonly string[];
   /** Features the app grants itself, e.g. "otp-credentials". */
   readonly features?: readonly string[];
+  /** Keeps a popup the page opens connected to it, as a payment provider's card check may need. */
+  readonly popups?: boolean;
 }
 
 /** Denied unless an app grants itself one. */
@@ -48,7 +50,7 @@ export function headersFile(policy: AppPolicy): string {
     "  Strict-Transport-Security: max-age=63072000; includeSubDomains",
     "  X-Content-Type-Options: nosniff",
     "  Referrer-Policy: strict-origin-when-cross-origin",
-    "  Cross-Origin-Opener-Policy: same-origin",
+    `  Cross-Origin-Opener-Policy: ${policy.popups === true ? "same-origin-allow-popups" : "same-origin"}`,
     // The apps are behind a login; nothing in them is for a search engine.
     "  X-Robots-Tag: noindex, nofollow",
     "/assets/*",
