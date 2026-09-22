@@ -9,7 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import subsetFont from "subset-font";
 
 const FACES = [["eb-garamond", 400]] as const;
-const OUT = "site/src/assets/fonts";
+const OUT = "packages/brand/fonts";
 
 mkdirSync(OUT, { recursive: true });
 for (const [family, weight] of FACES) {

@@ -1,15 +1,13 @@
-// Every colour, size and space on the site comes from site/src/styles/tokens.css:
+// Every colour, size and space on the site comes from packages/brand/tokens.css:
 // no component writes a raw colour, px, vw or em value, and every token a
-// component uses is defined there.
+// component uses is defined there. The site does not use the Phase 2 layer.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const SOURCE = "site/src";
-const TOKENS = "site/src/styles/tokens.css";
-/** Font files and their unicode ranges are not design values. */
-const EXEMPT = new Set([TOKENS, "site/src/styles/fonts.css"]);
+const TOKENS = "packages/brand/tokens.css";
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -30,7 +28,7 @@ function withoutMediaConditions(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@media[^{]*\{/g, "@media {");
 }
 
-const styled = files(SOURCE).filter((path) => /\.(astro|css)$/.test(path) && !EXEMPT.has(path));
+const styled = files(SOURCE).filter((path) => /\.(astro|css)$/.test(path));
 const defined = new Set(
   [...readFileSync(TOKENS, "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""),
 );

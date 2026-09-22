@@ -1,0 +1,13 @@
+/*
+ * The colours the Phase 2 surfaces add to tokens.css, which they load first.
+ * This layer only adds names; it never redefines one of tokens.css's
+ * (test/node/brand-package.test.ts). Each value is drawn in a Phase 2 spec
+ * board (design/phase2), not only in the Prototype, whose colours the boards
+ * overrule.
+ */
+
+:root {
+  --text-quiet: #4a453c; /* a window's hours beside its name, on white */
+  --paper-shade: #ded7c8; /* loading blocks; a full window; leave and replacement cells */
+  --brass-text: #7a5b24; /* brass for small text on paper: "Prepaid", the busiest day */
+}

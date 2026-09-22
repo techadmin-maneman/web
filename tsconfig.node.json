@@ -13,6 +13,7 @@
   "include": [
     "scripts/**/*.ts",
     "test/node/**/*.ts",
+    "packages/*/*.ts",
     "src/config/**/*.ts",
     "src/worker-configuration.d.ts",
     "vitest.config.ts",

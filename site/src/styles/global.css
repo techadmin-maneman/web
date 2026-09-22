@@ -3,8 +3,8 @@
  * layout lives in each component's own <style>. Values come from tokens.css.
  */
 
-@import "./tokens.css";
-@import "./fonts.css";
+@import "@maneman/brand/tokens.css";
+@import "@maneman/brand/fonts.css";
 
 *,
 *::before,

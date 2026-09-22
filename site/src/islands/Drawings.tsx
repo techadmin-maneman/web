@@ -1,7 +1,7 @@
 // Small drawings the islands share: a line icon, and the stage drawing (a head
 // with the hair and the thinning zone) used by the try-on and the booking form.
 
-import { HEAD_OUTLINE } from "../lib/icons.ts";
+import { HEAD_OUTLINE } from "@maneman/brand/icons";
 
 export function Icon({ path, size, stroke = 1.6 }: { path: string; size: number; stroke?: number }) {
   return (

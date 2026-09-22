@@ -6,7 +6,7 @@
 import sharp from "sharp";
 import favicon from "../../../design/brand/favicon-32.svg?raw";
 import lockup from "../../../design/brand/lockup-gilt.svg?raw";
-import tokens from "../styles/tokens.css?raw";
+import tokens from "@maneman/brand/tokens.css?raw";
 
 /** A colour from tokens.css, so the images use the site's one set of values. */
 export function token(name: string): string {
