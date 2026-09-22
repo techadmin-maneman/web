@@ -94,3 +94,13 @@ The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcil
 - **Books has no GST set up yet,** so staging's documents carry no tax (`docs/open-points.md`, item 3).
 - **FSM's app uploads photographs at full size,** several megabytes each, where the Phase 2 budget (ADR 0039) assumes about 270 KB. Until our technician app re-encodes them on the phone (P2-M4), R2's 10 GB fills faster (`docs/open-points.md`, item 34).
 - **The FSM and Books trials end around 6 October 2026** (`docs/open-points.md`, item 9). After that FSM drops to its Free edition, which has no assets or job sheets.
+
+## Leads into FSM (P2-M2.7)
+
+A consultation booked on the public site reaches FSM as well as the CRM, so ops schedule it where the field work lives.
+
+- **What goes.** A booking in a served city: not a waitlist entry, and not a try-on. The lead route puts `{ lead_id }` on the fsm-sync queue wherever `FSM_PROVIDER` is not `none`; the consumer sends it (`src/domain/fsm-leads.ts`) with the same retries and final alert as an appointment.
+- **The contact.** The person becomes an FSM contact once, with their mobile number in E.164 (which the mirror matches on), their city and its state as the place of supply, and a street "To be confirmed with the client". Its ID is kept on the person at once, so a retry does not add the contact twice. The territory is the org's first until territories follow pincodes (P2-M4).
+- **The Request.** A Consultation line, with the day the booking proposed as its preferred date and due date, and the window in words ("Morning, 9 am to 12 pm") as its note. The Request's ID on the lead marks it sent. On staging its summary begins "Staging test:", since staging shares the real org (ADR 0025, item 26).
+- **Then ops.** In FSM, ops convert the Request to a work order, schedule it and assign a technician. The appointment comes back through the webhook and the mirror, matched to the person by mobile number, and the client sees it in the app.
+- **FSM's webhook sends its fields in the query string,** with an empty form body, as the first delivery to staging showed on 22 September 2026. The hook reads them from there, or from a JSON or form body.
