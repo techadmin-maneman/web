@@ -8,6 +8,7 @@ import { WINDOW_LABELS, windowLabel, type VisitWindow } from "../config/booking.
 import { currentAddress } from "../domain/profile.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { initialsOf } from "../lib/names.ts";
 
 export const MeSchema = z
   .object({
@@ -79,15 +80,4 @@ export function registerClientMe(app: App): void {
       200,
     );
   });
-}
-
-/** "Rohit Malhotra" → "RM"; one name gives one letter. */
-function initialsOf(name: string): string {
-  const words = name
-    .trim()
-    .split(/\s+/)
-    .filter((word) => word !== "");
-  const first = words[0] ?? "";
-  const last = words.length > 1 ? (words.at(-1) ?? "") : "";
-  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
 }

@@ -59,7 +59,7 @@ describe("mm-api wrangler config", () => {
     [
       "staging consumes a different queue",
       ["env.staging.queues.consumers.0.queue", "mm-other-staging"],
-      "env.staging: queues.consumers declares [mm-other-staging, mm-render-staging, mm-messaging-staging]",
+      "env.staging: queues.consumers declares [mm-other-staging, mm-render-staging, mm-messaging-staging, mm-fsm-sync-staging]",
     ],
   ])("fails when %s", (_label, edit, problem) => {
     expect(api(edit)).toContain(problem);

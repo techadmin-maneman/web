@@ -510,6 +510,28 @@ Evolution's delivery receipts (messages.update) for the WhatsApp messages we sen
 }
 ```
 
+### POST /api/hooks/fsm/{token}
+
+FSM's webhook: an appointment was created, edited or deleted
+
+**204**: Taken, or ignored. Either way FSM need not send it again
+
+**401**: unauthorized: the token is wrong
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: FSM's webhook is not switched on (no FSM_WEBHOOK_TOKEN)
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse

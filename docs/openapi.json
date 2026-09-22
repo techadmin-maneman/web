@@ -1388,6 +1388,46 @@
           }
         }
       }
+    },
+    "/api/hooks/fsm/{token}": {
+      "post": {
+        "summary": "FSM's webhook: an appointment was created, edited or deleted",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Taken, or ignored. Either way FSM need not send it again"
+          },
+          "401": {
+            "description": "unauthorized: the token is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: FSM's webhook is not switched on (no FSM_WEBHOOK_TOKEN)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "webhooks": {}

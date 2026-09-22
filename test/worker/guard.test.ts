@@ -347,6 +347,7 @@ describe("validateStaticConfig: Zoho FSM and Books", () => {
       accountsHost: "accounts.zoho.in",
       apiHost: "www.zohoapis.in",
       booksOrgId: "60088931635",
+      webhookToken: null,
     });
   });
 

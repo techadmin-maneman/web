@@ -24,6 +24,9 @@ export interface FsmAppointment {
   readonly technicianIds: readonly string[];
   /** The service items its line items are for: the visit type comes from these. */
   readonly serviceIds: readonly string[];
+  /** Where the visit is: the service address's city and pincode, as FSM holds them. */
+  readonly serviceCity: string | null;
+  readonly servicePincode: string | null;
   /** The Books invoice, once one is raised. */
   readonly invoiceId: string | null;
   readonly modifiedAt: string;
