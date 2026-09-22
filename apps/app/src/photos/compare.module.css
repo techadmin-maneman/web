@@ -1,0 +1,221 @@
+/* Board D2: two visits on ink, cut by a gold divider, over the three angles. */
+
+.compare {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--ink-deep);
+  color: var(--paper);
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--sp-14);
+  height: var(--btn-lg);
+  padding: 0 var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: calc(-1 * var(--sp-11));
+  color: var(--ink-soft);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  font-weight: 400;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pickers {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-10);
+  padding: var(--sp-18) var(--sp-20);
+}
+
+/* The chosen date is drawn; the select over it, unseen, is what a tap or the keyboard opens. */
+.picker {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--btn-md);
+  padding: 0 var(--sp-14);
+  border: var(--hairline) solid var(--ink-line);
+}
+
+.pickerLabel {
+  font-size: var(--fs-13);
+  color: var(--ink-muted);
+}
+
+.pickerValue {
+  font-size: var(--fs-16);
+}
+
+.picker select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  font-size: var(--fs-16);
+  cursor: pointer;
+}
+
+.picker:focus-within {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
+}
+
+/* --at, where the divider stands, is set by the page as the finger or the keyboard moves it. */
+.stage {
+  --at: 50%;
+
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 0 var(--sp-20) var(--sp-18);
+  overflow: hidden;
+  background: var(--ink-frame);
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.sides,
+.later,
+.earlier {
+  position: absolute;
+  inset: 0;
+}
+
+.later {
+  background: var(--ink-raised);
+}
+
+.earlier {
+  background: var(--ink-frame);
+  clip-path: inset(0 calc(100% - var(--at)) 0 0);
+}
+
+.sides img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.date {
+  position: absolute;
+  top: var(--sp-14);
+  font-size: var(--fs-14);
+  font-variant-numeric: tabular-nums;
+}
+
+.later .date {
+  right: var(--sp-14);
+  color: var(--ink-soft);
+}
+
+.earlier .date {
+  left: var(--sp-14);
+  color: var(--ink-muted);
+}
+
+/* A new angle fades in over the one it replaces, both sides at once. */
+.arriving {
+  animation: arrive var(--ease);
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--at);
+  width: var(--hairline);
+  background: var(--gilt);
+}
+
+.handle {
+  position: absolute;
+  top: 50%;
+  left: var(--at);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  width: var(--tap);
+  height: var(--tap);
+  border: var(--hairline) solid var(--gilt);
+  background: var(--ink-deep);
+  color: var(--gilt);
+  transform: translate(-50%, -50%);
+}
+
+.angles {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-10);
+  padding: 0 var(--sp-20) var(--sp-22);
+}
+
+.angle {
+  flex: 1;
+  min-height: var(--btn-md);
+  border: var(--hairline) solid var(--ink-line);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.angle[aria-pressed="true"] {
+  color: var(--paper);
+}
+
+.back:focus-visible,
+.handle:focus-visible,
+.angle:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
+}
+
+/* Opened with fewer than two visits to compare, on paper. */
+.none {
+  margin: 0;
+  padding: var(--sp-24) var(--sp-20);
+  font-size: var(--fs-16);
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arriving {
+    animation: none;
+  }
+}

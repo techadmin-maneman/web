@@ -83,22 +83,55 @@ export const tabs = [
   { page: "/refer", label: "Refer", icon: "refer" },
 ] as const;
 
-/** The window a Phase 1 booking asked for (docs/decisions/0040-phase-1-alignment.md). */
-export const WINDOWS: Readonly<Record<string, string>> = {
-  "before noon": "Morning, 9 am to 12 pm",
-  "after four": "Evening, 4 pm to 8 pm",
+/** The three windows a visit is booked in (design/phase2/Client App, the windows data). */
+export const WINDOW_NAMES = { morning: "Morning", afternoon: "Afternoon", evening: "Evening" } as const;
+export const WINDOW_HOURS = { morning: "9 am to 12 pm", afternoon: "12 to 4 pm", evening: "4 to 8 pm" } as const;
+export type WindowLabel = keyof typeof WINDOW_NAMES;
+
+/** The window a Phase 1 booking asked for, as one of the three (docs/decisions/0040-phase-1-alignment.md). */
+export const PHASE1_WINDOWS: Readonly<Record<string, WindowLabel>> = {
+  "before noon": "morning",
+  "after four": "evening",
 };
+
+/** "Afternoon, 12 to 4 pm", as a visit's card gives its window. */
+export const windowText = (label: WindowLabel) => `${WINDOW_NAMES[label]}, ${WINDOW_HOURS[label]}`;
+
+/** Each kind of visit, as the design names it. */
+export const VISIT_TYPES = {
+  consultation: "Consultation",
+  first_fit: "First fit",
+  service: "Service visit",
+  replacement: "Replacement piece",
+} as const;
+// PLACEHOLDER: a visit whose FSM service item is none of the four.
+export const OTHER_VISIT = "Visit";
+
+/**
+ * While self-serve booking is off, booking, rescheduling and notes open WhatsApp to ops with a message ready
+ * (docs/prompts/phase2-backend.md, "Booking"). PLACEHOLDER wording, all of it.
+ */
+export const messages = {
+  reschedule: (what: string, date: string) => `I would like to move my ${what.toLowerCase()} on ${date}.`,
+  note: (what: string, date: string) => `A note about my ${what.toLowerCase()} on ${date}: `,
+  book: "I would like to book my next visit.",
+  document: (what: string, reference: string) => `Please send me the ${what.toLowerCase()} for ${reference}.`,
+} as const;
 
 export const home = {
   profile: "Your profile",
+  reschedule: "Reschedule",
+  note: "Add a note",
   consultation: {
     label: "Your consultation",
     free: "Free · nothing to pay",
-    reschedule: "Reschedule",
-    note: "Add a note",
-    // PLACEHOLDER: while self-serve booking is off, both open WhatsApp to ops with a message ready.
-    rescheduleMessage: (date: string) => `I would like to move my consultation on ${date}.`,
-    noteMessage: (date: string) => `A note about my consultation on ${date}: `,
+  },
+  next: {
+    label: "Your next visit",
+    length: (what: string, minutes: number) => `${what} · ${String(minutes)} minutes`,
+    // PLACEHOLDER: the design draws no Home for a fitted client with nothing booked.
+    none: "No visit booked.",
+    book: "Book your next visit",
   },
   expect: {
     label: "What to expect",
@@ -119,9 +152,89 @@ export const home = {
 export const visits = {
   title: "Visits",
   upcoming: "Upcoming",
-  consultation: "Consultation",
+  past: "Past",
   // PLACEHOLDER
   none: "No visits booked.",
+  book: "Book your next visit",
+  detail: {
+    back: "Back to visits",
+    photographs: "Photographs from this visit",
+    technician: "Technician",
+    duration: "Duration",
+    type: "Type",
+    done: "What was done",
+  },
+} as const;
+
+export const photos = {
+  title: "Photos",
+  compare: "Compare",
+  angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
+  /** The compare's three angles, as board D2 names them. */
+  compareAngles: { front: "Front", top: "Top", hair: "Hairline" },
+  // PLACEHOLDER: a photograph's description for a screen reader; the design draws no captions.
+  alt: (angle: string, phase: "before" | "after", date: string) => `${angle}, ${phase} the visit, ${date}`,
+  back: "Back to photos",
+  from: "From",
+  to: "To",
+  // PLACEHOLDER: the divider's name for a screen reader, and the compare opened with fewer than two visits.
+  divider: "Divider between the two photographs",
+  compareNone: "Compare opens once two visits have photographs.",
+  download: "Download",
+  downloaded: "Downloaded photographs sit in your gallery, outside the app.",
+  photoOf: (angle: string, date: string) => `${angle} · ${date}`,
+  // PLACEHOLDER
+  close: "Close",
+} as const;
+
+export const payments = {
+  title: "Payments",
+  back: "Back to payments",
+  // PLACEHOLDER: an entry that paid for no visit we know of.
+  payment: "Payment",
+  refundOf: (what: string) => `${what} · refund`,
+  refundTo: (method: string) => `refund to ${method}`,
+  /** A payment's status, and a refund's. */
+  status: {
+    captured: "Paid",
+    // PLACEHOLDER from here to the refund's "created", and its "processed" and "failed".
+    authorized: "Processing",
+    refunded: "Refunded",
+    partially_refunded: "Partly refunded",
+    created: "Refund processing",
+    processed: "Refunded",
+    failed: "Refund failed",
+  },
+  /**
+   * How long a refund takes, beside "Refund processing". The design says "3 to 5 working days"; Razorpay's
+   * normal refunds take 5 to 7, and the owner ruled the app says so (ADR 0025, item 28).
+   */
+  speed: { normal: "5 to 7 working days" } as Readonly<Record<string, string>>,
+  /** A method as a list's meta line writes it ("22 Aug · UPI"), and as the detail's row does ("UPI"). */
+  methods: {
+    upi: ["UPI", "UPI"],
+    card: ["card", "Card"],
+    netbanking: ["net banking", "Net banking"],
+    wallet: ["wallet", "Wallet"],
+    emi: ["EMI", "EMI"],
+    paylater: ["pay later", "Pay later"],
+  } as Readonly<Record<string, readonly [string, string]>>,
+  incl: (amount: string) => `${amount} incl.`,
+  including: (amount: string, percent: number) => `${amount} including GST at ${String(percent)}%`,
+  // PLACEHOLDER: the design draws a payment's rows; a refund's "Refunded to" is ours.
+  rows: { date: "Date", method: "Method", destination: "Refunded to", status: "Status", reference: "Reference" },
+  documents: "Tax documents",
+  invoice: "Tax invoice",
+  receipt: "Receipt",
+  // PLACEHOLDER
+  voucher: "Refund voucher",
+  unavailable: {
+    invoice: "The invoice is still generating. Usually ready within the hour.",
+    // PLACEHOLDER: receipts and vouchers wait for the invoicing route (docs/open-points.md, item 3).
+    receipt: "The receipt is not ready yet.",
+    voucher: "The refund voucher is not ready yet.",
+    notify: "Notify me",
+  },
 } as const;
 
 export const empty = {
@@ -132,6 +245,11 @@ export const empty = {
   payments: {
     title: "Payments",
     lines: ["Nothing to pay yet.", "Your consultation is free. Later payments appear here with their invoices."],
+  },
+  // PLACEHOLDER: the design draws the empty list for a lead only.
+  paymentsFitted: {
+    title: "Payments",
+    lines: ["No payments yet.", "Payments made in the app appear here with their invoices."],
   },
   refer: {
     title: "Refer",
@@ -226,8 +344,8 @@ export const states = {
   offline: "No connection. Showing your last update.",
   error: {
     title: "We could not load your visit.",
-    // The design's second line, "Your visit is still booked.", waits for Home's own visit data (P2-F2):
-    // until then the app cannot know that there is one.
+    /** Said only when the phone has kept a Home with a visit on it. */
+    booked: "Your visit is still booked.",
     retry: "Try again",
     message: "Message us",
   },

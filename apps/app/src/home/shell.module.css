@@ -60,9 +60,20 @@
   color: var(--text);
 }
 
-.name {
+.name,
+.tabTitle {
+  margin: 0;
   font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+.name {
   font-size: var(--fs-22);
+}
+
+/* A tab's title, as boards C1, D1 and E1 put it in the header. */
+.tabTitle {
+  font-size: var(--fs-24);
 }
 
 .offline {
@@ -82,20 +93,33 @@
   color: var(--gilt);
 }
 
+/* Each page pads itself, as its board does, and fades in as a tab changes: never sliding. */
 .page {
-  display: flex;
   flex: 1;
-  flex-direction: column;
-  gap: var(--sp-26);
   min-height: 0;
-  padding: var(--sp-28) var(--sp-20);
   overflow-y: auto;
   overscroll-behavior: contain;
+  animation: arrive var(--ease);
 }
 
-/* Under the profile's header the page starts 24 px down (board G1), where Home's starts 28 (B2). */
-.titledPage {
-  padding-top: var(--sp-24);
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+}
+
+/* Board C1's bar above the tabs. */
+.footer {
+  flex-shrink: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-top: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
 }
 
 /* Installed on an iPhone, the app runs to the bottom edge (viewport-fit=cover): the tabs' ground does too, and their row keeps clear of the home indicator. */

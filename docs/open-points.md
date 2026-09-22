@@ -16,6 +16,7 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 | 6   | Razorpay live mode                                   | Test keys                                                                                                                                                    | KYC, live keys and a live webhook (P2-M5).                                                                           |
 | 7   | Late fees, the refund route, a late-cancelled credit | The design's figures and rules                                                                                                                               | The owner confirms them (P2-M5).                                                                                     |
 | 8   | Self-serve booking                                   | Off: booking goes through WhatsApp                                                                                                                           | The owner switches on `SELF_SERVE_BOOKING` (P2-M5).                                                                  |
+| 35  | Receipts and refund vouchers                         | The app lists them on each payment and refund (board E2), but they are never ready: its Notify me asks ops on WhatsApp                                       | Settle the invoicing route (section 6). The API then serves each document, and Notify me tells the client itself.    |
 
 ## Zoho
 
@@ -71,3 +72,5 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 - **The Zoho org the trial runs in is the real one.** 22 September 2026 (ADR 0025, item 26).
 - **The FSM trial findings** are recorded, apart from webhooks (`docs/decisions/fsm-trial.md`).
 - **Production's Access service token (item 30).** `mm-ci-production` has a Service Auth policy on production's Access applications (ops, app, tech), set up by the owner on 22 September 2026. It is kept in `.env.production-access` and as the `production` environment's `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` in GitHub; `verify-ci-secrets` checks it against the ops console (`docs/runbook.md`, step 3).
+- **How long a refund takes (item 36).** The app says "5 to 7 working days", Razorpay's time for a normal refund. Ruled 22 September 2026 (ADR 0025, item 28).
+- **The UPI app on a payment (item 37).** The app shows "UPI" alone. Ruled 22 September 2026 (ADR 0025, item 29).

@@ -1,11 +1,14 @@
 // The client app's fidelity pairs (docs/fidelity-method.md, "Phase 2 boards"):
-// each frame of design/phase2/Client App.dc.html that P2-F1 builds, beside the
-// built app in the same state, at the frames' 390 px.
+// each frame of design/phase2/Client App.dc.html that P2-F1 and P2-F2 build,
+// beside the built app in the same state, at the frames' 390 px.
 //
 //   npm run build:app -- --env local && npm run fidelity:app
 //
 // The app's API is answered with the design's own example (Rohit Malhotra, a
-// consultation on Sat 21 Sep), so both sides show the same things. The phone's
+// consultation on Sat 21 Sep; fitted, his next service visit on Thu 19 Sep
+// with Imran), so both sides show the same things. The design's photographs
+// are ink blocks with the angle written on them; the app's are answered with
+// blocks of the same ink, and carry no captions, as the prompt has it. The phone's
 // status bar the frames draw above each screen is board furniture: it is
 // cropped off, and the app is shot 44 px shorter to match.
 //
@@ -39,7 +42,110 @@ const ME = {
   initials: "RM",
   // A Saturday, as the design's "Sat 21 Sep" is.
   consultation: { date: "2030-09-21", window_label: "before noon", place: "Sector 65, Gurgaon 122018" },
+  next_visit: null,
+  credits: null,
+  prompt: null,
 };
+
+// ---- Fitted (P2-F2) --------------------------------------------------------------
+
+const IMRAN = { name: "Imran Qureshi", initials: "IQ" };
+const SANDEEP = { name: "Sandeep Rawat", initials: "SR" };
+const PLACE = "Sector 65, Gurgaon 122018";
+
+const visit = (n: number, date: string, type: string, technician: typeof IMRAN) => ({
+  id: `c0000000-0000-4000-8000-00000000000${String(n)}`,
+  date,
+  window_label: "afternoon",
+  starts_at: `${date}T06:30:00.000Z`,
+  ends_at: `${date}T08:00:00.000Z`,
+  length_minutes: 90,
+  type,
+  status: "completed",
+  technician,
+  place: PLACE,
+});
+
+/** A Thursday, as B1's "Thu 19 Sep" is. */
+const NEXT = { ...visit(1, "2030-09-19", "service", IMRAN), status: "scheduled" };
+const PAST = [
+  visit(2, "2027-08-22", "service", IMRAN),
+  visit(3, "2027-07-25", "service", IMRAN),
+  visit(4, "2027-06-27", "replacement", SANDEEP),
+  visit(5, "2026-11-14", "first_fit", IMRAN),
+] as const;
+const [AUGUST, JULY, , NOVEMBER] = PAST;
+
+const ME_FITTED = { ...ME, state: "fitted", consultation: null, next_visit: NEXT };
+
+const ANGLES = ["front", "top", "left", "right", "hair"];
+/** The five angles after a visit, each answered with a block of `ink` (see PHOTO_FILES). */
+const photoSet = (ink: string) => ({
+  before: [],
+  after: ANGLES.map((angle) => ({ angle, url: `/api/photos/file/${ink}`, width: 600, height: 800 })),
+});
+const PHOTO_FILES = { ink: "#16233a", frame: "#131c2e", raised: "#1a2740" } as const;
+
+const VISIT_DETAIL = {
+  ...AUGUST,
+  duration_minutes: 85,
+  outcome: "done",
+  what_was_done: null,
+  photos: photoSet("ink"),
+  document_id: null,
+};
+
+const timeline = (inks: readonly [string, string, string]) => ({
+  visits: [AUGUST, JULY, NOVEMBER].map((each, index) => ({
+    visit_id: each.id,
+    date: each.date,
+    type: each.type,
+    photos: photoSet(inks[index] ?? "ink"),
+  })),
+});
+/** Board D2 draws the earlier visit on ink-frame and the later on ink-raised. */
+const TIMELINE = timeline(["ink", "ink", "ink"]);
+const COMPARED = timeline(["raised", "ink", "frame"]);
+
+const visitRef = (each: (typeof PAST)[number]) => ({ id: each.id, date: each.date, type: each.type });
+const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: string, reference: string) => ({
+  kind: "payment",
+  id: `e0000000-0000-4000-8000-00000000000${String(n)}`,
+  date: of.date,
+  amount: exGst * 1.18,
+  amount_ex_gst: exGst,
+  gst_percent: 18,
+  visit: visitRef(of),
+  status: "captured",
+  method,
+  reference,
+  refunded_amount: 0,
+});
+const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
+/** Board E1's entries that exist before booking (P2-M5): the charge and the credit arrive with it. */
+const ENTRIES = {
+  entries: [
+    {
+      kind: "refund",
+      id: "e0000000-0000-4000-8000-000000000001",
+      payment_id: "e0000000-0000-4000-8000-000000000009",
+      date: "2027-09-14",
+      amount: 236000,
+      amount_ex_gst: 200000,
+      gst_percent: 18,
+      visit: { id: "c0000000-0000-4000-8000-000000000009", date: "2027-09-16", type: "service" },
+      status: "created",
+      destination: "upi",
+      speed: "normal",
+    },
+    SERVICE_PAID,
+    paid(3, PAST[2], 1500000, "upi", "MM-2027-0512"),
+    paid(4, NOVEMBER, 3000000, "card", "MM-2026-0102"),
+  ],
+};
+const ENTRY = { ...SERVICE_PAID, documents: { invoice: AUGUST.id, receipt: null } };
+/** The clock for the payments: in 2027, so its entries drop the year, as E1's do. */
+const IN_2027 = new Date("2027-09-20T05:00:00Z");
 
 const PROFILE = {
   name: "Rohit Malhotra",
@@ -99,14 +205,14 @@ async function openDesign(browser: Browser): Promise<Page> {
 }
 
 /** The app with its API answered from `api` (anything else unauthorised), 44 px shorter than a frame. */
-async function openApp(browser: Browser, path: string, api: Api): Promise<Page> {
+async function openApp(browser: Browser, path: string, api: Api, now?: Date): Promise<Page> {
   // The app's policy would refuse the style that stills the page; screenshots set it aside.
   const page = await browser.newPage({
     viewport: { width: WIDTH, height: FRAME_HEIGHT - STATUS_BAR },
     bypassCSP: true,
     serviceWorkers: "block",
   });
-  await page.clock.install();
+  await page.clock.install(now === undefined ? {} : { time: now });
   await page.route("**/api/**", (route) => {
     const answer = api[new URL(route.request().url()).pathname] ?? signedOut;
     return answer(route);
@@ -126,12 +232,18 @@ async function frame(design: Page, label: string, statusBar = true): Promise<Buf
     .toBuffer();
 }
 
-/** One of board B3's three small frames, by its caption: Loading, Offline or Error. */
-function stateFrame(design: Page, caption: string): Promise<Buffer> {
+/** One of a states board's small frames, by its caption: B3's Loading, Offline or Error, and so on. */
+function stateFrame(design: Page, caption: string, board = "Home · states"): Promise<Buffer> {
   return design
-    .locator('[data-screen-label="Home · states"] > div')
+    .locator(`[data-screen-label="${board}"] > div`)
     .filter({ has: design.getByText(caption, { exact: true }) })
     .screenshot();
+}
+
+/** Every photograph on the page arrived and faded in. */
+async function photographsIn(page: Page): Promise<void> {
+  await page.waitForFunction(() => [...document.images].every((image) => image.complete && image.naturalWidth > 0));
+  await page.waitForFunction(() => [...document.images].every((image) => getComputedStyle(image).opacity === "1"));
 }
 
 async function shot(page: Page): Promise<Buffer> {
@@ -181,8 +293,14 @@ async function states(browser: Browser, design: Page): Promise<void> {
   await pair(OUT, WIDTH, "b3-offline", await stateFrame(design, "Offline"), await shot(offline));
   await offline.close();
 
+  // The phone kept a Home with the consultation on it, so the error can say the visit is still booked.
   const failed = await openApp(browser, "/", { "/api/me": (route) => route.abort() });
-  await failed.getByRole("heading", { name: "We could not load your visit." }).waitFor();
+  await failed.evaluate(async (home) => {
+    const kept = await caches.open("mm-app-home");
+    await kept.put("/api/me", new Response(JSON.stringify(home)));
+  }, ME);
+  await failed.reload();
+  await failed.getByText("Your visit is still booked.").waitFor();
   await pair(OUT, WIDTH, "b3-error", await stateFrame(design, "Error"), await shot(failed));
   await failed.close();
 }
@@ -206,6 +324,107 @@ async function profile(browser: Browser, design: Page): Promise<void> {
   await app.close();
 }
 
+async function fitted(browser: Browser, design: Page): Promise<void> {
+  const files: Record<string, (route: Route) => Promise<void>> = {};
+  for (const [name, background] of Object.entries(PHOTO_FILES)) {
+    const body = await sharp({ create: { width: 600, height: 800, channels: 3, background } })
+      .jpeg()
+      .toBuffer();
+    files[`/api/photos/file/${name}`] = (route) => route.fulfill({ body, contentType: "image/jpeg" });
+  }
+  const me = { "/api/me": json(ME_FITTED), ...files };
+
+  // B1 draws the credit tile and a prompt, which arrive with the credits (P2-M3) and the pieces (P2-M4).
+  const home = await openApp(browser, "/", me);
+  await home.getByRole("heading", { name: "Your next visit" }).waitFor();
+  await pair(OUT, WIDTH, "b1-fitted", await frame(design, "Home · fitted"), await shot(home));
+  await home.close();
+
+  // C1 marks the upcoming visit Prepaid, which arrives with prepayment (P2-M5).
+  const visits = await openApp(browser, "/visits", { ...me, "/api/visits": json({ upcoming: [NEXT], past: PAST }) });
+  await visits.getByRole("heading", { name: "Past" }).waitFor();
+  await pair(OUT, WIDTH, "c1-visits", await frame(design, "Visits · list"), await shot(visits));
+  await visits.close();
+
+  // C9's "What was done" arrives with the job sheet (P2-M4).
+  const detail = await openApp(browser, `/visits/${AUGUST.id}`, {
+    ...me,
+    [`/api/visits/${AUGUST.id}`]: json(VISIT_DETAIL),
+  });
+  await detail.getByRole("heading", { name: "Photographs from this visit" }).waitFor();
+  await photographsIn(detail);
+  await pair(OUT, WIDTH, "c9-visit", await frame(design, "Visit detail"), await shot(detail));
+  await detail.close();
+
+  const photos = await openApp(browser, "/photos", { ...me, "/api/photos": json(TIMELINE) });
+  await photos.getByRole("heading", { name: "22 Aug 2027" }).waitFor();
+  await photographsIn(photos);
+  await pair(OUT, WIDTH, "d1-timeline", await frame(design, "Photos · timeline"), await shot(photos));
+  await photos.getByRole("button", { name: "Front, after the visit, 22 Aug 2027" }).click();
+  await photos.getByRole("dialog").waitFor();
+  await photographsIn(photos);
+  await pair(OUT, WIDTH, "d3-download", await stateFrame(design, "Download", "Photos · states"), await shot(photos));
+  await photos.close();
+
+  // The divider is set where D2 draws it, 48% across.
+  const compare = await openApp(browser, "/photos/compare", { ...me, "/api/photos": json(COMPARED) });
+  const stage = compare.getByRole("slider").locator("..");
+  await stage.waitFor();
+  const box = await stage.boundingBox();
+  if (box !== null) await compare.mouse.click(box.x + box.width * 0.48, box.y + box.height / 2);
+  await photographsIn(compare);
+  await pair(OUT, WIDTH, "d2-compare", await frame(design, "Photos · compare"), await shot(compare));
+  await compare.close();
+
+  const none = await openApp(browser, "/photos", { ...me, "/api/photos": json({ visits: [] }) });
+  await none.getByText("Your photographs start at your first fit.").waitFor();
+  await pair(
+    OUT,
+    WIDTH,
+    "d3-empty",
+    await stateFrame(design, "Empty · before the first fit", "Photos · states"),
+    await shot(none),
+  );
+  await none.close();
+
+  const loading = await openApp(browser, "/photos", { ...me, "/api/photos": never });
+  await loading.getByRole("status").filter({ hasText: "Loading" }).waitFor({ state: "attached" });
+  await pair(OUT, WIDTH, "d3-loading", await stateFrame(design, "Loading", "Photos · states"), await shot(loading));
+  await loading.close();
+
+  // E1's entries are newest first, where the board lists them in no order; its charge and credit arrive
+  // with booking (P2-M5).
+  const list = await openApp(browser, "/payments", { ...me, "/api/payments": json(ENTRIES) }, IN_2027);
+  await list.getByText("MM-2027-0841").or(list.getByText("Paid").first()).first().waitFor();
+  await pair(OUT, WIDTH, "e1-payments", await frame(design, "Payments · list"), await shot(list));
+  await list.close();
+
+  // E2's method row names the UPI app, which Razorpay's payment does not always carry.
+  const entry = await openApp(
+    browser,
+    `/payments/${SERVICE_PAID.id}`,
+    { ...me, [`/api/payments/${SERVICE_PAID.id}`]: json(ENTRY) },
+    IN_2027,
+  );
+  await entry.getByRole("heading", { name: "Tax documents" }).waitFor();
+  await pair(OUT, WIDTH, "e2-entry", await frame(design, "Payments · detail"), await shot(entry));
+  await entry.getByRole("button", { name: "Receipt" }).click();
+  await entry.getByText("Notify me").waitFor();
+  await pair(
+    OUT,
+    WIDTH,
+    "e3-unavailable",
+    await stateFrame(design, "Document unavailable", "Payments · states"),
+    await shot(entry),
+  );
+  await entry.close();
+
+  const lead = await openApp(browser, "/payments", { "/api/me": json(ME), "/api/payments": json({ entries: [] }) });
+  await lead.getByText("Nothing to pay yet.").waitFor();
+  await pair(OUT, WIDTH, "e3-empty", await stateFrame(design, "Empty · lead", "Payments · states"), await shot(lead));
+  await lead.close();
+}
+
 const servers: Server[] = [
   await serveDirectory(APP_DIR, 4314, undefined, { spa: true }),
   await serveDirectory(DESIGN_DIR, 4313),
@@ -219,6 +438,7 @@ try {
   await home(browser, design);
   await states(browser, design);
   await profile(browser, design);
+  await fitted(browser, design);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();

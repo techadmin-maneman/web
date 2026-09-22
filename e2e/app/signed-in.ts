@@ -21,11 +21,16 @@ export async function signIn(page: Page, request: APIRequestContext): Promise<st
     },
   });
   expect(booking.status()).toBe(201);
+  await logIn(page, mobile);
+  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  return mobile;
+}
+
+/** Logs in with a number that may, from the app's first screen. */
+export async function logIn(page: Page, mobile: string): Promise<void> {
   await page.goto("/");
   await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
   await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
   await page.getByRole("textbox", { name: "The six-digit code" }).fill(CODE);
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
-  return mobile;
 }

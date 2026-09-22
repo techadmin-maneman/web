@@ -2,10 +2,11 @@
   "name": "@maneman/web-kit",
   "private": true,
   "version": "0.0.0",
-  "description": "What the Phase 2 apps share beyond the brand: their security headers, and India's dates.",
+  "description": "What the Phase 2 apps share beyond the brand: their security headers, India's dates, and rupees.",
   "type": "module",
   "exports": {
     "./headers": "./headers.ts",
-    "./dates": "./dates.ts"
+    "./dates": "./dates.ts",
+    "./money": "./money.ts"
   }
 }

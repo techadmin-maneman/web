@@ -79,6 +79,8 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
     - rulings 2 and 3 of item 24.
 26. **The Zoho org.** The org the FSM trial runs in is the real one (ruled 22 September 2026). CRM is set up in it before production moves off the Developer Edition org (ADR 0020). Until then, staging's FSM and Books calls reach this real org, so its test records must be removed before go-live (`docs/open-points.md`).
 27. **Staging runs on placeholders.** **Ruled 22 September 2026:** "take placeholder values for everything else. This is going to staging." Where an input is still owed, staging uses a placeholder and the build carries on. Each placeholder, and every other point to settle, is listed in `docs/open-points.md`, which is cleared before anything reaches production.
+28. **How long a refund takes.** The design says "3 to 5 working days"; Razorpay's normal refunds take 5 to 7. **Ruled 22 September 2026:** the app says "5 to 7 working days".
+29. **The UPI app on a payment.** Board E2 names it ("UPI · Google Pay"), but Razorpay's payment does not always say which app paid. **Ruled 22 September 2026:** the app shows "UPI" alone.
 
 ## Inputs still owed
 

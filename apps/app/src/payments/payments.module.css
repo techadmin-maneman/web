@@ -1,0 +1,199 @@
+/* Board E1, the list; E2, one entry; E3, a document not yet raised. */
+
+.list {
+  margin: 0;
+  padding: 0 var(--sp-20);
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-14);
+  min-height: var(--tap-row);
+  padding: var(--sp-18) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.entryText {
+  min-width: 0;
+}
+
+.what,
+.meta,
+.status,
+.amount,
+.incl {
+  display: block;
+}
+
+.what {
+  font-size: var(--fs-16);
+}
+
+.meta,
+.status {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.meta {
+  margin-top: var(--sp-5);
+}
+
+.status {
+  margin-top: var(--sp-6);
+}
+
+.money {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.amount {
+  font-family: var(--font-serif);
+  font-size: var(--fs-21);
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.refunded {
+  color: var(--text-muted);
+}
+
+.incl {
+  margin-top: var(--sp-5);
+  font-size: var(--fs-13);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* Board E2. */
+.detail {
+  padding: var(--sp-24) var(--sp-20);
+}
+
+.detail p {
+  margin: 0;
+}
+
+.bigAmount {
+  font-family: var(--font-serif);
+  font-size: var(--fs-40);
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.detail .including {
+  margin-top: var(--sp-9);
+  font-size: var(--fs-15);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.facts {
+  margin: var(--sp-26) 0 0;
+  border-top: var(--hairline) solid var(--text);
+}
+
+.fact {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-15) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-16);
+}
+
+.fact:last-child {
+  border-bottom: 0;
+}
+
+.fact dt {
+  color: var(--text-muted);
+}
+
+.fact dd {
+  margin: 0;
+  text-align: right;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  margin: var(--sp-26) 0 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-15);
+  font-weight: 400;
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  color: var(--text-muted);
+}
+
+.documents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-10);
+  margin-top: var(--sp-12);
+}
+
+.document {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  width: 100%;
+  min-height: var(--btn-lg);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper-light);
+  font: inherit;
+  font-size: var(--fs-16);
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.documentIcon {
+  flex-shrink: 0;
+  color: var(--ink);
+}
+
+/* Board E3: the document is not ready, and Notify me. */
+.unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-12);
+  padding: var(--sp-6) 0 var(--sp-10);
+}
+
+.unavailable p {
+  font-size: var(--fs-16);
+  line-height: 1.55;
+}
+
+.notify {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink);
+  font-size: var(--fs-15);
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.entry:focus-visible,
+.document:focus-visible,
+.notify:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}

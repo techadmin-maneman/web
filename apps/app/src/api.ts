@@ -11,6 +11,15 @@ export type Profile = Schemas["Profile"];
 export type Address = Schemas["Address"];
 export type NumberChange = Schemas["NumberChange"];
 export type ConsentPurpose = Profile["consents"][number]["purpose"];
+export type VisitSummary = Schemas["VisitSummary"];
+export type Visits = Schemas["Visits"];
+export type VisitDetail = Schemas["VisitDetail"];
+export type PhotoLink = Schemas["PhotoLink"];
+export type PhotoSet = Schemas["PhotoSet"];
+export type PhotoTimeline = Schemas["PhotoTimeline"];
+export type Angle = PhotoLink["angle"];
+export type Entry = Schemas["PaymentEntry"] | Schemas["RefundEntry"];
+export type EntryDetail = Schemas["PaymentDetail"] | Schemas["RefundDetail"];
 
 /**
  * A failed call carries the API's error code, or "offline" when it never reached
@@ -23,10 +32,18 @@ export type Answer<T> =
 /** Named as in apps/app/sw/sw.ts. */
 const HOME_CACHE = "mm-app-home";
 const SERVED_FROM = "Mm-Served-From";
+const HOME_PATH = "/api/me";
 
 /** The kept Home is the one personal thing the app keeps on the phone: gone at logout, and once the session has ended. */
 export async function forgetHome(): Promise<void> {
   if ("caches" in window) await caches.delete(HOME_CACHE);
+}
+
+/** The Home the phone kept, if any: board B3's error can then say the visit is still booked. */
+export async function keptHome(): Promise<Me | null> {
+  if (!("caches" in window)) return null;
+  const kept = await caches.match(HOME_PATH, { cacheName: HOME_CACHE });
+  return kept === undefined ? null : ((await kept.json()) as Me);
 }
 
 async function call<T>(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<Answer<T>> {
@@ -62,7 +79,7 @@ export const api = {
   verify: (challengeId: string, code: string) =>
     call<LoginVerify>("POST", "/api/auth/verify", { challenge_id: challengeId, code }),
   logout: () => call<null>("POST", "/api/auth/logout"),
-  me: () => call<Me>("GET", "/api/me"),
+  me: () => call<Me>("GET", HOME_PATH),
   profile: () => call<Profile>("GET", "/api/profile"),
   saveAddress: (address: Address) => call<Address>("PATCH", "/api/profile/address", address),
   switchConsent: (purpose: ConsentPurpose, granted: boolean) =>
@@ -78,4 +95,12 @@ export const api = {
       code,
     }),
   requestDeletion: () => call<{ state: "requested"; requested_at: string }>("POST", "/api/deletion-request"),
+  visits: () => call<Visits>("GET", "/api/visits"),
+  visit: (id: string) => call<VisitDetail>("GET", `/api/visits/${id}`),
+  photos: () => call<PhotoTimeline>("GET", "/api/photos"),
+  payments: () => call<{ entries: Entry[] }>("GET", "/api/payments"),
+  entry: (id: string) => call<EntryDetail>("GET", `/api/payments/${id}`),
 };
+
+/** A visit's tax invoice, as a PDF the browser opens itself. */
+export const documentUrl = (id: string) => `/api/documents/${id}`;

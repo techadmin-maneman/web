@@ -1,66 +1,32 @@
-/* The other tabs' headings, the Visits row, and the empty states. */
-
-.title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-app-title);
-  font-weight: 400;
-  line-height: 1.1;
-}
-
-.label {
-  margin: var(--sp-26) 0 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-15);
-  font-weight: 400;
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
-  color: var(--text-muted);
-}
-
-.row {
-  margin-top: var(--sp-12);
-  padding: var(--sp-18) 0;
-  border-top: var(--hairline) solid var(--paper-line);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-.row p {
-  margin: 0;
-}
-
-.rowDate {
-  font-family: var(--font-serif);
-  font-size: var(--fs-22);
-}
-
-.row .rowWhat {
-  margin-top: var(--sp-6);
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
+/* The empty states (boards D3, E3 and F6). */
 
 .empty {
-  margin-top: var(--sp-26);
-  padding-top: var(--sp-20);
-  border-top: var(--hairline) solid var(--paper-line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-14);
+  padding: var(--sp-24) var(--sp-20);
+}
+
+.tight {
+  gap: var(--sp-12);
 }
 
 .empty p {
   margin: 0;
 }
 
-.emptyFirst {
-  font-size: var(--fs-17);
-}
-
-.line {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-15);
-  line-height: 1.6;
+.emptyIcon {
   color: var(--text-muted);
 }
 
-.empty .line {
-  margin-top: var(--sp-8);
+.emptyFirst {
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  line-height: 1.2;
+}
+
+.line {
+  font-size: var(--fs-15);
+  line-height: 1.6;
+  color: var(--text-muted);
 }

@@ -1,5 +1,5 @@
 // The tab bar's glyphs (design/phase2/Client App, the tabs() data), in the
-// icon set's 24 px box with a 1.6 stroke, and the one other glyph the app draws
+// icon set's 24 px box with a 1.6 stroke, and the other glyphs the app draws
 // that the icon set lacks. The rest come from @maneman/brand/icons.
 
 export const TAB_ICONS = {
@@ -13,3 +13,6 @@ export const TAB_ICONS = {
 /** Beside A2's "Read automatically": the WhatsApp glyph's bubble without its handset, as the design draws it. */
 export const BUBBLE =
   "M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z";
+
+/** A past visit's row opens its detail (board C1). */
+export const CHEVRON = "M9 5 L16 12 L9 19";

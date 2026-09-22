@@ -1,46 +1,28 @@
-// The tabs beyond Home, as a lead sees them: Visits lists the consultation,
-// and Photos, Payments and Refer show the design's empty states (boards C1,
-// D3, E3 and F6). Their full screens arrive with P2-F2 and P2-F3.
+// The design's empty states (boards D3, E3 and F6): one line in the serif and
+// one beneath it. Refer shows its empty state until its screens arrive with
+// P2-F3.
 
-import { shortDate } from "@maneman/web-kit/dates";
-import type { Me } from "../api.ts";
-import { empty, visits, WINDOWS } from "../content.ts";
+import { Icon } from "../components/Icon.tsx";
+import { empty } from "../content.ts";
+import { Shell } from "./Shell.tsx";
 import styles from "./tabs.module.css";
 
-export function VisitsScreen({ me }: { me: Me }) {
-  const { consultation } = me;
+/** `tight` sets the lines 12 px apart, as board E3 does, where D3 and F6 set them 14; D3 draws a glyph above. */
+export function EmptyState(props: { lines: readonly [string, string]; tight?: boolean; icon?: string }) {
+  const [first, second] = props.lines;
   return (
-    <section aria-labelledby="visits">
-      <h1 className={styles.title} id="visits">
-        {visits.title}
-      </h1>
-      <h2 className={styles.label}>{visits.upcoming}</h2>
-      {consultation === null ? (
-        <p className={styles.line}>{visits.none}</p>
-      ) : (
-        <div className={styles.row}>
-          <p className={styles.rowDate}>{shortDate(consultation.date)}</p>
-          <p className={styles.rowWhat}>
-            {visits.consultation} · {WINDOWS[consultation.window_label]}
-          </p>
-        </div>
-      )}
-    </section>
+    <div className={props.tight === true ? `${styles.empty} ${styles.tight}` : styles.empty}>
+      {props.icon !== undefined && <Icon className={styles.emptyIcon} d={props.icon} size={24} />}
+      <p className={styles.emptyFirst}>{first}</p>
+      <p className={styles.line}>{second}</p>
+    </div>
   );
 }
 
-export function EmptyScreen({ which }: { which: keyof typeof empty }) {
-  const copy = empty[which];
-  const [first, second] = copy.lines;
+export function ReferScreen() {
   return (
-    <section aria-labelledby={which}>
-      <h1 className={styles.title} id={which}>
-        {copy.title}
-      </h1>
-      <div className={styles.empty}>
-        <p className={styles.emptyFirst}>{first}</p>
-        <p className={styles.line}>{second}</p>
-      </div>
-    </section>
+    <Shell header={{ kind: "tab", title: empty.refer.title }} tab="/refer">
+      <EmptyState lines={empty.refer.lines} />
+    </Shell>
   );
 }
