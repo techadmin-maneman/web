@@ -1,9 +1,11 @@
-# Mane Man web: Phase 1 backend
+# Mane Man web
+
+Phase 1 (the public site, booking and the try-on) is complete on staging, and its production release waits for the owner. Phase 2 (the client app, referrals, the ops console and the technician app, over Zoho FSM) is in progress. The briefs are in `docs/prompts/`; the decisions in `docs/decisions/`, with the Phase 2 conflicts in 0025.
 
 Two Cloudflare Workers on one origin:
 
 - **`mm-api`** (repository root): `https://{host}/api/*`. Owns every binding and secret: D1, R2 and Queues.
-- **`mm-site`** (`site/`): everything else. Static assets only. Today a placeholder page per environment; the front-end task replaces it with the Astro build and must keep the `mm-worker` and `mm-environment` meta tags the smoke suite looks for.
+- **`mm-site`** (`site/`): everything else. The Astro site, static assets only (`docs/frontend.md`). Production still serves a placeholder page until the owner releases the site; every build keeps the `mm-worker` and `mm-environment` meta tags the smoke suite looks for.
 
 |           | local                        | staging                                            | production                   |
 | --------- | ---------------------------- | -------------------------------------------------- | ---------------------------- |

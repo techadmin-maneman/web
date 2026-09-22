@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#CFCABE; color:#1A1714; font-family:'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  * { box-sizing:border-box; }
+  .mm-4up { display:grid; grid-template-columns:1fr; }
+  @media (min-width:560px) { .mm-4up { grid-template-columns:repeat(2,1fr); } }
+  @media (min-width:1100px) { .mm-4up { grid-template-columns:repeat(4,1fr); } }
+  a { color:#1A1714; text-decoration:none; }
+</style>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#16233A"/><text x="256" y="300" font-family="Georgia, serif" font-size="150" fill="#C9A363" text-anchor="middle">M</text><rect x="156" y="340" width="200" height="5" fill="#C9A363"/></svg></template>
+</helmet>
+
+<div style="padding:56px 48px 120px;">
+
+  <div style="max-width:900px; margin:0 0 56px;">
+    <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.16em; font-size:16px; color:#4A453C;">Mane Man · Phase 2 · 1 of 4</div>
+    <h1 style="margin:16px 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:56px; line-height:1.02; letter-spacing:-0.015em;">Client app</h1>
+    <p style="margin:22px 0 0; font-size:19px; line-height:1.7; color:#1A1714; text-wrap:pretty;">Installable web app, 390&nbsp;px, five tabs. Rohit Malhotra, standard tier, mono base, fitted 14&nbsp;Nov 2026. Two credits, expiring 3&nbsp;Jan 2028. Technician Imran.</p>
+    <div class="mm-4up" style="margin-top:28px; gap:24px; border-top:1px solid #1A1714; padding-top:20px; font-size:15px; line-height:1.6; color:#3A352E;">
+      <div><span style="color:#4A453C;">Money</span><br>Every visit prepaid. No amount to collect appears in either app.</div>
+      <div><span style="color:#4A453C;">Prices</span><br>Main figure ex-GST, inclusive amount muted beside it.</div>
+      <div><span style="color:#4A453C;">Contact</span><br>No telephone number. Support and notifications are WhatsApp.</div>
+      <div><span style="color:#4A453C;">Targets</span><br>Primary 56&nbsp;px, rows 64&nbsp;px, tabs 64&nbsp;px, icon buttons 44&nbsp;px.</div>
+    </div>
+  </div>
+
+  <!-- ========== A · LOGIN ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">A</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">Login</h2>
+    <span style="font-size:15px; color:#4A453C;">No password. The app opens once a consultation is booked.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">A1 · Mobile number</div>
+      <div data-screen-label="Login · mobile" style="width:390px; height:844px; background:#16233A; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-size:13px; color:#8C96A8;">
+          <span style="font-variant-numeric:tabular-nums;">10:30</span>
+          <span style="letter-spacing:0.2em;">···</span>
+        </div>
+        <div style="flex:1; padding:64px 24px 24px; display:flex; flex-direction:column;">
+          <svg viewBox="0 0 200 217.4" width="44" height="48" fill="#C9A363"><use href="#mm"></use></svg>
+          <h3 style="margin:48px 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; line-height:1.1; color:#E9E4D8;">Your mobile number</h3>
+          
+          <div style="margin-top:36px; height:56px; display:flex; border:1px solid #3A4A64;">
+            <span style="padding:0 15px; display:flex; align-items:center; font-size:17px; color:#8C96A8; border-right:1px solid #3A4A64; font-variant-numeric:tabular-nums;">+91</span>
+            <span style="padding:0 15px; display:flex; align-items:center; font-size:17px; color:#E9E4D8; font-variant-numeric:tabular-nums; letter-spacing:0.04em;">98xxx x4417</span>
+          </div>
+          <div style="margin-top:auto; display:flex; flex-direction:column; gap:16px;">
+            <div style="height:56px; background:#E9E4D8; color:#16233A; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Send code on WhatsApp</div>
+            <div style="font-size:14px; line-height:1.6; color:#8C96A8; text-align:center;">A six-digit code, no password.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">A2 · Code · after 30 seconds</div>
+      <div data-screen-label="Login · OTP" style="width:390px; height:844px; background:#16233A; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 22px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#A8B2C2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+        </div>
+        <div style="flex:1; padding:48px 24px 24px; display:flex; flex-direction:column;">
+          <h3 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; line-height:1.1; color:#E9E4D8;">Enter the code</h3>
+          <p style="margin:16px 0 0; font-size:16px; line-height:1.65; color:#A8B2C2;">Sent on WhatsApp to <span style="color:#E9E4D8; font-variant-numeric:tabular-nums;">+91 98xxx x4417</span>.</p>
+          <div style="margin-top:36px; display:grid; grid-template-columns:repeat(6,1fr); gap:9px;">
+            <div style="height:64px; border:1px solid #3A4A64; display:flex; align-items:center; justify-content:center; font-size:24px; color:#E9E4D8; font-variant-numeric:tabular-nums;">4</div>
+            <div style="height:64px; border:1px solid #3A4A64; display:flex; align-items:center; justify-content:center; font-size:24px; color:#E9E4D8; font-variant-numeric:tabular-nums;">1</div>
+            <div style="height:64px; border:1px solid #3A4A64; display:flex; align-items:center; justify-content:center; font-size:24px; color:#E9E4D8; font-variant-numeric:tabular-nums;">8</div>
+            <div style="height:64px; border:1px solid #C9A363; display:flex; align-items:center; justify-content:center;"><div style="width:1px; height:26px; background:#E9E4D8;"></div></div>
+            <div style="height:64px; border:1px solid #3A4A64;"></div>
+            <div style="height:64px; border:1px solid #3A4A64;"></div>
+          </div>
+          <div style="margin-top:22px; display:flex; align-items:center; gap:10px; font-size:15px; color:#A8B2C2;">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#8C96A8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z"></path></svg>
+            Read automatically where your phone allows
+          </div>
+          <div style="margin-top:32px; padding-top:22px; border-top:1px solid #1E2E49; display:flex; flex-direction:column; gap:14px;">
+            <div style="min-height:44px; display:flex; align-items:center; font-size:16px; color:#A8B2C2;"><span style="border-bottom:1px solid #3A4A64; padding-bottom:3px;">Send by SMS instead</span></div>
+            <div style="font-size:14px; color:#8C96A8;">Resend on WhatsApp in <span style="font-variant-numeric:tabular-nums;">18s</span></div>
+          </div>
+          <div style="margin-top:auto; height:56px; background:#2A3A56; color:#A8B2C2; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Continue</div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Wrong code: borders turn oxblood, one line below — "That code did not match. Two attempts left." After five, the code is void.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">A3 · Number not recognised</div>
+      <div data-screen-label="Login · not recognised" style="width:390px; height:844px; background:#16233A; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 22px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#A8B2C2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+        </div>
+        <div style="flex:1; padding:48px 24px 24px; display:flex; flex-direction:column;">
+          <h3 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:32px; line-height:1.12; color:#E9E4D8;">We have no booking on this number</h3>
+          <p style="margin:18px 0 0; font-size:16px; line-height:1.7; color:#A8B2C2;">The app opens once a consultation is booked. The consultation is free.</p>
+          <div style="margin-top:32px; border:1px solid #3A4A64; padding:20px;">
+            
+            <div style="margin-top:10px; font-size:15px; line-height:1.65; color:#A8B2C2;">Try the number you gave us, or message us and we will link it.</div>
+          </div>
+          <div style="margin-top:auto; display:flex; flex-direction:column; gap:14px;">
+            <div style="height:56px; background:#E9E4D8; color:#16233A; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Book a free consultation</div>
+            <div style="height:56px; border:1px solid #3A4A64; color:#E9E4D8; display:flex; align-items:center; justify-content:center; gap:11px; font-size:16px; font-weight:500;">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#E9E4D8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z M8.8 8.2 C8.4 9.2 9 10.6 10 11.8 C11 13 12.4 13.8 13.4 13.6 L14.6 12.4 L13 11.2 L12 12 C11.4 11.6 10.6 10.8 10.2 10 L11 9 L9.8 7.6 Z"></path></svg>
+              Message us
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== B · HOME ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">B</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">Home</h2>
+    <span style="font-size:15px; color:#4A453C;">One card, one prompt, nothing else.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">B1 · Fitted client · default</div>
+      <div data-screen-label="Home · fitted" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-size:13px; color:#5F5851;">
+          <span style="font-variant-numeric:tabular-nums;">10:30</span><span style="letter-spacing:0.2em;">···</span>
+        </div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <svg viewBox="0 0 200 217.4" width="28" height="30" fill="#16233A"><use href="#mm"></use></svg>
+          <div style="width:44px; height:44px; border:1px solid #CEC6B4; background:#F4F1E9; display:flex; align-items:center; justify-content:center; font-family:'EB Garamond',serif; font-size:17px; color:#16233A;">RM</div>
+        </div>
+        <div style="flex:1; padding:28px 20px; display:flex; flex-direction:column; gap:26px; overflow:hidden;">
+          <div>
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Your next visit</div>
+            <div style="margin-top:14px; background:#16233A; padding:24px;">
+              <div style="font-family:'EB Garamond',serif; font-size:34px; line-height:1.08; color:#E9E4D8;">Thu 19 Sep</div>
+              <div style="margin-top:8px; font-size:17px; color:#A8B2C2;">Afternoon, 12 to 4 pm</div>
+              <div style="margin-top:20px; padding-top:20px; border-top:1px solid #1E2E49; display:flex; align-items:center; gap:14px;">
+                <div style="width:48px; height:48px; background:#0B1220; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:'EB Garamond',serif; font-size:17px; color:#8C96A8;">IQ</div>
+                <div>
+                  <div style="font-size:16px; color:#E9E4D8;">Imran</div>
+                  <div style="font-size:14px; color:#8C96A8; margin-top:3px;">Service visit · 90 minutes</div>
+                </div>
+              </div>
+              <div style="margin-top:18px; font-size:15px; line-height:1.55; color:#A8B2C2;">Sector 65, Gurgaon 122018</div>
+              <div style="margin-top:20px; display:flex; gap:10px;">
+                <div style="flex:1; min-height:48px; border:1px solid #3A4A64; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Reschedule</div>
+                <div style="flex:1; min-height:48px; border:1px solid #3A4A64; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500; text-align:center; line-height:1.3; padding:0 8px;">Add a note</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:18px 0; border-top:1px solid #CEC6B4; border-bottom:1px solid #CEC6B4; display:flex; align-items:baseline; justify-content:space-between; gap:16px;">
+            <div>
+              <div style="font-size:16px;">2 visit credits</div>
+              <div style="font-size:14px; color:#5F5851; margin-top:4px;">Expire 3 Jan 2028</div>
+            </div>
+            <div style="font-family:'EB Garamond',serif; font-size:30px; line-height:1; font-variant-numeric:lining-nums;">2</div>
+          </div>
+          <div>
+            <div style="font-size:17px; line-height:1.5;">Your replacement piece is due in March.</div>
+            <div style="margin-top:12px; min-height:44px; display:inline-flex; align-items:center;"><span style="font-size:16px; border-bottom:1px solid #B98B45; padding-bottom:3px;">See what that involves</span></div>
+          </div>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsHome }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">B2 · Lead · consultation only</div>
+      <div data-screen-label="Home · lead" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-size:13px; color:#5F5851;">
+          <span style="font-variant-numeric:tabular-nums;">10:30</span><span style="letter-spacing:0.2em;">···</span>
+        </div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <svg viewBox="0 0 200 217.4" width="28" height="30" fill="#16233A"><use href="#mm"></use></svg>
+          <div style="width:44px; height:44px; border:1px solid #CEC6B4; background:#F4F1E9; display:flex; align-items:center; justify-content:center; font-family:'EB Garamond',serif; font-size:17px; color:#16233A;">RM</div>
+        </div>
+        <div style="flex:1; padding:28px 20px; display:flex; flex-direction:column; gap:26px;">
+          <div>
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Your consultation</div>
+            <div style="margin-top:14px; background:#16233A; padding:24px;">
+              <div style="font-family:'EB Garamond',serif; font-size:34px; line-height:1.08; color:#E9E4D8;">Sat 21 Sep</div>
+              <div style="margin-top:8px; font-size:17px; color:#A8B2C2;">Morning, 9 am to 12 pm</div>
+              <div style="margin-top:18px; font-size:15px; line-height:1.55; color:#A8B2C2;">Sector 65, Gurgaon 122018</div>
+              <div style="margin-top:18px; padding-top:18px; border-top:1px solid #1E2E49; font-size:16px; color:#E9E4D8;">Free · nothing to pay</div>
+              <div style="margin-top:20px; display:flex; gap:10px;">
+                <div style="flex:1; min-height:48px; border:1px solid #3A4A64; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Reschedule</div>
+                <div style="flex:1; min-height:48px; border:1px solid #3A4A64; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Add a note</div>
+              </div>
+            </div>
+          </div>
+          <div style="border-top:1px solid #CEC6B4; padding-top:20px;">
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">What to expect</div>
+            <div style="margin-top:14px; display:flex; flex-direction:column; gap:12px; font-size:16px; line-height:1.55;">
+              <div style="display:flex; gap:14px;"><span style="font-family:'EB Garamond',serif; color:#5F5851; width:16px; flex-shrink:0; font-variant-numeric:oldstyle-nums;">1</span><span>A template of your scalp, in cling film and tape.</span></div>
+              <div style="display:flex; gap:14px;"><span style="font-family:'EB Garamond',serif; color:#5F5851; width:16px; flex-shrink:0; font-variant-numeric:oldstyle-nums;">2</span><span>Your colour matched against forty samples.</span></div>
+              <div style="display:flex; gap:14px;"><span style="font-family:'EB Garamond',serif; color:#5F5851; width:16px; flex-shrink:0; font-variant-numeric:oldstyle-nums;">3</span><span>Nothing fitted, nothing ordered on the day.</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsHomeLead }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Photos, Payments and Refer are reachable but empty.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">B3 · Loading, offline, error</div>
+      <div data-screen-label="Home · states" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+
+        <div style="height:268px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden; border:1px solid #CEC6B4;">
+          <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Loading</div>
+          <div style="padding:20px; display:flex; flex-direction:column; gap:14px;">
+            <div style="height:15px; width:120px; background:#DED7C8;"></div>
+            <div style="height:150px; background:#DED7C8;"></div>
+          </div>
+        </div>
+
+        <div style="height:268px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden; border:1px solid #CEC6B4;">
+          <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Offline</div>
+          <div style="flex-shrink:0; background:#0E1728; padding:13px 20px; display:flex; align-items:center; gap:12px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#C9A363" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8 C9 4 15 4 20 8 M7.5 12 C10.5 9.8 13.5 9.8 16.5 12 M12 16.5 V16.6 M3 3 L21 21"></path></svg>
+            <span style="font-size:15px; color:#E9E4D8;">No connection. Showing your last update.</span>
+          </div>
+          <div style="padding:20px; font-size:15px; line-height:1.6; color:#5F5851;">Next visit reads from cache. Booking and reschedule are disabled until he is back online.</div>
+        </div>
+
+        <div style="height:268px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden; border:1px solid #CEC6B4;">
+          <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Error</div>
+          <div style="flex:1; padding:24px 20px; display:flex; flex-direction:column; justify-content:center; gap:16px;">
+            <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2;">We could not load your visit.</div>
+            <div style="font-size:15px; line-height:1.6; color:#5F5851;">Your visit is still booked.</div>
+            <div style="display:flex; gap:10px;">
+              <div style="min-height:44px; padding:0 20px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; font-size:15px; font-weight:500;">Try again</div>
+              <div style="min-height:44px; padding:0 20px; border:1px solid #16233A; display:flex; align-items:center; font-size:15px; font-weight:500;">Message us</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== C · VISITS ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">C</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">Visits</h2>
+    <span style="font-size:15px; color:#4A453C;">Three-step sheet. The consequence shows before he confirms.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:40px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C1 · Upcoming and past</div>
+      <div data-screen-label="Visits · list" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <span style="font-family:'EB Garamond',serif; font-size:24px;">Visits</span>
+        </div>
+        <div style="flex:1; overflow:hidden;">
+          <div style="padding:22px 20px 12px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Upcoming</div>
+          <div style="margin:0 20px; background:#16233A; padding:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:12px;">
+              <div style="font-family:'EB Garamond',serif; font-size:26px; color:#E9E4D8;">Thu 19 Sep</div>
+              <div style="font-size:14px; color:#C9A363; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.12em;">Prepaid</div>
+            </div>
+            <div style="margin-top:7px; font-size:16px; color:#A8B2C2;">Service visit · 12 to 4 pm · Imran</div>
+          </div>
+          <div style="padding:26px 20px 12px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851; border-top:1px solid #CEC6B4; margin-top:22px;">Past</div>
+          <sc-for list="{{ pastVisits }}" as="v" hint-placeholder-count="4">
+            <div style="min-height:64px; margin:0 20px; padding:16px 0; border-bottom:1px solid #CEC6B4; display:flex; align-items:center; justify-content:space-between; gap:14px;">
+              <div>
+                <div style="font-size:16px;">{{ v.date }}</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:4px;">{{ v.what }}</div>
+              </div>
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#5F5851" stroke-width="1.6" stroke-linecap="round" style="flex-shrink:0;"><path d="M9 5 L16 12 L9 19"></path></svg>
+            </div>
+          </sc-for>
+        </div>
+        <div style="flex-shrink:0; padding:16px 20px; background:#E9E4D8; border-top:1px solid #CEC6B4;">
+          <div style="height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Book your next visit</div>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsVisits }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C2 · Sheet 1 of 3 · date</div>
+      <div data-screen-label="Booking · date" style="width:390px; height:844px; background:#0B1220; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden;">
+        <div style="background:#E9E4D8; padding:22px 20px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px;">
+            <div style="font-family:'EB Garamond',serif; font-size:24px;">Pick a date</div>
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Step 1 of 3</div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px;">
+            <sc-for list="{{ dateStrip }}" as="d" hint-placeholder-count="14">
+              <div style="aspect-ratio:1/1.15; border:1px solid {{ d.border }}; background:{{ d.bg }}; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;">
+                <span style="font-size:13px; color:{{ d.dow }};">{{ d.day }}</span>
+                <span style="font-family:'EB Garamond',serif; font-size:19px; color:{{ d.ink }}; font-variant-numeric:lining-nums;">{{ d.num }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:18px; display:flex; gap:20px; font-size:14px; color:#5F5851;">
+            <span style="display:flex; align-items:center; gap:8px;"><span style="width:13px; height:13px; border:1px solid #CEC6B4; background:#FFFFFF;"></span>Available</span>
+            <span style="display:flex; align-items:center; gap:8px;"><span style="width:13px; height:13px; border:1px solid #DED7C8; background:#DED7C8;"></span>Full</span>
+          </div>
+          <div style="margin-top:22px; height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Continue</div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Weekdays and weekends carry identical weight. Full windows are disabled in place, not hidden.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C3 · Sheet 2 of 3 · window</div>
+      <div data-screen-label="Booking · window" style="width:390px; height:844px; background:#0B1220; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden;">
+        <div style="background:#E9E4D8; padding:22px 20px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <div style="font-family:'EB Garamond',serif; font-size:24px;">Pick a window</div>
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Step 2 of 3</div>
+          </div>
+          <div style="font-size:16px; color:#5F5851; margin-bottom:20px;">Thursday 19 Sep</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{ windows }}" as="w" hint-placeholder-count="3">
+              <div style="min-height:64px; padding:0 18px; border:1px solid {{ w.border }}; background:{{ w.bg }}; display:flex; align-items:center; justify-content:space-between; gap:14px;">
+                <div>
+                  <div style="font-size:17px; color:{{ w.ink }};">{{ w.label }}</div>
+                  <div style="font-size:14px; color:{{ w.sub }}; margin-top:3px;">{{ w.time }}</div>
+                </div>
+                <span style="font-size:14px; color:{{ w.sub }};">{{ w.note }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:20px; padding-top:18px; border-top:1px solid #CEC6B4; display:flex; align-items:center; gap:14px;">
+            <div style="width:40px; height:40px; background:#DED7C8; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:'EB Garamond',serif; font-size:15px; color:#5F5851;">IQ</div>
+            <div style="font-size:15px; line-height:1.5;">Imran, your regular technician, is free.</div>
+          </div>
+          <div style="margin-top:22px; height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Continue to payment</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C4 · Sheet 3 of 3 · pay</div>
+      <div data-screen-label="Booking · pay" style="width:390px; height:844px; background:#0B1220; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden;">
+        <div style="background:#E9E4D8; padding:22px 20px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+            <div style="font-family:'EB Garamond',serif; font-size:24px;">Pay and confirm</div>
+            <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:#5F5851;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#5F5851" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M12 7.5 V12 L15 14.5"></path></svg>
+              <span style="font-variant-numeric:tabular-nums;">Slot held 9:42</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid #1A1714;">
+            <div style="padding:16px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; align-items:baseline;">
+              <div>
+                <div style="font-size:16px;">Service visit</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:4px;">Thu 19 Sep, 12 to 4 pm</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:'EB Garamond',serif; font-size:26px; line-height:1; font-variant-numeric:lining-nums tabular-nums;">Rs. 2,000</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px; font-variant-numeric:tabular-nums;">Rs. 2,360 incl. GST</div>
+              </div>
+            </div>
+            <div style="padding:16px 0; border-bottom:1px solid #CEC6B4; font-size:15px; line-height:1.55; color:#3A352E;">Free to move until 12 pm, Wed 18 Sep. After that it is charged.</div>
+          </div>
+          <div style="margin-top:20px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Pay with</div>
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:9px;">
+            <div style="min-height:56px; border:1px solid #16233A; background:#FFFFFF; padding:0 16px; display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:16px;">UPI · any app</span>
+              <span style="width:20px; height:20px; border:1px solid #16233A; background:#16233A; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#E9E4D8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13 L10 18 L19 6"></path></svg></span>
+            </div>
+            <div style="min-height:56px; border:1px solid #CEC6B4; background:#FFFFFF; padding:0 16px; display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:16px;">Card ending 4417</span>
+              <span style="width:20px; height:20px; border:1px solid #CEC6B4;"></span>
+            </div>
+          </div>
+          <div style="margin-top:22px; height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500; font-variant-numeric:tabular-nums;">Pay Rs. 2,360</div>
+          <div style="margin-top:14px; font-size:14px; color:#5F5851; text-align:center;">Imran never handles money.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C5 · Pay · credit applied, and first fit</div>
+      <div data-screen-label="Booking · credit" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:16px;">Credit covers it · payment skipped</div>
+          <div style="border-top:1px solid #1A1714;">
+            <div style="padding:16px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; align-items:baseline;">
+              <div style="font-size:16px;">Service visit</div>
+              <div style="text-align:right;">
+                <div style="font-family:'EB Garamond',serif; font-size:22px; line-height:1; color:#5F5851; text-decoration:line-through; font-variant-numeric:lining-nums tabular-nums;">Rs. 2,000</div>
+                <div style="font-family:'EB Garamond',serif; font-size:26px; line-height:1; margin-top:8px; font-variant-numeric:lining-nums tabular-nums;">Rs. 0</div>
+              </div>
+            </div>
+            <div style="padding:16px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:12px; font-size:15px;">
+              <span>1 visit credit used</span>
+              <span style="color:#5F5851;">1 remaining</span>
+            </div>
+          </div>
+          <div style="margin-top:18px; height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Confirm visit</div>
+          <div style="margin-top:12px; font-size:14px; line-height:1.55; color:#5F5851;">Cancel inside 24 hours and the credit is gone.</div>
+        </div>
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:16px;">First fit · guarantee line added</div>
+          <div style="border-top:1px solid #1A1714;">
+            <div style="padding:16px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; align-items:baseline;">
+              <div>
+                <div style="font-size:16px;">First fit · standard</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:4px;">Two slots · 3 hours</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:'EB Garamond',serif; font-size:26px; line-height:1; font-variant-numeric:lining-nums tabular-nums;">Rs. 30,000</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px; font-variant-numeric:tabular-nums;">Rs. 35,400 incl. GST</div>
+              </div>
+            </div>
+            <div style="padding:16px 0; border-bottom:1px solid #CEC6B4; font-size:15px; line-height:1.55;">If the fit is not right, Imran stops and you are refunded in full.</div>
+            <div style="padding:16px 0; font-size:15px; line-height:1.55; color:#3A352E;">Moving inside 24 hours costs <span style="font-variant-numeric:tabular-nums;">Rs. 4,000</span>. The balance carries over.</div>
+          </div>
+        </div>
+
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Late fee is slots × a variable. Replacement is 1.5 slots, <span style="font-variant-numeric:tabular-nums;">Rs. 3,000</span>. Pending final confirmation.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C6 · Pay states</div>
+      <div data-screen-label="Booking · pay states" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Payment failed</div>
+          <div style="border-left:2px solid #8A3A2E; padding-left:16px;">
+            <div style="font-family:'EB Garamond',serif; font-size:22px; line-height:1.25;">The payment did not go through.</div>
+            <div style="margin-top:10px; font-size:15px; line-height:1.6; color:#3A352E;">Your bank declined it. Slot held <span style="font-variant-numeric:tabular-nums;">6:18</span> more.</div>
+          </div>
+          <div style="margin-top:18px; display:flex; gap:10px;">
+            <div style="flex:1; min-height:48px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Try again</div>
+            <div style="flex:1; min-height:48px; border:1px solid #16233A; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Another method</div>
+          </div>
+        </div>
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Hold expired</div>
+          <div style="font-family:'EB Garamond',serif; font-size:22px; line-height:1.25;">That slot has gone back.</div>
+          <div style="margin-top:10px; font-size:15px; line-height:1.6; color:#3A352E;">Thursday afternoon is still open.</div>
+          <div style="margin-top:18px; min-height:48px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Pick again</div>
+        </div>
+
+        <div style="background:#16233A; padding:26px 20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#8C96A8; margin-bottom:16px;">Confirmed</div>
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#C9A363" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"></path></svg>
+          <div style="margin-top:18px; font-family:'EB Garamond',serif; font-size:28px; line-height:1.12; color:#E9E4D8;">Thursday 19 Sep, 12 to 4 pm</div>
+          <div style="margin-top:12px; font-size:16px; line-height:1.6; color:#A8B2C2;">Imran messages you the day before.</div>
+          <div style="margin-top:20px; padding-top:18px; border-top:1px solid #1E2E49; display:flex; justify-content:space-between; font-size:15px; color:#A8B2C2;">
+            <span>Paid</span><span style="font-variant-numeric:tabular-nums; color:#E9E4D8;">Rs. 2,360</span>
+          </div>
+          <div style="margin-top:22px; min-height:48px; border:1px solid #3A4A64; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Add a note for Imran</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C7 · Reschedule · both versions</div>
+      <div data-screen-label="Reschedule" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">More than 24 hours out</div>
+          <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2;">Move Thursday's visit</div>
+          <div style="margin-top:14px; border-top:1px solid #CEC6B4; padding-top:14px; font-size:16px; line-height:1.6;">Free to move. Your <span style="font-variant-numeric:tabular-nums;">Rs. 2,360</span> carries over.</div>
+          <div style="margin-top:18px; display:flex; gap:10px;">
+            <div style="flex:1; min-height:48px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Pick a new date</div>
+            <div style="flex:1; min-height:48px; border:1px solid #16233A; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Keep it</div>
+          </div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Inside 24 hours</div>
+          <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2;">Move Thursday's visit</div>
+          <div style="margin-top:14px; border-left:2px solid #8A3A2E; padding-left:16px; font-size:16px; line-height:1.6;">Charged. The <span style="font-variant-numeric:tabular-nums;">Rs. 2,360</span> is not refunded and the new visit is paid separately.</div>
+          <div style="margin-top:18px; display:flex; gap:10px;">
+            <div style="flex:1; min-height:48px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500; text-align:center; line-height:1.3; padding:0 8px;">Move and accept charge</div>
+            <div style="flex:1; min-height:48px; border:1px solid #16233A; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Keep it</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C8 · Cancel · both versions</div>
+      <div data-screen-label="Cancel" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">More than 24 hours out</div>
+          <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2;">Cancel Thursday's visit</div>
+          <div style="margin-top:14px; border-top:1px solid #CEC6B4; padding-top:14px; font-size:16px; line-height:1.6;"><span style="font-variant-numeric:tabular-nums;">Rs. 2,360</span> back to your UPI in three to five working days.</div>
+          <div style="margin-top:18px; display:flex; gap:10px;">
+            <div style="flex:1; min-height:48px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Cancel visit</div>
+            <div style="flex:1; min-height:48px; border:1px solid #16233A; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Keep it</div>
+          </div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Inside 24 hours · credit booking</div>
+          <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2;">Cancel Thursday's visit</div>
+          <div style="margin-top:14px; border-left:2px solid #8A3A2E; padding-left:16px; font-size:16px; line-height:1.6;">Your credit is used. One left, expiring 3 Jan 2028.</div>
+          <div style="margin-top:18px; display:flex; gap:10px;">
+            <div style="flex:1; min-height:48px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500; text-align:center; line-height:1.3; padding:0 8px;">Cancel and use credit</div>
+            <div style="flex:1; min-height:48px; border:1px solid #16233A; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Keep it</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C9 · Past visit detail</div>
+      <div data-screen-label="Visit detail" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1A1714" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+          <span style="font-family:'EB Garamond',serif; font-size:22px;">22 Aug 2027</span>
+        </div>
+        <div style="flex:1; padding:24px 20px; display:flex; flex-direction:column; gap:24px; overflow:hidden;">
+          <div>
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Photographs from this visit</div>
+            <div style="margin-top:12px; display:grid; grid-template-columns:repeat(5,1fr); gap:6px;">
+              <sc-for list="{{ angles }}" as="a" hint-placeholder-count="5">
+                <div style="aspect-ratio:3/4; background:#16233A; display:flex; align-items:flex-end; padding:5px;">
+                  <span style="font-size:13px; color:#8C96A8;">{{ a }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="border-top:1px solid #CEC6B4;">
+            <div style="padding:15px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; font-size:16px;">
+              <span style="color:#5F5851;">Technician</span><span>Imran Qureshi</span>
+            </div>
+            <div style="padding:15px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; font-size:16px;">
+              <span style="color:#5F5851;">Duration</span><span style="font-variant-numeric:tabular-nums;">1 h 25 m</span>
+            </div>
+            <div style="padding:15px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; font-size:16px;">
+              <span style="color:#5F5851;">Type</span><span>Service visit</span>
+            </div>
+            <div style="padding:15px 0; font-size:16px;">
+              <div style="color:#5F5851; margin-bottom:10px;">What was done</div>
+              <div style="line-height:1.65;">Removed, cleaned, re-taped, re-bonded, trimmed. Base in good condition.</div>
+            </div>
+          </div>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsVisits }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== D · PHOTOS ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">D</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">Photos</h2>
+    <span style="font-size:15px; color:#4A453C;">Five angles per visit, same crop. No captions.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">D1 · Timeline</div>
+      <div data-screen-label="Photos · timeline" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <span style="font-family:'EB Garamond',serif; font-size:24px;">Photos</span>
+          <div style="min-height:44px; display:flex; align-items:center; font-size:16px;"><span style="border-bottom:1px solid #B98B45; padding-bottom:3px;">Compare</span></div>
+        </div>
+        <div style="flex:1; padding:22px 20px; display:flex; flex-direction:column; gap:26px; overflow:hidden;">
+          <sc-for list="{{ photoGroups }}" as="g" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
+                <div style="font-family:'EB Garamond',serif; font-size:20px;">{{ g.date }}</div>
+                <div style="font-size:14px; color:#5F5851;">{{ g.what }}</div>
+              </div>
+              <div style="margin-top:12px; display:grid; grid-template-columns:repeat(5,1fr); gap:6px;">
+                <sc-for list="{{ angles }}" as="a" hint-placeholder-count="5">
+                  <div style="aspect-ratio:3/4; background:#16233A; display:flex; align-items:flex-end; padding:5px;">
+                    <span style="font-size:13px; color:#8C96A8;">{{ a }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsPhotos }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">D2 · Compare · vertical divider</div>
+      <div data-screen-label="Photos · compare" style="width:390px; height:844px; background:#0E1728; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 20px; border-bottom:1px solid #1E2E49;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#A8B2C2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+          <span style="font-family:'EB Garamond',serif; font-size:22px; color:#E9E4D8;">Compare</span>
+        </div>
+        <div style="flex-shrink:0; padding:18px 20px; display:flex; gap:10px;">
+          <div style="flex:1; min-height:48px; border:1px solid #3A4A64; padding:0 14px; display:flex; flex-direction:column; justify-content:center;">
+            <span style="font-size:13px; color:#8C96A8;">From</span>
+            <span style="font-size:16px; color:#E9E4D8;">14 Nov 2026</span>
+          </div>
+          <div style="flex:1; min-height:48px; border:1px solid #3A4A64; padding:0 14px; display:flex; flex-direction:column; justify-content:center;">
+            <span style="font-size:13px; color:#8C96A8;">To</span>
+            <span style="font-size:16px; color:#E9E4D8;">22 Aug 2027</span>
+          </div>
+        </div>
+        <div style="flex:1; position:relative; background:#131C2E; margin:0 20px 18px; overflow:hidden;">
+          <div style="position:absolute; inset:0; background:#1A2740; display:flex; align-items:flex-start; justify-content:flex-end; padding:14px;">
+            <span style="font-size:14px; color:#A8B2C2; font-variant-numeric:tabular-nums;">22 Aug 2027</span>
+          </div>
+          <div style="position:absolute; left:0; top:0; bottom:0; width:48%; background:#131C2E; padding:14px;">
+            <span style="font-size:14px; color:#8C96A8; font-variant-numeric:tabular-nums;">14 Nov 2026</span>
+          </div>
+          <div style="position:absolute; top:0; bottom:0; left:48%; width:1px; background:#C9A363;"></div>
+          <div style="position:absolute; top:50%; left:48%; transform:translate(-50%,-50%); width:44px; height:44px; border:1px solid #C9A363; background:#0E1728; display:flex; align-items:center; justify-content:center; gap:4px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#C9A363" stroke-width="1.6" stroke-linecap="round"><path d="M14 8 L10 12 L14 16"></path></svg>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#C9A363" stroke-width="1.6" stroke-linecap="round"><path d="M10 8 L14 12 L10 16"></path></svg>
+          </div>
+          
+        </div>
+        <div style="flex-shrink:0; padding:0 20px 22px; display:flex; gap:10px;">
+          <div style="flex:1; min-height:48px; border:1px solid #3A4A64; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px;">Front</div>
+          <div style="flex:1; min-height:48px; border:1px solid #3A4A64; color:#8C96A8; display:flex; align-items:center; justify-content:center; font-size:15px;">Top</div>
+          <div style="flex:1; min-height:48px; border:1px solid #3A4A64; color:#8C96A8; display:flex; align-items:center; justify-content:center; font-size:15px;">Hairline</div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Divider follows the finger, no easing, no snap. Changing angle cross-fades both sides together.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">D3 · Empty, download, loading</div>
+      <div data-screen-label="Photos · states" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+
+        <div style="height:300px; background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Empty · before the first fit</div>
+          <div style="flex:1; padding:24px 20px; display:flex; flex-direction:column; justify-content:center; gap:14px;">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#5F5851" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 H7 L8.5 5.5 H15.5 L17 8 H20.5 V19 H3.5 Z M12 9.7 A3.8 3.8 0 0 1 12 17.3 A3.8 3.8 0 0 1 12 9.7"></path></svg>
+            <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2;">Your photographs start at your first fit.</div>
+            <div style="font-size:15px; line-height:1.6; color:#5F5851;">Five angles, before and after each visit.</div>
+          </div>
+        </div>
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Download</div>
+          <div style="display:flex; gap:16px; align-items:flex-start;">
+            <div style="width:72px; aspect-ratio:3/4; background:#16233A; flex-shrink:0;"></div>
+            <div>
+              <div style="font-size:16px;">Front · 22 Aug 2027</div>
+              <div style="margin-top:12px; min-height:44px; display:inline-flex; align-items:center; gap:10px; border:1px solid #16233A; padding:0 16px; font-size:15px; font-weight:500;">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#16233A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 V15 M7.5 10.5 L12 15 L16.5 10.5 M5 19 H19"></path></svg>
+                Download
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid #CEC6B4; font-size:14px; line-height:1.6; color:#5F5851;">Downloaded photographs sit in your gallery, outside the app.</div>
+        </div>
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Loading</div>
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:6px;">
+            <div style="aspect-ratio:3/4; background:#DED7C8;"></div>
+            <div style="aspect-ratio:3/4; background:#DED7C8;"></div>
+            <div style="aspect-ratio:3/4; background:#DED7C8;"></div>
+            <div style="aspect-ratio:3/4; background:#DED7C8;"></div>
+            <div style="aspect-ratio:3/4; background:#DED7C8;"></div>
+          </div>
+          <div style="margin-top:14px; font-size:14px; color:#5F5851;">Thumbnails fade in as each arrives. No spinner.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== E · PAYMENTS ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">E</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">Payments</h2>
+    <span style="font-size:15px; color:#4A453C;">Payments, refunds and charges in one list.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">E1 · List</div>
+      <div data-screen-label="Payments · list" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <span style="font-family:'EB Garamond',serif; font-size:24px;">Payments</span>
+        </div>
+        <div style="flex:1; padding:0 20px; overflow:hidden;">
+          <sc-for list="{{ ledger }}" as="e" hint-placeholder-count="6">
+            <div style="min-height:64px; padding:18px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:14px; align-items:flex-start;">
+              <div style="min-width:0;">
+                <div style="font-size:16px;">{{ e.what }}</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:5px;">{{ e.meta }}</div>
+                <div style="font-size:14px; margin-top:6px; color:{{ e.statusInk }};">{{ e.status }}</div>
+              </div>
+              <div style="text-align:right; flex-shrink:0;">
+                <div style="font-family:'EB Garamond',serif; font-size:21px; line-height:1; font-variant-numeric:lining-nums tabular-nums; color:{{ e.amtInk }};">{{ e.amt }}</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px; font-variant-numeric:tabular-nums;">{{ e.incl }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsPayments }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">E2 · Entry · tax documents</div>
+      <div data-screen-label="Payments · detail" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1A1714" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+          <span style="font-family:'EB Garamond',serif; font-size:22px;">Service visit</span>
+        </div>
+        <div style="flex:1; padding:24px 20px; overflow:hidden;">
+          <div style="font-family:'EB Garamond',serif; font-size:40px; line-height:1; font-variant-numeric:lining-nums tabular-nums;">Rs. 2,000</div>
+          <div style="font-size:15px; color:#5F5851; margin-top:9px; font-variant-numeric:tabular-nums;">Rs. 2,360 including GST at 18%</div>
+          <div style="margin-top:26px; border-top:1px solid #1A1714;">
+            <div style="padding:15px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; font-size:16px;">
+              <span style="color:#5F5851;">Date</span><span>22 Aug 2027</span>
+            </div>
+            <div style="padding:15px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; font-size:16px;">
+              <span style="color:#5F5851;">Method</span><span>UPI · Google Pay</span>
+            </div>
+            <div style="padding:15px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; font-size:16px;">
+              <span style="color:#5F5851;">Status</span><span>Paid</span>
+            </div>
+            <div style="padding:15px 0; display:flex; justify-content:space-between; gap:16px; font-size:16px;">
+              <span style="color:#5F5851;">Reference</span><span style="font-variant-numeric:tabular-nums;">MM-2027-0841</span>
+            </div>
+          </div>
+          <div style="margin-top:26px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Tax documents</div>
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+            <div style="min-height:56px; border:1px solid #CEC6B4; background:#F4F1E9; padding:0 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span style="font-size:16px;">Tax invoice</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#16233A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 V15 M7.5 10.5 L12 15 L16.5 10.5 M5 19 H19"></path></svg>
+            </div>
+            <div style="min-height:56px; border:1px solid #CEC6B4; background:#F4F1E9; padding:0 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span style="font-size:16px;">Receipt</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#16233A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 V15 M7.5 10.5 L12 15 L16.5 10.5 M5 19 H19"></path></svg>
+            </div>
+          </div>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsPayments }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Refunds add a voucher and the destination. Charges show the evidence: cancelled 9:14 am, visit was 10 am.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">E3 · Empty and error</div>
+      <div data-screen-label="Payments · states" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+        <div style="height:240px; background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Empty · lead</div>
+          <div style="flex:1; padding:24px 20px; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+            <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2;">Nothing to pay yet.</div>
+            <div style="font-size:15px; line-height:1.6; color:#5F5851;">Your consultation is free. Later payments appear here with their invoices.</div>
+          </div>
+        </div>
+        <div style="height:240px; background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Refund processing</div>
+          <div style="flex:1; padding:20px; display:flex; flex-direction:column; justify-content:center;">
+            <div style="display:flex; justify-content:space-between; gap:14px; align-items:flex-start;">
+              <div>
+                <div style="font-size:16px;">Service visit · refund</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:5px;">14 Sep · UPI ending @okhdfc</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:6px;">Refund processing · 3 to 5 working days</div>
+              </div>
+              <div style="font-family:'EB Garamond',serif; font-size:21px; line-height:1; font-variant-numeric:lining-nums tabular-nums;">Rs. 2,360</div>
+            </div>
+          </div>
+        </div>
+        <div style="height:200px; background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Document unavailable</div>
+          <div style="flex:1; padding:20px; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+            <div style="font-size:16px; line-height:1.55;">The invoice is still generating. Usually ready within the hour.</div>
+            <div style="min-height:44px; display:inline-flex; align-items:center; align-self:flex-start; border:1px solid #16233A; padding:0 16px; font-size:15px; font-weight:500;">Notify me</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== F · REFER ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">F</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">Refer</h2>
+    <span style="font-size:15px; color:#4A453C;">Six screens. The tracker shows completed fits only.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:40px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">F1 · Landing</div>
+      <div data-screen-label="Refer · landing" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <span style="font-family:'EB Garamond',serif; font-size:24px;">Refer</span>
+        </div>
+        <div style="flex:1; padding:28px 20px; display:flex; flex-direction:column; gap:26px;">
+          <div style="font-family:'EB Garamond',serif; font-size:30px; line-height:1.18;">When a friend you refer is fitted, you both get 3 service visits free.</div>
+          <div style="padding:20px 0; border-top:1px solid #CEC6B4; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; align-items:baseline; gap:16px;">
+            <div>
+              <div style="font-size:16px;">Your credit</div>
+              <div style="font-size:14px; color:#5F5851; margin-top:4px;">Expire 3 Jan 2028</div>
+            </div>
+            <div style="font-family:'EB Garamond',serif; font-size:34px; line-height:1; font-variant-numeric:lining-nums;">2</div>
+          </div>
+          <div style="font-size:16px; line-height:1.65; color:#3A352E;">No other discount applies.</div>
+          <div style="margin-top:auto; display:flex; flex-direction:column; gap:14px;">
+            <div style="height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; gap:11px; font-size:16px; font-weight:500;">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#E9E4D8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15 V4 M8 8 L12 4 L16 8 M5 14 V20 H19 V14"></path></svg>
+              Share an invite
+            </div>
+            <div style="min-height:44px; display:flex; align-items:center; justify-content:center; font-size:16px;"><span style="border-bottom:1px solid #CEC6B4; padding-bottom:3px;">See who has been fitted</span></div>
+          </div>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsRefer }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">F2 · Card choice</div>
+      <div data-screen-label="Refer · card choice" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1A1714" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+          <span style="font-family:'EB Garamond',serif; font-size:22px;">Which card?</span>
+        </div>
+        <div style="flex:1; padding:24px 20px; display:flex; flex-direction:column; gap:18px;">
+          <div style="font-size:16px; line-height:1.6; color:#3A352E;">This is what he sees in the chat. No name on it, and no copy.</div>
+          <div style="border:1px solid #16233A; box-shadow:none;">
+            <div style="aspect-ratio:1200/630; background:#16233A; display:flex; position:relative;">
+              <div style="flex:1; background:#131C2E;"></div>
+              <div style="width:1px; background:#C9A363;"></div>
+              <div style="flex:1; background:#1A2740;"></div>
+              <div style="position:absolute; right:12px; bottom:10px; display:flex; align-items:center; gap:7px;">
+                <svg viewBox="0 0 200 217.4" width="15" height="16" fill="#C9A363"><use href="#mm"></use></svg>
+                <svg viewBox="-3 -3 638 106" width="46" height="8" fill="#E9E4D8"><use href="#wms"></use></svg>
+              </div>
+            </div>
+            <div style="padding:16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <div>
+                <div style="font-size:16px;">My before and after</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:4px;">Your own photographs</div>
+              </div>
+              <span style="width:20px; height:20px; border:1px solid #16233A; background:#16233A; flex-shrink:0; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#E9E4D8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13 L10 18 L19 6"></path></svg></span>
+            </div>
+          </div>
+          <div style="border:1px solid #CEC6B4;">
+            <div style="aspect-ratio:1200/630; background:#16233A; display:flex; position:relative;">
+              <div style="flex:1; background:#131C2E;"></div>
+              <div style="width:1px; background:#C9A363;"></div>
+              <div style="flex:1; background:#1A2740;"></div>
+              <div style="position:absolute; right:12px; bottom:10px; display:flex; align-items:center; gap:7px;">
+                <svg viewBox="0 0 200 217.4" width="15" height="16" fill="#C9A363"><use href="#mm"></use></svg>
+                <svg viewBox="-3 -3 638 106" width="46" height="8" fill="#E9E4D8"><use href="#wms"></use></svg>
+              </div>
+            </div>
+            <div style="padding:16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <div>
+                <div style="font-size:16px;">A Mane Man example</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:4px;">Our house sample</div>
+              </div>
+              <span style="width:20px; height:20px; border:1px solid #CEC6B4; flex-shrink:0;"></span>
+            </div>
+          </div>
+          <div style="margin-top:auto; height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Continue to share</div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Without consent, the first option opens F3 instead of selecting.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">F3 · Consent sheet</div>
+      <div data-screen-label="Refer · consent" style="width:390px; height:844px; background:#0B1220; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden;">
+        <div style="background:#E9E4D8; padding:24px 20px 26px;">
+          <div style="font-family:'EB Garamond',serif; font-size:26px; line-height:1.18;">Before you send your own photographs</div>
+          <div style="margin-top:20px; border-top:1px solid #1A1714;">
+            <sc-for list="{{ consentLines }}" as="c" hint-placeholder-count="4">
+              <div style="padding:15px 0; border-bottom:1px solid #CEC6B4; display:flex; gap:14px; align-items:flex-start;">
+                <span style="width:6px; height:6px; background:#16233A; flex-shrink:0; margin-top:8px;"></span>
+                <span style="font-size:16px; line-height:1.55;">{{ c }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
+            <div style="height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Allow for referral cards</div>
+            <div style="height:56px; border:1px solid #16233A; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Use the example instead</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Four lines, no scroll. The irreversible one goes last.</div>
+    </div>
+
+  </div>
+
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">F4 · Share · exactly as he will receive it</div>
+      <div data-screen-label="Refer · share" style="width:390px; height:844px; background:#0B1220; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="flex:1; padding:24px 20px; display:flex; flex-direction:column; gap:20px; overflow:hidden;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8;">Preview · what your friend sees</div>
+          <div style="background:#DFF7C9; padding:8px; max-width:310px;">
+            <div style="background:#F6FFEB;">
+              <div style="aspect-ratio:1200/630; background:#16233A; display:flex; position:relative;">
+                <div style="flex:1; background:#131C2E;"></div>
+                <div style="width:1px; background:#C9A363;"></div>
+                <div style="flex:1; background:#1A2740;"></div>
+                <div style="position:absolute; right:10px; bottom:8px; display:flex; align-items:center; gap:6px;">
+                  <svg viewBox="0 0 200 217.4" width="13" height="14" fill="#C9A363"><use href="#mm"></use></svg>
+                  <svg viewBox="-3 -3 638 106" width="40" height="7" fill="#E9E4D8"><use href="#wms"></use></svg>
+                </div>
+              </div>
+              <div style="padding:9px 11px;">
+                <div style="font-size:14px; color:#1A1714; line-height:1.35;">Rohit sent you a Mane Man invite</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:4px; line-height:1.4;">Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.</div>
+                <div style="font-size:13px; color:#5F5851; margin-top:5px;">maneman.in</div>
+              </div>
+            </div>
+            <div style="padding:8px 4px 2px; font-size:15px; color:#1A1714; line-height:1.5;">Had my hair system fitted at home by these people. Worth a look — maneman.in/r/RM4417</div>
+            <div style="padding:0 4px 4px; display:flex; justify-content:flex-end; font-size:13px; color:#5F5851; font-variant-numeric:tabular-nums;">10:31</div>
+          </div>
+          <div style="margin-top:auto; border-top:1px solid #1E2E49; padding-top:20px;">
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8; margin-bottom:14px;">Share via</div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="min-height:56px; border:1px solid #C9A363; padding:0 16px; display:flex; align-items:center; gap:14px;">
+                <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#E9E4D8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z M8.8 8.2 C8.4 9.2 9 10.6 10 11.8 C11 13 12.4 13.8 13.4 13.6 L14.6 12.4 L13 11.2 L12 12 C11.4 11.6 10.6 10.8 10.2 10 L11 9 L9.8 7.6 Z"></path></svg>
+                <span style="font-size:16px; color:#E9E4D8;">WhatsApp</span>
+              </div>
+              <div style="min-height:56px; border:1px solid #3A4A64; padding:0 16px; display:flex; align-items:center; gap:14px;">
+                <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#A8B2C2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7 H6 A2 2 0 0 0 4 9 V18 A2 2 0 0 0 6 20 H18 A2 2 0 0 0 20 18 V9 A2 2 0 0 0 18 7 H16 M12 3 V13 M8.5 6.5 L12 3 L15.5 6.5"></path></svg>
+                <span style="font-size:16px; color:#A8B2C2;">Other apps</span>
+              </div>
+              <div style="min-height:56px; border:1px solid #3A4A64; padding:0 16px; display:flex; align-items:center; gap:14px;">
+                <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#A8B2C2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 13.5 L14.5 8.5 M8 11 L6 13 A3.5 3.5 0 0 0 11 18 L13 16 M11 8 L13 6 A3.5 3.5 0 0 1 18 11 L16 13"></path></svg>
+                <span style="font-size:16px; color:#A8B2C2;">Copy link</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">F5 · Tracker · fits only</div>
+      <div data-screen-label="Refer · tracker" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1A1714" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+          <span style="font-family:'EB Garamond',serif; font-size:22px;">Who has been fitted</span>
+        </div>
+        <div style="flex:1; padding:24px 20px; overflow:hidden;">
+          <div style="display:flex; gap:32px; padding-bottom:20px; border-bottom:1px solid #1A1714;">
+            <div>
+              <div style="font-family:'EB Garamond',serif; font-size:34px; line-height:1; font-variant-numeric:lining-nums;">6</div>
+              <div style="font-size:14px; color:#5F5851; margin-top:7px;">visits earned</div>
+            </div>
+            <div>
+              <div style="font-family:'EB Garamond',serif; font-size:34px; line-height:1; font-variant-numeric:lining-nums;">2</div>
+              <div style="font-size:14px; color:#5F5851; margin-top:7px;">remaining</div>
+            </div>
+          </div>
+          <sc-for list="{{ referrals }}" as="r" hint-placeholder-count="2">
+            <div style="min-height:64px; padding:18px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:14px; align-items:baseline;">
+              <div>
+                <div style="font-size:17px;">{{ r.name }}</div>
+                <div style="font-size:14px; color:#5F5851; margin-top:4px;">Fitted {{ r.month }}</div>
+              </div>
+              <div style="font-size:15px;">3 visits earned</div>
+            </div>
+          </sc-for>
+          <div style="margin-top:24px; font-size:15px; line-height:1.65; color:#5F5851;">Completed fits only. Whether an invite was opened is your friend's business.</div>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsRefer }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">F6 · Tracker empty, and revoke</div>
+      <div data-screen-label="Refer · empty and revoke" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+
+        <div style="height:300px; background:#E9E4D8; border:1px solid #CEC6B4; display:flex; flex-direction:column;">
+          <div style="height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #CEC6B4; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851;">Tracker · empty</div>
+          <div style="flex:1; padding:24px 20px; display:flex; flex-direction:column; justify-content:center; gap:14px;">
+            <div style="font-family:'EB Garamond',serif; font-size:25px; line-height:1.2;">Nobody you have referred has been fitted yet.</div>
+            <div style="font-size:15px; line-height:1.6; color:#5F5851;">When a friend you refer is fitted, you both get 3 service visits free.</div>
+            <div style="margin-top:6px; min-height:48px; align-self:flex-start; background:#16233A; color:#E9E4D8; padding:0 20px; display:flex; align-items:center; font-size:15px; font-weight:500;">Share an invite</div>
+          </div>
+        </div>
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Revoke the photo card</div>
+          <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2;">Switch off your photographs?</div>
+          <div style="margin-top:14px; border-top:1px solid #CEC6B4; padding-top:14px; font-size:16px; line-height:1.6;">New opens show the house example. Cards already sent stay in those chats.</div>
+          <div style="margin-top:18px; display:flex; gap:10px;">
+            <div style="flex:1; min-height:48px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Switch off</div>
+            <div style="flex:1; min-height:48px; border:1px solid #16233A; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Keep it on</div>
+          </div>
+        </div>
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Share failed</div>
+          <div style="font-size:16px; line-height:1.6;">The link did not generate. Nothing was sent.</div>
+          <div style="margin-top:16px; min-height:44px; align-self:flex-start; display:inline-flex; align-items:center; border:1px solid #16233A; padding:0 16px; font-size:15px; font-weight:500;">Try again</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== G · PROFILE ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">G</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">Profile</h2>
+    <span style="font-size:15px; color:#4A453C;">Behind the avatar on Home. Consent carries a date per purpose.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">G1 · Profile</div>
+      <div data-screen-label="Profile" style="width:390px; height:844px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:44px; flex-shrink:0;"></div>
+        <div style="height:56px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 20px; border-bottom:1px solid #CEC6B4;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1A1714" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+          <span style="font-family:'EB Garamond',serif; font-size:22px;">Rohit Malhotra</span>
+        </div>
+        <div style="flex:1; padding:24px 20px; overflow:hidden;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Where we come</div>
+          <div style="margin-top:12px; border-top:1px solid #1A1714; padding:16px 0; border-bottom:1px solid #CEC6B4;">
+            <div style="font-size:16px; line-height:1.55;">Sector 65, Gurgaon 122018</div>
+            <div style="font-size:15px; color:#5F5851; margin-top:8px; line-height:1.5;">Gate code 4417 · park in visitor bay B</div>
+            <div style="margin-top:12px; min-height:44px; display:inline-flex; align-items:center; font-size:15px;"><span style="border-bottom:1px solid #CEC6B4; padding-bottom:3px;">Edit address and access notes</span></div>
+          </div>
+          <div style="margin-top:24px; font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">What you have agreed to</div>
+          <div style="margin-top:12px; border-top:1px solid #1A1714;">
+            <sc-for list="{{ consents }}" as="c" hint-placeholder-count="4">
+              <div style="min-height:64px; padding:16px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; align-items:center;">
+                <div style="min-width:0;">
+                  <div style="font-size:16px; line-height:1.4;">{{ c.what }}</div>
+                  <div style="font-size:14px; color:#5F5851; margin-top:4px;">{{ c.when }}</div>
+                </div>
+                <div style="width:46px; height:26px; flex-shrink:0; background:{{ c.track }}; border:1px solid {{ c.border }}; display:flex; align-items:center; justify-content:{{ c.justify }}; padding:2px;">
+                  <div style="width:20px; height:20px; background:{{ c.knob }};"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="height:64px; flex-shrink:0; background:#F4F1E9; border-top:1px solid #CEC6B4; display:grid; grid-template-columns:repeat(5,1fr);">
+          <sc-for list="{{ tabsHome }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="{{ t.ink }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg>
+              <span style="font-size:13px; color:{{ t.ink }};">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">G2 · Number change, deletion, support</div>
+      <div data-screen-label="Profile · account" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Change mobile number</div>
+          <div style="font-size:16px; line-height:1.6;">A code goes to both numbers, then we confirm with you before it takes effect.</div>
+          <div style="margin-top:16px; height:56px; border:1px solid #CEC6B4; background:#FFFFFF; display:flex; align-items:center;">
+            <span style="padding:0 15px; color:#5F5851; border-right:1px solid #CEC6B4; height:100%; display:flex; align-items:center; font-size:16px; font-variant-numeric:tabular-nums;">+91</span>
+            <span style="padding:0 15px; font-size:16px; color:#9A9284;">New number</span>
+          </div>
+          <div style="margin-top:14px; min-height:48px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500;">Start the change</div>
+        </div>
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Support</div>
+          <div style="min-height:56px; border:1px solid #16233A; padding:0 16px; display:flex; align-items:center; gap:14px;">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#16233A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z M8.8 8.2 C8.4 9.2 9 10.6 10 11.8 C11 13 12.4 13.8 13.4 13.6 L14.6 12.4 L13 11.2 L12 12 C11.4 11.6 10.6 10.8 10.2 10 L11 9 L9.8 7.6 Z"></path></svg>
+            <span style="font-size:16px;">Message us on WhatsApp</span>
+          </div>
+          <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#5F5851;">Replies within a working day. Everything in writing.</div>
+        </div>
+
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Delete your account</div>
+          <div style="font-size:16px; line-height:1.6;">Photographs deleted within seven days. Invoices kept eight years, by law.</div>
+          <div style="margin-top:16px; min-height:48px; display:inline-flex; align-items:center; border:1px solid #8A3A2E; color:#8A3A2E; padding:0 18px; font-size:15px; font-weight:500;">Request deletion</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">Icons added to the set</div>
+      <div style="background:#F4F1E9; border:1px solid #CEC6B4; padding:22px;">
+        <div style="font-size:15px; line-height:1.65; color:#3A352E;">Nine glyphs, same 24&nbsp;px grid, 1.6 stroke, round caps.</div>
+        <div style="margin-top:20px; display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:#CEC6B4; border:1px solid #CEC6B4;">
+          <sc-for list="{{ newIcons }}" as="i" hint-placeholder-count="9">
+            <div style="background:#F4F1E9; padding:18px 8px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#16233A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ i.d }}"></path></svg>
+              <span style="font-size:13px; color:#5F5851; text-align:center; line-height:1.3;">{{ i.name }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="margin-top:20px; background:#F4F1E9; border:1px solid #CEC6B4; padding:22px;">
+        <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Motion</div>
+        <div style="margin-top:14px; font-size:15px; line-height:1.8; color:#3A352E;">One curve: cubic-bezier(0.22, 0.61, 0.36, 1). Sheets rise 420&nbsp;ms. Tabs cross-fade 300&nbsp;ms, no slide. The hold timer counts whole seconds, no pulse. Nothing bounces, nothing scales.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="max-width:900px; padding-top:40px; border-top:1px solid #1A1714;">
+    <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C;">Open questions</div>
+    <div class="mm-4up" style="margin-top:16px; gap:26px; font-size:15px; line-height:1.7; color:#3A352E;">
+      <div><span style="color:#4A453C;">Late fee</span><br>Slots × variable. Rs. 4,000 a first fit, Rs. 3,000 a replacement. Confirm the figure and whether the balance carries.</div>
+      <div><span style="color:#4A453C;">Credit on late cancellation</span><br>Written as lost. If it should return, the second cancel sheet changes.</div>
+      <div><span style="color:#4A453C;">Refund route</span><br>Shown as original UPI, 3 to 5 working days. Confirm against Razorpay.</div>
+      <div><span style="color:#4A453C;">Photo retention</span><br>Seven days for photographs, eight years for invoices. Both need sign-off.</div>
+    </div>
+  </div>
+
+</div>
+
+<svg width="0" height="0" style="position:absolute; overflow:hidden;" aria-hidden="true"><defs>
+  <symbol id="mm" viewBox="0 0 200 217.4"><path fill-rule="evenodd" d="M97.3 0.1L99.3 0L101.8 1.6L107.1 7.7L109.5 14L110.3 19.7L110.1 23.8L108.4 30.8L103.8 40.9L92.4 60.2L91 63.5L83.2 76L81.4 76.9L77.4 72.7L77.2 70.8L84.8 59.1L94.3 42.5L99.5 32.7L102.4 24L102.4 15.4L101.1 11L98.5 8.2L95.9 10.5L94.3 14.8L94.3 23.5L96.5 32.5L94 37.9L92.5 38.3L91.3 37.4L86.7 23.5L86.7 15.1L88.3 9.9L92.1 4.2L97.1 0.3ZM147.6 30.6L151.5 31L154.8 32.6L157.3 35.2L159 39.3L159 43.9L157.3 49L152.2 56.1L129.2 78.3L114.9 93.3L111.4 98.2L106.5 106.9L101.2 120.7L95.5 120.7L94.6 119.7L91.8 110.2L86.1 99L74.7 85.2L57.3 68.3L57.1 65.6L58.4 61.8L59.4 60.9L60.5 61.1L83.2 83.6L90.2 92.5L95.9 101.5L97.6 105.6L98.5 106L104.6 94.7L116 80.6L146.5 51L150.3 46.1L151.6 42.3L151.6 40.4L150.4 38L148.2 37.5L145.9 40.1L145.4 41.7L145.4 47.1L143.2 50.7L140.1 53.3L138.9 52.3L137.8 48.2L137.8 40.1L139.4 36.3L142.5 32.6L145.5 31L147.4 30.7ZM45.9 30.8L51 31L55 33.4L57.9 37.6L59.2 43.9L58.7 51.2L55.4 63.7L46.5 88.7L45.8 89.1L41.2 85.1L40.2 84.1L40.2 82.5L45.4 69.7L51.4 50.7L51.9 47.4L51.6 41.2L50.8 39L49.3 37.5L47.1 37.5L45.4 40.1L45.4 44.2L48.4 50.7L47.6 55.6L46.6 57.1L45.7 56.7L40.5 50.1L38.9 46.1L38 41.2L38.6 38.5L41.3 33.6L45.8 31ZM103.5 46.6L105.2 47.4L116.6 65.9L119.6 71.1L119.8 73.2L115.6 77.4L114.8 77.4L113.3 75.7L103 58.8L100 52.3L103.4 46.7ZM0.8 54.5L1.5 54.3L3.7 56L30.3 79.3L43.2 92L48.6 98.2L55.2 108.6L58.4 115.9L60.6 123L64.4 129.8L64.4 130.8L63.2 131.5L51 132.6L40.9 134.8L33.6 137L24.9 140.8L22.6 139.5L3.3 67.8L0 57.7L0 55.3L0.7 54.6ZM195.1 54.8L196.6 54.6L197 56.4L188.3 87.4L185.6 99.3L184 103.7L178.5 126L175.3 136.5L170.9 143.9L165.6 148.4L158.8 151.6L150.1 153.3L139.8 153.3L130.3 151.1L115.9 145.9L109.1 141.8L104.8 140.2L99.3 137L98.4 135.7L100.4 135.6L113.5 140.2L128.7 144L141.7 145.7L150.1 145.1L155.3 144L161.8 140.5L163.3 138.7L162.6 137.2L151.5 133.7L135.7 131L120.2 129.9L119.6 129.2L119.8 127.9L123.4 123.8L125.8 119.7L127.2 112.4L126.4 100.4L122.3 89.3L126.5 84.5L127.3 84.5L133.2 96.6L135.6 106.9L135.1 115.6L133.4 121.3L133.8 122.8L151.5 125.8L164.8 129.9L165.2 128.9L164.4 127.9L159.5 112.4L157.9 109.1L150.8 88.5L145.4 75.7L143.2 68.3L148 63.9L149.7 64.8L153 72.7L154.6 78.9L163.3 100.7L163.9 103.7L166.6 109.6L169.3 119.4L170.2 120.1L176.1 101.2L182.3 76L181.4 75.8L180.3 76.6L164 91.8L163.2 91.8L162.2 90.4L160.9 84.9L161.7 83.3L165.6 79.6L169.7 76.6L189 59.2L195 54.9ZM13.9 75.1L19.4 79.1L38 96.9L47 108.6L50.8 116.7L53 124L50.7 125L38.7 127.2L32.5 129.3L31 129.2L32.3 127.3L34.5 120.2L39.4 108.3L39.7 104.8L35.7 99.7L34 100.4L27.7 117.3L26.9 119.2L25.8 119.4L15.5 81.7L13.6 76.5L13.7 75.3ZM69.3 85.2L70.2 85.1L74.2 89.5L73.1 94.7L71.2 98.2L69.8 104.2L69.8 115.6L72 121.9L77.6 128.5L99.3 142.4L123.5 163.6L130 167.9L136 170.7L141.7 172.8L148.8 173.9L154.2 173.9L161.8 172.8L173.5 167.7L178.9 163.6L184.6 157.6L185.1 159.1L178.8 169.4L170.8 176.6L160.7 182.1L150.1 184.5L140.6 184.5L132.2 182.9L122.7 179.3L112.4 173.6L86 157.1L75.4 151.9L65.1 148.6L55.6 147L47.7 147L40.4 147.8L30.3 150.5L16.2 157.3L15.8 155L18.9 151.9L26.8 145.9L32.5 142.9L38.2 140.8L45.5 139.1L49.3 138.6L62.1 138.6L75.1 141.8L87.1 147.8L97.4 154.3L116.4 169.6L126.8 175.5L134.6 178.3L142.8 179.6L153.1 179.3L156.3 178.1L155.8 177.7L154.5 178.3L145.8 178.5L139.5 177.7L130.3 175L122.4 171.2L112.1 163.6L94.4 148.6L83 140.8L76.2 137L68.5 130L65.2 125.4L62.5 117.8L61.7 106.4L62.5 101L65.5 91.7L69.2 85.3ZM149.5 97.1L150.8 98L151.4 99.3L152.4 102.6L152.4 105L147 114L144.3 120.5L142.8 121.2L137.4 120.4L137 118.3L140.5 109.4L146.5 100.1L149.3 97.3ZM187.2 120L188.6 120.2L189.4 124.3L189.9 128.4L189.7 136.5L187.2 146.1L183.4 153.7L177 160.1L171.3 164.1L162.9 167.4L153.9 168.8L148.8 168.5L141.4 167.1L137.6 165.8L129.8 161.7L124.6 157.6L122.8 155.3L123.8 154.9L131.4 157.6L139 159.2L150.1 159.5L156.9 158.7L167 154.9L173.2 150.5L177.2 146.6L181.3 140.9L185.6 129.2L187.1 120.1ZM194.6 124.6L196.5 126L198.1 130.6L199.7 139.5L200 146.3L199.7 153.1L198.1 160.7L195.7 168.1L193.2 173L185.9 183.8L176.8 192.4L165.9 198.6L155.6 202.2L146.1 203.8L139.3 203.8L127.9 202.2L120.8 200L112.9 196.5L103.7 191.3L77 172.8L65.4 167.4L56.7 164.7L50.1 163.6L37.6 164.1L28.9 166.3L20.8 170.1L14.8 174.2L10.1 178.9L2.9 189.1L2.2 188.5L2.4 185.2L5.2 177.9L9.5 171.1L13 167L19.2 161.4L23.5 158.7L33.3 154.3L43.9 151.9L58.8 152.4L70.8 155.4L83 160.9L90.9 165.2L115.6 181.3L123 184.8L134.4 188.6L141.2 189.7L148 189.7L154.8 188.6L163.5 186.1L172.4 181.5L181.8 173.2L186.1 167.5L191 157.5L194.3 146.1L195.1 138.7L194.4 124.7ZM177.2 152.3L177.7 152.6L172.7 157.6L168.6 160.3L163.2 162.8L157.5 164.1L151 164.7L145.5 164.1L143.8 163.2L154.2 163L162.6 161.4L171.6 156.8L177 152.4ZM44 157.7L52 157.6L58.6 158.4L66.4 160.3L74.9 163.6L82.5 167.4L103.4 181.5L113.5 187.5L126.5 193.2L134.6 195.1L146.9 195.7L158 193.5L171.6 187.5L179.8 180.7L180.6 180.2L181 180.6L170.5 189.7L161.5 194L152.3 196.7L148.2 197.3L136 197.3L124.6 194.6L111.3 188.6L88.7 173.4L73 164.7L64.3 161.4L54.8 159.2L45 158.7L37.6 159.5L37.6 159L40.1 158.2L43.9 157.9ZM45.1 168.9L54.5 169.6L66.7 173.4L78.9 179.9L96.6 192.7L107.5 199.5L114 202.7L126 207.1L134.6 208.7L148.5 208.7L154.5 207.6L161.3 205.4L171.3 200.3L172.7 200.3L172.8 201L171.2 202.9L160.5 210.3L152.3 214.1L145.5 216L138.7 217.1L128.7 217.4L115.9 215.2L106.9 212L96.3 206.5L63.2 182.6L50.1 177.2L43.9 176.1L33.8 176.1L24.3 178.3L14.8 183.2L14.4 181.4L17 178.8L25.1 173.6L35.5 169.6L45 169ZM39.4 182.2L49.6 182.6L56.4 184.8L62.9 188.3L69.4 192.9L76.5 198.4L77.2 200.1L76.2 200.5L67.5 195.7L56.9 190.8L46.1 188L38.2 187.8L29.2 189.7L23.8 191.8L23.4 190.1L27.9 186.1L32.7 183.7L39.3 182.3Z"></path></symbol>
+  <symbol id="wms" viewBox="-3 -3 638 106"><path d="M3 0L12.4 0L12.4 100L3 100ZM79.6 0L89 0L89 100L79.6 100ZM3 0L19 0L48.5 90L40.5 90ZM75 0L89 0L51.5 90L43.5 90ZM-1 0L16 0L16 8.6L-1 8.6ZM76 0L93 0L93 8.6L76 8.6ZM-1 91.4L14 91.4L14 100L-1 100ZM76.5 91.4L93 91.4L93 100L76.5 100ZM131.5 0L140.9 0L117 100L107.6 100ZM136.5 0L145.9 0L167.5 100L153.9 100ZM119.5 65L157 65L157 74L119.5 74ZM103 91.4L123 91.4L123 100L103 100ZM150 91.4L172 91.4L172 100L150 100ZM190 0L199.4 0L199.4 100L190 100ZM244.6 0L254 0L254 100L244.6 100ZM190 0L206 0L254 86L254 100L238 100L190 14ZM186 0L203 0L203 8.6L186 8.6ZM241 0L258 0L258 8.6L241 8.6ZM186 91.4L201 91.4L201 100L186 100ZM240 91.4L258 91.4L258 100L240 100ZM274 0L290 0L290 100L274 100ZM290 0L323 0L323 8.6L290 8.6ZM317 0L324 0L324 16L317 16ZM290 46L318 46L318 54L290 54ZM312.5 40L319.5 40L319.5 60L312.5 60ZM290 91.4L327 91.4L327 100L290 100ZM321 83L328 83L328 100L321 100ZM378 0L387.4 0L387.4 100L378 100ZM454.6 0L464 0L464 100L454.6 100ZM378 0L394 0L423.5 90L415.5 90ZM450 0L464 0L426.5 90L418.5 90ZM374 0L391 0L391 8.6L374 8.6ZM451 0L468 0L468 8.6L451 8.6ZM374 91.4L389 91.4L389 100L374 100ZM451.5 91.4L468 91.4L468 100L451.5 100ZM506.5 0L515.9 0L492 100L482.6 100ZM511.5 0L520.9 0L542.5 100L528.9 100ZM494.5 65L532 65L532 74L494.5 74ZM478 91.4L498 91.4L498 100L478 100ZM525 91.4L547 91.4L547 100L525 100ZM565 0L574.4 0L574.4 100L565 100ZM619.6 0L629 0L629 100L619.6 100ZM565 0L581 0L629 86L629 100L613 100L565 14ZM561 0L578 0L578 8.6L561 8.6ZM616 0L633 0L633 8.6L616 8.6ZM561 91.4L576 91.4L576 100L561 100ZM615 91.4L633 91.4L633 100L615 100Z"></path></symbol>
+</defs></svg>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  tabs(active) {
+    const items = [
+      { label: 'Home', d: 'M3 11 L12 4 L21 11 M5.5 10 V20 H18.5 V10 M10 20 V14.5 H14 V20' },
+      { label: 'Visits', d: 'M3.5 5.5 H20.5 V20.5 H3.5 Z M3.5 10 H20.5 M8 3.5 V7 M16 3.5 V7' },
+      { label: 'Photos', d: 'M3.5 8 H7 L8.5 5.5 H15.5 L17 8 H20.5 V19 H3.5 Z M12 9.7 A3.8 3.8 0 0 1 12 17.3 A3.8 3.8 0 0 1 12 9.7' },
+      { label: 'Payments', d: 'M7 4 H16 M7 8.5 H16 M7 13 C12 13 14.5 11.5 14.5 8.5 C14.5 6 12.8 4 9.5 4 M7 13 H10.5 L17 20.5' },
+      { label: 'Refer', d: 'M12 15 V4 M8 8 L12 4 L16 8 M5 14 V20 H19 V14' }
+    ];
+    return items.map((t, i) => ({ ...t, ink: i === active ? '#16233A' : '#5F5851' }));
+  }
+
+  renderVals() {
+    const strip = [];
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    for (let i = 0; i < 14; i++) {
+      const num = 16 + i;
+      const full = i === 1 || i === 8 || i === 12;
+      const chosen = i === 3;
+      strip.push({
+        day: days[i % 7], num: String(num),
+        border: chosen ? '#16233A' : full ? '#DED7C8' : '#CEC6B4',
+        bg: chosen ? '#16233A' : full ? '#DED7C8' : '#FFFFFF',
+        ink: chosen ? '#E9E4D8' : full ? '#9A9284' : '#1A1714',
+        dow: chosen ? '#A8B2C2' : full ? '#9A9284' : '#5F5851'
+      });
+    }
+
+    const win = (label, time, note, state) => ({
+      label, time, note,
+      border: state === 'on' ? '#16233A' : state === 'off' ? '#DED7C8' : '#CEC6B4',
+      bg: state === 'on' ? '#16233A' : state === 'off' ? '#DED7C8' : '#FFFFFF',
+      ink: state === 'on' ? '#E9E4D8' : state === 'off' ? '#9A9284' : '#1A1714',
+      sub: state === 'on' ? '#A8B2C2' : state === 'off' ? '#9A9284' : '#5F5851'
+    });
+
+    const consent = (what, when, on) => ({
+      what, when,
+      track: on ? '#16233A' : '#FFFFFF',
+      border: on ? '#16233A' : '#CEC6B4',
+      knob: on ? '#E9E4D8' : '#CEC6B4',
+      justify: on ? 'flex-end' : 'flex-start'
+    });
+
+    return {
+      tabsHome: this.tabs(0),
+      tabsHomeLead: this.tabs(0),
+      tabsVisits: this.tabs(1),
+      tabsPhotos: this.tabs(2),
+      tabsPayments: this.tabs(3),
+      tabsRefer: this.tabs(4),
+
+      angles: ['Front', 'Top', 'Left', 'Right', 'Hair'],
+
+      dateStrip: strip,
+      windows: [
+        win('Morning', '9 am to 12 pm', 'Full', 'off'),
+        win('Afternoon', '12 to 4 pm', 'Imran free', 'on'),
+        win('Evening', '4 to 8 pm', 'Another technician', 'idle')
+      ],
+
+      pastVisits: [
+        { date: '22 Aug 2027', what: 'Service visit · Imran' },
+        { date: '25 Jul 2027', what: 'Service visit · Imran' },
+        { date: '27 Jun 2027', what: 'Replacement piece · Sandeep' },
+        { date: '14 Nov 2026', what: 'First fit · Imran' }
+      ],
+
+      photoGroups: [
+        { date: '22 Aug 2027', what: 'Service visit' },
+        { date: '25 Jul 2027', what: 'Service visit' },
+        { date: '14 Nov 2026', what: 'First fit' }
+      ],
+
+      ledger: [
+        { what: 'Service visit', meta: '22 Aug · UPI', status: 'Paid', statusInk: '#5F5851', amt: 'Rs. 2,000', incl: 'Rs. 2,360 incl.', amtInk: '#1A1714' },
+        { what: 'Service visit', meta: '14 Sep · refund to UPI', status: 'Refund processing', statusInk: '#5F5851', amt: 'Rs. 2,000', incl: 'Rs. 2,360 incl.', amtInk: '#5F5851' },
+        { what: 'Service visit', meta: '9 Sep · cancelled inside 24 hours', status: 'Charged', statusInk: '#8A3A2E', amt: 'Rs. 2,000', incl: 'Rs. 2,360 incl.', amtInk: '#1A1714' },
+        { what: 'Replacement piece', meta: '27 Jun · UPI', status: 'Paid', statusInk: '#5F5851', amt: 'Rs. 15,000', incl: 'Rs. 17,700 incl.', amtInk: '#1A1714' },
+        { what: 'Service visit', meta: '25 Jul · visit credit', status: 'Covered by credit', statusInk: '#5F5851', amt: 'Rs. 0', incl: '1 credit used', amtInk: '#1A1714' },
+        { what: 'First fit · standard', meta: '14 Nov 2026 · card', status: 'Paid', statusInk: '#5F5851', amt: 'Rs. 30,000', incl: 'Rs. 35,400 incl.', amtInk: '#1A1714' }
+      ],
+
+      consentLines: [
+        'Anyone you send this card to can see your photographs.',
+        'They can forward it, and so can anyone who receives it.',
+        'You can switch it off at any time, and new opens will show our house example instead.',
+        'Cards already delivered stay in people\u2019s chats. We cannot take those back.'
+      ],
+
+      referrals: [
+        { name: 'Vikram', month: 'Aug 2027' },
+        { name: 'Ashish', month: 'Mar 2027' }
+      ],
+
+      consents: [
+        consent('Photographs for your own record', 'Given 14 Nov 2026', true),
+        consent('Photographs on referral cards', 'Given 3 Aug 2027', true),
+        consent('Photographs in our marketing', 'Not given', false),
+        consent('WhatsApp about your visits', 'Given 2 Nov 2026', true)
+      ],
+
+      newIcons: [
+        { name: 'Visit credit', d: 'M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M8 12 L11 15 L16.5 9' },
+        { name: 'Hold timer', d: 'M9 3 H15 M12 3 V7 M12 7 A6.5 6.5 0 0 1 12 20 A6.5 6.5 0 0 1 12 7 M12 11 V14' },
+        { name: 'Compare', d: 'M12 4 V20 M4.5 8 H9 V16 H4.5 Z M15 8 H19.5 V16 H15 Z' },
+        { name: 'Tax document', d: 'M6 3.5 H14 L18 7.5 V20.5 H6 Z M14 3.5 V7.5 H18 M9 12 H15 M9 16 H13' },
+        { name: 'Share', d: 'M12 15 V4 M8 8 L12 4 L16 8 M5 14 V20 H19 V14' },
+        { name: 'Referral', d: 'M9 8 A2.5 2.5 0 0 1 9 13 A2.5 2.5 0 0 1 9 8 M4 20 C4 16.6 6.2 15 9 15 C11.8 15 14 16.6 14 20 M16 6 L18 8 L16 10 M18 8 H13.5' },
+        { name: 'Offline', d: 'M4 8 C9 4 15 4 20 8 M7.5 12 C10.5 9.8 13.5 9.8 16.5 12 M12 16.5 V16.6 M3 3 L21 21' },
+        { name: 'Upload queue', d: 'M12 14 V5 M8.5 8.5 L12 5 L15.5 8.5 M4.5 15 V19.5 H19.5 V15 M8 17.2 H16' },
+        { name: 'Piece ID', d: 'M4 6 V18 M7 7 V17 M10 7 V17 M13.5 7 V17 M17 7 V17 M20 6 V18' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

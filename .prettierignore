@@ -7,8 +7,10 @@ package-lock.json
 docs/openapi.json
 docs/api.md
 src/worker-configuration.d.ts
-# The design export: read-only reference (docs/frontend.md).
+# The design exports: read-only reference (docs/frontend.md, design/phase2/README.md).
 design/
+# The owner's prompts, committed word for word (docs/prompts/README.md).
+docs/prompts/
 # Built and generated.
 site/src/lib/api-schema.ts
 site/.astro/
