@@ -60,6 +60,8 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 | 30  | Production's Access service policy | Parked: `mm-ci-production` does not appear in the policy picker | Add the Service Auth policy for `mm-ci-production` on production's Access apps.                                                     |
 | 31  | Analytics IDs                      | None                                                            | The owner supplies them.                                                                                                            |
 | 32  | Production's queue for FSM         | Not created                                                     | Create `mm-fsm-sync-prod` before the first production deploy that sends to it, then run `apply-triggers` (runbook 11b).             |
+| 33  | Production's photographs bucket    | Not created                                                     | Create `mm-prod-client-photos`, with no lifecycle rule, before the first production deploy that uses it (runbook 11b).              |
+| 34  | Photograph sizes                   | FSM's app uploads full-size photographs, several MB each        | Our technician app (P2-M4) re-encodes them on the phone to about 270 KB, as ADR 0039's R2 budget assumes. Watch R2 until then.      |
 
 ## Settled
 

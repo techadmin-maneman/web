@@ -213,7 +213,7 @@ describe("the fsm-sync queue", () => {
     const batch = batchOf([{ fsm_id: "ap-1", inbox_id: inboxId, request_id: "r1" }]);
     await handleFsmSyncBatch(
       batch as unknown as MessageBatch,
-      env.DB,
+      env,
       fakeDependencies({ fsm: createStubFsm(world()) }),
       createLogger(),
     );
@@ -234,7 +234,7 @@ describe("the fsm-sync queue", () => {
     const deps = fakeDependencies({ fsm: failing });
 
     const first = batchOf([{ fsm_id: "ap-1", inbox_id: inboxId, request_id: "r1" }], 1);
-    await handleFsmSyncBatch(first as unknown as MessageBatch, env.DB, deps, createLogger());
+    await handleFsmSyncBatch(first as unknown as MessageBatch, env, deps, createLogger());
     expect(first.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
     const entry = await env.DB.prepare("SELECT processed_at, attempts, last_error FROM webhook_inbox WHERE id = ?1")
       .bind(inboxId)
@@ -242,11 +242,11 @@ describe("the fsm-sync queue", () => {
     expect(entry).toEqual({ processed_at: null, attempts: 1, last_error: "Zoho 503 UNAVAILABLE: busy" });
 
     const fourth = batchOf([{ fsm_id: "ap-1", request_id: "r1" }], 4);
-    await handleFsmSyncBatch(fourth as unknown as MessageBatch, env.DB, deps, createLogger());
+    await handleFsmSyncBatch(fourth as unknown as MessageBatch, env, deps, createLogger());
     expect(fourth.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 240 });
 
     const fifth = batchOf([{ fsm_id: "ap-1", request_id: "r1" }], 5);
-    await handleFsmSyncBatch(fifth as unknown as MessageBatch, env.DB, deps, createLogger());
+    await handleFsmSyncBatch(fifth as unknown as MessageBatch, env, deps, createLogger());
     expect(fifth.messages[0]?.ack).toHaveBeenCalled();
     expect(deps.alerts).toEqual([
       "FSM sync gave up on appointment ap-1 after 5 attempts: Zoho 503 UNAVAILABLE: busy. The reconciliation will try it again.",
@@ -255,7 +255,7 @@ describe("the fsm-sync queue", () => {
 
   it("drops a message it cannot read", async () => {
     const batch = batchOf([{ appointment: "ap-1" }]);
-    await handleFsmSyncBatch(batch as unknown as MessageBatch, env.DB, fakeDependencies(), createLogger());
+    await handleFsmSyncBatch(batch as unknown as MessageBatch, env, fakeDependencies(), createLogger());
     expect(batch.messages[0]?.ack).toHaveBeenCalled();
   });
 });

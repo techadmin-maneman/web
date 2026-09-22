@@ -57,7 +57,7 @@ export default {
       return;
     }
     if (batch.queue.startsWith("mm-fsm-sync-")) {
-      await handleFsmSyncBatch(batch, workerEnv.DB, deps, log);
+      await handleFsmSyncBatch(batch, workerEnv, deps, log);
       return;
     }
     if (batch.queue.startsWith("mm-messaging-")) {

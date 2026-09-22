@@ -24,7 +24,9 @@
   ],
   "r2_buckets": [
     { "binding": "UPLOADS", "bucket_name": "mm-local-tryon-uploads" },
-    { "binding": "RESULTS", "bucket_name": "mm-local-tryon-results" }
+    { "binding": "RESULTS", "bucket_name": "mm-local-tryon-results" },
+    // Clients' photographs: no lifecycle rule, deleted only on purpose (docs/decisions/0032-fsm-mirror.md).
+    { "binding": "CLIENT_PHOTOS", "bucket_name": "mm-local-client-photos" }
   ],
   "queues": {
     "producers": [
@@ -130,7 +132,9 @@
       ],
       "r2_buckets": [
         { "binding": "UPLOADS", "bucket_name": "mm-staging-tryon-uploads" },
-        { "binding": "RESULTS", "bucket_name": "mm-staging-tryon-results" }
+        { "binding": "RESULTS", "bucket_name": "mm-staging-tryon-results" },
+        // Clients' photographs: no lifecycle rule, deleted only on purpose (docs/decisions/0032-fsm-mirror.md).
+        { "binding": "CLIENT_PHOTOS", "bucket_name": "mm-staging-client-photos" }
       ],
       "queues": {
         "producers": [
@@ -230,7 +234,9 @@
       ],
       "r2_buckets": [
         { "binding": "UPLOADS", "bucket_name": "mm-prod-tryon-uploads" },
-        { "binding": "RESULTS", "bucket_name": "mm-prod-tryon-results" }
+        { "binding": "RESULTS", "bucket_name": "mm-prod-tryon-results" },
+        // Clients' photographs: no lifecycle rule, deleted only on purpose (docs/decisions/0032-fsm-mirror.md).
+        { "binding": "CLIENT_PHOTOS", "bucket_name": "mm-prod-client-photos" }
       ],
       "queues": {
         "producers": [

@@ -118,3 +118,29 @@ describe("the reconciliation, overnight", () => {
     expect(cursor).toEqual({ pass_date: "2026-09-24", next_page: 0 });
   });
 });
+
+describe("the reconciliation, hourly", () => {
+  async function closed(fsmId: string, type: string, windowEnd: string) {
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, type, status, fsm_status, window_end, fsm_modified_at, synced_at)
+       VALUES (?1, ?2, ?3, 'completed', 'Completed', ?4, ?4, ?4)`,
+    )
+      .bind(crypto.randomUUID(), fsmId, type, windowEnd)
+      .run();
+  }
+
+  it("looks again for the photographs of visits closed in the last three days, but not consultations", async () => {
+    await closed("ap-yesterday", "service", "2026-09-21T08:00:00.000Z");
+    await closed("ap-consultation", "consultation", "2026-09-21T08:00:00.000Z");
+    await closed("ap-last-week", "service", "2026-09-14T08:00:00.000Z");
+    const { summary, queue } = run([], DAY);
+    expect((await summary).queued).toBe(1);
+    expect(queuedIds(queue)).toEqual(["ap-yesterday"]);
+  });
+
+  it("only on the run at the top of the hour", async () => {
+    await closed("ap-yesterday", "service", "2026-09-21T08:00:00.000Z");
+    const { summary } = run([], new Date(DAY.getTime() + 10 * 60_000));
+    expect((await summary).queued).toBe(0);
+  });
+});
