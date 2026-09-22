@@ -41,7 +41,7 @@ concurrency:
 jobs:
   eligible:
     name: commit is on main and passed staging
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
@@ -72,7 +72,7 @@ jobs:
   release:
     name: release production
     needs: eligible
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 45
     environment:
       name: production
