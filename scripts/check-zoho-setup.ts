@@ -79,7 +79,9 @@ async function accessToken(): Promise<string> {
 
 async function get(token: string, path: string): Promise<unknown> {
   const response = await fetch(`https://${apiHost}${path}`, { headers: { Authorization: `Zoho-oauthtoken ${token}` } });
-  const body: unknown = await response.json().catch(() => null);
+  // An empty list answers 204 with no body: an org with no assignment rules yet.
+  const text = await response.text();
+  const body: unknown = text === "" ? {} : JSON.parse(text);
   if (!response.ok) {
     const code = (body as { code?: string } | null)?.code ?? String(response.status);
     throw new Error(
@@ -128,6 +130,7 @@ for (const expected of EXPECTED_FIELDS) {
 const { assignment_rules: rules = [] } = (await get(token, "/crm/v8/settings/automation/assignment_rules")) as {
   assignment_rules?: { id: string; name: string; module?: { api_name?: string } }[];
 };
+
 const leadRules = rules.filter((rule) => rule.module?.api_name === "Leads");
 console.log("\nLeads assignment rules (ZOHO_LAR_ID is one of these IDs):");
 for (const rule of leadRules) console.log(`  ${rule.id}  ${rule.name}`);

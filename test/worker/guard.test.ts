@@ -213,9 +213,14 @@ describe("validateStaticConfig: settings and secrets", () => {
   });
 
   it("requires every Zoho secret when the CRM is Zoho, and none when it is the stub", () => {
-    const { ZOHO_LAR_ID: _lar, ZOHO_REFRESH_TOKEN: _refresh, ...partialZoho } = production;
-    expect(problemsOf(partialZoho)).toEqual(["ZOHO_REFRESH_TOKEN is not set", "ZOHO_LAR_ID is not set"]);
+    const { ZOHO_REFRESH_TOKEN: _refresh, ...partialZoho } = production;
+    expect(problemsOf(partialZoho)).toEqual(["ZOHO_REFRESH_TOKEN is not set"]);
     expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS })).toEqual([]);
+  });
+
+  // An org with no assignment rule is a working org: Zoho leaves the record with the API user.
+  it("accepts an empty ZOHO_LAR_ID", () => {
+    expect(problemsOf({ ...production, ZOHO_LAR_ID: "" })).toEqual([]);
   });
 
   it("refuses a Zoho host given as a URL", () => {
