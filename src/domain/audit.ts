@@ -18,6 +18,8 @@ export const AUDIT_ACTIONS = [
   "number_change.decide",
   "deletion.request",
   "deletion.decide",
+  // A held referral grant (docs/decisions/0048-referrals.md).
+  "referral.decide",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

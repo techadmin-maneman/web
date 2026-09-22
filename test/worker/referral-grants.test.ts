@@ -1,0 +1,252 @@
+// The referral grant, its fraud holds and ops' review, credit expiry and clawback (src/domain/referral-grants.ts,
+// src/domain/credits.ts). NOW is Monday 21 September 2026, 12 noon in India. Every name and number is made up.
+
+import { env } from "cloudflare:workers";
+import { beforeEach, describe, expect, it } from "vitest";
+import { renderMessage } from "../../src/config/message-templates.ts";
+import { creditBalance, expireCredits, grantCredits } from "../../src/domain/credits.ts";
+import { clawBackRefunded, composeFriendFitted, settleReferrals } from "../../src/domain/referral-grants.ts";
+import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+
+const REFERRER = "11111111-1111-4111-8111-111111111111";
+const FRIEND = "22222222-2222-4222-8222-222222222222";
+const FIT = "33333333-3333-4333-8333-333333333333";
+const ATTRIBUTION = "44444444-4444-4444-8444-444444444444";
+const CODE = "RM7K2Q";
+const DAY = 86_400_000;
+
+async function person(id: string, name: string, mobile: string) {
+  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)")
+    .bind(id, NOW.toISOString(), mobile, name)
+    .run();
+}
+
+async function firstFit(
+  id: string,
+  personId: string,
+  outcome: "done" | "partial" = "done",
+  start = "2026-09-20T03:30:00.000Z",
+) {
+  await env.DB.prepare(
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+       fsm_modified_at, synced_at)
+     VALUES (?1, ?2, ?3, 'first_fit', 'completed', 'Completed', ?4, ?4, ?5, ?5)`,
+  )
+    .bind(id, `fsm-${id}`, personId, start, NOW.toISOString())
+    .run();
+  await env.DB.prepare("INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES (?1, ?2, ?3, ?4)")
+    .bind(crypto.randomUUID(), id, outcome, NOW.toISOString())
+    .run();
+}
+
+async function attribution(id: string, personId: string, via = "consultation", pincode: string | null = null) {
+  await env.DB.prepare(
+    `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, pincode, created_at,
+       updated_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?4, ?4)`,
+  )
+    .bind(id, CODE, personId, "2026-09-01T06:30:00.000Z", via, pincode)
+    .run();
+}
+
+const state = async (id = ATTRIBUTION) =>
+  (await env.DB.prepare("SELECT grant_state, fraud_signals FROM referral_attributions WHERE id = ?1")
+    .bind(id)
+    .first<{ grant_state: string; fraud_signals: string | null }>()) ?? null;
+
+beforeEach(async () => {
+  await markDatabase();
+  captureLogs();
+  await person(REFERRER, "Rohit Malhotra", "+919810000001");
+  await person(FRIEND, "Karan Bhatia", "+919810000002");
+  await env.DB.prepare("INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)")
+    .bind(CODE, REFERRER, NOW.toISOString())
+    .run();
+  await attribution(ATTRIBUTION, FRIEND);
+});
+
+describe("the grant", () => {
+  it("gives both sides 3 service visits once the friend's first fit is done, and tells the referrer", async () => {
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
+    await firstFit(FIT, FRIEND);
+    const settled = await settleReferrals(env.DB, NOW);
+    expect(settled).toMatchObject({ granted: 1, held: 0, expired: 0 });
+    expect(settled.messageIds).toHaveLength(1);
+    expect(await state()).toEqual({ grant_state: "granted", fraud_signals: null });
+    const expiry = new Date(NOW.getTime() + 365 * DAY).toISOString();
+    expect(await creditBalance(env.DB, FRIEND, NOW)).toEqual({ visits: 3, earliestExpiry: expiry });
+    expect(await creditBalance(env.DB, REFERRER, NOW)).toEqual({ visits: 3, earliestExpiry: expiry });
+
+    const message = await env.DB.prepare("SELECT person_id, kind, subject_id FROM outbound_messages").first();
+    expect(message).toEqual({ person_id: REFERRER, kind: "friend_fitted", subject_id: ATTRIBUTION });
+    const composed = await composeFriendFitted(env.DB, ATTRIBUTION, REFERRER);
+    expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
+      "Hello Rohit, Karan has been fitted. You each have 3 service visits free, until 21 Sep 2027. " +
+        "Thank you for the introduction.",
+    );
+
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
+  });
+
+  it("waits while the first fit is only partly done", async () => {
+    await firstFit(FIT, FRIEND, "partial");
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, held: 0 });
+    expect((await state())?.grant_state).toBe("pending");
+  });
+
+  it("credits only the friend when the referrer has since been erased", async () => {
+    await firstFit(FIT, FRIEND);
+    await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), REFERRER).run();
+    const settled = await settleReferrals(env.DB, NOW);
+    expect(settled).toMatchObject({ granted: 1, messageIds: [] });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(0);
+  });
+
+  it("lets a waitlist invite lapse 12 months after its area launched", async () => {
+    await env.DB.prepare("DELETE FROM referral_attributions").run();
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('400050', 'Bandra', 'Mumbai', 1, '2025-06-01T00:00:00.000Z')",
+    ).run();
+    await attribution(ATTRIBUTION, FRIEND, "waitlist", "400050");
+    await firstFit(FIT, FRIEND);
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, expired: 1 });
+    expect((await state())?.grant_state).toBe("expired");
+  });
+});
+
+describe("fraud holds", () => {
+  it("holds a pair who share an address or a UPI handle", async () => {
+    for (const personId of [REFERRER, FRIEND]) {
+      await env.DB.prepare(
+        `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+         VALUES (?1, ?2, ?3, ?4, 'Sector 65', 'Gurgaon', '122018')`,
+      )
+        .bind(crypto.randomUUID(), personId, NOW.toISOString(), personId === REFERRER ? "House 7" : " house 7 ")
+        .run();
+      await env.DB.prepare(
+        `INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, vpa_hash, status, created_at,
+           updated_at)
+         VALUES (?1, ?2, ?3, 100, 'INR', 'same-handle', 'captured', ?4, ?4)`,
+      )
+        .bind(crypto.randomUUID(), personId, `pay_${personId}`, NOW.toISOString())
+        .run();
+    }
+    await firstFit(FIT, FRIEND);
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, held: 1, messageIds: [] });
+    expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["shared_address","shared_upi"]' });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
+  });
+
+  it("holds a referrer's sixth fit in a calendar month in India, but not the fifth", async () => {
+    for (let n = 0; n < 5; n += 1) {
+      const friend = `f000000${String(n)}-0000-4000-8000-000000000000`;
+      const fit = `a000000${String(n)}-0000-4000-8000-000000000000`;
+      await person(friend, `Friend ${String(n)}`, `+91981000010${String(n)}`);
+      await attribution(`b000000${String(n)}-0000-4000-8000-000000000000`, friend);
+      await firstFit(fit, friend, "done", `2026-09-0${String(n + 1)}T03:30:00.000Z`);
+    }
+    // Five fits this month: all granted, since none passes the cap of 5 (the friend's own is still waiting).
+    await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'held' WHERE id = ?1").bind(ATTRIBUTION).run();
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 5, held: 0 });
+    await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'pending' WHERE id = ?1")
+      .bind(ATTRIBUTION)
+      .run();
+    await firstFit(FIT, FRIEND);
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, held: 1 });
+    expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["monthly_cap"]' });
+  });
+});
+
+describe("ops' review", () => {
+  async function held() {
+    await firstFit(FIT, FRIEND);
+    await env.DB.prepare(
+      "UPDATE referral_attributions SET grant_state = 'held', fraud_signals = '[\"shared_address\"]', first_fit_appointment_id = ?2 WHERE id = ?1",
+    )
+      .bind(ATTRIBUTION, FIT)
+      .run();
+  }
+  const ops = () => appFor("local", fakeDependencies(), {}, "ops");
+  const decide = (body: object, queue = fakeQueue()) =>
+    request(
+      ops(),
+      `/api/referrals/${ATTRIBUTION}/decision`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify(body),
+      },
+      { MESSAGE_QUEUE: queue },
+    );
+
+  it("lists held grants with the rules they met, and an approval grants and tells the referrer", async () => {
+    await held();
+    const list = await (await request(ops(), "/api/referrals/held")).json();
+    expect(list).toEqual({
+      held: [
+        {
+          id: ATTRIBUTION,
+          referrer: { person_id: REFERRER, name: "Rohit Malhotra" },
+          referred: { person_id: FRIEND, name: "Karan Bhatia" },
+          fitted_on: "2026-09-20",
+          signals: ["shared_address"],
+        },
+      ],
+    });
+    const queue = fakeQueue();
+    const answer = await decide({ decision: "approve", reason: null }, queue);
+    expect(await answer.json()).toEqual({ state: "approved" });
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(3);
+    expect(queue.sent).toHaveLength(1);
+    const audit = await env.DB.prepare(
+      "SELECT action, subject_id FROM audit_log WHERE action = 'referral.decide'",
+    ).first();
+    expect(audit).toEqual({ action: "referral.decide", subject_id: ATTRIBUTION });
+    expect((await decide({ decision: "approve", reason: null })).status).toBe(404);
+  });
+
+  it("rejects only with a reason, and grants nothing", async () => {
+    await held();
+    expect((await decide({ decision: "reject", reason: null })).status).toBe(400);
+    expect(await (await decide({ decision: "reject", reason: "Same household" })).json()).toEqual({
+      state: "rejected",
+    });
+    expect((await state())?.grant_state).toBe("rejected");
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
+  });
+});
+
+describe("credits after the grant", () => {
+  it("expire once, keeping the ledger's record", async () => {
+    await grantCredits(env.DB, {
+      personId: FRIEND,
+      visits: 3,
+      source: "ops",
+      sourceId: "o1",
+      now: NOW,
+      expiresAt: new Date(NOW.getTime() - DAY),
+    }).run();
+    expect(await expireCredits(env.DB, NOW)).toBe(1);
+    expect(await expireCredits(env.DB, NOW)).toBe(0);
+    const entry = await env.DB.prepare("SELECT visits FROM credit_ledger WHERE kind = 'expire'").first();
+    expect(entry).toEqual({ visits: -3 });
+  });
+
+  it("are taken back when the friend's first fit is refunded in full under the guarantee", async () => {
+    await firstFit(FIT, FRIEND);
+    await settleReferrals(env.DB, NOW);
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status,
+         refunded_amount, created_at, updated_at)
+       VALUES ('p1', ?1, ?2, 'pay_fit', 3000000, 'INR', 'refunded', 3000000, ?3, ?3)`,
+    )
+      .bind(FRIEND, FIT, NOW.toISOString())
+      .run();
+    expect(await clawBackRefunded(env.DB, NOW)).toBe(1);
+    expect((await state())?.grant_state).toBe("clawed_back");
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(0);
+  });
+});

@@ -11,6 +11,7 @@ import { handleMessagingBatch, type MessagingMessage } from "./queues/messaging.
 import { handleRenderBatch } from "./queues/render.ts";
 import { syncBooks } from "./domain/books-sync.ts";
 import { queueReminders } from "./domain/visit-messages.ts";
+import { referralPass } from "./scheduled/referrals.ts";
 import { reconcileFsm } from "./scheduled/reconcile-fsm.ts";
 import { sweep } from "./scheduled/sweeper.ts";
 
@@ -81,6 +82,19 @@ export default {
       await reconcileFsm(workerEnv, deps, log.child({ job: "fsm_reconcile" })).catch((error: unknown) => {
         log.error("fsm_reconcile_failed", { error });
       });
+    }
+    const referralMessages = await referralPass(workerEnv.DB, deps.now(), log.child({ job: "referrals" })).catch(
+      (error: unknown) => {
+        log.error("referrals_failed", { error });
+        return [];
+      },
+    );
+    if (referralMessages.length > 0) {
+      await workerEnv.MESSAGE_QUEUE.sendBatch(
+        referralMessages.map((id) => ({
+          body: { message_id: id, request_id: "referrals" } satisfies MessagingMessage,
+        })),
+      );
     }
     if (config.settings.messaging.enabled) {
       const reminders = await queueReminders(workerEnv.DB, deps.now()).catch((error: unknown) => {

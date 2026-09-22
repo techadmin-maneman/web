@@ -1,6 +1,6 @@
 # 0048. Referrals and the waitlist
 
-- Status: accepted; the grant, cards and ops' views to follow in P2-M3
+- Status: accepted; cards, the landing page and ops' waitlist views to follow in P2-M3
 - Date: 2026-09-22
 
 ## Context
@@ -43,6 +43,33 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
   - The invite is held for them, valid until 12 months after the area launches (`inviteLapsed`).
 
 **Erasure** removes a person's waitlist entries. Their code and ledger stay (ADR 0033).
+
+**The grant** (`src/domain/referral-grants.ts`) runs on the five-minute cron (`src/scheduled/referrals.ts`), with no new trigger. It takes up to ten pending referrals a pass: those whose friend has a first fit that FSM closed as done (a visit with outcome done).
+
+- **A lapsed invite expires.** An invite from the waitlist lapses 12 months after its area launched (ruling 1). Its friend's consultation stayed free, but carries no credits.
+- **The fraud rules run first** (`fraudSignals`):
+  - the two share an address (the same first line and pincode, in any address either has saved);
+  - they share a UPI handle (the payments' hashed handles; no card fingerprint is given to us, ADR 0025, item 21);
+  - the referrer already has 5 fits granted or held in that calendar month in India (ruling 5), so the sixth is held;
+  - their mobile numbers match.
+- **A grant that meets any rule is held,** with the rules it met, for ops' review.
+- **The rest are granted in one batch:**
+  - 3 service-visit credits each, expiring in 365 days, once per referral (ADR 0033);
+  - the attribution granted;
+  - the referrer's WhatsApp, "friend fitted", with the friend's first name.
+- **A referrer who has been erased gets nothing,** and no message. Their friend keeps the 3 the invite promised (ruling 1).
+- **The referrer's message needs no consent of its own.** Ruling 3 says the referrer is told, and counsel confirmed it. It still respects erasure, messaging being on, and staging's allowlist.
+
+**Ops' review** is on the ops surface, behind Access:
+
+- `GET /api/referrals/held` lists the held grants, with the rules each met.
+- `POST /api/referrals/:id/decision` approves, and the credits and message follow, or rejects with a reason.
+- Each decision is audited (`referral.decide`).
+
+**Afterwards, on the same cron:**
+
+- A grant past its expiry is closed with an expire entry, once (`expireCredits`).
+- A referral whose friend's first fit was refunded in full, under the guarantee, has what is left of both sides' credits clawed back (`clawBackRefunded`).
 
 ## Consequences
 

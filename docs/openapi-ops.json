@@ -178,6 +178,31 @@
           "reason"
         ],
         "additionalProperties": false
+      },
+      "ReferralDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "Required to reject."
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -469,6 +494,170 @@
           },
           "404": {
             "description": "not_found: no request waiting for ops by that ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referrals/held": {
+      "get": {
+        "summary": "Referral grants held for review, oldest first",
+        "responses": {
+          "200": {
+            "description": "Held grants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "held": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "referrer": {
+                            "type": "object",
+                            "properties": {
+                              "person_id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "person_id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "referred": {
+                            "type": "object",
+                            "properties": {
+                              "person_id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "person_id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "fitted_on": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "signals": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "shared_address",
+                                "shared_upi",
+                                "monthly_cap",
+                                "same_mobile"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "referrer",
+                          "referred",
+                          "fitted_on",
+                          "signals"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "held"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referrals/{id}/decision": {
+      "post": {
+        "summary": "Approve a held grant, or reject it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferralDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "approved",
+                        "rejected"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a rejection needs a reason",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no held grant by that ID",
             "content": {
               "application/json": {
                 "schema": {

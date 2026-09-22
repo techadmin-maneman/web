@@ -82,3 +82,68 @@ export async function redeemCredit(
     )
     .bind(crypto.randomUUID(), personId, grant.id, appointmentId, now.toISOString());
 }
+
+/** How many expired grants a pass closes. */
+const EXPIRE_PER_PASS = 20;
+
+/**
+ * Closes grants past their expiry: an expire entry takes whatever is left, or marks a spent one closed, so each
+ * grant is expired once. The balance already leaves them out; this keeps the ledger's own record.
+ */
+export async function expireCredits(db: D1Database, now: Date): Promise<number> {
+  const { results } = await db
+    .prepare(
+      `SELECT g.id, g.person_id, g.source_kind, g.source_id,
+         g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
+       FROM credit_ledger g
+       WHERE g.kind = 'grant' AND g.expires_at <= ?1
+         AND NOT EXISTS (SELECT 1 FROM credit_ledger x WHERE x.grant_id = g.id AND x.kind = 'expire')
+       LIMIT ?2`,
+    )
+    .bind(now.toISOString(), EXPIRE_PER_PASS)
+    .all<{ id: string; person_id: string; source_kind: CreditSource; source_id: string; remaining: number }>();
+  if (results.length === 0) return 0;
+  await db.batch(
+    results.map((grant) =>
+      db
+        .prepare(
+          `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+           VALUES (?1, ?2, 'expire', ?3, ?4, ?5, ?6, ?7)`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          grant.person_id,
+          -Math.max(0, grant.remaining),
+          grant.id,
+          grant.source_kind,
+          grant.source_id,
+          now.toISOString(),
+        ),
+    ),
+  );
+  return results.length;
+}
+
+/** Takes back what is left of a source's grants: a referral whose first fit was refunded under the guarantee. */
+export async function clawBack(db: D1Database, source: CreditSource, sourceId: string, now: Date): Promise<void> {
+  const { results } = await db
+    .prepare(
+      `SELECT g.id, g.person_id,
+         g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
+       FROM credit_ledger g WHERE g.kind = 'grant' AND g.source_kind = ?1 AND g.source_id = ?2`,
+    )
+    .bind(source, sourceId)
+    .all<{ id: string; person_id: string; remaining: number }>();
+  const live = results.filter((grant) => grant.remaining > 0);
+  if (live.length === 0) return;
+  await db.batch(
+    live.map((grant) =>
+      db
+        .prepare(
+          `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+           VALUES (?1, ?2, 'clawback', ?3, ?4, ?5, ?6, ?7)`,
+        )
+        .bind(crypto.randomUUID(), grant.person_id, -grant.remaining, grant.id, source, sourceId, now.toISOString()),
+    ),
+  );
+}

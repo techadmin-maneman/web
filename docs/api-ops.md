@@ -251,6 +251,143 @@ Request body:
 }
 ```
 
+### GET /api/referrals/held
+
+Referral grants held for review, oldest first
+
+**200**: Held grants
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referrer": {
+            "type": "object",
+            "properties": {
+              "person_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "person_id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "referred": {
+            "type": "object",
+            "properties": {
+              "person_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "person_id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "fitted_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "shared_address",
+                "shared_upi",
+                "monthly_cap",
+                "same_mobile"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "referrer",
+          "referred",
+          "fitted_on",
+          "signals"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "held"
+  ],
+  "additionalProperties": false
+}
+```
+
+### POST /api/referrals/{id}/decision
+
+Approve a held grant, or reject it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralDecision"
+}
+```
+
+**200**: Decided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "rejected"
+      ]
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: a rejection needs a reason
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no held grant by that ID
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -425,6 +562,36 @@ Request body:
       ],
       "maxLength": 300,
       "description": "Required to reject; kept with the decision."
+    }
+  },
+  "required": [
+    "decision",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReferralDecision
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approve",
+        "reject"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Required to reject."
     }
   },
   "required": [
