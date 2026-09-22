@@ -6,7 +6,7 @@
 import { toE164 } from "../lib/mobile.ts";
 import type { EvolutionSettings } from "../providers/evolution.ts";
 import { isKnownTemplate } from "./message-templates.ts";
-import type { EnvironmentName, ProviderVar } from "./environments.ts";
+import { ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
 import { UNKNOWN_COLOR_ROUTES, type UnknownColorRoute } from "./tryon.ts";
 
 export interface TryonSettings {
@@ -57,6 +57,13 @@ export interface ZohoSettings {
   readonly larId: string;
 }
 
+export interface AccessSettings {
+  /** The Cloudflare Access team domain, e.g. summer-math-0275.cloudflareaccess.com. */
+  readonly teamDomain: string;
+  /** The ops console's Access application audience tag. Required once the ops surface is switched on. */
+  readonly opsAudience: string | null;
+}
+
 export interface Settings {
   readonly visitLeadDays: number;
   readonly leadMobileDailyLimit: number;
@@ -76,6 +83,8 @@ export interface Settings {
   readonly erasureSecret: string;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
+  /** Present when ACCESS_PROVIDER is "cloudflare". */
+  readonly access: AccessSettings | null;
   readonly tryon: TryonSettings;
   readonly messaging: MessagingSettings;
 }
@@ -91,6 +100,7 @@ const TURNSTILE_TEST_SECRETS = new Set([
 ]);
 
 const ZOHO_HOST = /^[a-z0-9.-]+\.(zoho|zohoapis)\.[a-z.]+$/;
+const ACCESS_TEAM_DOMAIN = /^[a-z0-9-]+\.cloudflareaccess\.com$/;
 
 type Env = Readonly<Record<string, unknown>>;
 
@@ -213,6 +223,18 @@ export function readSettings(
     }
   }
 
+  let access: AccessSettings | null = null;
+  if (providers.ACCESS_PROVIDER === "cloudflare") {
+    const teamDomain = read.text("ACCESS_TEAM_DOMAIN");
+    if (teamDomain !== "" && !ACCESS_TEAM_DOMAIN.test(teamDomain)) {
+      read.problems.push("ACCESS_TEAM_DOMAIN must be a cloudflareaccess.com hostname, without https://");
+    }
+    const opsOn = environment !== undefined && ENABLED_SURFACES[environment].includes("ops");
+    access = { teamDomain, opsAudience: opsOn ? read.text("ACCESS_OPS_AUD") : read.optionalText("ACCESS_OPS_AUD") };
+  } else if (environment === "staging" && providers.ACCESS_PROVIDER === "stub") {
+    read.problems.push("ACCESS_PROVIDER is a stub in staging: staff identity is verified everywhere but locally");
+  }
+
   const tryon: TryonSettings = {
     uploadIpHourlyLimit: read.count("TRYON_UPLOAD_IP_HOURLY_LIMIT"),
     generateIpHourlyLimit: read.count("TRYON_GENERATE_IP_HOURLY_LIMIT"),
@@ -268,6 +290,7 @@ export function readSettings(
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
     erasureSecret: read.key("ERASURE_SECRET"),
     zoho,
+    access,
     tryon,
     messaging,
   };

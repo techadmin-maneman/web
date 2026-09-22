@@ -3,6 +3,7 @@
 // config; tests pass their own.
 
 import type { StaticConfig } from "./guard.ts";
+import { createAccessVerifier, type AccessVerifier } from "./http/access.ts";
 import type { Logger } from "./log.ts";
 import { createAlert, createLeadNotice, type Alert, type LeadNotice } from "./providers/alerts.ts";
 import { createCrmProvider, type CrmProvider } from "./providers/crm.ts";
@@ -18,16 +19,20 @@ export interface Dependencies {
   readonly alert: Alert;
   /** Posts a new lead to the chat space. */
   readonly notifyLead: LeadNotice;
+  /** Checks the Cloudflare Access token on the ops surface. */
+  readonly access: AccessVerifier;
 }
 
 export type DependencyFactory = (env: Env, log: Logger) => Dependencies;
 
 export function productionDependencies(config: StaticConfig): DependencyFactory {
   const { settings } = config;
+  // A bare reference to the global fetch throws "Illegal invocation" in Workers when called as a method.
+  const httpFetch: typeof fetch = (input, init) => fetch(input, init);
+  const now = (): Date => new Date();
+  // Built once per isolate, so Access's signing keys are fetched once, not per request.
+  const access = createAccessVerifier(settings.access, { fetch: httpFetch, now });
   return (env, log) => {
-    // A bare reference to the global fetch throws "Illegal invocation" in Workers when called as a method.
-    const httpFetch: typeof fetch = (input, init) => fetch(input, init);
-    const now = (): Date => new Date();
     return {
       fetch: httpFetch,
       now,
@@ -46,6 +51,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
         fetch: httpFetch,
         log,
       }),
+      access,
     };
   };
 }

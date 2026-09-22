@@ -5,6 +5,7 @@ import { EXPECTED_DATABASE_NAME, type EnvironmentName, type Surface } from "../.
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import type { StaticConfig } from "../../src/guard.ts";
+import { createAccessVerifier } from "../../src/http/access.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
 import { createImageProvider } from "../../src/providers/image.ts";
@@ -23,6 +24,7 @@ export const LOCAL_SETTINGS: Settings = {
   leadWebhookUrl: null,
   erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
+  access: null,
   tryon: {
     uploadIpHourlyLimit: 5,
     generateIpHourlyLimit: 5,
@@ -42,7 +44,7 @@ export const LOCAL_SETTINGS: Settings = {
 
 export const LOCAL_CONFIG: StaticConfig = {
   environment: "local",
-  providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub" },
+  providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub", ACCESS_PROVIDER: "stub" },
   settings: LOCAL_SETTINGS,
 };
 
@@ -125,6 +127,7 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
       return Promise.resolve();
     },
     leadNotices,
+    access: createAccessVerifier(null, { fetch, now }),
     ...overrides,
   };
 }

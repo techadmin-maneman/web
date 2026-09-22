@@ -519,7 +519,8 @@ Request body:
             "job_not_claimable",
             "look_limit_reached",
             "unauthorized",
-            "forbidden_origin"
+            "forbidden_origin",
+            "access_required"
           ]
         },
         "request_id": {
