@@ -23,7 +23,8 @@ export interface CrmLead {
   readonly source: LeadSource;
   readonly city: string | null;
   readonly firstChoiceWindow: VisitWindow | null;
-  readonly lossExtent: LossExtent;
+  /** Null for a booking made on a Phase 2 form, which does not ask (migration 0025). */
+  readonly lossExtent: LossExtent | null;
   readonly proposedVisitDate: string | null;
   /** The person has a contact consent: ops may call and message them. */
   readonly contactable: boolean;

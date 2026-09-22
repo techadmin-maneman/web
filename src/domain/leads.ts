@@ -23,22 +23,43 @@ export interface BookingLead {
   readonly newPersonId: string;
   readonly name: string;
   readonly mobileE164: string;
-  readonly city: string;
-  /** "form" for a served city, "waitlist" otherwise. */
+  /** Null where the pincode's city is not one of ours (migration 0025). */
+  readonly city: string | null;
+  /** "form" for a served pincode or city, "waitlist" otherwise. */
   readonly source: "form" | "waitlist";
-  readonly window: VisitWindow;
-  readonly lossExtent: LossExtent;
+  /** Phase 1's rough preference. A booking has a date and a window of its own, so it has none. */
+  readonly window: VisitWindow | null;
+  /** The public form asks; an invited friend is never asked. */
+  readonly lossExtent: LossExtent | null;
   readonly proposedVisitDate: string | null;
   readonly attribution: Attribution;
   readonly ipHash: string;
   readonly requestId: string;
   readonly now: Date;
+  /**
+   * Phase 1's form agrees to be contacted here, under the booking notice. A Phase 2
+   * booking has already recorded the consent it showed, which is a different notice,
+   * so it asks for none to be written (src/domain/public-booking.ts).
+   */
+  readonly recordConsent?: boolean;
 }
 
 export async function saveBookingLead(db: D1Database, lead: BookingLead): Promise<void> {
   const at = lead.now.toISOString();
   const personId = "(SELECT id FROM people WHERE mobile_e164 = ?)";
   const attribution = lead.attribution;
+
+  const consent =
+    lead.recordConsent === false
+      ? []
+      : [
+          db
+            .prepare(
+              `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
+               VALUES (?, ${personId}, 'contact', ?, 1, ?, ?)`,
+            )
+            .bind(crypto.randomUUID(), lead.mobileE164, CURRENT_NOTICE.contact, at, lead.ipHash),
+        ];
 
   await db.batch([
     // A returning person keeps their ID; their name is updated and they become contactable.
@@ -49,12 +70,7 @@ export async function saveBookingLead(db: D1Database, lead: BookingLead): Promis
       )
       .bind(lead.newPersonId, at, lead.mobileE164, lead.name),
 
-    db
-      .prepare(
-        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-         VALUES (?, ${personId}, 'contact', ?, 1, ?, ?)`,
-      )
-      .bind(crypto.randomUUID(), lead.mobileE164, CURRENT_NOTICE.contact, at, lead.ipHash),
+    ...consent,
 
     db
       .prepare(
