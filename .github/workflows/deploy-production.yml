@@ -169,6 +169,14 @@ jobs:
       - name: Final smoke
         run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"
 
+      # Nothing until a Phase 2 surface is switched on in production. ops.maneman.in is behind
+      # Access, so it needs the mm-ci-production service token (runbook, step 3).
+      - name: Smoke the Phase 2 surfaces
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run smoke -- --environment production --surfaces --version-tag "$SHA"
+
       - name: Roll back
         if: failure() && steps.canary.outcome != 'skipped' && steps.before.outputs.api != ''
         run: |

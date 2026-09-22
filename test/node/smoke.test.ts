@@ -7,6 +7,8 @@ interface Faults {
   notFound?: { status?: number; body?: unknown; requestId?: string };
   site?: { status?: number; html?: string; robots?: string | null };
   cities?: unknown;
+  /** On a Phase 2 surface's host, the public site's routes must not answer. */
+  publicRoutes?: "present" | "absent";
 }
 
 const REQUEST_ID = "4b0e6c0a-0000-4000-8000-000000000001";
@@ -48,7 +50,7 @@ function fakeDeployment(environment: string, faults: Faults = {}): { fetch: type
     const url = input instanceof Request ? input.url : input.toString();
     seen.push(new Headers(init?.headers));
     if (url.endsWith("/api/health")) return Promise.resolve(health());
-    if (url.endsWith("/api/cities"))
+    if (url.endsWith("/api/cities") && faults.publicRoutes !== "absent")
       return Promise.resolve(json(200, faults.cities ?? [{ name: "Gurgaon", served: true }]));
     if (url.includes("/api/")) return Promise.resolve(notFound());
     return Promise.resolve(sitePage());
@@ -185,5 +187,35 @@ describe("smoke suite", () => {
     await runSmoke({ ...smokeOptions("staging"), fetch: fake.fetch, headers: { "CF-Access-Client-Id": "id" } });
     expect(fake.seen.length).toBeGreaterThan(0);
     expect(fake.seen.every((headers) => headers.get("CF-Access-Client-Id") === "id")).toBe(true);
+  });
+});
+
+describe("smoke suite, on a Phase 2 surface's host", () => {
+  const onSurface = (environment: SmokeOptions["environment"], faults: Faults = {}) =>
+    smokeOptions(environment, { publicRoutes: "absent", ...faults }, { surface: "ops" });
+
+  it.each(["staging", "production"] as const)(
+    "passes a healthy %s surface, without asking for the site",
+    async (environment) => {
+      const results = await runSmoke(onSurface(environment));
+      expect(results.filter((result) => !result.ok)).toEqual([]);
+      expect(results.map((result) => result.name)).toEqual([
+        "mm-api /api/health",
+        "mm-api error shape",
+        "public routes absent",
+        "indexing",
+      ]);
+    },
+  );
+
+  it("fails when the public site's routes answer on the surface's host", async () => {
+    expect(await failures(onSurface("staging", { publicRoutes: "present" }))).toEqual([
+      "public routes absent: /api/cities answered 200; it belongs to the public site",
+    ]);
+  });
+
+  it("fails when a staging surface is indexable", async () => {
+    const indexable = { health: { headers: { "x-robots-tag": "all" } } };
+    expect(await failures(onSurface("staging", indexable))).toEqual(['indexing: API X-Robots-Tag is "all"']);
   });
 });

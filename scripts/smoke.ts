@@ -1,5 +1,6 @@
 // npm run smoke -- --base https://staging.maneman.in --environment staging
 // npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
+// npm run smoke -- --environment staging --surfaces    every switched-on Phase 2 host (docs/decisions/0026)
 //
 // Options:
 //   --version-id <id>         require /api/health to report this Worker version
@@ -9,8 +10,8 @@
 //   CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET   Access service token (staging)
 
 import { parseArgs } from "node:util";
-import { isEnvironmentName } from "../src/config/environments.ts";
-import { runSmoke } from "./lib/smoke.ts";
+import { ENABLED_SURFACES, isEnvironmentName, SURFACE_HOSTS } from "../src/config/environments.ts";
+import { runSmoke, type SmokeResult } from "./lib/smoke.ts";
 
 const { values } = parseArgs({
   options: {
@@ -21,15 +22,18 @@ const { values } = parseArgs({
     "version-id": { type: "string" },
     "version-tag": { type: "string" },
     override: { type: "string", multiple: true },
+    surfaces: { type: "boolean", default: false },
   },
 });
 
 const environment = values.environment;
 const apiBase = values["api-base"] ?? values.base;
 const siteBase = values["site-base"] ?? values.base;
-if (!isEnvironmentName(environment) || apiBase === undefined || siteBase === undefined) {
+const surfacesOnly = values.surfaces && (environment === "staging" || environment === "production");
+if (!isEnvironmentName(environment) || (!surfacesOnly && (apiBase === undefined || siteBase === undefined))) {
   console.error(
-    "usage: smoke --environment <local|staging|production> (--base <url> | --api-base <url> --site-base <url>)",
+    "usage: smoke --environment <local|staging|production> (--base <url> | --api-base <url> --site-base <url>)\n" +
+      "       smoke --environment <staging|production> --surfaces",
   );
   process.exit(2);
 }
@@ -53,19 +57,33 @@ const overrides = (values.override ?? []).map((pair) => {
 });
 if (overrides.length > 0) headers["Cloudflare-Workers-Version-Overrides"] = overrides.join(", ");
 
-const results = await runSmoke({
-  apiBase: apiBase.replace(/\/$/, ""),
-  siteBase: siteBase.replace(/\/$/, ""),
-  environment,
-  headers,
-  versionId: values["version-id"],
-  versionTag: values["version-tag"],
-});
+const common = { environment, headers, versionId: values["version-id"], versionTag: values["version-tag"] };
+const runs: { base: string; results: SmokeResult[] }[] = [];
 
-for (const result of results) console.log(`${result.ok ? "PASS" : "FAIL"}  ${result.name}: ${result.detail}`);
-const failed = results.filter((result) => !result.ok).length;
+if (surfacesOnly) {
+  const surfaces = ENABLED_SURFACES[environment].filter((surface) => surface !== "public");
+  if (surfaces.length === 0) console.log(`no Phase 2 surface is switched on in ${environment}`);
+  for (const surface of surfaces) {
+    const base = `https://${SURFACE_HOSTS[environment][surface]}`;
+    runs.push({ base, results: await runSmoke({ ...common, apiBase: base, siteBase: base, surface }) });
+  }
+} else if (apiBase !== undefined && siteBase !== undefined) {
+  const results = await runSmoke({
+    ...common,
+    apiBase: apiBase.replace(/\/$/, ""),
+    siteBase: siteBase.replace(/\/$/, ""),
+  });
+  runs.push({ base: apiBase, results });
+}
+
+let failed = 0;
+for (const { base, results } of runs) {
+  for (const result of results)
+    console.log(`${result.ok ? "PASS" : "FAIL"}  ${base}  ${result.name}: ${result.detail}`);
+  failed += results.filter((result) => !result.ok).length;
+}
 if (failed > 0) {
-  console.error(`smoke failed: ${String(failed)} of ${String(results.length)} check(s)`);
+  console.error(`smoke failed: ${String(failed)} check(s)`);
   process.exit(1);
 }
-console.log(`smoke passed against ${apiBase} (${environment})`);
+for (const { base } of runs) console.log(`smoke passed against ${base} (${environment})`);

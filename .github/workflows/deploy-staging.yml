@@ -71,6 +71,13 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run smoke -- --base https://staging.maneman.in --environment staging --version-tag "$SHA"
 
+      # app-staging, ops-staging and tech-staging: every Phase 2 surface switched on (docs/decisions/0026).
+      - name: Smoke-test the Phase 2 surfaces
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run smoke -- --environment staging --surfaces --version-tag "$SHA"
+
       - name: Remind if triggers changed (CI cannot apply them)
         env:
           BEFORE: ${{ github.event.before }}

@@ -2,12 +2,14 @@
 // in the right environment, on the right database, with routing intact. Runs
 // after every staging and production deploy, and against wrangler dev in CI.
 
-import type { EnvironmentName } from "../../src/config/environments.ts";
+import type { EnvironmentName, Surface } from "../../src/config/environments.ts";
 
 export interface SmokeOptions {
   readonly apiBase: string;
   readonly siteBase: string;
   readonly environment: EnvironmentName;
+  /** Which surface's host this is (docs/decisions/0026-hosts-and-surfaces.md). The public site unless given. */
+  readonly surface?: Surface;
   /** Require /api/health to report this Worker version ID. */
   readonly versionId?: string;
   /** Require /api/health to report this upload tag (the git SHA). */
@@ -153,12 +155,37 @@ const indexing: Check = async ({ options, api, site }) => {
   return "noindex on site and API";
 };
 
+/** A Phase 2 surface's host serves none of the public site's routes. */
+const publicRoutesAbsent: Check = async ({ api }) => {
+  const response = await api("/api/cities");
+  assert(response.status === 404, `/api/cities answered ${String(response.status)}; it belongs to the public site`);
+  const body = await readJsonObject(response);
+  assert((body.error as Record<string, unknown> | undefined)?.code === "not_found", "the 404 is not ours");
+  return "the public site's routes are not here";
+};
+
+/** Outside production, a surface's API is noindex, as the public site's is. */
+const apiIndexing: Check = async ({ options, api }) => {
+  if (options.environment === "production") return "production: not required";
+  const tag = (await api("/api/health")).headers.get("x-robots-tag") ?? "";
+  assert(tag.includes("noindex"), `API X-Robots-Tag is "${tag}"`);
+  return "noindex on the API";
+};
+
 export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["mm-api /api/health", health],
   ["mm-api error shape", errorShape],
   ["mm-api cities", cities],
   ["mm-site routing", siteRouting],
   ["indexing", indexing],
+];
+
+/** For the client, ops and technician hosts. Their apps are not built yet, so only mm-api is checked. */
+export const SURFACE_CHECKS: readonly (readonly [name: string, check: Check])[] = [
+  ["mm-api /api/health", health],
+  ["mm-api error shape", errorShape],
+  ["public routes absent", publicRoutesAbsent],
+  ["indexing", apiIndexing],
 ];
 
 export async function runSmoke(options: SmokeOptions): Promise<SmokeResult[]> {
@@ -182,7 +209,7 @@ export async function runSmoke(options: SmokeOptions): Promise<SmokeResult[]> {
   };
 
   const results: SmokeResult[] = [];
-  for (const [name, check] of CHECKS) {
+  for (const [name, check] of (options.surface ?? "public") === "public" ? CHECKS : SURFACE_CHECKS) {
     try {
       results.push({ name, ok: true, detail: await check(target) });
     } catch (error) {
