@@ -17,6 +17,7 @@ export type JobStatus = Schemas["JobStatus"];
 export type FailureCode = Schemas["ResultFailed"]["failure_code"];
 export type ClaimRequest = Schemas["ClaimRequest"];
 export type ClaimResponse = Schemas["ClaimResponse"];
+export type Look = Schemas["Look"];
 
 /**
  * How long a poll waits for its answer. A request stuck on the way is dropped,
@@ -79,7 +80,12 @@ export function jobStatus(jobId: string): Promise<Answer<JobStatus>> {
   return call<JobStatus>(`/api/tryon/status/${jobId}`, { signal: AbortSignal.timeout(POLL_TIMEOUT_MS) });
 }
 
-/** The gate. It sets the session cookie that fetchResult needs. */
+/** The look this browser already has, for a visitor who comes back. */
+export function fetchLook(): Promise<Answer<Look>> {
+  return call<Look>("/api/tryon/look");
+}
+
+/** The gate: optional, for a WhatsApp copy. It also opens a session that can see the result. */
 export function claimResult(claim: ClaimRequest, idempotencyKey: string): Promise<Answer<ClaimResponse>> {
   return post<ClaimResponse>("/api/tryon/claim", claim, idempotencyKey);
 }

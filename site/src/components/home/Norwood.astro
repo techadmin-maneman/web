@@ -52,13 +52,11 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
                   {SHOW_PLACEHOLDER_TAGS && showPhotos && <div class="label placeholder">{placeholderTag}</div>}
                 </div>
               )}
-              <div class="body">
-                <div class="head">
-                  <span class="name">{stage.name}</span>
-                  <span class="tag caps">{stage.tag}</span>
-                </div>
-                <div class="description">{stage.description}</div>
+              <div class="head">
+                <span class="name">{stage.name}</span>
+                <span class="tag caps">{stage.tag}</span>
               </div>
+              <div class="description">{stage.description}</div>
             </li>
           ))}
         </ul>
@@ -112,23 +110,28 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     gap: var(--norwood-gap);
     max-width: var(--norwood-early-max);
   }
+  /* v2 centres this row; the owner asked for it to start at the left edge, like the early group. */
   .flow {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--norwood-flow-basis)), 1fr));
     gap: var(--norwood-gap);
+    max-width: var(--norwood-flow-row-max);
   }
-  .flow > .card {
-    flex: 1 1 var(--norwood-flow-basis);
-    max-width: var(--norwood-flow-max);
-  }
+  /*
+   * Each card is three rows of its group's grid (subgrid): picture, name,
+   * description. Cards side by side share the name row's height, so their
+   * descriptions start level however their names wrap.
+   */
   .card {
     background: var(--paper);
     border: var(--hairline) solid var(--paper-line);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    row-gap: 0;
   }
   .picture {
+    grid-row: 1;
     aspect-ratio: 4 / 5;
   }
   .drawing {
@@ -153,17 +156,10 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     letter-spacing: var(--tracking-12);
     color: var(--ink-muted);
   }
-  .body {
-    padding: var(--norwood-card-pad);
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-8);
-    border-top: var(--hairline) solid var(--paper-line);
-  }
-  .late .body {
-    border-top: var(--rule-strong) solid var(--ink);
-  }
   .head {
+    grid-row: 2;
+    padding: var(--norwood-card-pad) var(--norwood-card-pad) 0;
+    border-top: var(--hairline) solid var(--paper-line);
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -180,10 +176,15 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     white-space: nowrap;
     color: var(--text-muted);
   }
+  .late .head {
+    border-top: var(--rule-strong) solid var(--ink);
+  }
   .late .tag {
     color: var(--ink);
   }
   .description {
+    grid-row: 3;
+    padding: var(--sp-8) var(--norwood-card-pad) var(--norwood-card-pad);
     font-size: var(--fs-14);
     line-height: 1.55;
     color: var(--text-soft);

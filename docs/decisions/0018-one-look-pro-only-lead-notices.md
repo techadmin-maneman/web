@@ -14,7 +14,7 @@ After M3's staging proof, the owner decided three things on 21 September 2026. E
 The design offers "one photograph, six looks", and the prompt a "try another look" with no second gate. The owner decided instead that a visitor gets one look, even after the gate.
 
 - `POST /api/tryon/generate` renders the look for an uploaded photo once. The same look asked for again returns that job; any other look answers `403 look_limit_reached`.
-- When the render is queued, the browser gets an `mm_look` cookie naming the job, for 30 days: `HttpOnly; Secure; SameSite=Strict; Path=/api/tryon`. `POST /api/tryon/upload-url` refuses a browser whose named job has not failed (`403 look_limit_reached`).
+- When the render is queued, the browser gets an `mm_look` cookie naming the job, for 30 days (signed since ADR 0024, which also lets it show that look again): `HttpOnly; Secure; SameSite=Strict; Path=/api/tryon`. `POST /api/tryon/upload-url` refuses a browser whose named job has not failed (`403 look_limit_reached`).
 - A render that failed doesn't count, so a visitor whose photo showed no face can try another.
 
 The limit is best-effort. Without verifying the phone number before the render, clearing cookies or changing browsers gets round it, and an address limit can't be tightened far: Indian mobile networks put many people behind one address. What holds spend is unchanged: the per-address hourly limits and the global daily render ceiling (docs/decisions/0015).

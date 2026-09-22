@@ -1,10 +1,10 @@
-// Short-lived tokens for links: the photo upload link and the result links.
-// Signed with RESULT_SIGNING_KEY, and bound to a purpose so a token made for
-// one use cannot open the other.
+// Signed tokens: the photo upload link, the result links, and the mm_look
+// cookie. Signed with RESULT_SIGNING_KEY, and bound to a purpose so a token
+// made for one use cannot open another.
 //
 //   <subject, base64url>.<expiry, Unix seconds>.<HMAC-SHA256, base64url>
 
-export type TokenPurpose = "upload" | "result";
+export type TokenPurpose = "upload" | "result" | "look";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

@@ -560,6 +560,33 @@
   gap: var(--result-gap);
   align-items: start;
 }
+/* A returning visitor's look: the result alone, in the result frame's size. */
+.solo {
+  position: relative;
+  width: 100%;
+  height: var(--result-frame-h);
+  background: var(--ink-frame);
+  overflow: hidden;
+}
+.solo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.solo .soloLabel {
+  position: absolute;
+  top: var(--sp-18);
+  right: var(--sp-18);
+  font-size: var(--fs-15);
+}
+.returningNote {
+  margin: var(--sp-18) 0 0;
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
 /* The after side while the render is still running, in the gate's colours. */
 .pending {
   position: absolute;

@@ -1,17 +1,20 @@
 // The try-on, v2's eight screens, on the API. The photograph is prepared in
 // the browser (lib/photo.ts) and uploads while the visitor chooses a stage and
 // a look; the render starts at Generate. The gate opens after 20 seconds, as
-// in v2, whether or not the render has finished: submitting it saves the lead
-// and starts the session that shows the result.
+// in v2, whether or not the render has finished. The number there is
+// optional, as its copy says: given, it saves the lead and sends a WhatsApp
+// copy; either way the result opens next. A visitor who has had their look
+// and comes back is shown it again.
 //
 // Outside production, ?state=<screen> opens a screen directly, with stand-in
 // images and no API calls, for the fidelity screenshots and the browser tests.
-// ?state=error&kind=<busy|renderFailed|lookLimit> opens the other error copy.
+// ?state=error&kind=<busy|renderFailed|lookLimit> opens the other error copy,
+// and ?state=result&kind=returning a returning visitor's look.
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { looks, notices, stageOptions, tryOn } from "../content/site.ts";
 import { track } from "../lib/analytics.ts";
-import { claimResult, fetchResult, jobStatus, type ClaimResponse } from "../lib/api.ts";
+import { claimResult, fetchLook, fetchResult, jobStatus, type ClaimResponse } from "../lib/api.ts";
 import { downloadFile } from "../lib/download.ts";
 import { ICONS } from "../lib/icons.ts";
 import { formatMobile, isCompleteMobile } from "../lib/phone.ts";
@@ -40,6 +43,13 @@ interface Props {
   mockAfter: string;
   /** Allow ?state= to open a screen directly (never in production). */
   allowStateSwitch: boolean;
+}
+
+/** The look on the result screen: its job, the gate's answer if a number was given, and whether it is a returning visitor's. */
+interface Showing {
+  readonly jobId: string;
+  readonly claim: ClaimResponse | null;
+  readonly returning: boolean;
 }
 
 /** The finished render: shown from memory, and the same file for Download and WhatsApp. */
@@ -95,7 +105,7 @@ export default function TryOn(props: Props) {
   const [gateTouched, setGateTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [gateFailure, setGateFailure] = useState<string | null>(null);
-  const [claimed, setClaimed] = useState<{ jobId: string; answer: ClaimResponse } | null>(null);
+  const [showing, setShowing] = useState<Showing | null>(null);
   const [rendered, setRendered] = useState<Rendered | null>(null);
   const [errorKind, setErrorKind] = useState<ErrorKind>("photo");
   const heading = useRef<HTMLHeadingElement>(null);
@@ -130,7 +140,9 @@ export default function TryOn(props: Props) {
     setDemo(true);
     if (found === "result" || found === "gate") setLook(0);
     if (found === "result") {
-      setMobile(tryOn.gate.mobilePlaceholder);
+      const returning = params.get("kind") === "returning";
+      if (!returning) setMobile(tryOn.gate.mobilePlaceholder);
+      setShowing({ jobId: "demo", claim: null, returning });
       setRendered({ url: props.mockAfter, file: null });
     }
     if (found === "error") setErrorKind(ERROR_KINDS.find((kind) => kind === params.get("kind")) ?? "photo");
@@ -183,12 +195,12 @@ export default function TryOn(props: Props) {
 
   // After the gate: ask for the result until it is ready, then fetch it once.
   useEffect(() => {
-    if (demo || screen !== "result" || claimed === null || rendered !== null) return;
+    if (demo || screen !== "result" || showing === null || rendered !== null) return;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const started = Date.now();
     const check = async () => {
-      const answer = await fetchResult(claimed.jobId);
+      const answer = await fetchResult(showing.jobId);
       if (stopped) return;
       if (answer.kind === "ready") {
         void loadRendered(answer.url).then((image) => {
@@ -198,7 +210,7 @@ export default function TryOn(props: Props) {
             return;
           }
           setRendered(image);
-          track({ name: "try_on_completed" });
+          if (!showing.returning) track({ name: "try_on_completed" });
         });
         return;
       }
@@ -221,7 +233,7 @@ export default function TryOn(props: Props) {
       stopped = true;
       clearTimeout(timer);
     };
-  }, [demo, screen, claimed, rendered]);
+  }, [demo, screen, showing, rendered]);
 
   // Photographs and results are shown from memory; each object URL is released when replaced.
   useEffect(
@@ -248,7 +260,7 @@ export default function TryOn(props: Props) {
     uploading.current = null;
     rendering.current = null;
     jobId.current = null;
-    setClaimed(null);
+    setShowing(null);
     setRendered(null);
     setPhoto(URL.createObjectURL(file));
     setScreen("consent");
@@ -269,8 +281,32 @@ export default function TryOn(props: Props) {
     uploading.current = upload;
     // A refusal shows at once, rather than after the visitor has chosen a look.
     void upload.then((outcome) => {
-      if (!outcome.ok && uploading.current === upload) fail(outcome);
+      if (outcome.ok || uploading.current !== upload) return;
+      if (outcome.kind === "lookLimit") void showOwnLook(outcome);
+      else fail(outcome);
     });
+  }
+
+  /** A browser that has had its look is shown it again. Only if it is gone does the error screen say so. */
+  async function showOwnLook(refusal: Failure) {
+    const answer = await fetchLook();
+    if (!answer.ok || answer.body.state === "failed") {
+      fail(refusal);
+      return;
+    }
+    const own = answer.body;
+    jobId.current = own.job_id;
+    rendering.current = Promise.resolve({ ok: true, value: own.job_id } as const);
+    setStage(
+      Math.max(
+        0,
+        stageOptions.findIndex((option) => option.id === own.stage),
+      ),
+    );
+    setLook(looks.findIndex((option) => option.id === own.preset));
+    setRendered(null);
+    setShowing({ jobId: own.job_id, claim: null, returning: true });
+    setScreen("result");
   }
 
   function generate() {
@@ -285,6 +321,7 @@ export default function TryOn(props: Props) {
     void render.then((outcome) => {
       if (rendering.current !== render) return;
       if (outcome.ok) jobId.current = outcome.value;
+      else if (outcome.kind === "lookLimit") void showOwnLook(outcome);
       else fail(outcome);
     });
   }
@@ -295,12 +332,14 @@ export default function TryOn(props: Props) {
     else setScreen(target);
   }
 
-  const nameBad = gateTouched && name.trim() === "";
-  const mobileBad = gateTouched && !isCompleteMobile(mobile);
+  // Both fields empty skips the gate; either one filled needs both.
+  const skipping = name.trim() === "" && mobile === "";
+  const nameBad = gateTouched && !skipping && name.trim() === "";
+  const mobileBad = gateTouched && !skipping && !isCompleteMobile(mobile);
   async function submitGate(event: Event) {
     event.preventDefault();
     if (sending) return;
-    if (name.trim() === "" || !isCompleteMobile(mobile)) {
+    if (!skipping && (name.trim() === "" || !isCompleteMobile(mobile))) {
       setGateTouched(true);
       return;
     }
@@ -319,6 +358,13 @@ export default function TryOn(props: Props) {
       fail(render);
       return;
     }
+    const returning = showing?.returning ?? false;
+    if (skipping) {
+      setSending(false);
+      setShowing({ jobId: render.value, claim: null, returning });
+      setScreen("result");
+      return;
+    }
     const attribution = readAttribution();
     const answer = await claimResult(
       { job_id: render.value, name: name.trim(), mobile, ...(attribution === undefined ? {} : { attribution }) },
@@ -326,7 +372,7 @@ export default function TryOn(props: Props) {
     );
     setSending(false);
     if (answer.ok) {
-      setClaimed({ jobId: render.value, answer: answer.body });
+      setShowing({ jobId: render.value, claim: answer.body, returning });
       setScreen("result");
       track({ name: "try_on_claimed" });
       return;
@@ -361,8 +407,17 @@ export default function TryOn(props: Props) {
 
   const chosenLook = looks[look] ?? looks[2];
   const errorCopy = tryOn.error.kinds[errorKind];
-  const showCopyLine = demo || claimed?.answer.whatsapp_copy === true;
+  const showCopyLine = (demo && showing?.returning !== true) || showing?.claim?.whatsapp_copy === true;
+  const returning = showing?.returning === true;
   const resultReady = rendered !== null;
+  const afterImage = resultReady ? (
+    <img src={rendered.url} alt={tryOn.result.afterAlt} />
+  ) : (
+    <div class={styles.pending}>
+      <Icon path={ICONS.sending} size={20} stroke={1.5} />
+      <span class="caps">{tryOn.result.pending}</span>
+    </div>
+  );
   const title = (text: string, className = styles.title) => (
     <h1 ref={heading} tabIndex={-1} class={className}>
       {text}
@@ -380,7 +435,9 @@ export default function TryOn(props: Props) {
             <Icon path={ICONS.back} size={17} />
             {screen === "upload" ? tryOn.backToSite : tryOn.back}
           </button>
-          <span class={`caps ${styles.stepLabel}`}>{tryOn.stepLabels[screen]}</span>
+          <span class={`caps ${styles.stepLabel}`}>
+            {screen === "error" ? errorCopy.step : tryOn.stepLabels[screen]}
+          </span>
         </div>
 
         {screen === "upload" && (
@@ -658,27 +715,27 @@ export default function TryOn(props: Props) {
 
         {screen === "result" && (
           <div class={styles.result}>
-            <BeforeAfter
-              start={50}
-              size="result"
-              beforeLabel={tryOn.result.before}
-              afterLabel={tryOn.result.after}
-              sliderLabel={tryOn.result.sliderLabel}
-              before={<img src={photo ?? props.mockBefore} alt={tryOn.result.beforeAlt} />}
-              after={
-                resultReady ? (
-                  <img src={rendered.url} alt={tryOn.result.afterAlt} />
-                ) : (
-                  <div class={styles.pending}>
-                    <Icon path={ICONS.sending} size={20} stroke={1.5} />
-                    <span class="caps">{tryOn.result.pending}</span>
-                  </div>
-                )
-              }
-            />
+            {returning ? (
+              // The photograph is not kept, so a returning visitor sees the result alone.
+              <div class={styles.solo}>
+                {afterImage}
+                <span class={`label ${styles.soloLabel}`}>{tryOn.result.after}</span>
+              </div>
+            ) : (
+              <BeforeAfter
+                start={50}
+                size="result"
+                beforeLabel={tryOn.result.before}
+                afterLabel={tryOn.result.after}
+                sliderLabel={tryOn.result.sliderLabel}
+                before={<img src={photo ?? props.mockBefore} alt={tryOn.result.beforeAlt} />}
+                after={afterImage}
+              />
+            )}
             <div>
               <div class={`caps ${styles.chosen}`}>{chosenLook?.label}</div>
-              {title(tryOn.result.title, styles.resultTitle)}
+              {title(returning ? tryOn.result.returning.title : tryOn.result.title, styles.resultTitle)}
+              {returning && <p class={styles.returningNote}>{tryOn.result.returning.note}</p>}
               <p class="visually-hidden" role="status">
                 {resultReady ? tryOn.gate.ready : tryOn.result.pending}
               </p>
@@ -725,7 +782,7 @@ export default function TryOn(props: Props) {
           <div class={styles.errorScreen}>
             <div class={styles.errorFrame}>
               <Icon path={ICONS.noPhoto} size={28} stroke={1.5} />
-              <div class="caps">{tryOn.error.frame}</div>
+              <div class="caps">{errorCopy.frame}</div>
             </div>
             {title(errorCopy.title, styles.errorTitle)}
             <p class={styles.errorBody}>{errorCopy.body}</p>

@@ -82,7 +82,7 @@ export function registerTryonUpload(app: App): void {
     }
 
     // One look per visitor: a browser whose last render did not fail gets no second photo.
-    const lastJobId = lookCookieJob(c);
+    const lastJobId = await lookCookieJob(c);
     const lastJob = lastJobId === null ? null : await loadJob(db, lastJobId);
     if (lastJob !== null && lastJob.state !== "failed") return c.json(errorBody("look_limit_reached", requestId), 403);
 

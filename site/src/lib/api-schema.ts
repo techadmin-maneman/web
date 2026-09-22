@@ -566,7 +566,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The result, for the session the gate set */
+        /** The result, for the gate's session or the browser that made the look */
         get: {
             parameters: {
                 query?: never;
@@ -596,7 +596,7 @@ export interface paths {
                         "application/json": components["schemas"]["ResultPending"];
                     };
                 };
-                /** @description session_required: no session, or not this job's */
+                /** @description session_required: neither the gate's session nor this browser's look is this job's */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -621,6 +621,51 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ResultFailed"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tryon/look": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The look this browser already has, from its mm_look cookie */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The browser's look */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Look"];
+                    };
+                };
+                /** @description not_found: this browser has no look, or its result has been deleted */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -913,6 +958,21 @@ export interface components {
             state: "failed";
             /** @enum {string} */
             failure_code: "photo_unreadable" | "photo_invalid_file" | "render_failed" | "busy";
+        };
+        Look: {
+            /** Format: uuid */
+            job_id: string;
+            /** @enum {string} */
+            state: "awaiting_upload" | "queued" | "rendering" | "downloading" | "ready" | "failed" | "expired";
+            /** @enum {string} */
+            stage: "crown" | "receding" | "advanced";
+            /** @enum {string} */
+            preset: "full-natural-short" | "full-straight-medium" | "medium-natural-short" | "medium-receded-medium" | "light-natural-short" | "light-receded-cropped";
+            /**
+             * @description Only when state is failed.
+             * @enum {string}
+             */
+            failure_code?: "photo_unreadable" | "photo_invalid_file" | "render_failed" | "busy";
         };
         ErasureResponse: {
             /** Format: uuid */

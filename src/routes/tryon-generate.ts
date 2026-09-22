@@ -146,7 +146,7 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
   }
 
   await enqueueRender(c, job.id);
-  setLookCookie(c, job.id);
+  await setLookCookie(c, job.id);
   c.var.log.info("tryon_render_queued", { job_id: job.id, endpoint: choice.endpoint, color_route: choice.colorRoute });
   return { job_id: job.id, state: "queued" };
 }

@@ -57,6 +57,10 @@ function visitor(
     dropCookies: () => {
       cookies.clear();
     },
+    cookie: (name: string) => cookies.get(name) ?? "",
+    useCookie: (name: string, value: string) => {
+      cookies.set(name, value);
+    },
     uploadLink: (body: Record<string, unknown> = {}) =>
       post("/api/tryon/upload-url", { photo_consent: true, notice_version: "photo-v1", turnstile_token: "t", ...body }),
     put: (path: string, bytes: Uint8Array, contentType = "image/jpeg") =>
@@ -408,22 +412,22 @@ describe("POST /api/tryon/claim", () => {
 });
 
 describe("results, and one look per visitor", () => {
-  it("shows the result only to the session that claimed it", async () => {
+  it("shows the result to the session that claimed it", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
     await browser.generate(jobId);
-    expect((await browser.call(`/api/tryon/result/${jobId}`)).status).toBe(403); // no session yet
-
     await browser.claim(jobId);
-    const running = await browser.call(`/api/tryon/result/${jobId}`);
+    const claimant = visitor();
+    claimant.useCookie("mm_tryon", browser.cookie("mm_tryon"));
+    const running = await claimant.call(`/api/tryon/result/${jobId}`);
     expect(running.status).toBe(202);
     expect(await running.json()).toEqual({ state: "queued" });
 
     await makeReady(jobId);
-    const ready = await browser.call(`/api/tryon/result/${jobId}`);
+    const ready = await claimant.call(`/api/tryon/result/${jobId}`);
     expect(ready.status).toBe(200);
     const { url } = await ready.json<{ url: string }>();
-    const image = await browser.call(url);
+    const image = await claimant.call(url);
     expect(image.status).toBe(200);
     expect(image.headers.get("Content-Type")).toBe("image/png");
     expect(new Uint8Array(await image.arrayBuffer()).slice(0, 4)).toEqual(Uint8Array.from([0x89, 0x50, 0x4e, 0x47]));
@@ -431,6 +435,54 @@ describe("results, and one look per visitor", () => {
     const stranger = visitor();
     await insertPerson("q", "+919810000009");
     expect((await stranger.call(`/api/tryon/result/${jobId}`)).status).toBe(403);
+  });
+
+  it("shows the result to the browser that made the look, with no number given", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    await browser.generate(jobId);
+    const running = await browser.call(`/api/tryon/result/${jobId}`);
+    expect(running.status).toBe(202);
+    await makeReady(jobId);
+    expect((await browser.call(`/api/tryon/result/${jobId}`)).status).toBe(200);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM leads").first()).toEqual({ n: 0 });
+  });
+
+  it("refuses a look cookie that is made up, stale, or names another job", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    await browser.generate(jobId);
+
+    const forger = visitor();
+    forger.useCookie("mm_look", jobId); // the bare job ID, as the cookie held before it was signed
+    expect((await forger.call(`/api/tryon/result/${jobId}`)).status).toBe(403);
+    forger.useCookie("mm_look", `${browser.cookie("mm_look")}x`);
+    expect((await forger.call(`/api/tryon/result/${jobId}`)).status).toBe(403);
+
+    const other = await visitor().uploaded();
+    expect((await browser.call(`/api/tryon/result/${other}`)).status).toBe(403);
+
+    const later = visitor({ deps: fakeDependencies({ now: () => new Date(NOW.getTime() + 31 * 24 * 3_600_000) }) });
+    later.useCookie("mm_look", browser.cookie("mm_look"));
+    expect((await later.call(`/api/tryon/result/${jobId}`)).status).toBe(403);
+  });
+
+  it("tells a browser which look it has, until the look's result is gone", async () => {
+    const browser = visitor();
+    expect((await browser.call("/api/tryon/look")).status).toBe(404);
+    const jobId = await browser.uploaded();
+    await browser.generate(jobId, { stage: "receding", preset: "light-natural-short" });
+
+    const look = await browser.call("/api/tryon/look");
+    expect(look.status).toBe(200);
+    expect(await look.json()).toEqual({
+      job_id: jobId,
+      state: "queued",
+      stage: "receding",
+      preset: "light-natural-short",
+    });
+    await setState(jobId, "expired");
+    expect((await browser.call("/api/tryon/look")).status).toBe(404);
   });
 
   it("reports a failed render with its failure code", async () => {
@@ -463,7 +515,7 @@ describe("results, and one look per visitor", () => {
     const jobId = await browser.uploaded();
     const queued = await browser.generate(jobId);
     expect(queued.headers.get("Set-Cookie")).toMatch(
-      new RegExp(`^mm_look=${jobId}; Max-Age=2592000; Path=/api/tryon; HttpOnly; Secure; SameSite=Strict$`),
+      /^mm_look=[\w-]+\.\d+\.[\w-]+; Max-Age=2592000; Path=\/api\/tryon; HttpOnly; Secure; SameSite=Strict$/,
     );
 
     const second = await browser.uploadLink();

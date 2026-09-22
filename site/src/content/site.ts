@@ -209,8 +209,8 @@ export const legalPages = {
     publish: true,
     title: "Privacy",
     paragraphs: [
-      "Mane Man Grooming Services Private Limited collects only what it needs to arrange your visit and your simulation. When you book, we keep your name, mobile number, city, preferred visit time and the extent of your hair loss, with how you reached this site. They are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM, and we use them to arrange and confirm the visit and for nothing else; we never sell them. If you use the try-on, your photograph is used only to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour; the simulation itself is kept for thirty days. If you give your number at the end of the try-on, we use it to send you the result on WhatsApp and for nothing else.",
-      "The site sets two cookies of its own, both for the try-on: one keeps your session for thirty minutes, the other remembers for thirty days that you have had your one look. We count visits with Cloudflare Web Analytics, and measure our advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse. Under India's Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased: message us on WhatsApp at +91 90079 73247 and we erase it the same day.",
+      "Mane Man Grooming Services Private Limited collects only what it needs to arrange your visit and your simulation. When you book, we keep your name, mobile number, city, preferred visit time and the extent of your hair loss, with how you reached this site. They are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM, and we use them to arrange and confirm the visit and for nothing else; we never sell them. If you use the try-on, your photograph is used only to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour; the simulation itself is kept for thirty days. Giving your number at the end of the try-on is optional; if you give it, we use it to send you the result on WhatsApp and for nothing else.",
+      "The site sets two cookies of its own, both for the try-on: one keeps your session for thirty minutes, the other remembers for thirty days that you have had your one look, so that this browser can show it to you again. We count visits with Cloudflare Web Analytics, and measure our advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse. Under India's Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased: message us on WhatsApp at +91 90079 73247 and we erase it the same day.",
     ],
   },
   // Drafted from the site's published prices, guarantee and try-on rules; the owner approved it on 22 September 2026.
@@ -743,29 +743,42 @@ export const tryOn = {
     whatsapp: "WhatsApp",
     copy: { before: "A copy is on its way to ", after: ". Deleted after thirty days." },
     fileName: "mane-man-simulation",
+    /** A visitor who has had their look, back again: the result alone, since the photograph is not kept. */
+    returning: {
+      title: "The look you had.",
+      note: "Each visitor gets one simulation, and this is yours.",
+    },
     share: "My Mane Man simulation. See yours at maneman.in/try",
   },
   error: {
-    frame: "Cannot read the photograph",
     another: "Choose another",
     book: "Book a visit instead",
-    /** By ErrorKind (lib/tryon-errors.ts). v2's heading and body are the photograph's. */
+    /** By ErrorKind (lib/tryon-errors.ts). v2's labels, heading and body are the photograph's. */
     kinds: {
       photo: {
+        step: "Cannot use this photograph",
+        frame: "Cannot read the photograph",
         title: "We cannot use this photograph.",
         body: "Either the face is turned too far, something is covering the hairline, or the frame is too dark to read. A photograph taken facing a window, straight on, works almost every time.",
       },
       renderFailed: {
+        step: "Something went wrong",
+        frame: "The simulation failed",
         title: "The simulation did not work this time.",
         body: "The photograph looked fine; the simulation failed on our side. Try again with the same photograph or another, or book a measurement and see it in person.",
       },
       busy: {
+        step: "Please try again shortly",
+        frame: "The simulation is busy",
         title: "The simulation is busy just now.",
         body: "Too many people are trying it at once, or it could not be reached. Please try again in a little while, or book a measurement and see it in person.",
       },
+      /** Only when this browser's look can no longer be shown: otherwise the page shows it again. */
       lookLimit: {
+        step: "One look per visitor",
+        frame: "Your look is no longer kept",
         title: "You have had your look.",
-        body: "Each visitor gets one simulation, and this browser has had its one. The measurement shows you the real thing, in person, and costs nothing.",
+        body: "Each visitor gets one simulation, and this browser has had its one, which is no longer kept. The measurement shows you the real thing, in person, and costs nothing.",
       },
     },
   },

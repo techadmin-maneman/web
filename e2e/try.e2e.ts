@@ -168,8 +168,16 @@ test.describe("processing", () => {
 });
 
 test.describe("gate", () => {
-  test("says what is missing, then shows the result", async ({ page }) => {
+  test("the number is optional, as its copy says: left empty, the result opens", async ({ page }) => {
     await open(page, "gate");
+    await expect(page.getByText("The result opens on the next screen either way.", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "Show me the result" }).click();
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "result");
+  });
+
+  test("a gate half filled in says what is missing, then shows the result", async ({ page }) => {
+    await open(page, "gate");
+    await page.getByLabel("Mobile").fill("98100");
     await page.getByRole("button", { name: "Show me the result" }).click();
     await expect(page.getByText("Tell us what to call you.")).toBeVisible();
     await expect(page.getByText("Enter all ten digits so we can send the result.")).toBeVisible();
@@ -216,17 +224,46 @@ test.describe("error", () => {
   });
 
   const KINDS = [
-    { kind: "renderFailed", heading: "The simulation did not work this time.", another: true },
-    { kind: "busy", heading: "The simulation is busy just now.", another: true },
-    { kind: "lookLimit", heading: "You have had your look.", another: false },
+    {
+      kind: "renderFailed",
+      step: "Something went wrong",
+      frame: "The simulation failed",
+      heading: "The simulation did not work this time.",
+      another: true,
+    },
+    {
+      kind: "busy",
+      step: "Please try again shortly",
+      frame: "The simulation is busy",
+      heading: "The simulation is busy just now.",
+      another: true,
+    },
+    {
+      kind: "lookLimit",
+      step: "One look per visitor",
+      frame: "Your look is no longer kept",
+      heading: "You have had your look.",
+      another: false,
+    },
   ];
-  for (const { kind, heading, another } of KINDS) {
-    test(`${kind} changes only the heading and body`, async ({ page }) => {
+  for (const { kind, step, frame, heading, another } of KINDS) {
+    test(`${kind} has its own labels, heading and body, and never blames the photograph`, async ({ page }) => {
       await page.goto(`/try?state=error&kind=${kind}`);
       await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-      await expect(page.getByText("Cannot read the photograph")).toBeVisible();
+      await expect(page.getByText(step, { exact: true })).toBeVisible();
+      await expect(page.getByText(frame, { exact: true })).toBeVisible();
+      await expect(page.getByText("photograph", { exact: false }).filter({ hasText: /Cannot/ })).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Book a visit instead" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(another ? 1 : 0);
     });
   }
+
+  test("a returning visitor's look: the result alone, with no slider and no copy line", async ({ page }) => {
+    await page.goto("/try?state=result&kind=returning");
+    await expect(page.getByRole("heading", { name: "The look you had." })).toBeVisible();
+    await expect(page.getByText("Each visitor gets one simulation, and this is yours.")).toBeVisible();
+    await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
+    await expect(page.getByRole("slider")).toHaveCount(0);
+    await expect(page.getByText("A copy is on its way", { exact: false })).toHaveCount(0);
+  });
 });

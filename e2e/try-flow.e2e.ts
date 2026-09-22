@@ -19,7 +19,7 @@ const JOB = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
 const MOBILE = "9810000000";
 
-type Call = "uploadUrl" | "upload" | "generate" | "status" | "claim" | "result" | "image";
+type Call = "uploadUrl" | "upload" | "generate" | "status" | "claim" | "result" | "image" | "look";
 interface Answer {
   readonly status: number;
   readonly json?: unknown;
@@ -37,6 +37,7 @@ function callOf(request: Request): Call | null {
   if (path === "/api/tryon/claim") return "claim";
   if (path.startsWith("/api/tryon/result/")) return "result";
   if (path.startsWith("/api/result/")) return "image";
+  if (path === "/api/tryon/look") return "look";
   return null;
 }
 
@@ -63,6 +64,7 @@ async function mockApi(page: Page, answers: Partial<Record<Call, Answer | Answer
       { status: 200, json: { url: "/api/result/signed", expires_at: later } },
     ],
     image: { status: 200, image: result },
+    look: { status: 404, json: { error: { code: "not_found", request_id: "test" } } },
   };
   const queues = new Map<Call, Answer[]>();
   for (const [call, answer] of Object.entries({ ...defaults, ...answers }) as [Call, Answer | Answer[]][]) {
@@ -184,6 +186,42 @@ test("a result request stuck on the way is dropped, and the next poll shows the 
   await page.getByLabel("Mobile").fill(MOBILE);
   await page.getByRole("button", { name: "Show me the result" }).click();
   await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible({ timeout: 20_000 });
+});
+
+test("the number is optional: an empty gate shows the result, and no lead is made", async ({ page }) => {
+  const seen = await mockApi(page);
+  await visit(page, "/try");
+  await throughToGenerate(page);
+  await page.clock.runFor(20_000);
+  await page.getByRole("button", { name: "Show me the result" }).click();
+  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "result");
+  await page.clock.runFor(3_000);
+  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
+  await expect(page.getByText("A copy is on its way", { exact: false })).toHaveCount(0);
+  expect(named(seen, "claim")).toHaveLength(0);
+});
+
+test("a visitor who has had their look is shown it again", async ({ page }) => {
+  const seen = await mockApi(page, {
+    uploadUrl: refusal(403, "look_limit_reached"),
+    look: { status: 200, json: { job_id: JOB, state: "ready", stage: "receding", preset: "light-natural-short" } },
+    result: {
+      status: 200,
+      json: { url: "/api/result/signed", expires_at: new Date(Date.now() + 300_000).toISOString() },
+    },
+  });
+  await visit(page, "/try");
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles(await drawnHeadPhoto());
+  await page.getByText("I understand, and I agree to my photograph being used this way.").click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "The look you had." })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
+  await expect(page.getByText("Light density · Natural hairline · short")).toBeVisible();
+  expect(named(seen, "result")[0]?.url()).toContain(`/api/tryon/result/${JOB}`);
+  expect((await analyticsEvents(page)).map(([name]) => name)).not.toContain("try_on_failed");
 });
 
 test("no WhatsApp line when messaging is off", async ({ page }) => {
