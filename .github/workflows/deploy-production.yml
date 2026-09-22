@@ -115,9 +115,11 @@ jobs:
             echo "::error::Production has never been deployed, so there is nothing to roll back to. Bootstrap it first (docs/runbook.md)."
             exit 1
           fi
-          echo "api=$api" >> "$GITHUB_OUTPUT"
-          echo "site=$site" >> "$GITHUB_OUTPUT"
-          echo "app=$app" >> "$GITHUB_OUTPUT"
+          {
+            echo "api=$api"
+            echo "site=$site"
+            echo "app=$app"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Migrate the production database
         run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply maneman-prod --env production --remote
