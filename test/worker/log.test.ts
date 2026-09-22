@@ -50,6 +50,13 @@ describe("redact", () => {
     expect(scrubString(text)).toBe(text);
   });
 
+  // About one UUID in 270 ends in ten digits starting 6-9, which read as a mobile number.
+  it("leaves an ID alone even where it reads as a mobile number", () => {
+    const id = "cb72f987-b7b9-4398-914a-9876543210d2";
+    expect(scrubString(id)).toBe(id);
+    expect(scrubString("cb72f987-b7b9-4398-914a-987654321012")).toBe("cb72f987-b7b9-4398-914a-987654321012");
+  });
+
   it("serialises errors with a scrubbed message and stack", () => {
     const error = new Error("rejected 9876543210");
     const out = redact({ error }) as { error: { name: string; message: string; stack?: string } };

@@ -42,6 +42,7 @@ GitHub gives a private repository 2,000 minutes of its runners a month. Ten jobs
 - **Every workflow chooses its runner by the repository variable `CI_RUNNER`:** "maneman" for the machine, anything else for GitHub's runners, so turning the variable off moves everything back within the free minutes' limits.
 - **The pull request checks are one job,** so a run costs one job's time on either.
 - **npm's cache is the runner's own,** on its disk between jobs. GitHub's cache, fetched over the network, took three to six minutes a run on the machine, and once stalled a run outright; GitHub's own runners keep using it.
+- **A lost reply is not a failed upload.** Cloudflare's API sometimes accepts a version upload and never answers: the request hangs about five minutes and the connection drops ("terminated"), and wrangler exits 1 although the version is on the account. Six staging deploys failed that way on 22 September 2026, from the runner and from a laptop alike. `scripts/release.ts` now asks for the version by its tag before failing, and the same for a traffic split that may already be live. Work that is the same done twice — applying the migrations that are missing, marking the database — is simply run again (`scripts/lib/cloudflare-api.ts`).
 - **Nothing about what runs changed:** every check still runs on every pull request and again before every staging deploy, and production still needs its manual start, a commit on `main`, and a successful staging deploy of that commit (`deploy-production.yml`, "commit is on main and passed staging").
 
 ## Open items

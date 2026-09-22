@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { z } from "zod";
+import { isConnectionLost } from "./lib/cloudflare-api.ts";
 import { isWorkerName, WORKERS, workerNamed, type WorkerName as Worker } from "./lib/workers.ts";
 
 type Environment = "staging" | "production";
@@ -27,6 +28,11 @@ const DeploymentStatus = z.object({
 
 /** The line wrangler writes to WRANGLER_OUTPUT_FILE_PATH after `versions upload`. */
 const UploadOutput = z.object({ type: z.literal("version-upload"), version_id: z.string() });
+
+/** What `wrangler versions list --json` prints, of which only the ID and the tag matter here. */
+const VersionList = z.array(
+  z.object({ id: z.string(), annotations: z.object({ "workers/tag": z.string().optional() }).optional() }),
+);
 
 /** Cloudflare's error code for "This Worker does not exist on your account". */
 const WORKER_NOT_FOUND = "code: 10007";
@@ -58,11 +64,26 @@ function currentVersion(worker: Worker, environment: Environment): string {
   return serving.version_id;
 }
 
+/** The newest version carrying this tag, or null where the upload really did not land. */
+function versionTagged(worker: Worker, environment: Environment, tag: string): string | null {
+  const versions = VersionList.parse(JSON.parse(wrangler(worker, environment, ["versions", "list", "--json"])));
+  const tagged = versions.filter((version) => version.annotations?.["workers/tag"] === tag);
+  return tagged.at(-1)?.id ?? null;
+}
+
 function uploadVersion(worker: Worker, environment: Environment, tag: string, message: string): string {
   const outputFile = join(mkdtempSync(join(tmpdir(), "wrangler-")), "output.ndjson");
-  wrangler(worker, environment, ["versions", "upload", "--tag", tag, "--message", message], {
-    WRANGLER_OUTPUT_FILE_PATH: outputFile,
-  });
+  try {
+    wrangler(worker, environment, ["versions", "upload", "--tag", tag, "--message", message], {
+      WRANGLER_OUTPUT_FILE_PATH: outputFile,
+    });
+  } catch (error) {
+    if (!isConnectionLost(error)) throw error;
+    const uploaded = versionTagged(worker, environment, tag);
+    if (uploaded === null) throw error;
+    console.error(`${worker} ${environment}: Cloudflare's reply was lost; the upload is on the account`);
+    return uploaded;
+  }
 
   for (const line of readFileSync(outputFile, "utf8").split("\n")) {
     if (line.trim() === "") continue;
@@ -78,7 +99,14 @@ function deploySplit(worker: Worker, environment: Environment, splits: string[],
   if (splits.length === 0 || !valid || total !== 100) {
     throw new Error(`--split must be <version-id>@<percent>, totalling 100; got: ${splits.join(" ")}`);
   }
-  wrangler(worker, environment, ["versions", "deploy", ...splits, "--yes", "--message", message]);
+  try {
+    wrangler(worker, environment, ["versions", "deploy", ...splits, "--yes", "--message", message]);
+  } catch (error) {
+    // The same lost reply: the split may already be live, so ask what is serving before failing.
+    const wanted = splits.length === 1 ? (splits[0]?.split("@")[0] ?? "") : "";
+    if (!isConnectionLost(error) || wanted === "" || currentVersion(worker, environment) !== wanted) throw error;
+    console.error(`${worker} ${environment}: Cloudflare's reply was lost; the version is already serving`);
+  }
   console.error(`${worker} ${environment}: ${splits.join(", ")}`);
 }
 
