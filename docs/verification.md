@@ -265,3 +265,12 @@ The owner supplied a straight-on portrait for this run. It is not kept in the re
 - [x] **The gate was submitted before the render finished.** The claim returned at 26.6 s with the job `rendering`.
 - [ ] **The result was shown as soon as it was ready.** Not in the first run. The render was ready about 31 s in, but the page showed it only at 92.8 s. A second run showed it at 44.5 s, with a poll every 3.6 s, each answered in about 0.2 s. In the first run, the result requests between 27 s and 86 s got no answer at all. The backend recorded nothing unusual, so a request was most likely stuck in transit, and it held up every poll after it. **Fixed:** each poll now gives up after 10 s and the next one goes out. `e2e/try-flow.e2e.ts` › "a result request stuck on the way" fails without the fix.
 - **The hair colour read as `unknown`,** and the backend rendered it black, which suits the photograph. The detector is the harness's, and the reason is recorded in ADR 0022, 31.
+
+### The owner's review, on staging, 22 September 2026
+
+Staging ran `5e82022` (PR #20). This used one real render of the owner's portrait, on the same phone profile and Slow 4G.
+
+- [x] **The number is optional.** At the gate the number was left out. The result showed at 49.4 s, and the page made no claim, so there was no lead and no message.
+- [x] **The look is shown again.** Back on `/try` in the same browser, a second photograph was refused (`403 look_limit_reached`). The page asked `GET /api/tryon/look` (200) and showed the first look within 7 s, under "The look you had.", with its label "Full density · Natural hairline · short". There was no second render.
+- [x] **Layouts.** The Norwood scale and How it works render as ADR 0022, 34 and 35 describe (`docs/fidelity/`).
+- [x] **Leads reach the CRM.** Every staging lead, from bookings and try-on claims alike, synced to the Zoho test org on its first attempt, about 10 s after it was made. Each created a new record (`lead_synced`, `created: true`).
