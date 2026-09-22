@@ -16,6 +16,8 @@ import { registerCities } from "./routes/cities.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
 import { registerClientProfile } from "./routes/client-profile.ts";
+import { registerClientPayments } from "./routes/client-payments.ts";
+import { registerClientVisits } from "./routes/client-visits.ts";
 import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerFsmHook } from "./routes/fsm-hook.ts";
@@ -72,7 +74,14 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerFsmHook,
     registerRazorpayHook,
   ],
-  client: [registerHealth, registerClientAuth, registerClientMe, registerClientProfile],
+  client: [
+    registerHealth,
+    registerClientAuth,
+    registerClientMe,
+    registerClientProfile,
+    registerClientVisits,
+    registerClientPayments,
+  ],
   ops: [registerHealth, registerOpsProfile],
   tech: [registerHealth],
 };

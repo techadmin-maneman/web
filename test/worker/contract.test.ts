@@ -25,13 +25,14 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
     expect(renderApiMarkdown(buildOpenApiDocument(surface))).toBe(markdown.replace(/\r\n/g, "\n"));
   });
 
-  it("documents every GET response with a JSON schema, or as an image", () => {
+  it("documents every GET response with a JSON schema, or as an image or a PDF", () => {
     const generated = buildOpenApiDocument(surface);
     for (const [path, item] of Object.entries(generated.paths ?? {})) {
       for (const [status, response] of Object.entries(item.get?.responses ?? {}) as [string, unknown][]) {
         const types = Object.keys((response as { content?: Record<string, unknown> }).content ?? {});
-        const isImage = types.length > 0 && types.every((type) => type.startsWith("image/"));
-        if (!isImage) expect(readResponse(response).jsonSchema, `${path} ${status}`).toBeDefined();
+        const isFile =
+          types.length > 0 && types.every((type) => type.startsWith("image/") || type === "application/pdf");
+        if (!isFile) expect(readResponse(response).jsonSchema, `${path} ${status}`).toBeDefined();
       }
     }
     expect(Object.keys(generated.components?.schemas ?? {})).toEqual(

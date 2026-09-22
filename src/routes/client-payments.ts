@@ -1,0 +1,256 @@
+// The client app's payments and documents (docs/prompts/phase2-backend.md,
+// "Read endpoints"), from the payments mirror (docs/decisions/0044-payments-mirror.md)
+// and Zoho Books (docs/decisions/0032-fsm-mirror.md).
+//
+//   GET /api/payments          one list of payments and refunds, newest first
+//   GET /api/payments/:id      one entry: a payment with its documents, or a refund with its destination
+//   GET /api/documents/:id     a visit's invoice, as a PDF from Books
+//
+// Amounts are in paise, as Razorpay charged them, GST included; each carries
+// its ex-GST part, which the app shows as the main figure. A failed attempt is
+// not a payment and is left out. Charges arrive with booking (P2-M5).
+
+import { createRoute, z } from "@hono/zod-openapi";
+import type { App } from "../app.ts";
+import { exGst, GST_PERCENT } from "../config/gst.ts";
+import { VISIT_TYPES } from "../config/visit-types.ts";
+import { requireClientSession } from "../http/client-session.ts";
+import { errorBody, errorResponse } from "../http/errors.ts";
+import { indiaDate } from "../lib/india-time.ts";
+
+const VisitRefSchema = z
+  .union([
+    z.object({ id: z.uuid(), date: z.iso.date(), type: z.union([z.enum(VISIT_TYPES), z.null()]) }).strict(),
+    z.null(),
+  ])
+  .openapi({ description: "The visit it paid for, when known." });
+
+const money = {
+  date: z.iso.date().openapi({ description: "India's calendar date it was made." }),
+  amount: z.number().int().openapi({ description: "In paise, GST included." }),
+  amount_ex_gst: z.number().int().openapi({ description: "In paise, before GST: the main figure." }),
+  gst_percent: z.number().openapi({ description: "The GST rate the amount includes." }),
+  visit: VisitRefSchema,
+};
+
+const PaymentEntrySchema = z
+  .object({
+    kind: z.literal("payment"),
+    id: z.uuid(),
+    ...money,
+    status: z.enum(["authorized", "captured", "refunded", "partially_refunded"]),
+    method: z.union([z.string(), z.null()]).openapi({ description: "upi, card, netbanking and so on." }),
+    reference: z.union([z.string(), z.null()]).openapi({ description: "Ours, e.g. MM-2026-0841, once captured." }),
+    refunded_amount: z.number().int().openapi({ description: "In paise: refunds Razorpay has processed." }),
+  })
+  .strict()
+  .openapi("PaymentEntry");
+
+const RefundEntrySchema = z
+  .object({
+    kind: z.literal("refund"),
+    id: z.uuid(),
+    payment_id: z.uuid(),
+    ...money,
+    status: z.enum(["created", "processed", "failed"]),
+    destination: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "Where the money goes back to: the payment's method." }),
+    speed: z.union([z.string(), z.null()]).openapi({ description: "normal (5 to 7 working days) or instant." }),
+  })
+  .strict()
+  .openapi("RefundEntry");
+
+const EntrySchema = z.discriminatedUnion("kind", [PaymentEntrySchema, RefundEntrySchema]);
+
+const PaymentDetailSchema = PaymentEntrySchema.extend({
+  documents: z
+    .object({
+      invoice: z
+        .union([z.uuid(), z.null()])
+        .openapi({ description: "The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it." }),
+      receipt: z.null().openapi({
+        description: "The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3).",
+      }),
+    })
+    .strict(),
+}).openapi("PaymentDetail");
+
+const RefundDetailSchema = RefundEntrySchema.extend({
+  voucher: z
+    .null()
+    .openapi({ description: "The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3)." }),
+}).openapi("RefundDetail");
+
+const paymentsRoute = createRoute({
+  method: "get",
+  path: "/api/payments",
+  summary: "The client's payments and refunds, newest first",
+  responses: {
+    200: {
+      description: "One list of payments and refunds",
+      content: { "application/json": { schema: z.object({ entries: z.array(EntrySchema) }).strict() } },
+    },
+    401: errorResponse("session_required"),
+  },
+});
+
+const entryRoute = createRoute({
+  method: "get",
+  path: "/api/payments/{id}",
+  summary: "One of the client's entries: a payment with its documents, or a refund",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: {
+      description: "The entry",
+      content: {
+        "application/json": { schema: z.discriminatedUnion("kind", [PaymentDetailSchema, RefundDetailSchema]) },
+      },
+    },
+    401: errorResponse("session_required"),
+    404: errorResponse("not_found: no such payment or refund of this client's"),
+  },
+});
+
+const documentRoute = createRoute({
+  method: "get",
+  path: "/api/documents/{id}",
+  summary: "A visit's invoice, as a PDF from Books",
+  request: { params: z.object({ id: z.uuid().openapi({ description: "The visit's ID." }) }) },
+  responses: {
+    200: { description: "The PDF", content: { "application/pdf": { schema: z.string() } } },
+    401: errorResponse("session_required"),
+    404: errorResponse("not_found: no such visit of this client's"),
+    409: errorResponse('not_ready: Books has not raised the invoice yet; the app shows "Document unavailable"'),
+  },
+});
+
+interface VisitColumns {
+  appointment_id: string | null;
+  window_start: string | null;
+  type: (typeof VISIT_TYPES)[number] | null;
+}
+
+interface PaymentRow extends VisitColumns {
+  id: string;
+  reference: string | null;
+  created_at: string;
+  amount: number;
+  refunded_amount: number;
+  status: "authorized" | "captured" | "refunded" | "partially_refunded";
+  method: string | null;
+  fsm_invoice_id: string | null;
+}
+
+interface RefundRow extends VisitColumns {
+  id: string;
+  payment_id: string;
+  created_at: string;
+  amount: number;
+  status: "created" | "processed" | "failed";
+  speed: string | null;
+  method: string | null;
+}
+
+const VISIT_JOIN = `LEFT JOIN appointments a ON a.id = p.appointment_id AND a.deleted_at IS NULL`;
+
+const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.refunded_amount, p.status, p.method,
+    a.id AS appointment_id, a.window_start, a.type, a.fsm_invoice_id
+  FROM payments p ${VISIT_JOIN}
+  WHERE p.person_id = ?1 AND p.status != 'failed'`;
+
+const REFUND_QUERY = `SELECT r.id, r.payment_id, r.created_at, r.amount, r.status, r.speed, p.method,
+    a.id AS appointment_id, a.window_start, a.type
+  FROM refunds r JOIN payments p ON p.id = r.payment_id ${VISIT_JOIN}
+  WHERE p.person_id = ?1`;
+
+function moneyOf(row: VisitColumns & { created_at: string; amount: number }) {
+  return {
+    date: indiaDate(new Date(row.created_at)),
+    amount: row.amount,
+    amount_ex_gst: exGst(row.amount),
+    gst_percent: GST_PERCENT,
+    visit:
+      row.appointment_id === null || row.window_start === null
+        ? null
+        : { id: row.appointment_id, date: indiaDate(new Date(row.window_start)), type: row.type },
+  };
+}
+
+const paymentOf = (row: PaymentRow) => ({
+  kind: "payment" as const,
+  id: row.id,
+  ...moneyOf(row),
+  status: row.status,
+  method: row.method,
+  reference: row.reference,
+  refunded_amount: row.refunded_amount,
+});
+
+const refundOf = (row: RefundRow) => ({
+  kind: "refund" as const,
+  id: row.id,
+  payment_id: row.payment_id,
+  ...moneyOf(row),
+  status: row.status,
+  destination: row.method,
+  speed: row.speed,
+});
+
+export function registerClientPayments(app: App): void {
+  for (const path of ["/api/payments", "/api/payments/*", "/api/documents/*"]) {
+    app.use(path, requireClientSession);
+  }
+
+  app.openapi(paymentsRoute, async (c) => {
+    const session = c.var.clientSession;
+    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const db = c.env.DB;
+    const [payments, refunds] = await Promise.all([
+      db.prepare(PAYMENT_QUERY).bind(session.subjectId).all<PaymentRow>(),
+      db.prepare(REFUND_QUERY).bind(session.subjectId).all<RefundRow>(),
+    ]);
+    const entries = [
+      ...payments.results.map((row) => ({ at: row.created_at, entry: paymentOf(row) })),
+      ...refunds.results.map((row) => ({ at: row.created_at, entry: refundOf(row) })),
+    ]
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .map(({ entry }) => entry);
+    return c.json({ entries }, 200);
+  });
+
+  app.openapi(entryRoute, async (c) => {
+    const session = c.var.clientSession;
+    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const db = c.env.DB;
+    const id = c.req.valid("param").id;
+    const payment = await db.prepare(`${PAYMENT_QUERY} AND p.id = ?2`).bind(session.subjectId, id).first<PaymentRow>();
+    if (payment !== null) {
+      const invoice = payment.fsm_invoice_id === null ? null : payment.appointment_id;
+      return c.json({ ...paymentOf(payment), documents: { invoice, receipt: null } }, 200);
+    }
+    const refund = await db.prepare(`${REFUND_QUERY} AND r.id = ?2`).bind(session.subjectId, id).first<RefundRow>();
+    if (refund === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    return c.json({ ...refundOf(refund), voucher: null }, 200);
+  });
+
+  app.openapi(documentRoute, async (c) => {
+    const session = c.var.clientSession;
+    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const visit = await c.env.DB.prepare(
+      "SELECT fsm_invoice_id FROM appointments WHERE id = ?1 AND person_id = ?2 AND deleted_at IS NULL",
+    )
+      .bind(c.req.valid("param").id, session.subjectId)
+      .first<{ fsm_invoice_id: string | null }>();
+    if (visit === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    const pdf = visit.fsm_invoice_id === null ? null : await c.var.deps.books.invoicePdf(visit.fsm_invoice_id);
+    if (pdf === null) return c.json(errorBody("not_ready", c.var.requestId), 409);
+    return new Response(pdf.body, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": 'inline; filename="invoice.pdf"',
+        "Cache-Control": "private, no-store",
+      },
+    });
+  });
+}

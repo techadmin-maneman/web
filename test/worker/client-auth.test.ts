@@ -307,6 +307,9 @@ describe("the session", () => {
       first_name: "Arjun",
       initials: "AM",
       consultation: { date: "2026-09-24", window_label: "after four", place: "Gurgaon" },
+      next_visit: null,
+      credits: null,
+      prompt: null,
     });
   });
 

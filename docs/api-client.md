@@ -533,6 +533,242 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
 }
 ```
 
+### GET /api/visits
+
+The client's visits, upcoming and past
+
+**200**: Upcoming soonest first; past newest first
+
+```json
+{
+  "$ref": "#/components/schemas/Visits"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/visits/{id}
+
+One of the client's visits, with its photographs
+
+**200**: The visit
+
+```json
+{
+  "$ref": "#/components/schemas/VisitDetail"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/photos
+
+The client's photographs, by visit, newest first
+
+**200**: Visits that have photographs
+
+```json
+{
+  "$ref": "#/components/schemas/PhotoTimeline"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/photos/compare
+
+One angle from two of the client's visits, to compare
+
+**200**: Both photographs, or null where a visit has none of that angle
+
+```json
+{
+  "$ref": "#/components/schemas/PhotoCompare"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: a visit that is not this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/photos/file/{token}
+
+A photograph, through a link that lasts 15 minutes
+
+**200**: The image
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the link is wrong, expired, or not this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/payments
+
+The client's payments and refunds, newest first
+
+**200**: One list of payments and refunds
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PaymentEntry"
+          },
+          {
+            "$ref": "#/components/schemas/RefundEntry"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "payment": "#/components/schemas/PaymentEntry",
+            "refund": "#/components/schemas/RefundEntry"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "entries"
+  ],
+  "additionalProperties": false
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/payments/{id}
+
+One of the client's entries: a payment with its documents, or a refund
+
+**200**: The entry
+
+```json
+{
+  "oneOf": [
+    {
+      "$ref": "#/components/schemas/PaymentDetail"
+    },
+    {
+      "$ref": "#/components/schemas/RefundDetail"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "kind",
+    "mapping": {
+      "payment": "#/components/schemas/PaymentDetail",
+      "refund": "#/components/schemas/RefundDetail"
+    }
+  }
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such payment or refund of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/documents/{id}
+
+A visit's invoice, as a PDF from Books
+
+**200**: The PDF
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_ready: Books has not raised the invoice yet; the app shows "Document unavailable"
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -812,6 +1048,7 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
     "state": {
       "type": "string",
       "enum": [
+        "fitted",
         "lead",
         "nothing_booked"
       ]
@@ -854,7 +1091,26 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
         "place"
       ],
       "additionalProperties": false,
-      "description": "The booked consultation: its proposed date and window, to be confirmed on WhatsApp."
+      "description": "A Phase 1 booking's proposed consultation, to be confirmed on WhatsApp. Null once the mirror has the visit."
+    },
+    "next_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/VisitSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The next visit that has not happened, from FSM: a consultation for a lead."
+    },
+    "credits": {
+      "type": "null",
+      "description": "The credit tile: balance and earliest expiry. Arrives with the credit ledger (P2-M3)."
+    },
+    "prompt": {
+      "type": "null",
+      "description": "The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4)."
     }
   },
   "required": [
@@ -862,9 +1118,127 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
     "name",
     "first_name",
     "initials",
-    "consultation"
+    "consultation",
+    "next_visit",
+    "credits",
+    "prompt"
   ],
   "additionalProperties": false
+}
+```
+
+### VisitSummary
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date."
+    },
+    "window_label": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ends_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "length_minutes": {
+      "type": "integer"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "dispatched",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "terminated",
+        "other"
+      ]
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Technician"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "place": {
+      "type": "string",
+      "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "window_label",
+    "starts_at",
+    "ends_at",
+    "length_minutes",
+    "type",
+    "status",
+    "technician",
+    "place"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Technician
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "initials": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "initials"
+  ],
+  "additionalProperties": false,
+  "description": "Display name and initials only."
 }
 ```
 
@@ -1127,5 +1501,657 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
     "code"
   ],
   "additionalProperties": false
+}
+```
+
+### Visits
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "upcoming": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/VisitSummary"
+      }
+    },
+    "past": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/VisitSummary"
+      }
+    }
+  },
+  "required": [
+    "upcoming",
+    "past"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitDetail
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/VisitSummary"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "duration_minutes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "From start to finish, once done."
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "done",
+                "partial"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "what_was_done": {
+          "type": "null",
+          "description": "What the technician did, from the job sheet (P2-M4)."
+        },
+        "photos": {
+          "$ref": "#/components/schemas/PhotoSet"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The visit's invoice, for GET /api/documents/{id}, once Books has raised it."
+        }
+      },
+      "required": [
+        "duration_minutes",
+        "outcome",
+        "what_was_done",
+        "photos",
+        "document_id"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
+```
+
+### PhotoSet
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "before": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/PhotoLink"
+      }
+    },
+    "after": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/PhotoLink"
+      }
+    }
+  },
+  "required": [
+    "before",
+    "after"
+  ],
+  "additionalProperties": false,
+  "description": "Each angle in the order front, top, left, right, hair; missing angles left out."
+}
+```
+
+### PhotoLink
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "angle": {
+      "type": "string",
+      "enum": [
+        "front",
+        "top",
+        "left",
+        "right",
+        "hair"
+      ]
+    },
+    "url": {
+      "type": "string",
+      "description": "Lasts 15 minutes; only the signed-in client can open it."
+    },
+    "width": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "height": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "angle",
+    "url",
+    "width",
+    "height"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PhotoTimeline
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "visit_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photos": {
+            "$ref": "#/components/schemas/PhotoSet"
+          }
+        },
+        "required": [
+          "visit_id",
+          "date",
+          "type",
+          "photos"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "visits"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PhotoCompare
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "angle": {
+      "type": "string",
+      "enum": [
+        "front",
+        "top",
+        "left",
+        "right",
+        "hair"
+      ]
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "before",
+        "after"
+      ]
+    },
+    "from": {
+      "type": "object",
+      "properties": {
+        "visit_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "photo": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/PhotoLink"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "visit_id",
+        "date",
+        "photo"
+      ],
+      "additionalProperties": false
+    },
+    "to": {
+      "type": "object",
+      "properties": {
+        "visit_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "photo": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/PhotoLink"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "visit_id",
+        "date",
+        "photo"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "angle",
+    "phase",
+    "from",
+    "to"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentEntry
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "payment"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date it was made."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "gst_percent": {
+      "type": "number",
+      "description": "The GST rate the amount includes."
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for, when known."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "authorized",
+        "captured",
+        "refunded",
+        "partially_refunded"
+      ]
+    },
+    "method": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "upi, card, netbanking and so on."
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Ours, e.g. MM-2026-0841, once captured."
+    },
+    "refunded_amount": {
+      "type": "integer",
+      "description": "In paise: refunds Razorpay has processed."
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "date",
+    "amount",
+    "amount_ex_gst",
+    "gst_percent",
+    "visit",
+    "status",
+    "method",
+    "reference",
+    "refunded_amount"
+  ],
+  "additionalProperties": false
+}
+```
+
+### RefundEntry
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "refund"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "payment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date it was made."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "gst_percent": {
+      "type": "number",
+      "description": "The GST rate the amount includes."
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for, when known."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "processed",
+        "failed"
+      ]
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where the money goes back to: the payment's method."
+    },
+    "speed": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "normal (5 to 7 working days) or instant."
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "payment_id",
+    "date",
+    "amount",
+    "amount_ex_gst",
+    "gst_percent",
+    "visit",
+    "status",
+    "destination",
+    "speed"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentDetail
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/PaymentEntry"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "documents": {
+          "type": "object",
+          "properties": {
+            "invoice": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it."
+            },
+            "receipt": {
+              "type": "null",
+              "description": "The receipt voucher; arrives with the invoicing route (docs/open-points.md, item 3)."
+            }
+          },
+          "required": [
+            "invoice",
+            "receipt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "documents"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
+```
+
+### RefundDetail
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/RefundEntry"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "voucher": {
+          "type": "null",
+          "description": "The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3)."
+        }
+      },
+      "required": [
+        "voucher"
+      ],
+      "additionalProperties": false
+    }
+  ]
 }
 ```
