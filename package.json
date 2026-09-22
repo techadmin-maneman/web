@@ -1,7 +1,7 @@
 {
   "name": "maneman-web",
   "private": true,
-  "description": "Mane Man Phase 1 backend: the mm-api Worker, the mm-site placeholder, migrations and pipeline.",
+  "description": "Mane Man web: the mm-api Worker, the mm-site public site, and the Phase 2 surfaces, with migrations and pipeline.",
   "type": "module",
   "engines": {
     "node": ">=24.11.0"

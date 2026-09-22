@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#CFCABE; color:#1A1714; font-family:'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  * { box-sizing:border-box; }
+  .mm-4up { display:grid; grid-template-columns:1fr; }
+  @media (min-width:560px) { .mm-4up { grid-template-columns:repeat(2,1fr); } }
+  @media (min-width:1100px) { .mm-4up { grid-template-columns:repeat(4,1fr); } }
+</style>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#16233A"/><text x="256" y="300" font-family="Georgia, serif" font-size="150" fill="#C9A363" text-anchor="middle">M</text><rect x="156" y="340" width="200" height="5" fill="#C9A363"/></svg></template>
+</helmet>
+
+<div style="padding:56px 48px 120px;">
+
+  <div style="max-width:900px; margin:0 0 56px;">
+    <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.16em; font-size:16px; color:#4A453C;">Mane Man · Phase 2 · 2 of 4</div>
+    <h1 style="margin:16px 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:56px; line-height:1.02; letter-spacing:-0.015em;">Referral card, landing page, waitlist</h1>
+    <p style="margin:22px 0 0; font-size:19px; line-height:1.7; color:#1A1714; text-wrap:pretty;">What the referred friend sees. He has not heard of Mane Man; Rohit sent him a link.</p>
+  </div>
+
+  <!-- ========== A · THE CARD ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">A</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">The card · 1200 × 630</h2>
+    <span style="font-size:15px; color:#4A453C;">The image outlives the message. No name on it, no copy.</span>
+  </div>
+  <div style="display:flex; gap:40px; flex-wrap:wrap; margin-bottom:48px;">
+
+    <div>
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">A1 · Personal · at half size</div>
+      <div data-screen-label="Card · personal" style="width:600px; height:315px; overflow:hidden; border:1px solid #CEC6B4;">
+        <div style="width:1200px; height:630px; transform:scale(0.5); transform-origin:top left; background:#16233A; display:flex; position:relative;">
+          <div style="flex:1; overflow:hidden;"><img src="assets/ba-before.jpg" alt="Before" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+          <div style="width:2px; background:#C9A363;"></div>
+          <div style="flex:1; overflow:hidden;"><img src="assets/ba-after.jpg" alt="After" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+          <div style="position:absolute; right:40px; bottom:34px; display:flex; align-items:center; gap:18px;">
+            <svg viewBox="0 0 200 217.4" width="44" height="48" fill="#C9A363"><use href="#mm"></use></svg>
+            <svg viewBox="-3 -3 638 106" width="140" height="23" fill="#E9E4D8"><use href="#wms"></use></svg>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px; max-width:600px; font-size:15px; line-height:1.65; color:#3A352E;">Same crop, same distance, same light on both halves. One gold rule down the middle. No arrow, no labels, no word about transformation.</div>
+    </div>
+
+    <div>
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">A2 · House sample</div>
+      <div data-screen-label="Card · house" style="width:600px; height:315px; overflow:hidden; border:1px solid #CEC6B4;">
+        <div style="width:1200px; height:630px; transform:scale(0.5); transform-origin:top left; background:#16233A; display:flex; position:relative;">
+          <div style="flex:1; overflow:hidden;"><img src="assets/hair-texture.jpg" alt="House sample, before" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+          <div style="width:2px; background:#C9A363;"></div>
+          <div style="flex:1; overflow:hidden;"><img src="assets/membrane-on-skin.jpg" alt="House sample, after" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+          <div style="position:absolute; right:40px; bottom:34px; display:flex; align-items:center; gap:18px;">
+            <svg viewBox="0 0 200 217.4" width="44" height="48" fill="#C9A363"><use href="#mm"></use></svg>
+            <svg viewBox="-3 -3 638 106" width="140" height="23" fill="#E9E4D8"><use href="#wms"></use></svg>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px; max-width:600px; font-size:15px; line-height:1.65; color:#3A352E;">Identical layout. Shown without consent, or after a revoke. Placeholder images.</div>
+    </div>
+
+  </div>
+
+  <!-- ========== B · IN THE CHAT ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">B</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">In the chat</h2>
+    <span style="font-size:15px; color:#4A453C;">Android crops to 4:1, iOS does not. Both shown.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">B1 · Android</div>
+      <div data-screen-label="Chat · Android" style="width:390px; background:#0D1418; padding:24px 16px;">
+        <div style="max-width:320px; background:#005C4B; padding:7px; margin-left:auto;">
+          <div style="background:#025144;">
+            <div style="height:88px; overflow:hidden; display:flex;">
+              <div style="flex:1; overflow:hidden;"><img src="assets/ba-before.jpg" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+              <div style="width:1px; background:#C9A363;"></div>
+              <div style="flex:1; overflow:hidden;"><img src="assets/ba-after.jpg" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+            </div>
+            <div style="padding:9px 11px;">
+              <div style="font-size:14px; color:#E9EDEF; line-height:1.35;">Rohit sent you a Mane Man invite</div>
+              <div style="font-size:13px; color:#8696A0; margin-top:4px; line-height:1.4;">Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.</div>
+              <div style="font-size:13px; color:#8696A0; margin-top:5px;">maneman.in</div>
+            </div>
+          </div>
+          <div style="padding:8px 5px 2px; font-size:15px; color:#E9EDEF; line-height:1.5;">Had mine fitted at home by these people. Worth a look — maneman.in/r/RM4417</div>
+          <div style="padding:0 5px 3px; display:flex; justify-content:flex-end; gap:5px; align-items:center;">
+            <span style="font-size:13px; color:#8696A0; font-variant-numeric:tabular-nums;">10:31</span>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#53BDEB" stroke-width="2" stroke-linecap="round"><path d="M2 13 L6 17 L13 7 M10 13 L13 16 L21 6"></path></svg>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">Android crops to a wide strip. The rule runs full height, so it survives.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">B2 · iOS</div>
+      <div data-screen-label="Chat · iOS" style="width:390px; background:#FFFFFF; padding:24px 16px;">
+        <div style="max-width:320px; background:#DCF8C6; padding:0; margin-left:auto; overflow:hidden;">
+          <div style="aspect-ratio:1200/630; overflow:hidden; display:flex;">
+            <div style="flex:1; overflow:hidden;"><img src="assets/ba-before.jpg" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+            <div style="width:1px; background:#C9A363;"></div>
+            <div style="flex:1; overflow:hidden;"><img src="assets/ba-after.jpg" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+          </div>
+          <div style="padding:9px 11px; background:#F0F8E4;">
+            <div style="font-size:13px; color:#5F5851;">maneman.in</div>
+            <div style="font-size:14px; color:#1A1714; margin-top:4px; line-height:1.35;">Rohit sent you a Mane Man invite</div>
+            <div style="font-size:13px; color:#5F5851; margin-top:4px; line-height:1.4;">Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.</div>
+          </div>
+          <div style="padding:8px 11px 4px; font-size:15px; color:#1A1714; line-height:1.5;">Had mine fitted at home by these people. Worth a look — maneman.in/r/RM4417</div>
+          <div style="padding:0 11px 7px; display:flex; justify-content:flex-end; gap:5px; align-items:center;">
+            <span style="font-size:13px; color:#5F5851; font-variant-numeric:tabular-nums;">10:31</span>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#34B7F1" stroke-width="2" stroke-linecap="round"><path d="M2 13 L6 17 L13 7 M10 13 L13 16 L21 6"></path></svg>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:14px; line-height:1.6; color:#3A352E;">iOS shows the full 1200 × 630, domain above the title.</div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">B3 · Messages from us</div>
+      <div data-screen-label="WhatsApp messages" style="width:390px; background:#0D1418; padding:22px 16px; display:flex; flex-direction:column; gap:18px;">
+        <sc-for list="{{ waMessages }}" as="m" hint-placeholder-count="3">
+          <div>
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:13px; color:#8696A0; margin-bottom:8px;">{{ m.label }}</div>
+            <div style="max-width:310px; background:#1F2C33; padding:8px 11px;">
+              <div style="display:flex; align-items:center; gap:7px; padding-bottom:7px; border-bottom:1px solid #2A3942;">
+                <svg viewBox="0 0 200 217.4" width="13" height="14" fill="#C9A363"><use href="#mm"></use></svg>
+                <span style="font-size:13px; color:#C9A363;">Mane Man</span>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#53BDEB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 L14.5 6 H18 V9.5 L20.5 12 L18 14.5 V18 H14.5 L12 20.5 L9.5 18 H6 V14.5 L3.5 12 L6 9.5 V6 H9.5 Z M9 12 L11 14 L15 9.5"></path></svg>
+              </div>
+              <div style="padding-top:8px; font-size:15px; color:#E9EDEF; line-height:1.5; white-space:pre-line;">{{ m.body }}</div>
+              <div style="display:flex; justify-content:flex-end; padding-top:4px;"><span style="font-size:13px; color:#8696A0; font-variant-numeric:tabular-nums;">{{ m.time }}</span></div>
+            </div>
+            <div style="margin-top:7px; font-size:13px; color:#8696A0; font-variant-numeric:tabular-nums;">{{ m.count }} characters</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== C · LANDING · MOBILE ========== -->
+  <div style="margin-bottom:24px; display:flex; align-items:baseline; gap:18px;">
+    <span style="font-family:'EB Garamond',serif; font-size:17px; color:#4A453C;">C</span>
+    <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:34px; letter-spacing:-0.01em;">maneman.in/r/RM4417 · mobile</h2>
+    <span style="font-size:15px; color:#4A453C;">One pincode field decides what follows.</span>
+  </div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:40px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C1 · Arrival</div>
+      <div data-screen-label="Landing · arrival" style="width:390px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:56px; flex-shrink:0; background:#16233A; display:flex; align-items:center; justify-content:space-between; padding:0 20px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <svg viewBox="0 0 200 217.4" width="28" height="30" fill="#C9A363"><use href="#mm"></use></svg>
+            <svg viewBox="-3 -3 638 106" width="82" height="14" fill="#E9E4D8"><use href="#wms"></use></svg>
+          </div>
+          <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#8C96A8;">Gurgaon</span>
+        </div>
+        <div style="padding:26px 20px 0;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Rohit sent you this</div>
+          <div style="margin-top:14px; background:#16233A; display:flex; position:relative; aspect-ratio:1200/630;">
+            <div style="flex:1; overflow:hidden;"><img src="assets/ba-before.jpg" alt="Before" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+            <div style="width:1px; background:#C9A363;"></div>
+            <div style="flex:1; overflow:hidden;"><img src="assets/ba-after.jpg" alt="After" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+          </div>
+          <h1 style="margin:26px 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:36px; line-height:1.08; letter-spacing:-0.01em;">Hair, fitted at your home in Gurgaon.</h1>
+          <p style="margin:16px 0 0; font-size:17px; line-height:1.65; color:#1A1714;">Get fitted and you both get 3 service visits free.</p>
+        </div>
+        <div style="margin-top:26px; padding:0 20px;">
+          <div style="border-top:1px solid #1A1714;">
+            <sc-for list="{{ priceRows }}" as="p" hint-placeholder-count="2">
+              <div style="padding:16px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:16px; align-items:baseline;">
+                <div>
+                  <div style="font-size:16px;">{{ p.what }}</div>
+                  <div style="font-size:14px; color:#5F5851; margin-top:4px;">{{ p.note }}</div>
+                </div>
+                <div style="text-align:right; flex-shrink:0;">
+                  <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1; font-variant-numeric:lining-nums tabular-nums;">{{ p.amt }}</div>
+                  <div style="font-size:13px; color:#5F5851; margin-top:5px; font-variant-numeric:tabular-nums;">{{ p.incl }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-top:32px; padding:0 20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">How it works</div>
+          <div style="margin-top:14px; display:flex; flex-direction:column; gap:14px;">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex; gap:16px; align-items:flex-start; border-top:1px solid #CEC6B4; padding-top:14px;">
+                <span style="font-family:'EB Garamond',serif; font-size:22px; color:#5F5851; font-variant-numeric:oldstyle-nums; flex-shrink:0; line-height:1;">{{ s.n }}</span>
+                <div>
+                  <div style="font-size:16px; line-height:1.35;">{{ s.title }}</div>
+                  <div style="font-size:15px; color:#5F5851; margin-top:5px; line-height:1.55;">{{ s.body }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin:32px 20px 28px; padding:22px 20px; background:#16233A;">
+          <div style="font-family:'EB Garamond',serif; font-size:24px; line-height:1.2; color:#E9E4D8;">Do we come to you?</div>
+          <div style="margin-top:16px; display:flex; gap:10px;">
+            <div style="flex:1; height:56px; border:1px solid #3A4A64; padding:0 15px; display:flex; align-items:center; font-size:17px; color:#8C96A8; font-variant-numeric:tabular-nums;">Pincode</div>
+            <div style="width:104px; height:56px; background:#E9E4D8; color:#16233A; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Check</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C2 · Served · 122018</div>
+      <div data-screen-label="Landing · served" style="width:390px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:56px; flex-shrink:0; background:#16233A; display:flex; align-items:center; padding:0 20px; gap:12px;">
+          <svg viewBox="0 0 200 217.4" width="28" height="30" fill="#C9A363"><use href="#mm"></use></svg>
+          <svg viewBox="-3 -3 638 106" width="82" height="14" fill="#E9E4D8"><use href="#wms"></use></svg>
+        </div>
+        <div style="background:#16233A; padding:0 20px 24px;">
+          <div style="display:flex; align-items:center; gap:12px; padding:18px 0;">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#C9A363" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 12.5 L9.5 18 L20 6"></path></svg>
+            <span style="font-family:'EB Garamond',serif; font-size:26px; color:#E9E4D8; line-height:1.15;">We come to Sector 65</span>
+          </div>
+        </div>
+        <div style="padding:28px 20px 0;">
+          <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:30px; line-height:1.12;">Book a free consultation</h2>
+          <p style="margin:14px 0 0; font-size:16px; line-height:1.6; color:#3A352E;">Forty minutes. Nothing fitted, nothing to pay.</p>
+          <div style="margin-top:24px;">
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Pick a date</div>
+            <div style="margin-top:12px; display:grid; grid-template-columns:repeat(7,1fr); gap:5px;">
+              <sc-for list="{{ dateStrip }}" as="d" hint-placeholder-count="7">
+                <div style="aspect-ratio:1/1.2; border:1px solid {{ d.border }}; background:{{ d.bg }}; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;">
+                  <span style="font-size:13px; color:{{ d.dow }};">{{ d.day }}</span>
+                  <span style="font-family:'EB Garamond',serif; font-size:18px; color:{{ d.ink }}; font-variant-numeric:lining-nums;">{{ d.num }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="margin-top:22px;">
+            <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#5F5851;">Window</div>
+            <div style="margin-top:12px; display:flex; flex-direction:column; gap:9px;">
+              <div style="min-height:56px; border:1px solid #16233A; background:#16233A; padding:0 16px; display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:16px; color:#E9E4D8;">Morning</span>
+                <span style="font-size:15px; color:#A8B2C2;">9 am to 12 pm</span>
+              </div>
+              <div style="min-height:56px; border:1px solid #CEC6B4; background:#FFFFFF; padding:0 16px; display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:16px;">Afternoon</span>
+                <span style="font-size:15px; color:#4A453C;">12 to 4 pm</span>
+              </div>
+              <div style="min-height:56px; border:1px solid #CEC6B4; background:#FFFFFF; padding:0 16px; display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:16px;">Evening</span>
+                <span style="font-size:15px; color:#4A453C;">4 to 8 pm</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:22px; display:flex; flex-direction:column; gap:16px;">
+            <div>
+              <div style="font-size:14px; color:#5F5851; margin-bottom:8px;">Name</div>
+              <div style="height:56px; border:1px solid #CEC6B4; background:#FFFFFF; padding:0 15px; display:flex; align-items:center; font-size:16px; color:#9A9284;">Your name</div>
+            </div>
+            <div>
+              <div style="font-size:14px; color:#5F5851; margin-bottom:8px;">Mobile</div>
+              <div style="height:56px; border:1px solid #CEC6B4; background:#FFFFFF; display:flex; align-items:center;">
+                <span style="padding:0 14px; color:#5F5851; border-right:1px solid #CEC6B4; height:100%; display:flex; align-items:center; font-size:16px; font-variant-numeric:tabular-nums;">+91</span>
+                <span style="padding:0 14px; font-size:16px; color:#9A9284;">Your number</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:20px; display:flex; gap:12px; align-items:flex-start; min-height:44px; padding-top:4px;">
+            <div style="width:20px; height:20px; border:1px solid #16233A; background:#FFFFFF; flex-shrink:0; margin-top:2px;"></div>
+            <span style="font-size:15px; line-height:1.55; color:#3A352E;">You may contact me on WhatsApp about this consultation.</span>
+          </div>
+          <div style="margin-top:22px; height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Book the consultation</div>
+          <div style="margin:16px 0 30px; font-size:15px; line-height:1.6; color:#5F5851;">Rohit is told when you are fitted. That is when the 3 visits land.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C3 · Not served · 400050</div>
+      <div data-screen-label="Landing · not served" style="width:390px; background:#E9E4D8; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:56px; flex-shrink:0; background:#16233A; display:flex; align-items:center; padding:0 20px; gap:12px;">
+          <svg viewBox="0 0 200 217.4" width="28" height="30" fill="#C9A363"><use href="#mm"></use></svg>
+          <svg viewBox="-3 -3 638 106" width="82" height="14" fill="#E9E4D8"><use href="#wms"></use></svg>
+        </div>
+        <div style="background:#16233A; padding:22px 20px;">
+          <div style="font-family:'EB Garamond',serif; font-size:26px; color:#E9E4D8; line-height:1.15;">We are not in Bandra yet</div>
+          <div style="margin-top:12px; font-size:16px; line-height:1.6; color:#A8B2C2;">Gurgaon only, for now. Mumbai next.</div>
+        </div>
+        <div style="padding:28px 20px 0;">
+          <h2 style="margin:0; font-family:'EB Garamond',serif; font-weight:400; font-size:28px; line-height:1.14;">Leave us your number</h2>
+          <p style="margin:14px 0 0; font-size:16px; line-height:1.6; color:#3A352E;">For <span style="font-variant-numeric:tabular-nums;">400050</span>, Bandra.</p>
+          <div style="margin-top:22px; display:flex; flex-direction:column; gap:16px;">
+            <div>
+              <div style="font-size:14px; color:#5F5851; margin-bottom:8px;">Name</div>
+              <div style="height:56px; border:1px solid #CEC6B4; background:#FFFFFF; padding:0 15px; display:flex; align-items:center; font-size:16px; color:#9A9284;">Your name</div>
+            </div>
+            <div>
+              <div style="font-size:14px; color:#5F5851; margin-bottom:8px;">Mobile</div>
+              <div style="height:56px; border:1px solid #CEC6B4; background:#FFFFFF; display:flex; align-items:center;">
+                <span style="padding:0 14px; color:#5F5851; border-right:1px solid #CEC6B4; height:100%; display:flex; align-items:center; font-size:16px; font-variant-numeric:tabular-nums;">+91</span>
+                <span style="padding:0 14px; font-size:16px; color:#9A9284;">Your number</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:22px; display:flex; gap:12px; align-items:flex-start; min-height:44px; padding-top:4px;">
+            <div style="width:20px; height:20px; border:1px solid #16233A; background:#FFFFFF; flex-shrink:0; margin-top:2px;"></div>
+            <span style="font-size:15px; line-height:1.55; color:#3A352E;">You may contact me about this request. <span style="color:#5F5851;">Required</span></span>
+          </div>
+          <div style="margin-top:14px; display:flex; gap:12px; align-items:flex-start; min-height:44px; padding-top:4px;">
+            <div style="width:20px; height:20px; border:1px solid #CEC6B4; background:#FFFFFF; flex-shrink:0; margin-top:2px;"></div>
+            <span style="font-size:15px; line-height:1.55; color:#3A352E;">Tell me when you launch in my area. <span style="color:#5F5851;">Optional</span></span>
+          </div>
+          <div style="margin-top:22px; height:56px; background:#16233A; color:#E9E4D8; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Add me to the list</div>
+          <div style="margin:16px 0 30px; font-size:15px; line-height:1.6; color:#5F5851;">Rohit's invite stays valid for 12 months after we launch there.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:88px;">
+
+    <div style="width:390px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C4 · Confirmations</div>
+      <div data-screen-label="Landing · confirmations" style="width:390px; display:flex; flex-direction:column; gap:20px;">
+        <div style="background:#16233A; padding:26px 20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#8C96A8; margin-bottom:16px;">Consultation booked</div>
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#C9A363" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"></path></svg>
+          <div style="margin-top:18px; font-family:'EB Garamond',serif; font-size:28px; line-height:1.12; color:#E9E4D8;">Saturday 21 Sep, 9 am to 12 pm</div>
+          <div style="margin-top:14px; font-size:16px; line-height:1.6; color:#A8B2C2;">A technician messages you the day before.</div>
+          <div style="margin-top:20px; padding-top:18px; border-top:1px solid #1E2E49; font-size:15px; color:#A8B2C2;">Sector 65, Gurgaon 122018 · free</div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:22px 20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">On the list</div>
+          <div style="font-family:'EB Garamond',serif; font-size:26px; line-height:1.16;">You are on the Bandra list</div>
+          <div style="margin-top:14px; font-size:16px; line-height:1.6;">We message you when a technician starts working there. Rohit's invite holds for 12 months after that.</div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:22px 20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Code expired</div>
+          <div style="font-family:'EB Garamond',serif; font-size:26px; line-height:1.16;">This invite has expired</div>
+          <div style="margin-top:14px; font-size:16px; line-height:1.6;">More than 12 months old. The consultation is still free; the 3 visits do not apply.</div>
+          <div style="margin-top:18px; min-height:48px; align-self:flex-start; display:inline-flex; align-items:center; background:#16233A; color:#E9E4D8; padding:0 20px; font-size:15px; font-weight:500;">Book anyway</div>
+        </div>
+        <div style="background:#E9E4D8; border:1px solid #CEC6B4; padding:22px 20px;">
+          <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:14px; color:#5F5851; margin-bottom:14px;">Pincode not recognised</div>
+          <div style="font-size:16px; line-height:1.6; color:#8A3A2E;">That is not a six-digit Indian pincode.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:812px;">
+      <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C; margin-bottom:12px;">C5 · Desktop 1440 · arrival, shown at 812</div>
+      <div data-screen-label="Landing · desktop" style="width:812px; height:508px; overflow:hidden; border:1px solid #CEC6B4;">
+        <div style="width:1440px; height:900px; transform:scale(0.5639); transform-origin:top left; background:#E9E4D8; display:flex; flex-direction:column;">
+          <div style="height:56px; flex-shrink:0; background:#16233A; display:flex; align-items:center; justify-content:space-between; padding:0 48px;">
+            <div style="display:flex; align-items:center; gap:13px;">
+              <svg viewBox="0 0 200 217.4" width="30" height="33" fill="#C9A363"><use href="#mm"></use></svg>
+              <svg viewBox="-3 -3 638 106" width="88" height="15" fill="#E9E4D8"><use href="#wms"></use></svg>
+            </div>
+            <span style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#8C96A8;">Gurgaon</span>
+          </div>
+          <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:72px; padding:64px 48px;">
+            <div>
+              <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:16px; color:#5F5851;">Rohit sent you this</div>
+              <h1 style="margin:22px 0 0; font-family:'EB Garamond',serif; font-weight:400; font-size:64px; line-height:1.02; letter-spacing:-0.015em;">Hair, fitted at your home in Gurgaon.</h1>
+              <p style="margin:24px 0 0; font-size:19px; line-height:1.6; color:#1A1714; max-width:440px;">Get fitted and you both get 3 service visits free.</p>
+              <div style="margin-top:36px; border-top:1px solid #1A1714;">
+                <div style="padding:18px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:20px; align-items:baseline;">
+                  <div>
+                    <div style="font-size:17px;">First fit, from</div>
+                    <div style="font-size:15px; color:#5F5851; margin-top:4px;">Standard base</div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font-family:'EB Garamond',serif; font-size:30px; line-height:1; font-variant-numeric:lining-nums tabular-nums;">Rs. 30,000</div>
+                    <div style="font-size:14px; color:#5F5851; margin-top:5px; font-variant-numeric:tabular-nums;">Rs. 35,400 incl. GST</div>
+                  </div>
+                </div>
+                <div style="padding:18px 0; border-bottom:1px solid #CEC6B4; display:flex; justify-content:space-between; gap:20px; align-items:baseline;">
+                  <div>
+                    <div style="font-size:17px;">Service visit</div>
+                    <div style="font-size:15px; color:#5F5851; margin-top:4px;">Every four weeks, at home</div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font-family:'EB Garamond',serif; font-size:30px; line-height:1; font-variant-numeric:lining-nums tabular-nums;">Rs. 2,000</div>
+                    <div style="font-size:14px; color:#5F5851; margin-top:5px; font-variant-numeric:tabular-nums;">Rs. 2,360 incl. GST</div>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:36px; background:#16233A; padding:26px;">
+                <div style="font-family:'EB Garamond',serif; font-size:26px; color:#E9E4D8; line-height:1.2;">Do we come to you?</div>
+                <div style="margin-top:18px; display:flex; gap:12px;">
+                  <div style="flex:1; height:56px; border:1px solid #3A4A64; padding:0 16px; display:flex; align-items:center; font-size:17px; color:#8C96A8;">Pincode</div>
+                  <div style="width:120px; height:56px; background:#E9E4D8; color:#16233A; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500;">Check</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="background:#16233A; display:flex; aspect-ratio:1200/630;">
+                <div style="flex:1; overflow:hidden;"><img src="assets/ba-before.jpg" alt="Before" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+                <div style="width:2px; background:#C9A363;"></div>
+                <div style="flex:1; overflow:hidden;"><img src="assets/ba-after.jpg" alt="After" style="width:100%; height:100%; object-fit:cover; display:block;"></div>
+              </div>
+              <div style="margin-top:36px;">
+                <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:16px; color:#5F5851;">How it works</div>
+                <div style="margin-top:18px; display:flex; flex-direction:column; gap:18px;">
+                  <div style="display:flex; gap:18px; border-top:1px solid #CEC6B4; padding-top:16px;">
+                    <span style="font-family:'EB Garamond',serif; font-size:26px; color:#5F5851; font-variant-numeric:oldstyle-nums; line-height:1;">1</span>
+                    <div>
+                      <div style="font-size:18px;">A free consultation at home</div>
+                      <div style="font-size:16px; color:#5F5851; margin-top:5px; line-height:1.5;">Forty minutes. A scalp template and a colour match.</div>
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:18px; border-top:1px solid #CEC6B4; padding-top:16px;">
+                    <span style="font-family:'EB Garamond',serif; font-size:26px; color:#5F5851; font-variant-numeric:oldstyle-nums; line-height:1;">2</span>
+                    <div>
+                      <div style="font-size:18px;">The fit, also at home</div>
+                      <div style="font-size:16px; color:#5F5851; margin-top:5px; line-height:1.5;">Three hours. You leave the house wearing it.</div>
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:18px; border-top:1px solid #CEC6B4; padding-top:16px;">
+                    <span style="font-family:'EB Garamond',serif; font-size:26px; color:#5F5851; font-variant-numeric:oldstyle-nums; line-height:1;">3</span>
+                    <div>
+                      <div style="font-size:18px;">A service visit every four weeks</div>
+                      <div style="font-size:16px; color:#5F5851; margin-top:5px; line-height:1.5;">Lifted, cleaned, re-bonded, trimmed. An hour.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px; max-width:812px; font-size:15px; line-height:1.65; color:#3A352E;">Card and how-it-works right, prices and pincode left. The result replaces the navy block in place — no new page.</div>
+    </div>
+
+  </div>
+
+  <div style="max-width:900px; padding-top:40px; border-top:1px solid #1A1714;">
+    <div style="font-family:'EB Garamond',serif; font-variant-caps:all-small-caps; letter-spacing:0.14em; font-size:15px; color:#4A453C;">Open questions</div>
+    <div class="mm-4up" style="margin-top:16px; gap:26px; font-size:15px; line-height:1.7; color:#3A352E;">
+      <div><span style="color:#4A453C;">Invite validity</span><br>12 months from launch in his city. Confirm, and whether it lapses if Rohit leaves.</div>
+      <div><span style="color:#4A453C;">Naming the referrer</span><br>Page and preview title both name Rohit. Confirm he consents to being named to someone who may never book.</div>
+      <div><span style="color:#4A453C;">Fit notification</span><br>Confirm what Rohit actually sees, and that the friend agreeing is enough.</div>
+      <div><span style="color:#4A453C;">Prices on a referral page</span><br>From Rs. 30,000, matching the site. Confirm the referred friend sees the same figures.</div>
+    </div>
+  </div>
+
+</div>
+
+<svg width="0" height="0" style="position:absolute; overflow:hidden;" aria-hidden="true"><defs>
+  <symbol id="mm" viewBox="0 0 200 217.4"><path fill-rule="evenodd" d="M97.3 0.1L99.3 0L101.8 1.6L107.1 7.7L109.5 14L110.3 19.7L110.1 23.8L108.4 30.8L103.8 40.9L92.4 60.2L91 63.5L83.2 76L81.4 76.9L77.4 72.7L77.2 70.8L84.8 59.1L94.3 42.5L99.5 32.7L102.4 24L102.4 15.4L101.1 11L98.5 8.2L95.9 10.5L94.3 14.8L94.3 23.5L96.5 32.5L94 37.9L92.5 38.3L91.3 37.4L86.7 23.5L86.7 15.1L88.3 9.9L92.1 4.2L97.1 0.3ZM147.6 30.6L151.5 31L154.8 32.6L157.3 35.2L159 39.3L159 43.9L157.3 49L152.2 56.1L129.2 78.3L114.9 93.3L111.4 98.2L106.5 106.9L101.2 120.7L95.5 120.7L94.6 119.7L91.8 110.2L86.1 99L74.7 85.2L57.3 68.3L57.1 65.6L58.4 61.8L59.4 60.9L60.5 61.1L83.2 83.6L90.2 92.5L95.9 101.5L97.6 105.6L98.5 106L104.6 94.7L116 80.6L146.5 51L150.3 46.1L151.6 42.3L151.6 40.4L150.4 38L148.2 37.5L145.9 40.1L145.4 41.7L145.4 47.1L143.2 50.7L140.1 53.3L138.9 52.3L137.8 48.2L137.8 40.1L139.4 36.3L142.5 32.6L145.5 31L147.4 30.7ZM45.9 30.8L51 31L55 33.4L57.9 37.6L59.2 43.9L58.7 51.2L55.4 63.7L46.5 88.7L45.8 89.1L41.2 85.1L40.2 84.1L40.2 82.5L45.4 69.7L51.4 50.7L51.9 47.4L51.6 41.2L50.8 39L49.3 37.5L47.1 37.5L45.4 40.1L45.4 44.2L48.4 50.7L47.6 55.6L46.6 57.1L45.7 56.7L40.5 50.1L38.9 46.1L38 41.2L38.6 38.5L41.3 33.6L45.8 31ZM103.5 46.6L105.2 47.4L116.6 65.9L119.6 71.1L119.8 73.2L115.6 77.4L114.8 77.4L113.3 75.7L103 58.8L100 52.3L103.4 46.7ZM0.8 54.5L1.5 54.3L3.7 56L30.3 79.3L43.2 92L48.6 98.2L55.2 108.6L58.4 115.9L60.6 123L64.4 129.8L64.4 130.8L63.2 131.5L51 132.6L40.9 134.8L33.6 137L24.9 140.8L22.6 139.5L3.3 67.8L0 57.7L0 55.3L0.7 54.6ZM195.1 54.8L196.6 54.6L197 56.4L188.3 87.4L185.6 99.3L184 103.7L178.5 126L175.3 136.5L170.9 143.9L165.6 148.4L158.8 151.6L150.1 153.3L139.8 153.3L130.3 151.1L115.9 145.9L109.1 141.8L104.8 140.2L99.3 137L98.4 135.7L100.4 135.6L113.5 140.2L128.7 144L141.7 145.7L150.1 145.1L155.3 144L161.8 140.5L163.3 138.7L162.6 137.2L151.5 133.7L135.7 131L120.2 129.9L119.6 129.2L119.8 127.9L123.4 123.8L125.8 119.7L127.2 112.4L126.4 100.4L122.3 89.3L126.5 84.5L127.3 84.5L133.2 96.6L135.6 106.9L135.1 115.6L133.4 121.3L133.8 122.8L151.5 125.8L164.8 129.9L165.2 128.9L164.4 127.9L159.5 112.4L157.9 109.1L150.8 88.5L145.4 75.7L143.2 68.3L148 63.9L149.7 64.8L153 72.7L154.6 78.9L163.3 100.7L163.9 103.7L166.6 109.6L169.3 119.4L170.2 120.1L176.1 101.2L182.3 76L181.4 75.8L180.3 76.6L164 91.8L163.2 91.8L162.2 90.4L160.9 84.9L161.7 83.3L165.6 79.6L169.7 76.6L189 59.2L195 54.9ZM13.9 75.1L19.4 79.1L38 96.9L47 108.6L50.8 116.7L53 124L50.7 125L38.7 127.2L32.5 129.3L31 129.2L32.3 127.3L34.5 120.2L39.4 108.3L39.7 104.8L35.7 99.7L34 100.4L27.7 117.3L26.9 119.2L25.8 119.4L15.5 81.7L13.6 76.5L13.7 75.3ZM69.3 85.2L70.2 85.1L74.2 89.5L73.1 94.7L71.2 98.2L69.8 104.2L69.8 115.6L72 121.9L77.6 128.5L99.3 142.4L123.5 163.6L130 167.9L136 170.7L141.7 172.8L148.8 173.9L154.2 173.9L161.8 172.8L173.5 167.7L178.9 163.6L184.6 157.6L185.1 159.1L178.8 169.4L170.8 176.6L160.7 182.1L150.1 184.5L140.6 184.5L132.2 182.9L122.7 179.3L112.4 173.6L86 157.1L75.4 151.9L65.1 148.6L55.6 147L47.7 147L40.4 147.8L30.3 150.5L16.2 157.3L15.8 155L18.9 151.9L26.8 145.9L32.5 142.9L38.2 140.8L45.5 139.1L49.3 138.6L62.1 138.6L75.1 141.8L87.1 147.8L97.4 154.3L116.4 169.6L126.8 175.5L134.6 178.3L142.8 179.6L153.1 179.3L156.3 178.1L155.8 177.7L154.5 178.3L145.8 178.5L139.5 177.7L130.3 175L122.4 171.2L112.1 163.6L94.4 148.6L83 140.8L76.2 137L68.5 130L65.2 125.4L62.5 117.8L61.7 106.4L62.5 101L65.5 91.7L69.2 85.3ZM149.5 97.1L150.8 98L151.4 99.3L152.4 102.6L152.4 105L147 114L144.3 120.5L142.8 121.2L137.4 120.4L137 118.3L140.5 109.4L146.5 100.1L149.3 97.3ZM187.2 120L188.6 120.2L189.4 124.3L189.9 128.4L189.7 136.5L187.2 146.1L183.4 153.7L177 160.1L171.3 164.1L162.9 167.4L153.9 168.8L148.8 168.5L141.4 167.1L137.6 165.8L129.8 161.7L124.6 157.6L122.8 155.3L123.8 154.9L131.4 157.6L139 159.2L150.1 159.5L156.9 158.7L167 154.9L173.2 150.5L177.2 146.6L181.3 140.9L185.6 129.2L187.1 120.1ZM194.6 124.6L196.5 126L198.1 130.6L199.7 139.5L200 146.3L199.7 153.1L198.1 160.7L195.7 168.1L193.2 173L185.9 183.8L176.8 192.4L165.9 198.6L155.6 202.2L146.1 203.8L139.3 203.8L127.9 202.2L120.8 200L112.9 196.5L103.7 191.3L77 172.8L65.4 167.4L56.7 164.7L50.1 163.6L37.6 164.1L28.9 166.3L20.8 170.1L14.8 174.2L10.1 178.9L2.9 189.1L2.2 188.5L2.4 185.2L5.2 177.9L9.5 171.1L13 167L19.2 161.4L23.5 158.7L33.3 154.3L43.9 151.9L58.8 152.4L70.8 155.4L83 160.9L90.9 165.2L115.6 181.3L123 184.8L134.4 188.6L141.2 189.7L148 189.7L154.8 188.6L163.5 186.1L172.4 181.5L181.8 173.2L186.1 167.5L191 157.5L194.3 146.1L195.1 138.7L194.4 124.7ZM177.2 152.3L177.7 152.6L172.7 157.6L168.6 160.3L163.2 162.8L157.5 164.1L151 164.7L145.5 164.1L143.8 163.2L154.2 163L162.6 161.4L171.6 156.8L177 152.4ZM44 157.7L52 157.6L58.6 158.4L66.4 160.3L74.9 163.6L82.5 167.4L103.4 181.5L113.5 187.5L126.5 193.2L134.6 195.1L146.9 195.7L158 193.5L171.6 187.5L179.8 180.7L180.6 180.2L181 180.6L170.5 189.7L161.5 194L152.3 196.7L148.2 197.3L136 197.3L124.6 194.6L111.3 188.6L88.7 173.4L73 164.7L64.3 161.4L54.8 159.2L45 158.7L37.6 159.5L37.6 159L40.1 158.2L43.9 157.9ZM45.1 168.9L54.5 169.6L66.7 173.4L78.9 179.9L96.6 192.7L107.5 199.5L114 202.7L126 207.1L134.6 208.7L148.5 208.7L154.5 207.6L161.3 205.4L171.3 200.3L172.7 200.3L172.8 201L171.2 202.9L160.5 210.3L152.3 214.1L145.5 216L138.7 217.1L128.7 217.4L115.9 215.2L106.9 212L96.3 206.5L63.2 182.6L50.1 177.2L43.9 176.1L33.8 176.1L24.3 178.3L14.8 183.2L14.4 181.4L17 178.8L25.1 173.6L35.5 169.6L45 169ZM39.4 182.2L49.6 182.6L56.4 184.8L62.9 188.3L69.4 192.9L76.5 198.4L77.2 200.1L76.2 200.5L67.5 195.7L56.9 190.8L46.1 188L38.2 187.8L29.2 189.7L23.8 191.8L23.4 190.1L27.9 186.1L32.7 183.7L39.3 182.3Z"></path></symbol>
+  <symbol id="wms" viewBox="-3 -3 638 106"><path d="M3 0L12.4 0L12.4 100L3 100ZM79.6 0L89 0L89 100L79.6 100ZM3 0L19 0L48.5 90L40.5 90ZM75 0L89 0L51.5 90L43.5 90ZM-1 0L16 0L16 8.6L-1 8.6ZM76 0L93 0L93 8.6L76 8.6ZM-1 91.4L14 91.4L14 100L-1 100ZM76.5 91.4L93 91.4L93 100L76.5 100ZM131.5 0L140.9 0L117 100L107.6 100ZM136.5 0L145.9 0L167.5 100L153.9 100ZM119.5 65L157 65L157 74L119.5 74ZM103 91.4L123 91.4L123 100L103 100ZM150 91.4L172 91.4L172 100L150 100ZM190 0L199.4 0L199.4 100L190 100ZM244.6 0L254 0L254 100L244.6 100ZM190 0L206 0L254 86L254 100L238 100L190 14ZM186 0L203 0L203 8.6L186 8.6ZM241 0L258 0L258 8.6L241 8.6ZM186 91.4L201 91.4L201 100L186 100ZM240 91.4L258 91.4L258 100L240 100ZM274 0L290 0L290 100L274 100ZM290 0L323 0L323 8.6L290 8.6ZM317 0L324 0L324 16L317 16ZM290 46L318 46L318 54L290 54ZM312.5 40L319.5 40L319.5 60L312.5 60ZM290 91.4L327 91.4L327 100L290 100ZM321 83L328 83L328 100L321 100ZM378 0L387.4 0L387.4 100L378 100ZM454.6 0L464 0L464 100L454.6 100ZM378 0L394 0L423.5 90L415.5 90ZM450 0L464 0L426.5 90L418.5 90ZM374 0L391 0L391 8.6L374 8.6ZM451 0L468 0L468 8.6L451 8.6ZM374 91.4L389 91.4L389 100L374 100ZM451.5 91.4L468 91.4L468 100L451.5 100ZM506.5 0L515.9 0L492 100L482.6 100ZM511.5 0L520.9 0L542.5 100L528.9 100ZM494.5 65L532 65L532 74L494.5 74ZM478 91.4L498 91.4L498 100L478 100ZM525 91.4L547 91.4L547 100L525 100ZM565 0L574.4 0L574.4 100L565 100ZM619.6 0L629 0L629 100L619.6 100ZM565 0L581 0L629 86L629 100L613 100L565 14ZM561 0L578 0L578 8.6L561 8.6ZM616 0L633 0L633 8.6L616 8.6ZM561 91.4L576 91.4L576 100L561 100ZM615 91.4L633 91.4L633 100L615 100Z"></path></symbol>
+</defs></svg>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  renderVals() {
+    const days = ['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
+    const strip = days.map((day, i) => {
+      const num = 21 + i;
+      const chosen = i === 0;
+      const full = i === 2;
+      return {
+        day, num: String(num),
+        border: chosen ? '#16233A' : full ? '#DED7C8' : '#CEC6B4',
+        bg: chosen ? '#16233A' : full ? '#DED7C8' : '#FFFFFF',
+        ink: chosen ? '#E9E4D8' : full ? '#9A9284' : '#1A1714',
+        dow: chosen ? '#A8B2C2' : full ? '#9A9284' : '#5F5851'
+      };
+    });
+
+    const msg = (label, body, time) => ({ label, body, time, count: String(body.length) });
+
+    return {
+      dateStrip: strip,
+      priceRows: [
+        { what: 'First fit, from', note: 'Standard base', amt: 'Rs. 30,000', incl: 'Rs. 35,400 incl. GST' },
+        { what: 'Service visit', note: 'Every four weeks, at home', amt: 'Rs. 2,000', incl: 'Rs. 2,360 incl. GST' }
+      ],
+      steps: [
+        { n: '1', title: 'A free consultation at home', body: 'Forty minutes. A scalp template and a colour match.' },
+        { n: '2', title: 'The fit, also at home', body: 'Three hours. You leave the house wearing it.' },
+        { n: '3', title: 'A service visit every four weeks', body: 'Lifted, cleaned, re-bonded, trimmed. An hour.' }
+      ],
+      waMessages: [
+        msg('Waitlist confirmation',
+          'You are on our Bandra list. We message you when a technician starts working there, and not before.\n\nRohit\u2019s invite holds for 12 months after we launch in Mumbai.',
+          '10:34'),
+        msg('Consultation confirmation',
+          'Booked: Saturday 21 Sep, 9 am to 12 pm, Sector 65, Gurgaon 122018.\n\nForty minutes, nothing fitted, nothing to pay. Reply here to change it.',
+          '10:36'),
+        msg('Day-before reminder',
+          'Imran Qureshi comes to you tomorrow, 9 am to 12 pm. He will call from the gate.\n\nReply here if the time no longer suits.',
+          '18:02')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
