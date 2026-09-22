@@ -1,5 +1,9 @@
 # Every pull request, and every staging deploy (called from deploy-staging.yml).
-# Each job is one required status check on main; keep job names stable.
+#
+# One job, every check in turn, cheapest first, so a failure shows early and a
+# run costs one job's time (docs/decisions/0006-deployment-pipeline.md, "The
+# runner"). It runs on the owner's machine when the repository variable
+# CI_RUNNER is "maneman", else on GitHub's runners.
 name: ci
 
 on:
@@ -14,56 +18,35 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  typecheck:
-    name: typecheck
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-      - name: Env types match wrangler.jsonc
-        run: npm run types:check
-      - run: npm run typecheck
-
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-      - run: npm run lint
-      - name: Workflows
-        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
-
-  format:
-    name: format
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-      - run: npm run format:check
-
-  test:
-    name: test (unit, contract, coverage)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-      - name: Unit and contract tests, 85% line coverage on src/
-        run: npm run test:coverage
-
-  config:
-    name: config check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  checks:
+    name: checks
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # the migrations check compares with the base
       - uses: ./.github/actions/setup
+
+      - name: Env types match wrangler.jsonc
+        run: npm run types:check
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Workflows
+        run: |
+          if command -v actionlint > /dev/null; then
+            actionlint -color
+          else
+            docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+          fi
+      - name: Format
+        run: npm run format:check
+
+      - name: Unit and contract tests, 85% line coverage on src/
+        run: npm run test:coverage
+
       - name: Every environment redeclares every binding
         run: npm run check:config
       - name: A deliberately broken config is rejected
@@ -81,63 +64,68 @@ jobs:
             npm run check:migrations -- --base "$BASE"
           fi
 
-  migrations:
-    name: migrations apply
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-      - name: Apply every migration to an empty D1 and mark it
-        run: npm run db:local
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Registry signatures
+        run: npm audit signatures
+
+      - name: Bundle every Worker for every environment (dry run)
+        run: npm run build
+
+      - name: Local secrets, and every migration applied to an empty D1
+        run: |
+          node scripts/ensure-dev-vars.ts
+          npm run db:local
       - name: Nothing is left unapplied
         run: |
           node node_modules/wrangler/bin/wrangler.js d1 migrations list DB --local --env="" | tee migrations.txt
           grep -q "No migrations to apply" migrations.txt
 
-  audit:
-    name: dependency audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-      - run: npm audit --audit-level=high
-      - name: Registry signatures
-        run: npm audit signatures
-
-  build:
-    name: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-      - name: Bundle both Workers for every environment (dry run)
-        run: npm run build
-
-  site:
-    name: site (browser tests)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
       - name: Chromium for Playwright
         run: npx playwright install --with-deps chromium
-      - name: Local secrets and database for mm-api
-        run: |
-          node scripts/ensure-dev-vars.ts
-          npm run db:local
       - name: Build the site and the client app (local)
         run: |
           npm run build:site -- --env local
           npm run build:app -- --env local
       - name: Browser tests at 390 and 1440 px, and the client app at 390, against a local mm-api with stub providers
         run: npm run test:e2e
-      # After the browser tests, so nothing else competes for the runner's CPU.
       - name: Lighthouse on /, /try and /book, mobile profile, against the budgets
         run: npm run lighthouse
+
+      # After the browser tests, whose own local servers have stopped by then.
+      # One at a time, each with its own inspector port: two wrangler dev
+      # processes starting together race for the same auxiliary ports.
+      - name: Start mm-api and mm-site under wrangler dev
+        run: |
+          node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8787 --inspector-port 9230 > api.log 2>&1 &
+          echo $! > api.pid
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:8787/api/health && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://localhost:8787/api/health || { cat api.log; exit 1; }
+          node node_modules/wrangler/bin/wrangler.js dev --config site/wrangler.jsonc --env="" --port 8788 --inspector-port 9231 > site.log 2>&1 &
+          echo $! > site.pid
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:8788/ && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://localhost:8788/ || { cat site.log; exit 1; }
+      - name: Smoke suite against local
+        run: npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
+      - name: A production Worker holding stubs refuses to start
+        run: |
+          if timeout 60 node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8789 --inspector-port 9232 --var ENVIRONMENT:production > refuse.log 2>&1; then
+            cat refuse.log; exit 1
+          fi
+          grep -q "refuses to start: IMAGE_PROVIDER is a stub in production" refuse.log
+      - name: Stop the local servers
+        if: always()
+        run: |
+          for pid in api.pid site.pid; do
+            if [ -f "$pid" ]; then kill "$(cat "$pid")" 2> /dev/null || true; fi
+          done
+
       - name: Traces of failed tests
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -153,45 +141,3 @@ jobs:
           path: lighthouse/
           if-no-files-found: ignore
           retention-days: 7
-
-  smoke-local:
-    name: smoke (local)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-      - name: Local secrets and database
-        run: |
-          node scripts/ensure-dev-vars.ts
-          npm run db:local
-      # One at a time, each with its own inspector port: two wrangler dev
-      # processes starting together race for the same auxiliary ports.
-      - name: Start mm-api under wrangler dev
-        run: |
-          node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8787 --inspector-port 9230 > api.log 2>&1 &
-          for _ in $(seq 1 60); do
-            curl -sf -o /dev/null http://localhost:8787/api/health && exit 0
-            sleep 1
-          done
-          cat api.log
-          exit 1
-      - name: Build the site (local)
-        run: npm run build:site -- --env local
-      - name: Start mm-site under wrangler dev
-        run: |
-          node node_modules/wrangler/bin/wrangler.js dev --config site/wrangler.jsonc --env="" --port 8788 --inspector-port 9231 > site.log 2>&1 &
-          for _ in $(seq 1 60); do
-            curl -sf -o /dev/null http://localhost:8788/ && exit 0
-            sleep 1
-          done
-          cat site.log
-          exit 1
-      - name: Smoke suite against local
-        run: npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
-      - name: A production Worker holding stubs refuses to start
-        run: |
-          if timeout 60 node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8789 --inspector-port 9232 --var ENVIRONMENT:production > refuse.log 2>&1; then
-            cat refuse.log; exit 1
-          fi
-          grep -q "refuses to start: IMAGE_PROVIDER is a stub in production" refuse.log

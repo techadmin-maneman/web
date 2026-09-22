@@ -22,7 +22,7 @@ permissions:
 jobs:
   lead:
     name: create a test lead on staging
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
     environment: staging
     env:
