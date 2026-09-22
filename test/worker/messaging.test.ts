@@ -30,7 +30,7 @@ function config(messaging: Partial<Settings["messaging"]> = {}): StaticConfig {
 function recordingProvider(answer: SendResult = { ok: true, providerMessageId: "wa-1" }) {
   const sent: { to: string; template: string; params: readonly string[]; mediaUrl: string | undefined }[] = [];
   const provider: MessagingProvider = {
-    sendTemplate: (to, template, params, mediaUrl) => {
+    send: ({ to, template, params, mediaUrl }) => {
       sent.push({ to, template, params, mediaUrl });
       return Promise.resolve(answer);
     },
@@ -205,7 +205,7 @@ describe("messaging: the queue batch", () => {
 });
 
 describe("Evolution API", () => {
-  const settings = { baseUrl: "https://bridge.example", apiKey: "evo-key", instance: "mane man" };
+  const settings = { baseUrl: "https://bridge.example", apiKey: "evo-key", instance: "mane man", webhookToken: null };
   const SEND_MEDIA = "https://bridge.example/message/sendMedia/mane%20man";
   const SEND_TEXT = "https://bridge.example/message/sendText/mane%20man";
 
@@ -213,7 +213,12 @@ describe("Evolution API", () => {
     const http = fakeFetch({ [SEND_MEDIA]: () => json({ key: { id: "3EB0ABC" }, status: "PENDING" }, 201) });
     const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
 
-    const result = await evolution.sendTemplate("+919810000001", "tryon_result_v1", ["Arjun"], "https://x.test/r.png");
+    const result = await evolution.send({
+      to: "+919810000001",
+      template: "tryon_result_v1",
+      params: ["Arjun"],
+      mediaUrl: "https://x.test/r.png",
+    });
 
     expect(result).toEqual({ ok: true, providerMessageId: "3EB0ABC" });
     expect(http.calls[0]?.headers.get("apikey")).toBe("evo-key");
@@ -230,8 +235,10 @@ describe("Evolution API", () => {
   it("sends plain text when there is no image, and refuses an unknown template without calling out", async () => {
     const http = fakeFetch({ [SEND_TEXT]: () => json({ key: { id: "T1" } }) });
     const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
-    expect(await evolution.sendTemplate("+919810000001", "tryon_result_v1", ["Arjun"])).toMatchObject({ ok: true });
-    expect(await evolution.sendTemplate("+919810000001", "nope", ["Arjun"])).toMatchObject({
+    expect(await evolution.send({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun"] })).toMatchObject(
+      { ok: true },
+    );
+    expect(await evolution.send({ to: "+919810000001", template: "nope", params: ["Arjun"] })).toMatchObject({
       ok: false,
       transient: false,
     });
@@ -247,7 +254,14 @@ describe("Evolution API", () => {
   ])("classifies HTTP %i", async (status, body, transient, detail) => {
     const http = fakeFetch({ [SEND_MEDIA]: () => json(body, status) });
     const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
-    expect(await evolution.sendTemplate("+919810000001", "tryon_result_v1", ["A"], "https://x.test/r.png")).toEqual({
+    expect(
+      await evolution.send({
+        to: "+919810000001",
+        template: "tryon_result_v1",
+        params: ["A"],
+        mediaUrl: "https://x.test/r.png",
+      }),
+    ).toEqual({
       ok: false,
       transient,
       detail,
@@ -261,7 +275,14 @@ describe("Evolution API", () => {
       },
     });
     const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
-    expect(await evolution.sendTemplate("+919810000001", "tryon_result_v1", ["A"], "https://x.test/r.png")).toEqual({
+    expect(
+      await evolution.send({
+        to: "+919810000001",
+        template: "tryon_result_v1",
+        params: ["A"],
+        mediaUrl: "https://x.test/r.png",
+      }),
+    ).toEqual({
       ok: false,
       transient: true,
       detail: "unreachable: TypeError",
@@ -275,7 +296,14 @@ describe("Evolution API", () => {
       },
     });
     const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
-    expect(await evolution.sendTemplate("+919810000001", "tryon_result_v1", ["A"], "https://x.test/r.png")).toEqual({
+    expect(
+      await evolution.send({
+        to: "+919810000001",
+        template: "tryon_result_v1",
+        params: ["A"],
+        mediaUrl: "https://x.test/r.png",
+      }),
+    ).toEqual({
       ok: false,
       transient: false,
       detail: "no reply within 60 s: delivery unconfirmed",

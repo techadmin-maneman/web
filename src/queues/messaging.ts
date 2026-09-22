@@ -135,7 +135,12 @@ export async function sendResultMessage(
     new Date(now.getTime() + RESULT_LINK_MESSAGE_TTL_MS),
   );
   const mediaUrl = `${PUBLIC_ORIGIN[config.environment]}/api/result/${token}`;
-  const result = await deps.messaging.sendTemplate(row.mobile_e164, messaging.resultTemplate, [row.name], mediaUrl);
+  const result = await deps.messaging.send({
+    to: row.mobile_e164,
+    template: messaging.resultTemplate,
+    params: [row.name],
+    mediaUrl,
+  });
 
   if (result.ok) {
     await db

@@ -13,6 +13,7 @@ import { requireSameOrigin } from "./http/origin.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { registerCities } from "./routes/cities.ts";
 import { registerErasure } from "./routes/erasure.ts";
+import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
 import { registerTryonClaim } from "./routes/tryon-claim.ts";
@@ -57,6 +58,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerTryonClaim,
     registerTryonResult,
     registerErasure,
+    // Webhooks sit on the public host (ADR 0026).
+    registerEvolutionHook,
   ],
   client: [registerHealth],
   ops: [registerHealth],
