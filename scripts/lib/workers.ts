@@ -7,6 +7,8 @@
 //   site  mm-site: the Astro site, static assets
 //   spa   a single-page app: static assets that answer every path with index.html
 
+import type { Surface } from "../../src/config/environments.ts";
+
 export type WorkerKind = "api" | "site" | "spa";
 
 export interface WorkerEntry {
@@ -15,11 +17,14 @@ export interface WorkerEntry {
   /** Its wrangler config, from the repository root. */
   readonly config: string;
   readonly kind: WorkerKind;
+  /** A single-page app's surface, whose host it serves (docs/decisions/0026-hosts-and-surfaces.md). */
+  readonly surface?: Surface;
 }
 
 export const WORKERS = [
   { name: "mm-api", config: "wrangler.jsonc", kind: "api" },
   { name: "mm-site", config: "site/wrangler.jsonc", kind: "site" },
+  { name: "mm-app", config: "apps/app/wrangler.jsonc", kind: "spa", surface: "client" },
 ] as const satisfies readonly WorkerEntry[];
 
 export type WorkerName = (typeof WORKERS)[number]["name"];

@@ -35,6 +35,7 @@ The public site (`mm-site`) is built, edited and published as `docs/frontend.md`
 | 10. Access bypass for result links          | done                                  | not applicable                                  |
 | 11. Phase 2 hosts: DNS, Access              | done                                  | done (all three behind Access until go-live)    |
 | 11. Phase 2 surfaces switched on            | done (22 September 2026)              | not yet: waits for the production go-ahead      |
+| 11. The client app's Worker, bootstrapped   | done (22 September 2026)              | not yet: waits for the production go-ahead      |
 | 7. Worker secrets: login code pepper        | done (22 September 2026)              | not yet: with the client surface                |
 | 12. Evolution receipts: token, bypass       | done                                  | not yet                                         |
 | 12. Evolution receipts: the webhook         | open: the shared instance's webhook   | not yet                                         |
@@ -284,6 +285,12 @@ To switch one on:
    The config check fails if either comes without the other.
 
 5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
+6. **The app's own Worker**, where the surface has one (the client app is `mm-app`, docs/decisions/0043-client-app.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that.
+
+   ```sh
+   npm run build:app -- --env <env>
+   W deploy --config apps/app/wrangler.jsonc --env <env> --tag bootstrap
+   ```
 
 ### 11a. The client app's login
 

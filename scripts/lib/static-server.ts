@@ -6,9 +6,21 @@
 // Given an API origin, it passes /api/* there, as Cloudflare routes /api/* to
 // mm-api on the site's own host. A `_headers` file in the root is applied as
 // Cloudflare applies it, so the tests run under the site's real policy.
+//
+// For a single-page app (`spa`), a page path with no file answers index.html,
+// as Workers' single-page-application handling does. With `keepHost`, /api/*
+// goes on with the browser's own Host header, as Cloudflare's routing keeps it:
+// mm-api then chooses the app's surface by host, and a write's Origin matches
+// the URL mm-api sees (docs/decisions/0026-hosts-and-surfaces.md).
 
 import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import {
+  createServer,
+  request as httpRequest,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from "node:http";
 import { createGzip } from "node:zlib";
 import { extname, join, normalize, resolve, sep } from "node:path";
 
@@ -114,15 +126,55 @@ async function forward(request: IncomingMessage, response: ServerResponse, apiOr
   }
 }
 
-export function serveDirectory(root: string, port: number, apiOrigin?: string): Promise<Server> {
+/** Forwards one request to the API with its own Host header, which fetch() cannot set. */
+async function forwardKeepingHost(
+  request: IncomingMessage,
+  response: ServerResponse,
+  apiOrigin: string,
+): Promise<void> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) chunks.push(chunk as Buffer);
+  const target = new URL(apiOrigin);
+  const upstream = httpRequest(
+    {
+      host: target.hostname,
+      port: target.port,
+      path: request.url ?? "/",
+      method: request.method,
+      headers: request.headers,
+    },
+    (answer) => {
+      response.writeHead(answer.statusCode ?? 502, answer.headers);
+      answer.pipe(response);
+    },
+  );
+  upstream.on("error", () => response.writeHead(502).end("the API did not answer"));
+  upstream.end(Buffer.concat(chunks));
+}
+
+export interface ServeOptions {
+  /** A single-page app: a page path with no file answers index.html. */
+  readonly spa?: boolean;
+  /** Pass /api/* on with the browser's own Host header. */
+  readonly keepHost?: boolean;
+}
+
+export function serveDirectory(
+  root: string,
+  port: number,
+  apiOrigin?: string,
+  options: ServeOptions = {},
+): Promise<Server> {
   const headersPath = join(root, "_headers");
   const rules = isFile(headersPath) ? parseHeaders(readFileSync(headersPath, "utf8")) : [];
   const server = createServer((request, response) => {
     if (apiOrigin !== undefined && (request.url ?? "").startsWith("/api/")) {
-      void forward(request, response, apiOrigin);
+      void (options.keepHost === true ? forwardKeepingHost : forward)(request, response, apiOrigin);
       return;
     }
-    const found = resolveFile(root, request.url ?? "/");
+    const pagePath = extname((request.url ?? "/").split("?")[0] ?? "") === "";
+    const found =
+      resolveFile(root, request.url ?? "/") ?? (options.spa === true && pagePath ? join(root, "index.html") : null);
     const file = found ?? join(root, "404.html");
     if (!isFile(file)) {
       response.writeHead(404).end("not found");

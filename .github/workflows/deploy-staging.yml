@@ -65,6 +65,13 @@ jobs:
           version=$(node scripts/release.ts upload --worker mm-site --env staging --tag "$SHA")
           node scripts/release.ts deploy --worker mm-site --env staging --split "$version@100" --message "staging $SHA"
 
+      - name: Build the client app (staging)
+        run: npm run build:app -- --env staging
+      - name: Deploy mm-app
+        run: |
+          version=$(node scripts/release.ts upload --worker mm-app --env staging --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-app --env staging --split "$version@100" --message "staging $SHA"
+
       - name: Smoke-test staging
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}

@@ -1,0 +1,97 @@
+/* Board A1, at 390 px. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--sp-64) var(--sp-24) var(--sp-24);
+}
+
+.mark {
+  width: var(--tap);
+  height: var(--sp-48);
+  color: var(--gilt);
+  fill: currentColor;
+}
+
+.title {
+  margin: var(--sp-48) 0 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-app-title);
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--paper);
+}
+
+.form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.field {
+  display: flex;
+  height: var(--btn-lg);
+  margin-top: var(--sp-36);
+  border: var(--hairline) solid var(--ink-line);
+}
+
+.field:focus-within {
+  border-color: var(--gilt);
+}
+
+.prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-15);
+  border-right: var(--hairline) solid var(--ink-line);
+  font-size: var(--fs-17);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--sp-15);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-17);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-number);
+  color: var(--paper);
+  outline: none;
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  margin-top: auto;
+  padding-top: var(--sp-24);
+}
+
+.primary {
+  height: var(--btn-lg);
+  border: 0;
+  background: var(--paper);
+  font: inherit;
+  font-size: var(--fs-16);
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.primary:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--sp-3);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  text-align: center;
+  color: var(--ink-muted);
+}

@@ -76,8 +76,9 @@ describe("the Phase 2 colour layer", () => {
   });
 
   it("adds no colour tokens.css already has", () => {
-    const coreValues = new Set(core.values());
-    expect([...phase2.values()].filter((value) => coreValues.has(value))).toEqual([]);
+    const isColour = (value: string) => /^#[0-9a-f]{3,8}$/i.test(value);
+    const coreColours = new Set([...core.values()].filter(isColour));
+    expect([...phase2.values()].filter((value) => isColour(value) && coreColours.has(value))).toEqual([]);
   });
 
   it.each([...phase2])("%s (%s) is drawn in a Phase 2 spec board", (_name, value) => {

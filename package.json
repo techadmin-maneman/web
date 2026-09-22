@@ -4,7 +4,8 @@
   "description": "Mane Man web: the mm-api Worker, the mm-site public site, and the Phase 2 surfaces, with migrations and pipeline.",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "engines": {
     "node": ">=24.11.0"
@@ -13,7 +14,7 @@
     "dev": "node scripts/ensure-dev-vars.ts && npm run db:local && wrangler dev --env=\"\" --port 8787 --inspector-port 9230",
     "dev:site": "node scripts/build-site.ts --dev",
     "db:local": "wrangler d1 migrations apply DB --local && node scripts/mark-database.ts local",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.browser.json && npm run check:site",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.browser.json && tsc --noEmit -p apps/app/tsconfig.json && npm run check:site",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -28,6 +29,8 @@
     "types:check": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example --check",
     "apply-triggers": "wrangler triggers deploy",
     "build:site": "node scripts/build-site.ts",
+    "build:app": "node scripts/build-app.ts",
+    "dev:app": "node node_modules/vite/bin/vite.js --config apps/app/vite.config.ts",
     "check:site": "node scripts/build-site.ts --check",
     "fidelity": "node scripts/fidelity.ts",
     "test:e2e": "playwright test",
