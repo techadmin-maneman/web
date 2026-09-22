@@ -1,0 +1,85 @@
+/* Board B3: loading, offline and error, on paper. */
+
+.hidden {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-14);
+}
+
+.line,
+.card {
+  background: var(--paper-shade);
+}
+
+.line {
+  width: var(--skeleton-label);
+  height: var(--sp-15);
+}
+
+.card {
+  height: var(--skeleton-card);
+}
+
+.failed {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-16);
+  min-height: 100dvh;
+  padding: var(--sp-24) var(--sp-20);
+  background: var(--paper);
+  color: var(--text);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+}
+
+.retry,
+.message {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-20);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+}
+
+.retry {
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.message {
+  border: var(--hairline) solid var(--ink);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.retry:focus-visible,
+.message:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}

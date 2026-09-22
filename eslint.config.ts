@@ -34,6 +34,7 @@ export default defineConfig(
           "./tsconfig.browser.json",
           "./site/tsconfig.json",
           "./apps/app/tsconfig.json",
+          "./apps/app/sw/tsconfig.json",
         ],
         tsconfigRootDir: import.meta.dirname,
       },

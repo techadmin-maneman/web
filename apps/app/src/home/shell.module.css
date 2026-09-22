@@ -4,9 +4,9 @@
  * focused control could be hidden (WCAG 2.4.11).
  */
 
+/* The screen's height, not flex: 1, which would let a long page stretch it and carry the tabs away. */
 .shell {
   display: flex;
-  flex: 1;
   flex-direction: column;
   height: 100dvh;
   background: var(--paper);
@@ -65,6 +65,23 @@
   font-size: var(--fs-22);
 }
 
+.offline {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--sp-12);
+  margin: 0;
+  padding: var(--sp-13) var(--sp-20);
+  background: var(--ink-deep);
+  font-size: var(--fs-15);
+  color: var(--paper);
+}
+
+.offlineIcon {
+  flex-shrink: 0;
+  color: var(--gilt);
+}
+
 .page {
   display: flex;
   flex: 1;
@@ -76,11 +93,13 @@
   overscroll-behavior: contain;
 }
 
+/* Installed on an iPhone, the app runs to the bottom edge (viewport-fit=cover): the tabs' ground does too, and their row keeps clear of the home indicator. */
 .tabs {
   display: grid;
   flex-shrink: 0;
   grid-template-columns: repeat(5, 1fr);
-  height: var(--tap-row);
+  height: calc(var(--tap-row) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   border-top: var(--hairline) solid var(--paper-line);
   background: var(--paper-light);
 }

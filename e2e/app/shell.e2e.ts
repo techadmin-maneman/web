@@ -40,6 +40,21 @@ test("reaches mm-api as the client surface, on its own host", async ({ page }) =
   expect(statuses).toEqual({ health: 200, cities: 404, me: 401 });
 });
 
+test("says board B3's error when the API cannot be reached, with a way to try again", async ({ page }) => {
+  await page.route("**/api/me", (route) => route.abort());
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "We could not load your visit." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute("href", "https://wa.me/919007973247");
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await page.unroute("**/api/me");
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+});
+
 test("keeps the design's column on a wide screen, centred", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");

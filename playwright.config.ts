@@ -68,6 +68,9 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         viewport: { width: 390, height: 844 },
         baseURL: "http://app.localhost:4322",
+        // A service worker would answer requests that page.route() means to fake. The offline
+        // tests (e2e/app/pwa.e2e.ts) allow it.
+        serviceWorkers: "block",
       },
     },
   ],

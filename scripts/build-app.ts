@@ -27,11 +27,16 @@ execFileSync(
 );
 writeFileSync(`apps/app/dist/${environment}/_headers`, headersFile(CLIENT_APP_POLICY));
 
-/** "Client app: first load under 150 KB of gzipped JavaScript" (docs/prompts/phase2-frontend.md). */
+/** "Client app: first load under 150 KB of gzipped JavaScript" (docs/prompts/phase2-frontend.md), the service worker included. */
 const BUDGET_BYTES = 150 * 1024;
-const assets = `apps/app/dist/${environment}/assets`;
-const scripts = readdirSync(assets).filter((file) => file.endsWith(".js"));
-const gzipped = scripts.reduce((total, file) => total + gzipSync(readFileSync(`${assets}/${file}`)).length, 0);
+const dist = `apps/app/dist/${environment}`;
+const scripts = [
+  "sw.js",
+  ...readdirSync(`${dist}/assets`)
+    .filter((file) => file.endsWith(".js"))
+    .map((file) => `assets/${file}`),
+];
+const gzipped = scripts.reduce((total, file) => total + gzipSync(readFileSync(`${dist}/${file}`)).length, 0);
 console.log(`app JavaScript: ${(gzipped / 1024).toFixed(1)} KB gzipped, of a ${String(BUDGET_BYTES / 1024)} KB budget`);
 if (gzipped > BUDGET_BYTES) {
   console.error("the client app's JavaScript is over its budget");

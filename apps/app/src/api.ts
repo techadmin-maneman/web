@@ -12,10 +12,22 @@ export type Address = Schemas["Address"];
 export type NumberChange = Schemas["NumberChange"];
 export type ConsentPurpose = Profile["consents"][number]["purpose"];
 
-/** A failed call carries the API's error code, or "offline" when it never reached the API. */
+/**
+ * A failed call carries the API's error code, or "offline" when it never reached
+ * the API. `cached` is true for a Home the service worker kept (apps/app/sw/sw.ts).
+ */
 export type Answer<T> =
-  | { readonly ok: true; readonly status: number; readonly body: T }
+  | { readonly ok: true; readonly status: number; readonly body: T; readonly cached: boolean }
   | { readonly ok: false; readonly status: number; readonly code: string };
+
+/** Named as in apps/app/sw/sw.ts. */
+const HOME_CACHE = "mm-app-home";
+const SERVED_FROM = "Mm-Served-From";
+
+/** The kept Home is the one personal thing the app keeps on the phone: gone at logout, and once the session has ended. */
+export async function forgetHome(): Promise<void> {
+  if ("caches" in window) await caches.delete(HOME_CACHE);
+}
 
 async function call<T>(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<Answer<T>> {
   let response: Response;
@@ -31,7 +43,12 @@ async function call<T>(method: "GET" | "POST" | "PATCH", path: string, body?: un
   }
   if (response.ok) {
     const value = response.status === 204 ? null : ((await response.json()) as unknown);
-    return { ok: true, status: response.status, body: value as T };
+    return {
+      ok: true,
+      status: response.status,
+      body: value as T,
+      cached: response.headers.get(SERVED_FROM) === "cache",
+    };
   }
   const error = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
   return { ok: false, status: response.status, code: error?.error?.code ?? "unknown" };

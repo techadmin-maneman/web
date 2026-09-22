@@ -220,8 +220,21 @@ export const profile = {
   logout: "Log out",
 } as const;
 
+/** Board B3: loading, offline and error. */
+export const states = {
+  loading: "Loading",
+  offline: "No connection. Showing your last update.",
+  error: {
+    title: "We could not load your visit.",
+    // The design's second line, "Your visit is still booked.", waits for Home's own visit data (P2-F2):
+    // until then the app cannot know that there is one.
+    retry: "Try again",
+    message: "Message us",
+  },
+} as const;
+
 export const errors = {
-  // PLACEHOLDER until board B3's states are built.
+  // PLACEHOLDER: the design draws no error for the profile.
   load: "We could not load this. Please try again.",
   retry: "Try again",
 } as const;

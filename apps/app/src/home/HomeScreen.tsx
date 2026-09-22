@@ -1,6 +1,7 @@
 // Home for a lead (board B2): the consultation, and what to expect. Until
 // self-serve booking is on, Reschedule and Add a note open WhatsApp to ops
-// with a message ready (docs/prompts/phase2-backend.md, "Booking").
+// with a message ready (docs/prompts/phase2-backend.md, "Booking"). Offline,
+// booking and rescheduling wait for the connection (board B3).
 
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Me } from "../api.ts";
@@ -9,16 +10,22 @@ import styles from "./home.module.css";
 
 const whatsappWith = (text: string) => `https://wa.me/${whatsapp.number}?text=${encodeURIComponent(text)}`;
 
-export function HomeScreen({ me }: { me: Me }) {
+export function HomeScreen({ me, offline }: { me: Me; offline: boolean }) {
   const { consultation } = me;
   if (consultation === null) {
     return (
       <section className={styles.nothing}>
         <h1 className={styles.nothingTitle}>{home.nothing.title}</h1>
         <p>{home.nothing.body}</p>
-        <a className={styles.book} href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}>
-          {home.nothing.book}
-        </a>
+        {offline ? (
+          <button className={styles.book} type="button" disabled>
+            {home.nothing.book}
+          </button>
+        ) : (
+          <a className={styles.book} href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}>
+            {home.nothing.book}
+          </a>
+        )}
       </section>
     );
   }
@@ -37,9 +44,15 @@ export function HomeScreen({ me }: { me: Me }) {
           {consultation.place !== "" && <p className={styles.place}>{consultation.place}</p>}
           <p className={styles.free}>{copy.free}</p>
           <div className={styles.actions}>
-            <a className={styles.action} href={whatsappWith(copy.rescheduleMessage(date))} rel="noopener">
-              {copy.reschedule}
-            </a>
+            {offline ? (
+              <button className={styles.action} type="button" disabled>
+                {copy.reschedule}
+              </button>
+            ) : (
+              <a className={styles.action} href={whatsappWith(copy.rescheduleMessage(date))} rel="noopener">
+                {copy.reschedule}
+              </a>
+            )}
             <a className={styles.action} href={whatsappWith(copy.noteMessage(date))} rel="noopener">
               {copy.note}
             </a>
