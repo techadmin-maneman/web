@@ -7,11 +7,14 @@ import type { Surface } from "./config/environments.ts";
 import { productionDependencies, type Dependencies, type DependencyFactory } from "./dependencies.ts";
 import { auditCall } from "./domain/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
+import type { Session } from "./domain/sessions.ts";
 import { requireAccess, type AccessIdentity } from "./http/access.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { registerCities } from "./routes/cities.ts";
+import { registerClientAuth } from "./routes/client-auth.ts";
+import { registerClientMe } from "./routes/client-me.ts";
 import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerHealth } from "./routes/health.ts";
@@ -33,6 +36,8 @@ export type AppEnv = {
     surface: Surface;
     /** Set on the ops surface by requireAccess. */
     accessIdentity?: AccessIdentity;
+    /** Set on the client surface's session routes by requireClientSession. */
+    clientSession?: Session;
   };
 };
 
@@ -45,8 +50,8 @@ const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);
 
 /**
  * Each surface's routes (docs/decisions/0026-hosts-and-surfaces.md). A route
- * answers only on its own surface's host; anywhere else it is a 404. The
- * Phase 2 surfaces have only their health check until their milestones.
+ * answers only on its own surface's host; anywhere else it is a 404. The ops
+ * and technician surfaces have only their health check until their milestones.
  */
 const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>> = {
   public: [
@@ -61,7 +66,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
   ],
-  client: [registerHealth],
+  client: [registerHealth, registerClientAuth, registerClientMe],
   ops: [registerHealth],
   tech: [registerHealth],
 };

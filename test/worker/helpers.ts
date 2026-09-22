@@ -9,6 +9,7 @@ import { createAccessVerifier } from "../../src/http/access.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
 import { createImageProvider } from "../../src/providers/image.ts";
+import type { CodeChannel } from "../../src/providers/codes.ts";
 import { createStubMessaging } from "../../src/providers/messaging.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
@@ -25,6 +26,12 @@ export const LOCAL_SETTINGS: Settings = {
   erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   access: null,
+  login: {
+    codePepper: "test-login-code-pepper-that-is-long-enough",
+    codeMobileDailyLimit: 5,
+    codeIpHourlyLimit: 10,
+    codeDailyCeiling: 300,
+  },
   tryon: {
     uploadIpHourlyLimit: 5,
     generateIpHourlyLimit: 5,
@@ -44,7 +51,13 @@ export const LOCAL_SETTINGS: Settings = {
 
 export const LOCAL_CONFIG: StaticConfig = {
   environment: "local",
-  providers: { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub", ACCESS_PROVIDER: "stub" },
+  providers: {
+    IMAGE_PROVIDER: "stub",
+    CRM_PROVIDER: "stub",
+    MESSAGING_PROVIDER: "stub",
+    ACCESS_PROVIDER: "stub",
+    SMS_PROVIDER: "stub",
+  },
   settings: LOCAL_SETTINGS,
 };
 
@@ -102,14 +115,23 @@ export const turnstilePasses: Handler = () => json({ success: true });
 
 export const NOW = new Date("2026-09-21T06:30:00Z"); // 12:00 on Monday 21 September in India
 
+export interface SentCode {
+  readonly channel: CodeChannel;
+  readonly to: string;
+  readonly code: string;
+}
+
 export interface TestDependencies extends Dependencies {
   readonly alerts: string[];
   readonly leadNotices: string[];
+  /** Every login code sent, as the phone would receive it. */
+  readonly sentCodes: SentCode[];
 }
 
 export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDependencies {
   const alerts: string[] = [];
   const leadNotices: string[] = [];
+  const sentCodes: SentCode[] = [];
   const now = overrides.now ?? (() => NOW);
   return {
     fetch: fakeFetch({ [TURNSTILE_URL]: turnstilePasses }).fetch,
@@ -128,6 +150,14 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     },
     leadNotices,
     access: createAccessVerifier(null, { fetch, now }),
+    codes: {
+      smsAvailable: true,
+      send: (channel, to, code) => {
+        sentCodes.push({ channel, to, code });
+        return Promise.resolve({ ok: true, providerMessageId: `code-${String(sentCodes.length)}` });
+      },
+    },
+    sentCodes,
     ...overrides,
   };
 }

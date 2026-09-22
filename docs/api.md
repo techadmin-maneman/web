@@ -542,7 +542,9 @@ Evolution's delivery receipts (messages.update) for the WhatsApp messages we sen
             "look_limit_reached",
             "unauthorized",
             "forbidden_origin",
-            "access_required"
+            "access_required",
+            "code_expired",
+            "too_early"
           ]
         },
         "request_id": {

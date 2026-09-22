@@ -90,5 +90,8 @@ export const PROVIDER_VARS = {
   MESSAGING_PROVIDER: ["evolution", "stub"],
   // Verifies the Cloudflare Access token on the ops surface (docs/decisions/0031-access-and-audit.md).
   ACCESS_PROVIDER: ["cloudflare", "stub"],
+  // Login codes by SMS need a DLT-registered provider. Until one is chosen, "none": the app offers WhatsApp only
+  // (docs/decisions/0030-one-time-codes.md). "none" is not a stub, so production may hold it.
+  SMS_PROVIDER: ["none", "stub"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;

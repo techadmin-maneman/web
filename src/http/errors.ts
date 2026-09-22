@@ -27,6 +27,9 @@ export const ERROR_CODES = [
   "forbidden_origin",
   // The ops surface: no valid Cloudflare Access token (docs/decisions/0031-access-and-audit.md).
   "access_required",
+  // The client app's login (docs/decisions/0030-one-time-codes.md): the challenge is closed, or it is too soon to resend.
+  "code_expired",
+  "too_early",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

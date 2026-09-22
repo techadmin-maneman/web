@@ -64,6 +64,15 @@ export interface AccessSettings {
   readonly opsAudience: string | null;
 }
 
+export interface LoginSettings {
+  /** The HMAC key login codes are hashed under. Required wherever the client surface is switched on. */
+  readonly codePepper: string;
+  readonly codeMobileDailyLimit: number;
+  readonly codeIpHourlyLimit: number;
+  /** Codes sent a day across every number: the hard limit on what a flood of requests can send. */
+  readonly codeDailyCeiling: number;
+}
+
 export interface Settings {
   readonly visitLeadDays: number;
   readonly leadMobileDailyLimit: number;
@@ -85,6 +94,7 @@ export interface Settings {
   readonly zoho: ZohoSettings | null;
   /** Present when ACCESS_PROVIDER is "cloudflare". */
   readonly access: AccessSettings | null;
+  readonly login: LoginSettings;
   readonly tryon: TryonSettings;
   readonly messaging: MessagingSettings;
 }
@@ -235,6 +245,14 @@ export function readSettings(
     read.problems.push("ACCESS_PROVIDER is a stub in staging: staff identity is verified everywhere but locally");
   }
 
+  const clientOn = environment !== undefined && ENABLED_SURFACES[environment].includes("client");
+  const login: LoginSettings = {
+    codePepper: clientOn ? read.key("OTP_PEPPER") : (read.optionalText("OTP_PEPPER") ?? ""),
+    codeMobileDailyLimit: read.count("OTP_MOBILE_DAILY_LIMIT"),
+    codeIpHourlyLimit: read.count("OTP_IP_HOURLY_LIMIT"),
+    codeDailyCeiling: read.count("OTP_DAILY_CEILING"),
+  };
+
   const tryon: TryonSettings = {
     uploadIpHourlyLimit: read.count("TRYON_UPLOAD_IP_HOURLY_LIMIT"),
     generateIpHourlyLimit: read.count("TRYON_GENERATE_IP_HOURLY_LIMIT"),
@@ -295,6 +313,7 @@ export function readSettings(
     erasureSecret: read.key("ERASURE_SECRET"),
     zoho,
     access,
+    login,
     tryon,
     messaging,
   };

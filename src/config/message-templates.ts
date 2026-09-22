@@ -10,6 +10,8 @@
 const TEMPLATES: Readonly<Record<string, string>> = {
   tryon_result_v1:
     "Hello {{1}}, here is your Mane Man try-on. What you see is a simulation, not a photograph of a result.",
+  // The client app's login code (docs/decisions/0030-one-time-codes.md). PLACEHOLDER COPY, pending the owner's wording.
+  login_code_v1: "{{1}} is your Mane Man code. It works for ten minutes. We will never ask you for it.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */

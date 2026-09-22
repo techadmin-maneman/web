@@ -26,6 +26,7 @@ export default defineConfig({
                 IP_HASH_SALT: "local-development-salt-not-a-real-secret",
                 RESULT_SIGNING_KEY: "local-link-signing-key-not-a-real-secret",
                 ERASURE_SECRET: "local-erasure-secret-not-a-real-secret",
+                OTP_PEPPER: "local-login-code-pepper-not-a-real-secret",
               },
             },
           }),

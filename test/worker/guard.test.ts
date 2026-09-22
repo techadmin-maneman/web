@@ -6,8 +6,15 @@ const REAL = {
   CRM_PROVIDER: "zoho",
   MESSAGING_PROVIDER: "evolution",
   ACCESS_PROVIDER: "cloudflare",
+  SMS_PROVIDER: "none",
 };
-const STUBS = { IMAGE_PROVIDER: "stub", CRM_PROVIDER: "stub", MESSAGING_PROVIDER: "stub", ACCESS_PROVIDER: "stub" };
+const STUBS = {
+  IMAGE_PROVIDER: "stub",
+  CRM_PROVIDER: "stub",
+  MESSAGING_PROVIDER: "stub",
+  ACCESS_PROVIDER: "stub",
+  SMS_PROVIDER: "stub",
+};
 
 /** Vars and secrets every environment needs, with valid values. */
 const SETTINGS = {
@@ -33,6 +40,10 @@ const SETTINGS = {
   WA_RESULT_TEMPLATE: "tryon_result_v1",
   ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
   ACCESS_OPS_AUD: "ops-audience-tag",
+  OTP_PEPPER: "a-login-code-pepper-of-at-least-thirty-two-chars",
+  OTP_MOBILE_DAILY_LIMIT: "5",
+  OTP_IP_HOURLY_LIMIT: "10",
+  OTP_DAILY_CEILING: "300",
 };
 const IMAGE = { AILAB_API_KEY: "ailab-key" };
 const EVOLUTION = {
@@ -92,7 +103,7 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(4);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(5);
   });
 
   it("refuses a missing or unknown provider", () => {

@@ -35,6 +35,7 @@ The public site (`mm-site`) is built, edited and published as `docs/frontend.md`
 | 10. Access bypass for result links          | done                                  | not applicable                                  |
 | 11. Phase 2 hosts: DNS, Access              | done                                  | done (all three behind Access until go-live)    |
 | 11. Phase 2 surfaces switched on            | done (22 September 2026)              | not yet: waits for the production go-ahead      |
+| 7. Worker secrets: login code pepper        | done (22 September 2026)              | not yet: with the client surface                |
 | 12. Evolution receipts: token, bypass       | done                                  | not yet                                         |
 | 12. Evolution receipts: the webhook         | open: the shared instance's webhook   | not yet                                         |
 
@@ -283,6 +284,16 @@ To switch one on:
    The config check fails if either comes without the other.
 
 5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
+
+### 11a. The client app's login
+
+Before the client surface is switched on in an environment, give its Worker the pepper that login codes are hashed under (docs/decisions/0030-one-time-codes.md): a random value of at least 32 characters, different in each environment.
+
+```sh
+openssl rand -hex 32 | W secret put OTP_PEPPER --env <env>
+```
+
+Changing it later voids every code in flight; sessions are unaffected. SMS stays off (`SMS_PROVIDER` is `none`) until a DLT-registered provider is set up.
 
 ### 12. WhatsApp delivery receipts (Evolution)
 

@@ -67,6 +67,11 @@
     "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
     // The stub needs no audience.
     "ACCESS_OPS_AUD": "",
+    "SMS_PROVIDER": "stub",
+    // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
+    "OTP_MOBILE_DAILY_LIMIT": "5",
+    "OTP_IP_HOURLY_LIMIT": "10",
+    "OTP_DAILY_CEILING": "300",
     "VISIT_LEAD_DAYS": "2",
     "LEAD_MOBILE_DAILY_LIMIT": "5",
     "LEAD_IP_DAILY_LIMIT": "20",
@@ -152,6 +157,11 @@
         "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
         // The ops-staging Access application's audience tag.
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
+        "SMS_PROVIDER": "none",
+        // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
+        "OTP_MOBILE_DAILY_LIMIT": "5",
+        "OTP_IP_HOURLY_LIMIT": "10",
+        "OTP_DAILY_CEILING": "300",
         "VISIT_LEAD_DAYS": "2",
         "LEAD_MOBILE_DAILY_LIMIT": "5",
         "LEAD_IP_DAILY_LIMIT": "20",
@@ -231,6 +241,11 @@
         "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
         // The ops Access application's audience tag; unused until ops is switched on in production.
         "ACCESS_OPS_AUD": "aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773",
+        "SMS_PROVIDER": "none",
+        // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
+        "OTP_MOBILE_DAILY_LIMIT": "5",
+        "OTP_IP_HOURLY_LIMIT": "10",
+        "OTP_DAILY_CEILING": "300",
         "VISIT_LEAD_DAYS": "2",
         "LEAD_MOBILE_DAILY_LIMIT": "5",
         "LEAD_IP_DAILY_LIMIT": "20",

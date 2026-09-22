@@ -80,6 +80,15 @@ export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date
       )
       .bind(personId, at),
     db.prepare("DELETE FROM tryon_sessions WHERE person_id = ?1").bind(personId),
+    // The client app: every session ends, and every open login code stops working (docs/decisions/0029, 0030).
+    db
+      .prepare(
+        "UPDATE sessions SET revoked_at = ?2 WHERE subject_kind = 'client' AND subject_id = ?1 AND revoked_at IS NULL",
+      )
+      .bind(personId, at),
+    db
+      .prepare("UPDATE otp_challenges SET voided_at = ?2, code_hash = NULL WHERE person_id = ?1 AND voided_at IS NULL")
+      .bind(personId, at),
     // The number is replaced, not kept: a later booking from it starts afresh, with a new consent.
     db
       .prepare(
