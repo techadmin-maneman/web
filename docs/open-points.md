@@ -53,15 +53,14 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 
 ## Release
 
-| #   | Point                              | Staging uses                                                    | Before production                                                                                                                   |
-| --- | ---------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 28  | Phase 1 in production              | Waiting                                                         | The owner's go-ahead releases Phase 1 and Phase 2 together.                                                                         |
-| 29  | Production's app Workers           | Not bootstrapped                                                | Bootstrap `mm-app-production` (and later `mm-ops-production`, `mm-tech-production`), then add each to the `mm-ci-production` token. |
-| 30  | Production's Access service policy | Parked: `mm-ci-production` does not appear in the policy picker | Add the Service Auth policy for `mm-ci-production` on production's Access apps.                                                     |
-| 31  | Analytics IDs                      | None                                                            | The owner supplies them.                                                                                                            |
-| 32  | Production's queue for FSM         | Not created                                                     | Create `mm-fsm-sync-prod` before the first production deploy that sends to it, then run `apply-triggers` (runbook 11b).             |
-| 33  | Production's photographs bucket    | Not created                                                     | Create `mm-prod-client-photos`, with no lifecycle rule, before the first production deploy that uses it (runbook 11b).              |
-| 34  | Photograph sizes                   | FSM's app uploads full-size photographs, several MB each        | Our technician app (P2-M4) re-encodes them on the phone to about 270 KB, as ADR 0039's R2 budget assumes. Watch R2 until then.      |
+| #   | Point                           | Staging uses                                             | Before production                                                                                                                   |
+| --- | ------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 28  | Phase 1 in production           | Waiting                                                  | The owner's go-ahead releases Phase 1 and Phase 2 together.                                                                         |
+| 29  | Production's app Workers        | Not bootstrapped                                         | Bootstrap `mm-app-production` (and later `mm-ops-production`, `mm-tech-production`), then add each to the `mm-ci-production` token. |
+| 31  | Analytics IDs                   | None                                                     | The owner supplies them.                                                                                                            |
+| 32  | Production's queue for FSM      | Not created                                              | Create `mm-fsm-sync-prod` before the first production deploy that sends to it, then run `apply-triggers` (runbook 11b).             |
+| 33  | Production's photographs bucket | Not created                                              | Create `mm-prod-client-photos`, with no lifecycle rule, before the first production deploy that uses it (runbook 11b).              |
+| 34  | Photograph sizes                | FSM's app uploads full-size photographs, several MB each | Our technician app (P2-M4) re-encodes them on the phone to about 270 KB, as ADR 0039's R2 budget assumes. Watch R2 until then.      |
 
 ## Settled
 
@@ -71,3 +70,4 @@ How to hand over each answer is in `docs/phase2-inputs.md`.
 - **Bot Fight Mode is off.** 22 September 2026 (ADR 0025, item 12).
 - **The Zoho org the trial runs in is the real one.** 22 September 2026 (ADR 0025, item 26).
 - **The FSM trial findings** are recorded, apart from webhooks (`docs/decisions/fsm-trial.md`).
+- **Production's Access service token (item 30).** `mm-ci-production` has a Service Auth policy on production's Access applications (ops, app, tech), set up by the owner on 22 September 2026. It is kept in `.env.production-access` and as the `production` environment's `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` in GitHub; `verify-ci-secrets` checks it against the ops console (`docs/runbook.md`, step 3).
