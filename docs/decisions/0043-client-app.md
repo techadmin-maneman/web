@@ -85,6 +85,8 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
   - **`GET /api/me`, Home's data,** comes from the network and is kept. With no network, the kept copy is answered, marked `Mm-Served-From: cache`, and the app shows B3's offline banner over it. Booking and rescheduling are disabled until the connection is back.
   - **No other API answer is kept,** so no photograph or document ever is.
 - **The kept Home is the one personal thing on the phone.** The app deletes it at logout and whenever the API says the session has ended, rather than leaving it to the service worker, which does not see a page loaded around it (a hard reload).
+- **Back online, Home is fetched again,** tried a few times over some seconds, since a connection is often not usable the moment the phone reports it.
+- **Installed on an iPhone the app runs to the bottom edge** (`viewport-fit=cover`), so the tab bar and the login pad for the home indicator.
 - **Board B3's three states.** Loading is the design's two blocks, used while the profile loads. Offline is the ink banner, shown for a kept Home and whenever the connection drops. The error is the design's, with Try again and Message us.
   - **The error leaves out the design's "Your visit is still booked."** When the app cannot reach the API it cannot know that there is a visit. The line returns with Home's own visit data (P2-F2).
 - **Tests.** The app's browser tests block service workers, since one would answer requests a test fakes; `e2e/app/pwa.e2e.ts` allows them and covers installability (Chrome's own check), the offline Home, the kept files, and logout. The JavaScript budget counts the service worker: 79.8 KB gzipped in all.
