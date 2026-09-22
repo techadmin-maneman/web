@@ -46,9 +46,10 @@ beforeEach(async () => {
 });
 
 describe("POST /api/lead: a served city", () => {
-  it("saves the person, consent and lead, queues the sync, and proposes a visit day", async () => {
+  it("saves the person, consent and lead, queues the syncs to the CRM and FSM, and proposes a visit day", async () => {
     const queue = fakeQueue();
-    const res = await request(appFor(), "/api/lead", post(BOOKING), { CRM_QUEUE: queue });
+    const fsmQueue = fakeQueue();
+    const res = await request(appFor(), "/api/lead", post(BOOKING), { CRM_QUEUE: queue, FSM_QUEUE: fsmQueue });
 
     expect(res.status).toBe(201);
     const body = LeadResponseSchema.parse(await res.json());
@@ -85,6 +86,7 @@ describe("POST /api/lead: a served city", () => {
     });
 
     expect(queue.sent).toEqual([{ lead_id: body.lead_id, request_id: res.headers.get("X-Request-Id") }]);
+    expect(fsmQueue.sent).toEqual([{ lead_id: body.lead_id, request_id: res.headers.get("X-Request-Id") }]);
   });
 
   it("proposes the first weekend day for a weekend window, after four for an evening", async () => {

@@ -17,7 +17,10 @@ import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 /** The only module the mirror follows by webhook; others are ignored. */
 const APPOINTMENTS = "Service_Appointments";
 
-/** The fields the workflow rule sends, as JSON or as a form. Anything else is ignored. */
+/**
+ * The fields the workflow rule sends: FSM puts a webhook's form parameters in the query string, with an
+ * empty body; JSON or a form body are read too. Anything else is ignored.
+ */
 const FsmHintSchema = z.object({
   module: z.string(),
   id: z.string().min(1).max(40),
@@ -50,7 +53,7 @@ export function registerFsmHook(app: App): void {
     const body: unknown = isJson
       ? await c.req.json<unknown>().catch(() => null)
       : await c.req.parseBody().catch(() => null);
-    const parsed = FsmHintSchema.safeParse(body);
+    const parsed = FsmHintSchema.safeParse({ ...c.req.query(), ...(typeof body === "object" ? body : {}) });
     if (!parsed.success) {
       log.warn("fsm_hook_unreadable");
       return c.body(null, 204);

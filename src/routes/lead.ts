@@ -16,6 +16,7 @@ import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { saltedHash, sha256Hex } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
+import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
 export const AttributionSchema = z
   .object({
@@ -192,6 +193,17 @@ async function createLead(c: Context<AppEnv>, request: LeadRequest): Promise<Out
   }
 
   if (!city.served) return { ok: true, body: { lead_id: leadId, served: false } };
+
+  // A booking goes to FSM too, as a Request for ops to schedule (src/domain/fsm-leads.ts).
+  if (c.var.config.providers.FSM_PROVIDER !== "none") {
+    try {
+      await c.env.FSM_QUEUE.send({ lead_id: leadId, request_id: requestId } satisfies FsmSyncMessage);
+    } catch (error) {
+      // The lead is in D1 and the CRM; ops can enter it in FSM by hand.
+      log.warn("fsm_enqueue_failed", { lead_id: leadId, error });
+    }
+  }
+
   const body: LeadResponse = { lead_id: leadId, served: true, window_label: windowLabel(request.first_choice_window) };
   if (proposedVisitDate !== null) body.proposed_visit_date = proposedVisitDate;
   return { ok: true, body };

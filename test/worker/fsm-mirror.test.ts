@@ -278,11 +278,18 @@ describe("FSM's webhook", () => {
     await markDatabase();
   });
 
-  function hook(body: string, contentType: string, token = TOKEN, settings: object = connected, queue = fakeQueue()) {
+  function hook(
+    body: string,
+    contentType: string,
+    token = TOKEN,
+    settings: object = connected,
+    queue = fakeQueue(),
+    query = "",
+  ) {
     const app = appFor("local", fakeDependencies(), { ...LOCAL_SETTINGS, ...settings });
     const response = request(
       app,
-      `/api/hooks/fsm/${token}`,
+      `/api/hooks/fsm/${token}${query}`,
       { method: "POST", body, headers: { "Content-Type": contentType } },
       { FSM_QUEUE: queue },
     );
@@ -316,6 +323,23 @@ describe("FSM's webhook", () => {
     const again = hook(hint, "application/json");
     expect((await again.response).status).toBe(204);
     expect([...first.queue.sent, ...again.queue.sent]).toHaveLength(1);
+  });
+
+  it("reads the hint from the query string, as FSM sends it, with an empty form body", async () => {
+    // As a delivery from FSM arrived on staging on 22 September 2026.
+    const query = "?modified_time=2026-09-22+05%3A41%3A09&module=Service_Appointments&id=ap-1";
+    const { response, queue } = hook(
+      "",
+      "application/x-www-form-urlencoded;charset=UTF-8",
+      TOKEN,
+      connected,
+      fakeQueue(),
+      query,
+    );
+    expect((await response).status).toBe(204);
+    expect(queue.sent).toEqual([
+      { fsm_id: "ap-1", inbox_id: expect.any(String) as string, request_id: expect.any(String) as string },
+    ]);
   });
 
   it("ignores other modules and unreadable bodies, without asking FSM to send them again", async () => {

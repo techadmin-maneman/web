@@ -1,16 +1,19 @@
-// The fsm-sync consumer: each message names an FSM appointment to read afresh
+// The fsm-sync consumer. Most messages name an FSM appointment to read afresh
 // and write over its mirror copy (docs/decisions/0032-fsm-mirror.md). FSM's
-// webhooks and the reconciliation put messages here; neither is trusted for
-// the appointment's contents, only for which one changed.
+// webhooks and the reconciliation put them here; neither is trusted for the
+// appointment's contents, only for which one changed. The others name a
+// booked lead to send to FSM as a Request (src/domain/fsm-leads.ts).
 //
 // Once an appointment is closed, its photographs are copied from FSM into the
 // client-photos bucket (src/domain/visit-photos.ts).
 //
-// A failed sync is retried after 30 s, 1, 2 and 4 minutes. The fifth failure
-// alerts and gives up; the reconciliation picks the appointment up again.
+// A failure is retried after 30 s, 1, 2 and 4 minutes. The fifth alerts and
+// gives up; the reconciliation picks an appointment up again, and ops can
+// enter a lead in FSM by hand.
 
 import { z } from "zod";
 import type { Dependencies } from "../dependencies.ts";
+import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { scrubString, type Logger } from "../log.ts";
@@ -18,12 +21,15 @@ import { scrubString, type Logger } from "../log.ts";
 export const MAX_FSM_SYNC_ATTEMPTS = 5;
 const FIRST_RETRY_DELAY_SECONDS = 30;
 
-export const FsmSyncMessageSchema = z.object({
-  fsm_id: z.string().min(1),
-  /** The webhook delivery that asked for it, if one did. */
-  inbox_id: z.uuid().optional(),
-  request_id: z.string(),
-});
+export const FsmSyncMessageSchema = z.union([
+  z.object({
+    fsm_id: z.string().min(1),
+    /** The webhook delivery that asked for it, if one did. */
+    inbox_id: z.uuid().optional(),
+    request_id: z.string(),
+  }),
+  z.object({ lead_id: z.uuid(), request_id: z.string() }),
+]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
 export type FsmSyncEnv = Pick<Env, "DB" | "CLIENT_PHOTOS">;
@@ -33,6 +39,7 @@ export async function handleFsmSyncBatch(
   env: FsmSyncEnv,
   deps: Dependencies,
   log: Logger,
+  { labelAsTest }: { labelAsTest: boolean } = { labelAsTest: false },
 ): Promise<void> {
   const db = env.DB;
   for (const message of batch.messages) {
@@ -40,6 +47,12 @@ export async function handleFsmSyncBatch(
     if (!parsed.success) {
       log.error("fsm_sync_bad_message", { message_id: message.id });
       message.ack();
+      continue;
+    }
+    if ("lead_id" in parsed.data) {
+      await sendLead(message, parsed.data.lead_id, db, deps, log.child({ request_id: parsed.data.request_id }), {
+        labelAsTest,
+      });
       continue;
     }
     const { fsm_id: fsmId, inbox_id: inboxId, request_id: requestId } = parsed.data;
@@ -72,6 +85,32 @@ export async function handleFsmSyncBatch(
       } else {
         message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
       }
+    }
+  }
+}
+
+async function sendLead(
+  message: Message,
+  leadId: string,
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+  options: { labelAsTest: boolean },
+): Promise<void> {
+  try {
+    const outcome = await sendLeadToFsm(db, deps.fsm, leadId, options);
+    log.info("fsm_lead", { lead_id: leadId, outcome });
+    message.ack();
+  } catch (error) {
+    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    log.warn("fsm_lead_failed", { lead_id: leadId, attempt: message.attempts, reason });
+    if (message.attempts >= MAX_FSM_SYNC_ATTEMPTS) {
+      await deps.alert(
+        `Lead ${leadId} did not reach FSM after ${String(message.attempts)} attempts: ${reason}. Enter it in FSM by hand.`,
+      );
+      message.ack();
+    } else {
+      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
     }
   }
 }

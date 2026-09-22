@@ -9,13 +9,25 @@
 //   GET /fsm/v1/Service_And_Parts?per_page=200         { data: [item] }
 //   GET /fsm/v1/Service_Appointments/{id}/Attachments  { data: [attachment] }, or 204
 //   GET /fsm/v1/files?file_id=                         the file itself
+//   GET /fsm/v1/Territories                            { data: [territory] }
+//   POST /fsm/v1/Contacts                              { data: { Contacts: [{ id }] } }
+//   POST /fsm/v1/Requests                              { data: { Requests: [{ id }], Service_Line_Items: [...] } }
 //
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
 import { z } from "zod";
 import type { ZohoFsmSettings } from "../config/settings.ts";
 import type { Logger } from "../log.ts";
-import type { FsmAppointment, FsmAttachment, FsmContact, FsmItem, FsmProvider, FsmTechnician } from "./fsm.ts";
+import type {
+  FsmAppointment,
+  FsmAttachment,
+  FsmContact,
+  FsmItem,
+  FsmProvider,
+  FsmTechnician,
+  NewFsmContact,
+  NewFsmRequest,
+} from "./fsm.ts";
 import { createTokenCache, type TokenStore, ZohoError, zohoErrorFrom, zohoSend } from "./zoho-http.ts";
 
 interface Dependencies {
@@ -66,6 +78,17 @@ const User = z.object({
 });
 
 const Item = z.object({ id: z.string(), Name: z.string(), Type: z.enum(["Service", "Part"]) });
+
+const Addresses = z.object({
+  Service_Address: z.object({ id: z.string() }),
+  Billing_Address: z.object({ id: z.string() }),
+});
+
+/** What a create answers: the new record under its module's name. */
+const Created = z.object({ data: z.record(z.string(), z.array(z.object({ id: z.string() }))) });
+
+/** A new contact's street, until the client gives their address. */
+const ADDRESS_TO_CONFIRM = "To be confirmed with the client";
 
 const Attachment = z.object({
   id: z.string(),
@@ -131,11 +154,19 @@ export function fsmTokenStore(db: D1Database): TokenStore {
 export function createZohoFsmClient(settings: ZohoFsmSettings, deps: Dependencies) {
   const tokens = createTokenCache(settings, fsmTokenStore(deps.db), deps);
 
-  return async function request(step: string, path: string): Promise<Response> {
+  return async function request(
+    step: string,
+    path: string,
+    write?: { method: "POST"; body: unknown },
+  ): Promise<Response> {
     for (const forceRefresh of [false, true]) {
       const token = await tokens.get(forceRefresh);
       const response = await zohoSend(deps, step, `https://${settings.apiHost}${path}`, {
-        headers: { Authorization: `Zoho-oauthtoken ${token}` },
+        headers: {
+          Authorization: `Zoho-oauthtoken ${token}`,
+          ...(write === undefined ? {} : { "Content-Type": "application/json" }),
+        },
+        ...(write === undefined ? {} : { method: write.method, body: JSON.stringify(write.body) }),
       });
       if (response.status === 401 && !forceRefresh) continue;
       if (!response.ok) throw zohoErrorFrom(response.status, await response.json().catch(() => null));
@@ -160,6 +191,30 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
     if (answer === null) return [];
     const list = (answer as Record<string, unknown>)[key];
     return z.array(schema).parse(list ?? []);
+  }
+
+  /** Adds one record to a module and returns its ID. */
+  async function create(step: string, module: string, record: Record<string, unknown>): Promise<string> {
+    const response = await request(step, `/fsm/v1/${module}`, { method: "POST", body: { data: [record] } });
+    const id = Created.parse(await response.json()).data[module]?.[0]?.id;
+    if (id === undefined) throw new ZohoError(response.status, "NO_ID", `${step} answered without the new ID`);
+    return id;
+  }
+
+  let territory: Promise<string> | null = null;
+  /** The territory a new address goes in: the org's first, until territories follow pincodes (P2-M4). */
+  function firstTerritory(): Promise<string> {
+    territory ??= json("territories", "/Territories")
+      .then((answer) => {
+        const [first] = records(answer, "data", z.object({ id: z.string() }));
+        if (first === undefined) throw new ZohoError(404, "NO_TERRITORY", "FSM has no territory for the address");
+        return first.id;
+      })
+      .catch((error: unknown) => {
+        territory = null;
+        throw error;
+      });
+    return territory;
   }
 
   return {
@@ -227,6 +282,54 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
         body: response.body as ReadableStream<Uint8Array>,
         contentType: response.headers.get("Content-Type")?.split(";")[0] ?? "application/octet-stream",
       };
+    },
+
+    async createContact(contact: NewFsmContact) {
+      return create("create_contact", "Contacts", {
+        ...(contact.firstName === null ? {} : { First_Name: contact.firstName }),
+        Last_Name: contact.lastName,
+        Mobile: contact.mobile,
+        ...(contact.email === null ? {} : { Email: contact.email }),
+        GST_Treatment: "consumer",
+        ...(contact.stateCode === null ? {} : { Place_of_Supply: contact.stateCode }),
+        Service_Address: {
+          Address_Name: "Service Address",
+          Street_1: ADDRESS_TO_CONFIRM,
+          City: contact.city,
+          ...(contact.state === null ? {} : { State: contact.state }),
+          Country: "India",
+          Territory: await firstTerritory(),
+        },
+        Billing_Address: "$SUBLOOKUP_Service_Address",
+      });
+    },
+
+    // A Request and its line both need the contact's addresses by ID.
+    async createRequest(wanted: NewFsmRequest) {
+      const [contact] = records(await json("request_contact", `/Contacts/${wanted.contactId}`), "data", Addresses);
+      if (contact === undefined) throw new ZohoError(404, "NO_CONTACT", "the Request's contact is not in FSM");
+      const serviceAddress = { id: contact.Service_Address.id };
+      return create("create_request", "Requests", {
+        Summary: wanted.summary,
+        Contact: wanted.contactId,
+        Service_Address: serviceAddress,
+        Billing_Address: { id: contact.Billing_Address.id },
+        Request_Origin: "Web",
+        Preference: {
+          ...(wanted.preferredDate === null ? {} : { Preferred_Date_1: wanted.preferredDate }),
+          Preference_Note: wanted.preferenceNote,
+        },
+        ...(wanted.preferredDate === null ? {} : { Due_Date: wanted.preferredDate }),
+        Service_Line_Items: [
+          {
+            Service: wanted.serviceId,
+            Quantity: 1,
+            Sequence: 1,
+            Contact: wanted.contactId,
+            Service_Address: serviceAddress,
+          },
+        ],
+      });
     },
   };
 }

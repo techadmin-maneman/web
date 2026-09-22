@@ -1,9 +1,11 @@
 // Zoho FSM, the system of record for field work, behind an interface
 // (docs/decisions/0032-fsm-mirror.md). Callers use FsmProvider; only this file
 // knows which implementation runs, and only src/providers/fsm-zoho.ts knows
-// FSM's API. Reads feed the D1 mirror; nothing here writes yet.
+// FSM's API. Reads feed the D1 mirror. The only writes so far put a booked
+// lead into FSM, as a contact and a Request for ops to schedule.
 
 import type { ZohoFsmSettings } from "../config/settings.ts";
+import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { createZohoFsm } from "./fsm-zoho.ts";
 
@@ -69,6 +71,31 @@ export interface FsmDownload {
   readonly contentType: string;
 }
 
+/** A person to add to FSM as a contact. Their full address is confirmed with them later; FSM holds the city. */
+export interface NewFsmContact {
+  readonly firstName: string | null;
+  readonly lastName: string;
+  /** E.164, as the mirror matches it. */
+  readonly mobile: string;
+  readonly email: string | null;
+  readonly city: string;
+  /** The state, e.g. Haryana, and its GST code, e.g. HR; null where the city is not one we know. */
+  readonly state: string | null;
+  readonly stateCode: string | null;
+}
+
+/** A visit a client asked for, for ops to schedule in FSM: a Request. */
+export interface NewFsmRequest {
+  readonly contactId: string;
+  readonly summary: string;
+  /** The service item asked for, e.g. the Consultation. */
+  readonly serviceId: string;
+  /** YYYY-MM-DD, the day the client asked for, if any. */
+  readonly preferredDate: string | null;
+  /** The window they asked for, in words. */
+  readonly preferenceNote: string;
+}
+
 export interface FsmProvider {
   appointment(id: string): Promise<FsmAppointment | null>;
   /** One page of appointments, most recently changed first, for the reconciliation. */
@@ -79,6 +106,10 @@ export interface FsmProvider {
   /** The files attached to an appointment, such as its photographs. */
   attachments(appointmentId: string): Promise<FsmAttachment[]>;
   download(fileId: string): Promise<FsmDownload>;
+  /** Adds a contact, with a service address in their city; returns its FSM ID. */
+  createContact(contact: NewFsmContact): Promise<string>;
+  /** Adds a Request against a contact's service address; returns its FSM ID. */
+  createRequest(request: NewFsmRequest): Promise<string>;
 }
 
 export function createFsmProvider(
@@ -87,7 +118,7 @@ export function createFsmProvider(
   deps: { db: D1Database; fetch: typeof fetch; now: () => Date; log: Logger },
 ): FsmProvider {
   if (provider === "zoho" && settings !== null) return createZohoFsm(settings, deps);
-  if (provider === "stub") return createStubFsm();
+  if (provider === "stub") return createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
   return createUnconnectedFsm();
 }
 
@@ -101,6 +132,16 @@ export interface StubFsmWorld {
   readonly files: Record<string, { bytes: Uint8Array; contentType: string }>;
 }
 
+/** The catalogue scripts/setup-fsm.ts makes in FSM, which the local stub holds, so local bookings reach it. */
+const CATALOGUE: FsmItem[] = [
+  ...Object.values(FSM_SERVICE_NAMES).map((name, index) => ({
+    id: `stub-service-${String(index + 1)}`,
+    name,
+    type: "Service" as const,
+  })),
+  { id: "stub-part-1", name: FSM_BASE_PART_NAME, type: "Part" },
+];
+
 export const EMPTY_FSM: StubFsmWorld = {
   appointments: [],
   contacts: [],
@@ -110,9 +151,16 @@ export const EMPTY_FSM: StubFsmWorld = {
   files: {},
 };
 
-/** Local and test stand-in: answers from the world it is given, and reaches nothing. */
-export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): FsmProvider {
+/** The stub, and what was written to it, for tests to read. */
+export interface StubFsm extends FsmProvider {
+  readonly made: { readonly contacts: NewFsmContact[]; readonly requests: NewFsmRequest[] };
+}
+
+/** Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it. */
+export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
+  const made = { contacts: [] as NewFsmContact[], requests: [] as NewFsmRequest[] };
   return {
+    made,
     appointment: (id) => Promise.resolve(world.appointments.find((appointment) => appointment.id === id) ?? null),
     appointments: (page, perPage) => {
       const sorted = [...world.appointments].sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
@@ -134,6 +182,14 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): FsmProvider {
         contentType: file.contentType,
       });
     },
+    createContact: (contact) => {
+      made.contacts.push(contact);
+      return Promise.resolve(`stub-contact-${String(made.contacts.length)}`);
+    },
+    createRequest: (request) => {
+      made.requests.push(request);
+      return Promise.resolve(`stub-request-${String(made.requests.length)}`);
+    },
   };
 }
 
@@ -148,5 +204,7 @@ function createUnconnectedFsm(): FsmProvider {
     items: off,
     attachments: off,
     download: off,
+    createContact: off,
+    createRequest: off,
   };
 }
