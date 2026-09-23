@@ -58,6 +58,24 @@ These differences are known and stand:
 | G1       | A fifth consent, "WhatsApp about launches"                                                        | The waitlist's launch alert (ADR 0042); its wording is a placeholder                              |
 | G2       | The cards sit inside the page's 20 px margins                                                     | The design draws them on their own, 390 px wide                                                   |
 
+## The technician app (P2-F4)
+
+`npm run build:tech -- --env local && npm run fidelity:tech` writes `docs/fidelity/technician-app/`: board A1, board A2's empty state, and board A3.
+
+- **The app's API is answered with the design's own example,** Imran's four jobs on one day and Rohit M.'s 9:30 service in Sector 65. No mm-api runs. The clock is set to 9:12 India time, as board A1's status bar reads, so the day's times land where the board draws them.
+- **The status bar the phone frames draw is cropped off,** and the app is shot 44 px shorter to match, as the client app's pairs are.
+- **No photograph of anyone is used.** Last visit's thumbnail is answered with a block of `--ink-frame`, as the client app's photographs are.
+
+These differences are known and stand:
+
+| Pair     | Difference                                                 | Why                                                                                                |
+| -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| A1       | The initials chip carries "Sign out"                       | The board draws the initials alone and no way out; the Prototype's technician screen has this chip |
+| A1       | A line above the list when the outbox is holding something | The prompt's "plain account of what has not yet reached us"; the board draws the queue on A2       |
+| A2 empty | The whole screen, with its head and tomorrow's line        | The board draws the empty card on its own, as it does B3's states in the client app                |
+| A3       | Last visit's photograph is a block of ink                  | The pairs answer photographs with ink blocks, as the client app's do                               |
+| A3       | A job further out says "Not yet" and names its sector      | The board writes the rule in a note beside the frame and draws no locked screen                    |
+
 ## The referral landing (P2-F3)
 
 `npm run build:site -- --env local && npm run fidelity:refer` writes `docs/fidelity/referral/`: the Landing boards C1 to C4 at 390 px, and C5 at 1440.
@@ -78,7 +96,11 @@ These differences are known and stand:
 
 ## The ops console (P2-F3)
 
-`npm run build:ops -- --env local && npm run fidelity:ops` writes `docs/fidelity/ops/`: boards A1, A2, A3, B2 in both its states, B3, C1, C2 and C3.
+`npm run build:ops -- --env local && npm run fidelity:ops` writes `docs/fidelity/ops/`: boards B2 in both its states, B3, C1, C2, C3, D1 and D3.
+
+- **The console is drawn at 1440, and these boards are panels within it,** 660 and 484 px wide, drawn at their own size. Each pair is therefore a panel beside a panel, not a screen beside a screen, and neither side is scaled. A1 and B1, which the board does draw whole at 1440, are not built.
+- **D1 draws two cards,** the day's money over the charges and the disputed charge beside it. Only the evidence and a ruling have a route, so the built queue is paired with the second card, the one that holds them.
+  `npm run build:ops -- --env local && npm run fidelity:ops` writes `docs/fidelity/ops/`: boards A1, A2, A3, B2 in both its states, B3, C1, C2 and C3.
 
 - **A1 is the console whole,** as the board draws it: shot at 1440 and brought down to the 1000 px the board shows it at, so both sides are scaled alike. Every other board is a panel within the console, 660 and 484 px wide, drawn at its own size, so those pairs are a panel beside a panel and neither side is scaled. B1, which the board also draws whole, is not built.
 - **A2 and A3 are reached as ops reach them,** by opening a block and moving it. Nothing is written: the panel sends only on "Move and notify", and the pair is shot before it.
@@ -88,6 +110,39 @@ These differences are known and stand:
 - **Nobody in the fixtures is real.** The names, numbers, pincodes and photographs are the board's own or synthetic.
 
 These differences are known and stand:
+
+| Pair | Difference                                                                                            | Why                                                                                                               |
+| ---- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| B2   | No "AK · 19 Sep": who last opened the photographs, and when                                           | The audit log is written on every view and read by nobody; no route gives the last one back                       |
+| B2   | "logged 10:42 am" where the board has "logged 10:42"                                                  | India's clock as the console writes it everywhere else                                                            |
+| B2   | Each set of angles is headed "Before" or "After"                                                      | A visit has a set before and a set after; the board draws one unnamed set of five                                 |
+| B2   | The caption carries the technician's whole name, "Imran Qureshi" for the board's "Imran"              | FSM gives one name; splitting it would be a guess                                                                 |
+| B2   | Every visit that has photographs, newest first, not one                                               | `GET /api/clients/:id/photos` answers with the client's whole history; the board draws a single visit             |
+| B3   | "Notice", the version of the notice the client saw, where the board has "Source"                      | Nothing records whether a consent came from the app or the site; the notice version is what the route does give   |
+| B3   | "from their own app" where the board writes "from his own app"                                        | The client is not always a he; every line here is a placeholder until the owner approves it                       |
+| B3   | A line beneath the table when the client has asked to be erased                                       | The route answers with their latest deletion request, and it belongs beside the consents; the board draws none    |
+| C1   | "Fitted Sun 19 Sep" where the board has "3 days held"                                                 | `GET /api/referrals/held` gives the day of the first fit, not how long the grant has waited                       |
+| C1   | The rule's name, with no line of detail beneath it                                                    | The route names each rule a grant met; the addresses and UPI handles behind them stay out of the console          |
+| C1   | Approving and rejecting each ask for a reason before they send                                        | The prompt: "Approve and Reject. Both require a reason." The board draws no field for either                      |
+| C2   | No "Sent" column                                                                                      | Nothing counts invitations sent: a code is shared by the client, not by us (ADR 0048)                             |
+| C2   | The busiest referrer first                                                                            | `GET /api/referrers` orders them by fits; the board lists its rows in no order                                    |
+| C3   | The pincode is the control, underlined, where the board draws no way in                               | The panel that follows has to be opened by something, and the board's six columns leave no room for a button      |
+| C3   | A pincode we already come to says "Live" beside its area, and offers no launch                        | The route returns served pincodes that still have people waiting; the board draws only those waiting              |
+| C3   | The message is `launch_alert_v1` (src/config/message-templates.ts), with the first name a placeholder | It is what the queue will actually send; the name is each person's own                                            |
+| C3   | "Not now" where the board has "Edit the message"                                                      | The message is a template in the repository, not something the console can rewrite                                |
+| C3   | The note about the 33 who did not opt in sits inside the panel                                        | The board draws it as a caption beneath the frame; it is the reason both counts are shown, so it stays with them  |
+| D1   | The queue's card, headed "Waiting for a decision" with its count, where the board draws one case      | The board's own list is a card away, under the day's money; what is here is a queue, as C1's is                   |
+| D1   | "Visit of Sun 19 Sep · Imran Qureshi attended" where the board has "Vikram Sethi says he was home"    | `GET /api/no-shows` gives the visit's date and its technician, never the client; and nothing records a dispute    |
+| D1   | "240 m", in the same ink as the rest                                                                  | The route gives the distance, not the radius that was in force, so no fence can be lettered or read against       |
+| D1   | "closed 11:47 am" where the board has "closed 11:47"                                                  | India's clock as the console writes it everywhere else                                                            |
+| D1   | "Charge" and "Waive", with no note above them                                                         | The route charges the visit or waives it and takes no note; Refund and Uphold rule on a dispute that has no route |
+| D1   | A line saying nothing is taken from the client here                                                   | No amount appears on the board's own queue either, and the charge itself is applied at P2-M5                      |
+| D3   | Two columns, Technician and Zone, where the board draws five                                          | Nothing counts a technician's jobs, averages his visits or records his skill (`docs/open-points.md`, item 57)     |
+| D3   | Each technician's phones on the row beneath his name, with a revoke                                   | Device revocation belongs to this board (ADR 0025, item 17); its five columns leave no room for a phone           |
+| D3   | A revoke asks before it sends, and says what it does                                                  | It ends a session and makes the phone drop its cached jobs; the board draws no revoke at all                      |
+| D3   | No note beneath the table                                                                             | The board's note reads the average service times, which are not shown                                             |
+
+The console's own frame is not paired. Boards A1 and B1 draw it around a dispatch board and a client page; the built frame carries the five sections the backend has routes for, where the design's column lists eight. Its third is drawn as "Payments" and built as "No-shows": no route totals the day's money or lists a refund, so a section called Payments would show none.
 
 | Pair | Difference                                                                                                  | Why                                                                                                                                   |
 | ---- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -163,4 +218,7 @@ The console's own frame is paired with board A1, which draws it around the dispa
 | Who last opened a photograph, "AK · 19 Sep"           | Every view is written to the audit log; no route reads it back                                              |
 | The Visits, Payments, Referrals, Tasks and Notes tabs | This step builds the two tabs the boards draw, B2 and B3. The record does carry the visits and the payments |
 
+**Board D2, tasks, is not built at all,** and neither is D1's money. There is no `tasks` table and no route that answers one, and no ops route lists a payment, a refund or a charge, so neither screen could show anything but invented data. What each draws, what a route would have to answer and where the data would come from are written down in `docs/open-points.md`, items 55 and 56.
+
+Not built, and not paired: A (the dispatch board), which waits for its own step, and B1 (pieces), which waits for the job sheet.
 Not built, and not paired: D (payments, tasks and technicians), and B1 (pieces), which the job sheet now records but which no board here reads.

@@ -27,6 +27,9 @@ export type Photo = PhotoVisit["photos"][number];
 export type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
 export type Consent = Consents["consents"][number];
 
+export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
+export type Technician = Body<paths["/api/technicians"]["get"]>["technicians"][number];
+export type Device = Technician["devices"][number];
 export type Board = Body<paths["/api/dispatch"]["get"]>;
 export type BoardRow = Board["technicians"][number];
 export type BoardDay = BoardRow["days"][number];
@@ -122,4 +125,13 @@ export const api = {
   /** One photograph. The API writes the audit entry before it serves the bytes (ADR 0031). */
   clientPhoto: (id: string, photoId: string) => image(`/api/clients/${id}/photos/${photoId}`),
   clientConsents: (id: string) => call<Consents>("GET", `/api/clients/${id}/consents`),
+  /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
+  noShows: () => call<{ cases: NoShowCase[] }>("GET", "/api/no-shows?decision=undecided"),
+  /** Charge the visit or waive it. Neither takes money: the charge follows the 24-hour policy at P2-M5. */
+  decideNoShow: (id: string, decision: "charged" | "waived") =>
+    call<{ decided: boolean }>("POST", `/api/no-shows/${id}/decision`, { decision }),
+  technicians: () => call<{ technicians: Technician[] }>("GET", "/api/technicians"),
+  /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
+  revokeDevice: (id: string, deviceId: string) =>
+    call<{ revoked_at: string }>("POST", `/api/technicians/${id}/devices/${encodeURIComponent(deviceId)}/revoke`),
 };

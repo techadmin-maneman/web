@@ -1,0 +1,167 @@
+/* Board B1: the viewfinder, the five angle tiles, Retake and Capture. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--ink-night);
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-16);
+  align-items: center;
+  padding: var(--sp-8) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: calc(-1 * var(--sp-12));
+  border: 0;
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.title {
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.progress {
+  margin-left: auto;
+  font-size: var(--fs-18);
+  font-variant-numeric: tabular-nums;
+  color: var(--gilt);
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--preview-h);
+  background: var(--ink-frame);
+}
+
+.view {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.guide {
+  position: absolute;
+  bottom: var(--sp-20);
+  margin: 0;
+  padding: 0 var(--sp-20);
+  font-size: var(--fs-17);
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.unavailable {
+  margin: 0;
+  padding: var(--sp-24) var(--sp-20);
+  font-size: var(--fs-17);
+  line-height: 1.55;
+  text-align: center;
+  color: var(--paper);
+}
+
+.tiles {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-8);
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-top: var(--hairline) solid var(--ink-rule);
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  aspect-ratio: 3 / 4;
+  padding-bottom: var(--sp-5);
+  border: var(--hairline) solid var(--ink-line);
+  background: var(--ink-frame);
+}
+
+.tile[data-state="done"] {
+  border-color: var(--gilt);
+  background: var(--ink-raised);
+}
+
+.tile[data-state="now"] {
+  border-color: var(--paper);
+}
+
+.tileLabel {
+  font-size: var(--fs-14);
+  color: var(--paper);
+}
+
+.tile[data-state="todo"] .tileLabel {
+  color: var(--ink-muted);
+}
+
+/* The one place a screen has two actions: Retake beside the full-width Capture. */
+.foot {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-12);
+  padding: 0 var(--sp-20) var(--sp-22);
+}
+
+.retake,
+.take {
+  height: var(--tech-primary);
+  border: 0;
+  font: inherit;
+  font-size: var(--fs-18);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.retake {
+  width: var(--tech-retake);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  color: var(--paper);
+}
+
+.take {
+  flex: 1;
+  background: var(--gilt);
+  color: var(--ink-deep);
+}
+
+.retake:disabled,
+.take:disabled {
+  border-color: var(--ink-disabled);
+  background: var(--ink-disabled);
+  color: var(--ink-soft);
+  cursor: default;
+}
+
+.retake:focus-visible,
+.back:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
+}
+
+.take:focus-visible {
+  outline: var(--rule-strong) solid var(--paper);
+  outline-offset: var(--focus-offset);
+}

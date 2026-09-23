@@ -7,6 +7,8 @@
 //   /clients                finding one client by their mobile number
 //   /clients/:id/photos     that client's photographs (B2), locked until the view is logged
 //   /clients/:id/consents   what they have agreed to (B3)
+//   /no-shows               the no-show cases and their evidence (D1's queue)
+//   /technicians            who works, and the phones they work from (D3)
 //
 // Anything else, "/" included, is the dispatch board, which is what the design
 // opens on.
@@ -20,6 +22,8 @@ export type Route =
   | { readonly page: "dispatch" }
   | { readonly page: "referrals" }
   | { readonly page: "waitlist" }
+  | { readonly page: "no-shows" }
+  | { readonly page: "technicians" }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
 const DISPATCH: Route = { page: "dispatch" };
@@ -28,6 +32,8 @@ const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(photos|consents))?$/;
 export function routeOf(path: string): Route {
   if (path === "/referrals") return { page: "referrals" };
   if (path === "/waitlist") return { page: "waitlist" };
+  if (path === "/no-shows") return { page: "no-shows" };
+  if (path === "/technicians") return { page: "technicians" };
   if (path === "/clients") return { page: "clients", clientId: null, tab: "photos" };
   const client = CLIENT_PATH.exec(path);
   if (client !== null) {

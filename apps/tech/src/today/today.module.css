@@ -1,0 +1,264 @@
+/*
+ * Boards A1 and A2: the day's jobs, the offline banner, the empty state, and
+ * the line to what has not yet reached us. Ink ground, off-white text, gold on
+ * the banner alone — this screen has no primary action.
+ */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  background: var(--ink-deep);
+}
+
+.head {
+  flex-shrink: 0;
+  padding: var(--sp-18) var(--sp-20) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mark {
+  width: var(--tech-mark);
+  height: auto;
+  fill: var(--gilt);
+}
+
+/* The Prototype's chip: the technician's initials, and the way out. */
+.account {
+  display: flex;
+  gap: var(--sp-11);
+  align-items: center;
+  min-height: var(--tech-min);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.initials {
+  font-family: var(--font-serif);
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.signOut {
+  font-size: var(--fs-16);
+  color: var(--ink-soft);
+}
+
+.account:focus-visible,
+.tomorrow:focus-visible,
+.waiting:focus-visible,
+.row:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: calc(-1 * var(--focus-offset));
+}
+
+.count {
+  margin: var(--sp-20) 0 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-app-title-long);
+  font-weight: 400;
+  line-height: 1.08;
+  color: var(--paper);
+}
+
+.first {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-17);
+  color: var(--ink-soft);
+}
+
+/* Board A2's banner: a gold strip with the line, and the explanation beneath it on ink. */
+.offline {
+  flex-shrink: 0;
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.offlineTitle {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  margin: 0;
+  padding: var(--sp-14) var(--sp-20);
+  background: var(--gilt);
+  font-size: var(--fs-17);
+  font-weight: 500;
+  color: var(--ink-deep);
+}
+
+.offlineBody {
+  margin: 0;
+  padding: var(--sp-20);
+  font-size: var(--fs-16);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.waiting {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  min-height: var(--tech-min);
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+  text-decoration: none;
+}
+
+.waitingIcon {
+  flex-shrink: 0;
+  color: var(--gilt);
+}
+
+.waitingLine {
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A job row: 88 px, the time down the left, everything else beside it (board A1). */
+.row {
+  display: flex;
+  gap: var(--sp-16);
+  align-items: center;
+  min-height: var(--tech-row);
+  padding: var(--sp-18) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+  text-decoration: none;
+}
+
+.when {
+  flex-shrink: 0;
+  width: var(--tech-time);
+}
+
+.time {
+  display: block;
+  font-size: var(--fs-17);
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+.slots {
+  display: block;
+  margin-top: var(--sp-3);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.what {
+  flex: 1;
+  min-width: 0;
+}
+
+.kind {
+  display: flex;
+  gap: var(--sp-9);
+  align-items: center;
+}
+
+.type,
+.badge {
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+}
+
+.type {
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+}
+
+/* The job in hand is the one gold thing on the list. */
+.list > li:first-child .type {
+  color: var(--gilt);
+}
+
+.badge {
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.who {
+  display: block;
+  margin-top: var(--sp-5);
+  font-size: var(--fs-18);
+  color: var(--paper);
+}
+
+.where {
+  display: block;
+  margin-top: var(--sp-3);
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+}
+
+.tomorrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--tap-row);
+  padding: var(--sp-20);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-17);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.tomorrowIcon {
+  color: var(--ink-muted);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-14);
+  justify-content: center;
+  margin: var(--sp-20);
+  padding: var(--sp-24) var(--sp-20);
+  border: var(--hairline) solid var(--ink-rule);
+}
+
+.emptyLabel {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.emptyTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  line-height: 1.15;
+  color: var(--paper);
+}
+
+.emptyBody {
+  margin: 0;
+  font-size: var(--fs-16);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}

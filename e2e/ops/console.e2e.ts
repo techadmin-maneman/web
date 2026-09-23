@@ -13,7 +13,16 @@ test("opens on the dispatch board, with the console's sections beside it", async
   await expect(page).toHaveTitle("Mane Man operations");
   await expect(page.getByRole("heading", { level: 1, name: "Dispatch" })).toBeVisible();
   const sections = page.getByRole("navigation", { name: "Operations" });
-  await expect(sections.getByRole("link")).toHaveText(["Dispatch", "Clients", "Referrals", "Waitlist"]);
+  // The design's eight, less Tasks and Settings, which no route answers, and with
+  // No-shows where it writes Payments (docs/open-points.md, items 57 and 58).
+  await expect(sections.getByRole("link")).toHaveText([
+    "Dispatch",
+    "Clients",
+    "No-shows",
+    "Referrals",
+    "Waitlist",
+    "Technicians",
+  ]);
   await expect(sections.getByRole("link", { name: "Dispatch" })).toHaveAttribute("aria-current", "page");
 });
 
