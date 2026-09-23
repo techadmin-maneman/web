@@ -7,9 +7,12 @@
 .teaser {
   height: var(--teaser-frame-h);
 }
-/* The photograph's own shape, until one has loaded (site/src/lib/frame-aspect.ts). */
+/* The photograph's own shape, which the page writes once one has loaded
+   (site/src/lib/frame-aspect.ts); the design's 4 by 3 until then. */
 .result {
-  aspect-ratio: var(--frame-aspect, 4 / 3);
+  --frame-aspect: 4 / 3;
+
+  aspect-ratio: var(--frame-aspect);
   max-height: var(--result-frame-max-h);
 }
 .from46 {

@@ -1,4 +1,5 @@
 -- Migration number: 0025
+-- contract: docs/decisions/0051-booking-from-the-site.md
 -- A Phase 2 booking is a lead too (docs/decisions/0051-booking-from-the-site.md).
 --
 -- The public page and the referral landing now book a real visit: a pincode, a

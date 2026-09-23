@@ -1,19 +1,21 @@
 ---
+// Booking a free consultation from the site (docs/decisions/0051-booking-from-the-site.md).
+//
+// The same page a friend sees at /r/:code, without the invite: a pincode says
+// whether we come, and where we do the visitor picks a real date and window and
+// the slot is held for them. Where we do not, it takes their number instead.
 import { pageDescriptions, pageTitles } from "../content/site.ts";
-import Booking from "../islands/Booking.tsx";
+import Invite from "../islands/Invite.tsx";
 import Site from "../layouts/Site.astro";
 import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { TURNSTILE_SITE_KEYS } from "../lib/turnstile.ts";
 ---
 
 <Site title={pageTitles.book} description={pageDescriptions.book}>
-  <div class="page">
-    <Booking client:load turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
-  </div>
+  <Invite
+    client:load
+    mode="public"
+    turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]}
+    allowStateSwitch={!IS_PRODUCTION}
+  />
 </Site>
-
-<style>
-  .page {
-    min-height: calc(100vh - var(--header-h));
-  }
-</style>

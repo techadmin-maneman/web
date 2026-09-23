@@ -188,10 +188,7 @@ export interface Booked {
 }
 
 /** Books the free consultation: the slot, the lead, and the invite's credits where they apply. */
-export async function bookConsultation(
-  c: Context<AppEnv>,
-  request: ConsultationRequest,
-): Promise<Booked | Refusal> {
+export async function bookConsultation(c: Context<AppEnv>, request: ConsultationRequest): Promise<Booked | Refusal> {
   const { deps, log, requestId } = c.var;
   const db = c.env.DB;
   const now = deps.now();

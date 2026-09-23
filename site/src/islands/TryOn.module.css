@@ -562,9 +562,12 @@
 }
 /* A returning visitor's look: the result alone, in the result frame's size. */
 .solo {
+  /* The photograph's own shape, as on the slider's frame (site/src/lib/frame-aspect.ts). */
+  --frame-aspect: 4 / 3;
+
   position: relative;
   width: 100%;
-  aspect-ratio: var(--frame-aspect, 4 / 3);
+  aspect-ratio: var(--frame-aspect);
   max-height: var(--result-frame-max-h);
   background: var(--ink-frame);
   overflow: hidden;

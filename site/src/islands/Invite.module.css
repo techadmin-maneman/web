@@ -210,6 +210,11 @@
   color: var(--paper);
 }
 
+/* An error on ink needs the ink palette's red; the paper one is unreadable there. */
+.pincode .error {
+  color: var(--error-on-ink);
+}
+
 /* The field takes the row, with the button beside it, as the board draws them. */
 .pincodeField {
   flex: 1 1 auto;
@@ -391,6 +396,37 @@
 .windowHours {
   font-size: var(--fs-14);
   color: var(--text-muted);
+}
+
+/* Where the hair loss is, as the site's booking form has always asked (board is v2's). */
+.extents {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-10);
+}
+
+.extent {
+  background: var(--white);
+  padding: var(--sp-14) var(--sp-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-10);
+  cursor: pointer;
+  border: var(--hairline) solid var(--paper-line);
+  color: var(--text-muted);
+  transition: border-color var(--ease);
+}
+
+.extentOn {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.extentText {
+  font-size: var(--fs-13);
+  text-align: center;
+  line-height: 1.3;
 }
 
 .consent {

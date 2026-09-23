@@ -27,6 +27,10 @@ export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
 export type ReferralWaitlist = Schemas["ReferralWaitlist"];
+export type Consultation = Schemas["Consultation"];
+export type Waitlist = Schemas["Waitlist"];
+export type PublicConsultationRequest = Body<"/api/consultation">;
+export type PublicWaitlistRequest = Body<"/api/waitlist">;
 export type ConsultationRequest = Body<"/api/r/{code}/consultation">;
 export type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
 
@@ -148,4 +152,18 @@ export function joinWaitlist(
   idempotencyKey: string,
 ): Promise<Answer<ReferralWaitlist>> {
   return post<ReferralWaitlist>(`/api/r/${code}/waitlist`, request, idempotencyKey);
+}
+
+// The same two answers from the site's own page, which carries no invite
+// (docs/decisions/0051-booking-from-the-site.md).
+
+export function bookPublicConsultation(
+  request: PublicConsultationRequest,
+  idempotencyKey: string,
+): Promise<Answer<Consultation>> {
+  return post<Consultation>("/api/consultation", request, idempotencyKey);
+}
+
+export function joinPublicWaitlist(request: PublicWaitlistRequest, idempotencyKey: string): Promise<Answer<Waitlist>> {
+  return post<Waitlist>("/api/waitlist", request, idempotencyKey);
 }
