@@ -12,11 +12,18 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 export const shell = {
   /** The sidebar's own title, as boards A1 and B1 letter it. */
   title: "Operations",
-  /** The sections the backend has routes for, in the design's order; the design draws eight. */
+  /**
+   * The sections the backend has routes for, in the design's order; the design
+   * draws eight. Its third is "Payments", which this cannot be: no route totals
+   * the day's money or lists a refund, so the section holds the no-show queue
+   * alone (docs/open-points.md, item 57).
+   */
   sections: [
     { page: "/clients", label: "Clients" },
+    { page: "/no-shows", label: "No-shows" },
     { page: "/referrals", label: "Referrals" },
     { page: "/waitlist", label: "Waitlist" },
+    { page: "/technicians", label: "Technicians" },
   ],
 } as const;
 
@@ -200,6 +207,90 @@ export const waitlist = {
     done: (alerts: number) => `Launched. ${String(alerts)} on their way.`,
     errors: {
       not_found: "We have no such pincode.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Please try again.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/**
+ * Board D1's queue. The board draws the day's money over "No-shows and late
+ * cancellations", and beside it a disputed charge ruled on with Refund or
+ * Uphold. Only the no-show cases and their three facts have a route, so only
+ * they are here (docs/open-points.md, item 57).
+ */
+export const noShows = {
+  title: "No-shows",
+  queue: {
+    /**
+     * PLACEHOLDER: the board heads the list "No-shows and late cancellations".
+     * Nothing lists a late cancellation, and what is here is a queue, as board
+     * C1's "Held for review" is.
+     */
+    title: "Waiting for a decision",
+    /** The visit the case belongs to. The route gives its date and its technician, never the client. */
+    visit: (date: string) => `Visit of ${date}`,
+    /** PLACEHOLDER: a case whose appointment carries no date. */
+    undated: "Visit, date unknown",
+    attended: (technician: string) => `${technician} attended`,
+    /** The four rows the board letters on the evidence, in its own words. */
+    facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
+    /** The board writes "240 m · over 200 m fence"; the route gives the distance, not the radius in force. */
+    distance: (metres: number) => `${String(metres)} m`,
+    delivered: (time: string) => `Delivered ${time}`,
+    /** PLACEHOLDER: the board's receipt always arrived; one that never did is this. */
+    notDelivered: "Never delivered",
+    waited: (minutes: number, closed: string | null) =>
+      closed === null ? `${String(minutes)} min` : `${String(minutes)} min · closed ${closed}`,
+    /**
+     * PLACEHOLDER: the board's buttons are Refund and Uphold, which rule on a
+     * dispute. The route charges the visit or waives it, and nothing records a
+     * dispute at all.
+     */
+    charge: "Charge",
+    waive: "Waive",
+    deciding: "Deciding",
+    /** PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. */
+    note: "Charging records the decision. Nothing is taken from the client here.",
+    /** PLACEHOLDER: the board draws no empty queue. */
+    empty: "No no-show is waiting for a decision.",
+    errors: {
+      not_found: "Someone has ruled on this one already. Reload to see the queue as it stands.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Please try again.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/**
+ * Board D3's roster. The board draws five columns; the route answers the
+ * technician and the zone, and carries the phones the board does not draw
+ * (docs/open-points.md, item 59).
+ */
+export const technicians = {
+  title: "Technicians",
+  /** The two of board D3's five columns the route answers. */
+  columns: ["Technician", "Zone"],
+  /** A zone the FSM mirror has nothing for, written as the design's tables write a gap. */
+  unknown: "—",
+  // PLACEHOLDER: the board draws no console without technicians.
+  empty: "No technician is active.",
+  phones: {
+    /** PLACEHOLDER: a phone whose browser gave no label at login. */
+    unlabelled: "A phone",
+    seen: (date: string) => `last used ${date}`,
+    none: "No phone logged in.",
+    revoke: "Revoke",
+    /** The button's whole name, since a roster holds many phones and each button says "Revoke". */
+    revokeLabel: (phone: string, technician: string) => `Revoke ${phone} of ${technician}`,
+    confirm: "Revoke this phone",
+    cancel: "Keep it",
+    revoking: "Revoking",
+    revoked: (date: string) => `Revoked ${date}`,
+    /** PLACEHOLDER: the board draws no revoke, so nothing writes what one does. */
+    warning: "The session ends, and the phone drops its cached jobs when it is next online.",
+    errors: {
+      not_found: "That phone is not this technician's any more. Reload to see the roster as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,

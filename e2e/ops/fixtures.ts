@@ -184,6 +184,72 @@ export const CONSENTS = {
   deletion: null,
 };
 
+// ---- Board D1: the no-show the board rules on ---------------------------------
+
+/**
+ * The board's own case: the technician checked in at 11:31, 240 m out, the
+ * WhatsApp delivered at 11:32, and he closed the job at 11:47 after 15 minutes.
+ * The route gives the technician and the date, never the client.
+ */
+export const NO_SHOWS = {
+  cases: [
+    {
+      id: "66000000-0000-4000-8000-000000000001",
+      appointment_id: "77000000-0000-4000-8000-000000000001",
+      visit_date: "2027-09-19",
+      technician: "Imran Qureshi",
+      checked_in_at: "2027-09-19T06:01:00.000Z",
+      distance_m: 240,
+      message_delivered_at: "2027-09-19T06:02:00.000Z",
+      wait_ends_at: "2027-09-19T06:16:00.000Z",
+      closed_at: "2027-09-19T06:17:00.000Z",
+      decision: "undecided",
+      decided_at: null,
+    },
+    {
+      id: "66000000-0000-4000-8000-000000000002",
+      appointment_id: "77000000-0000-4000-8000-000000000002",
+      visit_date: "2027-09-20",
+      technician: "Sandeep Yadav",
+      checked_in_at: "2027-09-20T04:30:00.000Z",
+      distance_m: 12,
+      message_delivered_at: null,
+      wait_ends_at: "2027-09-20T04:45:00.000Z",
+      closed_at: "2027-09-20T04:46:00.000Z",
+      decision: "undecided",
+      decided_at: null,
+    },
+  ],
+};
+
+// ---- Board D3: the roster, and the phones the board does not draw --------------
+
+const technician = (
+  n: number,
+  name: string,
+  initials: string,
+  zone: string | null,
+  devices: { device_id: string; label: string | null; last_seen_at: string; revoked_at: string | null }[],
+) => ({ id: `88000000-0000-4000-8000-00000000000${String(n)}`, name, initials, zone, devices });
+
+export const TECHNICIANS = {
+  technicians: [
+    technician(1, "Imran Qureshi", "IQ", "Sec 40–65", [
+      { device_id: "device-1", label: "Chrome on Android", last_seen_at: "2027-09-22T05:00:00.000Z", revoked_at: null },
+      {
+        device_id: "device-2",
+        label: "Safari on iPhone",
+        last_seen_at: "2027-08-04T05:00:00.000Z",
+        revoked_at: "2027-08-05T05:00:00.000Z",
+      },
+    ]),
+    technician(2, "Sandeep Yadav", "SY", "Sec 1–39", [
+      { device_id: "device-3", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null },
+    ]),
+    technician(3, "Faizan Ali", "FA", null, []),
+  ],
+};
+
 export const ERASURE_REQUESTED = {
   ...CONSENTS,
   deletion: {
