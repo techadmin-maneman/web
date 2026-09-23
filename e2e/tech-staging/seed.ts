@@ -87,13 +87,22 @@ const quote = (value: string | number | null) =>
   value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
 const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
 
-/** Runs SQL on the staging database. A file, not a command, so quoting is the file's problem and not the shell's. */
+/**
+ * Runs SQL on the staging database. A file, not a command, so quoting is the
+ * file's problem and not the shell's. It is tried twice: D1 answered one
+ * teardown with `{"D1_RESET_DO":true}` and left the fixtures behind, and a
+ * teardown that does not finish leaves a technician in the mirror.
+ */
 async function execute(statements: readonly string[]): Promise<void> {
   const folder = await mkdtemp(join(tmpdir(), "mm-tech-staging-"));
   try {
     const file = join(folder, "statements.sql");
     await writeFile(file, statements.join("\n"));
-    await wrangler("d1", "execute", DATABASE, "--env", "staging", "--remote", "--file", file);
+    try {
+      await wrangler("d1", "execute", DATABASE, "--env", "staging", "--remote", "--file", file);
+    } catch {
+      await wrangler("d1", "execute", DATABASE, "--env", "staging", "--remote", "--file", file);
+    }
   } finally {
     await rm(folder, { recursive: true, force: true });
   }
@@ -223,6 +232,11 @@ export function stagingFixture(): StagingFixture {
  * It runs promptly, because a job event whose FSM write keeps failing alerts
  * ops on its fifth attempt: with the event gone, the fsm-sync consumer
  * acknowledges the message and says nothing (src/queues/fsm-sync.ts).
+ *
+ * The holds go too. An active technician in the mirror is a technician the
+ * booking availability offers, so anything else using staging can take a slot
+ * on him while the proof runs; one did on 23 September. Such a hold exists only
+ * because of this fixture, and it is what stops the technician being deleted.
  */
 export async function clearStaging(fixture: StagingFixture): Promise<void> {
   const ids = [fixture.today.id, fixture.tomorrow.id, fixture.later.id].map(quote).join(", ");
@@ -250,6 +264,8 @@ export async function clearStaging(fixture: StagingFixture): Promise<void> {
        AND created_at >= ${quote(fixture.startedAt)};`,
     `DELETE FROM technician_devices WHERE technician_id = ${quote(fixture.technicianId)};`,
     `DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ${quote(fixture.technicianId)};`,
+    `DELETE FROM slot_claims WHERE technician_id = ${quote(fixture.technicianId)};`,
+    `DELETE FROM slot_holds WHERE technician_id = ${quote(fixture.technicianId)};`,
     `DELETE FROM technicians WHERE id = ${quote(fixture.technicianId)};`,
   ]);
 }

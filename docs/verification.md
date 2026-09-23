@@ -488,7 +488,7 @@ From `docs/prompts/phase2-backend.md`, P2-M6:
 
 PR #84 shipped the technician app's job screens and its service worker, and said plainly that **the app had never spoken to a real mm-api**: every browser test and the fidelity harness fake the technician API in the browser. This is the first run over the wire.
 
-The app is the one deployed on `https://tech-staging.maneman.in`, and mm-api is the deployed `mm-api-staging`, version `f6d314a9`, tag `5578d95` — PR #84's own merge. Every request went over real HTTPS through real Cloudflare Access with the `mm-ci-staging` service token. Nothing was faked: no `page.route()`, no stubbed `fetch`, no local Worker.
+The app is the one deployed on `https://tech-staging.maneman.in`, and mm-api is the deployed `mm-api-staging`. It was run twice: against version `f6d314a9`, tag `5578d95` — PR #84's own merge — and again after PR #85 went out to staging, against version `8151eb30`, tag `91c9e30`. Both runs gave the same answers, and the figures below are the second one's. Every request went over real HTTPS through real Cloudflare Access with the `mm-ci-staging` service token. Nothing was faked: no `page.route()`, no stubbed `fetch`, no local Worker.
 
 ### How it was run
 
@@ -522,6 +522,8 @@ The fixtures (`e2e/tech-staging/seed.ts`) are written straight into `maneman-sta
 - **A passing check-in never shows the technician the distance.** Board B5 draws a distance only on the failed state, so the number open point 46 needs cannot be written down at the door; it has to be read out of `checkins` afterwards. `docs/tech-field-test.md` collects it that way, and gives the one command ops run. Whether the app should show the distance on a passing check-in is a change to a board the designer drew, and is the owner's to rule.
 - **No technician's FSM write reached FSM, for a stated reason.** The fixtures are mirror rows with no Zoho record behind them, so each event failed with `Zoho 404 INVALID_URL_PATTERN` and was retried. The teardown removes the events promptly, so the fifth attempt finds nothing and the run never alerts ops. The alerts in the Worker's log during this run are another surface's bookings, not this one's.
 - **Nothing was sent to anybody.** The code request for the seeded technician logged `login_code_skipped`, "number not on the allowlist". The request for a number FSM does not list sent nothing at all, and answered the same `202`, as the route intends.
+- **A technician seeded into the mirror is a technician the booking availability offers.** During the second run something else using staging took a slot on him and released it, and that hold then stopped the teardown deleting him: `slot_holds.technician_id` is a foreign key. A hold like that exists only because of this fixture, so the teardown now takes the claims and the holds out with it.
+- **One teardown did not finish.** D1 answered it `{"D1_RESET_DO":true}` and left the whole fixture in staging, which is how the hold above came to light. The fixtures were removed by hand and staging checked clean; the teardown now tries its statements twice.
 
 ### What staging cannot prove, and what proves it
 
