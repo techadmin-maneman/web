@@ -30,7 +30,10 @@ const NoShowCaseSchema = z
     visit_date: z.union([z.string(), z.null()]),
     technician: z.union([z.string(), z.null()]),
     checked_in_at: z.iso.datetime().openapi({ description: "Fact one: when the technician arrived." }),
-    distance_m: z.number().int().openapi({ description: "Fact two: how far from the address he was." }),
+    distance_m: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured.",
+    }),
     message_delivered_at: z
       .union([z.iso.datetime(), z.null()])
       .openapi({ description: "Fact three: when WhatsApp reported the visit message delivered; null if never." }),

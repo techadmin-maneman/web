@@ -37,7 +37,8 @@ export const canCloseAsNoShow = (checkedInAt: Date, type: VisitType, now: Date):
 /** The three facts ops rule on, and nothing else. */
 export interface Evidence {
   readonly checkedInAt: string;
-  readonly distanceM: number;
+  /** Null when the address had no coordinates, so nothing was measured (ADR 0036). */
+  readonly distanceM: number | null;
   /** When the BSP reported the day-before or arrival WhatsApp delivered; null if it never was. */
   readonly messageDeliveredAt: string | null;
 }
