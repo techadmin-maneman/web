@@ -22,6 +22,10 @@ const EMPTY: Address = {
   place_id: null,
 };
 
+/** A part the client filled in. Absent and null mean the same: they did not. */
+const given = (part: string | null | undefined): part is string =>
+  part !== null && part !== undefined && part.trim() !== "";
+
 /**
  * The address on one line, narrowest part first, as an envelope is written. An
  * address saved before the flat and building fields existed holds nulls in all
@@ -29,9 +33,7 @@ const EMPTY: Address = {
  */
 function written(address: Address): string {
   const parts = [address.flat, address.floor, address.tower, address.building, address.line1, address.line2];
-  return [...new Set(parts.filter((part) => part !== null && part !== undefined && part.trim() !== ""))]
-    .concat(address.locality)
-    .join(", ");
+  return [...new Set(parts.filter(given))].concat(address.locality).join(", ");
 }
 
 /**
@@ -63,10 +65,7 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
   async function save(chosenDraft: Address) {
     // A building chosen from the search is the address's first line, so the
     // "House, flat or building" field is not shown and not asked for twice.
-    const draft: Address =
-      chosenDraft.building !== null && chosenDraft.building !== undefined && chosenDraft.building.trim() !== ""
-        ? { ...chosenDraft, line1: chosenDraft.building }
-        : chosenDraft;
+    const draft: Address = given(chosenDraft.building) ? { ...chosenDraft, line1: chosenDraft.building } : chosenDraft;
     if (!complete(draft)) {
       setProblem(copy.form.invalid);
       return;
@@ -124,7 +123,7 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
               <p className={styles.address}>
                 {written(address)}, {address.city} {address.pincode}
               </p>
-              {address.landmark !== null && <p className={styles.muted}>{copy.near(address.landmark)}</p>}
+              {given(address.landmark) && <p className={styles.muted}>{copy.near(address.landmark)}</p>}
               {address.access_notes !== null && <p className={styles.muted}>{address.access_notes}</p>}
             </>
           )}
