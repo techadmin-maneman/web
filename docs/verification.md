@@ -335,11 +335,13 @@ Two other proof runs were working against the same staging database and the same
   5. **The mirror copied them.** The appointment became `completed` at **08:01:53.127**, with a `visits` row of outcome `done`; the export finished by **08:02:29.571**. `SELECT ps.phase, COUNT(*) …` gives `before 5` and `after 5`, stored under `visits/ab7b388c-…/` in `mm-staging-client-photos`.
   6. **Read as the client.** `GET /api/visits/{id}` returns both sets with the angles in the order front, top, left, right, hair. A photograph's link `/api/photos/file/<token>` answers **200 `image/png`** to the owning session, **401 `session_required`** without one, and **404 `not_found`** to the other test client's session, which also gets 404 on the visit itself. The token issued at 08:02:54 expired at 08:17:54: fifteen minutes.
   - Two fields are empty, and neither is a fault: `duration_minutes` is 0 because the job was started and closed seven seconds apart, and `what_was_done` is null because the job-sheet template is a placeholder (open point 13).
-- [ ] **The invoice PDF opens.** **Not proven: the invoice could not be raised.**
-  - The closed work order carries `Grand_Total` and `Sub_Total` of 2000 rupees and `Billing_Status` "Not yet Invoiced" — the price book's service-visit figure, with no tax, as open points 1 to 3 say it will be.
-  - FSM's API would not raise the invoice. `POST /fsm/v1/Invoices` answers **`500 INTERNAL_ERROR`** with no detail, both for a body naming the work order alone and for one naming the contact, both addresses, the date and the service line. `/fsm/v1/Work_Orders/{id}/actions/create_invoice` is `404 INVALID_URL_PATTERN`. The work order's blueprint offers Complete, Cancel and Terminate, then Close, and no invoice step. `GET /fsm/v1/Invoices` answers 204: the module is there and empty.
-  - **What would prove it:** the owner presses Create Invoice on work order **WO13** (`8229000000305234`) in FSM's own screen. FSM and Books then sync on their own (open point 38), the mirror reads `Invoice_Id` on to `appointments.fsm_invoice_id`, and `GET /api/documents/{visit_id}` streams the PDF.
-  - What was proven is the state before that: with `fsm_invoice_id` null, `GET /api/documents/ab7b388c-…` answers **`409 not_ready`**, which is what the app shows as E3's "The invoice is still generating".
+- [ ] **The invoice PDF opens.** **Not proven, and for two reasons, the second worse than the first.**
+  - The closed work order carried `Grand_Total` and `Sub_Total` of 2000 rupees and `Billing_Status` "Not yet Invoiced" — the price book's service-visit figure, with no tax, as open points 1 to 3 say it will be.
+  - **First, the API would not raise it.** `POST /fsm/v1/Invoices` answers **`500 INTERNAL_ERROR`** with no detail, both for a body naming the work order alone and for one naming the contact, both addresses, the date and the service line. `/fsm/v1/Work_Orders/{id}/actions/create_invoice` is `404 INVALID_URL_PATTERN`. The work order's blueprint offers Complete, Cancel and Terminate, then Close, and no invoice step. `GET /fsm/v1/Invoices` answered 204: the module was there and empty.
+  - **The owner then raised it by hand**, at 14:54 India time: FSM's **INV-000001**, id `8229000000304418`, on WO13, contact "Staging test", dated 2026-09-23, status Draft, carrying `ZBilling_InvoiceId` `4242595000000064030`. In Books that invoice is real and right: INV-000001, draft, total 2000, one line "Service visit × 1 = 2000", `tax_total` 0. `GET /books/v3/invoices/4242595000000064030?accept=pdf` answers **200 `application/pdf`**. Everything downstream of the invoice's ID works.
+  - **Second, and this is the defect: nothing carries that ID into the mirror.** `src/domain/fsm-mirror.ts` reads `Invoice_Id` off the **appointment**, and FSM leaves it **null** there even after the invoice exists (checked at 09:43 UTC, after the appointment's own `Modified_Time` had moved to 14:54 India time). The work order is no better: it flips to `Billing_Status: "Invoiced"` and carries no invoice ID at all. The link lives only on the Invoice record, which names its `Work_Order` and its `ZBilling_InvoiceId`.
+  - So `appointments.fsm_invoice_id` stays null however long one waits, and `GET /api/documents/ab7b388c-…` keeps answering **`409 not_ready`** — the app shows E3's "The invoice is still generating" for an invoice that has been generated. A client would never see their tax invoice.
+  - **What would fix it:** find the invoice by listing `/fsm/v1/Invoices` and matching `Work_Order.id` to the appointment's `fsm_work_order_id`, then store its `ZBilling_InvoiceId` — the Books ID, which is what `books.invoicePdf` wants — in `appointments.fsm_invoice_id`. That is a change to the mirror's shape and its call budget, so it is left for the milestone that owns it, with open point 64.
 - [x] **A deliberately broken webhook is repaired by the reconciliation.**
   - The reconciliation is not only nightly: it runs with the sweeper every five minutes over the 50 appointments FSM changed most recently, and walks the whole list overnight between 1 and 5 am India time (ADR 0032). The five-minute part is what was proven; the overnight pass was not, and the departure from the prompt's word stands.
   - **The rule was not switched off.** Deactivating the workflow rule needs FSM's Setup screens, which the API does not reach. The same condition — FSM changed, no hint came — was arranged instead by rolling the copy back by hand: the first-fit appointment `ffd24370-33ec-4aa2-81ed-81fd85000214` (FSM `8229000000306278`) was set to its old window, 2026-09-24T03:30Z, and its `fsm_modified_at` back to 08:00:00, while FSM held 2026-09-30T03:30Z and 08:39:15. Nothing changed in FSM, so no hint could come.
@@ -362,7 +364,7 @@ Two other proof runs were working against the same staging database and the same
 ### What the proof found
 
 - **`attachToAppointment` sent the wrong field name.** FSM's Attachments module takes `File_Id`; we sent `file_id`, and every attachment was refused with `400 INVALID_DATA`. Fixed, with a test. The mirror only reads attachments, so nothing in P2-M2 depended on it; the technician app's own upload (P2-M4) does.
-- **An invoice cannot be raised over FSM's API** (open point 64), so the second of the prompt's three checks cannot be run without the owner.
+- **An invoice cannot be raised over FSM's API, and once raised by hand the mirror never finds it** (open point 64). FSM leaves `Invoice_Id` null on the appointment and gives the work order no invoice ID either, so `appointments.fsm_invoice_id` stays null and the app shows "still generating" for an invoice that exists. It is the one link missing from an otherwise working path.
 - **"Convert to Work Order" over the API creates no work order** (open point 65). A Request converted that way is left at "Work In Progress" with nothing behind it.
 - **A Zoho auth outage refunds paid bookings.** Minting access tokens by hand alongside the Worker exhausted Zoho's refresh quota for about ten minutes; every FSM call on staging failed with `Access Denied`, and three bookings in flight were given up on after five attempts and refunded, with an alert each (open point 60). The outage was this proof's doing, and it recovered on its own, but the behaviour it exposed is the owner's to rule on.
 
@@ -581,18 +583,18 @@ Run in the same sitting as P2-M3 above, on the same staging version, with the sa
 
 ## What the P2-M2 and P2-M5 proofs left in the owner's org
 
-Staging shares the real Zoho org (open point 10), so the records below are real and are the owner's to keep or clear. Every one of them is labelled "Staging test". Nothing was deleted, because two of them are still wanted: **WO13 is the work order the invoice check waits on**, and the first fit is the visit a move was proven on.
+Staging shares the real Zoho org (open point 10), so the records below are real and are the owner's to keep or clear. Every one of them is labelled "Staging test". Nothing was deleted, because two of them are still wanted: **WO13 carries the invoice the owner raised by hand**, INV-000001, which the invoice check still waits on for the reason in open point 64; and the first fit is the visit a move was proven on.
 
 **Zoho FSM.** Two contacts, `8229000000305231` and `8229000000304356`, both "Staging test" with random numbers. Two Requests, `8229000000304279` (REQ4, left at "Work In Progress" with no work order, for the reason in open point 65) and `8229000000306245`. Five work orders with an appointment each:
 
-| Work order       | Appointment      | What it is                           | Left as                        |
-| ---------------- | ---------------- | ------------------------------------ | ------------------------------ |
-| 8229000000305234 | 8229000000304285 | The service job, with 10 photographs | **Closed, "Not yet Invoiced"** |
-| 8229000000306229 | 8229000000304341 | The paid service visit, then moved   | Cancelled, refunded            |
-| 8229000000305384 | 8229000000306251 | A credit booking, moved by ops       | Cancelled at late notice       |
-| 8229000000306269 | 8229000000304388 | A credit booking                     | Cancelled at free notice       |
-| 8229000000305397 | 8229000000306278 | The first fit, moved at a late fee   | **Scheduled, 30 September**    |
+| Work order       | Appointment      | What it is                           | Left as                                    |
+| ---------------- | ---------------- | ------------------------------------ | ------------------------------------------ |
+| 8229000000305234 | 8229000000304285 | The service job, with 10 photographs | **Closed, invoiced by hand as INV-000001** |
+| 8229000000306229 | 8229000000304341 | The paid service visit, then moved   | Cancelled, refunded                        |
+| 8229000000305384 | 8229000000306251 | A credit booking, moved by ops       | Cancelled at late notice                   |
+| 8229000000306269 | 8229000000304388 | A credit booking                     | Cancelled at free notice                   |
+| 8229000000305397 | 8229000000306278 | The first fit, moved at a late fee   | **Scheduled, 30 September**                |
 
-**Zoho Books.** Three customer payments — `4242595000000067002` (₹2,000), `4242595000000069003` (₹30,000) and `4242595000000071002` (₹4,000) — and one refund, `4242595000000072002` (₹2,000), each described "Staging test: Razorpay …". None is applied to an invoice, because no invoice exists.
+**Zoho Books.** Three customer payments — `4242595000000067002` (₹2,000), `4242595000000069003` (₹30,000) and `4242595000000071002` (₹4,000) — and one refund, `4242595000000072002` (₹2,000), each described "Staging test: Razorpay …". Also the draft invoice FSM raised on WO13, `4242595000000064030` (INV-000001, ₹2,000, no tax). No payment is applied to it: the mirror never learned the invoice existed.
 
 **Razorpay** holds the test-mode orders, payments and the refund. They are test data and need no clearing.
