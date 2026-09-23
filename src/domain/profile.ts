@@ -64,21 +64,41 @@ export interface ConsentState {
   readonly since: string | null;
 }
 
-/** "Each purpose carries its own date": the latest switch of each, or off if never switched. */
-export async function consentsOf(db: D1Database, personId: string): Promise<ConsentState[]> {
+export interface ConsentRecord extends ConsentState {
+  /** The notice the client saw when they last switched it; null if they never have. */
+  readonly noticeVersion: string | null;
+}
+
+/**
+ * "Each purpose carries its own date": the latest switch of each, or off if
+ * never switched, with the notice version that switch was given under. Ops read
+ * the notice version as the consent record (docs/decisions/0049-dpdp.md); the
+ * client app shows the state and the date alone.
+ */
+export async function consentRecordsOf(db: D1Database, personId: string): Promise<ConsentRecord[]> {
   const placeholders = CONSENT_PURPOSES.map((_, index) => `?${String(index + 2)}`).join(", ");
   const rows = await db
     .prepare(
-      `SELECT purpose, granted, created_at FROM consents
+      `SELECT purpose, granted, notice_version, created_at FROM consents
        WHERE person_id = ?1 AND purpose IN (${placeholders}) ORDER BY created_at, rowid`,
     )
     .bind(personId, ...CONSENT_PURPOSES)
-    .all<{ purpose: ConsentPurpose; granted: number; created_at: string }>();
+    .all<{ purpose: ConsentPurpose; granted: number; notice_version: string; created_at: string }>();
   const latest = new Map(rows.results.map((row) => [row.purpose, row]));
   return CONSENT_PURPOSES.map((purpose) => {
     const row = latest.get(purpose);
-    return { purpose, granted: row?.granted === 1, since: row?.created_at ?? null };
+    return {
+      purpose,
+      granted: row?.granted === 1,
+      since: row?.created_at ?? null,
+      noticeVersion: row?.notice_version ?? null,
+    };
   });
+}
+
+export async function consentsOf(db: D1Database, personId: string): Promise<ConsentState[]> {
+  const records = await consentRecordsOf(db, personId);
+  return records.map(({ purpose, granted, since }) => ({ purpose, granted, since }));
 }
 
 /** A switch is a new row: the consent record is append-only. */

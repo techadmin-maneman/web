@@ -93,6 +93,19 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
   return row === null ? null : summaryOf(row, await placeOf(db, personId));
 }
 
+/** The three states the apps show a client in. */
+export const CLIENT_STATES = ["fitted", "lead", "nothing_booked"] as const;
+export type ClientState = (typeof CLIENT_STATES)[number];
+
+/**
+ * A client is fitted once a fit or a later visit is done, a lead while
+ * something is booked for them, and otherwise has nothing booked. The client
+ * app's Home card and the ops console's client page read the same rule.
+ */
+export function clientStateOf(fitted: boolean, hasBooking: boolean): ClientState {
+  return fitted ? "fitted" : hasBooking ? "lead" : "nothing_booked";
+}
+
 /** Whether the client has been fitted: a first fit, or any visit after one, has been done. */
 export async function isFitted(db: D1Database, personId: string): Promise<boolean> {
   const row = await db
@@ -187,6 +200,22 @@ export async function visitDetail(
     photos: photos.get(row.id) ?? { before: [], after: [] },
     document_id: row.fsm_invoice_id === null ? null : row.id,
   };
+}
+
+export type VisitOutcome = "done" | "partial";
+
+/** What FSM closed each of these visits as, for the visits it has closed. */
+export async function visitOutcomes(
+  db: D1Database,
+  appointmentIds: readonly string[],
+): Promise<Map<string, VisitOutcome>> {
+  if (appointmentIds.length === 0) return new Map();
+  const placeholders = appointmentIds.map((_, index) => `?${String(index + 1)}`).join(", ");
+  const { results } = await db
+    .prepare(`SELECT appointment_id, outcome FROM visits WHERE appointment_id IN (${placeholders})`)
+    .bind(...appointmentIds)
+    .all<{ appointment_id: string; outcome: VisitOutcome }>();
+  return new Map(results.map((row) => [row.appointment_id, row.outcome]));
 }
 
 interface PhotoRow {
