@@ -4,6 +4,16 @@
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { CONSENT_PURPOSES, type ConsentPurpose } from "../policy/consents.ts";
 
+/** Where a coordinate came from; the licence and the trust differ by source (ADR 0054). */
+export type GeocodeSource = "google_geocoding" | "device" | "checkin";
+
+/** The pin, and the record of where it came from that migration 0028 keeps beside it. */
+export interface AddressPin {
+  readonly lat: number;
+  readonly lng: number;
+  readonly source: GeocodeSource;
+}
+
 export interface Address {
   readonly line1: string;
   readonly line2: string | null;
@@ -11,37 +21,76 @@ export interface Address {
   readonly city: string;
   readonly pincode: string;
   readonly accessNotes: string | null;
+  /** The building as chosen from the suggestions; null when the address was typed. */
+  readonly building: string | null;
+  readonly flat: string | null;
+  readonly floor: string | null;
+  readonly tower: string | null;
+  readonly landmark: string | null;
+  /** Google's Place ID for the building, which we may keep for good. */
+  readonly placeId: string | null;
 }
+
+const ADDRESS_COLUMNS = `line1, line2, locality, city, pincode, access_notes,
+       building, flat, floor, tower, landmark, place_id`;
+
+interface AddressRow {
+  line1: string;
+  line2: string | null;
+  locality: string;
+  city: string;
+  pincode: string;
+  access_notes: string | null;
+  building: string | null;
+  flat: string | null;
+  floor: string | null;
+  tower: string | null;
+  landmark: string | null;
+  place_id: string | null;
+}
+
+/** An address saved before migration 0028 has nulls in the new columns and reads unchanged. */
+const fromRow = ({ access_notes: accessNotes, place_id: placeId, ...rest }: AddressRow): Address => ({
+  ...rest,
+  accessNotes,
+  placeId,
+});
 
 export async function currentAddress(db: D1Database, personId: string): Promise<Address | null> {
   const row = await db
     .prepare(
-      `SELECT line1, line2, locality, city, pincode, access_notes FROM addresses
+      `SELECT ${ADDRESS_COLUMNS} FROM addresses
        WHERE person_id = ?1 AND replaced_at IS NULL ORDER BY created_at DESC LIMIT 1`,
     )
     .bind(personId)
-    .first<{
-      line1: string;
-      line2: string | null;
-      locality: string;
-      city: string;
-      pincode: string;
-      access_notes: string | null;
-    }>();
-  if (row === null) return null;
-  const { access_notes: accessNotes, ...rest } = row;
-  return { ...rest, accessNotes };
+    .first<AddressRow>();
+  return row === null ? null : fromRow(row);
 }
 
-/** The new address becomes current; the old one is kept, marked replaced. */
-export async function saveAddress(db: D1Database, personId: string, address: Address, now: Date): Promise<void> {
+/**
+ * The new address becomes current; the old one is kept, marked replaced.
+ *
+ * The pin is written here rather than by a later mirror, so that the coordinate
+ * and the address it belongs to are never out of step. It is the client's own
+ * address row and no one else's: Google's Geocoding terms allow an indefinite
+ * cache only where it is "logically isolated to the specific End User", so a
+ * building's coordinate is never reused across clients (ADR 0054).
+ */
+export async function saveAddress(
+  db: D1Database,
+  personId: string,
+  address: Address,
+  pin: AddressPin | null,
+  now: Date,
+): Promise<void> {
   const at = now.toISOString();
   await db.batch([
     db.prepare("UPDATE addresses SET replaced_at = ?2 WHERE person_id = ?1 AND replaced_at IS NULL").bind(personId, at),
     db
       .prepare(
-        `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+        `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes,
+                                building, flat, floor, tower, landmark, place_id, lat, lng, geocoded_at, geocode_source)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)`,
       )
       .bind(
         crypto.randomUUID(),
@@ -53,6 +102,16 @@ export async function saveAddress(db: D1Database, personId: string, address: Add
         address.city,
         address.pincode,
         address.accessNotes,
+        address.building,
+        address.flat,
+        address.floor,
+        address.tower,
+        address.landmark,
+        address.placeId,
+        pin?.lat ?? null,
+        pin?.lng ?? null,
+        pin === null ? null : at,
+        pin?.source ?? null,
       ),
   ]);
 }

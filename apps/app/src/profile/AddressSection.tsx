@@ -4,10 +4,44 @@
 import { useState } from "react";
 import { api, type Address } from "../api.ts";
 import { profile } from "../content.ts";
+import { BuildingSearch } from "./BuildingSearch.tsx";
 import styles from "./profile.module.css";
 
-const EMPTY: Address = { line1: "", line2: null, locality: "", city: "", pincode: "", access_notes: null };
+const EMPTY: Address = {
+  line1: "",
+  line2: null,
+  locality: "",
+  city: "",
+  pincode: "",
+  access_notes: null,
+  building: null,
+  flat: null,
+  floor: null,
+  tower: null,
+  landmark: null,
+  place_id: null,
+};
 
+/**
+ * The address on one line, narrowest part first, as an envelope is written. An
+ * address saved before the flat and building fields existed holds nulls in all
+ * of them and reads exactly as it did.
+ */
+function written(address: Address): string {
+  const parts = [address.flat, address.floor, address.tower, address.building, address.line1, address.line2];
+  return [...new Set(parts.filter((part) => part !== null && part !== undefined && part.trim() !== ""))]
+    .concat(address.locality)
+    .join(", ");
+}
+
+/**
+ * The house and the area are still what make an address an address. The
+ * building search is an addition, never a gate: a client who cannot use it, or
+ * whose provider is down, fills these in and saves the same address.
+ *
+ * `line1` is the building where one was chosen, so a client who used the search
+ * is never asked for the same words twice.
+ */
 function complete(address: Address): boolean {
   return (
     address.line1.trim() !== "" &&
@@ -21,8 +55,18 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
   const copy = profile;
   const [editing, setEditing] = useState<Address | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  // One token for the whole search, made when the form opens: it is what puts
+  // Google's autocomplete on the free per-session price rather than per
+  // keystroke (docs/decisions/0054-address-capture.md).
+  const [sessionToken, setSessionToken] = useState("");
 
-  async function save(draft: Address) {
+  async function save(chosenDraft: Address) {
+    // A building chosen from the search is the address's first line, so the
+    // "House, flat or building" field is not shown and not asked for twice.
+    const draft: Address =
+      chosenDraft.building !== null && chosenDraft.building !== undefined && chosenDraft.building.trim() !== ""
+        ? { ...chosenDraft, line1: chosenDraft.building }
+        : chosenDraft;
     if (!complete(draft)) {
       setProblem(copy.form.invalid);
       return;
@@ -31,6 +75,7 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
       ...draft,
       line2: draft.line2?.trim() === "" ? null : draft.line2,
       access_notes: draft.access_notes?.trim() === "" ? null : draft.access_notes,
+      session_token: sessionToken,
     });
     if (answer.ok) {
       setEditing(null);
@@ -41,7 +86,16 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
     }
   }
 
-  const field = (key: keyof Address, label: string, options: { inputMode?: "numeric"; autoComplete?: string } = {}) => (
+  function edit() {
+    setEditing(address ?? EMPTY);
+    setSessionToken(crypto.randomUUID());
+  }
+
+  const field = (
+    key: Exclude<keyof Address, "place_id">,
+    label: string,
+    options: { inputMode?: "numeric"; autoComplete?: string } = {},
+  ) => (
     <label className={styles.formField}>
       <span className={styles.formLabel}>{label}</span>
       <input
@@ -68,19 +122,13 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
           ) : (
             <>
               <p className={styles.address}>
-                {[address.line1, address.line2, address.locality].filter((part) => part !== null).join(", ")},{" "}
-                {address.city} {address.pincode}
+                {written(address)}, {address.city} {address.pincode}
               </p>
+              {address.landmark !== null && <p className={styles.muted}>{copy.near(address.landmark)}</p>}
               {address.access_notes !== null && <p className={styles.muted}>{address.access_notes}</p>}
             </>
           )}
-          <button
-            className={styles.link}
-            type="button"
-            onClick={() => {
-              setEditing(address ?? EMPTY);
-            }}
-          >
+          <button className={styles.link} type="button" onClick={edit}>
             <span>{address === null ? copy.addAddress : copy.editAddress}</span>
           </button>
         </div>
@@ -93,8 +141,29 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
             void save(editing);
           }}
         >
-          {field("line1", copy.form.line1, { autoComplete: "address-line1" })}
+          <BuildingSearch
+            value={editing.building ?? ""}
+            sessionToken={sessionToken}
+            onChoose={({ placeId, building }) => {
+              setEditing((draft) => ({
+                ...(draft ?? EMPTY),
+                building: building === "" ? null : building,
+                // An empty ID means the client typed over the choice: the
+                // building stands as words, and the address saves without a pin.
+                place_id: placeId === "" ? null : placeId,
+              }));
+            }}
+            onClear={() => {
+              setEditing((draft) => (draft === null ? draft : { ...draft, place_id: null }));
+            }}
+          />
+          {field("flat", copy.form.flat)}
+          {field("floor", copy.form.floor)}
+          {field("tower", copy.form.tower)}
+          {/* Only for an address nobody searched for: otherwise the building is line one. */}
+          {(editing.building ?? "").trim() === "" && field("line1", copy.form.line1, { autoComplete: "address-line1" })}
           {field("line2", copy.form.line2, { autoComplete: "address-line2" })}
+          {field("landmark", copy.form.landmark)}
           {field("locality", copy.form.locality, { autoComplete: "address-level3" })}
           {field("city", copy.form.city, { autoComplete: "address-level2" })}
           {field("pincode", copy.form.pincode, { inputMode: "numeric", autoComplete: "postal-code" })}

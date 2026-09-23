@@ -71,6 +71,83 @@ test("takes an address and its access notes, and shows them", async ({ page, req
   await expect(page.getByText("Sector 65, Gurgaon 122018")).toBeVisible();
 });
 
+// The building search (ADR 0054). The local API runs the stub provider, whose
+// suggestions are synthetic Gurugram societies.
+test("finds a building, keeps the flat separately, and shows the address as written", async ({ page, request }) => {
+  await loggedIn(page, request);
+  await page.getByRole("button", { name: "Add your address and access notes" }).click();
+
+  const search = page.getByRole("combobox", { name: "Search for your building" });
+  await search.fill("Sunrise");
+  const options = page.getByRole("option");
+  await expect(options).toHaveCount(1);
+  await expect(options.first()).toContainText("Sunrise Greens");
+  // Google's condition for showing their suggestions without a Google map.
+  await expect(page.getByText("Google Maps")).toBeVisible();
+  await options.first().click();
+  await expect(search).toHaveValue("Sunrise Greens");
+
+  await page.getByLabel("Flat or house number").fill("Flat 1203");
+  await page.getByLabel("Floor (optional)").fill("12");
+  await page.getByLabel("Tower or block (optional)").fill("Tower C");
+  await page.getByLabel("Landmark (optional)").fill("Opposite the sector market");
+  // The chosen building is line one, so the free-text building field is gone.
+  await expect(page.getByLabel("House, flat or building")).toBeHidden();
+  await page.getByLabel("Sector or area").fill("Sector 65");
+  await page.getByLabel("City").fill("Gurgaon");
+  await page.getByLabel("Pincode").fill("122018");
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByText("Flat 1203, 12, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
+  await expect(page.getByText("Near Opposite the sector market")).toBeVisible();
+});
+
+test("the suggestion list works by keyboard alone", async ({ page, request }) => {
+  await loggedIn(page, request);
+  await page.getByRole("button", { name: "Add your address and access notes" }).click();
+
+  const search = page.getByRole("combobox", { name: "Search for your building" });
+  await search.fill("Sec");
+  await expect(page.getByRole("option")).toHaveCount(3);
+  await expect(search).toHaveAttribute("aria-expanded", "true");
+
+  await search.press("ArrowDown");
+  await expect(page.getByRole("option").first()).toHaveAttribute("aria-selected", "true");
+  await search.press("ArrowDown");
+  await expect(page.getByRole("option").nth(1)).toHaveAttribute("aria-selected", "true");
+  await search.press("Enter");
+  await expect(search).toHaveValue("Mayfield Towers");
+  await expect(page.getByRole("option")).toHaveCount(0);
+
+  // Escape closes the list without choosing.
+  await search.fill("Sec");
+  await expect(page.getByRole("option")).toHaveCount(3);
+  await search.press("Escape");
+  await expect(page.getByRole("option")).toHaveCount(0);
+  await expect(search).toHaveAttribute("aria-expanded", "false");
+});
+
+test("an address can still be typed when the search gives nothing", async ({ page, request }) => {
+  await loggedIn(page, request);
+  await page.getByRole("button", { name: "Add your address and access notes" }).click();
+
+  // The stub answers this query with a 503, as a spent quota or an outage would.
+  const search = page.getByRole("combobox", { name: "Search for your building" });
+  await search.fill("mm-stub:down");
+  await expect(page.getByText("Search is unavailable just now. Type your address below instead.")).toBeVisible();
+  await expect(page.getByRole("option")).toHaveCount(0);
+
+  // Whatever is in the box stands as words: no suggestion was chosen, so no pin.
+  await search.fill("Sunrise Greens");
+  await page.getByLabel("Flat or house number").fill("House 4417");
+  await page.getByLabel("Sector or area").fill("Sector 65");
+  await page.getByLabel("City").fill("Gurgaon");
+  await page.getByLabel("Pincode").fill("122018");
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByText("House 4417, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
+});
+
 test("refuses an address without a six-digit pincode", async ({ page, request }) => {
   await loggedIn(page, request);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
@@ -203,5 +280,10 @@ test("meets WCAG 2.2 AA, with the address form and the card's lines open", async
   await scan();
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
   await page.getByRole("switch", { name: "Photographs on referral cards" }).click();
+  await scan();
+
+  // Again with the suggestion list open, which is the app's only combobox.
+  await page.getByRole("combobox", { name: "Search for your building" }).fill("Sec");
+  await expect(page.getByRole("option")).toHaveCount(3);
   await scan();
 });

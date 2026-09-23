@@ -4,6 +4,8 @@ This answers the question asked on 23 September 2026 — how addresses are taken
 
 It is written to be read without knowing the code. The decision in the ADR beside it is `docs/decisions/0054-address-capture.md`.
 
+> **The owner ruled on 23 September 2026, after this was written: Google, and build it.** This document is kept as the scoping that preceded the ruling, and what it says about suppliers other than Google is the comparison that was made rather than a live recommendation. Where it differs from the ADR, the ADR wins — in particular the ADR verified Google's terms against the live text and settled that a coordinate the Geocoding API returns for a chosen Place ID may be kept indefinitely, which is what makes the geofence work offline. No map is drawn, so the map-canvas and pin-dragging parts below describe a design that was not built.
+
 ## The short version
 
 **The money: ₹0 a month.** Three of the four pieces below need no supplier, no account and no payment at all. The fourth — the map you drag a pin on — is the only one that needs a company's permission, and at our size it is free too: about 300 addresses saved a month is roughly **0.3%** of the free monthly allowance of every supplier we would actually choose. It stays ₹0 until we are about two hundred times bigger, and the supplier we recommend cannot charge us even then without our first paying money up front.

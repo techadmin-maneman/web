@@ -9,6 +9,8 @@ export type LoginVerify = Schemas["LoginVerify"];
 export type Me = Schemas["Me"];
 export type Profile = Schemas["Profile"];
 export type Address = Schemas["Address"];
+export type AddressSave = Schemas["AddressSave"];
+export type Suggestion = Schemas["AddressSuggestions"]["suggestions"][number];
 export type NumberChange = Schemas["NumberChange"];
 export type ConsentPurpose = Profile["consents"][number]["purpose"];
 export type VisitSummary = Schemas["VisitSummary"];
@@ -89,7 +91,13 @@ export const api = {
   logout: () => call<null>("POST", "/api/auth/logout"),
   me: () => call<Me>("GET", HOME_PATH),
   profile: () => call<Profile>("GET", "/api/profile"),
-  saveAddress: (address: Address) => call<Address>("PATCH", "/api/profile/address", address),
+  saveAddress: (address: AddressSave) => call<Address>("PATCH", "/api/profile/address", address),
+  /** One session token for every keystroke of a search, so Google bills the session and not the letters. */
+  addressSuggestions: (query: string, session: string) =>
+    call<Schemas["AddressSuggestions"]>(
+      "GET",
+      `/api/address/suggestions?q=${encodeURIComponent(query)}&session=${encodeURIComponent(session)}`,
+    ),
   switchConsent: (purpose: ConsentPurpose, granted: boolean) =>
     call<{ purpose: ConsentPurpose; granted: boolean; since: string }>("PATCH", `/api/consents/${purpose}`, {
       granted,
