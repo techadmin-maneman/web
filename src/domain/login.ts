@@ -66,7 +66,9 @@ function challengeOf(row: ChallengeRow): Challenge {
   };
 }
 
-const codeHashOf = (pepper: string, challengeId: string, code: string) => saltedHash(pepper, `${challengeId}:${code}`);
+/** What a challenge stores instead of the code. The technician's login uses it too. */
+export const codeHashOf = (pepper: string, challengeId: string, code: string) =>
+  saltedHash(pepper, `${challengeId}:${code}`);
 
 /**
  * A new challenge. With a person, it holds the hash of `code`; without one (a
@@ -117,7 +119,8 @@ export async function openChallenge(
   const row = await db
     .prepare(
       `SELECT id, person_id, channel, created_at, last_sent_at, sends, attempts, expires_at FROM otp_challenges
-       WHERE id = ?1 AND purpose = ?3 AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2`,
+       WHERE id = ?1 AND purpose = ?3 AND technician_login = 0
+         AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2`,
     )
     .bind(id, now.toISOString(), purpose)
     .first<ChallengeRow>();
@@ -155,8 +158,8 @@ export async function verifyCode(
   const counted = await db
     .prepare(
       `UPDATE otp_challenges SET attempts = attempts + 1
-       WHERE id = ?1 AND purpose = ?4 AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2
-         AND attempts < ?3
+       WHERE id = ?1 AND purpose = ?4 AND technician_login = 0
+         AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2 AND attempts < ?3
        RETURNING person_id, code_hash, attempts`,
     )
     .bind(

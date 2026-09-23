@@ -51,6 +51,10 @@ export interface FsmTechnician {
   readonly userId: string;
   readonly name: string;
   readonly active: boolean;
+  /** As FSM holds it on the user; the mirror turns it into E.164. Null where the user has none. */
+  readonly mobile: string | null;
+  /** FSM's territory: the zone the dispatch board groups him by. */
+  readonly zone: string | null;
 }
 
 /** A service or a part in FSM's catalogue. */
@@ -67,6 +71,41 @@ export interface FsmAttachment {
   readonly name: string;
   readonly size: number;
   readonly createdAt: string;
+}
+
+/** A piece, as FSM holds it: an asset against a contact, labelled with our code. */
+export interface FsmAsset {
+  readonly id: string;
+  /** Our label on the piece, e.g. "MM-STD-4417-B". */
+  readonly assetNumber: string;
+  readonly contactId: string | null;
+  /** The part item the piece is built on: its base. */
+  readonly productId: string | null;
+  readonly productName: string | null;
+  /** The supplier's lot, which FSM holds as the serial number. */
+  readonly serialNumber: string | null;
+  readonly installedAt: string | null;
+  readonly status: string | null;
+  readonly modifiedAt: string;
+}
+
+/** A piece to record in FSM once it is fitted. */
+export interface NewFsmAsset {
+  readonly contactId: string;
+  readonly assetNumber: string;
+  /** The part item in FSM's catalogue; an asset needs one. */
+  readonly productId: string;
+  readonly serialNumber: string | null;
+  /** YYYY-MM-DD, the day it was fitted. */
+  readonly installedAt: string;
+}
+
+/** A photograph or other file to put on an FSM record. */
+export interface FsmUpload {
+  /** Carries the phase and angle, e.g. "before-front.jpg", so the mirror reads it back. */
+  readonly name: string;
+  readonly bytes: Uint8Array;
+  readonly contentType: string;
 }
 
 export interface FsmDownload {
@@ -129,6 +168,25 @@ export interface FsmProvider {
   createVisit(visit: NewFsmVisit): Promise<{ workOrderId: string; appointmentId: string }>;
   /** Moves an appointment to new times, with the same technician. ISO 8601 with India's offset. */
   rescheduleVisit(appointmentId: string, times: { start: string; end: string }): Promise<void>;
+  /** The pieces FSM holds against a contact, newest first. */
+  assets(contactId: string): Promise<FsmAsset[]>;
+  /** Records a fitted piece as an asset; returns its FSM ID. */
+  createAsset(asset: NewFsmAsset): Promise<string>;
+  /** Changes an asset's status, e.g. when a piece failed. */
+  updateAsset(assetId: string, fields: { status?: string }): Promise<void>;
+  /** Puts an appointment on another technician. */
+  assignVisit(appointmentId: string, technicianId: string): Promise<void>;
+  /** The blueprint transitions FSM offers an appointment right now, by name. */
+  appointmentTransitions(appointmentId: string): Promise<string[]>;
+  /**
+   * Makes one of them, with its mandatory note; false when FSM does not offer
+   * it, which is how a job FSM has already moved past says so.
+   */
+  transitionAppointment(appointmentId: string, name: string, note: string): Promise<boolean>;
+  /** Writes the job's own fields on the appointment, e.g. its summary. */
+  updateAppointment(appointmentId: string, fields: Record<string, string>): Promise<void>;
+  /** Uploads a file and attaches it to an appointment; returns FSM's attachment ID. */
+  attachToAppointment(appointmentId: string, file: FsmUpload): Promise<string>;
   /** Cancels a work order, and so its appointment, with a note for ops; false if FSM no longer allows it. */
   cancelVisit(workOrderId: string, note: string): Promise<boolean>;
   /** Anonymises an erased client's contact: name, numbers, e-mail and street; the city stays for the records. */
@@ -153,7 +211,14 @@ export interface StubFsmWorld {
   readonly items: FsmItem[];
   readonly attachments: Record<string, FsmAttachment[]>;
   readonly files: Record<string, { bytes: Uint8Array; contentType: string }>;
+  /** Pieces by contact ID. */
+  readonly assets?: Record<string, FsmAsset[]>;
+  /** The transitions each appointment offers, by appointment ID; the default is below. */
+  readonly transitions?: Record<string, string[]>;
 }
+
+/** What FSM offers a scheduled appointment, as the trial found (docs/decisions/fsm-trial.md). */
+export const STUB_TRANSITIONS = ["Dispatch", "Reschedule", "Cancel", "Terminate", "Start", "Complete"];
 
 /** The catalogue scripts/setup-fsm.ts makes in FSM, which the local stub holds, so local bookings reach it. */
 const CATALOGUE: FsmItem[] = [
@@ -183,8 +248,27 @@ export interface StubFsm extends FsmProvider {
     readonly rescheduled: { appointmentId: string; start: string; end: string }[];
     readonly cancelled: { workOrderId: string; note: string }[];
     readonly erased: string[];
+    readonly assets: NewFsmAsset[];
+    readonly assetUpdates: { assetId: string; status?: string }[];
+    readonly assigned: { appointmentId: string; technicianId: string }[];
+    readonly transitioned: { appointmentId: string; name: string; note: string }[];
+    readonly appointmentUpdates: { appointmentId: string; fields: Record<string, string> }[];
+    readonly attached: { appointmentId: string; name: string; contentType: string; bytes: number }[];
   };
+  /** Makes the next call of this kind throw, so a test can prove the retry. */
+  failNext(step: StubFsmStep, message?: string): void;
 }
+
+/** The writes a test can make fail. */
+export type StubFsmStep =
+  | "assets"
+  | "createAsset"
+  | "updateAsset"
+  | "assignVisit"
+  | "transitionAppointment"
+  | "updateAppointment"
+  | "attachToAppointment"
+  | "rescheduleVisit";
 
 /**
  * Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it,
@@ -198,9 +282,28 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     rescheduled: [] as { appointmentId: string; start: string; end: string }[],
     cancelled: [] as { workOrderId: string; note: string }[],
     erased: [] as string[],
+    assets: [] as NewFsmAsset[],
+    assetUpdates: [] as { assetId: string; status?: string }[],
+    assigned: [] as { appointmentId: string; technicianId: string }[],
+    transitioned: [] as { appointmentId: string; name: string; note: string }[],
+    appointmentUpdates: [] as { appointmentId: string; fields: Record<string, string> }[],
+    attached: [] as { appointmentId: string; name: string; contentType: string; bytes: number }[],
   };
+  const failures = new Map<StubFsmStep, string>();
+  /** Throws once if the test asked this step to fail; a retry then succeeds. */
+  function checkFailure(step: StubFsmStep): void {
+    const message = failures.get(step);
+    if (message === undefined) return;
+    failures.delete(step);
+    throw new Error(message);
+  }
+
+  const stubAssets = world.assets ?? {};
   return {
     made,
+    failNext: (step, message = `the stub FSM refused ${step}`) => {
+      failures.set(step, message);
+    },
     appointment: (id) => Promise.resolve(world.appointments.find((appointment) => appointment.id === id) ?? null),
     appointments: (page, perPage) => {
       const sorted = [...world.appointments].sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
@@ -236,8 +339,52 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       return Promise.resolve({ workOrderId: `stub-work-order-${id}`, appointmentId: `stub-appointment-${id}` });
     },
     rescheduleVisit: (appointmentId, times) => {
+      checkFailure("rescheduleVisit");
       made.rescheduled.push({ appointmentId, ...times });
       return Promise.resolve();
+    },
+    assets: (contactId) => {
+      checkFailure("assets");
+      return Promise.resolve([...(stubAssets[contactId] ?? [])]);
+    },
+    createAsset: (asset) => {
+      checkFailure("createAsset");
+      made.assets.push(asset);
+      return Promise.resolve(`stub-asset-${crypto.randomUUID()}`);
+    },
+    updateAsset: (assetId, fields) => {
+      checkFailure("updateAsset");
+      made.assetUpdates.push({ assetId, ...fields });
+      return Promise.resolve();
+    },
+    assignVisit: (appointmentId, technicianId) => {
+      checkFailure("assignVisit");
+      made.assigned.push({ appointmentId, technicianId });
+      return Promise.resolve();
+    },
+    appointmentTransitions: (appointmentId) =>
+      Promise.resolve([...(world.transitions?.[appointmentId] ?? STUB_TRANSITIONS)]),
+    transitionAppointment: (appointmentId, name, note) => {
+      checkFailure("transitionAppointment");
+      const offered = world.transitions?.[appointmentId] ?? STUB_TRANSITIONS;
+      if (!offered.includes(name)) return Promise.resolve(false);
+      made.transitioned.push({ appointmentId, name, note });
+      return Promise.resolve(true);
+    },
+    updateAppointment: (appointmentId, fields) => {
+      checkFailure("updateAppointment");
+      made.appointmentUpdates.push({ appointmentId, fields });
+      return Promise.resolve();
+    },
+    attachToAppointment: (appointmentId, file) => {
+      checkFailure("attachToAppointment");
+      made.attached.push({
+        appointmentId,
+        name: file.name,
+        contentType: file.contentType,
+        bytes: file.bytes.byteLength,
+      });
+      return Promise.resolve(`stub-attachment-${crypto.randomUUID()}`);
     },
     cancelVisit: (workOrderId, note) => {
       made.cancelled.push({ workOrderId, note });
@@ -267,5 +414,13 @@ function createUnconnectedFsm(): FsmProvider {
     rescheduleVisit: off,
     cancelVisit: off,
     eraseContact: off,
+    assets: off,
+    createAsset: off,
+    updateAsset: off,
+    assignVisit: off,
+    appointmentTransitions: off,
+    transitionAppointment: off,
+    updateAppointment: off,
+    attachToAppointment: off,
   };
 }

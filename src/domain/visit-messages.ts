@@ -14,7 +14,12 @@ import { windowAt } from "./scheduling.ts";
 
 export type VisitMessageKind = Extract<
   MessageKind,
-  "consultation_confirmation" | "payment_receipt" | "visit_reminder" | "reschedule_confirmation" | "cancel_confirmation"
+  | "consultation_confirmation"
+  | "payment_receipt"
+  | "visit_reminder"
+  | "reschedule_confirmation"
+  | "cancel_confirmation"
+  | "visit_moved"
 >;
 
 export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
@@ -23,6 +28,8 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
   "visit_reminder",
   "reschedule_confirmation",
   "cancel_confirmation",
+  // Ops moved the visit on the dispatch board; the client is told the new window and never charged.
+  "visit_moved",
 ];
 
 /** The day before a visit, reminders go from this time in India. */
@@ -112,7 +119,8 @@ export async function composeVisitMessage(
 
   if (kind === "consultation_confirmation") return { template: "consultation_booked_v1", params };
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
-  if (kind === "reschedule_confirmation") return { template: "visit_moved_v1", params };
+  // A move, whether the client made it or ops did: the same words, the visit's new window.
+  if (kind === "reschedule_confirmation" || kind === "visit_moved") return { template: "visit_moved_v1", params };
   if (kind === "payment_receipt") {
     const payment = await db
       .prepare(

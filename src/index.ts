@@ -10,6 +10,7 @@ import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch, type MessagingMessage } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
 import { syncBooks } from "./domain/books-sync.ts";
+import { recordUtilisation } from "./domain/dispatch.ts";
 import { queueReminders } from "./domain/visit-messages.ts";
 import { referralPass } from "./scheduled/referrals.ts";
 import { alertAgedDeletions } from "./domain/deletion.ts";
@@ -90,6 +91,15 @@ export default {
     await alertAgedDeletions(workerEnv.DB, deps.now(), deps.alert).catch((error: unknown) => {
       log.error("deletion_alert_failed", { error });
     });
+    // The dispatch board's utilisation, written to events once a day: the operating
+    // figure behind the model's weekend-share assumption (src/policy/dispatch.ts).
+    await recordUtilisation(workerEnv.DB, deps.now())
+      .then((date) => {
+        if (date !== null) log.info("dispatch_utilisation_recorded", { date });
+      })
+      .catch((error: unknown) => {
+        log.error("dispatch_utilisation_failed", { error });
+      });
     const referralMessages = await referralPass(workerEnv.DB, deps.now(), log.child({ job: "referrals" })).catch(
       (error: unknown) => {
         log.error("referrals_failed", { error });

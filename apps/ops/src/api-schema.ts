@@ -911,6 +911,503 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The dispatch board: seven days of every active technician, with the unassigned tray */
+        get: {
+            parameters: {
+                query?: {
+                    from?: string;
+                    city?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The board */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchBoard"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dispatch/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put a job on a technician, with a reason. The clash check runs before any write to FSM */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DispatchAssignRequest"];
+                };
+            };
+            responses: {
+                /** @description Assigned */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchMoved"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such live job */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description clash: the technician already holds a job in that window on that date */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description fsm_refused: FSM would not take it; nothing moved */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dispatch/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a job to another technician, day or window, with a reason. The client is never charged */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DispatchMoveRequest"];
+                };
+            };
+            responses: {
+                /** @description Moved, and the client told */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchMoved"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such live job */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description clash */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description fsm_refused */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/no-shows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** No-show cases: undecided first, each with its three facts */
+        get: {
+            parameters: {
+                query?: {
+                    decision?: "undecided" | "charged" | "waived" | "all";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The cases */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NoShowCases"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/no-shows/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Charge or waive a no-show, from the evidence */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NoShowDecisionRequest"];
+                };
+            };
+            responses: {
+                /** @description Recorded */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            decided: boolean;
+                        };
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such case, or it was ruled on already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/pieces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A client's pieces: code, base, fitted date, supplier lot, replacement due and any failure */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pieces, newest fit first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientPieces"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/technicians": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active technicians and the phones they have logged in on */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The technicians */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Technicians"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/technicians/{id}/devices/{device}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke a phone. Its session ends, and it drops its cached jobs on its next contact */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    device: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Revoked */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            revoked_at: string;
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such phone of that technician's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -918,7 +1415,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "clash" | "fsm_refused" | "too_early_to_close";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -1188,6 +1685,156 @@ export interface components {
              * @description India's date it starts; today if left out.
              */
             launch_on?: string;
+        };
+        DispatchBoard: {
+            /** Format: date */
+            from: string;
+            /** @description 7 days, the board's columns. */
+            dates: string[];
+            technicians: {
+                /** Format: uuid */
+                technician_id: string;
+                name: string;
+                initials: string;
+                zone: string | null;
+                days: {
+                    /** Format: date */
+                    date: string;
+                    blocks: components["schemas"]["DispatchBlock"][];
+                }[];
+            }[];
+            unassigned: {
+                /** Format: uuid */
+                appointment_id: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                asked_window: ("morning" | "afternoon" | "evening") | null;
+                offered_window: ("morning" | "afternoon" | "evening") | null;
+                date: string | null;
+                sector: string | null;
+            }[];
+            /** @description Each column's utilisation, in per cent. Written to events daily as well. */
+            utilisation: {
+                /** Format: date */
+                date: string;
+                percent: number;
+            }[];
+            /** @description Always empty: FSM's availability answers 48 hours ahead and the board is seven days. */
+            leave: {
+                /** Format: uuid */
+                technician_id: string;
+                /** Format: date */
+                from: string;
+                /** Format: date */
+                to: string;
+            }[];
+        };
+        DispatchBlock: {
+            /** Format: uuid */
+            appointment_id: string;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** Format: date-time */
+            starts_at: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
+            slots: number;
+            /** @enum {string} */
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /** @description First name and last initial. */
+            client: string | null;
+            sector: string | null;
+        };
+        DispatchMoved: {
+            /** Format: uuid */
+            move_id: string;
+            /** @description The client was told his new window. */
+            messaged: boolean;
+        };
+        DispatchAssignRequest: {
+            /** Format: uuid */
+            appointment_id: string;
+            /** Format: uuid */
+            technician_id: string;
+            /** Format: date */
+            date?: string;
+            /** @enum {string} */
+            window?: "morning" | "afternoon" | "evening";
+            /** @enum {string} */
+            reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
+        };
+        DispatchMoveRequest: {
+            /** Format: uuid */
+            appointment_id: string;
+            /**
+             * Format: uuid
+             * @description Left out keeps the technician it has.
+             */
+            technician_id?: string;
+            /** Format: date */
+            date?: string;
+            /** @enum {string} */
+            window?: "morning" | "afternoon" | "evening";
+            /** @enum {string} */
+            reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
+        };
+        NoShowCases: {
+            cases: components["schemas"]["NoShowCase"][];
+        };
+        /** @description The three facts ops rule on, and nothing else. */
+        NoShowCase: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            appointment_id: string;
+            visit_date: string | null;
+            technician: string | null;
+            /**
+             * Format: date-time
+             * @description Fact one: when the technician arrived.
+             */
+            checked_in_at: string;
+            /** @description Fact two: how far from the address he was. */
+            distance_m: number;
+            /** @description Fact three: when WhatsApp reported the visit message delivered; null if never. */
+            message_delivered_at: string | null;
+            /** Format: date-time */
+            wait_ends_at: string;
+            closed_at: string | null;
+            /** @enum {string} */
+            decision: "undecided" | "charged" | "waived";
+            decided_at: string | null;
+        };
+        NoShowDecisionRequest: {
+            /** @enum {string} */
+            decision: "charged" | "waived";
+        };
+        ClientPieces: {
+            pieces: components["schemas"]["Piece"][];
+        };
+        Piece: {
+            piece_code: string;
+            base: string | null;
+            supplier_lot: string | null;
+            fitted_at: string | null;
+            replacement_due_at: string | null;
+            failed_at: string | null;
+            failure_reason: string | null;
+        };
+        Technicians: {
+            technicians: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                initials: string;
+                zone: string | null;
+                devices: {
+                    device_id: string;
+                    label: string | null;
+                    /** Format: date-time */
+                    last_seen_at: string;
+                    revoked_at: string | null;
+                }[];
+            }[];
         };
     };
     responses: never;

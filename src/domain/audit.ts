@@ -27,6 +27,10 @@ export const AUDIT_ACTIONS = [
   "data.export",
   "grievance.raise",
   "grievance.resolve",
+  // Field operations (docs/decisions/0052-technician-sessions.md): ops ruling on a
+  // no-show from its evidence, and ops revoking the phone a technician works from.
+  "no_show.decide",
+  "technician_device.revoke",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

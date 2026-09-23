@@ -14,10 +14,13 @@
 // lead in FSM by hand, and a booking FSM would not take is refunded.
 
 import { z } from "zod";
+import type { VisitType } from "../config/visit-types.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { confirmBooking, giveBack, type ConfirmOptions } from "../domain/bookings.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
+import { eventById, markFsmWrite } from "../domain/job-events.ts";
+import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { MessagingMessage } from "./messaging.ts";
@@ -37,6 +40,8 @@ export const FsmSyncMessageSchema = z.union([
   z.object({ hold_id: z.uuid(), request_id: z.string() }),
   /** An erased person, whose FSM contact is anonymised; the sweeper sends it. */
   z.object({ erase_person_id: z.string().min(1), request_id: z.string() }),
+  /** One write from a technician's outbox, to pass to FSM (docs/decisions/0038-offline-writes.md). */
+  z.object({ job_event_id: z.uuid(), request_id: z.string() }),
 ]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
@@ -73,6 +78,17 @@ export async function handleFsmSyncBatch(
         db,
         deps,
         log.child({ request_id: parsed.data.request_id }),
+      );
+      continue;
+    }
+    if ("job_event_id" in parsed.data) {
+      await writeJobEvent(
+        message,
+        parsed.data.job_event_id,
+        env,
+        deps,
+        log.child({ request_id: parsed.data.request_id }),
+        { labelAsTest },
       );
       continue;
     }
@@ -142,6 +158,86 @@ async function bookHold(
     );
     message.ack();
   }
+}
+
+/**
+ * Passes one write from a technician's outbox to FSM. A failure is retried on
+ * the same schedule as everything else here, so the technician's work is never
+ * lost to a refusal FSM will take a minute later; the fifth attempt alerts, and
+ * the event stays "pending" for ops to settle by hand.
+ */
+async function writeJobEvent(
+  message: Message,
+  jobEventId: string,
+  env: FsmSyncEnv,
+  deps: Dependencies,
+  log: Logger,
+  options: { labelAsTest: boolean },
+): Promise<void> {
+  const db = env.DB;
+  const event = await eventById(db, jobEventId);
+  if (event === null || event.superseded || event.fsmWriteState === "written") {
+    message.ack();
+    return;
+  }
+  const job = await jobForFsm(db, event.appointmentId);
+  if (job === null) {
+    await markFsmWrite(db, event.id, "rejected", deps.now(), "the job is no longer in the mirror");
+    message.ack();
+    return;
+  }
+
+  try {
+    const outcome = await writeEventToFsm(
+      { db, bucket: env.CLIENT_PHOTOS, fsm: deps.fsm, labelAsTest: options.labelAsTest },
+      job,
+      event,
+      deps.now(),
+    );
+    await markFsmWrite(db, event.id, "written", deps.now());
+    log.info("job_event_written", { appointment_id: job.id, kind: event.kind, outcome });
+    message.ack();
+  } catch (error) {
+    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    log.warn("job_event_write_failed", { appointment_id: job.id, kind: event.kind, attempt: message.attempts, reason });
+    if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
+      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      return;
+    }
+    await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
+    await deps.alert(
+      `A technician's ${event.kind} did not reach FSM after ${String(message.attempts)} attempts: ${reason}. ` +
+        "Enter it in FSM by hand.",
+    );
+    message.ack();
+  }
+}
+
+/** The appointment a job event belongs to, with what FSM needs to write against it. */
+async function jobForFsm(db: D1Database, appointmentId: string): Promise<JobForFsm | null> {
+  const row = await db
+    .prepare(
+      `SELECT a.id, a.fsm_id, a.type, a.person_id, p.fsm_contact_id FROM appointments a
+       LEFT JOIN people p ON p.id = a.person_id
+       WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.type IS NOT NULL`,
+    )
+    .bind(appointmentId)
+    .first<{
+      id: string;
+      fsm_id: string;
+      type: VisitType;
+      person_id: string | null;
+      fsm_contact_id: string | null;
+    }>();
+  return row === null
+    ? null
+    : {
+        id: row.id,
+        fsmId: row.fsm_id,
+        type: row.type,
+        personId: row.person_id,
+        fsmContactId: row.fsm_contact_id,
+      };
 }
 
 /** Anonymises an erased person's FSM contact, once; a failure is counted, and the sweeper sends it again. */
