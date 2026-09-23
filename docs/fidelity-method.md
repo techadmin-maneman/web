@@ -60,21 +60,41 @@ These differences are known and stand:
 
 ## The technician app (P2-F4)
 
-`npm run build:tech -- --env local && npm run fidelity:tech` writes `docs/fidelity/technician-app/`: board A1, board A2's empty state, and board A3.
+`npm run build:tech -- --env local && npm run fidelity:tech` writes `docs/fidelity/technician-app/`: board A1, board A2's empty state, board A3, boards B2 to B4 and B5's three stages.
 
-- **The app's API is answered with the design's own example,** Imran's four jobs on one day and Rohit M.'s 9:30 service in Sector 65. No mm-api runs. The clock is set to 9:12 India time, as board A1's status bar reads, so the day's times land where the board draws them.
-- **The status bar the phone frames draw is cropped off,** and the app is shot 44 px shorter to match, as the client app's pairs are.
-- **No photograph of anyone is used.** Last visit's thumbnail is answered with a block of `--ink-frame`, as the client app's photographs are.
+- **The app's API is answered with the design's own example,** Imran's four jobs on one day and Rohit M.'s 9:30 service in Sector 65, at the shapes `docs/openapi-tech.json` writes. No mm-api runs. The clock is set to 9:12 India time, as board A1's status bar reads, so the day's times land where the board draws them, and B5's timer reads the board's "11:42" without moving.
+- **The status bar the phone frames draw is cropped off,** and the app is shot 44 px shorter to match, as the client app's pairs are. Boards B3, B4 and B5 are drawn as stacked cards rather than phone frames, so their pairs keep the whole frame and no status bar is cropped.
+- **B3, B4 and B5 each draw more than one screen's worth.** B3 is the consumables card above the piece card, B4 the outcome above the close-out, B5 four stages of one moment at the door. The app shows one at a time, so each is paired against the whole column: `b3-consumables` and `b3-piece`, `b4-outcome` and `b4-closed-out`, `b5-arrived`, `b5-failed` and `b5-waiting`.
+- **Nobody in the fixtures is real,** and no photograph of anyone is used.
 
 These differences are known and stand:
 
-| Pair     | Difference                                                 | Why                                                                                                |
-| -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| A1       | The initials chip carries "Sign out"                       | The board draws the initials alone and no way out; the Prototype's technician screen has this chip |
-| A1       | A line above the list when the outbox is holding something | The prompt's "plain account of what has not yet reached us"; the board draws the queue on A2       |
-| A2 empty | The whole screen, with its head and tomorrow's line        | The board draws the empty card on its own, as it does B3's states in the client app                |
-| A3       | Last visit's photograph is a block of ink                  | The pairs answer photographs with ink blocks, as the client app's do                               |
-| A3       | A job further out says "Not yet" and names its sector      | The board writes the rule in a note beside the frame and draws no locked screen                    |
+| Pair     | Difference                                                          | Why                                                                                                            |
+| -------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| A1       | The initials chip carries "Sign out"                                | The board draws the initials alone and no way out; the Prototype's technician screen has this chip             |
+| A1       | A line above the list when the outbox is holding something          | The prompt's "plain account of what has not yet reached us"; the board draws the queue on A2                   |
+| A1, A3   | No "1 slot" beneath a job's time                                    | `GET /api/tech/jobs` answers a start and an end, not a count of slots; the block per type is dispatch's config |
+| A1       | No "· 3.1 km" beside the sector                                     | No route gives the distance, and asking for the phone's position to open the day is not what board B5 asks for |
+| A1       | The 5:30 consultation is "Prepaid", where the board writes "Free"   | The badge is `prepaid` or `credit` and nothing else: "No response to a technician carries an amount"           |
+| A1       | The client's name appears once the cards are fetched                | The day's list carries no client; the API gives one with the card, from the day before                         |
+| A2 empty | The whole screen, with its head and tomorrow's line                 | The board draws the empty card on its own, as it does B3's states in the client app                            |
+| A3       | The address is the whole one, with the house                        | The API answers the address in parts; joining them is the plain reading                                        |
+| A3       | No piece card: no tier, base, colour, adhesive, template or scalp   | Nothing records any of them. The piece lookup answers a label, a base and a lot, and only on the piece step    |
+| A3       | No last visit's photograph                                          | No technician route answers a past visit's photographs                                                         |
+| A3       | "Start job" is below the check-in, not at the foot of the card      | The API refuses `start` before `check_in`, so board B5's chain comes first and board A3's action last          |
+| A3       | A job further out says "Not yet" and names its sector               | The board writes the rule in a note beside the frame and draws no locked screen                                |
+| B1 to B4 | A back arrow at the head of each step                               | The boards draw none, and a screen a gloved hand can reach needs a way out of it                               |
+| B2       | Three of the six ticked read "2 of 5" until a step is added         | The head counts what this screen has done, as the board does; the API's service checklist is its own           |
+| B2 to B4 | The checklist's words are placeholders                              | FSM holds no job-sheet template, so `src/config/job-sheet.ts` stands in (`docs/open-points.md`, item 13)       |
+| B3       | The four consumables are the board's own, all starting at 0         | FSM holds no consumables catalogue; the API takes whatever the technician names (item 13)                      |
+| B3       | The piece is typed, not scanned, and there is no "Pick from a list" | Labels carry no barcode yet (item 25), and no route answers a client's pieces to a technician                  |
+| B3       | A supplier-lot row beside the piece and the base                    | `GET /api/tech/pieces/lookup` answers it, and it is what tells two pieces of one base apart                    |
+| B4       | The four partial reasons are the API's, not the board's four        | The reasons are checked against `PARTIAL_REASONS` before any write; three of them are placeholders (item 13)   |
+| B4       | "Duration" counts from Start job on the phone's own clock           | The API answers when the job started and never when it closed                                                  |
+| B4       | "Photos" says "10 sent" once the sets have landed                   | The board draws them queued; the app says which of the two it is                                               |
+| B4       | The next job is named by its sector until its card is fetched       | Same as A1: the day's list carries no client                                                                   |
+| B5       | No delivery receipt: "Ops get the check-in time and the distance."  | No technician route answers the day-before WhatsApp's delivery receipt; ops see it, the technician does not    |
+| B5       | The wait's minutes come from the check-in's answer                  | `NO_SHOW_WAIT_MIN` is the backend's, and `wait_ends_at` is the only place it reaches the phone                 |
 
 ## The referral landing (P2-F3)
 

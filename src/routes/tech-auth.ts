@@ -2,6 +2,7 @@
 //   POST /api/tech/auth/otp     a code on WhatsApp to a technician's number
 //   POST /api/tech/auth/verify  the code and the phone, for a session bound to it
 //   POST /api/tech/auth/logout
+//   GET  /api/tech/me           who is signed in, and on which phone
 //
 // "Mobile number plus a one-time code, the same flow as clients but a separate
 // role. A technician is recognised only if FSM lists him as an active field
@@ -20,9 +21,11 @@ import {
   createTechnicianChallenge,
   findFieldTechnician,
   openTechnicianSession,
+  signedInTechnician,
   verifyTechnicianCode,
 } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { initialsOf } from "../lib/names.ts";
 import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import {
   clearTechnicianCookie,
@@ -101,8 +104,41 @@ const logoutRoute = createRoute({
   responses: { 204: { description: "Logged out" } },
 });
 
+/**
+ * The app asks this first, every time it opens. A 200 says the session is live
+ * on this phone and names who is on it; a 401 tells an ended session from a
+ * revoked phone by its code, and the app wipes what it holds either way
+ * (docs/decisions/0052-technician-sessions.md).
+ */
+const TechMeSchema = z
+  .object({
+    name: z.string(),
+    first_name: z.string(),
+    initials: z.string().openapi({ description: "For the chip at the head of Today: the first and last initials." }),
+    device: z
+      .object({
+        device_id: z.string().openapi({ description: "The phone's own ID, as it sent it at sign-in." }),
+        label: z.union([z.string(), z.null()]).openapi({ description: "Ours, from the User-Agent at sign-in." }),
+        enrolled_at: z.iso.datetime(),
+      })
+      .strict(),
+  })
+  .strict()
+  .openapi("TechnicianMe");
+
+const meRoute = createRoute({
+  method: "get",
+  path: "/api/tech/me",
+  summary: "Who is signed in, and the phone this session is bound to",
+  responses: {
+    200: { description: "The signed-in technician", ...json(TechMeSchema) },
+    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
+  },
+});
+
 export function registerTechAuth(app: App): void {
   app.use("/api/tech/auth/logout", requireTechnicianSession);
+  app.use(meRoute.path, requireTechnicianSession);
 
   app.openapi(otpRoute, async (c) => {
     const { requestId, deps, config } = c.var;
@@ -196,5 +232,21 @@ export function registerTechAuth(app: App): void {
     await revokeSession(c.env.DB, session.sessionId, c.var.deps.now());
     clearTechnicianCookie(c);
     return c.body(null, 204);
+  });
+
+  app.openapi(meRoute, async (c) => {
+    const { technicianId, deviceRowId } = technicianOf(c);
+    const signedIn = await signedInTechnician(c.env.DB, { technicianId, deviceRowId });
+    // The middleware found the device, so this is a technician deleted between the two reads.
+    if (signedIn === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+    return c.json(
+      {
+        name: signedIn.name,
+        first_name: signedIn.name.trim().split(/\s+/)[0] ?? "",
+        initials: initialsOf(signedIn.name),
+        device: { device_id: signedIn.deviceId, label: signedIn.label, enrolled_at: signedIn.enrolledAt },
+      },
+      200,
+    );
   });
 }

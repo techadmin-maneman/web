@@ -158,6 +158,32 @@ export async function openTechnicianSession(
   return token;
 }
 
+/** A technician and the phone he is signed in on, for GET /api/tech/me. */
+export interface SignedInTechnician {
+  readonly name: string;
+  readonly deviceId: string;
+  readonly label: string | null;
+  readonly enrolledAt: string;
+}
+
+/** Who this session belongs to, and since when this phone has been enrolled. */
+export async function signedInTechnician(
+  db: D1Database,
+  options: { technicianId: string; deviceRowId: string },
+): Promise<SignedInTechnician | null> {
+  const row = await db
+    .prepare(
+      `SELECT t.name, d.device_id, d.label, d.created_at FROM technician_devices d
+       JOIN technicians t ON t.id = d.technician_id
+       WHERE d.id = ?1 AND d.technician_id = ?2`,
+    )
+    .bind(options.deviceRowId, options.technicianId)
+    .first<{ name: string; device_id: string; label: string | null; created_at: string }>();
+  return row === null
+    ? null
+    : { name: row.name, deviceId: row.device_id, label: row.label, enrolledAt: row.created_at };
+}
+
 /** The device a live session belongs to, revoked or not. */
 export async function deviceOfSession(db: D1Database, sessionId: string): Promise<TechnicianDevice | null> {
   const row = await db

@@ -1,48 +1,45 @@
-// Board B1: the guided capture of the five before angles, one tap each.
+// Board B1: the guided capture of five angles, one tap each. It is step 1 of
+// the job for the before set and step 5 for the after set; the screen is the
+// same one.
 //
 // The frame comes from the camera into a canvas (./capture.ts), never from a
 // file input, so nothing is written to the phone's gallery. Each frame goes
-// into the app's own store and stays there until its upload is confirmed.
-//
-// P2-M4's photograph routes are not built yet, so nothing is sent from here:
-// the set waits on the waiting screen, which is what the outbox is for.
+// into the app's own store and stays there until the outbox has PUT it to the
+// link the API hands out and the set itself has landed
+// (apps/tech/src/store/outbox.ts).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Icon } from "../components/Icon.tsx";
-import { capture as copy } from "../content.ts";
-import { BACK } from "../icons.ts";
-import { go } from "../route.ts";
+import type { Angle, Phase } from "../api.ts";
+import { capture as copy, job as jobCopy } from "../content.ts";
+import { Failed, Loading } from "../states/States.tsx";
+import { StepFrame } from "../steps/StepFrame.tsx";
+import { useStep } from "../steps/useStep.ts";
 import { dropFrame, frames as keptFrames, keepFrame } from "../store/outbox.ts";
 import { cameraAvailable, captureFrame, closeCamera, openCamera } from "./capture.ts";
 import styles from "./capture.module.css";
 
 /** The five angles, in the order the design guides them (board B1). */
-const ANGLES = ["front", "top", "left", "right", "hair"] as const;
-type Angle = (typeof ANGLES)[number];
+const ANGLES: readonly Angle[] = ["front", "top", "left", "right", "hair"];
 
-const PHASE = "before";
-
-export function CaptureScreen({ id }: { id: string }) {
-  const video = useRef<HTMLVideoElement>(null);
-  const [taken, setTaken] = useState<readonly { angle: string; frameId: string }[]>([]);
+export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
+  const step = phase === "before" ? "before_photos" : "after_photos";
+  const { loaded, retry, finish, back } = useStep(id, step);
+  const video = useRef<HTMLVideoElement | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [taken, setTaken] = useState<readonly { angle: Angle; frameId: string }[]>([]);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
+    let opened: MediaStream | null = null;
     let current = true;
     if (!cameraAvailable()) setFailed(true);
     else {
       void openCamera().then(
-        (opened) => {
-          stream = opened;
-          if (!current) {
-            closeCamera(opened);
-            return;
-          }
-          // Capture waits for the first frame, not merely for the camera to open: a
-          // canvas drawn from a video with no dimensions yet holds nothing.
-          if (video.current !== null) video.current.srcObject = opened;
+        (camera) => {
+          opened = camera;
+          if (current) setStream(camera);
+          else closeCamera(camera);
         },
         () => {
           if (current) setFailed(true);
@@ -51,20 +48,34 @@ export function CaptureScreen({ id }: { id: string }) {
     }
     return () => {
       current = false;
-      closeCamera(stream);
+      closeCamera(opened);
     };
   }, []);
 
-  // Anything already on the phone for this job counts: a capture interrupted resumes where it stopped.
+  /**
+   * The camera and the element arrive in either order — the job's card may still
+   * be loading when the camera opens — so the stream is attached whichever is
+   * last. Capture then waits for the first frame, not merely for the camera to
+   * open: a canvas drawn from a video with no dimensions yet holds nothing.
+   */
+  const attach = useCallback(
+    (element: HTMLVideoElement | null) => {
+      video.current = element;
+      if (element !== null && stream !== null) element.srcObject = stream;
+    },
+    [stream],
+  );
+
+  // Anything already on the phone for this job and phase counts: a capture interrupted resumes.
   useEffect(() => {
     void keptFrames().then((held) => {
       setTaken(
         held
-          .filter((frame) => frame.job_id === id && frame.phase === PHASE)
+          .filter((frame) => frame.job_id === id && frame.phase === phase)
           .map((frame) => ({ angle: frame.angle, frameId: frame.id })),
       );
     });
-  }, [id]);
+  }, [id, phase]);
 
   const angle: Angle | undefined = ANGLES[taken.length];
 
@@ -72,12 +83,12 @@ export function CaptureScreen({ id }: { id: string }) {
     if (video.current === null || angle === undefined) return;
     try {
       const frame = await captureFrame(video.current);
-      const frameId = await keepFrame(id, angle, PHASE, frame.blob);
+      const frameId = await keepFrame(id, angle, phase, frame.blob);
       setTaken((already) => [...already, { angle, frameId }]);
     } catch {
       setFailed(true);
     }
-  }, [angle, id]);
+  }, [angle, id, phase]);
 
   const retake = useCallback(async () => {
     const last = taken.at(-1);
@@ -86,23 +97,22 @@ export function CaptureScreen({ id }: { id: string }) {
     setTaken((already) => already.slice(0, -1));
   }, [taken]);
 
-  return (
-    <main className={styles.screen}>
-      <header className={styles.head}>
-        <button
-          className={styles.back}
-          type="button"
-          aria-label={copy.back}
-          onClick={() => {
-            go(`/jobs/${id}`);
-          }}
-        >
-          <Icon d={BACK} size={24} />
-        </button>
-        <span className={styles.title}>{copy.before}</span>
-        <span className={styles.progress}>{copy.progress(taken.length, ANGLES.length)}</span>
-      </header>
+  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
 
+  const all = taken.length === ANGLES.length;
+
+  return (
+    // The board heads this screen with the angles taken, not the step's place in the six.
+    <StepFrame
+      title={phase === "before" ? copy.before : copy.after}
+      at={taken.length}
+      of={ANGLES.length}
+      action={copy.finish}
+      ready={all}
+      onBack={back}
+      onAction={() => void finish({ phase })}
+    >
       <div className={styles.stage}>
         {failed ? (
           <p className={styles.unavailable} role="alert">
@@ -113,7 +123,7 @@ export function CaptureScreen({ id }: { id: string }) {
             {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
             <video
               className={styles.view}
-              ref={video}
+              ref={attach}
               autoPlay
               muted
               playsInline
@@ -138,7 +148,7 @@ export function CaptureScreen({ id }: { id: string }) {
         ))}
       </ul>
 
-      <div className={styles.foot}>
+      <div className={styles.shutter}>
         <button className={styles.retake} type="button" disabled={taken.length === 0} onClick={() => void retake()}>
           {copy.retake}
         </button>
@@ -151,6 +161,6 @@ export function CaptureScreen({ id }: { id: string }) {
           {copy.take}
         </button>
       </div>
-    </main>
+    </StepFrame>
   );
 }

@@ -1,50 +1,90 @@
-// The technician app is built beside the technician API, not after it. This
-// test is how the two are kept honest until `docs/openapi-tech.json` exists:
-// every route the app calls must be one the P2-M4 section of the backend prompt
-// writes, and the handful it does not write must be declared as assumed.
+// The technician app was built beside the technician API, not after it. This
+// test is what keeps the two honest, and it now has the document to do it with:
+// every route the app calls must be one `docs/openapi-tech.json` writes, at the
+// method it writes it at, and nothing may be left assumed.
+//
+// It also pins the four things P2-M4 and the app's shell disagreed about
+// (`docs/open-points.md`, item 55), so neither side can quietly drop one.
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ROUTES_ASSUMED, ROUTES_SPECIFIED } from "../../apps/tech/src/routes.ts";
+import { EVENT_ID_HEADER, pathFor, ROUTES, ROUTES_ASSUMED, type EventKind } from "../../apps/tech/src/routes.ts";
 
-const prompt = readFileSync("docs/prompts/phase2-backend.md", "utf8");
+interface Document {
+  paths: Record<string, Record<string, { responses: Record<string, { description?: string }> }>>;
+  components: { schemas: Record<string, unknown> };
+}
 
-/** The prompt's technician list: from its heading to the dispatch list that follows it. */
-const technicianSection = (() => {
-  const from = prompt.indexOf("**Technician** (`tech.maneman.in/api/*`");
-  const to = prompt.indexOf("**Dispatch and pieces**", from);
-  expect(from, "the prompt's technician list moved").toBeGreaterThan(-1);
-  expect(to, "the prompt's dispatch list moved").toBeGreaterThan(from);
-  return prompt.slice(from, to);
-})();
+const document = JSON.parse(readFileSync("docs/openapi-tech.json", "utf8")) as Document;
 
-describe("the routes the technician app assumes", () => {
-  it.each(ROUTES_SPECIFIED)("$method $path is written in the prompt as $prompt", (route) => {
-    expect(technicianSection).toContain(route.prompt);
+/** The API's document writes each path under /api; the app's client adds that prefix. */
+const documented = (route: { method: string; path: string }) =>
+  document.paths[`/api${route.path}`]?.[route.method.toLowerCase()];
+
+describe("the routes the technician app calls", () => {
+  it.each(ROUTES.map((route) => [`${route.method} ${route.path}`, route] as const))(
+    "%s is in the technician API's document",
+    (_name, route) => {
+      expect(documented(route), `${route.method} /api${route.path} is not in docs/openapi-tech.json`).toBeDefined();
+    },
+  );
+
+  it("assumes no route at all: the document settles every one of them", () => {
+    expect(ROUTES_ASSUMED).toEqual([]);
   });
 
-  it("calls every route the prompt's technician list writes", () => {
-    // The prompt writes one route per line with a leading `POST` or `GET`; the three
-    // sub-paths on the checklist line are counted with it.
-    const written = [...technicianSection.matchAll(/`(GET|POST) (\/tech\/[^`]*)`/g)].map(
-      (match) => `${match[1] ?? ""} ${(match[2] ?? "").replace(/\?.*$/, "")}`,
-    );
-    const called = new Set(ROUTES_SPECIFIED.map((route) => `${route.method} ${route.path}`));
-    expect(written.filter((route) => !called.has(route))).toEqual([]);
-  });
-
-  it("declares as assumed every route the prompt does not write", () => {
-    for (const route of ROUTES_ASSUMED) {
-      expect(technicianSection, `${route.method} ${route.path} is in the prompt after all`).not.toContain(route.path);
+  it("sends each of the outbox's events to a route the document writes", () => {
+    const job = "00000000-0000-7000-8000-000000000000";
+    const kinds: EventKind[] = [
+      "check_in",
+      "start",
+      "before_photos",
+      "after_photos",
+      "checklist",
+      "consumables",
+      "piece",
+      "outcome",
+      "no_show",
+    ];
+    for (const kind of kinds) {
+      const path = `/api${pathFor(kind, job)}`.replace(job, "{id}");
+      expect(document.paths[path]?.post, `${kind} goes to ${path}`).toBeDefined();
     }
-    // Two, and no more, until the real document settles them: GET /tech/me and POST /tech/auth/logout.
-    expect(ROUTES_ASSUMED.map((route) => `${route.method} ${route.path}`)).toEqual([
-      "GET /tech/me",
-      "POST /tech/auth/logout",
-    ]);
+  });
+});
+
+describe("what P2-M4 and the app's shell disagreed about", () => {
+  it("has GET /api/tech/me, which the app asks every time it opens", () => {
+    expect(document.paths["/api/tech/me"]?.get).toBeDefined();
+    expect(document.components.schemas.TechnicianMe).toBeDefined();
   });
 
-  it("carries the client-generated event ID the prompt requires on every write", () => {
-    expect(technicianSection).toContain("X-Client-Event-Id");
+  it("has POST /api/tech/auth/logout, which ends the session on this phone", () => {
+    expect(document.paths["/api/tech/auth/logout"]?.post).toBeDefined();
+  });
+
+  it("answers `device_revoked` on a 401, so a revoked phone is told which it was", () => {
+    const revoked = Object.values(document.paths)
+      .flatMap((methods) => Object.values(methods))
+      .map((operation) => operation.responses["401"]?.description ?? "")
+      .filter((description) => description.includes("device_revoked"));
+    expect(revoked.length).toBeGreaterThan(0);
+    // The app's own constant, so the two cannot drift apart.
+    expect(readFileSync("apps/tech/src/routes.ts", "utf8")).toContain('DEVICE_REVOKED = "device_revoked"');
+  });
+
+  it("binds the session to the phone, which names itself on both login calls", () => {
+    const schemas = document.components.schemas as Record<string, { properties?: Record<string, unknown> }>;
+    expect(schemas.TechnicianLoginRequest?.properties).toHaveProperty("device_id");
+    expect(schemas.TechnicianVerifyRequest?.properties).toHaveProperty("device_id");
+    const login = readFileSync("apps/tech/src/api.ts", "utf8");
+    expect(login).toContain("device_id: deviceId");
+  });
+});
+
+describe("every write is idempotent on the phone's own event ID", () => {
+  it("carries the header the API makes each write idempotent on", () => {
+    const written = JSON.stringify(document).includes(EVENT_ID_HEADER.toLowerCase());
+    expect(written, `${EVENT_ID_HEADER} is not in the document`).toBe(true);
   });
 });

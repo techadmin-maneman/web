@@ -17,3 +17,7 @@ export const PIN =
 
 /** Beside a delivered message, and on the closed-out summary (boards B4 and B5). */
 export const TICK = "M4 12.5 L9.5 18 L20 6";
+
+/** The consumables' steppers, one fewer and one more (board B3). */
+export const MINUS = "M6 12 H18";
+export const PLUS = "M12 6 V18 M6 12 H18";

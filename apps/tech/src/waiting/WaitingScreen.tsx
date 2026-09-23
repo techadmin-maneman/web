@@ -1,34 +1,36 @@
 // Board A2's upload queue, and the plain account the prompt asks for of
 // everything else that has not yet reached us.
 //
-// A job whose queue met a `409 superseded` says what changed, in the API's own
-// words, and never a generic error. "Got it" clears that job, so the rest of
-// the queue can go on.
+// A job whose queue met a `409 superseded` says what changed — the API answers
+// a code and the fields that moved, never a sentence, so the words are the
+// app's (apps/tech/src/content.ts). "Got it" clears that job, so the rest of the
+// queue can go on.
 
-import { useEffect, useState } from "react";
 import { Icon } from "../components/Icon.tsx";
-import { queue as copy } from "../content.ts";
+import { queue as copy, stopped as stoppedCopy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { BACK } from "../icons.ts";
+import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
-import { account, forget, replay } from "../store/outbox.ts";
-import { keptNames } from "../store/jobs.ts";
+import { account, forget, replay, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
 import styles from "./waiting.module.css";
 
-/** The five angles of a before or after set (the technician prompt's B1). */
-const ANGLES_IN_A_SET = 5;
+/** The five angles of a before or after set (board B1), before and after: ten in all. */
+const IN_A_VISIT = 10;
+
+/** What stopped this job, in the app's words: the fields that moved if the API named any, else the code. */
+function why(stopped: NonNullable<JobAccount["stopped"]>): string {
+  const named = stopped.fields.map((field) => stoppedCopy[field]).filter((line) => line !== undefined);
+  return named[0] ?? stoppedCopy[stopped.note ?? ""] ?? stoppedCopy.unknown ?? "";
+}
 
 export function WaitingScreen() {
   const { offline } = useSession();
   const waiting = useOutbox();
-  const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map());
-
-  useEffect(() => {
-    void keptNames().then(setNames);
-  }, [waiting]);
+  const names = useNames(waiting);
 
   const held = account(waiting.events);
   const sets = new Map<string, number>();
@@ -76,8 +78,8 @@ export function WaitingScreen() {
                   </div>
                   {frames > 0 && (
                     <>
-                      <Progress done={frames} total={ANGLES_IN_A_SET * 2} />
-                      <p className={styles.count}>{copy.count(frames, ANGLES_IN_A_SET * 2)}</p>
+                      <Progress done={frames} total={IN_A_VISIT} />
+                      <p className={styles.count}>{copy.count(frames, IN_A_VISIT)}</p>
                     </>
                   )}
                   {line !== undefined && line.waiting > 0 && (
@@ -85,9 +87,7 @@ export function WaitingScreen() {
                   )}
                   {stopped !== null && (
                     <div className={styles.stopped} role="alert">
-                      <p className={styles.stoppedLine}>
-                        {stopped.note ?? (stopped.state === "superseded" ? copy.superseded : copy.refused)}
-                      </p>
+                      <p className={styles.stoppedLine}>{why(stopped)}</p>
                       <button
                         className={styles.button}
                         type="button"

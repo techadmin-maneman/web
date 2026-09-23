@@ -1,22 +1,41 @@
-// Board A3: one job's card. Client, time, type and slots, the badge, the
-// address with its access notes and Navigate, the piece, last visit's after
-// photograph, and Start job at the bottom.
+// Boards A3 and B5: one job's card, and beneath it the stage the job is at.
 //
-// A job further out shows time, type and sector only: the backend's day-before
-// unlock decides, and the card simply has no address to draw.
+// A3 is the card — client, time and type, the badge, the address with its
+// access notes and Navigate. B5 is the evidence chain that follows it: arrive,
+// wait, and either start the job or close it as a no-show. They are one screen
+// because they are one moment at the door.
+//
+// A job further out shows time, type and sector only: the API withholds the
+// address and the client card until the day before, so the card simply has none.
 
+import { useCallback } from "react";
+import type { Job } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { badges, job as copy, types, typesLower } from "../content.ts";
 import { BACK, PIN } from "../icons.ts";
+import { closed, nextStep, started } from "../lib/progress.ts";
 import { useJob } from "../lib/useDay.ts";
+import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { clock, where } from "../lib/when.ts";
-import { go } from "../route.ts";
+import { go, stepPath } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { queue, replay } from "../store/outbox.ts";
+import { NotHome } from "./NotHome.tsx";
 import styles from "./job.module.css";
 
+/** The address as one line, from the parts the API keeps it in. */
+function addressLine(parts: NonNullable<Job["address"]>): string {
+  return [parts.line1, parts.line2, parts.locality, `${parts.city} ${parts.pincode}`]
+    .filter((part) => part !== null && part.trim() !== "")
+    .join(", ");
+}
+
 export function JobScreen({ id }: { id: string }) {
-  const [loaded, retry] = useJob(id);
+  const waiting = useOutbox();
+  const [loaded, retry] = useJob(id, signatureOf(waiting));
+
+  const onBack = useCallback(() => {
+    go("/");
+  }, []);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
@@ -28,29 +47,24 @@ export function JobScreen({ id }: { id: string }) {
   }
 
   const job = loaded.value;
-  /** The start is queued, not sent: a basement must not stop a job beginning. Step 1 follows (board B1). */
-  const start = async () => {
-    await queue("start", job.id, { at: new Date().toISOString() });
-    void replay();
-    go(`/jobs/${job.id}/photos`);
-  };
+  const type = job.type;
+  const step = nextStep(job, waiting.events);
+  const running = started(job, waiting.events);
+  const over = closed(job, waiting.events);
 
   return (
     <main className={styles.screen}>
       <header className={styles.head}>
-        <button
-          className={styles.back}
-          type="button"
-          aria-label={copy.back}
-          onClick={() => {
-            go("/");
-          }}
-        >
+        <button className={styles.back} type="button" aria-label={copy.back} onClick={onBack}>
           <Icon d={BACK} size={24} />
         </button>
         <div className={styles.headWho}>
-          <h1 className={styles.name}>{job.locked ? types[job.type] : job.client_name}</h1>
-          <p className={styles.when}>{copy.when(clock(job.starts_at), typesLower[job.type], copy.slots(job.slots))}</p>
+          <h1 className={styles.name}>
+            {job.client === null ? (type === null ? copy.locked.title : types[type]) : job.client.name}
+          </h1>
+          <p className={styles.when}>
+            {copy.when(clock(job.starts_at), type === null ? copy.locked.title : typesLower[type])}
+          </p>
         </div>
         <span className={styles.badge}>{badges[job.badge]}</span>
       </header>
@@ -60,44 +74,46 @@ export function JobScreen({ id }: { id: string }) {
           <section className={styles.locked}>
             <p className={styles.lockedTitle}>{copy.locked.title}</p>
             <p className={styles.lockedBody}>{copy.locked.body}</p>
-            <p className={styles.sector}>{where(job.sector, job.distance_km)}</p>
+            <p className={styles.sector}>{where(job.sector)}</p>
           </section>
         ) : (
           <section className={styles.address}>
-            <p className={styles.line}>{job.address.line}</p>
-            {job.address.access_notes !== null && <p className={styles.access}>{job.address.access_notes}</p>}
-            <a className={styles.navigate} href={`geo:0,0?q=${encodeURIComponent(job.address.line)}`}>
+            <p className={styles.line}>{addressLine(job.address)}</p>
+            {job.access_notes !== null && <p className={styles.access}>{job.access_notes}</p>}
+            <a className={styles.navigate} href={`geo:0,0?q=${encodeURIComponent(addressLine(job.address))}`}>
               <Icon d={PIN} size={21} />
               <span>{copy.navigate}</span>
             </a>
           </section>
         )}
 
-        {job.spec.length > 0 && (
-          <section className={styles.piece}>
-            <h2 className={styles.pieceTitle}>{copy.piece}</h2>
-            <dl className={styles.spec}>
-              {job.spec.map((row) => (
-                <div className={styles.specRow} key={row.key}>
-                  <dt className={styles.specKey}>{row.key}</dt>
-                  <dd className={styles.specValue}>{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-            {job.last_visit !== null && (
-              <div className={styles.last}>
-                <img className={styles.thumb} src={job.last_visit.photo_url} alt="" />
-                <p className={styles.lastLine}>{copy.lastVisit(job.last_visit.on, job.last_visit.technician)}</p>
-              </div>
-            )}
-          </section>
-        )}
+        {job.unlocked && !over && <NotHome job={job} queued={waiting.events} />}
       </div>
 
-      {!job.locked && (
+      {job.unlocked && !over && running && step !== null && (
         <div className={styles.foot}>
-          <button className={styles.action} type="button" onClick={() => void start()}>
-            {copy.start}
+          <button
+            className={styles.action}
+            type="button"
+            onClick={() => {
+              go(stepPath(job.id, step));
+            }}
+          >
+            {copy.continueJob}
+          </button>
+        </div>
+      )}
+
+      {over && (
+        <div className={styles.foot}>
+          <button
+            className={styles.action}
+            type="button"
+            onClick={() => {
+              go(`/jobs/${job.id}/done`);
+            }}
+          >
+            {copy.continueJob}
           </button>
         </div>
       )}

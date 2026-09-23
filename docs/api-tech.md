@@ -123,6 +123,26 @@ End this session on this phone
 
 **204**: Logged out
 
+### GET /api/tech/me
+
+Who is signed in, and the phone this session is bound to
+
+**200**: The signed-in technician
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianMe"
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/tech/jobs
 
 The technician's jobs on a date. Today and tomorrow in full; later dates only time, type and sector
@@ -933,6 +953,63 @@ The piece a label names
     "challenge_id",
     "code",
     "device_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianMe
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "initials": {
+      "type": "string",
+      "description": "For the chip at the head of Today: the first and last initials."
+    },
+    "device": {
+      "type": "object",
+      "properties": {
+        "device_id": {
+          "type": "string",
+          "description": "The phone's own ID, as it sent it at sign-in."
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Ours, from the User-Agent at sign-in."
+        },
+        "enrolled_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "device_id",
+        "label",
+        "enrolled_at"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "name",
+    "first_name",
+    "initials",
+    "device"
   ],
   "additionalProperties": false
 }

@@ -10,6 +10,9 @@
 export const DATABASE = "mm-tech";
 const VERSION = 1;
 
+/** The one cache the service worker keeps an API answer in, wiped with the database. */
+export const DAY_CACHE = "mm-tech-day";
+
 export const STORES = ["device", "jobs", "outbox", "frames"] as const;
 export type StoreName = (typeof STORES)[number];
 
@@ -85,8 +88,14 @@ export async function replaceAll(name: StoreName, values: readonly unknown[]): P
  * Everything the phone holds, gone: at sign-out, and when ops revoke the device
  * (docs/decisions/0029-sessions.md). Called on the device's next contact with
  * the backend, so nothing of a client's stays on a phone that is no longer ours.
+ *
+ * The service worker's day cache goes with it. It holds no client's name — the
+ * day's list carries none — but it is a technician's day, and a phone that is
+ * no longer ours keeps none of it (apps/tech/sw/sw.ts).
  */
 export async function wipe(): Promise<void> {
+  // No cache storage outside a secure context, and none in the development server.
+  if (typeof caches !== "undefined") await caches.delete(DAY_CACHE).catch(() => false);
   const db = await open().catch(() => null);
   db?.close();
   opening = null;

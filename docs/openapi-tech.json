@@ -242,6 +242,58 @@
         ],
         "additionalProperties": false
       },
+      "TechnicianMe": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string",
+            "description": "For the chip at the head of Today: the first and last initials."
+          },
+          "device": {
+            "type": "object",
+            "properties": {
+              "device_id": {
+                "type": "string",
+                "description": "The phone's own ID, as it sent it at sign-in."
+              },
+              "label": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Ours, from the User-Agent at sign-in."
+              },
+              "enrolled_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "device_id",
+              "label",
+              "enrolled_at"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "name",
+          "first_name",
+          "initials",
+          "device"
+        ],
+        "additionalProperties": false
+      },
       "TechnicianJobs": {
         "type": "object",
         "properties": {
@@ -1213,6 +1265,33 @@
         "responses": {
           "204": {
             "description": "Logged out"
+          }
+        }
+      }
+    },
+    "/api/tech/me": {
+      "get": {
+        "summary": "Who is signed in, and the phone this session is bound to",
+        "responses": {
+          "200": {
+            "description": "The signed-in technician",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianMe"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked: ops revoked this phone, so drop the cached jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }

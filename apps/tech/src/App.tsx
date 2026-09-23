@@ -3,9 +3,10 @@
 // HttpOnly, and the app keeps no token — but the phone keeps enough to open in
 // a basement with no signal, and the API is asked again as soon as there is any.
 //
-// The session is bound to this device (docs/decisions/0029-sessions.md). A 401
-// means it has ended, whether it ran out or ops revoked the device: either way
-// everything the phone holds is wiped before the sign-in is shown again.
+// The session is bound to this device (docs/decisions/0052-technician-sessions.md).
+// A 401 means it has ended, whether it ran out or ops revoked the device:
+// either way everything the phone holds is wiped before the sign-in is shown
+// again, and a `device_revoked` code only changes what it says.
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { api, DEVICE_REVOKED, type Me } from "./api.ts";
@@ -14,6 +15,11 @@ import { JobScreen } from "./job/JobScreen.tsx";
 import { SignIn } from "./login/SignIn.tsx";
 import { go, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext, useOnline } from "./session.ts";
+import { Checklist } from "./steps/Checklist.tsx";
+import { CloseOut } from "./steps/CloseOut.tsx";
+import { Consumables } from "./steps/Consumables.tsx";
+import { Outcome } from "./steps/Outcome.tsx";
+import { Piece } from "./steps/Piece.tsx";
 import { enrolled, keepMe, keptMe } from "./store/device.ts";
 import { wipe } from "./store/db.ts";
 import { replay } from "./store/outbox.ts";
@@ -34,8 +40,23 @@ function pageFor(route: Route) {
       return <WaitingScreen />;
     case "job":
       return <JobScreen id={route.id} />;
-    case "capture":
-      return <CaptureScreen id={route.id} />;
+    case "done":
+      return <CloseOut id={route.id} />;
+    case "step":
+      switch (route.step) {
+        case "before_photos":
+          return <CaptureScreen id={route.id} phase="before" />;
+        case "after_photos":
+          return <CaptureScreen id={route.id} phase="after" />;
+        case "checklist":
+          return <Checklist id={route.id} />;
+        case "consumables":
+          return <Consumables id={route.id} />;
+        case "piece":
+          return <Piece id={route.id} />;
+        case "outcome":
+          return <Outcome id={route.id} />;
+      }
   }
 }
 

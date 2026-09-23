@@ -14,6 +14,7 @@ docs/openapi-tech.json
 docs/api-tech.md
 apps/app/src/api-schema.ts
 apps/ops/src/api-schema.ts
+apps/tech/src/api-schema.ts
 src/worker-configuration.d.ts
 # The design exports: read-only reference (docs/frontend.md, design/phase2/README.md).
 design/

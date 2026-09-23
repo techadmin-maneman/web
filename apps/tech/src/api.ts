@@ -1,100 +1,64 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// PROVISIONAL. The technician API is P2-M4's, and it is being built beside this
-// app. Nothing here is generated from an OpenAPI document yet, so nothing here
-// is the contract.
-//
-// Every route this app calls is named below exactly as the P2-M4 section of
-// `docs/prompts/phase2-backend.md` writes it, so the two can be put side by
-// side; `test/node/tech-routes.test.ts` does that against the prompt itself.
-// ROUTES_ASSUMED holds the two the prompt does not write, which the app needs
-// and which must be confirmed. The shapes below are this app's reading of the
-// technician boards, not the API's answer: when `docs/openapi-tech.json`
-// exists, `npm run openapi` generates them and this file keeps only the calls.
+// The technician app's calls to mm-api (docs/api-tech.md). Every shape here is
+// the API's own: `npm run openapi` writes ./api-schema.ts from the schemas that
+// serve the routes, so nothing below is this app's reading of a board.
 //
 // Every call is same-origin, so the session cookie goes with it and the Origin
 // matches (docs/decisions/0026-hosts-and-surfaces.md). Every write carries the
-// client-generated `X-Client-Event-Id`, which makes it idempotent.
-// ─────────────────────────────────────────────────────────────────────────────
+// client-generated `X-Client-Event-Id`, which makes it idempotent however often
+// the outbox replays it (docs/decisions/0038-offline-writes.md).
 
-// The routes themselves are in ./routes.ts, which holds no browser code, so the
-// route names can be checked against the prompt in a Node test.
+import type { components } from "./api-schema.ts";
 import { EVENT_ID_HEADER, SUPERSEDED } from "./routes.ts";
 
-export { DEVICE_REVOKED, pathFor, ROUTES_ASSUMED, ROUTES_SPECIFIED, SUPERSEDED } from "./routes.ts";
+export {
+  DEVICE_REVOKED,
+  EVENT_KINDS,
+  OUT_OF_ORDER,
+  pathFor,
+  ROUTES,
+  ROUTES_ASSUMED,
+  SUPERSEDED,
+  TOO_EARLY_TO_CLOSE,
+  type EventKind,
+} from "./routes.ts";
 
-// ---- The shapes, read off the boards ----------------------------------------
+type Schema = components["schemas"];
 
-export type VisitType = "consultation" | "service" | "replacement" | "first_fit";
+export type Me = Schema["TechnicianMe"];
+export type Challenge = Schema["TechnicianChallenge"];
+export type Verified = Schema["TechnicianVerify"];
+export type JobSummary = Schema["TechnicianJob"];
+export type Job = Schema["TechnicianJobDetail"];
+export type Progress = Schema["TechnicianJobProgress"];
+export type Accepted = Schema["TechnicianWriteAccepted"];
+export type CheckIn = Schema["CheckIn"];
+export type NoShowClose = Schema["NoShowClose"];
+export type PieceLookup = Schema["PieceLookup"];
+export type UploadLink = Schema["TechnicianPhotoUrl"];
+export type Day = Schema["TechnicianJobs"];
+
+export type VisitType = NonNullable<JobSummary["type"]>;
 /** No amount ever reaches this app: a badge only (board A1). */
-export type Badge = "prepaid" | "credit" | "free";
-
-export interface JobSummary {
-  readonly id: string;
-  readonly starts_at: string;
-  readonly slots: number;
-  readonly type: VisitType;
-  readonly badge: Badge;
-  readonly client_name: string;
-  readonly sector: string;
-  readonly distance_km: number | null;
-  /** True until the backend's day-before unlock releases the address and the card. */
-  readonly locked: boolean;
-}
-
-export interface Day {
-  readonly date: string;
-  readonly jobs: readonly JobSummary[];
-}
-
-export interface Address {
-  readonly line: string;
-  readonly access_notes: string | null;
-}
-
-/** The piece card's rows, as board A3 draws them: tier, base, colour, adhesive, template, scalp. */
-export interface SpecRow {
-  readonly key: string;
-  readonly value: string;
-}
-
-export interface LastVisit {
-  readonly photo_url: string;
-  readonly on: string;
-  readonly technician: string;
-}
-
-export interface Job extends JobSummary {
-  readonly address: Address | null;
-  readonly spec: readonly SpecRow[];
-  readonly last_visit: LastVisit | null;
-  readonly started_at: string | null;
-}
-
-export interface Technician {
-  readonly name: string;
-  readonly initials: string;
-}
-
-export interface Me {
-  readonly technician: Technician;
-  readonly device: { readonly id: string; readonly label: string };
-}
-
-export interface Challenge {
-  readonly challenge_id: string;
-  readonly expires_in_s: number;
-}
-
-// ---- The calls ---------------------------------------------------------------
+export type Badge = JobSummary["badge"];
+export type Step = Job["steps"][number];
+export type PartialReason = Job["partial_reasons"][number];
+export type Angle = Schema["TechnicianPhotoUrlRequest"]["angle"];
+export type Phase = Schema["TechnicianPhotoUrlRequest"]["phase"];
 
 /**
  * A failed call carries the API's error code, or "offline" when it never
- * reached the API. `message` is the API's own words, which board B5 and the
- * outbox show as they are: a supersede never becomes a generic error.
+ * reached the API. The API never returns a message — a stable code and, on a
+ * 409 or a 400, the fields that changed or failed — so the words a screen shows
+ * are the app's own (apps/tech/src/content.ts).
  */
 export type Answer<T> =
   | { readonly ok: true; readonly status: number; readonly body: T }
-  | { readonly ok: false; readonly status: number; readonly code: string; readonly message: string | null };
+  | {
+      readonly ok: false;
+      readonly status: number;
+      readonly code: string;
+      readonly fields: readonly string[];
+    };
 
 export interface Write {
   /** The UUIDv7 that makes this write idempotent, whatever it takes to arrive. */
@@ -114,46 +78,63 @@ async function call<T>(method: string, path: string, body?: unknown, write?: Wri
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   } catch {
-    return { ok: false, status: 0, code: "offline", message: null };
+    return { ok: false, status: 0, code: "offline", fields: [] };
   }
   if (response.ok) {
     const value = response.status === 204 ? null : ((await response.json()) as unknown);
     return { ok: true, status: response.status, body: value as T };
   }
   const failure = (await response.json().catch(() => null)) as {
-    error?: { code?: string; message?: string };
+    error?: { code?: string; fields?: string[] };
   } | null;
   return {
     ok: false,
     status: response.status,
     code: failure?.error?.code ?? (response.status === 409 ? SUPERSEDED : "unknown"),
-    message: failure?.error?.message ?? null,
+    fields: failure?.error?.fields ?? [],
   };
 }
 
 export const api = {
-  /** POST /tech/auth/otp — the code goes to the technician's mobile, as the client app's login does. */
-  sendCode: (mobile: string) => call<Challenge>("POST", "/tech/auth/otp", { mobile }),
+  /** The code goes to the technician's mobile on WhatsApp, and the phone names itself here too. */
+  sendCode: (mobile: string, deviceId: string) =>
+    call<Challenge>("POST", "/tech/auth/otp", { mobile, device_id: deviceId }),
   /**
-   * POST /tech/auth/verify — enrols this device and opens the session bound to
-   * it (ADR 0029). ASSUMED: `device_id`, the ID this phone made for itself. The
-   * prompt names the route but not its body; the label is the server's, from
-   * the User-Agent, and never sent from here.
+   * Checks the code. A wrong one is a 200 with the attempts left, not an error:
+   * only a closed challenge is refused (410). The right one opens the session
+   * bound to this phone (docs/decisions/0052-technician-sessions.md).
    */
   verify: (challengeId: string, code: string, deviceId: string) =>
-    call<Me>("POST", "/tech/auth/verify", { challenge_id: challengeId, code, device_id: deviceId }),
-  /** ASSUMED: GET /tech/me. */
+    call<Verified>("POST", "/tech/auth/verify", { challenge_id: challengeId, code, device_id: deviceId }),
+  /** Who is signed in, and on which phone. A 401 says the session ended, or that ops revoked the phone. */
   me: () => call<Me>("GET", "/tech/me"),
-  /** ASSUMED: POST /tech/auth/logout. */
   logout: () => call<null>("POST", "/tech/auth/logout"),
 
-  /** GET /tech/jobs?date= — today and tomorrow in full; later dates carry time, type and sector only. */
+  /** Today and tomorrow in full; later dates carry time, type and sector only. */
   jobs: (date: string) => call<Day>("GET", `/tech/jobs?date=${encodeURIComponent(date)}`),
-  /** GET /tech/jobs/:id — the card, which respects the day-before unlock. */
+  /** The card, which respects the day-before unlock: the API withholds it, not the screen. */
   job: (id: string) => call<Job>("GET", `/tech/jobs/${id}`),
-  /** GET /tech/pieces/lookup?code= */
-  piece: (code: string) => call<SpecRow[]>("GET", `/tech/pieces/lookup?code=${encodeURIComponent(code)}`),
+  /** The piece a label names, and whether it is one of this job's client's. */
+  piece: (code: string, jobId: string) =>
+    call<PieceLookup>("GET", `/tech/pieces/lookup?code=${encodeURIComponent(code)}&job=${encodeURIComponent(jobId)}`),
 
-  /** Every write below goes through the outbox, never straight from a screen (apps/tech/src/store/outbox.ts). */
-  send: (method: string, path: string, body: unknown, write: Write) => call<unknown>(method, path, body, write),
+  /** A link to PUT one photograph to, good for fifteen minutes. */
+  uploadLink: (jobId: string, phase: Phase, angle: Angle) =>
+    call<UploadLink>("POST", `/tech/jobs/${jobId}/photos/upload-url`, { phase, angle }),
+
+  /** The photograph itself. The link is a path on this host, so this call is same-origin too. */
+  async upload(link: string, frame: Blob): Promise<Answer<null>> {
+    let response: Response;
+    try {
+      response = await fetch(link, { method: "PUT", credentials: "same-origin", body: frame });
+    } catch {
+      return { ok: false, status: 0, code: "offline", fields: [] };
+    }
+    if (response.ok) return { ok: true, status: response.status, body: null };
+    const failure = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
+    return { ok: false, status: response.status, code: failure?.error?.code ?? "unknown", fields: [] };
+  },
+
+  /** Every write below goes through the outbox, never straight from a screen (./store/outbox.ts). */
+  send: <T>(path: string, body: unknown, write: Write) => call<T>("POST", path, body, write),
 };

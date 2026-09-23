@@ -8,7 +8,7 @@ import { Mark } from "../components/Mark.tsx";
 import { queue as queueCopy, today as copy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { CHEVRON_DOWN } from "../icons.ts";
-import { keepCards, useDay } from "../lib/useDay.ts";
+import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { clock, dayAfter, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
@@ -28,13 +28,24 @@ export function TodayScreen() {
   const jobs = day.state === "loaded" ? day.value : [];
   const first = jobs[0];
   const tomorrowJobs = tomorrow.state === "loaded" ? tomorrow.value : [];
+  const [cards, setCards] = useState(0);
+  const names = useNames(cards);
 
-  // Fresh from the API: keep each card too, so a basement opens them (board A2).
+  // Fresh from the API: keep each card too, so a basement opens them (board A2),
+  // and so the rows can name the client the day's list does not carry.
   useEffect(() => {
-    if (day.state === "loaded" && !day.fromPhone) void keepCards(day.value);
+    if (day.state === "loaded" && !day.fromPhone) {
+      void keepCards(day.value).then(() => {
+        setCards((round) => round + 1);
+      });
+    }
   }, [day]);
   useEffect(() => {
-    if (tomorrow.state === "loaded" && !tomorrow.fromPhone) void keepCards(tomorrow.value);
+    if (tomorrow.state === "loaded" && !tomorrow.fromPhone) {
+      void keepCards(tomorrow.value).then(() => {
+        setCards((round) => round + 1);
+      });
+    }
   }, [tomorrow]);
 
   return (
@@ -43,7 +54,7 @@ export function TodayScreen() {
         <div className={styles.top}>
           <Mark className={styles.mark} />
           <button className={styles.account} type="button" onClick={signOut}>
-            <span className={styles.initials}>{me.technician.initials}</span>
+            <span className={styles.initials}>{me.initials}</span>
             <span className={styles.signOut}>{copy.signOut}</span>
           </button>
         </div>
@@ -51,7 +62,7 @@ export function TodayScreen() {
           <>
             <h1 className={styles.count}>{copy.jobs(jobs.length)}</h1>
             {first !== undefined && (
-              <p className={styles.first}>{copy.first(clock(first.starts_at), where(first.sector, null))}</p>
+              <p className={styles.first}>{copy.first(clock(first.starts_at), where(first.sector))}</p>
             )}
           </>
         )}
@@ -104,7 +115,7 @@ export function TodayScreen() {
         <ul className={styles.list}>
           {jobs.map((job) => (
             <li key={job.id}>
-              <JobRow job={job} />
+              <JobRow job={job} client={names.get(job.id)} />
             </li>
           ))}
         </ul>
@@ -127,7 +138,7 @@ export function TodayScreen() {
             <ul className={styles.list}>
               {tomorrowJobs.map((job) => (
                 <li key={job.id}>
-                  <JobRow job={job} />
+                  <JobRow job={job} client={names.get(job.id)} />
                 </li>
               ))}
             </ul>
