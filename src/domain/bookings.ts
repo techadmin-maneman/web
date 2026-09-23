@@ -176,6 +176,13 @@ export async function confirmBooking(
          WHERE razorpay_order_id = ?3 AND appointment_id IS NULL`,
       )
       .bind(booked.appointmentId, at, hold.razorpay_order_id),
+    // The consultation an invited friend booked, so ops' referral record names it.
+    db
+      .prepare(
+        `UPDATE referral_attributions SET consultation_appointment_id = ${visitId}, updated_at = ?2
+         WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND ?4 = 'consultation'`,
+      )
+      .bind(booked.appointmentId, at, hold.person_id, hold.type),
   ]);
   if (hold.move_kind === "replace") await retireReplaced(db, fsm, hold, now, labelAsTest);
 
