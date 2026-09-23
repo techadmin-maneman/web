@@ -87,6 +87,153 @@ export const AREAS = {
 export const PREVIEW = { pincode: "400050", waiting: 117, alerts: 84, launched: false };
 export const LAUNCHED = { pincode: "400050", waiting: 117, alerts: 84, launched: true };
 
+// ---- Boards A1, A2 and A3: the week the dispatch board draws -----------------
+
+/** Fri 19 to Thu 25 September, the week board A1 heads, in a year whose days fall as it draws them. */
+const DATES = ["2025-09-19", "2025-09-20", "2025-09-21", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25"];
+
+/** Each column's utilisation, as the board letters it; 92 and 88 are the weekend's peak. */
+const UTILISATION = [64, 92, 88, 58, 64, 61, 67];
+
+const BOARD_TECHNICIANS = [
+  { id: "66000000-0000-4000-8000-000000000001", name: "Imran Qureshi", initials: "IQ", zone: "Sec 40–65" },
+  { id: "66000000-0000-4000-8000-000000000002", name: "Sandeep Yadav", initials: "SY", zone: "Sec 1–39" },
+  { id: "66000000-0000-4000-8000-000000000003", name: "Arjun Negi", initials: "AN", zone: "DLF 1–5" },
+  { id: "66000000-0000-4000-8000-000000000004", name: "Faizan Ali", initials: "FA", zone: "Sohna Rd" },
+];
+
+/** "Blocks are sized by slot: consultation and service 1, replacement 1.5, first fit 2." */
+const SLOTS: Readonly<Record<string, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
+/** Each window's first half-slot in India's time, as UTC (docs/decisions/0035-window-slot-map.md). */
+const STARTS: Readonly<Record<string, string>> = { morning: "03:30", afternoon: "06:30", evening: "10:30" };
+
+let jobs = 0;
+const job = (type: string, client: string | null, sector: string, day: number, window: string) => ({
+  appointment_id: `77000000-0000-4000-8000-${String(++jobs).padStart(12, "0")}`,
+  type,
+  starts_at: `${DATES[day] ?? ""}T${STARTS[window] ?? ""}:00.000Z`,
+  window,
+  slots: SLOTS[type] ?? 1,
+  status: "scheduled",
+  client,
+  sector,
+});
+
+/** One technician's seven days, from the blocks given against the day they fall on. */
+const daysOf = (blocks: readonly { day: number; block: ReturnType<typeof job> }[]) =>
+  DATES.map((date, day) => ({ date, blocks: blocks.filter((each) => each.day === day).map((each) => each.block) }));
+
+const on = (day: number, block: ReturnType<typeof job>) => ({ day, block });
+
+/**
+ * The board's own week: the design's rows, with two jobs in a cell put in
+ * different windows, because a technician cannot hold two in one (ADR 0034).
+ */
+export const BOARD = {
+  from: DATES[0],
+  dates: DATES,
+  technicians: [
+    {
+      technician_id: BOARD_TECHNICIANS[0]?.id,
+      name: BOARD_TECHNICIANS[0]?.name,
+      initials: BOARD_TECHNICIANS[0]?.initials,
+      zone: BOARD_TECHNICIANS[0]?.zone,
+      days: daysOf([
+        on(0, job("service", "Rohit M.", "Sec 65", 0, "morning")),
+        on(0, job("service", "Vikram S.", "DLF 4", 0, "afternoon")),
+        on(1, job("first_fit", "Sanjay B.", "Sec 43", 1, "morning")),
+        on(2, job("consultation", "Nikhil A.", "Sec 57", 2, "morning")),
+        on(2, job("service", "Aman T.", "Sec 49", 2, "afternoon")),
+        on(3, job("service", "Deepak R.", "Sec 54", 3, "afternoon")),
+        on(4, job("replacement", "Kunal M.", "Sec 62", 4, "afternoon")),
+        on(6, job("service", "Rohit M.", "Sec 65", 6, "morning")),
+      ]),
+    },
+    {
+      technician_id: BOARD_TECHNICIANS[1]?.id,
+      name: BOARD_TECHNICIANS[1]?.name,
+      initials: BOARD_TECHNICIANS[1]?.initials,
+      zone: BOARD_TECHNICIANS[1]?.zone,
+      days: daysOf([
+        on(0, job("service", "Arun P.", "Sec 23", 0, "morning")),
+        on(1, job("replacement", "Manish G.", "Sec 31", 1, "afternoon")),
+        on(1, job("consultation", "Tarun J.", "Sec 15", 1, "evening")),
+        on(2, job("first_fit", "Ravi S.", "Sec 28", 2, "morning")),
+        on(4, job("service", "Sameer L.", "Sec 12", 4, "morning")),
+        on(5, job("service", "Vivek N.", "Sec 35", 5, "afternoon")),
+      ]),
+    },
+    {
+      technician_id: BOARD_TECHNICIANS[2]?.id,
+      name: BOARD_TECHNICIANS[2]?.name,
+      initials: BOARD_TECHNICIANS[2]?.initials,
+      zone: BOARD_TECHNICIANS[2]?.zone,
+      days: daysOf([
+        on(0, job("service", "Gaurav D.", "DLF 2", 0, "morning")),
+        on(1, job("first_fit", "Rahul K.", "DLF 5", 1, "morning")),
+        on(2, job("service", "Anil V.", "DLF 1", 2, "morning")),
+        on(2, job("consultation", "Puneet S.", "DLF 3", 2, "afternoon")),
+        on(3, job("replacement", "Mohit A.", "DLF 4", 3, "afternoon")),
+        on(5, job("service", "Varun C.", "DLF 2", 5, "morning")),
+        on(6, job("service", "Kabir H.", "DLF 5", 6, "afternoon")),
+      ]),
+    },
+    {
+      technician_id: BOARD_TECHNICIANS[3]?.id,
+      name: BOARD_TECHNICIANS[3]?.name,
+      initials: BOARD_TECHNICIANS[3]?.initials,
+      zone: BOARD_TECHNICIANS[3]?.zone,
+      days: daysOf([
+        on(1, job("service", "Dev M.", "Sohna", 1, "morning")),
+        on(1, job("consultation", "Ishaan B.", "Sohna", 1, "evening")),
+        on(2, job("service", "Nitin R.", "Sohna", 2, "afternoon")),
+        on(3, job("service", "Yash T.", "Sohna", 3, "morning")),
+        on(6, job("replacement", "Hari P.", "Sohna", 6, "afternoon")),
+      ]),
+    },
+  ],
+  /** No client comes with an unassigned job: the route answers with the visit, not the person. */
+  unassigned: [
+    {
+      appointment_id: "78000000-0000-4000-8000-000000000001",
+      type: "first_fit",
+      asked_window: "morning",
+      offered_window: "morning",
+      date: DATES[1],
+      sector: "Sec 43",
+    },
+    {
+      appointment_id: "78000000-0000-4000-8000-000000000002",
+      type: "service",
+      asked_window: "evening",
+      offered_window: "evening",
+      date: DATES[1],
+      sector: "Sec 12",
+    },
+    {
+      appointment_id: "78000000-0000-4000-8000-000000000003",
+      type: "consultation",
+      asked_window: "morning",
+      offered_window: "morning",
+      date: DATES[2],
+      sector: "DLF 3",
+    },
+    {
+      appointment_id: "78000000-0000-4000-8000-000000000004",
+      type: "replacement",
+      asked_window: "afternoon",
+      offered_window: "afternoon",
+      date: DATES[2],
+      sector: "Sohna",
+    },
+  ],
+  utilisation: DATES.map((date, day) => ({ date, percent: UTILISATION[day] ?? 0 })),
+  /** Always empty: FSM answers about availability 48 hours ahead (docs/open-points.md, item 53). */
+  leave: [],
+};
+
+export const MOVED = { move_id: "79000000-0000-4000-8000-000000000001", messaged: true };
+
 // ---- Boards B2 and B3: one client's page ------------------------------------
 
 /** The board's client, on a number nobody holds. */
@@ -182,6 +329,72 @@ export const CONSENTS = {
     },
   ],
   deletion: null,
+};
+
+// ---- Board D1: the no-show the board rules on ---------------------------------
+
+/**
+ * The board's own case: the technician checked in at 11:31, 240 m out, the
+ * WhatsApp delivered at 11:32, and he closed the job at 11:47 after 15 minutes.
+ * The route gives the technician and the date, never the client.
+ */
+export const NO_SHOWS = {
+  cases: [
+    {
+      id: "66000000-0000-4000-8000-000000000001",
+      appointment_id: "77000000-0000-4000-8000-000000000001",
+      visit_date: "2027-09-19",
+      technician: "Imran Qureshi",
+      checked_in_at: "2027-09-19T06:01:00.000Z",
+      distance_m: 240,
+      message_delivered_at: "2027-09-19T06:02:00.000Z",
+      wait_ends_at: "2027-09-19T06:16:00.000Z",
+      closed_at: "2027-09-19T06:17:00.000Z",
+      decision: "undecided",
+      decided_at: null,
+    },
+    {
+      id: "66000000-0000-4000-8000-000000000002",
+      appointment_id: "77000000-0000-4000-8000-000000000002",
+      visit_date: "2027-09-20",
+      technician: "Sandeep Yadav",
+      checked_in_at: "2027-09-20T04:30:00.000Z",
+      distance_m: 12,
+      message_delivered_at: null,
+      wait_ends_at: "2027-09-20T04:45:00.000Z",
+      closed_at: "2027-09-20T04:46:00.000Z",
+      decision: "undecided",
+      decided_at: null,
+    },
+  ],
+};
+
+// ---- Board D3: the roster, and the phones the board does not draw --------------
+
+const technician = (
+  n: number,
+  name: string,
+  initials: string,
+  zone: string | null,
+  devices: { device_id: string; label: string | null; last_seen_at: string; revoked_at: string | null }[],
+) => ({ id: `88000000-0000-4000-8000-00000000000${String(n)}`, name, initials, zone, devices });
+
+export const TECHNICIANS = {
+  technicians: [
+    technician(1, "Imran Qureshi", "IQ", "Sec 40–65", [
+      { device_id: "device-1", label: "Chrome on Android", last_seen_at: "2027-09-22T05:00:00.000Z", revoked_at: null },
+      {
+        device_id: "device-2",
+        label: "Safari on iPhone",
+        last_seen_at: "2027-08-04T05:00:00.000Z",
+        revoked_at: "2027-08-05T05:00:00.000Z",
+      },
+    ]),
+    technician(2, "Sandeep Yadav", "SY", "Sec 1–39", [
+      { device_id: "device-3", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null },
+    ]),
+    technician(3, "Faizan Ali", "FA", null, []),
+  ],
 };
 
 export const ERASURE_REQUESTED = {

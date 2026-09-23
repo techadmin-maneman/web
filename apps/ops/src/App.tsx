@@ -6,13 +6,19 @@
 import { Fragment } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
+import { NoShowsScreen } from "./no-shows/NoShowsScreen.tsx";
+import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
 import { ReferralsScreen } from "./referrals/ReferralsScreen.tsx";
 import { keyOf, routeOf, usePath, type Route } from "./route.ts";
+import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 import { WaitlistScreen } from "./waitlist/WaitlistScreen.tsx";
 
 function Page({ route }: { route: Route }) {
+  if (route.page === "dispatch") return <DispatchScreen />;
   if (route.page === "waitlist") return <WaitlistScreen />;
   if (route.page === "referrals") return <ReferralsScreen />;
+  if (route.page === "no-shows") return <NoShowsScreen />;
+  if (route.page === "technicians") return <TechniciansScreen />;
   if (route.clientId === null) return <FindClientScreen />;
   return <ClientScreen clientId={route.clientId} tab={route.tab} />;
 }

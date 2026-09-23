@@ -40,6 +40,8 @@
   --ops-consent-state: 92px; /* a consent's state, date and notice, beside the purpose (board B3) */
   --ops-consent-date: 96px;
   --ops-consent-notice: 72px;
+  --ops-technician: 120px; /* the roster's name column, which board D3 draws as the 1fr of its five */
+  --ops-zone: 96px; /* and the zone beside it */
 
   /* The technician app's targets (design/phase2/Technician App.dc.html, "Targets" and "Gloved use"). */
   --tech-primary: 64px; /* the one primary action, bottom of every screen, and the fields beside it */
@@ -51,6 +53,14 @@
   --tech-box: 36px; /* a checklist item's box (board B2) */
   --fs-timer: 56px; /* the wait timer's count, board B5's one large number */
   --tech-retake: 88px; /* the Retake key beside Capture, the one action that is not full width (board B1) */
+
+  /* The dispatch board (board A1): technicians down, seven days across. */
+  --ops-tech: 104px; /* the column the technician and their zone stand in */
+  --ops-tray: 236px; /* the unassigned tray down the right */
+  --ops-cell: 88px; /* one technician's day */
+  --ops-block-1: 22px; /* a block of one slot: a consultation or a service visit */
+  --ops-block-15: 34px; /* a replacement, a slot and a half */
+  --ops-block-2: 46px; /* a first fit, two slots */
 
   --skeleton-label: 120px; /* the loading state's label (board B3) */
   --skeleton-card: 150px; /* and its card */

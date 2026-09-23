@@ -98,9 +98,19 @@
 }
 
 /* Each section pads itself, as its board does. */
-.page {
+.page,
+.flushPage {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+
+.page {
   padding: var(--sp-24);
+}
+
+/* The dispatch board runs to the frame's edges, and holds its own tray against the right. */
+.flushPage {
+  display: flex;
+  min-width: 0;
 }

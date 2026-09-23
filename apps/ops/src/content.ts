@@ -12,11 +12,19 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 export const shell = {
   /** The sidebar's own title, as boards A1 and B1 letter it. */
   title: "Operations",
-  /** The sections the backend has routes for, in the design's order; the design draws eight. */
+  /**
+   * The sections the backend has routes for, in the design's order; the design
+   * draws eight. Its third is "Payments", which this cannot be: no route totals
+   * the day's money or lists a refund, so the section holds the no-show queue
+   * alone (docs/open-points.md, item 57).
+   */
   sections: [
+    { page: "/dispatch", label: "Dispatch" },
     { page: "/clients", label: "Clients" },
+    { page: "/no-shows", label: "No-shows" },
     { page: "/referrals", label: "Referrals" },
     { page: "/waitlist", label: "Waitlist" },
+    { page: "/technicians", label: "Technicians" },
   ],
 } as const;
 
@@ -24,6 +32,143 @@ export const states = {
   loading: "Loading",
   failed: "We could not load this.",
   retry: "Try again",
+} as const;
+
+export const dispatch = {
+  title: "Dispatch",
+  /** Beside the title, as the board heads the week: "19 to 25 Sep". */
+  week: (from: string, to: string) => `${from} to ${to}`,
+  /** A cell, a zone or a sector the board has nothing for. */
+  unknown: "—",
+  /** A job with neither a client nor a kind on it, which a title still has to name. */
+  unnamed: "this visit",
+  util: (percent: number) => `${String(percent)}%`,
+  /**
+   * PLACEHOLDER: the board letters 92 and 88 per cent in brass and leaves 67 and
+   * below quiet, so the peak reads without a chart. It writes no line, and this
+   * is where we have drawn it.
+   */
+  peak: 80,
+  /** A block's second line, as the board writes it: "Sec 65 · service". */
+  types: {
+    consultation: "consult",
+    first_fit: "first fit",
+    service: "service",
+    replacement: "replace",
+  } as Readonly<Record<string, string>>,
+  /** The same four, named in full, as the drawer and the tray head a job. */
+  typeNames: {
+    consultation: "Consultation",
+    first_fit: "First fit",
+    service: "Service visit",
+    replacement: "Replacement",
+  } as Readonly<Record<string, string>>,
+  windows: { morning: "morning", afternoon: "afternoon", evening: "evening" } as Readonly<Record<string, string>>,
+  /**
+   * PLACEHOLDER: each window's hours, which the drawer writes as the board does
+   * ("12 to 4 pm"). They are src/config/scheduling.ts's WINDOW_TIMES, still the
+   * owner's to rule (docs/open-points.md, item 24); test/node/ops-content.test.ts
+   * holds the two together.
+   */
+  windowHours: {
+    morning: "9 am to 12",
+    afternoon: "12 to 4 pm",
+    evening: "4 to 8 pm",
+  } as Readonly<Record<string, string>>,
+  board: {
+    /** A block, for whoever is reading with a screen reader or moving by keyboard. */
+    block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
+    /** PLACEHOLDER: the board draws no board without technicians. */
+    empty: "No technician is on this board.",
+    /**
+     * The board draws a cell of leave, and none is ever shown: FSM answers about
+     * availability 48 hours ahead and the board is seven days
+     * (docs/open-points.md, item 53).
+     */
+    leave: "Leave is not shown. FSM answers about availability 48 hours ahead, and this board is seven days.",
+  },
+  tray: {
+    title: "Unassigned",
+    asked: (window: string) => `Asked · ${window}`,
+    offered: (window: string) => `Offered · ${window}`,
+    /**
+     * The two are always the same window: FSM holds one time on an appointment,
+     * and no preference of the client's is read back (docs/open-points.md, item 54).
+     */
+    same: "Asked and offered are the same window: FSM holds one time on a visit.",
+    // PLACEHOLDER: the board draws four waiting and no empty tray.
+    empty: "Nothing is waiting for a technician.",
+  },
+  /** Board A3: the drawer a block opens, narrowed to what a block carries. */
+  drawer: {
+    /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
+    when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
+    rows: { type: "Type", area: "Area", state: "State" },
+    /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
+    type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
+    // PLACEHOLDER: the board draws a scheduled visit only, and names no state.
+    states: {
+      scheduled: "Scheduled",
+      dispatched: "Sent to the technician",
+      in_progress: "In progress",
+      completed: "Done",
+      cancelled: "Cancelled",
+      terminated: "Terminated",
+      other: "Other",
+    } as Readonly<Record<string, string>>,
+    /** The keyboard way to do what the drag does; the board draws the drag alone. */
+    move: "Move this visit",
+    close: "Close",
+  },
+  /** Board A2: the reason a move must carry, asked for before anything is written. */
+  move: {
+    /** "Move Rohit M. to Sandeep Yadav". */
+    title: (job: string, technician: string) => `Move ${job} to ${technician}`,
+    /** "Fri 19 Sep, afternoon → Sat 20 Sep, morning". */
+    fromTo: (from: string, to: string) => `${from} → ${to}`,
+    /** The tray's jobs have no technician yet, so there is nothing to move them from. */
+    to: (to: string) => `To ${to}`,
+    legend: "Why it is moving",
+    /** The five the design lists, in its order (src/policy/dispatch.ts). */
+    reasons: [
+      { reason: "technician_unavailable", label: "Technician unavailable" },
+      { reason: "client_asked", label: "Client asked to move it" },
+      { reason: "zone_rebalance", label: "Zone rebalance" },
+      { reason: "skill_needed", label: "Skill needed · first fit certified" },
+      { reason: "running_over", label: "Running over on an earlier job" },
+    ],
+    note: (job: string | null) =>
+      `${job ?? "The client"} is messaged on WhatsApp with the new window. Their payment carries over.`,
+    /** The board's extra line within 24 hours of the visit. */
+    soon: "This visit is inside 24 hours. The client is not charged, because we moved it.",
+    send: "Move and notify",
+    sending: "Moving",
+    cancel: "Cancel",
+  },
+  /** Choosing where a job lands, which the design does by dragging. */
+  landing: {
+    /** The bar above the board while a job is in hand. */
+    moving: (job: string) => `Moving ${job}. Choose a technician and a window.`,
+    /** Each window of each technician's day, while a job is in hand. */
+    choose: (job: string, technician: string, date: string, window: string) =>
+      `Move ${job} to ${technician}, ${date}, ${window}`,
+    stop: "Stop moving it",
+    moved: (job: string) => `${job} moved. The client has been messaged.`,
+    /**
+     * A refusal names the technician and the window it asked for: the clash check
+     * runs before anything is written (ADR 0034), and the API answers with the
+     * code alone.
+     */
+    clash: (technician: string, date: string, window: string) =>
+      `${technician} already holds a job on ${date}, ${window}. Nothing was moved.`,
+    errors: {
+      invalid_request: "That move is not one we can make. Nothing was moved.",
+      not_found: "This visit is no longer live. Reload the board to see it as it stands.",
+      fsm_refused: "Our scheduling system would not take it. Nothing was moved.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was moved.",
+    },
+  },
 } as const;
 
 export const referrals = {
@@ -200,6 +345,90 @@ export const waitlist = {
     done: (alerts: number) => `Launched. ${String(alerts)} on their way.`,
     errors: {
       not_found: "We have no such pincode.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Please try again.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/**
+ * Board D1's queue. The board draws the day's money over "No-shows and late
+ * cancellations", and beside it a disputed charge ruled on with Refund or
+ * Uphold. Only the no-show cases and their three facts have a route, so only
+ * they are here (docs/open-points.md, item 57).
+ */
+export const noShows = {
+  title: "No-shows",
+  queue: {
+    /**
+     * PLACEHOLDER: the board heads the list "No-shows and late cancellations".
+     * Nothing lists a late cancellation, and what is here is a queue, as board
+     * C1's "Held for review" is.
+     */
+    title: "Waiting for a decision",
+    /** The visit the case belongs to. The route gives its date and its technician, never the client. */
+    visit: (date: string) => `Visit of ${date}`,
+    /** PLACEHOLDER: a case whose appointment carries no date. */
+    undated: "Visit, date unknown",
+    attended: (technician: string) => `${technician} attended`,
+    /** The four rows the board letters on the evidence, in its own words. */
+    facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
+    /** The board writes "240 m · over 200 m fence"; the route gives the distance, not the radius in force. */
+    distance: (metres: number) => `${String(metres)} m`,
+    delivered: (time: string) => `Delivered ${time}`,
+    /** PLACEHOLDER: the board's receipt always arrived; one that never did is this. */
+    notDelivered: "Never delivered",
+    waited: (minutes: number, closed: string | null) =>
+      closed === null ? `${String(minutes)} min` : `${String(minutes)} min · closed ${closed}`,
+    /**
+     * PLACEHOLDER: the board's buttons are Refund and Uphold, which rule on a
+     * dispute. The route charges the visit or waives it, and nothing records a
+     * dispute at all.
+     */
+    charge: "Charge",
+    waive: "Waive",
+    deciding: "Deciding",
+    /** PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. */
+    note: "Charging records the decision. Nothing is taken from the client here.",
+    /** PLACEHOLDER: the board draws no empty queue. */
+    empty: "No no-show is waiting for a decision.",
+    errors: {
+      not_found: "Someone has ruled on this one already. Reload to see the queue as it stands.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Please try again.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/**
+ * Board D3's roster. The board draws five columns; the route answers the
+ * technician and the zone, and carries the phones the board does not draw
+ * (docs/open-points.md, item 59).
+ */
+export const technicians = {
+  title: "Technicians",
+  /** The two of board D3's five columns the route answers. */
+  columns: ["Technician", "Zone"],
+  /** A zone the FSM mirror has nothing for, written as the design's tables write a gap. */
+  unknown: "—",
+  // PLACEHOLDER: the board draws no console without technicians.
+  empty: "No technician is active.",
+  phones: {
+    /** PLACEHOLDER: a phone whose browser gave no label at login. */
+    unlabelled: "A phone",
+    seen: (date: string) => `last used ${date}`,
+    none: "No phone logged in.",
+    revoke: "Revoke",
+    /** The button's whole name, since a roster holds many phones and each button says "Revoke". */
+    revokeLabel: (phone: string, technician: string) => `Revoke ${phone} of ${technician}`,
+    confirm: "Revoke this phone",
+    cancel: "Keep it",
+    revoking: "Revoking",
+    revoked: (date: string) => `Revoked ${date}`,
+    /** PLACEHOLDER: the board draws no revoke, so nothing writes what one does. */
+    warning: "The session ends, and the phone drops its cached jobs when it is next online.",
+    errors: {
+      not_found: "That phone is not this technician's any more. Reload to see the roster as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,

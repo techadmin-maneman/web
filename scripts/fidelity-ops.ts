@@ -1,8 +1,8 @@
 // The ops console's fidelity pairs (docs/fidelity-method.md, "Phase 2 boards"):
-// each frame of design/phase2/Ops Console.dc.html that P2-F3 builds, beside the
-// built console in the same state. The console is drawn at 1440; boards B2, B3
-// and C1 to C3 are panels within it, 660 and 484 px wide, drawn at their own
-// size, so each pair is a panel beside a panel.
+// each frame of design/phase2/Ops Console.dc.html that the console builds,
+// beside the built console in the same state. The console is drawn at 1440;
+// boards B2, B3, C1 to C3, D1 and D3 are panels within it, 660 and 484 px wide,
+// drawn at their own size, so each pair is a panel beside a panel.
 //
 //   npm run build:ops -- --env local && npm run fidelity:ops
 //
@@ -13,12 +13,17 @@
 //
 // Writes docs/fidelity/ops/<name>.jpg: the design on the left, the build on
 // the right. Differences in type, spacing, colour or order are defects.
+//
+// Board A1 draws the console whole at 1440 and shows it at 1000, so its pair is
+// the console's own frame brought down to 1000; every other pair is a panel
+// beside a panel, at its own size.
 
 import { rmSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
+import { BOARD } from "../e2e/ops/fixtures.ts";
 import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
@@ -28,8 +33,9 @@ const OPS = "http://127.0.0.1:4316";
 const DESIGN = "http://127.0.0.1:4315/Ops%20Console.dc.html";
 const OUT = resolve("docs/fidelity/ops");
 
-/** The console's own width, and the two widths its panels are drawn at. */
+/** The console's own width, the width the boards show it at, and its panels' two widths. */
 const CONSOLE = 1440;
+const SHOWN = 1000;
 const QUEUE = 660;
 const PANEL = 484;
 
@@ -37,6 +43,12 @@ const PANEL = 484;
 const IN_2027 = new Date("2027-09-22T05:00:00Z");
 /** India's 10:42, the time board B2 letters on the opened photographs. */
 const AT_1042 = new Date("2027-09-22T05:12:00Z");
+/**
+ * Two days before the week board A1 heads, Fri 19 to Thu 25 September, whose
+ * days fall as it draws them in 2025. Two days, so the visit A2 moves is more
+ * than 24 hours off and its panel carries no line about a charge.
+ */
+const BEFORE_THE_WEEK = new Date("2025-09-17T05:00:00Z");
 
 // ---- Board C1: the grants the fraud rules held ------------------------------
 
@@ -144,6 +156,51 @@ const PHOTOS = {
   ],
 };
 
+// ---- Board D1: the case the board rules on, with its three facts -------------
+
+/** The board's own: checked in at 11:31, 240 m out, the WhatsApp delivered 11:32, closed at 11:47. */
+const NO_SHOWS = {
+  cases: [
+    {
+      id: "66000000-0000-4000-8000-000000000001",
+      appointment_id: "77000000-0000-4000-8000-000000000001",
+      visit_date: "2027-09-19",
+      technician: "Imran Qureshi",
+      checked_in_at: "2027-09-19T06:01:00.000Z",
+      distance_m: 240,
+      message_delivered_at: "2027-09-19T06:02:00.000Z",
+      wait_ends_at: "2027-09-19T06:16:00.000Z",
+      closed_at: "2027-09-19T06:17:00.000Z",
+      decision: "undecided",
+      decided_at: null,
+    },
+  ],
+};
+
+// ---- Board D3: the roster, with the phones the board does not draw -----------
+
+const phone = (id: string, label: string | null, seen: string) => ({
+  device_id: id,
+  label,
+  last_seen_at: `${seen}T05:00:00.000Z`,
+  revoked_at: null,
+});
+const worker = (n: number, name: string, initials: string, zone: string, seen: string) => ({
+  id: `88000000-0000-4000-8000-00000000000${String(n)}`,
+  name,
+  initials,
+  zone,
+  devices: [phone(`device-${String(n)}`, "Chrome on Android", seen)],
+});
+const TECHNICIANS = {
+  technicians: [
+    worker(1, "Imran Qureshi", "IQ", "Sec 40–65", "2027-09-22"),
+    worker(2, "Sandeep Yadav", "SY", "Sec 1–39", "2027-09-22"),
+    worker(3, "Arjun Negi", "AN", "DLF 1–5", "2027-09-21"),
+    worker(4, "Faizan Ali", "FA", "Sohna Rd", "2027-09-20"),
+  ],
+};
+
 const consent = (purpose: string, state: string, version: string | null, at: string | null) => ({
   purpose,
   state,
@@ -179,6 +236,9 @@ const photoFiles = Object.fromEntries(
 );
 
 const API: Api = {
+  // Boards A1 to A3 are answered with the week the browser tests use, so the
+  // board's figures are written once and both read beside it (e2e/ops/fixtures.ts).
+  "/api/dispatch": json(BOARD),
   "/api/referrals/held": json(HELD),
   "/api/referrers": json(REFERRERS),
   "/api/waitlist": json(AREAS),
@@ -186,6 +246,8 @@ const API: Api = {
   [`/api/clients/${CLIENT_ID}`]: json(RECORD),
   [`/api/clients/${CLIENT_ID}/photos`]: json(PHOTOS),
   [`/api/clients/${CLIENT_ID}/consents`]: json(CONSENTS),
+  "/api/no-shows": json(NO_SHOWS),
+  "/api/technicians": json(TECHNICIANS),
   ...photoFiles,
 };
 
@@ -208,7 +270,7 @@ async function openDesign(browser: Browser): Promise<Page> {
  * scrolls its own section; for a screenshot the page is let out of it, so a
  * panel taller than the window is caught whole.
  */
-async function openConsole(browser: Browser, path: string, at: Date = IN_2027): Promise<Page> {
+async function openConsole(browser: Browser, path: string, at: Date = IN_2027, letOut = true): Promise<Page> {
   // The console's policy would refuse the style that stills the page; screenshots set it aside.
   const page = await browser.newPage({
     viewport: { width: CONSOLE, height: 900 },
@@ -222,11 +284,17 @@ async function openConsole(browser: Browser, path: string, at: Date = IN_2027): 
   });
   await page.goto(`${OPS}${path}`);
   await settle(page);
-  await page.addStyleTag({
-    content: "#root > div { height: auto !important; } main { overflow: visible !important; }",
-  });
+  // Board A1 draws the console whole, so that one is shot inside its own frame.
+  if (letOut) {
+    await page.addStyleTag({
+      content: "#root > div { height: auto !important; } main { overflow: visible !important; }",
+    });
+  }
   return page;
 }
+
+/** The console at 1440, brought down to the 1000 px board A1 shows it at. */
+const shrink = (image: Buffer, width: number) => sharp(image).resize({ width }).png().toBuffer();
 
 /** A frame of the board, by its label. */
 const frame = (design: Page, label: string) => design.locator(`[data-screen-label="${label}"]`).screenshot();
@@ -236,6 +304,32 @@ const panelOf = (design: Page, label: string, nth: number) =>
   design.locator(`[data-screen-label="${label}"] > div`).nth(nth).screenshot();
 
 // ---- The pairs ----------------------------------------------------------------
+
+/**
+ * Boards A1, A2 and A3: the week's board, the drawer a block opens, and the
+ * reason a move carries. A2 and A3 are reached as ops reach them, by opening a
+ * block and moving it; nothing is written, because the panel sends only on
+ * "Move and notify".
+ */
+async function dispatch(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, "/dispatch", BEFORE_THE_WEEK, false);
+  const block = page.getByRole("button", { name: "Rohit M., Fri 19 Sep, morning" });
+  await block.waitFor();
+  await settle(page);
+  await pair(OUT, SHOWN, "a1-dispatch", await frame(design, "Dispatch"), await shrink(await page.screenshot(), SHOWN));
+
+  await block.click();
+  const drawer = page.getByRole("dialog", { name: "Rohit M." });
+  await drawer.getByText("Service visit · 1 slot").waitFor();
+  await pair(OUT, PANEL, "a3-block-drawer", await frame(design, "Dispatch · drawer"), await drawer.screenshot());
+
+  await page.getByRole("button", { name: "Move this visit" }).click();
+  await page.getByRole("button", { name: "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning" }).click();
+  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
+  await picker.getByText("Fri 19 Sep, morning → Sat 20 Sep, morning").waitFor();
+  await pair(OUT, PANEL, "a2-move-reason", await frame(design, "Dispatch · drag"), await picker.screenshot());
+  await page.close();
+}
 
 async function referrals(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/referrals");
@@ -278,6 +372,28 @@ async function photos(browser: Browser, design: Page): Promise<void> {
   await page.close();
 }
 
+/**
+ * Board D1. The board's frame draws the day's money over the charges, then the
+ * disputed charge beside it; only the evidence and a ruling have a route, so
+ * the queue is paired with the second card, the one that holds them.
+ */
+async function noShows(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, "/no-shows");
+  const panel = page.getByRole("region", { name: "Waiting for a decision" });
+  await panel.getByText("Delivered 11:32 am").waitFor();
+  await pair(OUT, PANEL, "d1-no-shows", await panelOf(design, "Payments", 1), await panel.screenshot());
+  await page.close();
+}
+
+/** Board D3, the roster, with each technician's phones beneath his name. */
+async function technicians(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, "/technicians");
+  const panel = page.getByRole("region", { name: "Technicians" });
+  await panel.getByText("Faizan Ali").waitFor();
+  await pair(OUT, PANEL, "d3-technicians", await frame(design, "Technicians"), await panel.screenshot());
+  await page.close();
+}
+
 /** Board B3, the consents, which ops read and never change. */
 async function consents(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, `/clients/${CLIENT_ID}/consents`);
@@ -296,10 +412,13 @@ try {
   rmSync(OUT, { recursive: true, force: true });
   console.log(`fidelity: the ops console at ${String(CONSOLE)} px`);
   const design = await openDesign(browser);
+  await dispatch(browser, design);
   await photos(browser, design);
   await consents(browser, design);
   await referrals(browser, design);
   await waitlist(browser, design);
+  await noShows(browser, design);
+  await technicians(browser, design);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();

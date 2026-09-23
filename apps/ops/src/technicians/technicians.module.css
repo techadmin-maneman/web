@@ -1,0 +1,175 @@
+/*
+ * Board D3's roster, on the panel the board draws it on and at its width: the
+ * name and the zone in the board's own columns, and each technician's phones
+ * on the row beneath, which the board's five columns leave no room for. A
+ * revoke stays quiet until it is asked for, since it ends a session and makes
+ * the phone drop its cached jobs.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-panel);
+}
+
+.panel {
+  padding: var(--sp-20);
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.hiddenTitle {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-14);
+}
+
+.head {
+  height: var(--ops-row);
+  padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
+  border-bottom: var(--hairline) solid var(--text);
+  font-size: var(--fs-13);
+  font-weight: 400;
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.name,
+.zone {
+  height: var(--ops-row);
+  padding: var(--sp-9) var(--sp-6) var(--sp-9) 0;
+  font-weight: 400;
+  text-align: left;
+}
+
+/* The board's two columns, at the widths it draws them; the zone takes the slack its other three leave. */
+.name {
+  width: var(--ops-technician);
+}
+
+.zone {
+  min-width: var(--ops-zone);
+  color: var(--text-muted);
+}
+
+.phones {
+  padding: 0 0 var(--sp-14);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.none {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* ---- One phone, and its revoke ------------------------------------------- */
+
+.phoneList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phone + .phone {
+  margin-top: var(--sp-12);
+  padding-top: var(--sp-12);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.phoneLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-12);
+}
+
+.phoneName {
+  font-size: var(--fs-14);
+}
+
+.seen {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.asking {
+  margin-top: var(--sp-8);
+}
+
+.warning {
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+  margin-top: var(--sp-8);
+}
+
+.revoke,
+.quiet {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-14);
+  font: inherit;
+  font-size: var(--fs-14);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.revoke {
+  border: var(--hairline) solid var(--error-on-paper);
+  background: transparent;
+  color: var(--error-on-paper);
+}
+
+.quiet {
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+}
+
+.revoke:disabled,
+.quiet:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.revoke:focus-visible,
+.quiet:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+.revoked {
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.error {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-13);
+  color: var(--error-on-paper);
+}
