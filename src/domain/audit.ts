@@ -20,6 +20,8 @@ export const AUDIT_ACTIONS = [
   "deletion.decide",
   // A held referral grant (docs/decisions/0048-referrals.md).
   "referral.decide",
+  // Ops opening one of a client's photographs (docs/decisions/0031-access-and-audit.md).
+  "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).
   "pincode.launch",
   "data.export",
