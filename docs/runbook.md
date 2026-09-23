@@ -439,9 +439,11 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
 
 ## The CI runner
 
-GitHub Actions jobs run on the owner's machine, in a container (docs/decisions/0006-deployment-pipeline.md, "The runner"). The machine must be on, with Docker Desktop running; the container starts with Docker.
+GitHub Actions jobs run on the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"). The machine must be on, with Docker Desktop running; the containers start with Docker.
 
-- **Check it:** `docker logs --tail 5 maneman-runner` ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` as Idle or Active.
+**There are two,** `maneman-runner` (`maneman-pc`) and `maneman-runner-2` (`maneman-pc-2`), each with its own volume. One runner meant a pull request, a deploy and a second pull request waited for each other, half an hour at a time; two run side by side on a twelve-core machine. They share the machine, so a job is slower when both are busy: that is why the worker tests allow thirty seconds each (`vitest.config.ts`), since they write to a real D1 and a slow one is working, not hanging.
+
+- **Check them:** `docker logs --tail 5 maneman-runner` (and `maneman-runner-2`) ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` and `maneman-pc-2` as Idle or Active.
 - **Set it up again** (a new machine, or after removing it). Build the image, take a registration token (it lasts an hour), and start the container once with it; the registration is kept in the `maneman-runner` volume. Then start it again without the token, so the token is not left in the container's settings:
 
   ```sh
@@ -451,6 +453,17 @@ GitHub Actions jobs run on the owner's machine, in a container (docs/decisions/0
   docker rm -f maneman-runner   # once the logs say "Listening for Jobs"
   docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g     -v maneman-runner:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web maneman-runner:2.337.0
   ```
+
+- **A second runner** is the same, with its own name and volume. `RUNNER_NAME` is what GitHub lists it as; without it the entrypoint registers `maneman-pc`, and `--replace` would take the first one's place instead of joining it:
+
+  ```sh
+  token=$(gh api -X POST repos/techadmin-maneman/web/actions/runners/registration-token -q .token)
+  docker run -d --name maneman-runner-2 --restart unless-stopped --shm-size=2g     -v maneman-runner-2:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web     -e RUNNER_NAME=maneman-pc-2 -e RUNNER_TOKEN="$token" maneman-runner:2.337.0
+  docker rm -f maneman-runner-2   # once the logs say "Listening for Jobs"
+  docker run -d --name maneman-runner-2 --restart unless-stopped --shm-size=2g     -v maneman-runner-2:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web     -e RUNNER_NAME=maneman-pc-2 maneman-runner:2.337.0
+  ```
+
+- **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
 - **Move the jobs back to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They are then within GitHub's free minutes, about ten runs a day.
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
