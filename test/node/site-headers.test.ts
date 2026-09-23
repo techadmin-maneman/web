@@ -99,8 +99,10 @@ describe("the headers file", () => {
 });
 
 describe("the sitemap", () => {
-  it("lists each page by its address, and not the 404", () => {
-    const paths = ["index.html", "try.html", "404.html", "privacy.html"].map(pagePath).filter((path) => path !== null);
+  // The referral landing answers every /r/:code, each one a person's own invite, and is not indexed.
+  it("lists each page by its address, and neither the 404 nor the referral landing", () => {
+    const files = ["index.html", "try.html", "404.html", "privacy.html", "r.html"];
+    const paths = files.map(pagePath).filter((path) => path !== null);
     expect(paths).toEqual(["/", "/try", "/privacy"]);
     expect(sitemapFile(paths)).toContain("<loc>https://maneman.in/try</loc>");
   });

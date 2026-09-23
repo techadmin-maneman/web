@@ -1,4 +1,6 @@
-// mm-site: static assets for everything outside /api/*. Local and staging serve
+// mm-site: static assets for everything outside /api/*, and one Worker beside
+// them for the referral landing (docs/decisions/0027-referral-landing.md), which
+// writes each invite's preview into the page WhatsApp fetches. Local and staging serve
 // the Astro build (site/dist/<environment>, from npm run build:site). Production
 // keeps its placeholder page until the site goes live there, which the owner
 // will do in one release with the backend.
@@ -11,7 +13,14 @@
   "compatibility_date": "2026-08-15",
   "workers_dev": false,
   "preview_urls": false,
-  "assets": { "directory": "./dist/local", "not_found_handling": "404-page" },
+  "main": "./src/worker.ts",
+  "assets": {
+    "directory": "./dist/local",
+    "not_found_handling": "404-page",
+    "binding": "ASSETS",
+    "run_worker_first": ["/r/*"]
+  },
+  "services": [{ "binding": "API", "service": "mm-api" }],
   "env": {
     "staging": {
       "name": "mm-site-staging",
@@ -20,7 +29,14 @@
       "preview_urls": false,
       "observability": { "enabled": true },
       "routes": [{ "pattern": "staging.maneman.in/*", "zone_name": "maneman.in" }],
-      "assets": { "directory": "./dist/staging", "not_found_handling": "404-page" }
+      "main": "./src/worker.ts",
+      "assets": {
+        "directory": "./dist/staging",
+        "not_found_handling": "404-page",
+        "binding": "ASSETS",
+        "run_worker_first": ["/r/*"]
+      },
+      "services": [{ "binding": "API", "service": "mm-api-staging" }]
     },
     "production": {
       "name": "mm-site-production",
@@ -29,7 +45,14 @@
       "preview_urls": false,
       "observability": { "enabled": true },
       "routes": [{ "pattern": "maneman.in/*", "zone_name": "maneman.in" }],
-      "assets": { "directory": "./placeholder/production", "not_found_handling": "404-page" }
+      "main": "./src/worker.ts",
+      "assets": {
+        "directory": "./placeholder/production",
+        "not_found_handling": "404-page",
+        "binding": "ASSETS",
+        "run_worker_first": ["/r/*"]
+      },
+      "services": [{ "binding": "API", "service": "mm-api-production" }]
     }
   }
 }

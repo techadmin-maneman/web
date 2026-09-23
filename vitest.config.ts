@@ -35,6 +35,13 @@ export default defineConfig({
           name: "worker",
           include: ["test/worker/**/*.test.ts"],
           setupFiles: ["./test/worker/setup.ts"],
+          /*
+           * These tests run inside workerd and write to a real D1, so a slow one is
+           * doing work, not hanging. Vitest's five seconds is enough on an idle
+           * machine and not on a busy one, which failed CI repeatedly while proving
+           * nothing about the code.
+           */
+          testTimeout: 30_000,
         },
       },
       {

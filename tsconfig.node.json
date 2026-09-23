@@ -25,6 +25,7 @@
   "exclude": [
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",
+    "scripts/fidelity-refer.ts",
     "scripts/lib/fidelity.ts",
     "scripts/serve-site.ts",
     "scripts/serve-app.ts",

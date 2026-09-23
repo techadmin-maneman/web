@@ -296,6 +296,61 @@ export const change = {
   destination: "UPI",
 } as const;
 
+/** Refer (boards F1 to F6): the invite, the card behind it, and who has been fitted. */
+export const refer = {
+  title: "Refer",
+  promise: "When a friend you refer is fitted, you both get 3 service visits free.",
+  credit: { label: "Your credit", expire: (date: string) => `Expire ${date}` },
+  noOther: "No other discount applies.",
+  share: "Share an invite",
+  tracker: "See who has been fitted",
+  card: {
+    title: "Which card?",
+    what: "This is what he sees in the chat. No name on it, and no copy.",
+    mine: { name: "My before and after", note: "Your own photographs" },
+    house: { name: "A Mane Man example", note: "Our house sample" },
+    next: "Continue to share",
+  },
+  consent: {
+    title: "Before you send your own photographs",
+    allow: "Allow for referral cards",
+    instead: "Use the example instead",
+  },
+  preview: {
+    title: "Preview — what your friend sees",
+    heading: (name: string) => `${name} sent you a Mane Man invite`,
+    body: "Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.",
+    domain: "maneman.in",
+    message: (link: string) => `Had my hair system fitted at home by these people. Worth a look — ${link}`,
+    whatsapp: "Share via WhatsApp",
+    other: "Other apps",
+    copy: "Copy link",
+    copied: "Link copied",
+    // PLACEHOLDER: board F6's share failure.
+    failed: "The link did not generate. Nothing was sent. Try again.",
+  },
+  fitted: {
+    title: "Who has been fitted",
+    earned: (visits: number) => `${String(visits)} visits earned`,
+    remaining: (visits: number) => `${String(visits)} remaining`,
+    when: (month: string) => `Fitted ${month}`,
+    each: (visits: number) => `${String(visits)} visits earned`,
+    only: "Completed fits only. Whether an invite was opened is your friend's business.",
+    none: "Nobody you have referred has been fitted yet.",
+    back: "Back to refer",
+  },
+  revoke: {
+    open: "Revoke the photo card",
+    title: "Switch off your photographs?",
+    body: "New opens show the house example. Cards already sent stay in those chats.",
+    yes: "Switch off",
+    no: "Keep it on",
+  },
+  // PLACEHOLDER: the card is composed on the phone; the design does not draw its waiting or its failure.
+  composing: "Making your card.",
+  cardFailed: "We could not make your card. The house example is used instead.",
+} as const;
+
 export const photos = {
   title: "Photos",
   compare: "Compare",
