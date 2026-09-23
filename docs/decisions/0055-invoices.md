@@ -1,4 +1,4 @@
-# 0054. The invoice for a finished job
+# 0055. The invoice for a finished job
 
 - Status: accepted
 - Date: 2026-09-23
@@ -42,13 +42,13 @@ The proof proposed listing `/fsm/v1/Invoices` and matching `Work_Order.id`, and 
 **The pass runs on the five-minute cron** (`src/domain/fsm-invoices.ts`), with the Books pass and never in a client's path.
 
 - Each run takes up to five completed visits whose invoice we do not hold, oldest first, and offers their work orders to FSM.
-- A work order FSM will not bill, or refuses, is stamped `invoice_checked_at` (migration 0028) and waits an hour, so a free consultation is not offered again every five minutes for ever.
+- A work order FSM will not bill, or refuses, is stamped `invoice_checked_at` (migration 0029) and waits an hour, so a free consultation is not offered again every five minutes for ever.
 - A refusal — a 4xx — is logged as `invoice_refused` with FSM's own code and the pass carries on. Anything else fails the pass, which the next run repeats.
 
 ## Consequences
 
 - **The manual step is gone.** A closed job is invoiced within five minutes, and `GET /api/documents/{visit_id}` streams the PDF from Books. Nobody has to remember.
-- **The invoice is a draft.** FSM creates it in Books as a draft, as the owner's hand-made one is, and sending it is Books' own step that nothing of ours presses. ADR 0044 has the payments pass wait while an invoice is a draft, so **a client's advance is still not set against their invoice**: that is `docs/open-points.md` item 66, for the owner and the CA to rule on with the rest of section 6.
+- **The invoice is a draft.** FSM creates it in Books as a draft, as the owner's hand-made one is, and sending it is Books' own step that nothing of ours presses. ADR 0044 has the payments pass wait while an invoice is a draft, so **a client's advance is still not set against their invoice**: that is `docs/open-points.md` item 70, for the owner and the CA to rule on with the rest of section 6.
 - **No tax on it.** GST is off in Books and 0% in the price book (open points 2 and 3), so the invoice carries the price and nothing else. When GST goes on, the invoice is FSM's to compute, not ours.
 - **Consultations get no invoice**, because they are free. If the owner ever prices one, it is invoiced like everything else with no change here.
 - **One invoice per work order**, and our work orders carry one service line each. A work order with some lines invoiced and some not is answered with the invoice the first billed line names, and the rest are left; nothing of ours makes such a work order.

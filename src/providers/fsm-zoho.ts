@@ -571,7 +571,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
      * Billing is FSM's door into Books: the create makes the invoice in Books and
      * keeps a link to it here. The line IDs and `$finance_data` are mandatory, and
      * FSM answers a bare 500 rather than a refusal when the line IDs are missing
-     * (ADR 0054), so both always go with the work order.
+     * (ADR 0055), so both always go with the work order.
      */
     async invoiceWorkOrder(workOrderId) {
       const [order] = records(

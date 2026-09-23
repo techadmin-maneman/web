@@ -126,7 +126,7 @@ export default {
         log.info("visit_reminders_queued", { count: reminders.length });
       }
     }
-    // A finished job's invoice: FSM raises it, Books holds it (ADR 0054). Before the
+    // A finished job's invoice: FSM raises it, Books holds it (ADR 0055). Before the
     // Books pass, which sets a client's advance against the invoice once there is one.
     if (config.providers.FSM_PROVIDER !== "none") {
       const invoiceLog = log.child({ job: "invoices" });

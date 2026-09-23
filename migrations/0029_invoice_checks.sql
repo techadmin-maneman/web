@@ -1,5 +1,5 @@
--- Migration number: 0028
--- When a finished job was last offered to FSM for invoicing (ADR 0054).
+-- Migration number: 0029
+-- When a finished job was last offered to FSM for invoicing (ADR 0055).
 --
 -- The five-minute pass bills every completed appointment whose invoice we do
 -- not hold yet. A work order FSM will not invoice — a free consultation, or one

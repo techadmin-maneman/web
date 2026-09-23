@@ -1,4 +1,4 @@
-// The invoice for a finished job (docs/decisions/0054-invoices.md). FSM raises
+// The invoice for a finished job (docs/decisions/0055-invoices.md). FSM raises
 // it and Books holds it, so `appointments.fsm_invoice_id` keeps
 // Books' ID: that is what the client app's tax invoice is streamed from.
 //

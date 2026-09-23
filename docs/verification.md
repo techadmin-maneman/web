@@ -397,7 +397,7 @@ service line SVC-16 Invoice_Id: 8229000000304418 Billing_Status: Invoiced
 
 `8229000000304418` is INV-000001, the one the owner raised by hand, and reading it gives `ZBilling_InvoiceId` `4242595000000064030` — the Books ID `books.invoicePdf` takes. So the link is one read of the work order, and `/fsm/v1/Invoices`, which takes no filter and grows with every job the business ever does, is never listed.
 
-**What is built on it** is `fsm.invoiceWorkOrder`, one call that answers the invoice a work order's lines already name and raises one only when they name none, and a five-minute pass that puts its `ZBilling_InvoiceId` into `appointments.fsm_invoice_id` (ADR 0054). The mirror no longer writes that column from the appointment's null `Invoice_Id`.
+**What is built on it** is `fsm.invoiceWorkOrder`, one call that answers the invoice a work order's lines already name and raises one only when they name none, and a five-minute pass that puts its `ZBilling_InvoiceId` into `appointments.fsm_invoice_id` (ADR 0055). The mirror no longer writes that column from the appointment's null `Invoice_Id`.
 
 #### The provider itself, run against the org
 
@@ -635,7 +635,7 @@ Staging shares the real Zoho org (open point 10), so the records below are real 
 | 8229000000306269 | 8229000000304388 | A credit booking                     | Cancelled at free notice                   |
 | 8229000000305397 | 8229000000306278 | The first fit, moved at a late fee   | **Scheduled, 30 September**                |
 
-**Zoho Books.** Three customer payments — `4242595000000067002` (₹2,000), `4242595000000069003` (₹30,000) and `4242595000000071002` (₹4,000) — and one refund, `4242595000000072002` (₹2,000), each described "Staging test: Razorpay …". Also the draft invoice FSM raised on WO13, `4242595000000064030` (INV-000001, ₹2,000, no tax). No payment is applied to it, because it is a draft (open point 66).
+**Zoho Books.** Three customer payments — `4242595000000067002` (₹2,000), `4242595000000069003` (₹30,000) and `4242595000000071002` (₹4,000) — and one refund, `4242595000000072002` (₹2,000), each described "Staging test: Razorpay …". Also the draft invoice FSM raised on WO13, `4242595000000064030` (INV-000001, ₹2,000, no tax). No payment is applied to it, because it is a draft (open point 70).
 
 **What the evening's invoice work added**, all "Staging test" and all the owner's to clear:
 
