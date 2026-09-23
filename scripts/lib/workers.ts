@@ -25,6 +25,7 @@ export const WORKERS = [
   { name: "mm-api", config: "wrangler.jsonc", kind: "api" },
   { name: "mm-site", config: "site/wrangler.jsonc", kind: "site" },
   { name: "mm-app", config: "apps/app/wrangler.jsonc", kind: "spa", surface: "client" },
+  { name: "mm-ops", config: "apps/ops/wrangler.jsonc", kind: "spa", surface: "ops" },
   { name: "mm-tech", config: "apps/tech/wrangler.jsonc", kind: "spa", surface: "tech" },
 ] as const satisfies readonly WorkerEntry[];
 

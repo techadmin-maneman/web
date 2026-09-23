@@ -56,7 +56,12 @@ const decisionRoute = createRoute({
         z
           .object({
             decision: z.enum(["approve", "reject"]),
-            reason: z.string().trim().max(300).nullable().openapi({ description: "Required to reject." }),
+            reason: z
+              .string()
+              .trim()
+              .max(300)
+              .nullable()
+              .openapi({ description: "Required to reject, and kept with the decision either way." }),
           })
           .strict()
           .openapi("ReferralDecision"),

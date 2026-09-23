@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 
 const APPS = [
   ["the client app", "apps/app/src"],
+  ["the ops console", "apps/ops/src"],
   ["the technician app", "apps/tech/src"],
 ] as const;
 

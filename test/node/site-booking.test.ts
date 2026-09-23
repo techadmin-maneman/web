@@ -54,6 +54,7 @@ describe("the calendar file", () => {
 describe.each([
   ["the site's", "docs/openapi.json", "site/src/lib/api-schema.ts"],
   ["the client app's", "docs/openapi-client.json", "apps/app/src/api-schema.ts"],
+  ["the ops console's", "docs/openapi-ops.json", "apps/ops/src/api-schema.ts"],
 ])("%s API types", (_label, document, committed) => {
   it(`are generated from ${document}, unchanged (npm run openapi)`, { timeout: 60_000 }, () => {
     const out = join(mkdtempSync(join(tmpdir(), "api-schema-")), "api-schema.ts");

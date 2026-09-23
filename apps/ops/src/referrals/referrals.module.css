@@ -1,0 +1,243 @@
+/*
+ * Boards C1 and C2: the held queue over the referrers' figures, each a panel
+ * on paper. Figures are tabular so a column reads down; gold is kept for the
+ * navigation's selection, so the one primary action here is on ink.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--measure-column);
+}
+
+.panel {
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--sp-14) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.panelTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-22);
+}
+
+.hiddenTitle {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.count {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.panelBody {
+  padding: var(--sp-20);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* ---- Board C1: one held grant ------------------------------------------- */
+
+.grants {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grant {
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.grantHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-20);
+}
+
+.pair {
+  font-size: var(--fs-15);
+}
+
+.when {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* The rules the grant met, in oxblood behind one rule, as the board marks them. */
+.signals {
+  margin: var(--sp-10) 0 0;
+  padding: 0 0 0 var(--sp-14);
+  border-left: var(--rule-strong) solid var(--error-on-paper);
+  list-style: none;
+}
+
+.signal {
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+  margin-top: var(--sp-14);
+}
+
+.approve,
+.reject,
+.quiet {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-18);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.approve {
+  border: var(--hairline) solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.reject {
+  border: var(--hairline) solid var(--error-on-paper);
+  background: transparent;
+  color: var(--error-on-paper);
+}
+
+.quiet {
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+}
+
+.approve:disabled,
+.reject:disabled,
+.quiet:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.approve:focus-visible,
+.reject:focus-visible,
+.quiet:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+/* The reason board C1 asks for on either decision, for which it draws no field. */
+.reason {
+  margin-top: var(--sp-14);
+}
+
+.reasonLabel {
+  display: block;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.reasonField {
+  display: block;
+  width: 100%;
+  height: var(--skeleton-card);
+  margin-top: var(--sp-8);
+  padding: var(--sp-12) var(--sp-14);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-15);
+  color: var(--text);
+  resize: none;
+}
+
+.reasonField:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+.reasonHint {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.error {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+/* ---- Board C2: every referrer's figures ---------------------------------- */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-14);
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  height: var(--ops-row);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-weight: 400;
+}
+
+.table thead th {
+  border-bottom: var(--hairline) solid var(--text);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.name {
+  padding: var(--sp-8) var(--sp-8) var(--sp-8) 0;
+  font-variant-numeric: normal;
+  text-align: left;
+}
+
+.figure,
+.quietFigure {
+  width: var(--ops-figure);
+  padding: var(--sp-8) var(--sp-4);
+  text-align: right;
+}
+
+.quietFigure {
+  color: var(--text-muted);
+}
+
+.note {
+  margin: var(--sp-14) 0 0;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-muted);
+}

@@ -1,9 +1,17 @@
 # Every pull request, and every staging deploy (called from deploy-staging.yml).
 #
-# One job, every check in turn, cheapest first, so a failure shows early and a
-# run costs one job's time (docs/decisions/0006-deployment-pipeline.md, "The
-# runner"). It runs on the owner's machine when the repository variable
-# CI_RUNNER is "maneman", else on GitHub's runners.
+# Jobs that do not need each other run side by side on the two runners the
+# machine has (docs/runbook.md, "The CI runner"), so a run takes the longest
+# job's time rather than every job's. The browser tests are the longest, and
+# they start at once: nothing waits behind a check it does not need.
+#
+# `checks` is the one job to depend on. It needs all the others and passes when
+# each of them passed or had nothing it could affect, so a documentation-only
+# pull request, which skips the jobs a browser or a build would run, is still
+# green (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs").
+#
+# Jobs run on the owner's machine when the repository variable CI_RUNNER is
+# "maneman", else on GitHub's runners.
 name: ci
 
 on:
@@ -18,10 +26,42 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  checks:
-    name: checks
+  changes:
+    name: what changed
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
-    timeout-minutes: 45
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the filter compares with the base branch
+
+      # Nothing outside a pull request is filtered: a staging deploy runs every check.
+      - name: Anything a build, a Worker or a browser can see
+        id: filter
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: |
+          if [ -z "$BASE" ]; then
+            echo "Not a pull request: every job runs."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only "$BASE...HEAD" | tee changed.txt
+          # docs/ and design/ are read-only reference, and the notes at the root are read by people.
+          # Everything else, src/ and the configs included, can change what a build or a browser sees.
+          if grep -qvE '^(docs/.+|design/.+|[^/]+\.md)$' changed.txt; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Only documentation changed: the build, the browser tests, Lighthouse and the local smoke have nothing to do."
+          fi
+
+  static:
+    name: static checks
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,9 +83,6 @@ jobs:
           fi
       - name: Format
         run: npm run format:check
-
-      - name: Unit and contract tests, 85% line coverage on src/
-        run: npm run test:coverage
 
       - name: Every environment redeclares every binding
         run: npm run check:config
@@ -69,8 +106,86 @@ jobs:
       - name: Registry signatures
         run: npm audit signatures
 
+  # One run of the whole suite, so coverage still measures all of src/ at 85%.
+  # It runs whatever changed: it covers src/ and the migrations, and a config
+  # change can break it.
+  tests:
+    name: tests (unit, contract, coverage)
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Unit and contract tests, 85% line coverage on src/
+        run: npm run test:coverage
+
+  build:
+    name: build
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
       - name: Bundle every Worker for every environment (dry run)
         run: npm run build
+
+  browser:
+    name: browser tests and Lighthouse
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+
+      - name: Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Local secrets, and every migration applied to an empty D1
+        run: |
+          node scripts/ensure-dev-vars.ts
+          npm run db:local
+      - name: Build the site and the Phase 2 apps (local)
+        run: |
+          npm run build:site -- --env local
+          npm run build:app -- --env local
+          npm run build:ops -- --env local
+          npm run build:tech -- --env local
+      - name: Browser tests at 390 and 1440 px, the client and technician apps at 390 and the ops console at 1440, against a local mm-api with stub providers
+        run: npm run test:e2e
+
+      # After the browser tests, and in their job: Lighthouse measures a page
+      # load, so nothing this run starts should be competing for the machine.
+      - name: Lighthouse on /, /try and /book, mobile profile, against the budgets
+        run: npm run lighthouse
+
+      - name: Traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
+      - name: Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-reports
+          path: lighthouse/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  smoke:
+    name: smoke (local)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
 
       - name: Local secrets, and every migration applied to an empty D1
         run: |
@@ -80,22 +195,12 @@ jobs:
         run: |
           node node_modules/wrangler/bin/wrangler.js d1 migrations list DB --local --env="" | tee migrations.txt
           grep -q "No migrations to apply" migrations.txt
+      - name: Build the site (local)
+        run: npm run build:site -- --env local
 
-      - name: Chromium for Playwright
-        run: npx playwright install --with-deps chromium
-      - name: Build the site and the Phase 2 apps (local)
-        run: |
-          npm run build:site -- --env local
-          npm run build:app -- --env local
-          npm run build:tech -- --env local
-      - name: Browser tests at 390 and 1440 px, and the client and technician apps at 390, against a local mm-api with stub providers
-        run: npm run test:e2e
-      - name: Lighthouse on /, /try and /book, mobile profile, against the budgets
-        run: npm run lighthouse
-
-      # After the browser tests, whose own local servers have stopped by then.
-      # One at a time, each with its own inspector port: two wrangler dev
-      # processes starting together race for the same auxiliary ports.
+      # Each runner is its own container, so these ports are this job's alone.
+      # Within it, one server at a time, each with its own inspector port: two
+      # wrangler dev processes starting together race for the same auxiliary ports.
       - name: Start mm-api and mm-site under wrangler dev
         run: |
           node node_modules/wrangler/bin/wrangler.js dev --env="" --port 8787 --inspector-port 9230 > api.log 2>&1 &
@@ -127,18 +232,36 @@ jobs:
             if [ -f "$pid" ]; then kill "$(cat "$pid")" 2> /dev/null || true; fi
           done
 
-      - name: Traces of failed tests
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: playwright-traces
-          path: test-results/
-          retention-days: 7
-      - name: Lighthouse reports
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: lighthouse-reports
-          path: lighthouse/
-          if-no-files-found: ignore
-          retention-days: 7
+  # The gate: deploy-staging.yml waits for this workflow, and main's protection
+  # waits for this job's name (docs/decisions/0008, when the plan allows it).
+  # A job that was skipped had nothing it could affect, which is a pass.
+  checks:
+    name: checks
+    needs: [changes, static, tests, build, browser, smoke]
+    if: ${{ !cancelled() }}
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - name: Every check passed, or had nothing to do
+        env:
+          RESULTS: |
+            changes ${{ needs.changes.result }}
+            static ${{ needs.static.result }}
+            tests ${{ needs.tests.result }}
+            build ${{ needs.build.result }}
+            browser ${{ needs.browser.result }}
+            smoke ${{ needs.smoke.result }}
+        run: |
+          failed=""
+          while read -r job result; do
+            [ -n "$job" ] || continue
+            echo "$job: $result"
+            case "$result" in
+              success | skipped) ;;
+              *) failed="$failed $job" ;;
+            esac
+          done <<< "$RESULTS"
+          if [ -n "$failed" ]; then
+            echo "::error::these checks did not pass:$failed"
+            exit 1
+          fi

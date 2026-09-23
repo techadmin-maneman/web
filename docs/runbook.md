@@ -112,7 +112,7 @@ npm run smoke -- --base https://<host> --environment <env>
 Cloudflare dashboard → Manage Account → Account API Tokens → Create Token → Custom token, one per environment:
 
 - Name `mm-ci-<env>`.
-- Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
+- Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>`, `mm-ops-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also reach production's database; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - No zone permissions.
 
@@ -297,11 +297,14 @@ To switch one on:
    The config check fails if either comes without the other.
 
 5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
-6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md) and the technician app `mm-tech` (docs/decisions/0038-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then its deploy step says so and does nothing, so a release does not fail on a Worker that does not exist.
+6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md), the ops console is `mm-ops`, and the technician app is `mm-tech` (docs/decisions/0038-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then its deploy step says so and does nothing, so a release does not fail on a Worker that does not exist.
 
    ```sh
    npm run build:app -- --env <env>
    W deploy --config apps/app/wrangler.jsonc --env <env> --tag bootstrap
+
+   npm run build:ops -- --env <env>
+   W deploy --config apps/ops/wrangler.jsonc --env <env> --tag bootstrap
 
    npm run build:tech -- --env <env>
    W deploy --config apps/tech/wrangler.jsonc --env <env> --tag bootstrap
@@ -447,7 +450,7 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
 
 GitHub Actions jobs run on the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"). The machine must be on, with Docker Desktop running; the containers start with Docker.
 
-**There are two,** `maneman-runner` (`maneman-pc`) and `maneman-runner-2` (`maneman-pc-2`), each with its own volume. One runner meant a pull request, a deploy and a second pull request waited for each other, half an hour at a time; two run side by side on a twelve-core machine. They share the machine, so a job is slower when both are busy: that is why the worker tests allow thirty seconds each (`vitest.config.ts`), since they write to a real D1 and a slow one is working, not hanging.
+**There are two,** `maneman-runner` (`maneman-pc`) and `maneman-runner-2` (`maneman-pc-2`), each with its own volume. One runner meant a pull request, a deploy and a second pull request waited for each other, half an hour at a time; two run side by side on a twelve-core machine. They share the machine, so a job is slower when both are busy: that is why the worker tests allow thirty seconds each (`vitest.config.ts`), since they write to a real D1 and a slow one is working, not hanging. One CI run is itself six jobs now (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"), so a single pull request keeps both runners busy, and a third runner would shorten a run further.
 
 - **Check them:** `docker logs --tail 5 maneman-runner` (and `maneman-runner-2`) ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` and `maneman-pc-2` as Idle or Active.
 - **Set it up again** (a new machine, or after removing it). Build the image, take a registration token (it lasts an hour), and start the container once with it; the registration is kept in the `maneman-runner` volume. Then start it again without the token, so the token is not left in the container's settings:
@@ -471,7 +474,7 @@ GitHub Actions jobs run on the owner's machine, in containers (docs/decisions/00
 
 - **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
-- **Move the jobs back to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They are then within GitHub's free minutes, about ten runs a day.
+- **Move the jobs back to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They are then within GitHub's free minutes, which a run spends about twice as fast as it used to: GitHub bills each of the seven jobs a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs").
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
 
 ## Staying on the free tier

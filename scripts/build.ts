@@ -18,6 +18,7 @@ for (const environment of ["local", "staging"]) {
 // switched on there (docs/decisions/0026-hosts-and-surfaces.md).
 for (const environment of ["local", "staging", "production"]) {
   execFileSync(process.execPath, ["scripts/build-app.ts", "--env", environment], { stdio: "inherit" });
+  execFileSync(process.execPath, ["scripts/build-ops.ts", "--env", environment], { stdio: "inherit" });
   execFileSync(process.execPath, ["scripts/build-tech.ts", "--env", environment], { stdio: "inherit" });
 }
 
