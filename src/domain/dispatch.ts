@@ -68,7 +68,7 @@ export interface Board {
   /**
    * "Leave periods come from FSM technician availability." FSM answers only 48
    * hours ahead (docs/decisions/fsm-trial.md, question 6) and the board is seven
-   * days, so it is always empty for now (docs/open-points.md, item 50).
+   * days, so it is always empty for now (docs/open-points.md, item 53).
    */
   readonly leave: { technician_id: string; from: string; to: string }[];
 }
@@ -158,7 +158,7 @@ function unassignedOf(job: BoardJobRow): UnassignedJob {
     appointment_id: job.id,
     type: job.type,
     // FSM holds one time, so the asked and offered windows are the same until a
-    // Request records a preference of its own (docs/open-points.md, item 51).
+    // Request records a preference of its own (docs/open-points.md, item 54).
     asked_window: windowAt(indiaTime(start)),
     offered_window: windowAt(indiaTime(start)),
     date: indiaDate(start),

@@ -2256,7 +2256,7 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject."
+      "description": "Required to reject, and kept with the decision either way."
     }
   },
   "required": [

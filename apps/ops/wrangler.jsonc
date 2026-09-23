@@ -1,0 +1,34 @@
+// mm-ops: the ops console (docs/decisions/0026-hosts-and-surfaces.md), static
+// assets only. Every path that is not a file answers index.html; /api/* on the
+// same host goes to mm-api, whose route is more specific. The console sits
+// behind Cloudflare Access, which guards the host, not this Worker
+// (docs/decisions/0031-access-and-audit.md).
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "mm-ops",
+  "compatibility_date": "2026-08-15",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": { "directory": "./dist/local", "not_found_handling": "single-page-application" },
+  "env": {
+    "staging": {
+      "name": "mm-ops-staging",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "routes": [{ "pattern": "ops-staging.maneman.in/*", "zone_name": "maneman.in" }],
+      "assets": { "directory": "./dist/staging", "not_found_handling": "single-page-application" }
+    },
+    // No route until the ops surface is switched on in production, with the go-ahead.
+    "production": {
+      "name": "mm-ops-production",
+      "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "routes": [],
+      "assets": { "directory": "./dist/production", "not_found_handling": "single-page-application" }
+    }
+  }
+}

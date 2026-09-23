@@ -75,3 +75,53 @@ These differences are known and stand:
 | C4 expired | "We do not recognise this invite"                     | `GET /api/r/:code` answers `unknown` for an expired, revoked or mistyped code alike     |
 | C1, C5     | The card is our house one: ink, paper and a gold rule | The design draws a client's photographs; the house card is a placeholder (open point 1) |
 | every pair | The site's header sits above the page                 | The landing is a page of the site; the boards draw the page alone                       |
+
+## The ops console (P2-F3)
+
+`npm run build:ops -- --env local && npm run fidelity:ops` writes `docs/fidelity/ops/`: boards B2 in both its states, B3, C1, C2 and C3.
+
+- **The console is drawn at 1440, and these boards are panels within it,** 660 and 484 px wide, drawn at their own size. Each pair is therefore a panel beside a panel, not a screen beside a screen, and neither side is scaled. A1 and B1, which the board does draw whole at 1440, are not built.
+- **B2 draws its two states one above the other,** locked and open, and the console shows one at a time, so each is paired with its own half of the frame.
+- **The console's API is answered with the board's own figures,** so both sides show the same things. No mm-api runs. The clock is set to 2027, the year the board's waiting dates fall in, so they read without a year, as the board writes them; B2's is set to India's 10:42, the time it letters on the opened photographs.
+- **The design's photographs are ink blocks with the angle written on them,** as the client app's boards draw them. The console's are answered with blocks of the same ink, and carry no captions.
+- **Nobody in the fixtures is real.** The names, numbers, pincodes and photographs are the board's own or synthetic.
+
+These differences are known and stand:
+
+| Pair | Difference                                                                                            | Why                                                                                                              |
+| ---- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| B2   | No "AK · 19 Sep": who last opened the photographs, and when                                           | The audit log is written on every view and read by nobody; no route gives the last one back                      |
+| B2   | "logged 10:42 am" where the board has "logged 10:42"                                                  | India's clock as the console writes it everywhere else                                                           |
+| B2   | Each set of angles is headed "Before" or "After"                                                      | A visit has a set before and a set after; the board draws one unnamed set of five                                |
+| B2   | The caption carries the technician's whole name, "Imran Qureshi" for the board's "Imran"              | FSM gives one name; splitting it would be a guess                                                                |
+| B2   | Every visit that has photographs, newest first, not one                                               | `GET /api/clients/:id/photos` answers with the client's whole history; the board draws a single visit            |
+| B3   | "Notice", the version of the notice the client saw, where the board has "Source"                      | Nothing records whether a consent came from the app or the site; the notice version is what the route does give  |
+| B3   | "from their own app" where the board writes "from his own app"                                        | The client is not always a he; every line here is a placeholder until the owner approves it                      |
+| B3   | A line beneath the table when the client has asked to be erased                                       | The route answers with their latest deletion request, and it belongs beside the consents; the board draws none   |
+| C1   | "Fitted Sun 19 Sep" where the board has "3 days held"                                                 | `GET /api/referrals/held` gives the day of the first fit, not how long the grant has waited                      |
+| C1   | The rule's name, with no line of detail beneath it                                                    | The route names each rule a grant met; the addresses and UPI handles behind them stay out of the console         |
+| C1   | Approving and rejecting each ask for a reason before they send                                        | The prompt: "Approve and Reject. Both require a reason." The board draws no field for either                     |
+| C2   | No "Sent" column                                                                                      | Nothing counts invitations sent: a code is shared by the client, not by us (ADR 0048)                            |
+| C2   | The busiest referrer first                                                                            | `GET /api/referrers` orders them by fits; the board lists its rows in no order                                   |
+| C3   | The pincode is the control, underlined, where the board draws no way in                               | The panel that follows has to be opened by something, and the board's six columns leave no room for a button     |
+| C3   | A pincode we already come to says "Live" beside its area, and offers no launch                        | The route returns served pincodes that still have people waiting; the board draws only those waiting             |
+| C3   | The message is `launch_alert_v1` (src/config/message-templates.ts), with the first name a placeholder | It is what the queue will actually send; the name is each person's own                                           |
+| C3   | "Not now" where the board has "Edit the message"                                                      | The message is a template in the repository, not something the console can rewrite                               |
+| C3   | The note about the 33 who did not opt in sits inside the panel                                        | The board draws it as a caption beneath the frame; it is the reason both counts are shown, so it stays with them |
+
+The console's own frame is not paired. Boards A1 and B1 draw it around a dispatch board and a client page; the built frame carries the three sections the backend has routes for, Clients, Referrals and Waitlist, where the design's column lists eight.
+
+**The client's page is B1's frame, narrowed to what the ops routes answer.** It is not paired, since the board draws it around the pieces table, which is not built. Neither is the way into it: the board opens on a client and draws no way of finding one, so the console asks for a mobile number and sends it in the request body, never in a path or a query string. What the board draws there and no data source can give:
+
+| What the board draws                                  | Why it is not built                                                                                         |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| "Tier · Standard · mono"                              | Nothing records a tier. The price book names prices, not tiers (`docs/open-points.md`, item 1)              |
+| "Technician · Imran Qureshi", the usual one           | Each visit has its technician; nothing says which is the client's                                           |
+| "Replacement due · Mar 2028"                          | It comes from the fitted piece, which arrives with the job sheet (P2-M4)                                    |
+| The WhatsApp button beside the name                   | It belongs to B1's header, with the pieces table; the console reaches nothing beyond its own origin         |
+| B1's pieces table                                     | No piece is recorded yet (P2-M4)                                                                            |
+| A consent's source, "App" or "Site"                   | The consent record carries the notice version and the date, not where it was given                          |
+| Who last opened a photograph, "AK · 19 Sep"           | Every view is written to the audit log; no route reads it back                                              |
+| The Visits, Payments, Referrals, Tasks and Notes tabs | This step builds the two tabs the boards draw, B2 and B3. The record does carry the visits and the payments |
+
+Not built, and not paired: A (the dispatch board) and D (payments, tasks and technicians), which wait for the FSM mirror, and B1 (pieces), which waits for the job sheet.

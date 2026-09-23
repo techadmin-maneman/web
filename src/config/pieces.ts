@@ -5,7 +5,7 @@
 // The prompt says the replacement due date "follows the per-base cycle config
 // already defined in this prompt", but no cycle is written anywhere in it, so
 // every figure here is a placeholder until the owner rules them
-// (docs/open-points.md, item 49). The label format is item 25's placeholder.
+// (docs/open-points.md, item 52). The label format is item 25's placeholder.
 
 /** How long a piece on each base lasts before it is due for replacement, in days. */
 export const PIECE_CYCLE_DAYS: Readonly<Record<string, number>> = {

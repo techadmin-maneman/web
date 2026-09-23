@@ -11,6 +11,7 @@ docs/api-client.md
 docs/openapi-ops.json
 docs/api-ops.md
 apps/app/src/api-schema.ts
+apps/ops/src/api-schema.ts
 src/worker-configuration.d.ts
 # The design exports: read-only reference (docs/frontend.md, design/phase2/README.md).
 design/

@@ -1,3 +1,3 @@
 # Fidelity screenshots
 
-The design on the left, the build on the right. `npm run fidelity` makes the public site's, at 390 and 1440 px; `npm run fidelity:app` makes the client app's, in `client-app/`. The method, including Phase 2's boards, is in `docs/fidelity-method.md`.
+The design on the left, the build on the right. `npm run fidelity` makes the public site's, at 390 and 1440 px; `npm run fidelity:app` makes the client app's, in `client-app/`; `npm run fidelity:ops` makes the ops console's, in `ops/`. The method, including Phase 2's boards, is in `docs/fidelity-method.md`.
