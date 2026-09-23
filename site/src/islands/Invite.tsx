@@ -13,11 +13,15 @@
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
+import type { LossExtent } from "../../../src/config/booking.ts";
 import { referral } from "../content/referral.ts";
+import { booking, stageOptions } from "../content/site.ts";
 import {
   bookConsultation,
+  bookPublicConsultation,
   checkPincode,
   fetchInvite,
+  joinPublicWaitlist,
   joinWaitlist,
   type ErrorCode,
   type Invite as InviteAnswer,
@@ -28,13 +32,21 @@ import { bookedHeadline, dayStrip, indiaTomorrow } from "../lib/dates.ts";
 import { formatMobile, isCompleteMobile, mobileDigits } from "../lib/phone.ts";
 import { fill } from "../lib/text.ts";
 import { turnstileWidget } from "../lib/turnstile.ts";
+import { readAttribution } from "../lib/visit.ts";
 import styles from "./Invite.module.css";
-import { Icon } from "./Drawings.tsx";
+import { Icon, StageDrawing } from "./Drawings.tsx";
 
 interface Props {
   turnstileSiteKey: string;
   /** Outside production only: ?state= opens a state directly. */
   allowStateSwitch: boolean;
+  /**
+   * "invited" is /r/:code, where a friend arrives with someone's invite. "public"
+   * is the site's own /book, which shows no card and no invite, asks where the
+   * hair loss is as Phase 1's form did, and books without one
+   * (docs/decisions/0051-booking-from-the-site.md).
+   */
+  mode?: "invited" | "public";
 }
 
 type BookingWindow = ReferralConsultation["window"];
@@ -108,10 +120,12 @@ export default function Invite(props: Props) {
   const heading = useRef<HTMLHeadingElement>(null);
   const form = useRef<HTMLDivElement>(null);
 
-  const name = invite.referrer_first_name;
+  const invited = (props.mode ?? "invited") === "invited";
+  const name = invited ? invite.referrer_first_name : null;
 
   // The invite: from the page where the Worker wrote it, otherwise from the API.
   useEffect(() => {
+    if (!invited) return;
     const written = inviteInPage();
     if (written !== null) {
       setInvite(written);
@@ -122,7 +136,7 @@ export default function Invite(props: Props) {
     void fetchInvite(code).then((found) => {
       if (found.ok) setInvite(found.body);
     });
-  }, []);
+  }, [invited]);
 
   useEffect(() => {
     if (!props.allowStateSwitch) return;
@@ -177,30 +191,36 @@ export default function Invite(props: Props) {
         <>
           <section class={styles.arrival}>
             <div class={styles.inner}>
-              <div class={`caps ${styles.from}`}>
-                {name === null ? referral.arrival.unnamed : fill(referral.arrival.invited, { name })}
-              </div>
-              <img
-                class={styles.inviteCard}
-                src={cardImage(invite, codeInPath())}
-                width={CARD.width}
-                height={CARD.height}
-                alt=""
-                onError={(event) => {
-                  event.currentTarget.src = HOUSE_CARD;
-                }}
-              />
-              <h1 ref={heading} tabIndex={-1} class={styles.title}>
-                {referral.arrival.title}
-              </h1>
-              {invite.state === "valid" ? (
-                <p class={styles.offer}>{referral.arrival.offer}</p>
-              ) : (
-                <p class={styles.offer}>
-                  <span class={styles.unknownTitle}>{referral.arrival.unknown.title}</span>
-                  <span class={styles.unknownBody}>{referral.arrival.unknown.body}</span>
-                </p>
+              {invited && (
+                <>
+                  <div class={`caps ${styles.from}`}>
+                    {name === null ? referral.arrival.unnamed : fill(referral.arrival.invited, { name })}
+                  </div>
+                  <img
+                    class={styles.inviteCard}
+                    src={cardImage(invite, codeInPath())}
+                    width={CARD.width}
+                    height={CARD.height}
+                    alt=""
+                    onError={(event) => {
+                      event.currentTarget.src = HOUSE_CARD;
+                    }}
+                  />
+                </>
               )}
+              <h1 ref={heading} tabIndex={-1} class={styles.title}>
+                {invited ? referral.arrival.title : booking.title}
+              </h1>
+              {!invited && <p class={styles.offer}>{booking.intro}</p>}
+              {invited &&
+                (invite.state === "valid" ? (
+                  <p class={styles.offer}>{referral.arrival.offer}</p>
+                ) : (
+                  <p class={styles.offer}>
+                    <span class={styles.unknownTitle}>{referral.arrival.unknown.title}</span>
+                    <span class={styles.unknownBody}>{referral.arrival.unknown.body}</span>
+                  </p>
+                ))}
             </div>
           </section>
 
@@ -300,6 +320,7 @@ export default function Invite(props: Props) {
               <Consultation
                 answer={answer}
                 name={name}
+                invited={invited}
                 turnstileSiteKey={props.turnstileSiteKey}
                 onBooked={(result) => {
                   setBooked(result);
@@ -311,6 +332,7 @@ export default function Invite(props: Props) {
               <Waitlist
                 answer={answer}
                 name={name}
+                invited={invited}
                 turnstileSiteKey={props.turnstileSiteKey}
                 onListed={(result) => {
                   setListed(result);
@@ -328,6 +350,35 @@ export default function Invite(props: Props) {
   );
 }
 
+/**
+ * Where the hair loss is, as the site's own form has always asked (v2's booking board).
+ * An invited friend is never asked: their invite carries no such question.
+ */
+function ExtentFieldset(props: { extent: LossExtent; onChange: (extent: LossExtent) => void }) {
+  return (
+    <fieldset class={styles.group}>
+      <legend class={styles.label}>{booking.extent}</legend>
+      <div class={styles.extents}>
+        {stageOptions.map((option) => (
+          <label key={option.id} class={`${styles.extent} ${props.extent === option.id ? styles.extentOn : ""}`}>
+            <input
+              type="radio"
+              name="extent"
+              class="visually-hidden"
+              checked={props.extent === option.id}
+              onChange={() => {
+                props.onChange(option.id);
+              }}
+            />
+            <StageDrawing hair={option.hair} zone={option.zone} size="small" />
+            <span class={styles.extentText}>{option.short}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 /** What both forms hold: the name, the number and the agreement. */
 interface PersonFields {
   name: string;
@@ -338,6 +389,8 @@ interface PersonFields {
 interface FormProps {
   answer: PincodeAnswer;
   name: string | null;
+  /** The invited page carries someone's invite; the site's own does not. */
+  invited: boolean;
   turnstileSiteKey: string;
 }
 
@@ -460,6 +513,7 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
   const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const [extent, setExtent] = useState<LossExtent>("crown");
   const turnstile = useTurnstile(props.turnstileSiteKey);
   const days = dayStrip(indiaTomorrow(), DAYS);
 
@@ -478,19 +532,23 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
       setSending(false);
       return;
     }
-    const result = await bookConsultation(
-      codeInPath(),
-      {
-        name: fields.name.trim(),
-        mobile: mobileDigits(fields.mobile),
-        pincode: props.answer.pincode,
-        date,
-        window,
-        consent: true,
-        turnstile_token: token,
-      },
-      crypto.randomUUID(),
-    );
+    const shared = {
+      name: fields.name.trim(),
+      mobile: mobileDigits(fields.mobile),
+      pincode: props.answer.pincode,
+      date,
+      window,
+      consent: true as const,
+      turnstile_token: token,
+    };
+    // The site's own page carries where this visit came from; the invite carries the invite.
+    const attribution = readAttribution();
+    const result = props.invited
+      ? await bookConsultation(codeInPath(), shared, crypto.randomUUID())
+      : await bookPublicConsultation(
+          { ...shared, loss_extent: extent, ...(attribution === undefined ? {} : { attribution }) },
+          crypto.randomUUID(),
+        );
     void turnstile.widget.current?.renew();
     setSending(false);
     if (!result.ok) {
@@ -498,7 +556,7 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
       setFailure(refusal(result.code));
       return;
     }
-    props.onBooked(result.body);
+    props.onBooked({ credits: false, ...result.body });
   }
 
   const { consultation } = referral;
@@ -551,6 +609,8 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
             </div>
           </fieldset>
 
+          {!props.invited && <ExtentFieldset extent={extent} onChange={setExtent} />}
+
           <div class={styles.fields}>
             <PersonFieldset
               fields={fields}
@@ -582,6 +642,7 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
 function Waitlist(props: FormProps & { onListed: (result: { area: string | null; credits: boolean }) => void }) {
   const [fields, setFields] = useState<PersonFields>({ name: "", mobile: "", consent: false });
   const [alert, setAlert] = useState(false);
+  const [extent, setExtent] = useState<LossExtent>("crown");
   const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -602,18 +663,21 @@ function Waitlist(props: FormProps & { onListed: (result: { area: string | null;
       setSending(false);
       return;
     }
-    const result = await joinWaitlist(
-      codeInPath(),
-      {
-        name: fields.name.trim(),
-        mobile: mobileDigits(fields.mobile),
-        pincode: props.answer.pincode,
-        contact_consent: true,
-        launch_alert: alert,
-        turnstile_token: token,
-      },
-      crypto.randomUUID(),
-    );
+    const shared = {
+      name: fields.name.trim(),
+      mobile: mobileDigits(fields.mobile),
+      pincode: props.answer.pincode,
+      contact_consent: true as const,
+      launch_alert: alert,
+      turnstile_token: token,
+    };
+    const attribution = readAttribution();
+    const result = props.invited
+      ? await joinWaitlist(codeInPath(), shared, crypto.randomUUID())
+      : await joinPublicWaitlist(
+          { ...shared, loss_extent: extent, ...(attribution === undefined ? {} : { attribution }) },
+          crypto.randomUUID(),
+        );
     void turnstile.widget.current?.renew();
     setSending(false);
     if (!result.ok) {
@@ -621,7 +685,7 @@ function Waitlist(props: FormProps & { onListed: (result: { area: string | null;
       setFailure(refusal(result.code));
       return;
     }
-    props.onListed(result.body);
+    props.onListed({ credits: false, ...result.body });
   }
 
   const { waitlist } = referral;
@@ -637,6 +701,8 @@ function Waitlist(props: FormProps & { onListed: (result: { area: string | null;
               area: area === null ? "" : `, ${area}`,
             })}
           </p>
+
+          {!props.invited && <ExtentFieldset extent={extent} onChange={setExtent} />}
 
           <div class={styles.fields}>
             <PersonFieldset

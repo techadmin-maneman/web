@@ -128,6 +128,321 @@ Request body:
 }
 ```
 
+### POST /api/consultation
+
+Book a free consultation
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "mobile": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^[1-8]\\d{5}$",
+      "description": "A six-digit Indian pincode."
+    },
+    "loss_extent": {
+      "type": "string",
+      "enum": [
+        "crown",
+        "receding",
+        "advanced"
+      ],
+      "description": "Where the hair loss is, as the form's drawings show it."
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "attribution": {
+      "type": "object",
+      "properties": {
+        "utm_source": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_medium": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_campaign": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_content": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "gclid": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "fbclid": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "referrer": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "landing_path": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "consent": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"You may contact me on WhatsApp about this consultation.\""
+    }
+  },
+  "required": [
+    "name",
+    "mobile",
+    "pincode",
+    "loss_extent",
+    "turnstile_token",
+    "date",
+    "window",
+    "consent"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: Booked
+
+```json
+{
+  "$ref": "#/components/schemas/Consultation"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: that window has gone; ops_assisted: booking goes through WhatsApp for now
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: invalid_request: the pincode is not served, or the day is not open
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Turnstile could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/waitlist
+
+Wait for a pincode we do not serve yet
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "mobile": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^[1-8]\\d{5}$",
+      "description": "A six-digit Indian pincode."
+    },
+    "loss_extent": {
+      "type": "string",
+      "enum": [
+        "crown",
+        "receding",
+        "advanced"
+      ],
+      "description": "Where the hair loss is, as the form's drawings show it."
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "attribution": {
+      "type": "object",
+      "properties": {
+        "utm_source": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_medium": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_campaign": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "utm_content": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "gclid": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "fbclid": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "referrer": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "landing_path": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "contact_consent": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"You may contact me about this request.\" Required."
+    },
+    "launch_alert": {
+      "type": "boolean",
+      "description": "\"Tell me when you launch in my area.\" Optional."
+    }
+  },
+  "required": [
+    "name",
+    "mobile",
+    "pincode",
+    "loss_extent",
+    "turnstile_token",
+    "contact_consent",
+    "launch_alert"
+  ],
+  "additionalProperties": false
+}
+```
+
+**201**: On the list
+
+```json
+{
+  "$ref": "#/components/schemas/Waitlist"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: invalid_request: that pincode is served; book instead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Turnstile could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/r/{code}
 
 An invite: valid or unknown
@@ -1112,6 +1427,68 @@ Razorpay's webhook: payments and refunds
   },
   "additionalProperties": false,
   "description": "Where the visitor came from, as the page saw it. All optional."
+}
+```
+
+### Consultation
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "booked"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "area": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "state",
+    "date",
+    "window",
+    "area"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Waitlist
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "area": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "area"
+  ],
+  "additionalProperties": false
 }
 ```
 

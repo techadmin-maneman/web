@@ -190,6 +190,243 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/consultation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Book a free consultation */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        mobile: string;
+                        /** @description A six-digit Indian pincode. */
+                        pincode: string;
+                        /**
+                         * @description Where the hair loss is, as the form's drawings show it.
+                         * @enum {string}
+                         */
+                        loss_extent: "crown" | "receding" | "advanced";
+                        turnstile_token: string;
+                        attribution?: {
+                            utm_source?: string;
+                            utm_medium?: string;
+                            utm_campaign?: string;
+                            utm_content?: string;
+                            gclid?: string;
+                            fbclid?: string;
+                            referrer?: string;
+                            landing_path?: string;
+                        };
+                        /** Format: date */
+                        date: string;
+                        /** @enum {string} */
+                        window: "morning" | "afternoon" | "evening";
+                        /**
+                         * @description "You may contact me on WhatsApp about this consultation."
+                         * @enum {boolean}
+                         */
+                        consent: true;
+                    };
+                };
+            };
+            responses: {
+                /** @description Booked */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Consultation"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description turnstile_failed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description taken: that window has gone; ops_assisted: booking goes through WhatsApp for now */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description invalid_request: the pincode is not served, or the day is not open */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: Turnstile could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Wait for a pincode we do not serve yet */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        mobile: string;
+                        /** @description A six-digit Indian pincode. */
+                        pincode: string;
+                        /**
+                         * @description Where the hair loss is, as the form's drawings show it.
+                         * @enum {string}
+                         */
+                        loss_extent: "crown" | "receding" | "advanced";
+                        turnstile_token: string;
+                        attribution?: {
+                            utm_source?: string;
+                            utm_medium?: string;
+                            utm_campaign?: string;
+                            utm_content?: string;
+                            gclid?: string;
+                            fbclid?: string;
+                            referrer?: string;
+                            landing_path?: string;
+                        };
+                        /**
+                         * @description "You may contact me about this request." Required.
+                         * @enum {boolean}
+                         */
+                        contact_consent: true;
+                        /** @description "Tell me when you launch in my area." Optional. */
+                        launch_alert: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description On the list */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Waitlist"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description turnstile_failed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description invalid_request: that pincode is served; book instead */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: Turnstile could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/r/{code}": {
         parameters: {
             query?: never;
@@ -1391,6 +1628,18 @@ export interface components {
             fbclid?: string;
             referrer?: string;
             landing_path?: string;
+        };
+        Consultation: {
+            /** @enum {string} */
+            state: "booked";
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            area: string;
+        };
+        Waitlist: {
+            area: string | null;
         };
         Invite: {
             /** @enum {string} */

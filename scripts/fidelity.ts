@@ -190,16 +190,6 @@ const TRY_ON_STEPS: Step[] = [
   },
 ];
 
-async function bookThrough(page: Page, city: string): Promise<void> {
-  await openDesign(page);
-  await click("Book a visit")(page);
-  await page.locator("select").selectOption(city);
-  await page.getByPlaceholder("Your name").fill("Arjun Mehta");
-  await page.getByPlaceholder("98100 00000").fill("9810000000");
-  await page.getByText("I agree to be contacted about this visit.", { exact: false }).click();
-  await click("Request a visit")(page);
-}
-
 async function run(browser: Browser, width: number): Promise<void> {
   const design = await preparePage(browser, width);
   const site = await preparePage(browser, width);
@@ -250,22 +240,8 @@ async function run(browser: Browser, width: number): Promise<void> {
   await openSite(site, "/try?state=error");
   await pair(width, "try-8-error", await shoot(design, null), await shoot(site, null));
 
-  // Booking: the form, then a served and an unserved city.
-  await openDesign(design);
-  await click("Book a visit")(design);
-  await settle(design);
-  await openSite(site, "/book");
-  await pair(width, "book-1-form", await shoot(design, null), await shoot(site, null));
-  await bookThrough(design, "Gurgaon");
-  await design.getByText("He will confirm the hour on WhatsApp by tomorrow evening.").waitFor();
-  await settle(design);
-  await openSite(site, "/book?state=booked");
-  await pair(width, "book-2-booked", await shoot(design, null), await shoot(site, null));
-  await bookThrough(design, "Mumbai");
-  await design.getByText("On the list", { exact: true }).waitFor();
-  await settle(design);
-  await openSite(site, "/book?state=waitlist");
-  await pair(width, "book-3-waitlist", await shoot(design, null), await shoot(site, null));
+  // The booking page is the referral landing without the invite, so its pairs are
+  // made against that design's boards instead (npm run fidelity:refer).
 
   await design.close();
   await site.close();
