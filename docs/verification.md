@@ -449,7 +449,7 @@ From `docs/prompts/phase2-backend.md`, P2-M5, whose staging proof "covers each c
 
 ### The staging proof, 23 September 2026
 
-Run on 23 September 2026 against Razorpay's **test** keys: no real money moved, and no real card was used. The two test clients are the ones P2-M2's proof made, both "Staging test" with random `9xxxxxxxxx` numbers; their sessions were written into `sessions` by hand, for the reason given in P2-M2 above.
+Run against Razorpay's **test** keys: no real money moved, and no real card was used. The two test clients are the ones P2-M2's proof made, both "Staging test" with random `9xxxxxxxxx` numbers; their sessions were written into `sessions` by hand, for the reason given in P2-M2 above.
 
 **The client app cannot open Checkout, so none of the money screens could be driven through the app.** This is the proof's main finding, and it is set out first, because it changes how everything below was run.
 
