@@ -11,6 +11,7 @@ import type { Session } from "./domain/sessions.ts";
 import { requireAccess, type AccessIdentity } from "./http/access.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
+import type { TechnicianSession } from "./http/technician-session.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { registerCities } from "./routes/cities.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
@@ -21,6 +22,8 @@ import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientData } from "./routes/client-data.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsClients } from "./routes/ops-clients.ts";
+import { registerOpsDispatch } from "./routes/ops-dispatch.ts";
+import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
@@ -35,6 +38,9 @@ import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
+import { registerTechAuth } from "./routes/tech-auth.ts";
+import { registerTechJobs } from "./routes/tech-jobs.ts";
+import { registerTechPieces } from "./routes/tech-pieces.ts";
 import { registerTryonClaim } from "./routes/tryon-claim.ts";
 import { registerTryonGenerate } from "./routes/tryon-generate.ts";
 import { registerTryonResult } from "./routes/tryon-result.ts";
@@ -54,6 +60,8 @@ export type AppEnv = {
     accessIdentity?: AccessIdentity;
     /** Set on the client surface's session routes by requireClientSession. */
     clientSession?: Session;
+    /** Set on the technician surface's session routes by requireTechnicianSession. */
+    technicianSession?: TechnicianSession;
   };
 };
 
@@ -66,8 +74,7 @@ const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);
 
 /**
  * Each surface's routes (docs/decisions/0026-hosts-and-surfaces.md). A route
- * answers only on its own surface's host; anywhere else it is a 404. The
- * technician surface has only its health check until P2-M4.
+ * answers only on its own surface's host; anywhere else it is a 404.
  */
 const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>> = {
   public: [
@@ -105,8 +112,10 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsReferrals,
     registerOpsGrievances,
     registerOpsWaitlist,
+    registerOpsDispatch,
+    registerOpsField,
   ],
-  tech: [registerHealth],
+  tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],
 };
 
 export function createApp(

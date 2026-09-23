@@ -59,6 +59,7 @@ export const DOCUMENTED_SURFACES = {
   public: { json: "docs/openapi.json", markdown: "docs/api.md" },
   client: { json: "docs/openapi-client.json", markdown: "docs/api-client.md" },
   ops: { json: "docs/openapi-ops.json", markdown: "docs/api-ops.md" },
+  tech: { json: "docs/openapi-tech.json", markdown: "docs/api-tech.md" },
 } as const satisfies Partial<Record<Surface, { json: string; markdown: string }>>;
 export type DocumentedSurface = keyof typeof DOCUMENTED_SURFACES;
 
@@ -80,6 +81,14 @@ const INFO: Readonly<Record<DocumentedSurface, { title: string; description: str
       "mm-api on the ops console's host (docs/decisions/0026-hosts-and-surfaces.md), served at https://{host}/api/*, behind Cloudflare Access. " +
       "Every call needs a valid Access token and is recorded in the audit log under its identity (docs/decisions/0031-access-and-audit.md). " +
       "Every response carries an X-Request-Id header.",
+  },
+  tech: {
+    title: "Mane Man API: the technician app",
+    description:
+      "mm-api on the technician app's host (docs/decisions/0026-hosts-and-surfaces.md), served at https://{host}/api/*. " +
+      "Every route but /api/health and /api/tech/auth/* needs the mm_tech session cookie, which is bound to one phone, and every write needs the page's own Origin. " +
+      "Every write also takes an X-Client-Event-Id and is idempotent on it, so a phone replaying its outbox lands each write once (docs/decisions/0038-offline-writes.md). " +
+      "No response here carries an amount. Every response carries an X-Request-Id header.",
   },
 };
 

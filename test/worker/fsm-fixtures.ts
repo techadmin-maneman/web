@@ -65,9 +65,10 @@ export function fsmUserRecord(overrides: Record<string, unknown> = {}) {
     first_name: "Imran",
     last_name: "Khan",
     email: "imran@example.com",
+    mobile: "+919810000009",
     status: "active",
     profile: { name: "Field Technician", id: "profile-2" },
-    Territory: null,
+    Territory: { name: "Gurgaon", id: "territory-1" },
     Service_Resources: { User: "user-1", id: "sr-1", SE_PRESENCE: 1, isActive: true, Name: "Imran Khan" },
     ...overrides,
   };

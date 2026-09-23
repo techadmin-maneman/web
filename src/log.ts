@@ -43,6 +43,12 @@ const PERSONAL_FIELDS = [
   "line2",
   "locality",
   "access_notes",
+  // An address's coordinates, and a phone's own, which locate a client's home
+  // as surely as the street does (the technician app's check-in, P2-M4).
+  "lat",
+  "lng",
+  "latitude",
+  "longitude",
   "provider_result_url",
   "result_url",
   "signed_url",
@@ -67,6 +73,8 @@ const SECRET_FIELDS = [
   "password",
   "signature",
   "webhook_token",
+  // The signed path a technician's phone PUTs a photograph to (ADR 0028).
+  "upload_url",
   // The webhook URL Evolution echoes back, which holds our webhook token.
   "destination",
 ];
