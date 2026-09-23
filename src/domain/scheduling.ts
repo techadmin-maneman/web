@@ -20,6 +20,7 @@ import {
 } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { clashes } from "../policy/dispatch.ts";
 import { isFitted } from "./client-visits.ts";
 import type { Price } from "./price-book.ts";
 
@@ -47,7 +48,7 @@ export function unitAt(time: string): number {
 
 /** Where a visit of this type can start in this window, given the day; null if it cannot. */
 export function placement(day: Day, window: BookingWindow, type: VisitType): number | null {
-  if (day.windows.has(window)) return null;
+  if (clashes(day, window)) return null;
   const { units } = VISIT_BLOCKS[type];
   for (const start of WINDOW_SLOT_MAP[window]) {
     if (start + units > UNITS_PER_DAY) continue;
