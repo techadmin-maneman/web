@@ -48,6 +48,7 @@ The proof proposed listing `/fsm/v1/Invoices` and matching `Work_Order.id`, and 
 ## Consequences
 
 - **The manual step is gone.** A closed job is invoiced within five minutes, and `GET /api/documents/{visit_id}` streams the PDF from Books. Nobody has to remember.
+- **The first run bills the backlog.** Every finished visit already in the mirror without an invoice is offered, five a pass. On staging that is the proof runs' own completed jobs, so the first hour after this is deployed puts a few more draft invoices in the owner's real Books, labelled like the rest and to be cleared with them (open point 10). In production there is no backlog: nothing has been mirrored yet.
 - **The invoice is a draft.** FSM creates it in Books as a draft, as the owner's hand-made one is, and sending it is Books' own step that nothing of ours presses. ADR 0044 has the payments pass wait while an invoice is a draft, so **a client's advance is still not set against their invoice**: that is `docs/open-points.md` item 70, for the owner and the CA to rule on with the rest of section 6.
 - **No tax on it.** GST is off in Books and 0% in the price book (open points 2 and 3), so the invoice carries the price and nothing else. When GST goes on, the invoice is FSM's to compute, not ours.
 - **Consultations get no invoice**, because they are free. If the owner ever prices one, it is invoiced like everything else with no change here.
