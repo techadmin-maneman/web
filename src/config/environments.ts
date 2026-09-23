@@ -101,5 +101,9 @@ export const PROVIDER_VARS = {
   // Razorpay, for payments (docs/decisions/0044-payments-mirror.md): test keys on staging, none in production until
   // Phase 2's release.
   PAYMENTS_PROVIDER: ["razorpay", "stub", "none"],
+  // Google Maps Platform, for the address search and the coordinate the geofence measures against
+  // (docs/decisions/0054-address-capture.md). "none" wherever the owner's key is not yet in place: the address form
+  // then takes a typed address, as it did before, and saves no coordinate.
+  GEOCODE_PROVIDER: ["google", "stub", "none"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;

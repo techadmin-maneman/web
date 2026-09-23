@@ -376,3 +376,63 @@ textarea.input {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--sp-3);
 }
+
+/* The building search (docs/decisions/0054-address-capture.md). The list sits
+   in the flow rather than floating over the fields below it: at 390 px an
+   overlay covers the flat number, and a list that pushes the form down is
+   easier to reach by touch and by screen reader. */
+.searchField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.suggestions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--hairline) solid var(--paper-line);
+  border-top: none;
+  background: var(--white);
+}
+
+.suggestion,
+.suggestionActive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: var(--tap-row);
+  justify-content: center;
+  padding: var(--sp-8) var(--sp-15);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  cursor: pointer;
+}
+
+.suggestion:last-child,
+.suggestionActive:last-child {
+  border-bottom: none;
+}
+
+/* The keyboard's place in the list. Not colour alone: the rule on the left
+   carries it for anyone who cannot tell the two backgrounds apart. */
+.suggestionActive {
+  background: var(--paper-light);
+  box-shadow: inset var(--rule-strong) 0 0 0 var(--ink);
+}
+
+.suggestionName {
+  font-size: var(--fs-16);
+  color: var(--text);
+}
+
+.suggestionWhere {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* Google's condition for showing their suggestions without a Google map. */
+.attribution {
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}

@@ -90,6 +90,7 @@
     "BOOKS_REFUND_ACCOUNT_ID": "",
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
     "PAYMENTS_PROVIDER": "stub",
+    "GEOCODE_PROVIDER": "stub",
     "SELF_SERVE_BOOKING": "true",
     "REFERRER_NAME_ON_INVITE": "true",
     "RAZORPAY_KEY_ID": "",
@@ -108,6 +109,9 @@
     "RENDER_DAILY_CEILING": "20",
     "UPLOAD_DAILY_CEILING": "40",
     "RESULT_READ_DAILY_CEILING": "400",
+    // Google requests a day, across every client. It refuses rather than spends
+    // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
+    "GEOCODE_DAILY_CEILING": "200",
     "RESULT_RETENTION_DAYS": "3",
     "UNKNOWN_COLOR_ROUTE": "pro_black",
     "AILAB_CREDIT_FLOOR": "200",
@@ -206,6 +210,8 @@
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000000038161",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
+        // "google" once the owner's key is in place (docs/runbook.md, section 13).
+        "GEOCODE_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "true",
         "REFERRER_NAME_ON_INVITE": "true",
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
@@ -224,6 +230,9 @@
         "RENDER_DAILY_CEILING": "20",
         "UPLOAD_DAILY_CEILING": "40",
         "RESULT_READ_DAILY_CEILING": "400",
+        // Google requests a day, across every client. It refuses rather than spends
+        // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
+        "GEOCODE_DAILY_CEILING": "200",
         "RESULT_RETENTION_DAYS": "3",
         "UNKNOWN_COLOR_ROUTE": "pro_black",
         "AILAB_CREDIT_FLOOR": "200",
@@ -315,6 +324,7 @@
         "BOOKS_REFUND_ACCOUNT_ID": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
+        "GEOCODE_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",
         "REFERRER_NAME_ON_INVITE": "true",
         "RAZORPAY_KEY_ID": "",
@@ -333,6 +343,9 @@
         "RENDER_DAILY_CEILING": "40",
         "UPLOAD_DAILY_CEILING": "80",
         "RESULT_READ_DAILY_CEILING": "800",
+        // Google requests a day, across every client. It refuses rather than spends
+        // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
+        "GEOCODE_DAILY_CEILING": "200",
         // Fourteen days, not thirty, to leave R2 room for Phase 2's photographs (docs/decisions/0039-phase-2-budget.md).
         "RESULT_RETENTION_DAYS": "14",
         "UNKNOWN_COLOR_ROUTE": "pro_black",

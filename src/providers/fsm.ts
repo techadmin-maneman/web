@@ -30,9 +30,15 @@ export interface FsmAppointment {
   /** Where the visit is: the service address's city and pincode, as FSM holds them. */
   readonly serviceCity: string | null;
   readonly servicePincode: string | null;
-  /** The Books invoice, once one is raised. */
-  readonly invoiceId: string | null;
   readonly modifiedAt: string;
+}
+
+/** A work order's invoice. FSM's Invoices module is a link: the document itself lives in Books. */
+export interface FsmInvoice {
+  /** FSM's own record, e.g. the one its Invoices screen shows. */
+  readonly id: string;
+  /** The same invoice in Books, which is where its number and its PDF come from. */
+  readonly booksInvoiceId: string;
 }
 
 export interface FsmContact {
@@ -189,6 +195,12 @@ export interface FsmProvider {
   attachToAppointment(appointmentId: string, file: FsmUpload): Promise<string>;
   /** Cancels a work order, and so its appointment, with a note for ops; false if FSM no longer allows it. */
   cancelVisit(workOrderId: string, note: string): Promise<boolean>;
+  /**
+   * Bills a finished job: raises the work order's invoice if it has none, and
+   * answers the invoice either way, so a job the owner invoiced by hand in FSM
+   * comes back the same. Null when there is nothing to bill.
+   */
+  invoiceWorkOrder(workOrderId: string): Promise<FsmInvoice | null>;
   /** Anonymises an erased client's contact: name, numbers, e-mail and street; the city stays for the records. */
   eraseContact(contactId: string): Promise<void>;
 }
@@ -215,6 +227,8 @@ export interface StubFsmWorld {
   readonly assets?: Record<string, FsmAsset[]>;
   /** The transitions each appointment offers, by appointment ID; the default is below. */
   readonly transitions?: Record<string, string[]>;
+  /** Work orders with nothing to bill, as a free consultation has. */
+  readonly unbillable?: string[];
 }
 
 /** What FSM offers a scheduled appointment, as the trial found (docs/decisions/fsm-trial.md). */
@@ -247,6 +261,7 @@ export interface StubFsm extends FsmProvider {
     readonly visits: NewFsmVisit[];
     readonly rescheduled: { appointmentId: string; start: string; end: string }[];
     readonly cancelled: { workOrderId: string; note: string }[];
+    readonly invoiced: string[];
     readonly erased: string[];
     readonly assets: NewFsmAsset[];
     readonly assetUpdates: { assetId: string; status?: string }[];
@@ -268,7 +283,8 @@ export type StubFsmStep =
   | "transitionAppointment"
   | "updateAppointment"
   | "attachToAppointment"
-  | "rescheduleVisit";
+  | "rescheduleVisit"
+  | "invoiceWorkOrder";
 
 /**
  * Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it,
@@ -281,6 +297,7 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     visits: [] as NewFsmVisit[],
     rescheduled: [] as { appointmentId: string; start: string; end: string }[],
     cancelled: [] as { workOrderId: string; note: string }[],
+    invoiced: [] as string[],
     erased: [] as string[],
     assets: [] as NewFsmAsset[],
     assetUpdates: [] as { assetId: string; status?: string }[],
@@ -299,6 +316,7 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   }
 
   const stubAssets = world.assets ?? {};
+  const invoices = new Map<string, FsmInvoice>();
   return {
     made,
     failNext: (step, message = `the stub FSM refused ${step}`) => {
@@ -390,6 +408,18 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       made.cancelled.push({ workOrderId, note });
       return Promise.resolve(true);
     },
+    invoiceWorkOrder: (workOrderId) => {
+      checkFailure("invoiceWorkOrder");
+      if (world.unbillable?.includes(workOrderId) === true) return Promise.resolve(null);
+      // One invoice per work order, as FSM gives, however often it is asked for.
+      const raised = invoices.get(workOrderId);
+      if (raised !== undefined) return Promise.resolve(raised);
+      const id = crypto.randomUUID();
+      const invoice = { id: `stub-fsm-invoice-${id}`, booksInvoiceId: `stub-invoice-${id}` };
+      invoices.set(workOrderId, invoice);
+      made.invoiced.push(workOrderId);
+      return Promise.resolve(invoice);
+    },
     eraseContact: (contactId) => {
       made.erased.push(contactId);
       return Promise.resolve();
@@ -413,6 +443,7 @@ function createUnconnectedFsm(): FsmProvider {
     createVisit: off,
     rescheduleVisit: off,
     cancelVisit: off,
+    invoiceWorkOrder: off,
     eraseContact: off,
     assets: off,
     createAsset: off,

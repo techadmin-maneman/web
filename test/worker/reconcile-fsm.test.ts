@@ -24,7 +24,6 @@ const fsmAppointment = (id: string, modifiedAt: string): FsmAppointment => ({
   serviceIds: [],
   serviceCity: null,
   servicePincode: null,
-  invoiceId: null,
   modifiedAt,
 });
 

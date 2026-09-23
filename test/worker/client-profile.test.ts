@@ -5,7 +5,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
+import { visitAddress } from "../../src/domain/check-ins.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { checkIn } from "../../src/policy/check-in.ts";
 import { RULES as CONSENT_RULES } from "../../src/policy/consents.ts";
 import { RULES as NUMBER_CHANGE_RULES } from "../../src/policy/number-change.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
@@ -94,7 +96,17 @@ describe("PATCH /api/profile/address", () => {
     expect((await send(client, "PATCH", "/api/profile/address", address)).status).toBe(200);
     expect((await send(client, "PATCH", "/api/profile/address", { ...address, line1: "House 12" })).status).toBe(200);
 
-    expect((await profile()).address).toEqual({ ...address, line1: "House 12" });
+    // An address given without the building search saves every new field null.
+    expect((await profile()).address).toEqual({
+      ...address,
+      line1: "House 12",
+      building: null,
+      flat: null,
+      floor: null,
+      tower: null,
+      landmark: null,
+      place_id: null,
+    });
     const rows = await env.DB.prepare(
       "SELECT line1, replaced_at IS NULL AS current FROM addresses ORDER BY created_at, rowid",
     ).all();
@@ -106,6 +118,148 @@ describe("PATCH /api/profile/address", () => {
 
   it("refuses a pincode that is not six digits", async () => {
     expect((await send(client, "PATCH", "/api/profile/address", { ...address, pincode: "12201" })).status).toBe(400);
+  });
+});
+
+describe("GET /api/address/suggestions", () => {
+  it("answers the buildings, with Google's attribution", async () => {
+    const res = await send(client, "GET", "/api/address/suggestions?q=Sunrise&session=s-1");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      suggestions: [{ place_id: "stub-place-sunrise", primary: "Sunrise Greens", secondary: "Sector 65, Gurugram" }],
+      attribution: "Google Maps",
+    });
+  });
+
+  it("needs a session token, because Google bills per keystroke without one", async () => {
+    expect((await send(client, "GET", "/api/address/suggestions?q=Sunrise")).status).toBe(400);
+  });
+
+  it("answers busy, having spent nothing, once the day's ceiling is reached", async () => {
+    const capped = appFor("local", deps, { geocode: { apiKey: null, dailyCeiling: 1 } }, "client");
+    expect((await send(capped, "GET", "/api/address/suggestions?q=Sunrise&session=s-1")).status).toBe(200);
+    const refused = await send(capped, "GET", "/api/address/suggestions?q=Mayfield&session=s-2");
+    expect(refused.status).toBe(503);
+    expect((await refused.json<{ error: { code: string } }>()).error.code).toBe("busy");
+    expect(deps.alerts).toEqual([
+      'The daily geocode ceiling (1) is reached; address suggestions answer "busy" until midnight IST.',
+    ]);
+  });
+
+  it("answers unavailable, not an error, when Google cannot be reached", async () => {
+    const res = await send(client, "GET", "/api/address/suggestions?q=mm-stub:down&session=s-1");
+    expect(res.status).toBe(503);
+    expect((await res.json<{ error: { code: string } }>()).error.code).toBe("unavailable");
+  });
+
+  it("needs a signed-in client: suggestions cost money", async () => {
+    const res = await request(client, "/api/address/suggestions?q=Sunrise&session=s-1", {
+      headers: { Origin: ORIGIN },
+    });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("the address pin", () => {
+  const chosen = {
+    line1: "Sunrise Greens",
+    line2: null,
+    locality: "Sector 65",
+    city: "Gurgaon",
+    pincode: "122018",
+    access_notes: null,
+    building: "Sunrise Greens",
+    flat: "Flat 1203",
+    floor: "12",
+    tower: "Tower C",
+    landmark: "Opposite the sector market",
+    place_id: "stub-place-sunrise",
+    session_token: "s-1",
+  };
+
+  const pinOf = () =>
+    env.DB.prepare(
+      "SELECT lat, lng, geocode_source, place_id, flat, floor, tower, landmark, building FROM addresses WHERE replaced_at IS NULL",
+    ).first<{ lat: number | null; lng: number | null; geocode_source: string | null; place_id: string | null }>();
+
+  it("geocodes the chosen building and keeps the coordinate with its source", async () => {
+    expect((await send(client, "PATCH", "/api/profile/address", chosen)).status).toBe(200);
+    const row = await pinOf();
+    expect(row?.lat).toBeCloseTo(28.3951, 4);
+    expect(row?.lng).toBeCloseTo(77.0619, 4);
+    expect(row?.geocode_source).toBe("google_geocoding");
+    expect(row?.place_id).toBe("stub-place-sunrise");
+  });
+
+  it("keeps the flat, floor, tower and landmark the technician needs", async () => {
+    await send(client, "PATCH", "/api/profile/address", chosen);
+    expect(await pinOf()).toMatchObject({
+      flat: "Flat 1203",
+      floor: "12",
+      tower: "Tower C",
+      landmark: "Opposite the sector market",
+      building: "Sunrise Greens",
+    });
+  });
+
+  it("saves a typed address with no pin at all, rather than a wrong one", async () => {
+    const typed = { ...chosen, building: null, place_id: null };
+    expect((await send(client, "PATCH", "/api/profile/address", typed)).status).toBe(200);
+    expect(await pinOf()).toMatchObject({ lat: null, lng: null, geocode_source: null, place_id: null });
+  });
+
+  it("saves the address even when the geocode fails: the pin is the part that is optional", async () => {
+    const res = await send(client, "PATCH", "/api/profile/address", { ...chosen, place_id: "stub-place-gone" });
+    expect(res.status).toBe(200);
+    expect(await pinOf()).toMatchObject({ lat: null, geocode_source: null, place_id: "stub-place-gone" });
+  });
+
+  it("never takes a coordinate from the client", async () => {
+    const res = await send(client, "PATCH", "/api/profile/address", { ...chosen, lat: 0, lng: 0 });
+    expect(res.status).toBe(400);
+  });
+
+  // The point of the whole feature: addresses.lat has been null in every
+  // environment since migration 0008, so the 200 m check has never measured
+  // anything (ADR 0054). A building chosen in the app is what finally fills it.
+  describe("feeding the check-in's geofence", () => {
+    it("gives the geofence a point to measure against, for the first time", async () => {
+      await send(client, "PATCH", "/api/profile/address", chosen);
+
+      const found = await visitAddress(env.DB, "p1");
+      expect(found?.point).not.toBeNull();
+      // A technician at the door of the chosen building passes.
+      expect(checkIn({ lat: 28.3952, lng: 77.062 }, found?.point ?? { lat: 0, lng: 0 })).toMatchObject({
+        passed: true,
+      });
+      // One two kilometres away does not, and the distance is real.
+      const away = checkIn({ lat: 28.4135, lng: 77.0405 }, found?.point ?? { lat: 0, lng: 0 });
+      expect(away.passed).toBe(false);
+      expect(away.distanceM).toBeGreaterThan(2000);
+    });
+
+    it("leaves a typed address unmeasurable rather than measuring it at zero", async () => {
+      await send(client, "PATCH", "/api/profile/address", { ...chosen, building: null, place_id: null });
+
+      const found = await visitAddress(env.DB, "p1");
+      // ADR 0036's honest degradation: no point, so no distance — never a pass at 0 m.
+      expect(found?.point).toBeNull();
+    });
+  });
+
+  it("an address saved before these fields existed still reads", async () => {
+    await env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+       VALUES ('old-1', 'p1', ?1, 'House 4417, Tower C', 'Sector 65', 'Gurgaon', '122018')`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    expect((await profile()).address).toMatchObject({
+      line1: "House 4417, Tower C",
+      building: null,
+      flat: null,
+      place_id: null,
+    });
   });
 });
 

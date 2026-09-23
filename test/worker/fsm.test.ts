@@ -10,7 +10,9 @@ import {
   fsmAppointmentRecord,
   fsmAttachmentRecord,
   fsmContactRecord,
+  fsmInvoiceRecord,
   fsmUserRecord,
+  fsmWorkOrderRecord,
 } from "./fsm-fixtures.ts";
 import { NOW, captureLogs, fakeFetch, json } from "./helpers.ts";
 
@@ -66,7 +68,6 @@ describe("FSM: appointments", () => {
       serviceIds: ["item-service-visit"],
       serviceCity: "Gurgaon",
       servicePincode: "122018",
-      invoiceId: null,
       modifiedAt: "2026-09-22T14:27:15+05:30",
     });
     expect(calls[1]?.headers.get("Authorization")).toBe("Zoho-oauthtoken fsm-access-1");
@@ -278,6 +279,95 @@ describe("FSM: moving and cancelling a visit", () => {
     });
     expect(await provider.cancelVisit("wo-2", "note")).toBe(false);
     expect(calls).toHaveLength(2);
+  });
+});
+
+describe("FSM: billing a finished job", () => {
+  it("raises the work order's invoice with its line IDs and finance data, and answers Books' ID for it", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1`]: () => json({ data: [fsmWorkOrderRecord()] }),
+      [`${FSM_API}/Invoices`]: () =>
+        json(
+          {
+            result: "success",
+            data: {
+              Invoices: [
+                {
+                  id: "fsm-invoice-1",
+                  finance_data: {
+                    code: "2030",
+                    Invoice_Id: "books-invoice-1",
+                    message: "Invoice Created Successfully",
+                  },
+                },
+              ],
+            },
+          },
+          201,
+        ),
+    });
+
+    expect(await provider.invoiceWorkOrder("wo-1")).toEqual({ id: "fsm-invoice-1", booksInvoiceId: "books-invoice-1" });
+    expect(calls[2]?.method).toBe("POST");
+    // Without the line IDs FSM answers a bare 500, whatever else the body carries.
+    expect(JSON.parse(calls[2]?.body ?? "null")).toEqual({
+      data: [
+        {
+          Work_Order: "wo-1",
+          $Service_Line_Items: ["line-1"],
+          $finance_data: {
+            date: "2026-09-21",
+            due_date: "2026-09-21",
+            payment_terms: 0,
+            payment_terms_label: "Due on Receipt",
+            discount_preference: { Discount: 0, Adjustment: 0, Discount_Type: "Currency" },
+          },
+        },
+      ],
+    });
+  });
+
+  it("answers the invoice a work order already carries, as one raised by hand in FSM does", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1`]: () =>
+        json({
+          data: [
+            fsmWorkOrderRecord({
+              Billing_Status: "Invoiced",
+              Service_Line_Items: [{ id: "line-1", Invoice_Id: "fsm-invoice-1" }],
+            }),
+          ],
+        }),
+      [`${FSM_API}/Invoices/fsm-invoice-1`]: () => json({ data: [fsmInvoiceRecord()] }),
+    });
+
+    expect(await provider.invoiceWorkOrder("wo-1")).toEqual({ id: "fsm-invoice-1", booksInvoiceId: "books-invoice-1" });
+    expect(calls.map((call) => call.method)).toEqual(["POST", "GET", "GET"]); // the token, then two reads: nothing raised
+  });
+
+  it("bills nothing for a work order with nothing on it, as a free consultation has", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1`]: () => json({ data: [fsmWorkOrderRecord({ Grand_Total: 0, Sub_Total: 0 })] }),
+    });
+
+    expect(await provider.invoiceWorkOrder("wo-1")).toBeNull();
+    expect(calls).toHaveLength(2);
+  });
+
+  it("raises a refusal FSM answers with 200, such as a line someone else has just invoiced", async () => {
+    const { fsm: provider } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1`]: () => json({ data: [fsmWorkOrderRecord()] }),
+      [`${FSM_API}/Invoices`]: () =>
+        json({ code: "2031", message: "One or more line items are already invoiced", status: "error" }),
+    });
+
+    await expect(provider.invoiceWorkOrder("wo-1")).rejects.toThrow(
+      "Zoho 400 2031: One or more line items are already invoiced",
+    );
   });
 });
 

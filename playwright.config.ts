@@ -49,6 +49,9 @@ export default defineConfig({
         // The read surfaces' tests share one fitted client (e2e/global-setup.ts), each logging in.
         "--var OTP_MOBILE_DAILY_LIMIT:10000",
         "--var OTP_DAILY_CEILING:10000",
+        // Each saved address takes from the address-lookup ceiling too. Its own
+        // cap is GEOCODE_CEILING_MAX, so this is raised to that and no further.
+        "--var GEOCODE_DAILY_CEILING:1800",
       ].join(" "),
       url: "http://127.0.0.1:8787/api/health",
       reuseExistingServer: local,
@@ -78,12 +81,14 @@ export default defineConfig({
   projects: [
     {
       name: "390",
-      testIgnore: ["app/**", "ops/**", "tech/**"],
+      // tech-staging/ is the proof against the deployed API, which has its own
+      // config and is never run by CI (playwright.staging.config.ts).
+      testIgnore: ["app/**", "ops/**", "tech/**", "tech-staging/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
     },
     {
       name: "1440",
-      testIgnore: ["app/**", "ops/**", "tech/**"],
+      testIgnore: ["app/**", "ops/**", "tech/**", "tech-staging/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {

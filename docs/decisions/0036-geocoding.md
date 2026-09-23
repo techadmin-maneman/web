@@ -1,6 +1,6 @@
 # 0036. Geocoding, for the check-in's geofence
 
-- Status: accepted
+- Status: accepted; amended by [0054](0054-address-capture.md) on 23 September 2026
 - Date: 2026-09-23
 
 ## Context
@@ -12,6 +12,8 @@ The prompt: "Addresses are geocoded when a client address is created or edited, 
 The FSM trial found something that changes the question (`docs/decisions/fsm-trial.md`, question 4): **FSM geocodes its service addresses itself**, and returns `Service_Latitude` and `Service_Longitude` on the record. An address a client saves in our app is confirmed with them and entered against their FSM contact either way, because FSM is the system of record for clients.
 
 ## Decision
+
+> **Amended in part by [docs/decisions/0054](0054-address-capture.md), 23 September 2026:** neither half of the FSM path below was ever built, and the address FSM holds is the placeholder `"To be confirmed with the client"`, so there was nothing to geocode. A coordinate now comes from the technician's own check-in or the client's own phone, recorded with its source. The rest of this ADR — the honest degradation, and the distance logged on every check-in — stands.
 
 **No geocoder provider of our own for now.** The coordinates come from FSM's own geocoding of the service address, read with the rest of the contact, and are written onto `addresses` by the mirror.
 

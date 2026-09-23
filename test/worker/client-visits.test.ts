@@ -29,7 +29,6 @@ const fsmAppointment = (id: string, overrides: Partial<FsmAppointment> = {}): Fs
   serviceIds: ["item-service"],
   serviceCity: "Gurgaon",
   servicePincode: "122018",
-  invoiceId: null,
   modifiedAt: "2026-09-20T10:00:00+05:30",
   ...overrides,
 });
