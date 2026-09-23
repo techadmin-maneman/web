@@ -88,7 +88,6 @@ export const job = {
   back: "Back",
   when: (time: string, type: string) => `${time} · ${type}`,
   navigate: "Navigate",
-  lastVisit: (on: string, technician: string) => `Last visit, after. ${on}, ${technician}.`,
   start: "Start job",
   continueJob: "Continue",
   locked: {
