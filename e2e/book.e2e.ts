@@ -67,6 +67,27 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
+// Nobody invited them, so nothing on this page may speak of an invite or of the
+// three visits that come with one.
+test("says nothing about an invite to someone who came here directly", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, "/book");
+  const invited = [/invited you/i, /3 visits/i, /3 service visits/i, /invite/i];
+
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  // The page is headed once, not twice: the form beneath it repeats nothing.
+  await expect(page.getByRole("heading", { name: "Book a free consultation" })).toHaveCount(1);
+  await expect(page.getByText("Forty minutes. Nothing fitted, nothing to pay.")).toBeVisible();
+  for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
+
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByRole("button", { name: "Add me to the list" })).toBeVisible();
+  for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
+});
+
 test("a pincode we do not serve takes the number, with the launch alert offered", async ({ page }) => {
   const requests = await mockApi(page);
   await visit(page, "/book");

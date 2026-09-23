@@ -41,7 +41,7 @@ function world(appointments: FsmAppointment[]): StubFsmWorld {
       { id: "contact-1", name: "Rohit Malhotra", mobile: MOBILE, email: null },
       { id: "contact-2", name: "Someone Else", mobile: "+919810000002", email: null },
     ],
-    technicians: [{ id: "sr-1", userId: "user-1", name: "Imran Khan", active: true }],
+    technicians: [{ id: "sr-1", userId: "user-1", name: "Imran Khan", active: true, mobile: null, zone: null }],
     items: [
       { id: "item-service", name: "Service visit", type: "Service" },
       { id: "item-consult", name: "Consultation", type: "Service" },

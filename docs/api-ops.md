@@ -822,6 +822,305 @@ Every referrer's figures, the busiest first
 }
 ```
 
+### GET /api/dispatch
+
+The dispatch board: seven days of every active technician, with the unassigned tray
+
+**200**: The board
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchBoard"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/dispatch/assign
+
+Put a job on a technician, with a reason. The clash check runs before any write to FSM
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchAssignRequest"
+}
+```
+
+**200**: Assigned
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchMoved"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such live job
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: clash: the technician already holds a job in that window on that date
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**502**: fsm_refused: FSM would not take it; nothing moved
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/dispatch/move
+
+Move a job to another technician, day or window, with a reason. The client is never charged
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchMoveRequest"
+}
+```
+
+**200**: Moved, and the client told
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchMoved"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such live job
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: clash
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**502**: fsm_refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/no-shows
+
+No-show cases: undecided first, each with its three facts
+
+**200**: The cases
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowCases"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/no-shows/{id}/decision
+
+Charge or waive a no-show, from the evidence
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowDecisionRequest"
+}
+```
+
+**200**: Recorded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decided": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "decided"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such case, or it was ruled on already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/clients/{id}/pieces
+
+A client's pieces: code, base, fitted date, supplier lot, replacement due and any failure
+
+**200**: The pieces, newest fit first
+
+```json
+{
+  "$ref": "#/components/schemas/ClientPieces"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/technicians
+
+Active technicians and the phones they have logged in on
+
+**200**: The technicians
+
+```json
+{
+  "$ref": "#/components/schemas/Technicians"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians/{id}/devices/{device}/revoke
+
+Revoke a phone. Its session ends, and it drops its cached jobs on its next contact
+
+**200**: Revoked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "revoked_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "revoked_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such phone of that technician's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -865,7 +1164,13 @@ Every referrer's figures, the busiest first
             "hold_expired",
             "not_changeable",
             "terms_changed",
-            "consent_required"
+            "consent_required",
+            "device_revoked",
+            "superseded",
+            "out_of_order",
+            "clash",
+            "fsm_refused",
+            "too_early_to_close"
           ]
         },
         "request_id": {
@@ -1998,6 +2303,785 @@ Every referrer's figures, the busiest first
   },
   "required": [
     "confirm"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchBoard
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "dates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      },
+      "description": "7 days, the board's columns."
+    },
+    "technicians": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchBlock"
+                  }
+                }
+              },
+              "required": [
+                "date",
+                "blocks"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "technician_id",
+          "name",
+          "initials",
+          "zone",
+          "days"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unassigned": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "appointment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "asked_window": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "morning",
+                  "afternoon",
+                  "evening"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "offered_window": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "morning",
+                  "afternoon",
+                  "evening"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "appointment_id",
+          "type",
+          "asked_window",
+          "offered_window",
+          "date",
+          "sector"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "utilisation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "percent": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "percent"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Each column's utilisation, in per cent. Written to events daily as well."
+    },
+    "leave": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "technician_id",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Always empty: FSM's availability answers 48 hours ahead and the board is seven days."
+    }
+  },
+  "required": [
+    "from",
+    "dates",
+    "technicians",
+    "unassigned",
+    "utilisation",
+    "leave"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchBlock
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "slots": {
+      "type": "number",
+      "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "dispatched",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "terminated",
+        "other"
+      ]
+    },
+    "client": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "First name and last initial."
+    },
+    "sector": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "appointment_id",
+    "type",
+    "starts_at",
+    "window",
+    "slots",
+    "status",
+    "client",
+    "sector"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchMoved
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "move_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "messaged": {
+      "type": "boolean",
+      "description": "The client was told his new window."
+    }
+  },
+  "required": [
+    "move_id",
+    "messaged"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchAssignRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "technician_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "technician_unavailable",
+        "client_asked",
+        "zone_rebalance",
+        "skill_needed",
+        "running_over"
+      ]
+    }
+  },
+  "required": [
+    "appointment_id",
+    "technician_id",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchMoveRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "technician_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Left out keeps the technician it has."
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "technician_unavailable",
+        "client_asked",
+        "zone_rebalance",
+        "skill_needed",
+        "running_over"
+      ]
+    }
+  },
+  "required": [
+    "appointment_id",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NoShowCases
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/NoShowCase"
+      }
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NoShowCase
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "visit_date": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "checked_in_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fact one: when the technician arrived."
+    },
+    "distance_m": {
+      "type": "integer",
+      "description": "Fact two: how far from the address he was."
+    },
+    "message_delivered_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Fact three: when WhatsApp reported the visit message delivered; null if never."
+    },
+    "wait_ends_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "undecided",
+        "charged",
+        "waived"
+      ]
+    },
+    "decided_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "appointment_id",
+    "visit_date",
+    "technician",
+    "checked_in_at",
+    "distance_m",
+    "message_delivered_at",
+    "wait_ends_at",
+    "closed_at",
+    "decision",
+    "decided_at"
+  ],
+  "additionalProperties": false,
+  "description": "The three facts ops rule on, and nothing else."
+}
+```
+
+### NoShowDecisionRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "charged",
+        "waived"
+      ]
+    }
+  },
+  "required": [
+    "decision"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientPieces
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pieces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Piece"
+      }
+    }
+  },
+  "required": [
+    "pieces"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Piece
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "piece_code": {
+      "type": "string"
+    },
+    "base": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "supplier_lot": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fitted_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "replacement_due_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failure_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "piece_code",
+    "base",
+    "supplier_lot",
+    "fitted_at",
+    "replacement_due_at",
+    "failed_at",
+    "failure_reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Technicians
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "technicians": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "device_id": {
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_seen_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "revoked_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "device_id",
+                "label",
+                "last_seen_at",
+                "revoked_at"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "initials",
+          "zone",
+          "devices"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "technicians"
   ],
   "additionalProperties": false
 }

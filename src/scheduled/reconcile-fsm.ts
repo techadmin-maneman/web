@@ -14,6 +14,7 @@ import type { Dependencies } from "../dependencies.ts";
 import type { Logger } from "../log.ts";
 import type { FsmAppointment } from "../providers/fsm.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import { syncTechnicians } from "../domain/fsm-mirror.ts";
 import { PHOTOS_PER_VISIT } from "../domain/visit-photos.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 
@@ -54,6 +55,14 @@ export async function reconcileFsm(env: ReconcileEnv, deps: Dependencies, log: L
     const night = await nightlyPass(db, deps, log, now, latest);
     nightPage = night.page;
     for (const fsmId of night.toSync) queue.add(fsmId);
+    // The technician list, once a night: who FSM still lists as active, the number
+    // each logs in with and his territory (docs/decisions/0052-technician-sessions.md).
+    if (nightPage === 1) {
+      await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
+        log.warn("technician_sync_failed", { error });
+        return 0;
+      });
+    }
   }
 
   const messages = [...queue].map((fsmId) => ({

@@ -46,6 +46,18 @@ export const ERROR_CODES = [
   "terms_changed",
   // A referral card without the client's consent to photographs on referral cards (docs/decisions/0048-referrals.md).
   "consent_required",
+  // The technician app (docs/decisions/0052-technician-sessions.md, 0038-offline-writes.md):
+  // ops revoked this phone, so it drops its cached jobs; the job moved under it while it
+  // was offline; the step before this one has not been sent.
+  "device_revoked",
+  "superseded",
+  "out_of_order",
+  // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
+  // window, or FSM would not take the move.
+  "clash",
+  "fsm_refused",
+  // The no-show wait has not run out yet (src/policy/no-show.ts).
+  "too_early_to_close",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

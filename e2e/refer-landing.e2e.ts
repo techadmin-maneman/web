@@ -84,6 +84,14 @@ test("the invite names the referrer, and a served pincode opens the consultation
   expect(sent.turnstile_token).toBeTruthy();
 });
 
+test("the invited page does say who is told, and what lands when", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Rohit is told when you are fitted. That is when the 3 visits land.")).toBeVisible();
+});
+
 test("an unserved pincode takes the number instead, and the launch alert is the visitor's choice", async ({ page }) => {
   const requests = await mockApi(page);
   await visit(page, `/r/${CODE}`);

@@ -10,6 +10,8 @@ docs/openapi-client.json
 docs/api-client.md
 docs/openapi-ops.json
 docs/api-ops.md
+docs/openapi-tech.json
+docs/api-tech.md
 apps/app/src/api-schema.ts
 apps/ops/src/api-schema.ts
 src/worker-configuration.d.ts

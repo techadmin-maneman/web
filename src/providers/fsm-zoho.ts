@@ -19,6 +19,14 @@
 //   PUT  /fsm/v1/Work_Orders/{id}/actions/blueprint              a transition, with its mandatory note;
 //        cancelling a work order cancels its appointments
 //   PUT  /fsm/v1/Contacts/{id}                                   fields to change, the service address by its ID
+//   GET  /fsm/v1/Assets?contact=                                 { data: [asset] }, or 204: the client's pieces
+//   POST /fsm/v1/Assets                                          an asset needs a Product; our label is Asset_Number
+//   PUT  /fsm/v1/Assets/{id}                                     the piece's status, when one fails
+//   PUT  /fsm/v1/Service_Appointments/{id}                       the technician, and the job's own fields
+//   GET  /fsm/v1/Service_Appointments/{id}/actions/blueprint/transitions
+//   PUT  /fsm/v1/Service_Appointments/{id}/actions/blueprint     start, close or terminate, with its mandatory note
+//   POST /fsm/v1/files                                           multipart; answers { data: { file_id } }
+//   POST /fsm/v1/Service_Appointments/{id}/Attachments           attaches an uploaded file
 //
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
@@ -27,11 +35,14 @@ import type { ZohoFsmSettings } from "../config/settings.ts";
 import type { Logger } from "../log.ts";
 import type {
   FsmAppointment,
+  FsmAsset,
   FsmAttachment,
   FsmContact,
   FsmItem,
   FsmProvider,
   FsmTechnician,
+  FsmUpload,
+  NewFsmAsset,
   NewFsmContact,
   NewFsmRequest,
   NewFsmVisit,
@@ -81,6 +92,9 @@ const User = z.object({
   id: z.string(),
   full_name: z.string().nullish(),
   status: z.string().nullish(),
+  mobile: z.string().nullish(),
+  phone: z.string().nullish(),
+  Territory: z.object({ name: z.string().nullish() }).nullish(),
   Service_Resources: z
     .object({ id: z.string(), isActive: z.boolean().nullish(), Name: z.string().nullish() })
     .nullish(),
@@ -111,6 +125,36 @@ const Attachment = z.object({
   Size: z.union([z.string(), z.number()]),
   Created_Time: z.string(),
 });
+
+/** A piece in FSM: an asset built on a part item, labelled with our own code. */
+const Asset = z.object({
+  id: z.string(),
+  Asset_Number: z.string().nullish(),
+  Asset_Name: z.string().nullish(),
+  Contact: Reference,
+  Product: z.object({ id: z.string(), name: z.string().nullish() }).nullish(),
+  Serial_Number: z.string().nullish(),
+  Installation_Date: z.string().nullish(),
+  Status: z.string().nullish(),
+  Modified_Time: z.string().nullish(),
+});
+
+/** An upload answers one object, not a list: { data: { file_id } } (docs/decisions/fsm-trial.md). */
+const Uploaded = z.object({ data: z.object({ file_id: z.string() }) });
+
+function assetFrom(record: z.infer<typeof Asset>): FsmAsset {
+  return {
+    id: record.id,
+    assetNumber: record.Asset_Number ?? record.Asset_Name ?? "",
+    contactId: record.Contact?.id ?? null,
+    productId: record.Product?.id ?? null,
+    productName: record.Product?.name ?? null,
+    serialNumber: record.Serial_Number ?? null,
+    installedAt: record.Installation_Date ?? null,
+    status: record.Status ?? null,
+    modifiedAt: record.Modified_Time ?? "",
+  };
+}
 
 function appointmentFrom(record: z.infer<typeof Appointment>): FsmAppointment {
   return {
@@ -167,6 +211,9 @@ export function fsmTokenStore(db: D1Database): TokenStore {
   };
 }
 
+/** A write: JSON for every module call, or multipart for a file upload. */
+type ZohoWrite = { method: "POST" | "PUT"; body: unknown } | { method: "POST"; form: FormData };
+
 /**
  * One authorised request to a Zoho API on the FSM client's token. On 401 the
  * token is refreshed once and the call repeated. Shared with Books.
@@ -174,19 +221,18 @@ export function fsmTokenStore(db: D1Database): TokenStore {
 export function createZohoFsmClient(settings: ZohoFsmSettings, deps: Dependencies) {
   const tokens = createTokenCache(settings, fsmTokenStore(deps.db), deps);
 
-  return async function request(
-    step: string,
-    path: string,
-    write?: { method: "POST" | "PUT"; body: unknown },
-  ): Promise<Response> {
+  return async function request(step: string, path: string, write?: ZohoWrite): Promise<Response> {
+    // A multipart upload sets its own Content-Type, with the boundary.
+    const body = write === undefined ? undefined : "form" in write ? write.form : JSON.stringify(write.body);
+    const json = write !== undefined && "body" in write;
     for (const forceRefresh of [false, true]) {
       const token = await tokens.get(forceRefresh);
       const response = await zohoSend(deps, step, `https://${settings.apiHost}${path}`, {
         headers: {
           Authorization: `Zoho-oauthtoken ${token}`,
-          ...(write === undefined ? {} : { "Content-Type": "application/json" }),
+          ...(json ? { "Content-Type": "application/json" } : {}),
         },
-        ...(write === undefined ? {} : { method: write.method, body: JSON.stringify(write.body) }),
+        ...(write === undefined ? {} : { method: write.method, body }),
       });
       if (response.status === 401 && !forceRefresh) continue;
       if (!response.ok) throw zohoErrorFrom(response.status, await response.json().catch(() => null));
@@ -282,6 +328,8 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
             userId: user.id,
             name: user.full_name ?? resource.Name ?? "",
             active: resource.isActive === true && user.status === "active",
+            mobile: user.mobile ?? user.phone ?? null,
+            zone: user.Territory?.name ?? null,
           },
         ];
       });
@@ -394,6 +442,81 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       await request("reschedule", `/fsm/v1/Service_Appointments/${appointmentId}/actions/reschedule`, {
         method: "PUT",
         body: { data: [{ Scheduled_Start_Date_Time: times.start, Scheduled_End_Date_Time: times.end }] },
+      });
+    },
+
+    async assets(contactId) {
+      const query = new URLSearchParams({ contact: contactId, per_page: "200" });
+      const answer = await json("assets", `/Assets?${query.toString()}`);
+      return records(answer, "data", Asset)
+        .map(assetFrom)
+        .sort((a, b) => (b.installedAt ?? "").localeCompare(a.installedAt ?? ""));
+    },
+
+    // "An asset needs a Product (a part item) and keeps our label in Asset_Number" (the trial).
+    async createAsset(asset: NewFsmAsset) {
+      return create("create_asset", "Assets", {
+        Asset_Name: asset.assetNumber,
+        Asset_Number: asset.assetNumber,
+        Contact: asset.contactId,
+        Product: asset.productId,
+        ...(asset.serialNumber === null ? {} : { Serial_Number: asset.serialNumber }),
+        Installation_Date: asset.installedAt,
+      });
+    },
+
+    async updateAsset(assetId, fields) {
+      await request("update_asset", `/fsm/v1/Assets/${assetId}`, {
+        method: "PUT",
+        body: { data: [{ ...(fields.status === undefined ? {} : { Status: fields.status }) }] },
+      });
+    },
+
+    // The times must go through /actions/reschedule, but the resources are a plain field edit.
+    async assignVisit(appointmentId, technicianId) {
+      await request("assign", `/fsm/v1/Service_Appointments/${appointmentId}`, {
+        method: "PUT",
+        body: { data: [{ $Service_Resources: [technicianId] }] },
+      });
+    },
+
+    async appointmentTransitions(appointmentId) {
+      const answer = await json(
+        "appointment_transitions",
+        `/Service_Appointments/${appointmentId}/actions/blueprint/transitions`,
+      );
+      return Transitions.parse(answer ?? { transitions: [] }).transitions.map((transition) => transition.name);
+    },
+
+    // The note is mandatory on every transition (the trial, 22 September 2026).
+    async transitionAppointment(appointmentId, name, note) {
+      const path = `/Service_Appointments/${appointmentId}/actions/blueprint`;
+      const { transitions } = Transitions.parse((await json("job_transitions", `${path}/transitions`)) ?? {});
+      const wanted = transitions.find((transition) => transition.name === name);
+      if (wanted === undefined) return false;
+      await request("job_transition", `/fsm/v1${path}`, {
+        method: "PUT",
+        body: { blueprint: [{ transition_id: wanted.id, data: { Notes: note } }] },
+      });
+      return true;
+    },
+
+    async updateAppointment(appointmentId, fields) {
+      await request("update_appointment", `/fsm/v1/Service_Appointments/${appointmentId}`, {
+        method: "PUT",
+        body: { data: [fields] },
+      });
+    },
+
+    // Upload to /files, then attach the file ID to the appointment (the trial, question 5).
+    async attachToAppointment(appointmentId, file: FsmUpload) {
+      const form = new FormData();
+      form.append("file", new Blob([file.bytes], { type: file.contentType }), file.name);
+      const uploaded = await request("upload_file", "/fsm/v1/files", { method: "POST", form });
+      const { data } = Uploaded.parse(await uploaded.json());
+      return create("attach_file", `Service_Appointments/${appointmentId}/Attachments`, {
+        file_id: data.file_id,
+        File_Name: file.name,
       });
     },
 
