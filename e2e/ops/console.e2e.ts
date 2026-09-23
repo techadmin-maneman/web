@@ -8,13 +8,13 @@ import { expect, test } from "../support.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-test("opens on the referral queue, with the console's sections beside it", async ({ page }) => {
+test("opens on the dispatch board, with the console's sections beside it", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Mane Man operations");
-  await expect(page.getByRole("heading", { level: 1, name: "Referrals" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Dispatch" })).toBeVisible();
   const sections = page.getByRole("navigation", { name: "Operations" });
-  await expect(sections.getByRole("link")).toHaveText(["Clients", "Referrals", "Waitlist"]);
-  await expect(sections.getByRole("link", { name: "Referrals" })).toHaveAttribute("aria-current", "page");
+  await expect(sections.getByRole("link")).toHaveText(["Dispatch", "Clients", "Referrals", "Waitlist"]);
+  await expect(sections.getByRole("link", { name: "Dispatch" })).toHaveAttribute("aria-current", "page");
 });
 
 test("serves its policy: its own origin only, no camera and no payment, and noindex", async ({ page }) => {
@@ -37,13 +37,13 @@ test("answers any page path with the console, as a single-page app", async ({ pa
 test("reaches mm-api as the ops surface, on its own host", async ({ page }) => {
   await page.goto("/");
   const statuses = await page.evaluate(async () => {
-    const [health, held, me] = await Promise.all(
-      ["/api/health", "/api/referrals/held", "/api/me"].map((path) => fetch(path)),
+    const [health, board, me] = await Promise.all(
+      ["/api/health", "/api/dispatch", "/api/me"].map((path) => fetch(path)),
     );
-    return { health: health?.status, held: held?.status, me: me?.status };
+    return { health: health?.status, board: board?.status, me: me?.status };
   });
   // /api/me belongs to the client surface, so it does not exist on this host.
-  expect(statuses).toEqual({ health: 200, held: 200, me: 404 });
+  expect(statuses).toEqual({ health: 200, board: 200, me: 404 });
 });
 
 test("moves between sections without a reload, and back", async ({ page }) => {
@@ -52,11 +52,11 @@ test("moves between sections without a reload, and back", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Waitlist" })).toBeVisible();
   expect(new URL(page.url()).pathname).toBe("/waitlist");
   await page.goBack();
-  await expect(page.getByRole("heading", { level: 1, name: "Referrals" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Dispatch" })).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA on both sections", async ({ page }) => {
-  for (const path of ["/", "/waitlist"]) {
+test("meets WCAG 2.2 AA on its sections", async ({ page }) => {
+  for (const path of ["/", "/referrals", "/waitlist"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();

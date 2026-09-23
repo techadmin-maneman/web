@@ -11,6 +11,9 @@ import type { paths } from "./api-schema.ts";
 /** The 200 body of one operation, which the ops document mostly writes inline rather than naming. */
 type Body<T> = T extends { responses: { 200: { content: { "application/json": infer B } } } } ? B : never;
 
+/** What one operation is sent. */
+type Sent<T> = T extends { requestBody: { content: { "application/json": infer B } } } ? B : never;
+
 export type Held = Body<paths["/api/referrals/held"]["get"]>["held"][number];
 export type Referrer = Body<paths["/api/referrers"]["get"]>["referrers"][number];
 export type Area = Body<paths["/api/waitlist"]["get"]>["areas"][number];
@@ -23,6 +26,18 @@ export type PhotoVisit = Body<paths["/api/clients/{id}/photos"]["get"]>["visits"
 export type Photo = PhotoVisit["photos"][number];
 export type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
 export type Consent = Consents["consents"][number];
+
+export type Board = Body<paths["/api/dispatch"]["get"]>;
+export type BoardRow = Board["technicians"][number];
+export type BoardDay = BoardRow["days"][number];
+export type Block = BoardDay["blocks"][number];
+export type Unassigned = Board["unassigned"][number];
+export type Moved = Body<paths["/api/dispatch/move"]["post"]>;
+
+type MoveRequest = Sent<paths["/api/dispatch/move"]["post"]>;
+export type MoveReason = MoveRequest["reason"];
+export type BookingWindow = NonNullable<MoveRequest["window"]>;
+export type VisitType = NonNullable<Block["type"]>;
 
 /** A failed call carries the API's error code, or "offline" when it never reached the API. */
 export type Answer<T> =
@@ -60,7 +75,38 @@ async function image(path: string): Promise<Answer<Blob>> {
   return response.ok ? { ok: true, body: await response.blob() } : refusal(response);
 }
 
+/** Where a job is being put: the technician, the India date and the window. */
+export interface Landing {
+  readonly technicianId: string;
+  readonly date: string;
+  readonly window: BookingWindow;
+  readonly reason: MoveReason;
+}
+
 export const api = {
+  /** Seven days from today, or from `from`. No name or number is in the query. */
+  board: () => call<Board>("GET", "/api/dispatch"),
+  /**
+   * A job the tray holds, put on a technician. The server runs the clash check
+   * before it writes anything, here and on a move alike (ADR 0034).
+   */
+  assign: (appointmentId: string, to: Landing) =>
+    call<Moved>("POST", "/api/dispatch/assign", {
+      appointment_id: appointmentId,
+      technician_id: to.technicianId,
+      date: to.date,
+      window: to.window,
+      reason: to.reason,
+    }),
+  /** A job already on the board, moved. The client is messaged, and never charged for it. */
+  move: (appointmentId: string, to: Landing) =>
+    call<Moved>("POST", "/api/dispatch/move", {
+      appointment_id: appointmentId,
+      technician_id: to.technicianId,
+      date: to.date,
+      window: to.window,
+      reason: to.reason,
+    }),
   held: () => call<{ held: Held[] }>("GET", "/api/referrals/held"),
   decideReferral: (id: string, decision: "approve" | "reject", reason: string | null) =>
     call<Decision>("POST", `/api/referrals/${id}/decision`, { decision, reason }),

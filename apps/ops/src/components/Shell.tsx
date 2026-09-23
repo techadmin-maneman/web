@@ -42,10 +42,12 @@ interface Props {
   readonly title: string;
   /** Beside the title, as the design puts the week's dates beside "Dispatch". */
   readonly sub?: string;
+  /** The dispatch board fills the frame to its edges, where every other section is padded. */
+  readonly flush?: boolean;
   readonly children: ReactNode;
 }
 
-export function Shell({ section, title, sub, children }: Props) {
+export function Shell({ section, title, sub, flush, children }: Props) {
   return (
     <div className={styles.console}>
       <nav className={styles.nav} aria-label={shell.title}>
@@ -70,7 +72,7 @@ export function Shell({ section, title, sub, children }: Props) {
           <h1 className={styles.title}>{title}</h1>
           {sub !== undefined && <span className={styles.sub}>{sub}</span>}
         </header>
-        <main className={styles.page}>{children}</main>
+        <main className={flush === true ? styles.flushPage : styles.page}>{children}</main>
       </div>
     </div>
   );

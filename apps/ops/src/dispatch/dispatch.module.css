@@ -1,0 +1,535 @@
+/*
+ * Boards A1, A2 and A3: the week's board, the reason a move carries, and the
+ * drawer a block opens. The board is 13 px type on 34 px of line, as the
+ * console's opening note asks, and gold is kept for the navigation's selection,
+ * so the one primary action here is on ink.
+ *
+ * A first fit is a block on ink, a replacement a shaded one, and a consultation
+ * or a service visit sits on light paper, each sized by the slots it takes.
+ */
+
+.area {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.main:focus {
+  outline: none;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ---- Board A1: technicians down, seven days across ----------------------- */
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--fs-13);
+}
+
+.corner,
+.tech {
+  width: var(--ops-tech);
+  padding: var(--sp-9) var(--sp-10);
+  font-weight: 400;
+  text-align: left;
+  vertical-align: top;
+}
+
+.grid thead tr {
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.grid tbody tr {
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.day {
+  padding: var(--sp-9) var(--sp-8);
+  border-left: var(--hairline) solid var(--paper-line);
+  font-weight: 400;
+  text-align: left;
+  vertical-align: top;
+}
+
+.dayName,
+.util,
+.peak,
+.zone {
+  display: block;
+}
+
+.util,
+.peak {
+  margin-top: var(--sp-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.util {
+  color: var(--text-muted);
+}
+
+/* The day the week turns on, which the board letters in brass so the peak reads without a chart. */
+.peak {
+  color: var(--brass-text);
+}
+
+.zone {
+  margin-top: var(--sp-3);
+  color: var(--text-muted);
+}
+
+.cell {
+  height: var(--ops-cell);
+  padding: var(--sp-3);
+  border-left: var(--hairline) solid var(--paper-line);
+  vertical-align: top;
+}
+
+/* ---- One job on the board ------------------------------------------------ */
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  margin-bottom: var(--sp-2);
+  padding: var(--sp-4) var(--sp-5);
+  border: 0;
+  border-left: var(--rule-strong) solid transparent;
+  font: inherit;
+  font-size: var(--fs-13);
+  text-align: left;
+  cursor: grab;
+}
+
+.slots1 {
+  min-height: var(--ops-block-1);
+}
+
+.slots15 {
+  min-height: var(--ops-block-15);
+}
+
+.slots2 {
+  min-height: var(--ops-block-2);
+}
+
+.svc {
+  border-left-color: var(--paper-line);
+  background: var(--paper-light);
+  color: var(--text);
+}
+
+.repl {
+  border-left-color: var(--brass);
+  background: var(--paper-shade);
+  color: var(--text);
+}
+
+.fit {
+  border-left-color: var(--gilt);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.who,
+.what {
+  display: block;
+  line-height: 1.25;
+}
+
+.svc .what,
+.repl .what {
+  color: var(--text-muted);
+}
+
+.fit .what {
+  color: var(--ink-soft);
+}
+
+.block:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+.fit:focus-visible {
+  outline-color: var(--gilt);
+}
+
+/* ---- Where a job in hand can land ---------------------------------------- */
+
+.targets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.target {
+  min-height: var(--sp-28);
+  padding: 0 var(--sp-5);
+  border: var(--hairline) dashed var(--paper-placeholder);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.target:hover {
+  border-style: solid;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.target:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+/* ---- The bar while a job is in hand -------------------------------------- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-10) var(--sp-14);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  background: var(--paper-light);
+}
+
+.barText {
+  margin: 0;
+  font-size: var(--fs-14);
+}
+
+.refusal,
+.done {
+  margin: 0;
+  padding: var(--sp-10) var(--sp-14);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-14);
+  line-height: 1.5;
+}
+
+.refusal {
+  color: var(--error-on-paper);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-14);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/*
+ * What the board cannot show: leave, and an asked window of its own. Each says
+ * so where it would have been drawn (docs/open-points.md, items 53 and 54).
+ */
+.note {
+  margin: 0;
+  padding: var(--sp-11) var(--sp-14);
+  border-top: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* ---- The unassigned tray ------------------------------------------------- */
+
+.tray {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--ops-tray);
+  overflow-y: auto;
+  border-left: var(--hairline) solid var(--text);
+  background: var(--paper-light);
+}
+
+.trayHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  padding: var(--sp-11) var(--sp-14);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.trayTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  font-weight: 400;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.count {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trayList {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The board draws no control on a tray job; the job is the control that places it. */
+.trayJob {
+  display: block;
+  width: 100%;
+  padding: var(--sp-11) var(--sp-14);
+  border: 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-13);
+  color: var(--text);
+  text-align: left;
+  cursor: grab;
+}
+
+.trayTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.trayType {
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.trayLine {
+  display: block;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.trayTop + .trayLine {
+  margin-top: var(--sp-5);
+}
+
+.trayJob:hover {
+  background: var(--paper-shade);
+}
+
+.trayJob:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+/* ---- Boards A2 and A3: the panels a job opens ----------------------------- */
+
+.panel {
+  position: fixed;
+  top: var(--header-h);
+  right: 0;
+  z-index: 1;
+  width: var(--ops-panel);
+  max-height: calc(100dvh - var(--header-h));
+  overflow-y: auto;
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+}
+
+.panel:focus {
+  outline: none;
+}
+
+.picker {
+  padding: var(--sp-22);
+}
+
+.pickerTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-24);
+  line-height: 1.2;
+}
+
+.pickerWhen {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.reasons {
+  margin: var(--sp-20) 0 0;
+  padding: 0;
+  border: 0;
+  border-top: var(--hairline) solid var(--text);
+}
+
+.hidden {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.reason {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-14);
+  min-height: var(--tap);
+  padding: var(--sp-11) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-15);
+  cursor: pointer;
+}
+
+.radio {
+  flex-shrink: 0;
+  width: var(--sp-16);
+  height: var(--sp-16);
+  margin: 0;
+  border: var(--hairline) solid var(--paper-line);
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.radio:checked {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.radio:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+/* What the move does, behind the board's brass rule. */
+.consequence {
+  margin: var(--sp-18) 0 0;
+  padding-left: var(--sp-14);
+  border-left: var(--rule-strong) solid var(--brass);
+  font-size: var(--fs-15);
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-10);
+  margin-top: var(--sp-20);
+}
+
+.send,
+.quiet {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-18);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.send {
+  border: var(--hairline) solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.quiet {
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+}
+
+.send:disabled,
+.quiet:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.send:focus-visible,
+.quiet:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+/* ---- Board A3: the drawer ------------------------------------------------ */
+
+.drawerHead {
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.drawerTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-22);
+}
+
+.drawerWhen {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.drawerBody {
+  padding: var(--sp-18) var(--sp-20);
+}
+
+.rows {
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-10) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-15);
+}
+
+.row dt {
+  color: var(--text-muted);
+}
+
+.row dd {
+  margin: 0;
+  text-align: right;
+}
+
+.drawerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-10);
+  margin-top: var(--sp-18);
+}

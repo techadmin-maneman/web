@@ -6,11 +6,13 @@
 import { Fragment } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
+import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
 import { ReferralsScreen } from "./referrals/ReferralsScreen.tsx";
 import { keyOf, routeOf, usePath, type Route } from "./route.ts";
 import { WaitlistScreen } from "./waitlist/WaitlistScreen.tsx";
 
 function Page({ route }: { route: Route }) {
+  if (route.page === "dispatch") return <DispatchScreen />;
   if (route.page === "waitlist") return <WaitlistScreen />;
   if (route.page === "referrals") return <ReferralsScreen />;
   if (route.clientId === null) return <FindClientScreen />;
