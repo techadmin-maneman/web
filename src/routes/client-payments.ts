@@ -79,7 +79,7 @@ const RefundEntrySchema = z
   .strict()
   .openapi("RefundEntry");
 
-const EntrySchema = z.discriminatedUnion("kind", [PaymentEntrySchema, RefundEntrySchema]);
+export const EntrySchema = z.discriminatedUnion("kind", [PaymentEntrySchema, RefundEntrySchema]);
 
 const PaymentDetailSchema = PaymentEntrySchema.extend({
   documents: z
@@ -249,6 +249,20 @@ const refundOf = (row: RefundRow) => ({
   speed: row.speed,
 });
 
+/** A person's payments and refunds as one list, newest first. Ops read the same list on the client's page. */
+export async function paymentEntries(db: D1Database, personId: string): Promise<z.infer<typeof EntrySchema>[]> {
+  const [payments, refunds] = await Promise.all([
+    db.prepare(PAYMENT_QUERY).bind(personId).all<PaymentRow>(),
+    db.prepare(REFUND_QUERY).bind(personId).all<RefundRow>(),
+  ]);
+  return [
+    ...payments.results.map((row) => ({ at: row.created_at, entry: paymentOf(row) })),
+    ...refunds.results.map((row) => ({ at: row.created_at, entry: refundOf(row) })),
+  ]
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .map(({ entry }) => entry);
+}
+
 export function registerClientPayments(app: App): void {
   for (const path of ["/api/payments", "/api/payments/*", "/api/documents/*"]) {
     app.use(path, requireClientSession);
@@ -257,18 +271,7 @@ export function registerClientPayments(app: App): void {
   app.openapi(paymentsRoute, async (c) => {
     const session = c.var.clientSession;
     if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
-    const db = c.env.DB;
-    const [payments, refunds] = await Promise.all([
-      db.prepare(PAYMENT_QUERY).bind(session.subjectId).all<PaymentRow>(),
-      db.prepare(REFUND_QUERY).bind(session.subjectId).all<RefundRow>(),
-    ]);
-    const entries = [
-      ...payments.results.map((row) => ({ at: row.created_at, entry: paymentOf(row) })),
-      ...refunds.results.map((row) => ({ at: row.created_at, entry: refundOf(row) })),
-    ]
-      .sort((a, b) => b.at.localeCompare(a.at))
-      .map(({ entry }) => entry);
-    return c.json({ entries }, 200);
+    return c.json({ entries: await paymentEntries(c.env.DB, session.subjectId) }, 200);
   });
 
   app.openapi(entryRoute, async (c) => {

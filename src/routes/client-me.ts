@@ -8,7 +8,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { WINDOW_LABELS, windowLabel, type VisitWindow } from "../config/booking.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { isFitted, nextVisit } from "../domain/client-visits.ts";
+import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { currentAddress } from "../domain/profile.ts";
@@ -20,7 +20,7 @@ import { VisitSummarySchema } from "./client-visits.ts";
 
 export const MeSchema = z
   .object({
-    state: z.enum(["fitted", "lead", "nothing_booked"]),
+    state: z.enum(CLIENT_STATES),
     name: z.string(),
     first_name: z.string(),
     initials: z
@@ -105,11 +105,7 @@ export function registerClientMe(app: App): void {
 
     return c.json(
       {
-        state: fitted
-          ? ("fitted" as const)
-          : upcoming !== null || booking !== null
-            ? ("lead" as const)
-            : ("nothing_booked" as const),
+        state: clientStateOf(fitted, upcoming !== null || booking !== null),
         name: person.name,
         first_name: person.name.trim().split(/\s+/)[0] ?? "",
         initials: initialsOf(person.name),

@@ -37,6 +37,142 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/clients/search
+
+Find a client by mobile number. A POST, so the number stays out of the URL
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientSearch"
+}
+```
+
+**200**: The client, to open their page with
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string"
+    },
+    "mobile": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "mobile"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: not an Indian mobile number
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/clients/{id}
+
+The client's record: who they are, their address, their visits and their payments
+
+**200**: The record
+
+```json
+{
+  "$ref": "#/components/schemas/ClientRecord"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/clients/{id}/photos
+
+Which photographs the client has, by visit, newest first. No image is served here
+
+**200**: Visits that have photographs
+
+```json
+{
+  "$ref": "#/components/schemas/ClientPhotos"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/clients/{id}/photos/{photo_id}
+
+One of the client's photographs. The audit entry is written before the image is
+
+**200**: The image
+
+**404**: not_found: no such photograph of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: the view could not be audited, so no photograph is served
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/clients/{id}/consents
+
+The client's consents and any deletion request. Ops read them and never grant one
+
+**200**: Consents and data
+
+```json
+{
+  "$ref": "#/components/schemas/ClientConsents"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/number-changes
 
 Number changes waiting for ops: both numbers proven by code
@@ -806,6 +942,931 @@ Every referrer's figures, the busiest first
     "version_id",
     "version_tag",
     "d1"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientSearch
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+    }
+  },
+  "required": [
+    "mobile"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientRecord
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string"
+    },
+    "mobile": {
+      "type": "string",
+      "description": "E.164, as ops need it to call or message."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "fitted",
+        "lead",
+        "nothing_booked"
+      ]
+    },
+    "known_since": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the person's record was first written."
+    },
+    "address": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ClientAddress"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The address visits go to now."
+    },
+    "credits": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "visits": {
+              "type": "integer"
+            },
+            "earliest_expiry": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "visits",
+            "earliest_expiry"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Service visits left and when the soonest expires; null with none left."
+    },
+    "visits": {
+      "type": "object",
+      "properties": {
+        "upcoming": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ClientVisit"
+          }
+        },
+        "past": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ClientVisit"
+          }
+        }
+      },
+      "required": [
+        "upcoming",
+        "past"
+      ],
+      "additionalProperties": false,
+      "description": "Upcoming soonest first; past newest first."
+    },
+    "payments": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PaymentEntry"
+          },
+          {
+            "$ref": "#/components/schemas/RefundEntry"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "payment": "#/components/schemas/PaymentEntry",
+            "refund": "#/components/schemas/RefundEntry"
+          }
+        }
+      },
+      "description": "Payments and refunds as one list, newest first."
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "mobile",
+    "state",
+    "known_since",
+    "address",
+    "credits",
+    "visits",
+    "payments"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientAddress
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "line1": {
+      "type": "string"
+    },
+    "line2": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "locality": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "pincode": {
+      "type": "string"
+    },
+    "access_notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For the technician: gate code, parking and the like."
+    }
+  },
+  "required": [
+    "line1",
+    "line2",
+    "locality",
+    "city",
+    "pincode",
+    "access_notes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientVisit
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/VisitSummary"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "done",
+                "partial"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What FSM closed the visit as; null until it is closed."
+        }
+      },
+      "required": [
+        "outcome"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
+```
+
+### Technician
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "initials": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "initials"
+  ],
+  "additionalProperties": false,
+  "description": "Display name and initials only."
+}
+```
+
+### VisitSummary
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date."
+    },
+    "window_label": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ends_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "length_minutes": {
+      "type": "integer"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "dispatched",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "terminated",
+        "other"
+      ]
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Technician"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "place": {
+      "type": "string",
+      "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "window_label",
+    "starts_at",
+    "ends_at",
+    "length_minutes",
+    "type",
+    "status",
+    "technician",
+    "place"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentEntry
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "payment"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date it was made."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "gst_percent": {
+      "type": "number",
+      "description": "The GST rate the amount includes."
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for, when known."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "authorized",
+        "captured",
+        "refunded",
+        "partially_refunded"
+      ]
+    },
+    "method": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "upi, card, netbanking and so on."
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Ours, e.g. MM-2026-0841, once captured."
+    },
+    "refunded_amount": {
+      "type": "integer",
+      "description": "In paise: refunds Razorpay has processed."
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "visit",
+        "late_fee"
+      ],
+      "description": "What it paid for: the visit, or a late fee."
+    },
+    "charge": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "change": {
+              "type": "string",
+              "enum": [
+                "cancelled",
+                "moved"
+              ]
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the client cancelled or moved the visit."
+            },
+            "visit_started_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the visit was to start."
+            },
+            "amount": {
+              "type": "integer",
+              "description": "In paise: what was kept."
+            }
+          },
+          "required": [
+            "change",
+            "at",
+            "visit_started_at",
+            "amount"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Kept under the 24-hour rule, with its evidence: \"cancelled 9:14 am, visit was 10 am\"."
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "date",
+    "amount",
+    "amount_ex_gst",
+    "gst_percent",
+    "visit",
+    "status",
+    "method",
+    "reference",
+    "refunded_amount",
+    "purpose",
+    "charge"
+  ],
+  "additionalProperties": false
+}
+```
+
+### RefundEntry
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "refund"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "payment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date it was made."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "gst_percent": {
+      "type": "number",
+      "description": "The GST rate the amount includes."
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for, when known."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "processed",
+        "failed"
+      ]
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where the money goes back to: the payment's method."
+    },
+    "speed": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "normal (5 to 7 working days) or instant."
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "payment_id",
+    "date",
+    "amount",
+    "amount_ex_gst",
+    "gst_percent",
+    "visit",
+    "status",
+    "destination",
+    "speed"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientPhotos
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "visit_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "technician": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "initials": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "initials"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPhoto"
+            },
+            "description": "Before then after, each in the design's angle order."
+          }
+        },
+        "required": [
+          "visit_id",
+          "date",
+          "type",
+          "technician",
+          "photos"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "visits"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientPhoto
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "For GET /api/clients/{id}/photos/{photo_id}, which is audited."
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "before",
+        "after"
+      ]
+    },
+    "angle": {
+      "type": "string",
+      "enum": [
+        "front",
+        "top",
+        "left",
+        "right",
+        "hair"
+      ]
+    },
+    "width": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "height": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "taken_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "phase",
+    "angle",
+    "width",
+    "height",
+    "taken_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientConsents
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "photos_own_record",
+              "photos_referral_cards",
+              "photos_marketing",
+              "whatsapp_visits",
+              "whatsapp_launches"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "given",
+              "withdrawn",
+              "not_given"
+            ],
+            "description": "not_given until the client first switches it on; withdrawn once they switch it back off."
+          },
+          "notice_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The notice the client saw when they last switched it."
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When they last switched it."
+          }
+        },
+        "required": [
+          "purpose",
+          "state",
+          "notice_version",
+          "at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "deletion": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "requested",
+                "rejected"
+              ]
+            },
+            "requested_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "decided_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "state",
+            "requested_at",
+            "decided_at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Their latest deletion request. A processed one leaves no client to read."
+    }
+  },
+  "required": [
+    "consents",
+    "deletion"
   ],
   "additionalProperties": false
 }

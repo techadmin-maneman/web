@@ -37,6 +37,12 @@ const PERSONAL_FIELDS = [
   "result_key",
   "image_key",
   "object_key",
+  "r2_key",
+  // Where the person lives, and how a technician gets in.
+  "line1",
+  "line2",
+  "locality",
+  "access_notes",
   "provider_result_url",
   "result_url",
   "signed_url",
