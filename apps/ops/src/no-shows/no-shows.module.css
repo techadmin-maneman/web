@@ -1,0 +1,155 @@
+/*
+ * Board D1's queue, on the panel the board draws it on. The evidence reads as
+ * the board's disputed charge does: the fact on the left, its value right and
+ * tabular, one hairline between each. Ink carries the one primary action, as
+ * on board C1; gold stays with the navigation's selection.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-panel);
+}
+
+.panel {
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--sp-14) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.panelTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-22);
+}
+
+.count {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* ---- One case, with its three facts --------------------------------------- */
+
+.cases {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case {
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.caseHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-16);
+}
+
+.visit {
+  font-size: var(--fs-15);
+}
+
+.technician {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.facts {
+  margin: var(--sp-14) 0 0;
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.fact {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-10) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-15);
+}
+
+.factName {
+  color: var(--text-muted);
+}
+
+.factValue {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+  margin-top: var(--sp-14);
+}
+
+.charge,
+.waive {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-18);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.charge {
+  border: var(--hairline) solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.waive {
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+}
+
+.charge:disabled,
+.waive:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.charge:focus-visible,
+.waive:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+.error {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.note {
+  margin: 0;
+  padding: var(--sp-14) var(--sp-20);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-muted);
+}

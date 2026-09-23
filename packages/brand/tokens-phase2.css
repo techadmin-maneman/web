@@ -40,6 +40,8 @@
   --ops-consent-state: 92px; /* a consent's state, date and notice, beside the purpose (board B3) */
   --ops-consent-date: 96px;
   --ops-consent-notice: 72px;
+  --ops-technician: 120px; /* the roster's name column, which board D3 draws as the 1fr of its five */
+  --ops-zone: 96px; /* and the zone beside it */
 
   --skeleton-label: 120px; /* the loading state's label (board B3) */
   --skeleton-card: 150px; /* and its card */
