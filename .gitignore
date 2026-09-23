@@ -18,6 +18,5 @@ lighthouse/
 # Files the owner supplies that hold personal data, such as ops' referral log. Never committed.
 private/
 
-# Worktrees the agents work in; never part of the repository.
 # Worktrees a background agent works in; never part of the repository.
 .claude/worktrees/
