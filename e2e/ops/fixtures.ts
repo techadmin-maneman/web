@@ -369,6 +369,145 @@ export const NO_SHOWS = {
   ],
 };
 
+// ---- Board B1: the pieces the client has been fitted with ----------------------
+
+/** The board's own three: one still in wear, one that split, and one rejected at the fit. */
+export const PIECES = {
+  pieces: [
+    {
+      piece_code: "MM-STD-4417-C",
+      base: "Mono",
+      supplier_lot: "L-2704",
+      fitted_at: "2027-06-27",
+      replacement_due_at: "2028-03-01",
+      failed_at: null,
+      failure_reason: null,
+    },
+    {
+      piece_code: "MM-STD-4417-B",
+      base: "Mono",
+      supplier_lot: "L-1109",
+      fitted_at: "2026-11-14",
+      replacement_due_at: "2027-06-01",
+      failed_at: "2027-06-24T06:00:00.000Z",
+      failure_reason: "base split at crown",
+    },
+    {
+      piece_code: "MM-STD-4417-A",
+      base: "Mono",
+      supplier_lot: null,
+      fitted_at: "2026-11-14",
+      replacement_due_at: null,
+      failed_at: "2026-11-16T06:00:00.000Z",
+      failure_reason: "rejected at fit, refunded",
+    },
+  ],
+};
+
+// ---- Board D2: what ops still have to do ---------------------------------------
+
+/**
+ * Read against 22 September 2027 in India, the day the tests and the fidelity
+ * run set their clock to. Four have run over, as the board's head writes, and
+ * each task's `due` is its `since` plus the placeholder two days
+ * (src/policy/tasks.ts), so the days left are the board's own: "2 days",
+ * "Today", "Overdue 3".
+ */
+export const TASKS = {
+  overdue: 4,
+  groups: [
+    {
+      group: "replacement_order",
+      count: 2,
+      tasks: [
+        {
+          id: "91000000-0000-4000-8000-000000000001",
+          person: { id: "22000000-0000-4000-8000-000000000002", name: "Kunal Mehta" },
+          detail: "MM-STD-4417-K",
+          since: "2027-09-16T18:30:00.000Z",
+          due: "2027-09-18T18:30:00.000Z",
+        },
+        {
+          id: "91000000-0000-4000-8000-000000000002",
+          person: { id: CLIENT.id, name: CLIENT.name },
+          detail: "MM-STD-4417-C",
+          since: "2027-09-21T18:30:00.000Z",
+          due: "2027-09-23T18:30:00.000Z",
+        },
+      ],
+    },
+    {
+      group: "referral_review",
+      count: 2,
+      tasks: [
+        {
+          id: "92000000-0000-4000-8000-000000000001",
+          person: { id: "22000000-0000-4000-8000-000000000003", name: "Rohan Bhalla" },
+          detail: "shared_address",
+          since: "2027-09-17T06:00:00.000Z",
+          due: "2027-09-19T06:00:00.000Z",
+        },
+        {
+          id: "92000000-0000-4000-8000-000000000002",
+          person: { id: "22000000-0000-4000-8000-000000000004", name: "Karan Bose" },
+          detail: "monthly_cap",
+          since: "2027-09-20T06:00:00.000Z",
+          due: "2027-09-22T06:00:00.000Z",
+        },
+      ],
+    },
+    {
+      group: "no_show_decision",
+      count: 2,
+      tasks: [
+        {
+          id: "93000000-0000-4000-8000-000000000001",
+          person: null,
+          detail: "Imran Qureshi",
+          since: "2027-09-19T06:17:00.000Z",
+          due: "2027-09-21T06:17:00.000Z",
+        },
+        {
+          id: "93000000-0000-4000-8000-000000000002",
+          person: null,
+          detail: "Sandeep Yadav",
+          since: "2027-09-20T04:46:00.000Z",
+          due: "2027-09-22T04:46:00.000Z",
+        },
+      ],
+    },
+    {
+      group: "number_change",
+      count: 1,
+      tasks: [
+        {
+          id: "94000000-0000-4000-8000-000000000001",
+          person: { id: "22000000-0000-4000-8000-000000000005", name: "Vikram Sethi" },
+          detail: null,
+          since: "2027-09-18T06:00:00.000Z",
+          due: "2027-09-20T06:00:00.000Z",
+        },
+      ],
+    },
+    {
+      group: "erasure_request",
+      count: 1,
+      tasks: [
+        {
+          id: "95000000-0000-4000-8000-000000000001",
+          person: { id: "22000000-0000-4000-8000-000000000006", name: "Ashish Gill" },
+          detail: null,
+          since: "2027-09-21T06:00:00.000Z",
+          due: "2027-09-23T06:00:00.000Z",
+        },
+      ],
+    },
+  ],
+};
+
+/** The day the board's tasks are read against: 10:30 in India on 22 September 2027. */
+export const TASKS_READ_ON = new Date("2027-09-22T05:00:00.000Z");
+
 // ---- Board D3: the roster, and the phones the board does not draw --------------
 
 const technician = (

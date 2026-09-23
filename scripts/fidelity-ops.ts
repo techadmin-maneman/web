@@ -1,8 +1,8 @@
 // The ops console's fidelity pairs (docs/fidelity-method.md, "Phase 2 boards"):
 // each frame of design/phase2/Ops Console.dc.html that the console builds,
 // beside the built console in the same state. The console is drawn at 1440;
-// boards B2, B3, C1 to C3, D1 and D3 are panels within it, 660 and 484 px wide,
-// drawn at their own size, so each pair is a panel beside a panel.
+// boards B2, B3, C1 to C3, D1, D2 and D3 are panels within it, 660 and 484 px
+// wide, drawn at their own size, so each pair is a panel beside a panel.
 //
 //   npm run build:ops -- --env local && npm run fidelity:ops
 //
@@ -14,16 +14,16 @@
 // Writes docs/fidelity/ops/<name>.jpg: the design on the left, the build on
 // the right. Differences in type, spacing, colour or order are defects.
 //
-// Board A1 draws the console whole at 1440 and shows it at 1000, so its pair is
-// the console's own frame brought down to 1000; every other pair is a panel
-// beside a panel, at its own size.
+// Boards A1 and B1 draw the console whole at 1440 and show it at 1000, so their
+// pairs are the console's own frame brought down to 1000; every other pair is a
+// panel beside a panel, at its own size.
 
 import { rmSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
-import { BOARD } from "../e2e/ops/fixtures.ts";
+import { BOARD, PIECES, TASKS } from "../e2e/ops/fixtures.ts";
 import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
@@ -244,9 +244,12 @@ const API: Api = {
   "/api/waitlist": json(AREAS),
   "/api/pincodes/400050/launch": json(PREVIEW),
   [`/api/clients/${CLIENT_ID}`]: json(RECORD),
+  [`/api/clients/${CLIENT_ID}/pieces`]: json(PIECES),
   [`/api/clients/${CLIENT_ID}/photos`]: json(PHOTOS),
   [`/api/clients/${CLIENT_ID}/consents`]: json(CONSENTS),
   "/api/no-shows": json(NO_SHOWS),
+  // The tasks are read against IN_2027, the day their dates are written for (e2e/ops/fixtures.ts).
+  "/api/tasks": json(TASKS),
   "/api/technicians": json(TECHNICIANS),
   ...photoFiles,
 };
@@ -385,6 +388,28 @@ async function noShows(browser: Browser, design: Page): Promise<void> {
   await page.close();
 }
 
+/**
+ * Board B1, the client's page with its pieces table. The board draws it whole
+ * at 1440, as it draws A1, so its pair is the console's own frame brought down
+ * to the 1000 px it shows it at.
+ */
+async function pieces(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, `/clients/${CLIENT_ID}/pieces`, IN_2027, false);
+  await page.getByText("MM-STD-4417-C").waitFor();
+  await settle(page);
+  await pair(OUT, SHOWN, "b1-pieces", await frame(design, "Client page"), await shrink(await page.screenshot(), SHOWN));
+  await page.close();
+}
+
+/** Board D2, the queues ops still have to work through, on the panel the board draws. */
+async function tasks(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, "/tasks");
+  const panel = page.getByRole("region", { name: "Tasks" });
+  await panel.getByText("Nothing is closed here.").waitFor();
+  await pair(OUT, PANEL, "d2-tasks", await frame(design, "Tasks"), await panel.screenshot());
+  await page.close();
+}
+
 /** Board D3, the roster, with each technician's phones beneath his name. */
 async function technicians(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/technicians");
@@ -413,11 +438,13 @@ try {
   console.log(`fidelity: the ops console at ${String(CONSOLE)} px`);
   const design = await openDesign(browser);
   await dispatch(browser, design);
+  await pieces(browser, design);
   await photos(browser, design);
   await consents(browser, design);
   await referrals(browser, design);
   await waitlist(browser, design);
   await noShows(browser, design);
+  await tasks(browser, design);
   await technicians(browser, design);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
