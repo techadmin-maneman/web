@@ -7,12 +7,14 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { checkoutOnTop, confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
+import { continueToPayment, TAKEN } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another.
 test.describe.configure({ mode: "serial" });
 
-async function toPayment(page: Page): Promise<void> {
+/** Logs in and picks the first free day, as far as the window step. */
+async function toWindows(page: Page): Promise<void> {
   await logIn(page, fittedClient().mobile);
   await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
   await page.getByRole("button", { name: "Book your next visit" }).click();
@@ -20,10 +22,11 @@ async function toPayment(page: Page): Promise<void> {
   await expect(sheet.getByText("Step 1 of 3")).toBeVisible();
   await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
   await sheet.getByRole("button", { name: "Continue" }).click();
-  const windows = page.getByRole("dialog", { name: "Pick a window" });
-  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await windows.getByRole("button", { name: "Continue to payment" }).click();
-  await expect(page.getByRole("dialog", { name: "Pay and confirm" })).toBeVisible();
+}
+
+async function toPayment(page: Page): Promise<void> {
+  await toWindows(page);
+  await continueToPayment(page);
 }
 
 test("books and pays for a service visit through Razorpay Checkout", async ({ page }) => {
@@ -66,6 +69,29 @@ test("says so when the payment fails, with the hold still counting", async ({ pa
   await expect(failed.getByText("The payment did not go through.")).toBeVisible();
   await expect(failed.getByText(/^Slot held \d:\d\d more\.$/)).toBeVisible();
   await expect(failed.getByRole("button", { name: "Another method" })).toBeVisible();
+});
+
+test("picks another window when one has just gone, and pays for that one", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await confirmedByRazorpay(page);
+  // The first window goes to another client between the sheet offering it and the hold.
+  let met = false;
+  await page.route("**/api/holds", (route) => {
+    if (met || route.request().method() !== "POST") return route.fallback();
+    met = true;
+    return route.fulfill({ status: 409, json: { error: { code: "taken", request_id: "e2e" } } });
+  });
+  await toWindows(page);
+  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+  await windows.getByRole("button", { name: "Continue to payment" }).click();
+  await expect(windows.getByRole("alert")).toHaveText(TAKEN);
+  // Nothing is chosen any more: the day's windows have been asked for again, and the client picks from those.
+  await expect(windows.getByRole("button", { name: "Continue to payment" })).toBeDisabled();
+
+  await continueToPayment(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
 });
 
 test("lets a lapsed hold go, and picks again", async ({ page }) => {

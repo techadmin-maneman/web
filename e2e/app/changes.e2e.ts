@@ -7,6 +7,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { changingClients } from "./changing.ts";
 import { confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
+import { continueToPayment } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
 // Each client's visit is moved, then cancelled, so these run one after another.
@@ -30,9 +31,7 @@ async function pickAnother(page: Page, which: "first" | "last"): Promise<void> {
   const dates = page.getByRole("dialog", { name: "Pick a date" }).getByRole("radio").and(page.locator(":enabled"));
   await (which === "first" ? dates.first() : dates.last()).click();
   await page.getByRole("button", { name: "Continue" }).click();
-  const windows = page.getByRole("dialog", { name: "Pick a window" });
-  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await windows.getByRole("button", { name: "Continue to payment" }).click();
+  await continueToPayment(page);
 }
 
 test("C7: a visit more than 24 hours out moves for free, its payment carried over", async ({ page }) => {
