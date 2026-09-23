@@ -78,12 +78,14 @@ export default defineConfig({
   projects: [
     {
       name: "390",
-      testIgnore: ["app/**", "ops/**", "tech/**"],
+      // tech-staging/ is the proof against the deployed API, which has its own
+      // config and is never run by CI (playwright.staging.config.ts).
+      testIgnore: ["app/**", "ops/**", "tech/**", "tech-staging/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
     },
     {
       name: "1440",
-      testIgnore: ["app/**", "ops/**", "tech/**"],
+      testIgnore: ["app/**", "ops/**", "tech/**", "tech-staging/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {
