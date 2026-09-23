@@ -2,15 +2,25 @@
 // outbox changes, so a send or a supersede shows without a reload.
 
 import { useEffect, useState } from "react";
-import { events, frames, onChange, type Queued } from "../store/outbox.ts";
+import { events, frames, onChange, type Frame, type Queued } from "../store/outbox.ts";
 
 export interface Waiting {
   readonly events: readonly Queued[];
   /** Photograph frames still on the phone, one per angle, grouped by job on the waiting screen. */
-  readonly frames: readonly { id: string; job_id: string; angle: string; phase: string; frame: Blob }[];
+  readonly frames: readonly Frame[];
 }
 
 const NOTHING: Waiting = { events: [], frames: [] };
+
+/**
+ * What the outbox holds, as one value that changes only when it does. A screen
+ * that must re-read a job when a write lands watches this rather than the array
+ * itself, which is new on every read (apps/tech/src/lib/useDay.ts).
+ */
+export function signatureOf(waiting: Waiting): string {
+  const events = waiting.events.map((event) => `${String(event.seq)}${event.state}`).join(",");
+  return `${events}|${String(waiting.frames.length)}`;
+}
 
 export function useOutbox(): Waiting {
   const [waiting, setWaiting] = useState<Waiting>(NOTHING);

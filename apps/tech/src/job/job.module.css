@@ -120,67 +120,6 @@
   color: var(--paper);
 }
 
-.piece {
-  padding: var(--sp-16) var(--sp-20);
-}
-
-.pieceTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
-  font-size: var(--fs-15);
-  font-weight: 400;
-  color: var(--ink-muted);
-}
-
-.spec {
-  margin: var(--sp-10) 0 0;
-  border-top: var(--hairline) solid var(--ink-rule);
-}
-
-.specRow {
-  display: flex;
-  gap: var(--sp-16);
-  justify-content: space-between;
-  padding: var(--sp-11) 0;
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.specKey {
-  font-size: var(--fs-16);
-  color: var(--ink-muted);
-}
-
-.specValue {
-  margin: 0;
-  font-size: var(--fs-17);
-  text-align: right;
-  color: var(--paper);
-}
-
-.last {
-  display: flex;
-  gap: var(--sp-14);
-  align-items: center;
-  margin-top: var(--sp-14);
-}
-
-.thumb {
-  flex-shrink: 0;
-  width: var(--tech-thumb);
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
-  background: var(--ink-frame);
-}
-
-.lastLine {
-  margin: 0;
-  font-size: var(--fs-15);
-  line-height: 1.55;
-  color: var(--ink-soft);
-}
-
 /* Gloved use: the one action, same place on every screen, 64 px and full width. */
 .foot {
   flex-shrink: 0;
@@ -209,4 +148,133 @@
 
 .action:focus-visible {
   outline-color: var(--paper);
+}
+
+/* ---- Board B5: the evidence chain, one card per stage ---------------------- */
+
+.stage,
+.failed {
+  padding: var(--sp-22) var(--sp-20);
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+.failed {
+  border-top-color: var(--error-on-paper);
+}
+
+.stageLabel,
+.failedLabel {
+  margin: 0 0 var(--sp-14);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.failedLabel {
+  color: var(--error-on-ink);
+}
+
+.stageBody {
+  margin: 0;
+  font-size: var(--fs-18);
+  line-height: 1.5;
+  color: var(--paper);
+}
+
+.failedLine {
+  margin: 0 0 var(--sp-12);
+  font-size: var(--fs-19);
+  line-height: 1.45;
+  color: var(--paper);
+}
+
+.failed .stageBody {
+  font-size: var(--fs-17);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.stageWarn {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-17);
+  line-height: 1.55;
+  color: var(--error-on-ink);
+}
+
+/* The wait, in whole seconds: the board's one large number. */
+.timer {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-timer);
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+  color: var(--paper);
+}
+
+.timer + .stageBody {
+  margin-top: var(--sp-10);
+  font-size: var(--fs-17);
+  color: var(--ink-soft);
+}
+
+.evidence {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: flex-start;
+  margin: var(--sp-18) 0 0;
+  padding-top: var(--sp-16);
+  border-top: var(--hairline) solid var(--ink-rule);
+  font-size: var(--fs-17);
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.evidenceIcon {
+  flex-shrink: 0;
+  margin-top: var(--sp-2);
+  color: var(--gilt);
+}
+
+.stage .action {
+  margin-top: var(--sp-18);
+}
+
+/* Not usable yet: the board keeps it in place and dims it, never hides it. */
+.dim {
+  width: 100%;
+  height: var(--tech-primary);
+  margin-top: var(--sp-18);
+  border: 0;
+  background: var(--gilt);
+  font: inherit;
+  font-size: var(--fs-18);
+  font-weight: 500;
+  color: var(--ink-deep);
+  cursor: pointer;
+}
+
+.dim:disabled {
+  background: var(--ink-disabled);
+  color: var(--ink-soft);
+  cursor: default;
+}
+
+.second {
+  width: 100%;
+  min-height: var(--tech-stepper);
+  margin-top: var(--sp-18);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-17);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.dim:focus-visible,
+.second:focus-visible {
+  outline: var(--rule-strong) solid var(--paper);
+  outline-offset: var(--focus-offset);
 }

@@ -18,6 +18,7 @@ const event = (seq: number, job: string, over: Partial<Queued> = {}): Queued => 
   queued_at: seq,
   state: "waiting",
   note: null,
+  fields: [],
   ...over,
 });
 
@@ -48,7 +49,7 @@ describe("what the outbox sends, and in what order", () => {
 
   it("stops a job whose write was superseded, and lets the other jobs go on", () => {
     const queue = [
-      event(1, "a", { state: "superseded", note: "Ops moved this job to Sandeep at 10:40" }),
+      event(1, "a", { state: "superseded", note: "superseded", fields: ["technician"] }),
       event(2, "a"),
       event(3, "b"),
     ];
@@ -57,7 +58,7 @@ describe("what the outbox sends, and in what order", () => {
   });
 
   it("stops a job the API refused, for the same reason", () => {
-    const queue = [event(1, "a", { state: "refused", note: "This job is already closed." }), event(2, "a")];
+    const queue = [event(1, "a", { state: "refused", note: "not_found" }), event(2, "a")];
     expect(sendable(queue)).toEqual([]);
     expect(nextToSend(queue)).toBeNull();
   });
@@ -76,9 +77,15 @@ describe("the account of what has not reached us", () => {
     ]);
   });
 
-  it("keeps what changed, in the API's own words, so no screen says a generic error", () => {
-    const changed = "Ops moved this job to Sandeep at 10:40";
-    const queue = [event(1, "a", { state: "superseded", note: changed }), event(2, "a")];
-    expect(account(queue)).toEqual([{ job_id: "a", waiting: 1, stopped: { state: "superseded", note: changed } }]);
+  /**
+   * The API answers a stable code and, on a 409, the fields that moved — never
+   * a sentence (docs/api-tech.md). The outbox keeps both, so the screen can say
+   * which field changed rather than a generic error.
+   */
+  it("keeps the code and the fields that changed, so no screen says a generic error", () => {
+    const queue = [event(1, "a", { state: "superseded", note: "superseded", fields: ["technician"] }), event(2, "a")];
+    expect(account(queue)).toEqual([
+      { job_id: "a", waiting: 1, stopped: { state: "superseded", note: "superseded", fields: ["technician"] } },
+    ]);
   });
 });

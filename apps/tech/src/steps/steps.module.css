@@ -1,0 +1,387 @@
+/*
+ * Board B: the six in-job steps and the close-out. One primary action per
+ * screen, bottom, same place; 88 px rows and 56 px steppers, for gloved use.
+ */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--ink-deep);
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-12);
+  align-items: center;
+  min-height: var(--tech-min);
+  padding: var(--sp-8) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: calc(-1 * var(--sp-12));
+  border: 0;
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.title {
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.progress {
+  margin-left: auto;
+  font-size: var(--fs-18);
+  font-variant-numeric: tabular-nums;
+  color: var(--gilt);
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---- Board B2: the checklist ---------------------------------------------- */
+
+.check {
+  display: flex;
+  gap: var(--sp-18);
+  align-items: center;
+  width: 100%;
+  min-height: var(--tech-row);
+  padding: var(--sp-20);
+  border: 0;
+  border-bottom: var(--hairline) solid var(--ink-rule);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.box,
+.boxDone {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--tech-box);
+  height: var(--tech-box);
+  border: var(--rule-strong) solid var(--ink-line);
+}
+
+.boxDone {
+  border-color: var(--gilt);
+  background: var(--gilt);
+  color: var(--ink-deep);
+}
+
+.checkLabel,
+.checkDone {
+  font-size: var(--fs-19);
+  color: var(--paper);
+}
+
+/* Done, and quiet: the board dims what is behind you. */
+.checkDone {
+  color: var(--ink-muted);
+}
+
+/* ---- Board B3: the consumables' steppers ---------------------------------- */
+
+.count {
+  display: flex;
+  gap: var(--sp-16);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.countLabel {
+  font-size: var(--fs-18);
+  color: var(--paper);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tech-stepper);
+  height: var(--tech-stepper);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tech-stepper);
+  height: var(--tech-stepper);
+  border-top: var(--hairline) solid var(--ink-line);
+  border-bottom: var(--hairline) solid var(--ink-line);
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  font-variant-numeric: lining-nums;
+  color: var(--paper);
+}
+
+.note {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-17);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.warn {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-17);
+  line-height: 1.55;
+  color: var(--error-on-ink);
+}
+
+/* ---- Board B3: the piece --------------------------------------------------- */
+
+.field {
+  padding: var(--sp-20);
+}
+
+.fieldLabel {
+  display: block;
+  margin-bottom: var(--sp-10);
+  font-size: var(--fs-16);
+  color: var(--ink-muted);
+}
+
+.scan {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  min-height: var(--tech-primary);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--gilt);
+}
+
+.scanIcon {
+  flex-shrink: 0;
+  color: var(--gilt);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-18);
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+.input::placeholder {
+  color: var(--ink-muted);
+}
+
+.second {
+  width: 100%;
+  min-height: var(--tech-stepper);
+  margin-top: var(--sp-14);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-17);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.second:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+}
+
+.rows {
+  margin: 0;
+  padding: 0 var(--sp-20) var(--sp-20);
+}
+
+.row {
+  display: flex;
+  gap: var(--sp-16);
+  justify-content: space-between;
+  padding: var(--sp-14) 0;
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.rowKey {
+  font-size: var(--fs-16);
+  color: var(--ink-muted);
+}
+
+.rowValue {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--paper);
+}
+
+/* ---- Board B4: the outcome ------------------------------------------------- */
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding: var(--sp-20);
+}
+
+.choice,
+.choiceOn {
+  display: flex;
+  align-items: center;
+  min-height: var(--tech-primary);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-18);
+  text-align: left;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.choiceOn {
+  border-color: var(--gilt);
+  background: var(--gilt);
+  font-weight: 500;
+  color: var(--ink-deep);
+}
+
+.reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-10);
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20) var(--sp-20);
+  border-top: var(--hairline) solid var(--ink-rule);
+  list-style: none;
+}
+
+.reason,
+.reasonOn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--tech-stepper);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-17);
+  text-align: left;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.reasonOn {
+  border-color: var(--gilt);
+  color: var(--paper);
+}
+
+/* ---- Board B4: the close-out ----------------------------------------------- */
+
+.close {
+  flex: 1;
+  padding: var(--sp-24) var(--sp-20);
+}
+
+.closeLabel {
+  margin: 0 0 var(--sp-16);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.closeTick {
+  color: var(--gilt);
+}
+
+.closeWho {
+  margin: var(--sp-18) 0 var(--sp-14);
+  font-family: var(--font-serif);
+  font-size: var(--fs-28);
+  font-weight: 400;
+  line-height: 1.12;
+  color: var(--paper);
+}
+
+.close .rows {
+  padding: 0;
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+/* ---- The one action, bottom of every screen -------------------------------- */
+
+.foot {
+  flex-shrink: 0;
+  padding: var(--sp-16) var(--sp-20) var(--sp-22);
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+.action {
+  width: 100%;
+  height: var(--tech-primary);
+  border: 0;
+  background: var(--gilt);
+  font: inherit;
+  font-size: var(--fs-18);
+  font-weight: 500;
+  color: var(--ink-deep);
+  cursor: pointer;
+}
+
+.action:disabled {
+  background: var(--ink-disabled);
+  color: var(--ink-soft);
+  cursor: default;
+}
+
+.action:focus-visible,
+.back:focus-visible,
+.check:focus-visible,
+.step:focus-visible,
+.second:focus-visible,
+.choice:focus-visible,
+.choiceOn:focus-visible,
+.reason:focus-visible,
+.reasonOn:focus-visible,
+.input:focus-visible {
+  outline: var(--rule-strong) solid var(--paper);
+  outline-offset: var(--focus-offset);
+}

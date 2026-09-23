@@ -4,14 +4,17 @@
 //
 // The Prototype draws both fields at once. The code has to be asked for before
 // it can be typed, so the one action is "Send the code" until the backend has
-// sent one, and "Sign in" after. Verifying enrols this device, and the session
-// is bound to it (docs/decisions/0029-sessions.md).
+// sent one, and "Sign in" after. The phone names itself on both calls, and
+// verifying binds the session to it (docs/decisions/0052-technician-sessions.md).
+//
+// A wrong code is not an error: the API answers 200 with the tries left, and
+// only a closed challenge is refused. The screen follows that.
 
 import { useState } from "react";
 import { api, type Challenge } from "../api.ts";
 import { Mark } from "../components/Mark.tsx";
 import { session, signIn as copy } from "../content.ts";
-import { deviceId, enrolled, keepMe } from "../store/device.ts";
+import { deviceId, enrolled } from "../store/device.ts";
 import styles from "./login.module.css";
 
 /** The API's error code in the app's words, or the line that fits when the code is one we do not know. */
@@ -60,7 +63,7 @@ export function SignIn({ revoked, onSignedIn }: { revoked: boolean; onSignedIn: 
       return;
     }
     setWorking(true);
-    const answer = await api.sendCode(mobile);
+    const answer = await api.sendCode(mobile, await deviceId());
     setWorking(false);
     if (answer.ok) {
       setChallenge(answer.body);
@@ -73,11 +76,18 @@ export function SignIn({ revoked, onSignedIn }: { revoked: boolean; onSignedIn: 
     setWorking(true);
     const answer = await api.verify(challenge.challenge_id, code, await deviceId());
     setWorking(false);
-    if (answer.ok) {
-      await keepMe(answer.body);
-      await enrolled();
-      onSignedIn();
-    } else setError(messageFor(answer.code, copy.errors.mismatch));
+    if (!answer.ok) {
+      setError(messageFor(answer.code, copy.errors.unknown));
+      return;
+    }
+    if (!answer.body.verified) {
+      setCode("");
+      setError(copy.attemptsLeft(answer.body.attempts_left));
+      return;
+    }
+    // The session cookie is set; who is signed in comes from GET /tech/me, which App asks next.
+    await enrolled();
+    onSignedIn();
   }
 
   const ready = challenge === null ? tenDigits : code.length === 6;

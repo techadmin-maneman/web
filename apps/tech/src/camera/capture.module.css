@@ -1,51 +1,12 @@
-/* Board B1: the viewfinder, the five angle tiles, Retake and Capture. */
-
-.screen {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 100dvh;
-  background: var(--ink-night);
-}
-
-.head {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--sp-16);
-  align-items: center;
-  padding: var(--sp-8) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tap);
-  height: var(--tap);
-  margin-left: calc(-1 * var(--sp-12));
-  border: 0;
-  background: transparent;
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.title {
-  font-size: var(--fs-17);
-  color: var(--paper);
-}
-
-.progress {
-  margin-left: auto;
-  font-size: var(--fs-18);
-  font-variant-numeric: tabular-nums;
-  color: var(--gilt);
-}
+/*
+ * Board B1: the viewfinder, the five angle tiles, Retake and Capture. The head
+ * and the one primary action come from the step frame every board B screen
+ * shares (apps/tech/src/steps/steps.module.css).
+ */
 
 .stage {
   position: relative;
   display: flex;
-  flex: 1;
   align-items: center;
   justify-content: center;
   min-height: var(--preview-h);
@@ -79,12 +40,10 @@
 
 .tiles {
   display: grid;
-  flex-shrink: 0;
   grid-template-columns: repeat(5, 1fr);
   gap: var(--sp-8);
   margin: 0;
   padding: var(--sp-16) var(--sp-20);
-  border-top: var(--hairline) solid var(--ink-rule);
   list-style: none;
 }
 
@@ -117,9 +76,8 @@
 }
 
 /* The one place a screen has two actions: Retake beside the full-width Capture. */
-.foot {
+.shutter {
   display: flex;
-  flex-shrink: 0;
   gap: var(--sp-12);
   padding: 0 var(--sp-20) var(--sp-22);
 }
@@ -155,8 +113,7 @@
   cursor: default;
 }
 
-.retake:focus-visible,
-.back:focus-visible {
+.retake:focus-visible {
   outline: var(--rule-strong) solid var(--gilt);
   outline-offset: var(--focus-offset);
 }

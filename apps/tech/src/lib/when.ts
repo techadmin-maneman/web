@@ -1,4 +1,6 @@
-// The day the technician is working, and the clock the boards write.
+// The day the technician is working, the clock the boards write, and the two
+// counts board B5 and board B4 show: what is left of the wait, and how long the
+// job took.
 
 import { indiaClock } from "@maneman/web-kit/dates";
 
@@ -23,7 +25,22 @@ export function clockShort(isoInstant: string): string {
   return `${String(hours)}:${String(india.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-/** "3.1 km" beside a job's sector, or the sector alone when the distance is not known. */
-export function where(sector: string, km: number | null): string {
-  return km === null ? sector : `${sector} · ${km.toFixed(1)} km`;
+/** The sector beside a job, which is all the place a locked job carries. */
+export const where = (sector: string | null): string => sector ?? "";
+
+/** "1.4 km", "240 m": how far the check-in measured the phone from the door (board B5). */
+export function metres(distance: number): string {
+  return distance < 1000 ? `${String(Math.round(distance))} m` : `${(distance / 1000).toFixed(1)} km`;
+}
+
+/** "11:42", the minutes and seconds left of the no-show wait; "0:00" once it has run. */
+export function countdown(msLeft: number): string {
+  const left = Math.max(0, Math.ceil(msLeft / 1000));
+  return `${String(Math.floor(left / 60))}:${String(left % 60).padStart(2, "0")}`;
+}
+
+/** A job's length in hours and minutes, from Start job to the outcome (board B4). */
+export function lengthOf(fromMs: number, toMs: number): { hours: number; minutes: number } {
+  const minutes = Math.max(0, Math.round((toMs - fromMs) / 60_000));
+  return { hours: Math.floor(minutes / 60), minutes: minutes % 60 };
 }
