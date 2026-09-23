@@ -11,7 +11,7 @@ The prompt's P2-M5: "availability, holds, Razorpay checkout, credit redemption, 
 
 **Behind `SELF_SERVE_BOOKING`,** a var: on locally and on staging, off in production until the owner switches it on. Off, every booking route answers `409 ops_assisted`, and the app opens WhatsApp to ops (ADR 0043). The guard refuses it on without a payments provider.
 
-**The price book is a table** (migration 0016): item, tier, ex-GST amount in paise, GST rate, and the date it applies from. It is the only source of prices. It opens with the design's figures at the owner's placeholder 5% (`docs/open-points.md`, items 1 and 2).
+**The price book is a table** (migration 0016): item, tier, ex-GST amount in paise, GST rate, and the date it applies from. It is the only source of prices. It opens with the design's figures. GST began at the owner's placeholder 5% and is 0% on staging since migration 0018, so billing works end to end while the CA's rates are outstanding (ADR 0025 item 31; `docs/open-points.md`, items 1 and 2).
 
 **Who may book what** (`bookableTypes`): a consultation first; a first fit once a consultation is done; then service visits and replacements.
 
