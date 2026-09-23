@@ -1,8 +1,8 @@
 // The ops console's fidelity pairs (docs/fidelity-method.md, "Phase 2 boards"):
-// each frame of design/phase2/Ops Console.dc.html that P2-F3 builds, beside the
-// built console in the same state. The console is drawn at 1440; boards B2, B3
-// and C1 to C3 are panels within it, 660 and 484 px wide, drawn at their own
-// size, so each pair is a panel beside a panel.
+// each frame of design/phase2/Ops Console.dc.html that the console builds,
+// beside the built console in the same state. The console is drawn at 1440;
+// boards B2, B3, C1 to C3, D1 and D3 are panels within it, 660 and 484 px wide,
+// drawn at their own size, so each pair is a panel beside a panel.
 //
 //   npm run build:ops -- --env local && npm run fidelity:ops
 //
@@ -144,6 +144,51 @@ const PHOTOS = {
   ],
 };
 
+// ---- Board D1: the case the board rules on, with its three facts -------------
+
+/** The board's own: checked in at 11:31, 240 m out, the WhatsApp delivered 11:32, closed at 11:47. */
+const NO_SHOWS = {
+  cases: [
+    {
+      id: "66000000-0000-4000-8000-000000000001",
+      appointment_id: "77000000-0000-4000-8000-000000000001",
+      visit_date: "2027-09-19",
+      technician: "Imran Qureshi",
+      checked_in_at: "2027-09-19T06:01:00.000Z",
+      distance_m: 240,
+      message_delivered_at: "2027-09-19T06:02:00.000Z",
+      wait_ends_at: "2027-09-19T06:16:00.000Z",
+      closed_at: "2027-09-19T06:17:00.000Z",
+      decision: "undecided",
+      decided_at: null,
+    },
+  ],
+};
+
+// ---- Board D3: the roster, with the phones the board does not draw -----------
+
+const phone = (id: string, label: string | null, seen: string) => ({
+  device_id: id,
+  label,
+  last_seen_at: `${seen}T05:00:00.000Z`,
+  revoked_at: null,
+});
+const worker = (n: number, name: string, initials: string, zone: string, seen: string) => ({
+  id: `88000000-0000-4000-8000-00000000000${String(n)}`,
+  name,
+  initials,
+  zone,
+  devices: [phone(`device-${String(n)}`, "Chrome on Android", seen)],
+});
+const TECHNICIANS = {
+  technicians: [
+    worker(1, "Imran Qureshi", "IQ", "Sec 40–65", "2027-09-22"),
+    worker(2, "Sandeep Yadav", "SY", "Sec 1–39", "2027-09-22"),
+    worker(3, "Arjun Negi", "AN", "DLF 1–5", "2027-09-21"),
+    worker(4, "Faizan Ali", "FA", "Sohna Rd", "2027-09-20"),
+  ],
+};
+
 const consent = (purpose: string, state: string, version: string | null, at: string | null) => ({
   purpose,
   state,
@@ -186,6 +231,8 @@ const API: Api = {
   [`/api/clients/${CLIENT_ID}`]: json(RECORD),
   [`/api/clients/${CLIENT_ID}/photos`]: json(PHOTOS),
   [`/api/clients/${CLIENT_ID}/consents`]: json(CONSENTS),
+  "/api/no-shows": json(NO_SHOWS),
+  "/api/technicians": json(TECHNICIANS),
   ...photoFiles,
 };
 
@@ -278,6 +325,28 @@ async function photos(browser: Browser, design: Page): Promise<void> {
   await page.close();
 }
 
+/**
+ * Board D1. The board's frame draws the day's money over the charges, then the
+ * disputed charge beside it; only the evidence and a ruling have a route, so
+ * the queue is paired with the second card, the one that holds them.
+ */
+async function noShows(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, "/no-shows");
+  const panel = page.getByRole("region", { name: "Waiting for a decision" });
+  await panel.getByText("Delivered 11:32 am").waitFor();
+  await pair(OUT, PANEL, "d1-no-shows", await panelOf(design, "Payments", 1), await panel.screenshot());
+  await page.close();
+}
+
+/** Board D3, the roster, with each technician's phones beneath his name. */
+async function technicians(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, "/technicians");
+  const panel = page.getByRole("region", { name: "Technicians" });
+  await panel.getByText("Faizan Ali").waitFor();
+  await pair(OUT, PANEL, "d3-technicians", await frame(design, "Technicians"), await panel.screenshot());
+  await page.close();
+}
+
 /** Board B3, the consents, which ops read and never change. */
 async function consents(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, `/clients/${CLIENT_ID}/consents`);
@@ -300,6 +369,8 @@ try {
   await consents(browser, design);
   await referrals(browser, design);
   await waitlist(browser, design);
+  await noShows(browser, design);
+  await technicians(browser, design);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();
