@@ -2,7 +2,7 @@
   "name": "@maneman/ops",
   "private": true,
   "version": "0.0.0",
-  "description": "The ops console: the referral review queue, the referrers' figures and the waitlist (docs/decisions/0026-hosts-and-surfaces.md).",
+  "description": "The ops console: one client's record, the referral review queue, the referrers' figures and the waitlist (docs/decisions/0026-hosts-and-surfaces.md).",
   "type": "module",
   "dependencies": {
     "@maneman/brand": "0.0.0",

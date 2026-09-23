@@ -1,13 +1,15 @@
 // What the ops routes answer in these tests. The figures are the Ops Console
-// board's own (design/phase2/Ops Console.dc.html, C1 to C3), so a test reads
-// beside the drawing; nothing here is a real person, number or address.
+// board's own (design/phase2/Ops Console.dc.html, B2, B3 and C1 to C3), so a
+// test reads beside the drawing; nothing here is a real person, number,
+// address or photograph.
 //
 // The queues the console reads are empty on a fresh local database, and
-// seeding a held grant would mean writing rows no route creates. So the tests
-// that need a full queue answer the API themselves, as e2e/app's do for a
-// state the API cannot be put into.
+// seeding a held grant or a client's photographs would mean writing rows no
+// route creates. So the tests that need them answer the API themselves, as
+// e2e/app's do for a state the API cannot be put into.
 
 import type { Page, Route } from "@playwright/test";
+import sharp from "sharp";
 
 export const HELD = {
   held: [
@@ -85,9 +87,123 @@ export const AREAS = {
 export const PREVIEW = { pincode: "400050", waiting: 117, alerts: 84, launched: false };
 export const LAUNCHED = { pincode: "400050", waiting: 117, alerts: 84, launched: true };
 
+// ---- Boards B2 and B3: one client's page ------------------------------------
+
+/** The board's client, on a number nobody holds. */
+export const CLIENT = { id: "22000000-0000-4000-8000-000000000001", name: "Rohit Malhotra", mobile: "+919810004417" };
+
+const TECHNICIAN = { name: "Imran Qureshi", initials: "IQ" };
+const VISIT_ID = "33000000-0000-4000-8000-000000000001";
+
+export const RECORD = {
+  ...CLIENT,
+  state: "fitted",
+  known_since: "2026-11-01T06:00:00.000Z",
+  address: {
+    line1: "House 1204",
+    line2: null,
+    locality: "Sector 65",
+    city: "Gurgaon",
+    pincode: "122018",
+    access_notes: "Gate 4417, bay B",
+  },
+  credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
+  visits: {
+    upcoming: [],
+    past: [
+      {
+        id: VISIT_ID,
+        date: "2027-08-22",
+        window_label: "morning",
+        starts_at: "2027-08-22T03:30:00.000Z",
+        ends_at: "2027-08-22T05:00:00.000Z",
+        length_minutes: 90,
+        type: "service",
+        status: "completed",
+        technician: TECHNICIAN,
+        place: "Sector 65, Gurgaon 122018",
+        outcome: "done",
+      },
+    ],
+  },
+  payments: [],
+};
+
+const ANGLES = ["front", "top", "left", "right", "hair"] as const;
+const PHASES = ["before", "after"] as const;
+
+const photo = (phase: string, angle: string, n: number) => ({
+  id: `44000000-0000-4000-8000-00000000000${String(n)}`,
+  phase,
+  angle,
+  width: 600,
+  height: 800,
+  taken_at: "2027-08-22T04:30:00.000Z",
+});
+
+export const PHOTOS = {
+  visits: [
+    {
+      visit_id: VISIT_ID,
+      date: "2027-08-22",
+      type: "service",
+      technician: TECHNICIAN,
+      photos: PHASES.flatMap((phase, set) => ANGLES.map((angle, n) => photo(phase, angle, set * 5 + n))),
+    },
+  ],
+};
+
+export const CONSENTS = {
+  consents: [
+    {
+      purpose: "photos_own_record",
+      state: "given",
+      notice_version: "photos-own-record-v1",
+      at: "2026-11-14T08:00:00.000Z",
+    },
+    {
+      purpose: "photos_referral_cards",
+      state: "given",
+      notice_version: "photos-referral-cards-v2",
+      at: "2027-08-03T08:00:00.000Z",
+    },
+    { purpose: "photos_marketing", state: "not_given", notice_version: null, at: null },
+    {
+      purpose: "whatsapp_visits",
+      state: "given",
+      notice_version: "whatsapp-visits-v1",
+      at: "2026-11-02T08:00:00.000Z",
+    },
+    {
+      purpose: "whatsapp_launches",
+      state: "withdrawn",
+      notice_version: "whatsapp-launches-v1",
+      at: "2027-01-11T08:00:00.000Z",
+    },
+  ],
+  deletion: null,
+};
+
+export const ERASURE_REQUESTED = {
+  ...CONSENTS,
+  deletion: {
+    id: "55000000-0000-4000-8000-000000000001",
+    state: "requested",
+    requested_at: "2027-09-18T08:00:00.000Z",
+    decided_at: null,
+  },
+};
+
+/** A photograph that is a block of ink, so no test holds a picture of anyone. */
+export const inkPhoto = () =>
+  sharp({ create: { width: 600, height: 800, channels: 3, background: "#16233a" } })
+    .jpeg()
+    .toBuffer();
+
 type Answers = Readonly<Record<string, (route: Route) => Promise<void>>>;
 
 export const json = (body: unknown) => (route: Route) => route.fulfill({ json: body });
+export const jpeg = (body: Buffer) => (route: Route) => route.fulfill({ body, contentType: "image/jpeg" });
 export const fails = (status: number, code: string) => (route: Route) =>
   route.fulfill({ status, json: { error: { code, request_id: "test" } } });
 

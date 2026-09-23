@@ -4,13 +4,25 @@
 // opens straight on a section.
 
 import { Fragment } from "react";
+import { ClientScreen } from "./clients/ClientScreen.tsx";
+import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ReferralsScreen } from "./referrals/ReferralsScreen.tsx";
-import { routeOf, usePath } from "./route.ts";
+import { keyOf, routeOf, usePath, type Route } from "./route.ts";
 import { WaitlistScreen } from "./waitlist/WaitlistScreen.tsx";
 
+function Page({ route }: { route: Route }) {
+  if (route.page === "waitlist") return <WaitlistScreen />;
+  if (route.page === "referrals") return <ReferralsScreen />;
+  if (route.clientId === null) return <FindClientScreen />;
+  return <ClientScreen clientId={route.clientId} tab={route.tab} />;
+}
+
 export function App() {
-  const path = usePath();
-  const route = routeOf(path);
+  const route = routeOf(usePath());
   // Keyed by the path, so each section opens at its top with its own data.
-  return <Fragment key={route.page}>{route.page === "waitlist" ? <WaitlistScreen /> : <ReferralsScreen />}</Fragment>;
+  return (
+    <Fragment key={keyOf(route)}>
+      <Page route={route} />
+    </Fragment>
+  );
 }

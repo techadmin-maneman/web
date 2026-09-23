@@ -34,6 +34,10 @@
   --ops-row: 34px; /* a table row: dense but not cramped */
   --ops-figure: 76px; /* a column of figures, right aligned */
   --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
+  --fs-30: 30px; /* the client's name at the head of their page (board B1) */
+  --ops-consent-state: 92px; /* a consent's state, date and notice, beside the purpose (board B3) */
+  --ops-consent-date: 96px;
+  --ops-consent-notice: 72px;
 
   --skeleton-label: 120px; /* the loading state's label (board B3) */
   --skeleton-card: 150px; /* and its card */

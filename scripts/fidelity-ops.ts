@@ -1,8 +1,8 @@
 // The ops console's fidelity pairs (docs/fidelity-method.md, "Phase 2 boards"):
 // each frame of design/phase2/Ops Console.dc.html that P2-F3 builds, beside the
-// built console in the same state. The console is drawn at 1440; boards C1 to
-// C3 are panels within it, 660 and 484 px wide, drawn at their own size, so
-// each pair is a panel beside a panel.
+// built console in the same state. The console is drawn at 1440; boards B2, B3
+// and C1 to C3 are panels within it, 660 and 484 px wide, drawn at their own
+// size, so each pair is a panel beside a panel.
 //
 //   npm run build:ops -- --env local && npm run fidelity:ops
 //
@@ -18,6 +18,7 @@ import { rmSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
+import sharp from "sharp";
 import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
@@ -34,6 +35,8 @@ const PANEL = 484;
 
 /** The year the board's waiting dates fall in, so "4 Feb" needs no year. */
 const IN_2027 = new Date("2027-09-22T05:00:00Z");
+/** India's 10:42, the time board B2 letters on the opened photographs. */
+const AT_1042 = new Date("2027-09-22T05:12:00Z");
 
 // ---- Board C1: the grants the fraud rules held ------------------------------
 
@@ -104,17 +107,86 @@ const AREAS = {
 };
 const PREVIEW = { pincode: "400050", waiting: 117, alerts: 84, launched: false };
 
+// ---- Boards B2 and B3: the client the board draws ----------------------------
+
+const CLIENT_ID = "22000000-0000-4000-8000-000000000001";
+const TECHNICIAN = { name: "Imran Qureshi", initials: "IQ" };
+const RECORD = {
+  id: CLIENT_ID,
+  name: "Rohit Malhotra",
+  mobile: "+919810004417",
+  state: "fitted",
+  known_since: "2026-11-01T06:00:00.000Z",
+  address: null,
+  credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
+  visits: { upcoming: [], past: [] },
+  payments: [],
+};
+
+/** The board draws one visit's five angles; a visit whose before set was not taken is that. */
+const ANGLES = ["front", "top", "left", "right", "hair"] as const;
+const PHOTOS = {
+  visits: [
+    {
+      visit_id: "33000000-0000-4000-8000-000000000001",
+      date: "2027-08-22",
+      type: "service",
+      technician: TECHNICIAN,
+      photos: ANGLES.map((angle, n) => ({
+        id: `44000000-0000-4000-8000-00000000000${String(n)}`,
+        phase: "after",
+        angle,
+        width: 600,
+        height: 800,
+        taken_at: "2027-08-22T04:30:00.000Z",
+      })),
+    },
+  ],
+};
+
+const consent = (purpose: string, state: string, version: string | null, at: string | null) => ({
+  purpose,
+  state,
+  notice_version: version,
+  at,
+});
+const CONSENTS = {
+  consents: [
+    consent("photos_own_record", "given", "photos-own-record-v1", "2026-11-14T08:00:00.000Z"),
+    consent("photos_referral_cards", "given", "photos-referral-cards-v2", "2027-08-03T08:00:00.000Z"),
+    consent("photos_marketing", "not_given", null, null),
+    consent("whatsapp_visits", "given", "whatsapp-visits-v1", "2026-11-02T08:00:00.000Z"),
+    consent("whatsapp_launches", "withdrawn", "whatsapp-launches-v1", "2027-01-11T08:00:00.000Z"),
+  ],
+  deletion: null,
+};
+
 // ---- Pages -------------------------------------------------------------------
 
 type Api = Readonly<Record<string, (route: Route) => Promise<void>>>;
 const json = (body: unknown) => (route: Route) => route.fulfill({ json: body });
 const missing = (route: Route) => route.fulfill({ status: 404, json: { error: { code: "not_found" } } });
 
+/** The design's photographs are ink blocks; the console's are answered with the same ink. */
+const inkBlock = await sharp({ create: { width: 600, height: 800, channels: 3, background: "#16233a" } })
+  .jpeg()
+  .toBuffer();
+const photoFiles = Object.fromEntries(
+  (PHOTOS.visits[0]?.photos ?? []).map((photo) => [
+    `/api/clients/${CLIENT_ID}/photos/${photo.id}`,
+    (route: Route) => route.fulfill({ body: inkBlock, contentType: "image/jpeg" }),
+  ]),
+);
+
 const API: Api = {
   "/api/referrals/held": json(HELD),
   "/api/referrers": json(REFERRERS),
   "/api/waitlist": json(AREAS),
   "/api/pincodes/400050/launch": json(PREVIEW),
+  [`/api/clients/${CLIENT_ID}`]: json(RECORD),
+  [`/api/clients/${CLIENT_ID}/photos`]: json(PHOTOS),
+  [`/api/clients/${CLIENT_ID}/consents`]: json(CONSENTS),
+  ...photoFiles,
 };
 
 async function settle(page: Page): Promise<void> {
@@ -136,14 +208,14 @@ async function openDesign(browser: Browser): Promise<Page> {
  * scrolls its own section; for a screenshot the page is let out of it, so a
  * panel taller than the window is caught whole.
  */
-async function openConsole(browser: Browser, path: string): Promise<Page> {
+async function openConsole(browser: Browser, path: string, at: Date = IN_2027): Promise<Page> {
   // The console's policy would refuse the style that stills the page; screenshots set it aside.
   const page = await browser.newPage({
     viewport: { width: CONSOLE, height: 900 },
     bypassCSP: true,
     serviceWorkers: "block",
   });
-  await page.clock.install({ time: IN_2027 });
+  await page.clock.install({ time: at });
   await page.route("**/api/**", (route) => {
     const answer = API[new URL(route.request().url()).pathname] ?? missing;
     return answer(route);
@@ -158,6 +230,10 @@ async function openConsole(browser: Browser, path: string): Promise<Page> {
 
 /** A frame of the board, by its label. */
 const frame = (design: Page, label: string) => design.locator(`[data-screen-label="${label}"]`).screenshot();
+
+/** One panel of a frame that draws several states one above the other, as B2 does. */
+const panelOf = (design: Page, label: string, nth: number) =>
+  design.locator(`[data-screen-label="${label}"] > div`).nth(nth).screenshot();
 
 // ---- The pairs ----------------------------------------------------------------
 
@@ -185,6 +261,32 @@ async function waitlist(browser: Browser, design: Page): Promise<void> {
   await page.close();
 }
 
+/**
+ * Board B2, in both states. The board draws them one above the other; the
+ * console shows one at a time, so each is paired with its own panel.
+ */
+async function photos(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, `/clients/${CLIENT_ID}/photos`, AT_1042);
+  const panel = page.getByRole("region", { name: "Photographs of Rohit Malhotra" });
+  await panel.getByRole("heading", { name: "Photographs of Rohit Malhotra" }).waitFor();
+  await pair(OUT, PANEL, "b2-photos-locked", await panelOf(design, "Client · photos", 0), await panel.screenshot());
+
+  await page.getByRole("button", { name: "View photos" }).click();
+  await page.getByText("22 Aug 2027 · service visit · Imran Qureshi").waitFor();
+  await settle(page);
+  await pair(OUT, PANEL, "b2-photos-open", await panelOf(design, "Client · photos", 1), await panel.screenshot());
+  await page.close();
+}
+
+/** Board B3, the consents, which ops read and never change. */
+async function consents(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, `/clients/${CLIENT_ID}/consents`);
+  const panel = page.getByRole("region", { name: "Consents" });
+  await page.getByText("Ops cannot grant a consent.").waitFor();
+  await pair(OUT, PANEL, "b3-consents", await frame(design, "Client · consents"), await panel.screenshot());
+  await page.close();
+}
+
 const servers: Server[] = [
   await serveDirectory(OPS_DIR, 4316, undefined, { spa: true }),
   await serveDirectory(DESIGN_DIR, 4315),
@@ -194,6 +296,8 @@ try {
   rmSync(OUT, { recursive: true, force: true });
   console.log(`fidelity: the ops console at ${String(CONSOLE)} px`);
   const design = await openDesign(browser);
+  await photos(browser, design);
+  await consents(browser, design);
   await referrals(browser, design);
   await waitlist(browser, design);
   console.log(`fidelity: written to ${OUT}`);

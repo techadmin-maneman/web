@@ -13,8 +13,8 @@ test("opens on the referral queue, with the console's sections beside it", async
   await expect(page).toHaveTitle("Mane Man operations");
   await expect(page.getByRole("heading", { level: 1, name: "Referrals" })).toBeVisible();
   const sections = page.getByRole("navigation", { name: "Operations" });
+  await expect(sections.getByRole("link")).toHaveText(["Clients", "Referrals", "Waitlist"]);
   await expect(sections.getByRole("link", { name: "Referrals" })).toHaveAttribute("aria-current", "page");
-  await expect(sections.getByRole("link", { name: "Waitlist" })).toBeVisible();
 });
 
 test("serves its policy: its own origin only, no camera and no payment, and noindex", async ({ page }) => {
