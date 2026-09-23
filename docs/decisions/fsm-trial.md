@@ -71,6 +71,7 @@ Run through the API against the org the owner confirmed as the real one, while i
 3. **Webhooks.** Not tested: webhooks are set up in FSM's settings, not through the API, and need a receiving route. That is tested in P2-M2 once the route exists.
 4. **Reading.** Contacts, work orders, appointments, assets, territories, users (with each user's service resource and territory) and job-sheet forms all read as documented. Work orders and appointments carry `Status`, `Billing_Status`, `Retainer_Received` and `Invoice_Id`.
    - **FSM geocodes service addresses itself** (`Service_Latitude`, `Service_Longitude`).
+   - **Open, and not tried:** whether `Service_Latitude` and `Service_Longitude` can be **written**, and whether a value we supply survives FSM re-geocoding the street. This decides whether a pin a client places in our app reaches the field at all, or lives only in our D1 (`docs/decisions/0054-address-capture.md`). It also matters that the street FSM holds is still the placeholder `"To be confirmed with the client"` for every contact we create, so anything FSM geocodes today is the city at best.
 5. **Photographs.**
    - A JPEG and a WebP were uploaded to `/files`, attached to a work order, and listed.
    - Both downloaded through `/files?file_id=` **byte for byte identical**, with the right content type.
