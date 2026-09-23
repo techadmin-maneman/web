@@ -563,7 +563,8 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
   return (
     <section class={styles.formSection}>
       <div class={styles.inner}>
-        <h2 class={`section-title ${styles.formTitle}`}>{consultation.title}</h2>
+        {/* The site's own page is already headed with this; the invite's is not. */}
+        {props.invited && <h2 class={`section-title ${styles.formTitle}`}>{consultation.title}</h2>}
         <p class={styles.formBody}>{consultation.body}</p>
 
         <form class={styles.card} onSubmit={(event) => void submit(event)} noValidate>
@@ -629,9 +630,11 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
             {sending && <Icon path={ICONS.sending} size={15} stroke={1.7} />}
             {sending ? consultation.sending : consultation.submit}
           </button>
-          <p class={styles.told}>
-            {props.name === null ? consultation.toldUnnamed : fill(consultation.told, { name: props.name })}
-          </p>
+          {props.invited && (
+            <p class={styles.told}>
+              {props.name === null ? consultation.toldUnnamed : fill(consultation.told, { name: props.name })}
+            </p>
+          )}
         </form>
       </div>
     </section>
@@ -740,9 +743,11 @@ function Waitlist(props: FormProps & { onListed: (result: { area: string | null;
             {sending && <Icon path={ICONS.sending} size={15} stroke={1.7} />}
             {sending ? waitlist.sending : waitlist.submit}
           </button>
-          <p class={styles.told}>
-            {props.name === null ? waitlist.holdsUnnamed : fill(waitlist.holds, { name: props.name })}
-          </p>
+          {props.invited && (
+            <p class={styles.told}>
+              {props.name === null ? waitlist.holdsUnnamed : fill(waitlist.holds, { name: props.name })}
+            </p>
+          )}
         </form>
       </div>
     </section>
