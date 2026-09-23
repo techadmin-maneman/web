@@ -152,7 +152,8 @@ jobs:
           npm run build:site -- --env local
           npm run build:app -- --env local
           npm run build:ops -- --env local
-      - name: Browser tests at 390 and 1440 px, the client app at 390 and the ops console at 1440, against a local mm-api with stub providers
+          npm run build:tech -- --env local
+      - name: Browser tests at 390 and 1440 px, the client and technician apps at 390 and the ops console at 1440, against a local mm-api with stub providers
         run: npm run test:e2e
 
       # After the browser tests, and in their job: Lighthouse measures a page

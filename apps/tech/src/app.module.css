@@ -1,0 +1,6 @@
+/* The ink ground while the app asks the API whether there is a session. */
+
+.checking {
+  flex: 1;
+  background: var(--ink-deep);
+}
