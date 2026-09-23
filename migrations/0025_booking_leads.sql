@@ -12,7 +12,9 @@
 --
 -- SQLite cannot drop NOT NULL in place, so the table is rebuilt. Nothing else
 -- changes: the same columns, checks, defaults and indexes, and every row is
--- carried across.
+-- carried across. The rebuilt table must carry every column the table has
+-- **today**, not only the ones migration 0002 gave it: 0015 added
+-- fsm_request_id, and leaving it out took the FSM lead sync with it.
 
 CREATE TABLE leads_rebuilt (
   id TEXT PRIMARY KEY,
@@ -35,7 +37,9 @@ CREATE TABLE leads_rebuilt (
   sync_attempts INTEGER NOT NULL DEFAULT 0,
   last_sync_error TEXT,
   synced_at TEXT,
-  request_id TEXT NOT NULL
+  request_id TEXT NOT NULL,
+  -- Added by migration 0015: the FSM Request this lead became.
+  fsm_request_id TEXT
 );
 
 INSERT INTO leads_rebuilt
@@ -60,7 +64,8 @@ SELECT
   sync_attempts,
   last_sync_error,
   synced_at,
-  request_id
+  request_id,
+  fsm_request_id
 FROM leads;
 
 DROP TABLE leads;
