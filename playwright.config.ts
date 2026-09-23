@@ -17,6 +17,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !local,
   retries: local ? 0 : 1,
+  /*
+   * Two runners share the machine (docs/runbook.md, "The CI runner"), so a job
+   * cannot have it to itself. Playwright's default takes half the cores, which
+   * between two jobs took all of them and more: wrangler's dev proxy then
+   * dropped connections and tests failed for want of a CPU, not a defect.
+   */
+  workers: local ? undefined : 3,
   reporter: local ? "list" : [["list"], ["github"]],
   use: { baseURL: "http://127.0.0.1:4321", trace: "retain-on-failure" },
   webServer: [
