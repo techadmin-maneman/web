@@ -1,0 +1,17 @@
+{
+  "name": "@maneman/ops",
+  "private": true,
+  "version": "0.0.0",
+  "description": "The ops console: the referral review queue, the referrers' figures and the waitlist (docs/decisions/0026-hosts-and-surfaces.md).",
+  "type": "module",
+  "dependencies": {
+    "@maneman/brand": "0.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1"
+  }
+}

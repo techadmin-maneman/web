@@ -12,9 +12,11 @@
     "playwright.config.ts",
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",
+    "scripts/fidelity-ops.ts",
     "scripts/lib/fidelity.ts",
     "scripts/serve-site.ts",
     "scripts/serve-app.ts",
+    "scripts/serve-ops.ts",
     "scripts/lighthouse.ts",
     "scripts/lib/static-server.ts"
   ]

@@ -111,7 +111,7 @@ npm run smoke -- --base https://<host> --environment <env>
 Cloudflare dashboard → Manage Account → Account API Tokens → Create Token → Custom token, one per environment:
 
 - Name `mm-ci-<env>`.
-- Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>` and `mm-app-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step fails with "No access to the specified service".
+- Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>` and `mm-ops-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step fails with "No access to the specified service".
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also reach production's database; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - No zone permissions.
 
@@ -296,11 +296,14 @@ To switch one on:
    The config check fails if either comes without the other.
 
 5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
-6. **The app's own Worker**, where the surface has one (the client app is `mm-app`, docs/decisions/0043-client-app.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that.
+6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md) and the ops console is `mm-ops`. Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that.
 
    ```sh
    npm run build:app -- --env <env>
    W deploy --config apps/app/wrangler.jsonc --env <env> --tag bootstrap
+
+   npm run build:ops -- --env <env>
+   W deploy --config apps/ops/wrangler.jsonc --env <env> --tag bootstrap
    ```
 
 ### 11a. The client app's login

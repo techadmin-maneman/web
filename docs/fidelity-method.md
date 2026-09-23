@@ -57,3 +57,30 @@ These differences are known and stand:
 | G1       | The address includes the house; the design shows the area only                                    | The owner ruled on 22 September 2026 that the profile shows the whole address (ADR 0025, item 23) |
 | G1       | A fifth consent, "WhatsApp about launches"                                                        | The waitlist's launch alert (ADR 0042); its wording is a placeholder                              |
 | G2       | The cards sit inside the page's 20 px margins                                                     | The design draws them on their own, 390 px wide                                                   |
+
+## The ops console (P2-F4)
+
+`npm run build:ops -- --env local && npm run fidelity:ops` writes `docs/fidelity/ops/`: boards C1, C2 and C3.
+
+- **The console is drawn at 1440, and boards C1 to C3 are panels within it,** 660 and 484 px wide, drawn at their own size. Each pair is therefore a panel beside a panel, not a screen beside a screen, and neither side is scaled. A1 and B1, which the board does draw whole at 1440, are not built.
+- **The console's API is answered with the board's own figures,** so both sides show the same things. No mm-api runs. The clock is set to 2027, the year the board's waiting dates fall in, so they read without a year, as the board writes them.
+- **Nobody in the fixtures is real.** The names and pincodes are the board's own.
+
+These differences are known and stand:
+
+| Pair | Difference                                                                                            | Why                                                                                                              |
+| ---- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| C1   | "Fitted Sun 19 Sep" where the board has "3 days held"                                                 | `GET /api/referrals/held` gives the day of the first fit, not how long the grant has waited                      |
+| C1   | The rule's name, with no line of detail beneath it                                                    | The route names each rule a grant met; the addresses and UPI handles behind them stay out of the console         |
+| C1   | Rejecting asks for a reason before it sends                                                           | `POST /api/referrals/:id/decision` refuses a rejection without one, and keeps the reason with the decision       |
+| C2   | No "Sent" column                                                                                      | Nothing counts invitations sent: a code is shared by the client, not by us (ADR 0048)                            |
+| C2   | The busiest referrer first                                                                            | `GET /api/referrers` orders them by fits; the board lists its rows in no order                                   |
+| C3   | The pincode is the control, underlined, where the board draws no way in                               | The panel that follows has to be opened by something, and the board's six columns leave no room for a button     |
+| C3   | A pincode we already come to says "Live" beside its area, and offers no launch                        | The route returns served pincodes that still have people waiting; the board draws only those waiting             |
+| C3   | The message is `launch_alert_v1` (src/config/message-templates.ts), with the first name a placeholder | It is what the queue will actually send; the name is each person's own                                           |
+| C3   | "Not now" where the board has "Edit the message"                                                      | The message is a template in the repository, not something the console can rewrite                               |
+| C3   | The note about the 33 who did not opt in sits inside the panel                                        | The board draws it as a caption beneath the frame; it is the reason both counts are shown, so it stays with them |
+
+The console's own frame is not paired. Boards A1 and B1 draw it around a dispatch board and a client page; the built frame carries the two sections the backend has routes for, Referrals and Waitlist, where the design's column lists eight.
+
+Not built, and not paired: A (the dispatch board) and D (payments, tasks and technicians), which wait for the FSM mirror; B1 (pieces), which waits for the job sheet; and **B2 (photographs) and B3 (consents), which have no ops route at all**. The ops surface has no way to read one client's record (`docs/openapi-ops.json`), and P2-F4 changes no backend route.

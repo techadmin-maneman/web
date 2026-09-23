@@ -10,6 +10,8 @@
   --text-quiet: #4a453c; /* a window's hours beside its name, on white */
   --paper-shade: #ded7c8; /* loading blocks; a full window; leave and replacement cells */
   --brass-text: #7a5b24; /* brass for small text on paper: "Prepaid", the busiest day */
+  --ink-message: #1f2c33; /* the ops console's preview of a message we are about to send (board C3) */
+  --ink-message-text: #e9edef; /* and the words in it */
 
   /* The apps' sizes (docs/prompts/phase2-frontend.md, "Layout and targets"). */
   --app-column: 390px; /* the design's width; wider screens centre it */
@@ -26,6 +28,13 @@
   --sp-40: 40px; /* the regular technician's initials beside the windows (board C3) */
   --sp-64: 64px;
   --switch-width: 46px; /* a consent's switch (board G1) */
+
+  /* The ops console's frame and density (design/phase2/Ops Console.dc.html, its opening note). */
+  --ops-nav: 196px; /* the navigation column down the left */
+  --ops-row: 34px; /* a table row: dense but not cramped */
+  --ops-figure: 76px; /* a column of figures, right aligned */
+  --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
+
   --skeleton-label: 120px; /* the loading state's label (board B3) */
   --skeleton-card: 150px; /* and its card */
   --tracking-number: 0.04em; /* a mobile number, spaced for reading */

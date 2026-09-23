@@ -1,0 +1,242 @@
+/*
+ * Board C3: who is waiting, by pincode, and the panel that confirms a launch
+ * before anything is sent. The two counts, the list and those who asked to be
+ * told, sit one above the other so the gap between them is visible.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-panel);
+}
+
+.panel,
+.launch {
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.panel {
+  padding: var(--sp-20);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* ---- The pincodes -------------------------------------------------------- */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-14);
+}
+
+.table th,
+.table td {
+  height: var(--ops-row);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-weight: 400;
+}
+
+.table thead th {
+  border-bottom: var(--hairline) solid var(--text);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.text,
+.pincode,
+.area {
+  padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
+  text-align: left;
+}
+
+/* The cell's own padding sits on what it holds, so a row stays 34 px whether or not it is a control. */
+.pincode {
+  padding: 0 var(--sp-6) 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.plain {
+  display: inline-block;
+  padding: var(--sp-8) 0;
+}
+
+/* The area takes the slack, as the board's 1fr column does. */
+.area {
+  width: 100%;
+}
+
+.figure,
+.quietFigure,
+.date {
+  width: var(--ops-figure);
+  padding: var(--sp-8) var(--sp-4);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.figure,
+.quietFigure {
+  text-align: right;
+}
+
+.quietFigure,
+.date {
+  color: var(--text-muted);
+}
+
+/*
+ * The pincode is the control: the board draws no button, and a console this
+ * dense cannot spare a column for one. Its underline is the only sign, quiet
+ * enough to leave the table reading as a table.
+ */
+.choose {
+  padding: var(--sp-8) 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-14);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+  cursor: pointer;
+}
+
+.choose:hover {
+  text-decoration-color: var(--text);
+}
+
+.choose:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.live {
+  margin-left: var(--sp-8);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-14);
+  color: var(--brass-text);
+}
+
+/* ---- Marking a pincode live --------------------------------------------- */
+
+.launch {
+  padding: var(--sp-22);
+}
+
+.launchLabel {
+  margin: 0 0 var(--sp-14);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.launchTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  line-height: 1.2;
+}
+
+.figures {
+  margin: var(--sp-14) 0 0;
+  padding-top: var(--sp-14);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.figureRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-6) 0;
+  font-size: var(--fs-15);
+}
+
+.figureRow dt {
+  color: var(--text-muted);
+}
+
+.figureRow dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* What each of them gets, as the queue will send it. */
+.message {
+  margin: var(--sp-16) 0 0;
+  padding: var(--sp-12) var(--sp-14);
+  background: var(--ink-message);
+  font-size: var(--fs-14);
+  line-height: 1.5;
+  color: var(--ink-message-text);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+  margin-top: var(--sp-16);
+}
+
+.send,
+.quiet {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-18);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.send {
+  border: var(--hairline) solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.send:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.quiet {
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+}
+
+.send:focus-visible,
+.quiet:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+.done {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-15);
+}
+
+.error {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.note {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-soft);
+}
