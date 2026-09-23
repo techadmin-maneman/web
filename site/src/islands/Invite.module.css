@@ -120,7 +120,7 @@
 
 .pincodeTitle,
 .formTitle {
-  font-size: var(--fs-h3, var(--fs-24));
+  font-size: var(--fs-24);
 }
 
 .stepsTitle {
@@ -210,15 +210,16 @@
   color: var(--paper);
 }
 
+/* The field takes the row, with the button beside it, as the board draws them. */
 .pincodeField {
   flex: 1 1 auto;
-  max-width: var(--field-max, 220px);
+  min-width: 0;
 }
 
 /* ---- The two forms (C2, C3) ---------------------------------------------- */
 
 .formSection {
-  padding-block: var(--sp-32) var(--sp-40);
+  padding-block: var(--sp-32) var(--sp-36);
 }
 
 .served {
@@ -443,7 +444,7 @@
 /* ---- The confirmations (C4) ---------------------------------------------- */
 
 .done {
-  padding-block: var(--sp-48) var(--sp-40);
+  padding-block: var(--sp-48) var(--sp-36);
 }
 
 .tick {
@@ -502,7 +503,7 @@
 
 @media (min-width: 1024px) {
   .arrival {
-    padding-block: var(--sp-64) var(--sp-56);
+    padding-block: var(--sp-48) var(--sp-48);
   }
 
   .priceRows {

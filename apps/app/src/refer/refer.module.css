@@ -87,7 +87,7 @@
   font-size: var(--fs-15);
   color: var(--text);
   text-decoration: underline;
-  text-underline-offset: 4px;
+  text-underline-offset: var(--sp-4);
 }
 
 /* Board F1's quiet way to the tracker, and F6's revoke. */
