@@ -4,7 +4,7 @@
 //
 //   <subject, base64url>.<expiry, Unix seconds>.<HMAC-SHA256, base64url>
 
-export type TokenPurpose = "upload" | "result" | "look" | "photo";
+export type TokenPurpose = "upload" | "result" | "look" | "photo" | "tech_photo";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

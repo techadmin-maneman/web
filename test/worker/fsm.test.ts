@@ -144,15 +144,19 @@ describe("FSM: clients, technicians, items and files", () => {
               id: "user-2",
               full_name: "Sameer",
               status: "deactive",
+              mobile: null,
+              Territory: null,
               Service_Resources: { id: "sr-2", isActive: true },
             }),
             fsmUserRecord({ id: "user-3", full_name: "Office only", Service_Resources: null }),
           ],
         }),
     });
+    // The number is what the technician logs in with, and the territory is the
+    // zone the dispatch board groups him by; both are null where FSM has none.
     expect(await provider.technicians()).toEqual([
-      { id: "sr-1", userId: "user-1", name: "Imran Khan", active: true },
-      { id: "sr-2", userId: "user-2", name: "Sameer", active: false },
+      { id: "sr-1", userId: "user-1", name: "Imran Khan", active: true, mobile: "+919810000009", zone: "Gurgaon" },
+      { id: "sr-2", userId: "user-2", name: "Sameer", active: false, mobile: null, zone: null },
     ]);
   });
 
