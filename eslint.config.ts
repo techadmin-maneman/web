@@ -9,6 +9,8 @@ export default defineConfig(
   {
     ignores: [
       "node_modules/",
+      // Where a background agent checks the repository out; its own checks run there.
+      ".claude/",
       "coverage/",
       "**/dist/",
       ".wrangler/",
