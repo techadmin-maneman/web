@@ -387,9 +387,20 @@ interface StaticWorker {
   readonly notFoundHandling: "404-page" | "single-page-application";
   /** The routes each remote environment must have, exactly. */
   readonly routes: (environment: RemoteEnvironmentName) => readonly string[];
+  /**
+   * mm-site runs one Worker beside its assets, for the referral landing (docs/decisions/0027-referral-landing.md).
+   * Its entry, the assets binding it reads them through, the paths it answers before the assets, and the one
+   * service it may hold: mm-api, whose name carries the environment.
+   */
+  readonly entry?: {
+    readonly main: string;
+    readonly assetsBinding: string;
+    readonly runWorkerFirst: readonly string[];
+    readonly service: { readonly binding: string; readonly worker: string };
+  };
 }
 
-/** A static Worker is assets and routes only: no bindings, no code. */
+/** A static Worker is assets and routes only: no bindings, and no code beyond the entry a landing page needs. */
 function checkStaticConfig(config: JsonObject, worker: StaticWorker): string[] {
   const problems: string[] = [];
   if (config.routes !== undefined || config.route !== undefined) {
@@ -412,11 +423,12 @@ function checkStaticConfig(config: JsonObject, worker: StaticWorker): string[] {
 
   for (const [label, block] of blocks) {
     for (const { key } of NON_INHERITABLE_KEYS) {
+      if (key === "services" && worker.entry !== undefined) continue; // checked below, with the rest of the entry
       if (read(block, key) !== undefined) {
         problems.push(`${label}: ${worker.name} must not declare ${key}; mm-api owns every binding`);
       }
     }
-    if (block.main !== undefined) problems.push(`${label}: ${worker.name} is assets-only and must not declare main`);
+    problems.push(...checkEntry(block, label, worker));
     const handling = read(block, "assets.not_found_handling");
     if (isObject(block.assets) && handling !== worker.notFoundHandling) {
       problems.push(`${label}: assets.not_found_handling must be "${worker.notFoundHandling}"`);
@@ -432,7 +444,56 @@ export function checkSiteConfig(config: JsonObject): string[] {
     label: "site",
     notFoundHandling: "404-page",
     routes: (environment) => [`${HOSTNAME[environment]}/*`],
+    entry: {
+      main: "./src/worker.ts",
+      assetsBinding: "ASSETS",
+      runWorkerFirst: ["/r/*"],
+      service: { binding: "API", worker: "mm-api" },
+    },
   });
+}
+
+/**
+ * The Worker beside the assets, where one is allowed: its entry, how it reads the assets, the paths it answers
+ * first, and its one binding to that environment's mm-api. Each environment declares them itself, since wrangler
+ * inherits none of it.
+ */
+function checkEntry(block: JsonObject, label: string, worker: StaticWorker): string[] {
+  const problems: string[] = [];
+  const entry = worker.entry;
+  if (entry === undefined) {
+    if (block.main !== undefined) problems.push(`${label}: ${worker.name} is assets-only and must not declare main`);
+    return problems;
+  }
+  if (block.main !== entry.main) problems.push(`${label}: main must be "${entry.main}"`);
+  if (read(block, "assets.binding") !== entry.assetsBinding) {
+    problems.push(`${label}: assets.binding must be "${entry.assetsBinding}"`);
+  }
+  const first = read(block, "assets.run_worker_first");
+  const paths = Array.isArray(first) ? first.filter((path): path is string => typeof path === "string") : [];
+  if (paths.join(",") !== entry.runWorkerFirst.join(",")) {
+    problems.push(`${label}: assets.run_worker_first must be ${JSON.stringify(entry.runWorkerFirst)}`);
+  }
+  const services = objectsIn(read(block, "services") ?? []);
+  const expected = environmentOf(label) === null ? entry.service.worker : `${entry.service.worker}-${suffixOf(label)}`;
+  const named = services.map(
+    (service) => `${stringField(service, "binding") ?? ""}:${stringField(service, "service") ?? ""}`,
+  );
+  if (named.length !== 1 || named[0] !== `${entry.service.binding}:${expected}`) {
+    problems.push(`${label}: services must be exactly ${entry.service.binding} to ${expected}`);
+  }
+  return problems;
+}
+
+/** "site env.staging" names an environment; "site top level" names none. */
+function environmentOf(label: string): string | null {
+  const [, environment] = label.split("env.");
+  return environment ?? null;
+}
+
+/** The suffix mm-api's name takes in that environment: staging or production. */
+function suffixOf(label: string): string {
+  return environmentOf(label) ?? "";
 }
 
 /**

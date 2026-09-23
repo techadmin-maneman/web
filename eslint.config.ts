@@ -9,6 +9,8 @@ export default defineConfig(
   {
     ignores: [
       "node_modules/",
+      // Where a background agent checks the repository out; its own checks run there.
+      ".claude/",
       "coverage/",
       "**/dist/",
       ".wrangler/",
@@ -34,6 +36,7 @@ export default defineConfig(
           "./tsconfig.node.json",
           "./tsconfig.browser.json",
           "./site/tsconfig.json",
+          "./site/tsconfig.worker.json",
           "./apps/app/tsconfig.json",
           "./apps/app/sw/tsconfig.json",
           "./apps/ops/tsconfig.json",

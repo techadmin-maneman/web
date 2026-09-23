@@ -58,6 +58,24 @@ These differences are known and stand:
 | G1       | A fifth consent, "WhatsApp about launches"                                                        | The waitlist's launch alert (ADR 0042); its wording is a placeholder                              |
 | G2       | The cards sit inside the page's 20 px margins                                                     | The design draws them on their own, 390 px wide                                                   |
 
+## The referral landing (P2-F3)
+
+`npm run build:site -- --env local && npm run fidelity:refer` writes `docs/fidelity/referral/`: the Landing boards C1 to C4 at 390 px, and C5 at 1440.
+
+- **The page's API is answered with the design's own example:** Rohit's invite, Sector 65 for 122018 and Bandra for 400050. No mm-api runs, and Turnstile is never reached.
+- **Every `/r/:code` is the one built page** (ADR 0027). The static server maps them as `run_worker_first` does behind Cloudflare, and `?state=` opens each state, as it does for the booking form.
+- **C4 draws four small frames.** Each confirmation is set beside the page's whole screen in that state; the expired frame has no pair, because the API does not tell an expired code from any other it does not know.
+
+These differences are known and stand:
+
+| Pair       | Difference                                            | Why                                                                                     |
+| ---------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| C1, C5     | The prices are the site's own, ₹25,000 and ₹1,500     | The design's figures are the unset price book's (`docs/open-points.md`, item 1)         |
+| C2         | Every day in the strip is offered                     | Availability needs a session; the API answers `taken` if a window has gone              |
+| C4 expired | "We do not recognise this invite"                     | `GET /api/r/:code` answers `unknown` for an expired, revoked or mistyped code alike     |
+| C1, C5     | The card is our house one: ink, paper and a gold rule | The design draws a client's photographs; the house card is a placeholder (open point 1) |
+| every pair | The site's header sits above the page                 | The landing is a page of the site; the boards draw the page alone                       |
+
 ## The ops console (P2-F3)
 
 `npm run build:ops -- --env local && npm run fidelity:ops` writes `docs/fidelity/ops/`: boards B2 in both its states, B3, C1, C2 and C3.

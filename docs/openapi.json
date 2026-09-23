@@ -279,6 +279,58 @@
         "additionalProperties": false,
         "description": "Where the visitor came from, as the page saw it. All optional."
       },
+      "Consultation": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "booked"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "morning",
+              "afternoon",
+              "evening"
+            ]
+          },
+          "area": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "date",
+          "window",
+          "area"
+        ],
+        "additionalProperties": false
+      },
+      "Waitlist": {
+        "type": "object",
+        "properties": {
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "area"
+        ],
+        "additionalProperties": false
+      },
       "Invite": {
         "type": "object",
         "properties": {
@@ -935,6 +987,355 @@
           },
           "503": {
             "description": "unavailable: Turnstile or the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/consultation": {
+      "post": {
+        "summary": "Book a free consultation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "mobile": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "pincode": {
+                    "type": "string",
+                    "pattern": "^[1-8]\\d{5}$",
+                    "description": "A six-digit Indian pincode."
+                  },
+                  "loss_extent": {
+                    "type": "string",
+                    "enum": [
+                      "crown",
+                      "receding",
+                      "advanced"
+                    ],
+                    "description": "Where the hair loss is, as the form's drawings show it."
+                  },
+                  "turnstile_token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  },
+                  "attribution": {
+                    "type": "object",
+                    "properties": {
+                      "utm_source": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_medium": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_campaign": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_content": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "gclid": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "fbclid": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "referrer": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "landing_path": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "window": {
+                    "type": "string",
+                    "enum": [
+                      "morning",
+                      "afternoon",
+                      "evening"
+                    ]
+                  },
+                  "consent": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "\"You may contact me on WhatsApp about this consultation.\""
+                  }
+                },
+                "required": [
+                  "name",
+                  "mobile",
+                  "pincode",
+                  "loss_extent",
+                  "turnstile_token",
+                  "date",
+                  "window",
+                  "consent"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consultation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "turnstile_failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "taken: that window has gone; ops_assisted: booking goes through WhatsApp for now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request: the pincode is not served, or the day is not open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: Turnstile could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/waitlist": {
+      "post": {
+        "summary": "Wait for a pincode we do not serve yet",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "mobile": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "pincode": {
+                    "type": "string",
+                    "pattern": "^[1-8]\\d{5}$",
+                    "description": "A six-digit Indian pincode."
+                  },
+                  "loss_extent": {
+                    "type": "string",
+                    "enum": [
+                      "crown",
+                      "receding",
+                      "advanced"
+                    ],
+                    "description": "Where the hair loss is, as the form's drawings show it."
+                  },
+                  "turnstile_token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  },
+                  "attribution": {
+                    "type": "object",
+                    "properties": {
+                      "utm_source": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_medium": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_campaign": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utm_content": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "gclid": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "fbclid": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "referrer": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "landing_path": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "contact_consent": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "\"You may contact me about this request.\" Required."
+                  },
+                  "launch_alert": {
+                    "type": "boolean",
+                    "description": "\"Tell me when you launch in my area.\" Optional."
+                  }
+                },
+                "required": [
+                  "name",
+                  "mobile",
+                  "pincode",
+                  "loss_extent",
+                  "turnstile_token",
+                  "contact_consent",
+                  "launch_alert"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "On the list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Waitlist"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "turnstile_failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request: that pincode is served; book instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: Turnstile could not be reached",
             "content": {
               "application/json": {
                 "schema": {

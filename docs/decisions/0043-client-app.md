@@ -125,3 +125,15 @@ Boards C2 to C6, over self-serve booking (ADR 0045), on staging ahead of the res
 - **Paying is Razorpay Checkout,** loaded from `checkout.razorpay.com` when a client first pays, on the order our API made, with the client's chosen method first. Checkout's own retry is off, so a failed payment comes back to C6's screen with the hold still counting, "Try again" and "Another method". Paid, the sheet polls the hold every two seconds for a minute: booked shows C6's confirmation; refunded, or slow, says so.
 - **The policy** (`apps/app/headers.ts`) allows Checkout's script, its frames from `api.razorpay.com`, calls to it and its logger, and popups: the opener policy is `same-origin-allow-popups`, since a card's check can open one.
 - **Browser tests** replace Checkout's script with one that pays or fails at once, and answer the hold's poll as Razorpay's webhook and FSM would leave it, since neither reaches a local run. The booking tests share the one fitted client and run one after another, since a client has one hold at a time.
+
+## Refer (P2-F3)
+
+Boards F1 to F6, on the Refer tab (`apps/app/src/refer/`), against `GET /api/refer` (ADR 0048).
+
+- **F1** shows what a referral earns, the credit tile while there is a balance, and the two ways on: sharing, and who has been fitted.
+- **F2 to F4 are one sheet.** Which card, then the consent its own photographs need (the notice's own lines, F3), then the preview exactly as the friend receives it, with WhatsApp, other apps and copy.
+  - **The card is composed on the phone** (`refer/card.ts`), from the first fit's front photographs, before on the left and after on the right, with the gold rule between: same crop, no name, no words. It is sent to the API only when the client chooses their own.
+  - Choosing the example takes any card of theirs down.
+  - If the photographs cannot be read, or the API refuses the card, the sheet falls back to the house example and says so.
+- **F5 and F6** are `/refer/fitted`: completed fits only, each a first name and a month, with what was earned and what is left; the empty state; and the revoke of their own card.
+- **What the referrer never sees:** opens, consultations, or a friend who has not been fitted. Ops see those figures instead (ADR 0048).

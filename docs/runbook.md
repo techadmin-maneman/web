@@ -30,7 +30,7 @@ The public site (`mm-site`) is built, edited and published as `docs/frontend.md`
 | 7. Worker secrets: AILabTools, link signing | done                                  | done (staging's AILabTools key, for now)        |
 | 7. Worker secrets: Evolution, allowlist     | done (poker-settle's bridge, for now) | Evolution done (the same bridge; messaging off) |
 | 7. Worker secrets: erasure                  | done                                  | done                                            |
-| 8. Zoho org, fields, secrets                | done: Developer Edition               | done: staging's org, for now (ADR 0020)         |
+| 8. Zoho org, fields, secrets                | done: the real org (ADR 0050)         | done: the real org (ADR 0050)                   |
 | 9. Triggers (cron and all three consumers)  | done                                  | done                                            |
 | 10. Access bypass for result links          | done                                  | not applicable                                  |
 | 11. Phase 2 hosts: DNS, Access              | done                                  | done (all three behind Access until go-live)    |
@@ -161,7 +161,7 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                                                                                                                                                                                                                |
 | `LEAD_WEBHOOK_URL`                                                          | Optional. Where the one-line notice for each new lead is posted, if not the alert space (`docs/decisions/0018-one-look-pro-only-lead-notices.md`). Notices carry city, window and date, never a name or number.                                                                                                                     |
 | `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                                                                                                                                                                                                             |
-| `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | India data centre: `accounts.zoho.in`, and for the API `www.zohoapis.in` (production org) or `developer.zohoapis.in` (Developer Edition org, staging).                                                                                                                                                                              |
+| `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | India data centre: `accounts.zoho.in`, and for the API `www.zohoapis.in`. Both environments use the real org (ADR 0050); a Developer Edition org would answer on `developer.zohoapis.in` instead.                                                                                                                                   |
 | `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                                                                                                                                                                                                    |
 | `RESULT_SIGNING_KEY`                                                        | 32 or more random characters, generated like `IP_HASH_SALT`. Signs upload and result links; changing it invalidates links already handed out.                                                                                                                                                                                       |
 | `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`         | The Evolution API bridge (`docs/decisions/0016-whatsapp-through-evolution.md`). The URL must be public `https://`, reachable from Cloudflare, and include the port if it is not 443: staging's ends in `ts.net:8443`, because port 443 on that host serves another app. `GET /` there should answer "Welcome to the Evolution API". |
@@ -442,9 +442,11 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
 
 ## The CI runner
 
-GitHub Actions jobs run on the owner's machine, in a container (docs/decisions/0006-deployment-pipeline.md, "The runner"). The machine must be on, with Docker Desktop running; the container starts with Docker.
+GitHub Actions jobs run on the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"). The machine must be on, with Docker Desktop running; the containers start with Docker.
 
-- **Check it:** `docker logs --tail 5 maneman-runner` ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` as Idle or Active.
+**There are two,** `maneman-runner` (`maneman-pc`) and `maneman-runner-2` (`maneman-pc-2`), each with its own volume. One runner meant a pull request, a deploy and a second pull request waited for each other, half an hour at a time; two run side by side on a twelve-core machine. They share the machine, so a job is slower when both are busy: that is why the worker tests allow thirty seconds each (`vitest.config.ts`), since they write to a real D1 and a slow one is working, not hanging.
+
+- **Check them:** `docker logs --tail 5 maneman-runner` (and `maneman-runner-2`) ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` and `maneman-pc-2` as Idle or Active.
 - **Set it up again** (a new machine, or after removing it). Build the image, take a registration token (it lasts an hour), and start the container once with it; the registration is kept in the `maneman-runner` volume. Then start it again without the token, so the token is not left in the container's settings:
 
   ```sh
@@ -454,6 +456,17 @@ GitHub Actions jobs run on the owner's machine, in a container (docs/decisions/0
   docker rm -f maneman-runner   # once the logs say "Listening for Jobs"
   docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g     -v maneman-runner:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web maneman-runner:2.337.0
   ```
+
+- **A second runner** is the same, with its own name and volume. `RUNNER_NAME` is what GitHub lists it as; without it the entrypoint registers `maneman-pc`, and `--replace` would take the first one's place instead of joining it:
+
+  ```sh
+  token=$(gh api -X POST repos/techadmin-maneman/web/actions/runners/registration-token -q .token)
+  docker run -d --name maneman-runner-2 --restart unless-stopped --shm-size=2g     -v maneman-runner-2:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web     -e RUNNER_NAME=maneman-pc-2 -e RUNNER_TOKEN="$token" maneman-runner:2.337.0
+  docker rm -f maneman-runner-2   # once the logs say "Listening for Jobs"
+  docker run -d --name maneman-runner-2 --restart unless-stopped --shm-size=2g     -v maneman-runner-2:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web     -e RUNNER_NAME=maneman-pc-2 maneman-runner:2.337.0
+  ```
+
+- **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
 - **Move the jobs back to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They are then within GitHub's free minutes, about ten runs a day.
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
@@ -476,7 +489,7 @@ If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RE
 
 ### Checking the lead path on staging
 
-Actions → **staging-lead** → Run workflow, with a city and window. It books a test lead through the real API. The name is "Staging test" and the mobile number is random. Within a minute the lead should be in the Zoho Developer Edition org: assigned, with its proposed date, or as Waitlist for Mumbai and Bengaluru. In D1:
+Actions → **staging-lead** → Run workflow, with a city and window. It books a test lead through the real API. The name is "Staging test" and the mobile number is random. Within a minute the lead should be in the real Zoho org (ADR 0050): assigned, with its proposed date, or as Waitlist for Mumbai and Bengaluru. In D1:
 
 ```sql
 SELECT id, sync_state, sync_attempts, last_sync_error, created_at, synced_at FROM leads ORDER BY created_at DESC LIMIT 5;

@@ -21,6 +21,7 @@ import { formatMobile, isCompleteMobile } from "../lib/phone.ts";
 import { preparePhoto, type PreparedPhoto } from "../lib/photo.ts";
 import { startRender, startUpload, type Outcome, type Uploaded } from "../lib/tryon.ts";
 import { failureKindOf, jobProblem, type ErrorKind, type Failure } from "../lib/tryon-errors.ts";
+import { fitFrameToPhotos } from "../lib/frame-aspect.ts";
 import { turnstileWidget } from "../lib/turnstile.ts";
 import { readAttribution } from "../lib/visit.ts";
 import BeforeAfter from "./BeforeAfter.tsx";
@@ -113,12 +114,16 @@ export default function TryOn(props: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const turnstileBox = useRef<HTMLDivElement>(null);
+  const soloFrame = useRef<HTMLDivElement>(null);
   const turnstile = useRef<ReturnType<typeof turnstileWidget> | null>(null);
   // The current photograph's work. Each is replaced when a new photograph is chosen.
   const preparing = useRef<Promise<PreparedPhoto> | null>(null);
   const uploading = useRef<Promise<Outcome<Uploaded>> | null>(null);
   const rendering = useRef<Promise<Outcome<string>> | null>(null);
   const jobId = useRef<string | null>(null);
+
+  // The result shown alone takes the photograph's shape, so it is never cropped.
+  useEffect(() => fitFrameToPhotos(soloFrame.current), [rendered, screen]);
 
   function fail(failure: Failure) {
     setErrorKind(failure.kind);
@@ -717,7 +722,7 @@ export default function TryOn(props: Props) {
           <div class={styles.result}>
             {returning ? (
               // The photograph is not kept, so a returning visitor sees the result alone.
-              <div class={styles.solo}>
+              <div class={styles.solo} ref={soloFrame}>
                 {afterImage}
                 <span class={`label ${styles.soloLabel}`}>{tryOn.result.after}</span>
               </div>

@@ -23,10 +23,18 @@ const PAGES = [
   "/try?state=error",
   "/try?state=error&kind=lookLimit",
   "/book",
+  "/book?state=served",
+  "/book?state=unserved",
   "/book?state=booked",
-  "/book?state=waitlist",
+  "/book?state=listed",
   "/privacy",
   "/terms",
+  // The referral landing: every /r/:code is the one page, and ?state= opens each state.
+  "/r/RM4K7P",
+  "/r/RM4K7P?state=served",
+  "/r/RM4K7P?state=unserved",
+  "/r/RM4K7P?state=booked",
+  "/r/RM4K7P?state=listed",
   "/no-such-page",
 ];
 
@@ -57,8 +65,16 @@ test("the forms' error states meet WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByText("Tell us what to call you.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 
+  // The booking page is the referral landing without the invite: a pincode first,
+  // then the form it decides on (docs/decisions/0051-booking-from-the-site.md).
+  await visit(page, "/book?state=served");
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Please tell us your name.")).toBeVisible();
+  expect(await violations(page)).toEqual([]);
+
   await visit(page, "/book");
-  await page.getByRole("button", { name: "Request a visit" }).click();
-  await expect(page.getByText("Tell us what to call you.")).toBeVisible();
+  await page.getByLabel("Pincode").fill("12");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("That is not a six-digit Indian pincode.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 });
