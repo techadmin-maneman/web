@@ -135,7 +135,11 @@ async function recordLead(
     served: boolean;
     now: Date;
   },
-): Promise<string> {
+): Promise<string | null> {
+  // A lead records where the hair loss is, and only the site's own form asks. An
+  // invited friend is never asked, so their booking leaves the referral records
+  // and no lead (docs/open-points.md, item 50).
+  if (input.lossExtent === null) return null;
   const { log, requestId } = c.var;
   const db = c.env.DB;
   const leadId = crypto.randomUUID();

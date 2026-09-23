@@ -20,6 +20,27 @@ export interface MigrationCheckOptions {
 const FILE_NAME = /^(\d{4})_[a-z0-9_]+\.sql$/; // 0001_create_leads.sql
 const CONTRACT_ANNOTATION = /^--\s*contract:\s*(docs\/decisions\/\d{4}-[a-z0-9-]+\.md)\s*$/m;
 
+/**
+ * A migration that reached no environment can be withdrawn, and only withdrawn:
+ * the deploy refused it and rolled it back, so there is nothing for a later
+ * migration to correct and the next deploy would fail on the same statement.
+ * The annotation names the run that refused it, and what is left must do
+ * nothing, so this can never be a way to rewrite a migration that has run.
+ *
+ *   -- withdrawn: deploy-staging run 35816407888 refused it, and it has been applied nowhere.
+ */
+// Horizontal space only: \s would cross the newline and read the next line as the reason.
+const WITHDRAWN_ANNOTATION = /^--[ \t]*withdrawn:[ \t]*\S.*$/m;
+
+/** Comments, blank lines and the no-op a migration file needs to hold a statement. */
+function doesNothing(sql: string): boolean {
+  const statements = sql
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "" && !line.startsWith("--"));
+  return statements.every((line) => /^select\s+1\s*;?$/i.test(line));
+}
+
 const DESTRUCTIVE_STATEMENTS = [
   { pattern: /\bDROP\s+TABLE\b/i, label: "DROP TABLE" },
   { pattern: /\bDROP\s+VIEW\b/i, label: "DROP VIEW" },
@@ -71,14 +92,26 @@ function checkDestructive(file: MigrationFile, adrExists?: (path: string) => boo
   return [];
 }
 
-/** Every migration on the base branch is still here, byte for byte. */
+/** A migration edited down to nothing, with the run that refused it named. */
+function withdrawn(sql: string): boolean {
+  return WITHDRAWN_ANNOTATION.test(sql) && doesNothing(sql);
+}
+
+/** Every migration on the base branch is still here, byte for byte, unless it was withdrawn. */
 function checkUnchanged(files: readonly MigrationFile[], atBase: ReadonlyMap<string, string>): string[] {
   const current = new Map(files.map((file) => [file.name, file.sql]));
   const problems: string[] = [];
   for (const [name, sqlAtBase] of atBase) {
     const sqlNow = current.get(name);
-    if (sqlNow === undefined) problems.push(`${name}: applied migrations must not be deleted`);
-    else if (sqlNow !== sqlAtBase) problems.push(`${name}: applied migrations must not be edited; add a new migration`);
+    if (sqlNow === undefined) {
+      problems.push(`${name}: applied migrations must not be deleted`);
+    } else if (sqlNow !== sqlAtBase && !withdrawn(sqlNow)) {
+      problems.push(
+        `${name}: applied migrations must not be edited; add a new migration, ` +
+          "or, if no environment ever applied this one, withdraw it with a " +
+          "'-- withdrawn: <the run that refused it>' annotation and nothing left to do",
+      );
+    }
   }
   return problems;
 }

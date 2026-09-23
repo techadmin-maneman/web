@@ -49,9 +49,28 @@ describe("migration check", () => {
       ["0001_a.sql", "CREATE TABLE a (id TEXT);"],
       ["0002_b.sql", "CREATE TABLE b (id TEXT);"],
     ]);
-    expect(checkMigrations([create("0001_a.sql", "CREATE TABLE a (id INTEGER);")], { atBase })).toEqual([
-      "0001_a.sql: applied migrations must not be edited; add a new migration",
-      "0002_b.sql: applied migrations must not be deleted",
-    ]);
+    const problems = checkMigrations([create("0001_a.sql", "CREATE TABLE a (id INTEGER);")], { atBase });
+    expect(problems[0]).toContain("0001_a.sql: applied migrations must not be edited");
+    expect(problems[1]).toBe("0002_b.sql: applied migrations must not be deleted");
+  });
+
+  // A migration the deploy refused and rolled back has reached nothing, so there is
+  // nothing for a later migration to correct and the next deploy fails on the same
+  // statement. It may be withdrawn, and only withdrawn.
+  it("allows a migration that reached nothing to be withdrawn", () => {
+    const atBase = new Map([["0001_a.sql", "CREATE TABLE a (id TEXT);"]]);
+    const withdrawn = [
+      "-- withdrawn: deploy-staging run 1234 refused it, and it has been applied nowhere.",
+      "SELECT 1;",
+    ];
+    expect(checkMigrations([create("0001_a.sql", withdrawn.join("\n"))], { atBase })).toEqual([]);
+  });
+
+  it("refuses a withdrawal that still does something, or that names no run", () => {
+    const atBase = new Map([["0001_a.sql", "CREATE TABLE a (id TEXT);"]]);
+    const stillDoes = ["-- withdrawn: run 1234 refused it", "CREATE TABLE c (id TEXT);"].join("\n");
+    expect(checkMigrations([create("0001_a.sql", stillDoes)], { atBase })[0]).toContain("must not be edited");
+    const unnamed = ["-- withdrawn:", "SELECT 1;"].join("\n");
+    expect(checkMigrations([create("0001_a.sql", unnamed)], { atBase })[0]).toContain("must not be edited");
   });
 });
