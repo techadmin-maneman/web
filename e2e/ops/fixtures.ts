@@ -95,7 +95,7 @@ const DATES = ["2025-09-19", "2025-09-20", "2025-09-21", "2025-09-22", "2025-09-
 /** Each column's utilisation, as the board letters it; 92 and 88 are the weekend's peak. */
 const UTILISATION = [64, 92, 88, 58, 64, 61, 67];
 
-const TECHNICIANS = [
+const BOARD_TECHNICIANS = [
   { id: "66000000-0000-4000-8000-000000000001", name: "Imran Qureshi", initials: "IQ", zone: "Sec 40–65" },
   { id: "66000000-0000-4000-8000-000000000002", name: "Sandeep Yadav", initials: "SY", zone: "Sec 1–39" },
   { id: "66000000-0000-4000-8000-000000000003", name: "Arjun Negi", initials: "AN", zone: "DLF 1–5" },
@@ -134,10 +134,10 @@ export const BOARD = {
   dates: DATES,
   technicians: [
     {
-      technician_id: TECHNICIANS[0]?.id,
-      name: TECHNICIANS[0]?.name,
-      initials: TECHNICIANS[0]?.initials,
-      zone: TECHNICIANS[0]?.zone,
+      technician_id: BOARD_TECHNICIANS[0]?.id,
+      name: BOARD_TECHNICIANS[0]?.name,
+      initials: BOARD_TECHNICIANS[0]?.initials,
+      zone: BOARD_TECHNICIANS[0]?.zone,
       days: daysOf([
         on(0, job("service", "Rohit M.", "Sec 65", 0, "morning")),
         on(0, job("service", "Vikram S.", "DLF 4", 0, "afternoon")),
@@ -150,10 +150,10 @@ export const BOARD = {
       ]),
     },
     {
-      technician_id: TECHNICIANS[1]?.id,
-      name: TECHNICIANS[1]?.name,
-      initials: TECHNICIANS[1]?.initials,
-      zone: TECHNICIANS[1]?.zone,
+      technician_id: BOARD_TECHNICIANS[1]?.id,
+      name: BOARD_TECHNICIANS[1]?.name,
+      initials: BOARD_TECHNICIANS[1]?.initials,
+      zone: BOARD_TECHNICIANS[1]?.zone,
       days: daysOf([
         on(0, job("service", "Arun P.", "Sec 23", 0, "morning")),
         on(1, job("replacement", "Manish G.", "Sec 31", 1, "afternoon")),
@@ -164,10 +164,10 @@ export const BOARD = {
       ]),
     },
     {
-      technician_id: TECHNICIANS[2]?.id,
-      name: TECHNICIANS[2]?.name,
-      initials: TECHNICIANS[2]?.initials,
-      zone: TECHNICIANS[2]?.zone,
+      technician_id: BOARD_TECHNICIANS[2]?.id,
+      name: BOARD_TECHNICIANS[2]?.name,
+      initials: BOARD_TECHNICIANS[2]?.initials,
+      zone: BOARD_TECHNICIANS[2]?.zone,
       days: daysOf([
         on(0, job("service", "Gaurav D.", "DLF 2", 0, "morning")),
         on(1, job("first_fit", "Rahul K.", "DLF 5", 1, "morning")),
@@ -179,10 +179,10 @@ export const BOARD = {
       ]),
     },
     {
-      technician_id: TECHNICIANS[3]?.id,
-      name: TECHNICIANS[3]?.name,
-      initials: TECHNICIANS[3]?.initials,
-      zone: TECHNICIANS[3]?.zone,
+      technician_id: BOARD_TECHNICIANS[3]?.id,
+      name: BOARD_TECHNICIANS[3]?.name,
+      initials: BOARD_TECHNICIANS[3]?.initials,
+      zone: BOARD_TECHNICIANS[3]?.zone,
       days: daysOf([
         on(1, job("service", "Dev M.", "Sohna", 1, "morning")),
         on(1, job("consultation", "Ishaan B.", "Sohna", 1, "evening")),
