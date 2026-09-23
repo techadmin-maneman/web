@@ -19,6 +19,7 @@ for (const environment of ["local", "staging"]) {
 for (const environment of ["local", "staging", "production"]) {
   execFileSync(process.execPath, ["scripts/build-app.ts", "--env", environment], { stdio: "inherit" });
   execFileSync(process.execPath, ["scripts/build-ops.ts", "--env", environment], { stdio: "inherit" });
+  execFileSync(process.execPath, ["scripts/build-tech.ts", "--env", environment], { stdio: "inherit" });
 }
 
 for (const worker of WORKERS) {

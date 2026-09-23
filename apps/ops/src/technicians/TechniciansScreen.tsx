@@ -4,7 +4,7 @@
 //
 // The board draws Jobs, Avg service and Skill beside the name; nothing gives
 // them, so the table carries the two columns the route answers and the phones
-// the board does not draw (docs/open-points.md, item 57).
+// the board does not draw (docs/open-points.md, item 59).
 
 import { longDate } from "@maneman/web-kit/dates";
 import { Fragment, useState } from "react";

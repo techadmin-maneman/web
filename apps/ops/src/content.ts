@@ -16,7 +16,7 @@ export const shell = {
    * The sections the backend has routes for, in the design's order; the design
    * draws eight. Its third is "Payments", which this cannot be: no route totals
    * the day's money or lists a refund, so the section holds the no-show queue
-   * alone (docs/open-points.md, item 55).
+   * alone (docs/open-points.md, item 57).
    */
   sections: [
     { page: "/clients", label: "Clients" },
@@ -217,7 +217,7 @@ export const waitlist = {
  * Board D1's queue. The board draws the day's money over "No-shows and late
  * cancellations", and beside it a disputed charge ruled on with Refund or
  * Uphold. Only the no-show cases and their three facts have a route, so only
- * they are here (docs/open-points.md, item 55).
+ * they are here (docs/open-points.md, item 57).
  */
 export const noShows = {
   title: "No-shows",
@@ -265,7 +265,7 @@ export const noShows = {
 /**
  * Board D3's roster. The board draws five columns; the route answers the
  * technician and the zone, and carries the phones the board does not draw
- * (docs/open-points.md, item 57).
+ * (docs/open-points.md, item 59).
  */
 export const technicians = {
   title: "Technicians",

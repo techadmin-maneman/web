@@ -40,6 +40,7 @@ export default defineConfig(
           "./apps/app/tsconfig.json",
           "./apps/app/sw/tsconfig.json",
           "./apps/ops/tsconfig.json",
+          "./apps/tech/tsconfig.json",
         ],
         tsconfigRootDir: import.meta.dirname,
       },

@@ -1,7 +1,7 @@
 // No-shows (Ops Console, board D1): each case with the three facts ops rule
 // on, charged or waived here. The board draws this queue beneath the day's
 // money and beside a disputed charge; neither has a route, so neither is built
-// (docs/open-points.md, item 55).
+// (docs/open-points.md, item 57).
 //
 // Nothing here takes money. The server never charges by itself, and this
 // records ops' ruling under whoever Access says is signed in
