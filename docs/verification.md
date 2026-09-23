@@ -387,7 +387,7 @@ So the 500 is what FSM does when there are no line IDs to walk: it throws before
 - **An FSM invoice is a link, not the document.** `GET /fsm/v1/Invoices/{id}` answers Books' own invoice payload — `line_items` with Books item IDs, `payment_terms_label`, and `record_actions` including "Unlink Invoice" — wrapped in a few FSM fields. Books is where a Mane Man invoice lives; FSM's Invoices module is the door.
 - **FSM will invoice a work order that is not closed.** `8229000000305514` was still `Status: "New"` when the invoice was raised. Our own pass only offers a job FSM has completed, which is the rule we want, not one FSM enforces.
 
-**Finding one already raised needs no listing.** The morning's record said the work order "carries no invoice ID at all". That is true of the work order's own fields and false of its **service lines**. Read back at 18:50 UTC, untouched, WO13 gives:
+**Finding one already raised needs no listing.** The morning's record said the work order "carries no invoice ID at all". That is true of the work order's own fields and false of its **service lines**. Read back that evening, untouched, WO13 gives:
 
 ```
 work order Billing_Status: Invoiced
