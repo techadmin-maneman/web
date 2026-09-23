@@ -6,11 +6,16 @@
 // own store rather than the phone's gallery, and leaves that store only when
 // the API has confirmed it.
 
+import AxeBuilder from "@axe-core/playwright";
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { fakeTech, heldOnPhone, JOB_ID } from "./fixtures.ts";
 
 const TARGET_BYTES = 250 * 1024;
 const BEFORE = `/jobs/${JOB_ID}/before-photos`;
+
+const wcag = (page: Page) =>
+  new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
 
 test("captures the five before angles into the app's own store, never a file input", async ({ page }) => {
   await fakeTech(page);
@@ -25,6 +30,9 @@ test("captures the five before angles into the app's own store, never a file inp
 
   const capture = page.getByRole("button", { name: "Capture" });
   await expect(capture).toBeEnabled();
+  const midway = await wcag(page);
+  expect(midway.violations.map((violation) => violation.id)).toEqual([]);
+
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
     await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
