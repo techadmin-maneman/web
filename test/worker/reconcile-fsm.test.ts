@@ -75,31 +75,37 @@ describe("the reconciliation, by day", () => {
 });
 
 describe("the reconciliation, overnight", () => {
-  it("walks the whole list a page a run, then checks the copies FSM did not list, and alerts once", async () => {
-    const listed = Array.from({ length: PAGE_SIZE + 1 }, (_, index) =>
-      fsmAppointment(`ap-${String(index).padStart(3, "0")}`, "2026-09-22T09:00:00+05:30"),
-    );
-    for (const appointment of listed) await copy(appointment.id, appointment.modifiedAt);
-    // One copy FSM no longer lists: deleted there without a webhook.
-    await copy("ap-deleted", "2026-09-20T09:00:00+05:30");
-    // And one change the webhook missed, hours old.
-    listed[PAGE_SIZE] = fsmAppointment(listed[PAGE_SIZE]?.id ?? "", "2026-09-22T12:00:00+05:30");
+  // Three passes over a full page of appointments, each writing its copies to D1: slower than
+  // the default allows when the machine is busy, which is how it failed in CI and nowhere else.
+  it(
+    "walks the whole list a page a run, then checks the copies FSM did not list, and alerts once",
+    { timeout: 30_000 },
+    async () => {
+      const listed = Array.from({ length: PAGE_SIZE + 1 }, (_, index) =>
+        fsmAppointment(`ap-${String(index).padStart(3, "0")}`, "2026-09-22T09:00:00+05:30"),
+      );
+      for (const appointment of listed) await copy(appointment.id, appointment.modifiedAt);
+      // One copy FSM no longer lists: deleted there without a webhook.
+      await copy("ap-deleted", "2026-09-20T09:00:00+05:30");
+      // And one change the webhook missed, hours old.
+      listed[PAGE_SIZE] = fsmAppointment(listed[PAGE_SIZE]?.id ?? "", "2026-09-22T12:00:00+05:30");
 
-    const first = run(listed, NIGHT);
-    expect(await first.summary).toEqual({ queued: 1, nightPage: 1 });
+      const first = run(listed, NIGHT);
+      expect(await first.summary).toEqual({ queued: 1, nightPage: 1 });
 
-    const second = run(listed, new Date(NIGHT.getTime() + 5 * 60_000));
-    expect(await second.summary).toEqual({ queued: 2, nightPage: 2 });
-    expect(queuedIds(second.queue).sort()).toEqual(["ap-050", "ap-deleted"]);
-    expect(second.deps.alerts).toEqual([
-      "FSM reconciliation repaired 2 appointment(s) tonight that the webhook missed or FSM deleted.",
-    ]);
+      const second = run(listed, new Date(NIGHT.getTime() + 5 * 60_000));
+      expect(await second.summary).toEqual({ queued: 2, nightPage: 2 });
+      expect(queuedIds(second.queue).sort()).toEqual(["ap-050", "ap-deleted"]);
+      expect(second.deps.alerts).toEqual([
+        "FSM reconciliation repaired 2 appointment(s) tonight that the webhook missed or FSM deleted.",
+      ]);
 
-    // Tonight's pass is done: later runs read the first page only.
-    const third = run(listed, new Date(NIGHT.getTime() + 10 * 60_000));
-    expect(await third.summary).toEqual({ queued: 1, nightPage: 0 });
-    expect(third.deps.alerts).toEqual([]);
-  });
+      // Tonight's pass is done: later runs read the first page only.
+      const third = run(listed, new Date(NIGHT.getTime() + 10 * 60_000));
+      expect(await third.summary).toEqual({ queued: 1, nightPage: 0 });
+      expect(third.deps.alerts).toEqual([]);
+    },
+  );
 
   it("does not count a change of the last few minutes as drift: its webhook may be on the way", async () => {
     await copy("ap-1", "2026-09-23T01:20:00+05:30");
