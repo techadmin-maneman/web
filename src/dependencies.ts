@@ -13,6 +13,7 @@ import { createFsmProvider, type FsmProvider } from "./providers/fsm.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
 import { createPaymentsProvider, type PaymentsProvider } from "./providers/razorpay.ts";
+import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode.ts";
 
 export interface Dependencies {
   readonly fetch: typeof fetch;
@@ -33,6 +34,8 @@ export interface Dependencies {
   readonly books: BooksProvider;
   /** Razorpay, for orders and refunds. */
   readonly payments: PaymentsProvider;
+  /** The address search, and the coordinate the geofence measures against. */
+  readonly geocode: GeocodeProvider;
 }
 
 export type DependencyFactory = (env: Env, log: Logger) => Dependencies;
@@ -82,6 +85,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
         fetch: httpFetch,
         log,
       }),
+      geocode: createGeocodeProvider(config.providers.GEOCODE_PROVIDER, settings.geocode.apiKey, { fetch: httpFetch }),
     };
   };
 }

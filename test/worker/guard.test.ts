@@ -10,6 +10,7 @@ const REAL = {
   FSM_PROVIDER: "none",
   BOOKS_PROVIDER: "none",
   PAYMENTS_PROVIDER: "none",
+  GEOCODE_PROVIDER: "none",
 };
 const STUBS = {
   IMAGE_PROVIDER: "stub",
@@ -20,6 +21,7 @@ const STUBS = {
   FSM_PROVIDER: "stub",
   BOOKS_PROVIDER: "stub",
   PAYMENTS_PROVIDER: "stub",
+  GEOCODE_PROVIDER: "stub",
 };
 
 /** Vars and secrets every environment needs, with valid values. */
@@ -39,6 +41,7 @@ const SETTINGS = {
   RENDER_DAILY_CEILING: "20",
   UPLOAD_DAILY_CEILING: "40",
   RESULT_READ_DAILY_CEILING: "400",
+  GEOCODE_DAILY_CEILING: "200",
   RESULT_RETENTION_DAYS: "30",
   UNKNOWN_COLOR_ROUTE: "premium_original",
   AILAB_CREDIT_FLOOR: "200",
@@ -125,7 +128,7 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(8);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(9);
   });
 
   it("refuses a missing or unknown provider", () => {
@@ -414,5 +417,26 @@ describe("validateStaticConfig: Razorpay", () => {
     expect(problemsOf({ ...production, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_test_abc" })).toEqual([
       "RAZORPAY_KEY_ID is not a live key in production",
     ]);
+  });
+});
+
+describe("the address search", () => {
+  it("needs the Google key only for the real provider", () => {
+    expect(problemsOf({ ...stagingBase, GEOCODE_PROVIDER: "google" })).toEqual(["GOOGLE_MAPS_API_KEY is not set"]);
+    expect(validateStaticConfig(stagingBase).settings.geocode.apiKey).toBeNull();
+  });
+
+  it("reads the ceiling everywhere, so the stub is capped too", () => {
+    expect(validateStaticConfig(stagingBase).settings.geocode.dailyCeiling).toBe(200);
+  });
+
+  it("refuses a ceiling that could reach Google's free allowance and start billing the card", () => {
+    expect(problemsOf({ ...stagingBase, GEOCODE_DAILY_CEILING: "5000" })).toEqual([
+      "GEOCODE_DAILY_CEILING must be at most 1800: a day above that could take a month past Google's free allowance",
+    ]);
+  });
+
+  it("allows nought, which is the runbook's kill switch", () => {
+    expect(problemsOf({ ...stagingBase, GEOCODE_DAILY_CEILING: "0" })).toEqual([]);
   });
 });

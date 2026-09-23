@@ -259,6 +259,42 @@ The profile: name, number, address, consents, and any number change or deletion 
 }
 ```
 
+### GET /api/address/suggestions
+
+Buildings matching what the client has typed, for the address form
+
+**200**: The suggestions, which may be empty
+
+```json
+{
+  "$ref": "#/components/schemas/AddressSuggestions"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PATCH /api/profile/address
 
 Replace the address visits go to, with its access notes
@@ -267,7 +303,7 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/Address"
+  "$ref": "#/components/schemas/AddressSave"
 }
 ```
 
@@ -1972,6 +2008,50 @@ Request body:
       ],
       "maxLength": 300,
       "description": "For the technician, from the day before the visit: gate code, parking."
+    },
+    "building": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120,
+      "description": "The building as chosen from the suggestions; null if typed."
+    },
+    "flat": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "floor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20
+    },
+    "tower": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "landmark": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "place_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Google's Place ID for the building, if one was chosen."
     }
   },
   "required": [
@@ -2020,6 +2100,154 @@ Request body:
     "new_mobile",
     "old_verified",
     "new_verified"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AddressSuggestions
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "string"
+          },
+          "secondary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "place_id",
+          "primary",
+          "secondary"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "attribution": {
+      "type": "string",
+      "enum": [
+        "Google Maps"
+      ]
+    }
+  },
+  "required": [
+    "suggestions",
+    "attribution"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AddressSave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "line1": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "line2": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "locality": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    },
+    "access_notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "For the technician, from the day before the visit: gate code, parking."
+    },
+    "building": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120,
+      "description": "The building as chosen from the suggestions; null if typed."
+    },
+    "flat": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "floor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20
+    },
+    "tower": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "landmark": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "place_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Google's Place ID for the building, if one was chosen."
+    },
+    "session_token": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    }
+  },
+  "required": [
+    "line1",
+    "line2",
+    "locality",
+    "city",
+    "pincode",
+    "access_notes"
   ],
   "additionalProperties": false
 }

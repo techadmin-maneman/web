@@ -458,7 +458,25 @@ export const profile = {
   // PLACEHOLDER: the design draws the profile with an address already given, and no form.
   noAddress: "No address yet. We confirm it with you before your visit.",
   addAddress: "Add your address and access notes",
+  // PLACEHOLDER: the design draws no landmark line (ADR 0054).
+  near: (landmark: string) => `Near ${landmark}`,
   form: {
+    // PLACEHOLDER: the design draws no address form at all, so none of the
+    // building search's words are drawn either (ADR 0054). The search is an
+    // addition to the form and never a gate: every field below still works
+    // typed, and an address with no building chosen saves without a pin.
+    building: {
+      label: "Search for your building",
+      hint: "Start typing your building or society. Choose it to help your technician find you.",
+      unavailable: "Search is unavailable just now. Type your address below instead.",
+      found: (count: number) => (count === 1 ? "1 building found" : `${String(count)} buildings found`),
+      // Google asks for their name against suggestions shown without a map.
+      attribution: "Google Maps",
+    },
+    flat: "Flat or house number",
+    floor: "Floor (optional)",
+    tower: "Tower or block (optional)",
+    landmark: "Landmark (optional)",
     line1: "House, flat or building",
     line2: "Street (optional)",
     locality: "Sector or area",
