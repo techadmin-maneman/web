@@ -23,6 +23,35 @@ export async function fakeCheckout(page: Page, outcome: "paid" | "failed"): Prom
 }
 
 /**
+ * Checkout that paints a window of its own across the page, as Razorpay's iframe does, and records whether the page
+ * let it through: `window.__checkoutOnTop`. A sheet left open with showModal() sits in the browser's top layer, above
+ * every z-index and with the rest of the page inert, so Checkout would be drawn under it and take no taps.
+ */
+export async function checkoutOnTop(page: Page): Promise<void> {
+  await page.route("https://checkout.razorpay.com/v1/checkout.js", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `window.__checkoutOnTop = null;
+      window.Razorpay = function (options) {
+        this.on = () => {};
+        this.open = () => {
+          const own = document.createElement("div");
+          own.id = "fake-checkout";
+          own.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:#000";
+          document.body.append(own);
+          setTimeout(() => {
+            const top = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+            window.__checkoutOnTop = top === own;
+            own.remove();
+            options.handler({ razorpay_payment_id: "pay_fake" });
+          }, 50);
+        };
+      };`,
+    }),
+  );
+}
+
+/**
  * The hold's poll answered as Razorpay's webhook and FSM would leave it: paid and booked. The hold is the one the
  * page was given; only the browser resolves app.localhost, so the test cannot fetch it again itself.
  */

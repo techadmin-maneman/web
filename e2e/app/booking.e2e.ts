@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
+import { checkoutOnTop, confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 
@@ -45,6 +45,17 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(confirmed.getByText("Rs. 2,000")).toBeVisible();
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+});
+
+test("lets Checkout's own window through, in front of the sheet", async ({ page }) => {
+  await checkoutOnTop(page);
+  await confirmedByRazorpay(page);
+  await toPayment(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { __checkoutOnTop: boolean | null }).__checkoutOnTop)).toBe(
+    true,
+  );
 });
 
 test("says so when the payment fails, with the hold still counting", async ({ page }) => {
