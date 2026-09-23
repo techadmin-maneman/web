@@ -12,9 +12,10 @@ export const RULES = [
 ] as const;
 
 /**
- * How close to the address a check-in must be. The design's own open question,
- * given GPS error in Gurgaon high-rises, so every check-in records the distance
- * it measured and the radius in force (docs/open-points.md, item 44).
+ * How close to the address a check-in must be. A placeholder until the owner
+ * rules it (docs/open-points.md, item 46): the design's own open question,
+ * given GPS error in Gurgaon high-rises. Every check-in records the distance it
+ * measured and the radius in force, which is what the owner tunes it from.
  */
 export const CHECKIN_RADIUS_M = 200;
 

@@ -1,4 +1,4 @@
-// Migration 0025 adds the field-operations tables (the plan's P2-M4). What the
+// Migration 0026 adds the field-operations tables (the plan's P2-M4). What the
 // schema itself must hold, whatever the code around it does: a replayed job
 // event lands once, a check-in records its distance whether it passed or not, a
 // move carries a reason from the design's list, and no row points at a job, a
@@ -60,7 +60,7 @@ beforeEach(() => {
   db = seeded();
 });
 
-describe("migration 0025", () => {
+describe("migration 0026", () => {
   it("lands a replayed job event once, and the same ID on another job as its own", () => {
     insertEvent(db, "job1", "device-event-1");
     expect(() => insertEvent(db, "job1", "device-event-1")).toThrow(/UNIQUE/);

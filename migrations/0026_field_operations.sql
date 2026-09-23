@@ -1,4 +1,4 @@
--- Migration number: 0025
+-- Migration number: 0026
 -- Field operations (docs/prompts/phase2-backend.md, "Data model additions",
 -- "Field operations"; the plan's P2-M4). These tables hold what FSM has no
 -- place for: the phones technicians work from, their check-ins, the evidence
@@ -9,6 +9,12 @@
 -- P2-M4's seventh table, slot_claims, already exists (migration 0016): the
 -- clash check and self-serve booking share it (ADR 0034).
 --
+-- The prompt's list also has two tables we already hold, and this migration
+-- alters neither. addresses has lat, lng and geocoded_at since migration 0008.
+-- technicians is still to gain the zone FSM calls a territory; it waits on the
+-- territories being set there (docs/open-points.md, item 12), and nothing here
+-- reads it, so it comes with the code that does.
+--
 -- The milestone itself waits on Zoho's licensing answer
 -- (docs/decisions/fsm-licensing.md; docs/open-points.md, item 15). The schema
 -- and the rules in src/policy/ do not, and land first. Only new tables, so the
@@ -18,6 +24,8 @@
 -- be revoked by ops. Revoking also wipes the device's cached jobs on its next
 -- contact" (src/policy/technician-login.ts). A device that has been revoked
 -- learns it the next time it calls, and says when it dropped its cached jobs.
+-- The session it binds to is the one ADR 0029 defines; revoking is an ops
+-- action, so it is audited like the rest of them (ADR 0031).
 CREATE TABLE technician_devices (
   id TEXT PRIMARY KEY,
   technician_id TEXT NOT NULL REFERENCES technicians (id),
@@ -43,9 +51,10 @@ CREATE INDEX technician_devices_by_session ON technician_devices (session_id);
 -- "I have arrived records the time and the device's position, and passes only
 -- within config CHECKIN_RADIUS_M (200 m) of the address" (src/policy/check-in.ts).
 -- A row is written whether the check-in passed or not, with the distance measured
--- and the radius in force, "so the value can be tuned from real data"
--- (docs/open-points.md, item 44). The address's coordinates come from the
--- geocoder chosen in item 26; without them there is nothing to measure against.
+-- and the radius in force, "so the value can be tuned from real data". The 200 m
+-- is a placeholder the owner must rule (docs/open-points.md, item 46). The
+-- address's coordinates come from the geocoder chosen in item 26; without them
+-- there is nothing to measure against.
 CREATE TABLE checkins (
   id TEXT PRIMARY KEY,
   appointment_id TEXT NOT NULL REFERENCES appointments (id),
@@ -70,7 +79,9 @@ CREATE INDEX checkins_by_appointment ON checkins (appointment_id, at);
 -- time, distance, and the delivery receipt of the day-before or arrival WhatsApp
 -- to the client" (src/policy/no-show.ts). "The charge is applied by ops from the
 -- evidence, never automatically", so a case opens undecided and stays that way
--- until a person rules on it.
+-- until a person rules on it. The wait each case runs is a placeholder of 15
+-- minutes for every visit type (docs/open-points.md, item 47), which is why the
+-- wait's start and end are stored rather than computed from the visit type.
 CREATE TABLE no_show_cases (
   id TEXT PRIMARY KEY,
   -- The check-in the wait ran from; one case per check-in.
@@ -148,10 +159,12 @@ CREATE TABLE consumables_used (
 
 CREATE INDEX consumables_used_by_appointment ON consumables_used (appointment_id);
 
--- Every move ops make on the board, each with "a reason from the design's list"
--- (src/policy/dispatch.ts): where the job was and where it went, who moved it,
--- what FSM said, and the message telling the client his new window. The client
--- "is never charged for a move ops make", so no amount belongs here.
+-- Every move ops make on the dispatch board, the Ops console's board A, each
+-- with "a reason from the design's list" (src/policy/dispatch.ts): where the job
+-- was and where it went, who moved it, what FSM said, and the message telling
+-- the client his new window. The client "is never charged for a move ops make",
+-- so no amount belongs here. A move is refused before it is written if it would
+-- clash (ADR 0034); the windows it moves between are ADR 0035's.
 CREATE TABLE dispatch_moves (
   id TEXT PRIMARY KEY,
   appointment_id TEXT NOT NULL REFERENCES appointments (id),

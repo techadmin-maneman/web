@@ -24,7 +24,7 @@ export function jobDay(windowStart: Date, now: Date): JobDay {
  * When a job's address, access notes and client card unlock: midnight in India
  * at the start of the day before the visit. The prompt says "the day before"
  * and names no hour, so this is the plain reading and a placeholder until the
- * owner rules it (docs/open-points.md, item 46).
+ * owner rules it (docs/open-points.md, item 48).
  */
 export const unlocksAt = (windowStart: Date): Date => indiaInstant(addDays(indiaDate(windowStart), -1), "00:00");
 
