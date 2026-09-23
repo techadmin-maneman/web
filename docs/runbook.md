@@ -16,29 +16,30 @@ The public site (`mm-site`) is built, edited and published as `docs/frontend.md`
 
 ### State on 21 September 2026
 
-| Step                                        | staging                               | production                                      |
-| ------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
-| 1. D1 database, queues                      | done                                  | done                                            |
-| 1. R2 buckets, 30-day expiry                | done                                  | done                                            |
-| 2. DNS record                               | done                                  | exists (the apex record)                        |
-| 3. Access application and service token     | done                                  | not applicable                                  |
-| 4. Migrations and identity mark             | done                                  | done                                            |
-| 5. Bootstrap deploy of both Workers         | done                                  | done                                            |
-| 6. CI tokens and GitHub secrets, checked    | done                                  | done                                            |
-| 7. Worker secrets: Turnstile, IP salt       | done                                  | done                                            |
-| 7. Worker secrets: alert webhook            | done (Google Chat)                    | done (the same Google Chat space)               |
-| 7. Worker secrets: AILabTools, link signing | done                                  | done (staging's AILabTools key, for now)        |
-| 7. Worker secrets: Evolution, allowlist     | done (poker-settle's bridge, for now) | Evolution done (the same bridge; messaging off) |
-| 7. Worker secrets: erasure                  | done                                  | done                                            |
-| 8. Zoho org, fields, secrets                | done: the real org (ADR 0050)         | done: the real org (ADR 0050)                   |
-| 9. Triggers (cron and all three consumers)  | done                                  | done                                            |
-| 10. Access bypass for result links          | done                                  | not applicable                                  |
-| 11. Phase 2 hosts: DNS, Access              | done                                  | done (all three behind Access until go-live)    |
-| 11. Phase 2 surfaces switched on            | done (22 September 2026)              | not yet: waits for the production go-ahead      |
-| 11. The client app's Worker, bootstrapped   | done (22 September 2026)              | not yet: waits for the production go-ahead      |
-| 7. Worker secrets: login code pepper        | done (22 September 2026)              | not yet: with the client surface                |
-| 12. Evolution receipts: token, bypass       | done                                  | not yet                                         |
-| 12. Evolution receipts: the webhook         | open: the shared instance's webhook   | not yet                                         |
+| Step                                        | staging                                            | production                                      |
+| ------------------------------------------- | -------------------------------------------------- | ----------------------------------------------- |
+| 1. D1 database, queues                      | done                                               | done                                            |
+| 1. R2 buckets, 30-day expiry                | done                                               | done                                            |
+| 2. DNS record                               | done                                               | exists (the apex record)                        |
+| 3. Access application and service token     | done                                               | not applicable                                  |
+| 4. Migrations and identity mark             | done                                               | done                                            |
+| 5. Bootstrap deploy of both Workers         | done                                               | done                                            |
+| 6. CI tokens and GitHub secrets, checked    | done                                               | done                                            |
+| 7. Worker secrets: Turnstile, IP salt       | done                                               | done                                            |
+| 7. Worker secrets: alert webhook            | done (Google Chat)                                 | done (the same Google Chat space)               |
+| 7. Worker secrets: AILabTools, link signing | done                                               | done (staging's AILabTools key, for now)        |
+| 7. Worker secrets: Evolution, allowlist     | done (poker-settle's bridge, for now)              | Evolution done (the same bridge; messaging off) |
+| 7. Worker secrets: erasure                  | done                                               | done                                            |
+| 8. Zoho org, fields, secrets                | done: the real org (ADR 0050)                      | done: the real org (ADR 0050)                   |
+| 9. Triggers (cron and all three consumers)  | done                                               | done                                            |
+| 10. Access bypass for result links          | done                                               | not applicable                                  |
+| 11. Phase 2 hosts: DNS, Access              | done                                               | done (all three behind Access until go-live)    |
+| 11. Phase 2 surfaces switched on            | done (22 September 2026)                           | not yet: waits for the production go-ahead      |
+| 11. The client app's Worker, bootstrapped   | done (22 September 2026)                           | not yet: waits for the production go-ahead      |
+| 11. The technician app's Worker (`mm-tech`) | not yet: bootstrap it, then add it to the CI token | not yet: waits for the production go-ahead      |
+| 7. Worker secrets: login code pepper        | done (22 September 2026)                           | not yet: with the client surface                |
+| 12. Evolution receipts: token, bypass       | done                                               | not yet                                         |
+| 12. Evolution receipts: the webhook         | open: the shared instance's webhook                | not yet                                         |
 
 ### 1. Resources
 
@@ -111,7 +112,7 @@ npm run smoke -- --base https://<host> --environment <env>
 Cloudflare dashboard → Manage Account → Account API Tokens → Create Token → Custom token, one per environment:
 
 - Name `mm-ci-<env>`.
-- Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>` and `mm-app-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step fails with "No access to the specified service".
+- Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also reach production's database; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - No zone permissions.
 
@@ -296,12 +297,17 @@ To switch one on:
    The config check fails if either comes without the other.
 
 5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
-6. **The app's own Worker**, where the surface has one (the client app is `mm-app`, docs/decisions/0043-client-app.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that.
+6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md) and the technician app `mm-tech` (docs/decisions/0038-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then its deploy step says so and does nothing, so a release does not fail on a Worker that does not exist.
 
    ```sh
    npm run build:app -- --env <env>
    W deploy --config apps/app/wrangler.jsonc --env <env> --tag bootstrap
+
+   npm run build:tech -- --env <env>
+   W deploy --config apps/tech/wrangler.jsonc --env <env> --tag bootstrap
    ```
+
+   Then add the new Worker to that environment's CI token (step 3), which can only name a Worker that exists.
 
 ### 11a. The client app's login
 

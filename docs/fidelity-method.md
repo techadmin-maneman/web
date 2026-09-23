@@ -58,6 +58,24 @@ These differences are known and stand:
 | G1       | A fifth consent, "WhatsApp about launches"                                                        | The waitlist's launch alert (ADR 0042); its wording is a placeholder                              |
 | G2       | The cards sit inside the page's 20 px margins                                                     | The design draws them on their own, 390 px wide                                                   |
 
+## The technician app (P2-F4)
+
+`npm run build:tech -- --env local && npm run fidelity:tech` writes `docs/fidelity/technician-app/`: board A1, board A2's empty state, and board A3.
+
+- **The app's API is answered with the design's own example,** Imran's four jobs on one day and Rohit M.'s 9:30 service in Sector 65. No mm-api runs. The clock is set to 9:12 India time, as board A1's status bar reads, so the day's times land where the board draws them.
+- **The status bar the phone frames draw is cropped off,** and the app is shot 44 px shorter to match, as the client app's pairs are.
+- **No photograph of anyone is used.** Last visit's thumbnail is answered with a block of `--ink-frame`, as the client app's photographs are.
+
+These differences are known and stand:
+
+| Pair     | Difference                                                 | Why                                                                                                |
+| -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| A1       | The initials chip carries "Sign out"                       | The board draws the initials alone and no way out; the Prototype's technician screen has this chip |
+| A1       | A line above the list when the outbox is holding something | The prompt's "plain account of what has not yet reached us"; the board draws the queue on A2       |
+| A2 empty | The whole screen, with its head and tomorrow's line        | The board draws the empty card on its own, as it does B3's states in the client app                |
+| A3       | Last visit's photograph is a block of ink                  | The pairs answer photographs with ink blocks, as the client app's do                               |
+| A3       | A job further out says "Not yet" and names its sector      | The board writes the rule in a note beside the frame and draws no locked screen                    |
+
 ## The referral landing (P2-F3)
 
 `npm run build:site -- --env local && npm run fidelity:refer` writes `docs/fidelity/referral/`: the Landing boards C1 to C4 at 390 px, and C5 at 1440.
