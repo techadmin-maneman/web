@@ -208,6 +208,27 @@ describe("FSM: clients, technicians, items and files", () => {
     });
     expect(await provider.attachments("ap-1")).toEqual([]);
   });
+
+  // The upload answers `file_id`, but the Attachments module takes `File_Id`. Sending
+  // the lower-case name is refused with 400 INVALID_DATA (staging, 23 September 2026).
+  it("attaches an uploaded file by File_Id, the name the module takes", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/files`]: () => json({ data: { file_id: "file-new" } }, 200),
+      [`${FSM_API}/Service_Appointments/ap-1/Attachments`]: () => json({ data: [{ id: "attachment-9" }] }, 201),
+    });
+
+    const id = await provider.attachToAppointment("ap-1", {
+      name: "before-front.jpg",
+      contentType: "image/jpeg",
+      bytes: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]),
+    });
+
+    expect(id).toBe("attachment-9");
+    expect(JSON.parse(calls.at(-1)?.body ?? "null")).toEqual({
+      data: [{ File_Id: "file-new", File_Name: "before-front.jpg" }],
+    });
+  });
 });
 
 describe("FSM: moving and cancelling a visit", () => {
