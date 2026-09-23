@@ -89,6 +89,16 @@ describe("the mirror: one appointment", () => {
     });
   });
 
+  // The invoice pass owns the column, and FSM has nothing to put in it: an
+  // appointment's own Invoice_Id is null even once its work order is invoiced.
+  it("leaves the invoice the pass recorded alone, however often it writes the copy again", async () => {
+    await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
+    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'books-invoice-1' WHERE fsm_id = 'ap-1'").run();
+
+    await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
+    expect((await mirrored())?.fsm_invoice_id).toBe("books-invoice-1");
+  });
+
   it("links the client to the person with the same mobile number, and remembers the contact", async () => {
     const existing = await person("+919810000001");
     await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
