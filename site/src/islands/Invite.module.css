@@ -1,0 +1,532 @@
+/*
+ * The referral landing (design/phase2/Referral and Waitlist, C1 to C5): the
+ * navy arrival block, the prices, how it works, the pincode check, and the form
+ * the pincode decides on. At 1440 the design puts the card and how-it-works on
+ * the right and the prices and pincode on the left; below that it is one
+ * column, in the order the boards show.
+ */
+
+.inner {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---- The arrival block (C1) ---------------------------------------------- */
+
+.arrival {
+  padding-block: var(--sp-28) var(--sp-24);
+}
+
+.from {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* The referrer's card, as WhatsApp showed it in the chat: the same 1200 by 630. */
+.inviteCard {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: var(--sp-16);
+  background: var(--ink);
+}
+
+.title {
+  margin: var(--sp-20) 0 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-h2);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-heading);
+}
+
+.offer {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-lead);
+  line-height: 1.55;
+  color: var(--text-soft);
+  max-width: var(--measure-lead);
+}
+
+.unknownTitle,
+.unknownBody {
+  display: block;
+}
+
+.unknownTitle {
+  color: var(--text);
+}
+
+.unknownBody {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-16);
+}
+
+/* ---- Prices (C1, C5) ------------------------------------------------------ */
+
+.prices {
+  padding-block: var(--sp-8) var(--sp-24);
+  border-top: var(--hairline) solid var(--paper-line);
+  margin-top: var(--sp-24);
+}
+
+.priceRows {
+  margin: 0;
+  display: grid;
+  gap: var(--sp-20);
+}
+
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  align-items: baseline;
+  padding-bottom: var(--sp-20);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.priceRow dt,
+.priceRow dd {
+  margin: 0;
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.priceRow dd {
+  text-align: right;
+}
+
+.priceWhat {
+  font-size: var(--fs-17);
+}
+
+.priceAmount {
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  font-variant-numeric: tabular-nums;
+}
+
+.priceNote {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* ---- How it works (C1, C5) ----------------------------------------------- */
+
+.steps {
+  padding-block: var(--sp-32);
+}
+
+.pincodeTitle,
+.formTitle {
+  font-size: var(--fs-24);
+}
+
+.stepsTitle {
+  margin: 0;
+  font-size: var(--fs-13);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.stepList {
+  margin: var(--sp-16) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
+/* A rule between the steps, as the board draws them. */
+.step {
+  display: flex;
+  gap: var(--sp-16);
+  align-items: flex-start;
+  padding-block: var(--sp-16);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.stepNumber {
+  flex: none;
+  font-family: var(--font-serif);
+  font-size: var(--fs-18);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepTitle {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: 500;
+}
+
+.stepBody {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-15);
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* ---- The pincode check (C1) ---------------------------------------------- */
+
+.pincode {
+  background: var(--ink);
+  color: var(--paper);
+  padding-block: var(--sp-28);
+}
+
+.pincode .pincodeTitle,
+.pincode .label {
+  color: var(--paper);
+}
+
+.answerBody {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+}
+
+.answer {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  line-height: 1.2;
+  color: var(--paper);
+}
+
+.pincodeForm {
+  margin-top: var(--sp-20);
+  display: flex;
+  gap: var(--sp-12);
+  align-items: flex-end;
+}
+
+/* The field on the navy block: the design's dark input, not the paper one. */
+.pincode .input {
+  background: transparent;
+  border-color: var(--ink-line);
+  color: var(--paper);
+}
+
+/* The field takes the row, with the button beside it, as the board draws them. */
+.pincodeField {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---- The two forms (C2, C3) ---------------------------------------------- */
+
+.formSection {
+  padding-block: var(--sp-32) var(--sp-36);
+}
+
+.served {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.formTitle {
+  margin-top: var(--sp-8);
+}
+
+.formBody {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-16);
+  color: var(--text-muted);
+}
+
+.card {
+  min-width: 0;
+  margin-top: var(--sp-24);
+  background: var(--paper-light);
+  border: var(--hairline) solid var(--paper-line);
+  padding: var(--sp-24);
+  display: grid;
+  gap: var(--sp-20);
+}
+
+.fields {
+  display: grid;
+  gap: var(--sp-20);
+  min-width: 0;
+}
+
+.forPincode {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--sp-8);
+  font-size: var(--fs-14);
+  color: var(--text-soft);
+}
+
+.group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  /* A fieldset does not shrink below its content unless told to, and the date strip is wide. */
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  height: var(--btn-lg);
+  padding: 0 var(--sp-16);
+  background: var(--white);
+  border: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-16);
+}
+
+.bad {
+  border-color: var(--error-on-paper);
+}
+
+.mobile {
+  display: flex;
+  align-items: center;
+  height: var(--btn-lg);
+  background: var(--white);
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.prefix {
+  padding-inline: var(--sp-16);
+  border-right: var(--hairline) solid var(--paper-line);
+  line-height: var(--btn-lg);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobileInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--sp-16);
+  border: 0;
+  background: transparent;
+  font-size: var(--fs-16);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The date strip scrolls sideways; a day is a tap target of its own (C2). */
+.dates {
+  display: flex;
+  gap: var(--sp-8);
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: var(--sp-8);
+  scrollbar-width: thin;
+  /* The strip scrolls; the page does not. */
+  overscroll-behavior-x: contain;
+}
+
+.day {
+  /* The hidden radio inside is absolutely positioned: without this it is placed against the
+     document, and a strip scrolled sideways would widen the whole page. */
+  position: relative;
+  flex: none;
+  width: var(--btn-lg);
+  padding-block: var(--sp-8);
+  display: grid;
+  gap: var(--sp-4);
+  justify-items: center;
+  background: var(--white);
+  border: var(--hairline) solid var(--paper-line);
+  cursor: pointer;
+}
+
+.dayOn {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.dayName {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.dayOn .dayName {
+  color: var(--ink-soft);
+}
+
+.dayNumber {
+  font-size: var(--fs-17);
+  font-variant-numeric: tabular-nums;
+}
+
+.windows {
+  display: grid;
+  gap: var(--sp-8);
+}
+
+.window {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-12);
+  min-height: var(--btn-lg);
+  padding-inline: var(--sp-16);
+  background: var(--white);
+  border: var(--hairline) solid var(--paper-line);
+  cursor: pointer;
+}
+
+.windowOn {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 var(--hairline) var(--ink);
+}
+
+.windowLabel {
+  font-size: var(--fs-16);
+}
+
+.windowHours {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.consent {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.box {
+  flex: none;
+  width: var(--sp-20);
+  height: var(--sp-20);
+  margin-top: var(--sp-4);
+  display: grid;
+  place-items: center;
+  background: var(--white);
+  border: var(--hairline) solid var(--paper-line);
+  color: var(--ink);
+}
+
+.consentText {
+  font-size: var(--fs-15);
+  line-height: 1.5;
+}
+
+.consentNote {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.turnstile:not(:empty) {
+  margin-block: var(--sp-8);
+}
+
+.error,
+.failure {
+  margin-top: var(--sp-8);
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.told {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ---- The confirmations (C4) ---------------------------------------------- */
+
+.done {
+  padding-block: var(--sp-48) var(--sp-36);
+}
+
+.tick {
+  display: grid;
+  place-items: center;
+  width: var(--btn-lg);
+  height: var(--btn-lg);
+  border: var(--hairline) solid var(--paper-line);
+  border-radius: 50%;
+  color: var(--text-soft);
+}
+
+.doneLabel {
+  margin-top: var(--sp-20);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.doneTitle {
+  margin: var(--sp-8) 0 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-h2);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-heading);
+}
+
+.doneBody {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-lead);
+  line-height: 1.55;
+  color: var(--text-soft);
+  max-width: var(--measure-lead);
+}
+
+.doneWhere {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.doneNote {
+  margin: var(--sp-16) 0 var(--sp-28);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+  max-width: var(--measure-lead);
+}
+
+.doneActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+}
+
+/* ---- Desktop (C5): prices and pincode left, how it works right ------------ */
+
+@media (min-width: 1024px) {
+  .arrival {
+    padding-block: var(--sp-48) var(--sp-48);
+  }
+
+  .priceRows {
+    max-width: var(--measure-lead);
+  }
+
+  .stepList {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-28);
+  }
+
+  .step {
+    flex-direction: column;
+  }
+
+  .windows {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .window {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding-block: var(--sp-12);
+  }
+}

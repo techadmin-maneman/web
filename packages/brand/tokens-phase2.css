@@ -20,6 +20,8 @@
   --fs-21: 21px; /* an entry's amount in the payments list (board E1) */
   --fs-26: 26px; /* an upcoming visit's date (board C1) */
   --fs-28: 28px; /* a confirmed booking's day and window (board C6) */
+  --fs-30: 30px; /* what a referral earns (board F1) */
+  --fs-34: 34px; /* the credit tile's count (board F1) */
   --fs-40: 40px; /* an entry's amount on its own page (board E2) */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
   --tap-row: 64px; /* rows, tabs, the code's boxes */

@@ -281,7 +281,7 @@ try {
   }
   writeFileSync(
     `${OUT}/README.md`,
-    "# Fidelity screenshots\n\nThe design on the left, the build on the right. `npm run fidelity` makes the public site's, at 390 and 1440 px; `npm run fidelity:app` makes the client app's, in `client-app/`. The method, including Phase 2's boards, is in `docs/fidelity-method.md`.\n",
+    "# Fidelity screenshots\n\nThe design on the left, the build on the right. `npm run fidelity` makes the public site's, at 390 and 1440 px; `npm run fidelity:app` makes the client app's, in `client-app/`; `npm run fidelity:refer` makes the referral landing's, in `referral/`. The method, including Phase 2's boards, is in `docs/fidelity-method.md`.\n",
   );
   console.log(`fidelity: written to ${OUT}`);
 } finally {

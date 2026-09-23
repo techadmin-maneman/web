@@ -45,11 +45,14 @@ function isFile(path: string): boolean {
   return existsSync(path) && statSync(path).isFile();
 }
 
+/** Every /r/:code is the one referral landing, as run_worker_first makes it behind Cloudflare. */
+const REFERRAL_CODE = /^\/r\/[A-Za-z0-9]{4,12}\/?$/;
+
 /** The file a request path maps to, or null. */
 export function resolveFile(root: string, urlPath: string): string | null {
   const base = resolve(root);
   const decoded = decodeURIComponent(urlPath.split("?")[0] ?? "/");
-  const path = normalize(join(base, decoded));
+  const path = normalize(join(base, REFERRAL_CODE.test(decoded) ? "/r" : decoded));
   if (path !== base && !path.startsWith(base + sep)) return null;
   for (const candidate of [path, `${path}.html`, join(path, "index.html")]) {
     if (isFile(candidate)) return candidate;

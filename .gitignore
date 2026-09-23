@@ -19,4 +19,5 @@ lighthouse/
 private/
 
 # Worktrees the agents work in; never part of the repository.
+# Worktrees a background agent works in; never part of the repository.
 .claude/worktrees/

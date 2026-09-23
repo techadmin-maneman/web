@@ -24,8 +24,9 @@ describe("the production site build", () => {
     for (const page of pages) {
       const html = readFileSync(`${OUT}/${page}`, "utf8");
       expect(html, page).not.toContain(">Placeholder<");
-      // The 404 page alone stays out of search engines.
-      if (page !== "404.html") expect(html, page).not.toContain("noindex");
+      // Two pages stay out of search engines: the 404, and the referral landing, whose
+      // address holds one person's invite code (docs/decisions/0027-referral-landing.md).
+      if (page !== "404.html" && page !== "r.html") expect(html, page).not.toContain("noindex");
       for (const value of placeholders) expect(html, `${page}: ${value}`).not.toContain(value);
     }
     expect(readFileSync(`${OUT}/robots.txt`, "utf8")).toContain("Allow: /");

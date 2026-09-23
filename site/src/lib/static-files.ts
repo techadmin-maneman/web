@@ -108,9 +108,13 @@ export function robotsFile(environment: SiteEnvironment): string {
   return "User-agent: *\nDisallow: /\n";
 }
 
-/** The page a built file serves: index.html is /, try.html is /try. The 404 page is not one. */
+/**
+ * The page a built file serves: index.html is /, try.html is /try. The 404 page
+ * is not one, and neither is the referral landing: r.html answers every /r/:code,
+ * each one a single person's invite, and none of them is indexed.
+ */
 export function pagePath(file: string): string | null {
-  if (!file.endsWith(".html") || file === "404.html") return null;
+  if (!file.endsWith(".html") || file === "404.html" || file === "r.html") return null;
   return file === "index.html" ? "/" : `/${file.slice(0, -".html".length)}`;
 }
 

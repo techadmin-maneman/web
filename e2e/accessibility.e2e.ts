@@ -27,6 +27,12 @@ const PAGES = [
   "/book?state=waitlist",
   "/privacy",
   "/terms",
+  // The referral landing: every /r/:code is the one page, and ?state= opens each state.
+  "/r/RM4K7P",
+  "/r/RM4K7P?state=served",
+  "/r/RM4K7P?state=unserved",
+  "/r/RM4K7P?state=booked",
+  "/r/RM4K7P?state=listed",
   "/no-such-page",
 ];
 

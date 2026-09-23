@@ -6,7 +6,8 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { api, forgetHome, keptHome, type Me } from "./api.ts";
 import { HomeScreen } from "./home/HomeScreen.tsx";
-import { ReferScreen } from "./home/TabScreens.tsx";
+import { ReferScreen } from "./refer/ReferScreen.tsx";
+import { TrackerScreen } from "./refer/TrackerScreen.tsx";
 import { Login } from "./login/Login.tsx";
 import { EntryScreen } from "./payments/EntryScreen.tsx";
 import { PaymentsScreen } from "./payments/PaymentsScreen.tsx";
@@ -44,6 +45,8 @@ function pageFor(route: Route, onLogout: () => void, onChanged: () => void) {
       return <EntryScreen id={route.id} />;
     case "refer":
       return <ReferScreen />;
+    case "fitted":
+      return <TrackerScreen />;
     case "profile":
       return <ProfileScreen onLogout={onLogout} onChanged={onChanged} />;
   }
