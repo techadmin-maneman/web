@@ -5,9 +5,11 @@
 //   /referrals              the review queue (C1) over the referrers' figures (C2)
 //   /waitlist               who is waiting, and marking a pincode live (C3)
 //   /clients                finding one client by their mobile number
+//   /clients/:id/pieces     the pieces they have been fitted with (B1)
 //   /clients/:id/photos     that client's photographs (B2), locked until the view is logged
 //   /clients/:id/consents   what they have agreed to (B3)
 //   /no-shows               the no-show cases and their evidence (D1's queue)
+//   /tasks                  what ops still have to do, by group (D2)
 //   /technicians            who works, and the phones they work from (D3)
 //
 // Anything else, "/" included, is the dispatch board, which is what the design
@@ -15,37 +17,41 @@
 
 import { useEffect, useState } from "react";
 
-/** The tabs of the design's eight that a client's page carries. */
-export type ClientTab = "photos" | "consents";
+/** The tabs of the design's eight that a client's page carries, in its order. */
+export const CLIENT_TABS = ["pieces", "consents", "photos"] as const;
+export type ClientTab = (typeof CLIENT_TABS)[number];
 
 export type Route =
   | { readonly page: "dispatch" }
   | { readonly page: "referrals" }
   | { readonly page: "waitlist" }
   | { readonly page: "no-shows" }
+  | { readonly page: "tasks" }
   | { readonly page: "technicians" }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
 const DISPATCH: Route = { page: "dispatch" };
-const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(photos|consents))?$/;
+const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(pieces|photos|consents))?$/;
+
+/** The tab a client's path names; Pieces without one, as the board draws the page. */
+const tabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? CLIENT_TABS[0];
 
 export function routeOf(path: string): Route {
   if (path === "/referrals") return { page: "referrals" };
   if (path === "/waitlist") return { page: "waitlist" };
   if (path === "/no-shows") return { page: "no-shows" };
+  if (path === "/tasks") return { page: "tasks" };
   if (path === "/technicians") return { page: "technicians" };
-  if (path === "/clients") return { page: "clients", clientId: null, tab: "photos" };
+  if (path === "/clients") return { page: "clients", clientId: null, tab: tabOf(undefined) };
   const client = CLIENT_PATH.exec(path);
-  if (client !== null) {
-    return { page: "clients", clientId: client[1] ?? null, tab: client[2] === "consents" ? "consents" : "photos" };
-  }
+  if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: tabOf(client[2]) };
   return DISPATCH;
 }
 
 /**
  * What keys the page, so each one opens at its top and a new client loads
- * afresh. A client's two tabs share one key: moving between them must not read
- * the record again.
+ * afresh. A client's tabs share one key: moving between them must not read the
+ * record again.
  */
 export function keyOf(route: Route): string {
   return route.page === "clients" ? `clients/${route.clientId ?? ""}` : route.page;

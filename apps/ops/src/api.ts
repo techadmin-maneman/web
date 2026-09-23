@@ -26,6 +26,11 @@ export type PhotoVisit = Body<paths["/api/clients/{id}/photos"]["get"]>["visits"
 export type Photo = PhotoVisit["photos"][number];
 export type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
 export type Consent = Consents["consents"][number];
+export type Piece = Body<paths["/api/clients/{id}/pieces"]["get"]>["pieces"][number];
+
+export type Tasks = Body<paths["/api/tasks"]["get"]>;
+export type TaskGroup = Tasks["groups"][number];
+export type Task = TaskGroup["tasks"][number];
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type Technician = Body<paths["/api/technicians"]["get"]>["technicians"][number];
@@ -125,6 +130,10 @@ export const api = {
   /** One photograph. The API writes the audit entry before it serves the bytes (ADR 0031). */
   clientPhoto: (id: string, photoId: string) => image(`/api/clients/${id}/photos/${photoId}`),
   clientConsents: (id: string) => call<Consents>("GET", `/api/clients/${id}/consents`),
+  /** The client's pieces. The route reads FSM afresh first, since FSM is the record. */
+  clientPieces: (id: string) => call<{ pieces: Piece[] }>("GET", `/api/clients/${id}/pieces`),
+  /** Every queue ops still have to work through. Nothing is closed here: a task leaves when its row is decided. */
+  tasks: () => call<Tasks>("GET", "/api/tasks"),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => call<{ cases: NoShowCase[] }>("GET", "/api/no-shows?decision=undecided"),
   /** Charge the visit or waive it. Neither takes money: the charge follows the 24-hour policy at P2-M5. */

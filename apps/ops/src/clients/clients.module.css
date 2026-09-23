@@ -1,8 +1,8 @@
 /*
- * The client's page, and the two boards it carries: B2, the photographs,
- * locked until the view is logged, and B3, the consents, which ops read and
- * never change. The page's head and tabs are board B1's frame, narrowed to
- * what the ops routes answer.
+ * The client's page, and the three boards it carries: B1's pieces, which FSM
+ * owns, B2, the photographs, locked until the view is logged, and B3, the
+ * consents, which ops read and never change. The page's head and tabs are
+ * board B1's frame, narrowed to what the ops routes answer.
  */
 
 /* ---- Finding a client ---------------------------------------------------- */
@@ -46,9 +46,15 @@
 
 /* ---- The client's page --------------------------------------------------- */
 
-/* The head and the tabs sit over the panels, which the boards draw 484 px wide. */
+/* Board B1 draws the head, the tabs and the pieces table across the page; B2 and B3 are panels within it. */
 .client {
-  max-width: calc(var(--ops-panel) + 2 * var(--sp-28));
+  flex: 1;
+  min-width: 0;
+}
+
+/* The page runs to the frame's edges, so what stands in for it before it loads is padded as a section is. */
+.waiting {
+  padding: var(--sp-24);
 }
 
 /* The board heads the page with the name over a line of the client's standing. */
@@ -110,9 +116,58 @@
   padding: var(--sp-20) var(--sp-28);
 }
 
+/* ---- Board B1: the pieces ------------------------------------------------ */
+
+/* The board's own column widths; the failure and its reason take the slack. */
+.code {
+  width: var(--ops-piece-code);
+  padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.base {
+  width: var(--ops-piece-base);
+}
+
+.fitted,
+.lot {
+  width: var(--ops-piece-column);
+}
+
+.due {
+  width: var(--ops-piece-due);
+}
+
+.base,
+.fitted,
+.lot,
+.due,
+.failure {
+  padding: var(--sp-8) var(--sp-10);
+}
+
+.lot {
+  font-variant-numeric: tabular-nums;
+}
+
+.lot,
+.failure {
+  color: var(--text-muted);
+}
+
+/* The piece still in wear: the board sets its replacement date in brass and leaves the replaced ones quiet. */
+.due {
+  color: var(--text-muted);
+}
+
+.dueSoon {
+  color: var(--brass-text);
+}
+
 /* ---- Board B2: the photographs ------------------------------------------- */
 
 .photos {
+  max-width: var(--ops-panel);
   border: var(--hairline) solid var(--paper-line);
   padding: var(--sp-22);
 }
@@ -185,6 +240,7 @@
 /* ---- Board B3: the consents ---------------------------------------------- */
 
 .consents {
+  max-width: var(--ops-panel);
   border: var(--hairline) solid var(--paper-line);
   padding: var(--sp-22);
 }

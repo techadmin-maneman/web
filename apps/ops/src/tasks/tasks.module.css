@@ -1,0 +1,141 @@
+/*
+ * Board D2's list, on the panel the board draws it on and at its width: a head
+ * with the count of what has run over in oxblood, then each group on its own
+ * shaded band with its count, then the tasks under it. The board's third column
+ * is an owner in ops, which nothing records, so a row is what it is and when it
+ * is due.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-panel);
+}
+
+.panel {
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--sp-14) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.panelTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-22);
+}
+
+/* The one figure the board sets in oxblood: how many have run over. */
+.overdue {
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* ---- One group ------------------------------------------------------------ */
+
+.group {
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.groupHead {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-14);
+  padding: var(--sp-10) var(--sp-20);
+  background: var(--paper-light);
+}
+
+.groupName {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-14);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.count {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- One task ------------------------------------------------------------- */
+
+.tasks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  min-height: var(--ops-row);
+  padding: var(--sp-12) var(--sp-20);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+/* The client's name, which reaches their page: the board draws it as plain text. */
+.subject {
+  font-size: var(--fs-15);
+  color: var(--text);
+}
+
+a.subject {
+  text-decoration: underline;
+}
+
+a.subject:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.sub {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.sla {
+  flex-shrink: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* Past its day, in oxblood, as the board marks one. */
+.late {
+  color: var(--error-on-paper);
+}
+
+.note {
+  margin: 0;
+  padding: var(--sp-14) var(--sp-20);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
