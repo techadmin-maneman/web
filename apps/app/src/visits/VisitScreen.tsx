@@ -1,9 +1,12 @@
-// One past visit (board C9): its photographs, technician, duration and type.
+// One past visit (board C9): its photographs, technician, duration and type,
+// and the visit's own tax invoice beneath them (ADR 0056; the board has none).
 // "What was done" arrives with the job sheet (P2-M4).
 
+import { ICONS } from "@maneman/brand/icons";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { api, type VisitDetail } from "../api.ts";
+import { api, documentUrl, type VisitDetail } from "../api.ts";
+import { Icon } from "../components/Icon.tsx";
 import { visits } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { useLoad } from "../lib/useLoad.ts";
@@ -20,6 +23,26 @@ function Fact({ name, value, numeric = false }: { name: string; value: string; n
       <dt>{name}</dt>
       <dd className={numeric ? styles.numeric : undefined}>{value}</dd>
     </div>
+  );
+}
+
+/**
+ * The visit's invoice, in one of its three states: here to open, still to come,
+ * or never coming because the visit was free. Nothing is offered for a visit
+ * FSM did not complete, which is billed by hand if it is billed at all.
+ */
+function Invoice({ visit }: { visit: VisitDetail }) {
+  const copy = visits.detail.invoice;
+  if (visit.status !== "completed") return null;
+  if (visit.document_id === null) {
+    return <p className={styles.invoiceLine}>{visit.invoice_expected ? copy.generating : copy.free}</p>;
+  }
+  return (
+    <a className={styles.invoice} href={documentUrl(visit.document_id)} target="_blank" rel="noopener">
+      <span>{copy.open}</span>
+      <span className={styles.away}>{copy.newTab}</span>
+      <Icon className={styles.invoiceIcon} d={ICONS.download} size={18} />
+    </a>
   );
 }
 
@@ -44,6 +67,7 @@ function Visit({ visit }: { visit: VisitDetail }) {
         )}
         <Fact name={copy.type} value={visitName(visit.type)} />
       </dl>
+      <Invoice visit={visit} />
       {open !== null && (
         <PhotoSheet
           photo={open}

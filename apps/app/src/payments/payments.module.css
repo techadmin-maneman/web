@@ -165,6 +165,16 @@
   color: var(--ink);
 }
 
+/* Said to a screen reader only: the link leaves the app for a PDF. */
+.away {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Board E3: the document is not ready, and Notify me. */
 .unavailable {
   display: flex;

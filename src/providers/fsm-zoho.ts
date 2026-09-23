@@ -307,7 +307,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
     const [invoice] = records(await json("invoice", `/Invoices/${id}`), "data", Invoice);
     const booksInvoiceId = invoice?.ZBilling_InvoiceId;
     if (invoice === undefined || booksInvoiceId === null || booksInvoiceId === undefined) return null;
-    return { id: invoice.id, booksInvoiceId };
+    return { id: invoice.id, booksInvoiceId, created: false };
   }
 
   let territory: Promise<string> | null = null;
@@ -615,7 +615,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       if ((answer as { status?: unknown }).status === "error") throw zohoErrorFrom(400, answer);
       const raised = Raised.parse(answer).data.Invoices[0];
       if (raised === undefined) throw new ZohoError(response.status, "NO_ID", "the invoice answered without its ID");
-      return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id };
+      return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id, created: true };
     },
 
     // Tried on the real org on 22 September 2026: the name, numbers and e-mail clear, and the street can be

@@ -15,14 +15,22 @@ async function person(id: string, mobile: string) {
     .run();
 }
 
-async function visit(id: string, personId: string, invoiceId: string | null) {
+/** A finished visit, with the invoice Books holds for it; `issued` is false while that invoice is a draft. */
+async function visit(id: string, personId: string, invoiceId: string | null, issued = true) {
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-       fsm_invoice_id, fsm_modified_at, synced_at)
+       fsm_invoice_id, invoice_issued_at, fsm_modified_at, synced_at)
      VALUES (?1, ?2, ?3, 'first_fit', 'completed', 'Completed', '2026-09-10T04:30:00.000Z', '2026-09-10T07:30:00.000Z',
-       ?4, ?5, ?5)`,
+       ?4, ?5, ?6, ?6)`,
   )
-    .bind(id, `fsm-${id}`, personId, invoiceId, NOW.toISOString())
+    .bind(
+      id,
+      `fsm-${id}`,
+      personId,
+      invoiceId,
+      invoiceId !== null && issued ? NOW.toISOString() : null,
+      NOW.toISOString(),
+    )
     .run();
 }
 
@@ -173,5 +181,13 @@ describe("GET /api/documents/:id", () => {
     const theirs = "44444444-4444-4444-8444-444444444444";
     await visit(theirs, "p2", "stub-42");
     expect((await get(`/api/documents/${theirs}`)).status).toBe(404);
+  });
+
+  // A draft can still be edited, renumbered or deleted, so it is not a document the client may open (ADR 0056).
+  it("says not ready while the invoice Books holds is still a draft", async () => {
+    await visit(VISIT, P1, "stub-41", false);
+    await payment(PAY_OLD, P1, VISIT, "2026-09-01T06:00:00.000Z");
+    expect((await get(`/api/documents/${VISIT}`)).status).toBe(409);
+    expect(await (await get(`/api/payments/${PAY_OLD}`)).json()).toMatchObject({ documents: { invoice: null } });
   });
 });

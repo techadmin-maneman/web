@@ -62,13 +62,14 @@ function world(appointments: FsmAppointment[]): StubFsmWorld {
   };
 }
 
-const done = (id: string, date: string) =>
+const done = (id: string, date: string, overrides: Partial<FsmAppointment> = {}) =>
   fsmAppointment(id, {
     status: "Completed",
     scheduledStart: `${date}T10:00:00+05:30`,
     scheduledEnd: `${date}T11:30:00+05:30`,
     actualStart: `${date}T10:05:00+05:30`,
     actualEnd: `${date}T11:15:00+05:30`,
+    ...overrides,
   });
 
 /** Mirrors these appointments, exports their photographs, and returns our IDs by FSM ID. */
@@ -230,6 +231,39 @@ describe("GET /api/visits/:id and the photographs", () => {
     cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: other, deviceLabel: null, now: NOW })}`;
     expect((await get(`/api/visits/${ids["ap-done"] ?? ""}`)).status).toBe(404);
     expect((await get(url)).status).toBe(404);
+  });
+
+  /*
+   * The app tells three states apart from these two fields (ADR 0056): the invoice is
+   * here, it is still to come, or the visit is free and none will ever exist. The app
+   * must never have to guess the third from a price it happens to be showing.
+   */
+  it("says the invoice is still to come for a billed visit, and never coming for a free one", async () => {
+    const ids = await mirror([
+      done("ap-done", "2026-09-10"),
+      done("ap-consult", "2026-09-08", { serviceIds: ["item-consult"] }),
+    ]);
+    await signIn();
+    const detail = async (fsmId: string) =>
+      (await get(`/api/visits/${ids[fsmId] ?? ""}`)).json<{ document_id: string | null; invoice_expected: boolean }>();
+
+    expect(await detail("ap-done")).toMatchObject({ document_id: null, invoice_expected: true });
+    expect(await detail("ap-consult")).toMatchObject({ document_id: null, invoice_expected: false });
+
+    // Once the pass has issued it, the same visit hands the app the document to open.
+    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-41', invoice_issued_at = ?1 WHERE id = ?2")
+      .bind(NOW.toISOString(), ids["ap-done"] ?? "")
+      .run();
+    expect(await detail("ap-done")).toMatchObject({ document_id: ids["ap-done"], invoice_expected: true });
+  });
+
+  it("offers no document while the invoice Books holds is still a draft", async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-41' WHERE id = ?1")
+      .bind(ids["ap-done"] ?? "")
+      .run();
+    expect(await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json()).toMatchObject({ document_id: null });
   });
 
   it("refuses a photograph link once its 15 minutes are up", async () => {

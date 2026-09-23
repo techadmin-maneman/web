@@ -167,6 +167,14 @@ export const visits = {
     duration: "Duration",
     type: "Type",
     done: "What was done",
+    /** The three things a finished visit can say about its invoice (ADR 0056). */
+    invoice: {
+      open: "Tax invoice",
+      newTab: "PDF, opens in a new tab",
+      generating: "The invoice is still generating. Usually ready within the hour.",
+      // The owner's own words on 23 September 2026: a free visit says "No charge", and never promises a document.
+      free: "No charge for this visit, so there is no invoice.",
+    },
   },
 } as const;
 
@@ -416,6 +424,8 @@ export const payments = {
   rows: { date: "Date", method: "Method", destination: "Refunded to", status: "Status", reference: "Reference" },
   documents: "Tax documents",
   invoice: "Tax invoice",
+  /** Said to a screen reader only, since a document opens outside the app. */
+  newTab: "PDF, opens in a new tab",
   receipt: "Receipt",
   // PLACEHOLDER
   voucher: "Refund voucher",

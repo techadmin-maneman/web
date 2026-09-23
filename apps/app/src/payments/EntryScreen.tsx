@@ -23,16 +23,13 @@ type Missing = "invoice" | "receipt" | "voucher";
 
 function Document(props: { name: string; href: string | null; missing: Missing; entry: string }) {
   const [asked, setAsked] = useState(false);
-  const inside = (
-    <>
-      <span>{props.name}</span>
-      <Icon className={styles.documentIcon} d={ICONS.download} size={18} />
-    </>
-  );
+  const icon = <Icon className={styles.documentIcon} d={ICONS.download} size={18} />;
   if (props.href !== null) {
     return (
       <a className={styles.document} href={props.href} target="_blank" rel="noopener">
-        {inside}
+        <span>{props.name}</span>
+        <span className={styles.away}>{payments.newTab}</span>
+        {icon}
       </a>
     );
   }
@@ -46,7 +43,8 @@ function Document(props: { name: string; href: string | null; missing: Missing; 
           setAsked(true);
         }}
       >
-        {inside}
+        <span>{props.name}</span>
+        {icon}
       </button>
       {asked && (
         <div className={styles.unavailable} role="status">
