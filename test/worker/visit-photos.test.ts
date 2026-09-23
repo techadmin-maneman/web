@@ -132,7 +132,6 @@ describe("the fsm-sync queue, with photographs", () => {
       serviceIds: [],
       serviceCity: null,
       servicePincode: null,
-      invoiceId: null,
       modifiedAt: "2026-09-24T11:30:00+05:30",
     };
     const fsm = createStubFsm({

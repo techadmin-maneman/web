@@ -41,6 +41,54 @@ export function fsmAppointmentRecord(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** A closed work order for one service line, as FSM answers it before it is billed. */
+export function fsmWorkOrderRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "wo-1",
+    Name: "WO1",
+    Status: "Closed",
+    Billing_Status: "Not yet Invoiced",
+    Sub_Total: 2000,
+    Grand_Total: 2000,
+    Contact: { name: "Rohit Malhotra", id: "contact-1" },
+    Territory: { name: "Mane Man", id: "territory-1" },
+    Service_Line_Items: [
+      {
+        id: "line-1",
+        Name: "SVC-1",
+        Service: { name: "Service visit", id: "item-service-visit" },
+        Quantity: 1,
+        Amount: 2000,
+        Status: "Completed",
+        Billing_Status: "Not yet Invoiced",
+        Invoice_Id: null,
+      },
+    ],
+    Owner: person("Ops", "user-9"),
+    Modified_Time: "2026-09-23T13:31:48+05:30",
+    ...overrides,
+  };
+}
+
+/** An invoice as FSM holds it: FSM's own record, and Books' ID for the document itself. */
+export function fsmInvoiceRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "fsm-invoice-1",
+    Name: "INV-000001",
+    Status: "draft",
+    Grouped_Invoice: "1",
+    Work_Order: { name: "WO1", id: "wo-1" },
+    Contact_Id: { name: "Rohit Malhotra", id: "contact-1" },
+    ZBilling_InvoiceId: "books-invoice-1",
+    Date: "2026-09-23",
+    Due_Date: "2026-09-23",
+    Currency: "INR",
+    total: 2000,
+    balance: 2000,
+    ...overrides,
+  };
+}
+
 export function fsmContactRecord(overrides: Record<string, unknown> = {}) {
   return {
     id: "contact-1",

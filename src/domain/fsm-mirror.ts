@@ -62,16 +62,17 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
   const statements = [
     db
       .prepare(
+        // fsm_invoice_id is not written here: FSM leaves the appointment's own Invoice_Id
+        // null, and the invoice pass fills the column with Books' ID (ADR 0055).
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
-           technician_id, status, fsm_status, service_city, service_pincode, fsm_invoice_id, fsm_modified_at, synced_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
+           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
          ON CONFLICT (fsm_id) DO UPDATE SET
            fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id, type = excluded.type,
            window_start = excluded.window_start, window_end = excluded.window_end,
            technician_id = excluded.technician_id, status = excluded.status, fsm_status = excluded.fsm_status,
            service_city = excluded.service_city, service_pincode = excluded.service_pincode,
-           fsm_invoice_id = excluded.fsm_invoice_id, fsm_modified_at = excluded.fsm_modified_at,
-           synced_at = excluded.synced_at, deleted_at = NULL`,
+           fsm_modified_at = excluded.fsm_modified_at, synced_at = excluded.synced_at, deleted_at = NULL`,
       )
       .bind(
         id,
@@ -86,7 +87,6 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         appointment.status,
         appointment.serviceCity,
         appointment.servicePincode,
-        appointment.invoiceId,
         utc(appointment.modifiedAt),
         at,
       ),
