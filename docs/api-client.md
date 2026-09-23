@@ -1320,7 +1320,13 @@ Request body:
             "hold_expired",
             "not_changeable",
             "terms_changed",
-            "consent_required"
+            "consent_required",
+            "device_revoked",
+            "superseded",
+            "out_of_order",
+            "clash",
+            "fsm_refused",
+            "too_early_to_close"
           ]
         },
         "request_id": {
