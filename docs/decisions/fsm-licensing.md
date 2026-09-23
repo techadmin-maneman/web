@@ -1,6 +1,6 @@
 # Zoho FSM licensing for our own apps
 
-- Status: **pending**. The owner obtains the answer from Zoho in writing; nothing in P2-M4 is built until it is recorded here.
+- Status: **the owner has ruled that we build our own interface and go on** (23 September 2026). Zoho's written answer is still outstanding, and this record says plainly which is which.
 - Referenced by: `docs/prompts/phase2-backend.md` ("Technician app and dispatch — how they relate to FSM", Licensing)
 
 ## The question for Zoho
@@ -15,8 +15,16 @@ Our technician app (`tech.maneman.in`) and ops console (`ops.maneman.in`) read a
 
 FSM is priced by appointments a month, not by users. Users cost nothing up to 20 on Free, 200 on Standard and Professional, and 500 on Premium (https://help.zoho.com/portal/en/kb/fsm/faqs/pricing-and-subscription). Technicians must still exist as FSM users, since appointments are assigned to users. That settles the cost of questions 2 and 3, but not question 1, whether the use is within the terms. Zoho's written answer is still needed.
 
-## The answer
+## The owner's ruling, 23 September 2026
+
+> We can work on our UI.
+
+P2-M4 goes ahead: the technician app, dispatch, and the ops boards over them. Technicians and dispatchers work in our apps, and FSM stays the system of record underneath, as ADR 0032 has it.
+
+This is the owner's decision to proceed, not Zoho's answer. It rests on what Zoho publishes: FSM is priced by appointments, users cost nothing up to the plan's limit, and each technician exists as an FSM user because appointments are assigned to users. Nothing about how we use the API changes.
+
+## Zoho's answer, still outstanding
 
 _To be recorded: Zoho's reply, word for word, with the date and the name of the person at Zoho who gave it._
 
-If Zoho says the use breaches its terms, P2-M4 stops, as the prompt requires.
+It is worth having in writing before production, and `docs/open-points.md` keeps it open. If Zoho ever says the use breaches its terms, what stops is technicians working in our app: the mirror, the client app and the ops console read and write FSM through the same API either way.
