@@ -10,6 +10,7 @@
   "include": [
     "e2e/**/*.ts",
     "playwright.config.ts",
+    "playwright.staging.config.ts",
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",
     "scripts/fidelity-ops.ts",
