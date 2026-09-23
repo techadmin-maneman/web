@@ -29,7 +29,7 @@ function world(overrides: Partial<StubFsmWorld> = {}): StubFsmWorld {
   return {
     appointments: [appointment()],
     contacts: [{ id: "contact-1", name: "Rohit Malhotra", mobile: "+91 98100 00001", email: "rohit@example.com" }],
-    technicians: [{ id: "sr-1", userId: "user-1", name: "Imran Khan", active: true }],
+    technicians: [{ id: "sr-1", userId: "user-1", name: "Imran Khan", active: true, mobile: null, zone: null }],
     items: [
       { id: "item-service", name: "Service visit", type: "Service" },
       { id: "item-first", name: "First fit", type: "Service" },

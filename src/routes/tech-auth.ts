@@ -1,0 +1,200 @@
+// Logging in to the technician app (src/policy/technician-login.ts):
+//   POST /api/tech/auth/otp     a code on WhatsApp to a technician's number
+//   POST /api/tech/auth/verify  the code and the phone, for a session bound to it
+//   POST /api/tech/auth/logout
+//
+// "Mobile number plus a one-time code, the same flow as clients but a separate
+// role. A technician is recognised only if FSM lists him as an active field
+// technician." A number FSM does not list gets the same answer as one it does,
+// and no code opens it.
+//
+// The phone sends its own ID, which it keeps in its storage: the session is
+// bound to it, so ops can revoke that phone and its cached jobs go with it.
+
+import { createRoute, z } from "@hono/zod-openapi";
+import type { App } from "../app.ts";
+import { syncTechnicians } from "../domain/fsm-mirror.ts";
+import { takeOne } from "../domain/rate-limit.ts";
+import { revokeSession, deviceLabel } from "../domain/sessions.ts";
+import {
+  createTechnicianChallenge,
+  findFieldTechnician,
+  openTechnicianSession,
+  verifyTechnicianCode,
+} from "../domain/technicians.ts";
+import { errorBody, errorResponse } from "../http/errors.ts";
+import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
+import {
+  clearTechnicianCookie,
+  setTechnicianCookie,
+  requireTechnicianSession,
+  technicianOf,
+} from "../http/technician-session.ts";
+import { visitorOf } from "../http/visitor.ts";
+import { saltedHash } from "../lib/hash.ts";
+import { indiaDate, indiaHour } from "../lib/india-time.ts";
+import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
+import { newCode } from "../policy/one-time-code.ts";
+
+const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
+
+/** The phone's own ID for itself, from its storage: never a hardware serial. */
+const DeviceIdSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{8,64}$/)
+  .openapi({ description: "The app's own ID for this phone, kept in its storage." });
+
+const TechLoginRequestSchema = z
+  .object({ mobile: z.string().regex(INDIAN_MOBILE_PATTERN), device_id: DeviceIdSchema })
+  .strict()
+  .openapi("TechnicianLoginRequest");
+
+const TechChallengeSchema = z
+  .object({
+    challenge_id: z.uuid(),
+    expires_in_s: z.number().int(),
+  })
+  .strict()
+  .openapi("TechnicianChallenge");
+
+const TechVerifyRequestSchema = z
+  .object({ challenge_id: z.uuid(), code: z.string().regex(/^\d{6}$/), device_id: DeviceIdSchema })
+  .strict()
+  .openapi("TechnicianVerifyRequest");
+
+const TechVerifySchema = z
+  .discriminatedUnion("verified", [
+    z.object({ verified: z.literal(true), first_name: z.string(), device_id: z.string() }).strict(),
+    z.object({ verified: z.literal(false), attempts_left: z.number().int() }).strict(),
+  ])
+  .openapi("TechnicianVerify");
+
+const otpRoute = createRoute({
+  method: "post",
+  path: "/api/tech/auth/otp",
+  summary: "Send a login code on WhatsApp. The answer is the same whether or not FSM lists the number",
+  request: { body: { required: true, ...json(TechLoginRequestSchema) } },
+  responses: {
+    202: { description: "A code is on its way, if FSM lists this number", ...json(TechChallengeSchema) },
+    400: errorResponse("invalid_request"),
+    429: errorResponse("rate_limited"),
+    503: errorResponse("busy: today's ceiling on codes is reached"),
+  },
+});
+
+const verifyRoute = createRoute({
+  method: "post",
+  path: "/api/tech/auth/verify",
+  summary: "Check a code. The right one opens a session on this phone (the mm_tech cookie)",
+  request: { body: { required: true, ...json(TechVerifyRequestSchema) } },
+  responses: {
+    200: { description: "Right, with a session; or wrong, with the attempts left", ...json(TechVerifySchema) },
+    400: errorResponse("invalid_request"),
+    410: errorResponse("code_expired: expired, used, or void after five wrong codes"),
+  },
+});
+
+const logoutRoute = createRoute({
+  method: "post",
+  path: "/api/tech/auth/logout",
+  summary: "End this session on this phone",
+  responses: { 204: { description: "Logged out" } },
+});
+
+export function registerTechAuth(app: App): void {
+  app.use("/api/tech/auth/logout", requireTechnicianSession);
+
+  app.openapi(otpRoute, async (c) => {
+    const { requestId, deps, config } = c.var;
+    const { login: limits, ipHashSalt } = config.settings;
+    const db = c.env.DB;
+    const now = deps.now();
+
+    const mobileE164 = toE164(c.req.valid("json").mobile);
+    if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
+
+    const visitor = await visitorOf(c);
+    const withinAddress = await takeOne(db, {
+      scope: "tech:code:ip",
+      key: visitor.ipHash,
+      window: indiaHour(now),
+      limit: limits.codeIpHourlyLimit,
+    });
+    const withinNumber =
+      withinAddress &&
+      (await takeOne(db, {
+        scope: "tech:code:mobile",
+        key: await saltedHash(ipHashSalt, `mobile:${mobileE164}`),
+        window: indiaDate(now),
+        limit: limits.codeMobileDailyLimit,
+      }));
+    if (!withinNumber) return c.json(errorBody("rate_limited", requestId), 429);
+    if (!(await withinCodeCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
+
+    // A technician FSM listed since the last sync is unknown to the mirror; read it once, then look again.
+    let technician = await findFieldTechnician(db, mobileE164);
+    if (technician === null && config.providers.FSM_PROVIDER !== "none") {
+      await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
+        c.var.log.warn("technician_sync_failed", { error });
+        return 0;
+      });
+      technician = await findFieldTechnician(db, mobileE164);
+    }
+
+    const code = limits.fixedCode ?? newCode();
+    const challenge = await createTechnicianChallenge(db, {
+      technicianId: technician?.id ?? null,
+      code,
+      pepper: limits.codePepper,
+      now,
+    });
+    await sendCodeAfterResponse(c, technician?.mobileE164 ?? null, "whatsapp", code);
+    return c.json(
+      { challenge_id: challenge.id, expires_in_s: Math.ceil((challenge.expiresAt.getTime() - now.getTime()) / 1000) },
+      202,
+    );
+  });
+
+  app.openapi(verifyRoute, async (c) => {
+    const { requestId, deps, config, log } = c.var;
+    const db = c.env.DB;
+    const now = deps.now();
+    const { challenge_id: challengeId, code, device_id: deviceId } = c.req.valid("json");
+
+    const verification = await verifyTechnicianCode(db, {
+      challengeId,
+      code,
+      pepper: config.settings.login.codePepper,
+      now,
+    });
+    if (verification.outcome === "closed") return c.json(errorBody("code_expired", requestId), 410);
+    if (verification.outcome === "mismatch") {
+      log.info("technician_code_mismatch", { attempts_left: verification.attemptsLeft });
+      return c.json({ verified: false as const, attempts_left: verification.attemptsLeft }, 200);
+    }
+
+    const name = await db
+      .prepare("SELECT name FROM technicians WHERE id = ?1")
+      .bind(verification.technicianId)
+      .first<string>("name");
+    const token = await openTechnicianSession(db, {
+      technicianId: verification.technicianId,
+      deviceId,
+      label: deviceLabel(c.req.header("User-Agent")),
+      now,
+    });
+    setTechnicianCookie(c, token);
+    log.info("technician_logged_in", { technician_id: verification.technicianId, device_id: deviceId });
+    return c.json(
+      { verified: true as const, first_name: (name ?? "").trim().split(/\s+/)[0] ?? "", device_id: deviceId },
+      200,
+    );
+  });
+
+  app.openapi(logoutRoute, async (c) => {
+    const session = technicianOf(c);
+    await revokeSession(c.env.DB, session.sessionId, c.var.deps.now());
+    clearTechnicianCookie(c);
+    return c.body(null, 204);
+  });
+}
