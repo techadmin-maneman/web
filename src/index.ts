@@ -11,6 +11,7 @@ import { handleMessagingBatch, type MessagingMessage } from "./queues/messaging.
 import { handleRenderBatch } from "./queues/render.ts";
 import { syncBooks } from "./domain/books-sync.ts";
 import { recordUtilisation } from "./domain/dispatch.ts";
+import { raiseInvoices } from "./domain/fsm-invoices.ts";
 import { queueReminders } from "./domain/visit-messages.ts";
 import { referralPass } from "./scheduled/referrals.ts";
 import { alertAgedDeletions } from "./domain/deletion.ts";
@@ -124,6 +125,18 @@ export default {
         );
         log.info("visit_reminders_queued", { count: reminders.length });
       }
+    }
+    // A finished job's invoice: FSM raises it, Books holds it (ADR 0054). Before the
+    // Books pass, which sets a client's advance against the invoice once there is one.
+    if (config.providers.FSM_PROVIDER !== "none") {
+      const invoiceLog = log.child({ job: "invoices" });
+      await raiseInvoices(workerEnv.DB, deps.fsm, deps.now(), invoiceLog)
+        .then((done) => {
+          if (done.invoiced > 0) invoiceLog.info("invoices_raised", done);
+        })
+        .catch((error: unknown) => {
+          invoiceLog.error("invoices_failed", { error });
+        });
     }
     if (config.providers.FSM_PROVIDER !== "none" && config.providers.BOOKS_PROVIDER !== "none") {
       const booksLog = log.child({ job: "books_sync" });

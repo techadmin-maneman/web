@@ -20,7 +20,6 @@ const appointment = (overrides: Partial<FsmAppointment> = {}): FsmAppointment =>
   serviceIds: ["item-service"],
   serviceCity: "Gurgaon",
   servicePincode: "122018",
-  invoiceId: null,
   modifiedAt: "2026-09-22T14:27:15+05:30",
   ...overrides,
 });

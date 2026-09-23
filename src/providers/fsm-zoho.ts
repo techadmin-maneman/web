@@ -27,17 +27,23 @@
 //   PUT  /fsm/v1/Service_Appointments/{id}/actions/blueprint     start, close or terminate, with its mandatory note
 //   POST /fsm/v1/files                                           multipart; answers { data: { file_id } }
 //   POST /fsm/v1/Service_Appointments/{id}/Attachments           attaches an uploaded file
+//   GET  /fsm/v1/Work_Orders/{id}                                { data: [work order with its service lines] }
+//   POST /fsm/v1/Invoices                                        the work order, the line IDs and $finance_data;
+//        answers Books' ID under data.Invoices[0].finance_data.Invoice_Id
+//   GET  /fsm/v1/Invoices/{id}                                   { data: [invoice with ZBilling_InvoiceId] }
 //
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
 import { z } from "zod";
 import type { ZohoFsmSettings } from "../config/settings.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import type {
   FsmAppointment,
   FsmAsset,
   FsmAttachment,
   FsmContact,
+  FsmInvoice,
   FsmItem,
   FsmProvider,
   FsmTechnician,
@@ -73,8 +79,27 @@ const Appointment = z.object({
     .array(z.object({ Service_Line_Item: z.object({ Service: z.string().nullish() }).nullish() }))
     .nullish(),
   Service_Address: z.object({ Service_City: z.string().nullish(), Service_Zip_Code: z.string().nullish() }).nullish(),
-  Invoice_Id: z.string().nullish(),
   Modified_Time: z.string(),
+});
+
+/**
+ * What billing a work order needs: its total, and each service line with the
+ * invoice it is already on. An appointment's own `Invoice_Id` is no use here —
+ * FSM leaves it null on a work order invoiced from its own screen.
+ */
+const WorkOrderBilling = z.object({
+  Grand_Total: z.number().nullish(),
+  Service_Line_Items: z.array(z.object({ id: z.string(), Invoice_Id: z.string().nullish() })).default([]),
+});
+
+/** An invoice as FSM holds it: the link, and Books' ID for the document itself. */
+const Invoice = z.object({ id: z.string(), ZBilling_InvoiceId: z.string().nullish() });
+
+/** A raised invoice: FSM's new record, with Books' ID for it under finance_data. */
+const Raised = z.object({
+  data: z.object({
+    Invoices: z.array(z.object({ id: z.string(), finance_data: z.object({ Invoice_Id: z.string() }) })),
+  }),
 });
 
 const Contact = z.object({
@@ -173,7 +198,6 @@ function appointmentFrom(record: z.infer<typeof Appointment>): FsmAppointment {
     ),
     serviceCity: record.Service_Address?.Service_City ?? null,
     servicePincode: record.Service_Address?.Service_Zip_Code ?? null,
-    invoiceId: record.Invoice_Id ?? null,
     modifiedAt: record.Modified_Time,
   };
 }
@@ -276,6 +300,14 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
 
   async function create(step: string, module: string, record: Record<string, unknown>): Promise<string> {
     return (await createWith(step, module, record))[module] ?? "";
+  }
+
+  /** An invoice FSM already holds, with Books' ID for it; null while Books has not been given it. */
+  async function invoiceById(id: string): Promise<FsmInvoice | null> {
+    const [invoice] = records(await json("invoice", `/Invoices/${id}`), "data", Invoice);
+    const booksInvoiceId = invoice?.ZBilling_InvoiceId;
+    if (invoice === undefined || booksInvoiceId === null || booksInvoiceId === undefined) return null;
+    return { id: invoice.id, booksInvoiceId };
   }
 
   let territory: Promise<string> | null = null;
@@ -533,6 +565,57 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
         body: { blueprint: [{ transition_id: cancel.id, data: { Notes: note } }] },
       });
       return true;
+    },
+
+    /*
+     * Billing is FSM's door into Books: the create makes the invoice in Books and
+     * keeps a link to it here. The line IDs and `$finance_data` are mandatory, and
+     * FSM answers a bare 500 rather than a refusal when the line IDs are missing
+     * (ADR 0054), so both always go with the work order.
+     */
+    async invoiceWorkOrder(workOrderId) {
+      const [order] = records(
+        await json("invoice_work_order", `/Work_Orders/${workOrderId}`),
+        "data",
+        WorkOrderBilling,
+      );
+      if (order === undefined) throw new ZohoError(404, "NO_WORK_ORDER", "the work order to invoice is not in FSM");
+
+      // Already invoiced, here or by hand in FSM's own screen: each line then names it.
+      const [existing] = order.Service_Line_Items.flatMap((line) =>
+        typeof line.Invoice_Id === "string" ? [line.Invoice_Id] : [],
+      );
+      if (existing !== undefined) return invoiceById(existing);
+
+      const lines = order.Service_Line_Items.map((line) => line.id);
+      if (lines.length === 0 || (order.Grand_Total ?? 0) <= 0) return null;
+
+      // Clients pay before the visit, so nothing is ever owed on terms.
+      const date = indiaDate(deps.now());
+      const response = await request("create_invoice", "/fsm/v1/Invoices", {
+        method: "POST",
+        body: {
+          data: [
+            {
+              Work_Order: workOrderId,
+              $Service_Line_Items: lines,
+              $finance_data: {
+                date,
+                due_date: date,
+                payment_terms: 0,
+                payment_terms_label: "Due on Receipt",
+                discount_preference: { Discount: 0, Adjustment: 0, Discount_Type: "Currency" },
+              },
+            },
+          ],
+        },
+      });
+      // A refusal FSM expects — a line already invoiced, say — comes back 200 with an error body.
+      const answer: unknown = await response.json();
+      if ((answer as { status?: unknown }).status === "error") throw zohoErrorFrom(400, answer);
+      const raised = Raised.parse(answer).data.Invoices[0];
+      if (raised === undefined) throw new ZohoError(response.status, "NO_ID", "the invoice answered without its ID");
+      return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id };
     },
 
     // Tried on the real org on 22 September 2026: the name, numbers and e-mail clear, and the street can be
