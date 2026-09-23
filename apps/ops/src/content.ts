@@ -46,11 +46,14 @@ export const referrals = {
     },
     approve: "Approve",
     reject: "Reject",
-    /** PLACEHOLDER: the API requires a reason to reject, which the board does not draw. */
+    /**
+     * PLACEHOLDER: board C1 requires a reason for both decisions
+     * (docs/prompts/phase2-frontend.md) and draws no field for either.
+     */
     reason: {
-      label: "Why you are rejecting it",
+      label: { approve: "Why you are approving it", reject: "Why you are rejecting it" },
       hint: "Kept with the decision, in the audit log.",
-      confirm: "Reject the grant",
+      confirm: { approve: "Approve the grant", reject: "Reject the grant" },
       cancel: "Keep it held",
     },
     /** PLACEHOLDER: the board draws no empty queue. */

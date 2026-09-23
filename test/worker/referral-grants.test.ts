@@ -196,7 +196,7 @@ describe("ops' review", () => {
       ],
     });
     const queue = fakeQueue();
-    const answer = await decide({ decision: "approve", reason: null }, queue);
+    const answer = await decide({ decision: "approve", reason: "Father and son, two households" }, queue);
     expect(await answer.json()).toEqual({ state: "approved" });
     expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(3);
     expect(queue.sent).toHaveLength(1);
@@ -204,6 +204,11 @@ describe("ops' review", () => {
       "SELECT action, subject_id FROM audit_log WHERE action = 'referral.decide'",
     ).first();
     expect(audit).toEqual({ action: "referral.decide", subject_id: ATTRIBUTION });
+    // The console asks for a reason on either decision (board C1); an approval keeps it too.
+    const reviewed = await env.DB.prepare("SELECT review_reason FROM referral_attributions WHERE id = ?1")
+      .bind(ATTRIBUTION)
+      .first<{ review_reason: string | null }>();
+    expect(reviewed?.review_reason).toBe("Father and son, two households");
     expect((await decide({ decision: "approve", reason: null })).status).toBe(404);
   });
 

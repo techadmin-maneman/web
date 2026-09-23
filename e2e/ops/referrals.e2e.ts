@@ -32,12 +32,17 @@ test("lists every held grant with the rule it met, and counts them", async ({ pa
   await expect(queue.getByText("Fitted Sun 19 Sep")).toBeVisible();
 });
 
-test("approves a grant, which then leaves the queue", async ({ page }) => {
+test("asks why before it approves one, and sends the reason with the approval", async ({ page }) => {
   await open(page);
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
+  await grant.getByRole("button", { name: "Approve", exact: true }).click();
+
+  const confirm = grant.getByRole("button", { name: "Approve the grant" });
+  await expect(confirm).toBeDisabled();
+  await grant.getByLabel("Why you are approving it").fill("Father and son, two households");
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
-  await grant.getByRole("button", { name: "Approve" }).click();
-  expect((await sent).postDataJSON()).toEqual({ decision: "approve", reason: null });
+  await confirm.click();
+  expect((await sent).postDataJSON()).toEqual({ decision: "approve", reason: "Father and son, two households" });
   await expect(page.getByText(FIRST)).toBeHidden();
 });
 
@@ -58,7 +63,9 @@ test("asks why before it rejects one, and will not send an empty reason", async 
 test("says so when someone else has decided the grant already", async ({ page }) => {
   await open(page, fails(404, "not_found"));
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
-  await grant.getByRole("button", { name: "Approve" }).click();
+  await grant.getByRole("button", { name: "Approve", exact: true }).click();
+  await grant.getByLabel("Why you are approving it").fill("Two households at one address");
+  await grant.getByRole("button", { name: "Approve the grant" }).click();
   await expect(page.getByRole("alert")).toContainText("Someone has decided this one already.");
   await expect(page.getByText(FIRST)).toBeVisible();
 });

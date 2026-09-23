@@ -58,7 +58,7 @@ These differences are known and stand:
 | G1       | A fifth consent, "WhatsApp about launches"                                                        | The waitlist's launch alert (ADR 0042); its wording is a placeholder                              |
 | G2       | The cards sit inside the page's 20 px margins                                                     | The design draws them on their own, 390 px wide                                                   |
 
-## The ops console (P2-F4)
+## The ops console (P2-F3)
 
 `npm run build:ops -- --env local && npm run fidelity:ops` writes `docs/fidelity/ops/`: boards C1, C2 and C3.
 
@@ -72,7 +72,7 @@ These differences are known and stand:
 | ---- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | C1   | "Fitted Sun 19 Sep" where the board has "3 days held"                                                 | `GET /api/referrals/held` gives the day of the first fit, not how long the grant has waited                      |
 | C1   | The rule's name, with no line of detail beneath it                                                    | The route names each rule a grant met; the addresses and UPI handles behind them stay out of the console         |
-| C1   | Rejecting asks for a reason before it sends                                                           | `POST /api/referrals/:id/decision` refuses a rejection without one, and keeps the reason with the decision       |
+| C1   | Approving and rejecting each ask for a reason before they send                                        | The prompt: "Approve and Reject. Both require a reason." The board draws no field for either                     |
 | C2   | No "Sent" column                                                                                      | Nothing counts invitations sent: a code is shared by the client, not by us (ADR 0048)                            |
 | C2   | The busiest referrer first                                                                            | `GET /api/referrers` orders them by fits; the board lists its rows in no order                                   |
 | C3   | The pincode is the control, underlined, where the board draws no way in                               | The panel that follows has to be opened by something, and the board's six columns leave no room for a button     |
@@ -83,4 +83,4 @@ These differences are known and stand:
 
 The console's own frame is not paired. Boards A1 and B1 draw it around a dispatch board and a client page; the built frame carries the two sections the backend has routes for, Referrals and Waitlist, where the design's column lists eight.
 
-Not built, and not paired: A (the dispatch board) and D (payments, tasks and technicians), which wait for the FSM mirror; B1 (pieces), which waits for the job sheet; and **B2 (photographs) and B3 (consents), which have no ops route at all**. The ops surface has no way to read one client's record (`docs/openapi-ops.json`), and P2-F4 changes no backend route.
+Not built, and not paired: A (the dispatch board) and D (payments, tasks and technicians), which wait for the FSM mirror; B1 (pieces), which waits for the job sheet; and **B2 (photographs) and B3 (consents), which wait for the ops client-view routes** (`docs/openapi-ops.json`).

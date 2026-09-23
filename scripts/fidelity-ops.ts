@@ -1,5 +1,5 @@
 // The ops console's fidelity pairs (docs/fidelity-method.md, "Phase 2 boards"):
-// each frame of design/phase2/Ops Console.dc.html that P2-F4 builds, beside the
+// each frame of design/phase2/Ops Console.dc.html that P2-F3 builds, beside the
 // built console in the same state. The console is drawn at 1440; boards C1 to
 // C3 are panels within it, 660 and 484 px wide, drawn at their own size, so
 // each pair is a panel beside a panel.

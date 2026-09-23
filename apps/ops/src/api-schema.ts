@@ -49,6 +49,268 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find a client by mobile number. A POST, so the number stays out of the URL */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientSearch"];
+                };
+            };
+            responses: {
+                /** @description The client, to open their page with */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            mobile: string;
+                        };
+                    };
+                };
+                /** @description invalid_request: not an Indian mobile number */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's record: who they are, their address, their visits and their payments */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The record */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientRecord"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which photographs the client has, by visit, newest first. No image is served here */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visits that have photographs */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientPhotos"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the client's photographs. The audit entry is written before the image is */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    photo_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description not_found: no such photograph of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: the view could not be audited, so no photograph is served */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's consents and any deletion request. Ops read them and never grant one */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Consents and data */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientConsents"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/number-changes": {
         parameters: {
             query?: never;
@@ -677,6 +939,227 @@ export interface components {
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
         };
+        ClientSearch: {
+            mobile: string;
+        };
+        ClientRecord: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description E.164, as ops need it to call or message. */
+            mobile: string;
+            /** @enum {string} */
+            state: "fitted" | "lead" | "nothing_booked";
+            /**
+             * Format: date-time
+             * @description When the person's record was first written.
+             */
+            known_since: string;
+            /** @description The address visits go to now. */
+            address: components["schemas"]["ClientAddress"] | null;
+            /** @description Service visits left and when the soonest expires; null with none left. */
+            credits: {
+                visits: number;
+                /** Format: date-time */
+                earliest_expiry: string | null;
+            } | null;
+            /** @description Upcoming soonest first; past newest first. */
+            visits: {
+                upcoming: components["schemas"]["ClientVisit"][];
+                past: components["schemas"]["ClientVisit"][];
+            };
+            /** @description Payments and refunds as one list, newest first. */
+            payments: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+        };
+        ClientAddress: {
+            line1: string;
+            line2: string | null;
+            locality: string;
+            city: string;
+            pincode: string;
+            /** @description For the technician: gate code, parking and the like. */
+            access_notes: string | null;
+        };
+        ClientVisit: components["schemas"]["VisitSummary"] & {
+            /** @description What FSM closed the visit as; null until it is closed. */
+            outcome: ("done" | "partial") | null;
+        };
+        /** @description Display name and initials only. */
+        Technician: {
+            name: string;
+            initials: string;
+        };
+        VisitSummary: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's calendar date.
+             */
+            date: string;
+            /** @enum {string} */
+            window_label: "morning" | "afternoon" | "evening";
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            length_minutes: number;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @enum {string} */
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            technician: components["schemas"]["Technician"] | null;
+            /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
+            place: string;
+        };
+        PaymentEntry: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "payment";
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's calendar date it was made.
+             */
+            date: string;
+            /** @description In paise, GST included. */
+            amount: number;
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description The GST rate the amount includes. */
+            gst_percent: number;
+            /** @description The visit it paid for, when known. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @enum {string} */
+            status: "authorized" | "captured" | "refunded" | "partially_refunded";
+            /** @description upi, card, netbanking and so on. */
+            method: string | null;
+            /** @description Ours, e.g. MM-2026-0841, once captured. */
+            reference: string | null;
+            /** @description In paise: refunds Razorpay has processed. */
+            refunded_amount: number;
+            /**
+             * @description What it paid for: the visit, or a late fee.
+             * @enum {string}
+             */
+            purpose: "visit" | "late_fee";
+            /** @description Kept under the 24-hour rule, with its evidence: "cancelled 9:14 am, visit was 10 am". */
+            charge: {
+                /** @enum {string} */
+                change: "cancelled" | "moved";
+                /**
+                 * Format: date-time
+                 * @description When the client cancelled or moved the visit.
+                 */
+                at: string;
+                /**
+                 * Format: date-time
+                 * @description When the visit was to start.
+                 */
+                visit_started_at: string;
+                /** @description In paise: what was kept. */
+                amount: number;
+            } | null;
+        };
+        RefundEntry: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "refund";
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            payment_id: string;
+            /**
+             * Format: date
+             * @description India's calendar date it was made.
+             */
+            date: string;
+            /** @description In paise, GST included. */
+            amount: number;
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description The GST rate the amount includes. */
+            gst_percent: number;
+            /** @description The visit it paid for, when known. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @enum {string} */
+            status: "created" | "processed" | "failed";
+            /** @description Where the money goes back to: the payment's method. */
+            destination: string | null;
+            /** @description normal (5 to 7 working days) or instant. */
+            speed: string | null;
+        };
+        ClientPhotos: {
+            visits: {
+                /** Format: uuid */
+                visit_id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                technician: {
+                    name: string;
+                    initials: string;
+                } | null;
+                /** @description Before then after, each in the design's angle order. */
+                photos: components["schemas"]["ClientPhoto"][];
+            }[];
+        };
+        ClientPhoto: {
+            /**
+             * Format: uuid
+             * @description For GET /api/clients/{id}/photos/{photo_id}, which is audited.
+             */
+            id: string;
+            /** @enum {string} */
+            phase: "before" | "after";
+            /** @enum {string} */
+            angle: "front" | "top" | "left" | "right" | "hair";
+            width: number | null;
+            height: number | null;
+            /** Format: date-time */
+            taken_at: string;
+        };
+        ClientConsents: {
+            consents: {
+                /** @enum {string} */
+                purpose: "photos_own_record" | "photos_referral_cards" | "photos_marketing" | "whatsapp_visits" | "whatsapp_launches";
+                /**
+                 * @description not_given until the client first switches it on; withdrawn once they switch it back off.
+                 * @enum {string}
+                 */
+                state: "given" | "withdrawn" | "not_given";
+                /** @description The notice the client saw when they last switched it. */
+                notice_version: string | null;
+                /** @description When they last switched it. */
+                at: string | null;
+            }[];
+            /** @description Their latest deletion request. A processed one leaves no client to read. */
+            deletion: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                state: "requested" | "rejected";
+                /** Format: date-time */
+                requested_at: string;
+                decided_at: string | null;
+            } | null;
+        };
         NumberChangeDecision: {
             /** @enum {string} */
             decision: "confirm" | "reject";
@@ -692,7 +1175,7 @@ export interface components {
         ReferralDecision: {
             /** @enum {string} */
             decision: "approve" | "reject";
-            /** @description Required to reject. */
+            /** @description Required to reject, and kept with the decision either way. */
             reason: string | null;
         };
         GrievanceAnswer: {

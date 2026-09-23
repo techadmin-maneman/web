@@ -141,7 +141,8 @@
 }
 
 .approve:disabled,
-.reject:disabled {
+.reject:disabled,
+.quiet:disabled {
   cursor: default;
   opacity: 0.5;
 }
@@ -153,7 +154,7 @@
   outline-offset: var(--sp-3);
 }
 
-/* The reason a rejection needs, which the API requires and the board does not draw. */
+/* The reason board C1 asks for on either decision, for which it draws no field. */
 .reason {
   margin-top: var(--sp-14);
 }

@@ -1951,7 +1951,7 @@ Every referrer's figures, the busiest first
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject."
+      "description": "Required to reject, and kept with the decision either way."
     }
   },
   "required": [

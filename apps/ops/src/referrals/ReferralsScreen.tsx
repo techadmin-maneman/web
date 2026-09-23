@@ -1,7 +1,8 @@
 // Referrals (Ops Console, boards C1 and C2): the grants the fraud rules held,
 // each approved or rejected here, over every referrer's figures. Approving a
-// grant releases its credits; both decisions are recorded in the audit log
-// under whoever Access says is signed in (docs/decisions/0048-referrals.md).
+// grant releases its credits. The board asks for a reason on either decision,
+// and both are recorded in the audit log under whoever Access says is signed
+// in (docs/decisions/0048-referrals.md).
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -12,11 +13,13 @@ import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./referrals.module.css";
 
+type Choice = "approve" | "reject";
+
 /** Where a row is in its decision: waiting, asked for a reason, sending, or refused by the API. */
 type Decision =
   | { readonly step: "open" }
-  | { readonly step: "rejecting" }
-  | { readonly step: "sending" }
+  | { readonly step: "asking"; readonly choice: Choice }
+  | { readonly step: "sending"; readonly choice: Choice }
   | { readonly step: "failed"; readonly code: string };
 
 function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void }) {
@@ -24,13 +27,15 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
   const [reason, setReason] = useState("");
   const copy = referrals.queue;
 
-  const decide = async (choice: "approve" | "reject") => {
-    setDecision({ step: "sending" });
-    const answer = await api.decideReferral(grant.id, choice, choice === "reject" ? reason.trim() : null);
+  const decide = async (choice: Choice) => {
+    setDecision({ step: "sending", choice });
+    const answer = await api.decideReferral(grant.id, choice, reason.trim());
     if (answer.ok) onDecided();
     else setDecision({ step: "failed", code: answer.code });
   };
 
+  // Both decisions are made in the same two steps, so the reason is asked for either way.
+  const asking = decision.step === "asking" || decision.step === "sending" ? decision : null;
   const sending = decision.step === "sending";
   return (
     <li className={styles.grant}>
@@ -45,10 +50,10 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
           </li>
         ))}
       </ul>
-      {decision.step === "rejecting" ? (
+      {asking !== null ? (
         <div className={styles.reason}>
           <label className={styles.reasonLabel} htmlFor={`reason-${grant.id}`}>
-            {copy.reason.label}
+            {copy.reason.label[asking.choice]}
           </label>
           <textarea
             id={`reason-${grant.id}`}
@@ -62,16 +67,17 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
           <p className={styles.reasonHint}>{copy.reason.hint}</p>
           <div className={styles.actions}>
             <button
-              className={styles.reject}
+              className={asking.choice === "approve" ? styles.approve : styles.reject}
               type="button"
-              disabled={reason.trim() === ""}
-              onClick={() => void decide("reject")}
+              disabled={sending || reason.trim() === ""}
+              onClick={() => void decide(asking.choice)}
             >
-              {copy.reason.confirm}
+              {sending ? copy.deciding : copy.reason.confirm[asking.choice]}
             </button>
             <button
               className={styles.quiet}
               type="button"
+              disabled={sending}
               onClick={() => {
                 setDecision({ step: "open" });
               }}
@@ -82,15 +88,20 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
         </div>
       ) : (
         <div className={styles.actions}>
-          <button className={styles.approve} type="button" disabled={sending} onClick={() => void decide("approve")}>
-            {sending ? copy.deciding : copy.approve}
+          <button
+            className={styles.approve}
+            type="button"
+            onClick={() => {
+              setDecision({ step: "asking", choice: "approve" });
+            }}
+          >
+            {copy.approve}
           </button>
           <button
             className={styles.reject}
             type="button"
-            disabled={sending}
             onClick={() => {
-              setDecision({ step: "rejecting" });
+              setDecision({ step: "asking", choice: "reject" });
             }}
           >
             {copy.reject}
