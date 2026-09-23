@@ -12,6 +12,7 @@ import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
 import { createImageProvider } from "../../src/providers/image.ts";
 import type { CodeChannel } from "../../src/providers/codes.ts";
 import { createStubBooks } from "../../src/providers/books.ts";
+import { createGeocodeProvider } from "../../src/providers/geocode.ts";
 import { createStubFsm } from "../../src/providers/fsm.ts";
 import { createStubMessaging } from "../../src/providers/messaging.ts";
 
@@ -32,6 +33,7 @@ export const LOCAL_SETTINGS: Settings = {
   zoho: null,
   zohoFsm: null,
   razorpay: null,
+  geocode: { apiKey: null, dailyCeiling: 200 },
   access: null,
   login: {
     codePepper: "test-login-code-pepper-that-is-long-enough",
@@ -68,6 +70,7 @@ export const LOCAL_CONFIG: StaticConfig = {
     FSM_PROVIDER: "stub",
     BOOKS_PROVIDER: "stub",
     PAYMENTS_PROVIDER: "stub",
+    GEOCODE_PROVIDER: "stub",
   },
   settings: LOCAL_SETTINGS,
 };
@@ -149,6 +152,7 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     now,
     crm: createStubCrm(createLogger()),
     image: createImageProvider(null, { fetch, now }),
+    geocode: createGeocodeProvider("stub", null, { fetch }),
     messaging: createStubMessaging(createLogger()),
     alert: (message) => {
       alerts.push(message);

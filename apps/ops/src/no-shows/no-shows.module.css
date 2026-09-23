@@ -98,6 +98,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * A fact that was never measured, in the ink the panel keeps for something
+ * wrong: ops are about to rule on evidence that has a hole in it, and the row
+ * must not be read past as though it held a figure.
+ */
+.unmeasured {
+  color: var(--error-on-paper);
+}
+
 .actions {
   display: flex;
   gap: var(--sp-10);

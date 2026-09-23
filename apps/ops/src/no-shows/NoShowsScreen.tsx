@@ -8,7 +8,7 @@
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { api, type NoShowCase } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { noShows } from "../content.ts";
@@ -29,9 +29,18 @@ function waitedMinutes(waitEndsAt: string, checkedInAt: string): number {
 
 function Facts({ each }: { each: NoShowCase }) {
   const copy = noShows.queue;
-  const rows = [
+  const rows: readonly (readonly [string, ReactNode])[] = [
     [copy.facts.checkIn, indiaClock(each.checked_in_at)],
-    [copy.facts.distance, copy.distance(each.distance_m)],
+    [
+      copy.facts.distance,
+      // Never a number when none was measured: a missing distance is not 0 m,
+      // and this fact helps decide whether to charge a client (ADR 0036).
+      each.distance_m === null ? (
+        <span className={styles.unmeasured}>{copy.unmeasured}</span>
+      ) : (
+        copy.distance(each.distance_m)
+      ),
+    ],
     [
       copy.facts.whatsapp,
       each.message_delivered_at === null ? copy.notDelivered : copy.delivered(indiaClock(each.message_delivered_at)),
@@ -43,7 +52,7 @@ function Facts({ each }: { each: NoShowCase }) {
         each.closed_at === null ? null : indiaClock(each.closed_at),
       ),
     ],
-  ] as const;
+  ];
 
   return (
     <dl className={styles.facts}>

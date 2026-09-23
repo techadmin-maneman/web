@@ -2819,8 +2819,15 @@ What ops still have to do, by group, the longest wait first
       "description": "Fact one: when the technician arrived."
     },
     "distance_m": {
-      "type": "integer",
-      "description": "Fact two: how far from the address he was."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured."
     },
     "message_delivered_at": {
       "anyOf": [

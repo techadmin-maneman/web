@@ -1,5 +1,6 @@
 // The client's profile, on the client surface (docs/decisions/0042-client-profile.md):
 //   GET   /api/profile
+//   GET   /api/address/suggestions     buildings matching what is typed so far
 //   PATCH /api/profile/address
 //   PATCH /api/consents/:purpose
 //   POST  /api/number-change          a code to each number
@@ -10,11 +11,20 @@
 // with ops' decision, which is audited in turn (src/routes/ops-profile.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { Context } from "hono";
+import type { App, AppEnv } from "../app.ts";
 import { auditStatement, recordAudit, type AuditEntry } from "../domain/audit.ts";
+import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { openDeletion, requestDeletion } from "../domain/deletion.ts";
 import { openNumberChange, startNumberChange, verifyNumberChange, type NumberChange } from "../domain/number-change.ts";
-import { consentsOf, currentAddress, maskedMobile, saveAddress, switchConsent } from "../domain/profile.ts";
+import {
+  consentsOf,
+  currentAddress,
+  maskedMobile,
+  saveAddress,
+  switchConsent,
+  type AddressPin,
+} from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -28,6 +38,35 @@ import { revokeCard } from "../domain/referral-cards.ts";
 /** Number changes a client may start in a day. */
 const NUMBER_CHANGES_PER_DAY = 3;
 
+/** Suggestions one client may ask for in a day, so one cannot spend the global ceiling. */
+const SUGGESTIONS_PER_DAY = 120;
+
+const blankToNull = (value: string | null | undefined): string | null =>
+  value === undefined || value === null || value.trim() === "" ? null : value;
+
+/**
+ * Counts one Google request against the day's ceiling; false, with one alert a
+ * day, once it is reached. Every call is counted, free SKU or not: the free
+ * ones are free only while the session token does its work, and a ceiling that
+ * assumed that would be no ceiling at all
+ * (docs/decisions/0054-address-capture.md).
+ */
+async function withinGeocodeCeiling(c: Context<AppEnv>, now: Date): Promise<boolean> {
+  const ceiling = c.var.config.settings.geocode.dailyCeiling;
+  if (await takeFromCeiling(c.env.DB, "geocode", ceiling, now)) return true;
+  await alertCeilingReached(c.env.DB, c.var.deps.alert, "geocode", ceiling, now);
+  return false;
+}
+
+/**
+ * Nullish rather than nullable: an address saved before migration 0028 holds
+ * nothing in these, and a client that predates them sends nothing. Both must
+ * keep working, so leaving one out means the same as sending null.
+ */
+const part = (max: number) => z.string().trim().max(max).nullish();
+
+const optional = (max: number) => z.string().trim().max(max).nullable();
+
 const AddressSchema = z
   .object({
     line1: z.string().trim().min(1).max(120),
@@ -35,15 +74,40 @@ const AddressSchema = z
     locality: z.string().trim().min(1).max(80),
     city: z.string().trim().min(1).max(40),
     pincode: z.string().regex(/^\d{6}$/),
-    access_notes: z
-      .string()
-      .trim()
-      .max(300)
-      .nullable()
-      .openapi({ description: "For the technician, from the day before the visit: gate code, parking." }),
+    access_notes: optional(300).openapi({
+      description: "For the technician, from the day before the visit: gate code, parking.",
+    }),
+    building: part(120).openapi({ description: "The building as chosen from the suggestions; null if typed." }),
+    flat: part(40),
+    floor: part(20),
+    tower: part(40),
+    landmark: part(120),
+    place_id: part(300).openapi({ description: "Google's Place ID for the building, if one was chosen." }),
   })
   .strict()
   .openapi("Address");
+
+/**
+ * What the app sends. `session_token` is the same string the app passed to every
+ * suggestion request; it groups them into one billed session, and without it
+ * Google bills per keystroke (docs/decisions/0054-address-capture.md). The
+ * coordinate is never sent: only this API may put one on an address, and only
+ * by geocoding the Place ID itself.
+ */
+const AddressSaveSchema = AddressSchema.extend({
+  session_token: part(100),
+})
+  .strict()
+  .openapi("AddressSave");
+
+const SuggestionsSchema = z
+  .object({
+    suggestions: z.array(z.object({ place_id: z.string(), primary: z.string(), secondary: z.string() }).strict()),
+    /** Google requires their name against content shown without a Google map. */
+    attribution: z.literal("Google Maps"),
+  })
+  .strict()
+  .openapi("AddressSuggestions");
 
 const NumberChangeSchema = z
   .object({
@@ -88,11 +152,34 @@ export const profileRoute = createRoute({
   responses: { 200: { description: "The profile", ...json(ProfileSchema) }, ...signedIn },
 });
 
+export const addressSuggestionsRoute = createRoute({
+  method: "get",
+  path: "/api/address/suggestions",
+  summary: "Buildings matching what the client has typed, for the address form",
+  request: {
+    query: z.object({
+      q: z.string().trim().min(1).max(200).openapi({ description: "What the client has typed so far." }),
+      session: z
+        .string()
+        .trim()
+        .min(1)
+        .max(100)
+        .openapi({ description: "One token for the whole search, sent again when the address is saved." }),
+    }),
+  },
+  responses: {
+    200: { description: "The suggestions, which may be empty", ...json(SuggestionsSchema) },
+    400: errorResponse("invalid_request"),
+    503: errorResponse("busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached"),
+    ...signedIn,
+  },
+});
+
 export const addressRoute = createRoute({
   method: "patch",
   path: "/api/profile/address",
   summary: "Replace the address visits go to, with its access notes",
-  request: { body: { required: true, ...json(AddressSchema) } },
+  request: { body: { required: true, ...json(AddressSaveSchema) } },
   responses: {
     200: { description: "Saved", ...json(AddressSchema) },
     400: errorResponse("invalid_request"),
@@ -199,6 +286,8 @@ export function registerClientProfile(app: App): void {
   for (const path of [
     "/api/profile",
     "/api/profile/*",
+    // Suggestions cost money, so only a signed-in client may ask for them.
+    "/api/address/suggestions",
     "/api/consents/*",
     "/api/number-change",
     "/api/number-change/*",
@@ -244,6 +333,12 @@ export function registerClientProfile(app: App): void {
                 city: address.city,
                 pincode: address.pincode,
                 access_notes: address.accessNotes,
+                building: address.building,
+                flat: address.flat,
+                floor: address.floor,
+                tower: address.tower,
+                landmark: address.landmark,
+                place_id: address.placeId,
               },
         consents,
         number_change: change === null ? null : numberChangeBody(change),
@@ -253,23 +348,91 @@ export function registerClientProfile(app: App): void {
     );
   });
 
+  app.openapi(addressSuggestionsRoute, async (c) => {
+    const personId = c.var.clientSession?.subjectId ?? "";
+    const { q, session } = c.req.valid("query");
+    const now = c.var.deps.now();
+
+    // Per client first, so one client cannot spend the day's ceiling on their own.
+    const within = await takeOne(c.env.DB, {
+      scope: "address_suggest",
+      key: personId,
+      window: indiaDate(now),
+      limit: SUGGESTIONS_PER_DAY,
+    });
+    if (!within) return c.json(errorBody("busy", c.var.requestId), 503);
+    if (!(await withinGeocodeCeiling(c, now))) return c.json(errorBody("busy", c.var.requestId), 503);
+
+    const answer = await c.var.deps.geocode.suggest(q, session);
+    if (!answer.ok) {
+      // The form carries on without suggestions: an address can always be typed.
+      c.var.log.warn("address_suggest_failed", { reason: answer.reason, detail: answer.detail });
+      return c.json(errorBody("unavailable", c.var.requestId), 503);
+    }
+    return c.json(
+      {
+        suggestions: answer.suggestions.map((one) => ({
+          place_id: one.placeId,
+          primary: one.primary,
+          secondary: one.secondary,
+        })),
+        attribution: "Google Maps" as const,
+      },
+      200,
+    );
+  });
+
   app.openapi(addressRoute, async (c) => {
     const personId = c.var.clientSession?.subjectId ?? "";
     const body = c.req.valid("json");
-    await saveAddress(
-      c.env.DB,
-      personId,
+    const now = c.var.deps.now();
+
+    // A chosen building is geocoded here, once, and its coordinate kept. A typed
+    // address has no Place ID and saves no pin: the geofence then measures
+    // nothing rather than measuring zero (ADR 0036's honest degradation).
+    let pin: AddressPin | null = null;
+    const placeId = blankToNull(body.place_id);
+    if (placeId !== null && (await withinGeocodeCeiling(c, now))) {
+      const resolved = await c.var.deps.geocode.resolve(
+        placeId,
+        blankToNull(body.session_token) ?? crypto.randomUUID(),
+      );
+      if (resolved.ok) pin = { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
+      else c.var.log.warn("address_resolve_failed", { reason: resolved.reason, detail: resolved.detail });
+    }
+
+    const address = {
+      line1: body.line1,
+      line2: blankToNull(body.line2),
+      locality: body.locality,
+      city: body.city,
+      pincode: body.pincode,
+      accessNotes: blankToNull(body.access_notes),
+      building: blankToNull(body.building),
+      flat: blankToNull(body.flat),
+      floor: blankToNull(body.floor),
+      tower: blankToNull(body.tower),
+      landmark: blankToNull(body.landmark),
+      placeId,
+    };
+    await saveAddress(c.env.DB, personId, address, pin, now);
+    return c.json(
       {
-        line1: body.line1,
-        line2: body.line2 === "" ? null : body.line2,
-        locality: body.locality,
-        city: body.city,
-        pincode: body.pincode,
-        accessNotes: body.access_notes === "" ? null : body.access_notes,
+        line1: address.line1,
+        line2: address.line2,
+        locality: address.locality,
+        city: address.city,
+        pincode: address.pincode,
+        access_notes: address.accessNotes,
+        building: address.building,
+        flat: address.flat,
+        floor: address.floor,
+        tower: address.tower,
+        landmark: address.landmark,
+        place_id: address.placeId,
       },
-      c.var.deps.now(),
+      200,
     );
-    return c.json(body, 200);
   });
 
   app.openapi(consentRoute, async (c) => {

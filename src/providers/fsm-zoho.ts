@@ -514,8 +514,10 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       form.append("file", new Blob([file.bytes], { type: file.contentType }), file.name);
       const uploaded = await request("upload_file", "/fsm/v1/files", { method: "POST", form });
       const { data } = Uploaded.parse(await uploaded.json());
+      // The upload answers `file_id`, but the Attachments module wants `File_Id`;
+      // `file_id` is refused with 400 INVALID_DATA (staging, 23 September 2026).
       return create("attach_file", `Service_Appointments/${appointmentId}/Attachments`, {
-        file_id: data.file_id,
+        File_Id: data.file_id,
         File_Name: file.name,
       });
     },

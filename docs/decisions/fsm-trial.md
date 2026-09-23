@@ -70,7 +70,7 @@ Run through the API against the org the owner confirmed as the real one, while i
    - Books allows 1,000 calls a day on its trial (`x-rate-limit-*` headers).
 3. **Webhooks.** Not tested: webhooks are set up in FSM's settings, not through the API, and need a receiving route. That is tested in P2-M2 once the route exists.
 4. **Reading.** Contacts, work orders, appointments, assets, territories, users (with each user's service resource and territory) and job-sheet forms all read as documented. Work orders and appointments carry `Status`, `Billing_Status`, `Retainer_Received` and `Invoice_Id`.
-   - **FSM geocodes service addresses itself** (`Service_Latitude`, `Service_Longitude`).
+   - ~~**FSM geocodes service addresses itself** (`Service_Latitude`, `Service_Longitude`).~~ **Wrong on both counts; corrected 23 September 2026.** It does not geocode a contact created through the API, and the coordinate is not on those fields. See "Question 4, the coordinate" at the end of this document. The street FSM holds is still the placeholder `"To be confirmed with the client"` for every contact we create.
 5. **Photographs.**
    - A JPEG and a WebP were uploaded to `/files`, attached to a work order, and listed.
    - Both downloaded through `/files?file_id=` **byte for byte identical**, with the right content type.
@@ -93,3 +93,21 @@ Run through the API against the org the owner confirmed as the real one, while i
    - **GST is not set up yet:** there is no GSTIN and no tax rates, so no GST document can be issued until it is.
 9. **The job-sheet template.** None exists yet (`meta/job_sheet_forms` is empty). It is built in FSM's settings.
 10. **Technicians and zones.** The org has one user (the owner, an active service resource of type Agent) and one territory, "Mane Man".
+
+## Question 4, the coordinate: answered 23 September 2026
+
+Tried against the real FSM org with one synthetic contact per case — "Mane Man API test", an `example.com` address and a Gurugram street that does not exist — each read back and then deleted. Nothing was left behind; a listing afterwards found no test contact.
+
+**FSM accepts a coordinate we supply, and keeps it.** A contact created with `Service_Address` carrying `Latitude` and `Longitude` read back with exactly those values.
+
+**The coordinate is a field of the address record, not of the contact.** `GET /Contacts/{id}/Addresses` and `GET /Contacts/{id}/Addresses/{addressId}` return `Latitude` and `Longitude`. The contact's own `Service_Latitude` and `Service_Longitude` stayed **null** throughout, on a record that demonstrably had a coordinate. The earlier note under question 4 named the wrong fields.
+
+**Only one path writes it.** Moving an existing pin needs a contact write with the address nested and its `id` named:
+
+- `PUT /Contacts/{id}` with `{ data: [{ Service_Address: { id, Latitude, Longitude } }] }` — **200, and the coordinate moved** (28.4595/77.0266 to 28.4089/77.3178).
+- `PUT /Addresses/{id}` — 400 `INVALID_MODULE`.
+- `PUT /Contacts/{id}/Addresses` — 400 `INVALID_DATA`.
+
+**FSM did not geocode anything.** A second contact created the same way but with **no** coordinate read back with `Latitude` null, `Longitude` null and `Google_Geocodedtime` null, after a wait. The field exists, so FSM can geocode somewhere — in its own interface, or under a setting this org does not have on — but it does not do so when a contact is created through the API. There is a `Google_Geocodedtime` on the address record, and it was null in both cases, so nothing re-geocoded over the coordinate we supplied either.
+
+This retires the premise of ADR 0036, which had the coordinates coming from FSM's own geocoding of the service address: there is nothing there to read. It also settles what a client-placed pin is worth — it reaches the field, on the record the technician's own navigation uses. Our D1 stays the record the geofence measures against regardless (`docs/decisions/0054-address-capture.md`).

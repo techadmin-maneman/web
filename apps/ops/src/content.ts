@@ -388,6 +388,12 @@ export const noShows = {
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
     /** The board writes "240 m · over 200 m fence"; the route gives the distance, not the radius in force. */
     distance: (metres: number) => `${String(metres)} m`,
+    /**
+     * An address with no coordinates cannot be measured against, so the route
+     * carries no distance (ADR 0036). Words rather than a number, because ops
+     * charge a client on these facts and nothing was measured here at all.
+     */
+    unmeasured: "Not measured · the address has no location",
     delivered: (time: string) => `Delivered ${time}`,
     /** PLACEHOLDER: the board's receipt always arrived; one that never did is this. */
     notDelivered: "Never delivered",
