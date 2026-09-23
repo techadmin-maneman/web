@@ -90,6 +90,23 @@ export interface RazorpaySettings {
   readonly webhookSecret: string | null;
 }
 
+export interface GeocodeSettings {
+  /**
+   * Google Maps Platform, restricted to Places and Geocoding and to this
+   * Worker's IPs (docs/runbook.md, section 13). Null unless GEOCODE_PROVIDER is
+   * "google".
+   */
+  readonly apiKey: string | null;
+  /**
+   * Requests to Google allowed in an India day, counted across every client.
+   * It refuses rather than spends: the owner's card is behind this key, and
+   * Google's budget alerts are not a spending cap
+   * (docs/decisions/0054-address-capture.md). Always read, so the ceiling holds
+   * for the stub too and a test cannot pass a build that would not hold.
+   */
+  readonly dailyCeiling: number;
+}
+
 export interface AccessSettings {
   /** The Cloudflare Access team domain, e.g. summer-math-0275.cloudflareaccess.com. */
   readonly teamDomain: string;
@@ -143,10 +160,21 @@ export interface Settings {
   readonly razorpay: RazorpaySettings | null;
   /** Present when ACCESS_PROVIDER is "cloudflare". */
   readonly access: AccessSettings | null;
+  /** The address search: its key when there is one, and its daily ceiling always. */
+  readonly geocode: GeocodeSettings;
   readonly login: LoginSettings;
   readonly tryon: TryonSettings;
   readonly messaging: MessagingSettings;
 }
+
+/**
+ * The most GEOCODE_DAILY_CEILING may be set to. Google's India price list gives
+ * the Geocoding SKU 70,000 free calls a month; 80% of that over a 31-day month
+ * is 1,806 a day, so a ceiling at or below this cannot reach the free
+ * allowance however many days run at it. Expected use is about ten a day
+ * (docs/decisions/0054-address-capture.md).
+ */
+export const GEOCODE_CEILING_MAX = 1_800;
 
 /**
  * Cloudflare's published Turnstile test secrets. Any of them in production
@@ -325,6 +353,19 @@ export function readSettings(
     }
   }
 
+  const geocode: GeocodeSettings = {
+    apiKey: providers.GEOCODE_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null,
+    dailyCeiling: read.count("GEOCODE_DAILY_CEILING"),
+  };
+  // A ceiling of nought is the runbook's kill switch and is deliberate; a
+  // ceiling this high is not, and it is the owner's card that pays for it.
+  if (geocode.dailyCeiling > GEOCODE_CEILING_MAX) {
+    read.problems.push(
+      `GEOCODE_DAILY_CEILING must be at most ${String(GEOCODE_CEILING_MAX)}: ` +
+        "a day above that could take a month past Google's free allowance",
+    );
+  }
+
   let access: AccessSettings | null = null;
   if (providers.ACCESS_PROVIDER === "cloudflare") {
     const teamDomain = read.text("ACCESS_TEAM_DOMAIN");
@@ -420,6 +461,7 @@ export function readSettings(
     zohoFsm,
     razorpay,
     access,
+    geocode,
     login,
     tryon,
     messaging,

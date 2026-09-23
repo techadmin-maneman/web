@@ -168,6 +168,7 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`         | The Evolution API bridge (`docs/decisions/0016-whatsapp-through-evolution.md`). The URL must be public `https://`, reachable from Cloudflare, and include the port if it is not 443: staging's ends in `ts.net:8443`, because port 443 on that host serves another app. `GET /` there should answer "Welcome to the Evolution API". |
 | `ERASURE_SECRET`                                                            | 32 or more random characters, generated like `IP_HASH_SALT`. Authorises `POST /api/erasure`. Keep one copy, in the git-ignored `.env.erasure-<env>` file that ops use for erasures ("Erasure within the day").                                                                                                                      |
 | `MESSAGING_ALLOWLIST`                                                       | Staging: the founders' mobile numbers, comma-separated. Only these receive messages. A secret, so the numbers stay out of git.                                                                                                                                                                                                      |
+| `GOOGLE_MAPS_API_KEY`                                                       | The address search, once `GEOCODE_PROVIDER` is `google`. Make and restrict it in section 13 first: an unrestricted key is a key anyone can spend.                                                                                                                                                                                   |
 
 **A required secret set to an empty value stops the Worker.** The settings reader counts an empty string as unset, the identity guard then refuses to start, and every request answers Cloudflare's error 1105 until it is set again. A secret change deploys a new version by itself, so the break is immediate; check `/api/health` after any `secret bulk`.
 
@@ -446,6 +447,68 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
 
 ---
 
+### 13. The address search (Google Maps Platform)
+
+The client app's address form searches for a building and keeps a coordinate for the check-in's geofence (docs/decisions/0054-address-capture.md). Until this is done, `GEOCODE_PROVIDER` stays `none`: the form takes a typed address, saves no coordinate, and nothing calls Google.
+
+**This is the owner's card, so do every step. Google's free allowance does not stop at its limit — it bills. Google's budget alerts are not a spending cap; they tell you after the money is spent. The only thing that stops a charge is the per-API quota in step 4.**
+
+Everything below is at <https://console.cloud.google.com>, signed in as the account that holds the card.
+
+1. **A project of its own.** Top bar → the project picker → **New project**. Name it `mane-man-maps`. A separate project keeps the quotas and the bill readable, and lets the key be deleted without touching anything else.
+
+2. **Switch on exactly two APIs, and no others.** Navigation menu (☰) → **APIs & Services** → **Library**. Search for and **Enable** each:
+   - **Places API (New)** — the search box.
+   - **Geocoding API** — the coordinate we keep.
+
+   Do not enable Maps JavaScript API, Maps SDK, Static Maps, Routes, Distance Matrix or anything else. Nothing draws a map, so nothing else is called, and an API that is not enabled cannot be billed.
+
+3. **Make the key and restrict it.** **APIs & Services** → **Credentials** → **Create credentials** → **API key**. Then **Edit API key** on the one just made:
+   - **Name:** `mm-api address search`.
+   - **Application restrictions:** choose **IP addresses**. The key is used only by our Worker, server to server, never by a browser — so add Cloudflare's egress ranges. In practice a Worker's outbound address is not fixed, so if the restriction refuses our calls, set this to **None** and rely on step 4's quota plus the API restriction below. **Never choose "Websites (HTTP referrers)"**: that restriction is for keys in a page, and ours is never in a page.
+   - **API restrictions:** choose **Restrict key** and tick **only** Places API (New) and Geocoding API. This is the important one. A key restricted to two APIs cannot be spent on a third even if it leaks.
+   - **Save.**
+
+4. **Cap each API's quota, so the card cannot be charged.** This is the step that makes the rest safe. **APIs & Services** → each API in turn → **Quotas & System Limits**. Filter the list for the per-day quotas and set each with the pencil icon → **Edit quota**:
+
+   | API              | Quota to edit                  | Set it to |
+   | ---------------- | ------------------------------ | --------- |
+   | Geocoding API    | Requests per day               | **300**   |
+   | Places API (New) | Autocomplete requests per day  | **2000**  |
+   | Places API (New) | Place Details requests per day | **500**   |
+
+   These sit just above our own daily ceiling (`GEOCODE_DAILY_CEILING`, 200) so our code refuses first and Google's quota is the backstop. Both are far under the free allowance — Geocoding gets 70,000 free requests a month on the India price list, and 300 a day cannot reach it. A quota change can take a few minutes to apply, and some quotas need a one-line reason.
+
+   If a quota field will not go below its default, lower the one above it in the list; Google applies the smallest that matches.
+
+5. **Set the alarms anyway**, so a surprise is noticed even though a quota should prevent it. Navigation menu → **Billing** → **Budgets & alerts** → **Create budget**: scope it to the `mane-man-maps` project, amount **₹100**, and tick the alert thresholds at 50%, 90% and 100%. This does not stop spending; it only emails. The quota in step 4 is what stops it.
+
+6. **Give the key to the Worker**, on staging only:
+
+   ```sh
+   W secret put GOOGLE_MAPS_API_KEY --env staging
+   ```
+
+   Paste the key when prompted. It is never printed, never committed, and never sent to the browser: the app calls our API and our API calls Google.
+
+7. **Switch the provider on.** In `wrangler.jsonc`, under `env.staging.vars`, set `"GEOCODE_PROVIDER": "google"`, and deploy. Leave production as `none` until Phase 2 is released.
+
+8. **Check it.** Sign in to the staging client app, open the profile, and start typing a building into "Search for your building". Suggestions should appear within a second, with the words _Google Maps_ under the list. Choose one, fill in the flat, save, and confirm the coordinate landed:
+
+   ```sh
+   W d1 execute mm-db --env staging --command \
+     "SELECT building, flat, place_id, lat, lng, geocode_source FROM addresses WHERE lat IS NOT NULL ORDER BY created_at DESC LIMIT 3"
+   ```
+
+   `geocode_source` should read `google_geocoding`. If `lat` is null, the save worked but the geocode did not: look for `address_resolve_failed` in the logs, which names the reason without the key.
+
+#### If the address search misbehaves
+
+- **Suggestions never appear, and the logs say `address_suggest_failed` with `refused`.** The key is wrong, restricted to the wrong APIs, or its quota is spent. Check step 3's API restrictions first. The form still works: an address can always be typed.
+- **"busy" instead of suggestions.** A ceiling is reached. `geocode` is the ceiling's name in the alert. Either a client is hammering the form — the per-client limit is 120 a day — or `GEOCODE_DAILY_CEILING` is too low for real use. Raise it in `wrangler.jsonc` and deploy; the guard refuses anything above 1,800.
+- **To stop all spending at once.** Set `"GEOCODE_DAILY_CEILING": "0"` in `wrangler.jsonc` and deploy, or set `"GEOCODE_PROVIDER": "none"`. Either way the form keeps working, typed.
+- **A charge appears at all.** Something is wrong, because the quotas in step 4 cannot reach the free allowance. Disable the key in **Credentials**, set `GEOCODE_PROVIDER` to `none`, and find out how before re-enabling it.
+
 ## The CI runner
 
 GitHub Actions jobs run on the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"). The machine must be on, with Docker Desktop running; the containers start with Docker.
@@ -486,6 +549,8 @@ Once, in the Cloudflare dashboard:
 1. Billing → Budget alerts: create an alert at the lowest amount offered. Any usage-based charge then emails the billing address.
 2. Notifications → Add → Usage-based billing: one notification each for R2 storage (5 GB), R2 Class A operations (500,000) and R2 Class B operations (5,000,000). That is half of each monthly allowance.
 3. Billing → Subscriptions should list only free plans. Never upgrade Workers to Paid without a new ADR.
+
+Cloudflare is not the only card now. The owner's own card is on Google Maps Platform for the address search, and Google bills past its free allowance rather than stopping. Its quotas and its kill switch are section 13, and its ceiling is `GEOCODE_DAILY_CEILING`.
 
 If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/free-tier-budget.test.ts` refuses any ceiling that could take R2 or Queues past 80% of the free allowance, counting the share set aside for Phase 2 (`docs/decisions/0015-render-pipeline.md`, `docs/decisions/0039-phase-2-budget.md`).
 

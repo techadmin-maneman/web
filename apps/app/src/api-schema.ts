@@ -441,6 +441,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/address/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Buildings matching what the client has typed, for the address form */
+        get: {
+            parameters: {
+                query: {
+                    /** @description What the client has typed so far. */
+                    q: string;
+                    /** @description One token for the whole search, sent again when the address is saved. */
+                    session: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The suggestions, which may be empty */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AddressSuggestions"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/profile/address": {
         parameters: {
             query?: never;
@@ -464,7 +532,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["Address"];
+                    "application/json": components["schemas"]["AddressSave"];
                 };
             };
             responses: {
@@ -2124,6 +2192,14 @@ export interface components {
             pincode: string;
             /** @description For the technician, from the day before the visit: gate code, parking. */
             access_notes: string | null;
+            /** @description The building as chosen from the suggestions; null if typed. */
+            building?: string | null;
+            flat?: string | null;
+            floor?: string | null;
+            tower?: string | null;
+            landmark?: string | null;
+            /** @description Google's Place ID for the building, if one was chosen. */
+            place_id?: string | null;
         };
         NumberChange: {
             /** Format: uuid */
@@ -2134,6 +2210,33 @@ export interface components {
             new_mobile: string;
             old_verified: boolean;
             new_verified: boolean;
+        };
+        AddressSuggestions: {
+            suggestions: {
+                place_id: string;
+                primary: string;
+                secondary: string;
+            }[];
+            /** @enum {string} */
+            attribution: "Google Maps";
+        };
+        AddressSave: {
+            line1: string;
+            line2: string | null;
+            locality: string;
+            city: string;
+            pincode: string;
+            /** @description For the technician, from the day before the visit: gate code, parking. */
+            access_notes: string | null;
+            /** @description The building as chosen from the suggestions; null if typed. */
+            building?: string | null;
+            flat?: string | null;
+            floor?: string | null;
+            tower?: string | null;
+            landmark?: string | null;
+            /** @description Google's Place ID for the building, if one was chosen. */
+            place_id?: string | null;
+            session_token?: string | null;
         };
         ConsentSwitch: {
             granted: boolean;
