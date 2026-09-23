@@ -16,6 +16,7 @@
     "packages/*/*.ts",
     "apps/app/headers.ts",
     "apps/app/pwa.ts",
+    "apps/tech/headers.ts",
     "src/config/**/*.ts",
     "src/worker-configuration.d.ts",
     "vitest.config.ts",
@@ -26,9 +27,11 @@
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",
     "scripts/fidelity-refer.ts",
+    "scripts/fidelity-tech.ts",
     "scripts/lib/fidelity.ts",
     "scripts/serve-site.ts",
     "scripts/serve-app.ts",
+    "scripts/serve-tech.ts",
     "scripts/lighthouse.ts",
     "scripts/lib/static-server.ts"
   ]

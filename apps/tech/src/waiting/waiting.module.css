@@ -1,0 +1,156 @@
+/* Board A2's upload queue, and the account of everything else still on the phone. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--ink-deep);
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-16);
+  align-items: center;
+  min-height: var(--tech-min);
+  padding: var(--sp-8) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: calc(-1 * var(--sp-12));
+  border: 0;
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: 400;
+  color: var(--paper);
+}
+
+.sets {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.setsIcon {
+  flex-shrink: 0;
+  color: var(--gilt);
+}
+
+.setsLine {
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.job {
+  padding: var(--sp-18) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.jobTop {
+  display: flex;
+  gap: var(--sp-14);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.who {
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.state {
+  font-size: var(--fs-15);
+  color: var(--gilt);
+}
+
+.stateStopped {
+  font-size: var(--fs-15);
+  color: var(--error-on-ink);
+}
+
+.bar {
+  --at: 0%;
+
+  height: var(--sp-4);
+  margin-top: var(--sp-12);
+  background: var(--ink-rule);
+}
+
+.barDone {
+  width: var(--at);
+  height: 100%;
+  background: var(--gilt);
+}
+
+.count {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
+}
+
+.stopped {
+  margin-top: var(--sp-14);
+  padding: var(--sp-14);
+  border: var(--hairline) solid var(--error-on-paper);
+}
+
+.stoppedLine {
+  margin: 0 0 var(--sp-14);
+  font-size: var(--fs-17);
+  line-height: 1.5;
+  color: var(--paper);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tech-min);
+  margin-top: var(--sp-12);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-17);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.stopped .button {
+  margin-top: 0;
+}
+
+.button:focus-visible,
+.back:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
+}
+
+.nothing,
+.never {
+  margin: 0;
+  padding: var(--sp-18) var(--sp-20);
+  font-size: var(--fs-15);
+  line-height: 1.6;
+  color: var(--ink-muted);
+}

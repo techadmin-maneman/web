@@ -28,6 +28,17 @@
   --sp-40: 40px; /* the regular technician's initials beside the windows (board C3) */
   --sp-64: 64px;
   --switch-width: 46px; /* a consent's switch (board G1) */
+
+  /* The technician app's targets (design/phase2/Technician App.dc.html, "Targets" and "Gloved use"). */
+  --tech-primary: 64px; /* the one primary action, bottom of every screen, and the fields beside it */
+  --tech-row: 88px; /* a job row, a checklist line */
+  --tech-stepper: 56px; /* a stepper's square, and the buttons that are not the primary one */
+  --tech-min: 48px; /* nothing under this: the initials chip, Retry */
+  --tech-time: 62px; /* the time column down the left of a job row (board A1) */
+  --tech-thumb: 56px; /* last visit's after photograph on the job card (board A3) */
+  --tech-mark: 28px; /* the mark at the head of Today */
+  --tech-retake: 88px; /* the Retake key beside Capture, the one action that is not full width (board B1) */
+
   --skeleton-label: 120px; /* the loading state's label (board B3) */
   --skeleton-card: 150px; /* and its card */
   --tracking-number: 0.04em; /* a mobile number, spaced for reading */

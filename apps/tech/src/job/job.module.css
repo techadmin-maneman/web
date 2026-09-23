@@ -1,0 +1,212 @@
+/* Board A3: the job card, with the one primary action at the bottom. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--ink-deep);
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-16);
+  align-items: center;
+  min-height: var(--tech-min);
+  padding: var(--sp-8) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: calc(-1 * var(--sp-12));
+  border: 0;
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.headWho {
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--fs-18);
+  font-weight: 400;
+  color: var(--paper);
+}
+
+.when {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.badge {
+  margin-left: auto;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-15);
+  color: var(--gilt);
+}
+
+.body {
+  flex: 1;
+}
+
+.address {
+  padding: var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.line {
+  margin: 0;
+  font-size: var(--fs-18);
+  line-height: 1.5;
+  color: var(--paper);
+}
+
+.access {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-16);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.navigate {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tech-stepper);
+  margin-top: var(--sp-16);
+  border: var(--hairline) solid var(--ink-line);
+  font-size: var(--fs-17);
+  color: var(--paper);
+  text-decoration: none;
+}
+
+.locked {
+  padding: var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.lockedTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.lockedBody {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-17);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.sector {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-18);
+  color: var(--paper);
+}
+
+.piece {
+  padding: var(--sp-16) var(--sp-20);
+}
+
+.pieceTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-15);
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.spec {
+  margin: var(--sp-10) 0 0;
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+.specRow {
+  display: flex;
+  gap: var(--sp-16);
+  justify-content: space-between;
+  padding: var(--sp-11) 0;
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.specKey {
+  font-size: var(--fs-16);
+  color: var(--ink-muted);
+}
+
+.specValue {
+  margin: 0;
+  font-size: var(--fs-17);
+  text-align: right;
+  color: var(--paper);
+}
+
+.last {
+  display: flex;
+  gap: var(--sp-14);
+  align-items: center;
+  margin-top: var(--sp-14);
+}
+
+.thumb {
+  flex-shrink: 0;
+  width: var(--tech-thumb);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: var(--ink-frame);
+}
+
+.lastLine {
+  margin: 0;
+  font-size: var(--fs-15);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+/* Gloved use: the one action, same place on every screen, 64 px and full width. */
+.foot {
+  flex-shrink: 0;
+  padding: var(--sp-16) var(--sp-20) var(--sp-22);
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+.action {
+  width: 100%;
+  height: var(--tech-primary);
+  border: 0;
+  background: var(--gilt);
+  font: inherit;
+  font-size: var(--fs-18);
+  font-weight: 500;
+  color: var(--ink-deep);
+  cursor: pointer;
+}
+
+.action:focus-visible,
+.navigate:focus-visible,
+.back:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
+}
+
+.action:focus-visible {
+  outline-color: var(--paper);
+}

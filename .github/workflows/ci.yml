@@ -83,11 +83,12 @@ jobs:
 
       - name: Chromium for Playwright
         run: npx playwright install --with-deps chromium
-      - name: Build the site and the client app (local)
+      - name: Build the site and the Phase 2 apps (local)
         run: |
           npm run build:site -- --env local
           npm run build:app -- --env local
-      - name: Browser tests at 390 and 1440 px, and the client app at 390, against a local mm-api with stub providers
+          npm run build:tech -- --env local
+      - name: Browser tests at 390 and 1440 px, and the client and technician apps at 390, against a local mm-api with stub providers
         run: npm run test:e2e
       - name: Lighthouse on /, /try and /book, mobile profile, against the budgets
         run: npm run lighthouse

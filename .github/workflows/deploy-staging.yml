@@ -78,6 +78,19 @@ jobs:
           version=$(node scripts/release.ts upload --worker mm-app --env staging --tag "$SHA")
           node scripts/release.ts deploy --worker mm-app --env staging --split "$version@100" --message "staging $SHA"
 
+      # mm-tech-staging's first deploy is a bootstrap by the owner, which also attaches its route and puts it
+      # on the CI token (docs/runbook.md, step 11); until then this step does nothing.
+      - name: Build the technician app (staging)
+        run: npm run build:tech -- --env staging
+      - name: Deploy mm-tech
+        run: |
+          if [ -z "$(node scripts/release.ts current --worker mm-tech --env staging || true)" ]; then
+            echo "::notice::mm-tech-staging is not bootstrapped yet, so it is not deployed."
+            exit 0
+          fi
+          version=$(node scripts/release.ts upload --worker mm-tech --env staging --tag "$SHA")
+          node scripts/release.ts deploy --worker mm-tech --env staging --split "$version@100" --message "staging $SHA"
+
       - name: Smoke-test staging
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
