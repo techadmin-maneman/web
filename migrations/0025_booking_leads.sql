@@ -1,76 +1,22 @@
 -- Migration number: 0025
--- contract: docs/decisions/0051-booking-from-the-site.md
--- A Phase 2 booking is a lead too (docs/decisions/0051-booking-from-the-site.md).
+-- withdrawn: deploy-staging run 35816407888 refused it, and it has been applied nowhere.
 --
--- The public page and the referral landing now book a real visit: a pincode, a
--- date and a window, with the slot held while the person fills the form. Those
--- forms do not ask the two things Phase 1's form asked for, so both columns
--- become optional:
+-- It rebuilt the leads table to make loss_extent and first_choice_window
+-- optional, so that a Phase 2 booking could leave a lead behind it
+-- (docs/decisions/0051-booking-from-the-site.md).
 --
---   loss_extent          the invited friend is never asked where the hair loss is;
---   first_choice_window  a booking has a date and a window of its own.
+-- Two things were wrong with that. first_choice_window was already optional, so
+-- only loss_extent needed anything. And a table that another table points at
+-- cannot be rebuilt inside one transaction: a try-on job points at a lead
+-- (migration 0003), and dropping the parent counts as a foreign key violation
+-- that re-creating it does not undo, whatever PRAGMA defer_foreign_keys says.
+-- SQLite's own recipe turns foreign keys off around the rebuild, and D1 runs a
+-- migration in one transaction, where that pragma does nothing.
 --
--- SQLite cannot drop NOT NULL in place, so the table is rebuilt. Nothing else
--- changes: the same columns, checks, defaults and indexes, and every row is
--- carried across. The rebuilt table must carry every column the table has
--- **today**, not only the ones migration 0002 gave it: 0015 added
--- fsm_request_id, and leaving it out took the FSM lead sync with it.
+-- So nothing is rebuilt. The site's own booking form asks where the hair loss
+-- is, as it always has, so its lead has the column it needs. An invited friend
+-- is not asked, and the referral landing leaves no lead, as it did before
+-- (docs/open-points.md, item 50).
 
-CREATE TABLE leads_rebuilt (
-  id TEXT PRIMARY KEY,
-  person_id TEXT NOT NULL REFERENCES people (id),
-  created_at TEXT NOT NULL,
-  source TEXT NOT NULL CHECK (source IN ('form', 'waitlist', 'tryon')),
-  city TEXT REFERENCES cities (name),
-  first_choice_window TEXT CHECK (first_choice_window IN ('weekday_am', 'weekday_pm', 'weekend_am', 'weekend_pm')),
-  loss_extent TEXT CHECK (loss_extent IN ('crown', 'receding', 'advanced')),
-  proposed_visit_date TEXT,
-  utm_source TEXT,
-  utm_medium TEXT,
-  utm_campaign TEXT,
-  utm_content TEXT,
-  gclid TEXT,
-  fbclid TEXT,
-  referrer TEXT,
-  landing_path TEXT,
-  sync_state TEXT NOT NULL DEFAULT 'pending' CHECK (sync_state IN ('pending', 'synced', 'failed')),
-  sync_attempts INTEGER NOT NULL DEFAULT 0,
-  last_sync_error TEXT,
-  synced_at TEXT,
-  request_id TEXT NOT NULL,
-  -- Added by migration 0015: the FSM Request this lead became.
-  fsm_request_id TEXT
-);
-
-INSERT INTO leads_rebuilt
-SELECT
-  id,
-  person_id,
-  created_at,
-  source,
-  city,
-  first_choice_window,
-  loss_extent,
-  proposed_visit_date,
-  utm_source,
-  utm_medium,
-  utm_campaign,
-  utm_content,
-  gclid,
-  fbclid,
-  referrer,
-  landing_path,
-  sync_state,
-  sync_attempts,
-  last_sync_error,
-  synced_at,
-  request_id,
-  fsm_request_id
-FROM leads;
-
-DROP TABLE leads;
-
-ALTER TABLE leads_rebuilt RENAME TO leads;
-
-CREATE INDEX leads_by_sync_state ON leads (sync_state, created_at);
-CREATE INDEX leads_by_person ON leads (person_id);
+-- A migration must contain a statement, and this one has nothing left to do.
+SELECT 1;
