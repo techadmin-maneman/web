@@ -10,5 +10,6 @@
     "types": ["astro/client"]
   },
   "include": [".astro/types.d.ts", "src/**/*", "astro.config.ts", "../src/config/**/*.ts"],
-  "exclude": ["dist"]
+  // src/worker.ts runs in the Workers runtime: tsconfig.worker.json checks it.
+  "exclude": ["dist", "src/worker.ts"]
 }

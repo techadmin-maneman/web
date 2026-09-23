@@ -98,7 +98,7 @@ export function recordFor(lead: CrmLead, status: LeadStatus | null, isNew: boole
   if (lead.source !== "tryon") {
     if (lead.city !== null) record.City = lead.city;
     if (lead.firstChoiceWindow !== null) record.First_Choice_Window = WINDOW_NAMES[lead.firstChoiceWindow];
-    record.Loss_Extent = LOSS_EXTENT_NAMES[lead.lossExtent];
+    if (lead.lossExtent !== null) record.Loss_Extent = LOSS_EXTENT_NAMES[lead.lossExtent];
     if (lead.proposedVisitDate !== null) record.Proposed_Visit_Date = lead.proposedVisitDate;
   }
   return record;

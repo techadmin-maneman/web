@@ -23,6 +23,7 @@ import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
+import { registerConsultations } from "./routes/consultations.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
@@ -72,6 +73,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerHealth,
     registerCities,
     registerLead,
+    registerConsultations,
     registerReferralLanding,
     registerTryonUpload,
     registerTryonGenerate,

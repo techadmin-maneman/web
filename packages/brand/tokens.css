@@ -269,6 +269,8 @@
   --gate-blur: 7px;
   --result-gap: clamp(28px, 4vw, 56px);
   --result-frame-h: clamp(340px, 52vw, 520px);
+  /* The result takes the photograph's own shape, up to this (site/src/lib/frame-aspect.ts). */
+  --result-frame-max-h: min(70vh, 720px);
   --result-handle: 48px;
   --error-frame-h: clamp(200px, 28vw, 260px);
   --error-title-gap: clamp(24px, 3vw, 36px);

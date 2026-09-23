@@ -177,6 +177,18 @@ const AVAILABILITY = {
   })),
 };
 /** The clock for booking: Monday 16 September 2030, the strip's first day. */
+/** The design's referrer: two credits left, and two friends fitted (boards F1 and F5). */
+const REFER = {
+  code: "RM4417",
+  link: "https://maneman.in/r/RM4417",
+  credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
+  card: { state: "house", version: 1 },
+  fitted: [
+    { first_name: "Karan", month: "2027-08" },
+    { first_name: "Vikram", month: "2027-05" },
+  ],
+};
+
 const IN_2030 = new Date("2030-09-16T05:00:00Z");
 const hold = (type: string, price: object, lateFee: object | null) => ({
   id: "b0000000-0000-4000-8000-000000000001",
@@ -645,6 +657,43 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
   await late.close();
 }
 
+/** Boards F1 to F6: the invite, which card, the preview, and who has been fitted. */
+async function referPairs(browser: Browser, design: Page): Promise<void> {
+  const api: Api = { "/api/me": json(ME_FITTED), "/api/refer": json(REFER) };
+
+  const landing = await openApp(browser, "/refer", api);
+  await landing.getByRole("button", { name: "Share an invite" }).waitFor();
+  await pair(OUT, WIDTH, "f1-refer", await frame(design, "Refer · landing"), await shot(landing));
+
+  await landing.getByRole("button", { name: "Share an invite" }).click();
+  await landing.getByRole("heading", { name: "Which card?" }).waitFor();
+  await pair(OUT, WIDTH, "f2-card-choice", await frame(design, "Refer · card choice"), await shot(landing));
+
+  // The example needs no consent: the sheet goes straight to the preview.
+  await landing.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await landing.getByRole("button", { name: "Continue to share" }).click();
+  await landing.getByRole("heading", { name: /^Preview/ }).waitFor();
+  await pair(OUT, WIDTH, "f4-share", await frame(design, "Refer · share"), await shot(landing));
+  await landing.close();
+
+  const tracker = await openApp(browser, "/refer/fitted", api);
+  await tracker.getByText("Karan").waitFor();
+  await pair(OUT, WIDTH, "f5-tracker", await frame(design, "Refer · tracker"), await shot(tracker));
+  await tracker.close();
+
+  const empty = await openApp(browser, "/refer/fitted", {
+    ...api,
+    "/api/refer": json({ ...REFER, fitted: [], credits: { visits: 0, earliest_expiry: null } }),
+  });
+  await empty.getByText("Nobody you have referred has been fitted yet.").waitFor();
+  const emptyFrame = design
+    .locator('[data-screen-label="Refer · empty and revoke"] > div')
+    .filter({ has: design.getByText("Tracker · empty", { exact: true }) })
+    .screenshot();
+  await pair(OUT, WIDTH, "f6-tracker-empty", await emptyFrame, await shot(empty));
+  await empty.close();
+}
+
 const servers: Server[] = [
   await serveDirectory(APP_DIR, 4314, undefined, { spa: true }),
   await serveDirectory(DESIGN_DIR, 4313),
@@ -661,6 +710,7 @@ try {
   await fitted(browser, design);
   await bookingPairs(browser, design);
   await changePairs(browser, design);
+  await referPairs(browser, design);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();

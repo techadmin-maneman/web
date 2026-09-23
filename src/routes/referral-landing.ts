@@ -14,18 +14,11 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../app.ts";
-import { CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
-import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS } from "../config/scheduling.ts";
-import { takeOne } from "../domain/rate-limit.ts";
+import { BOOKING_WINDOWS } from "../config/scheduling.ts";
+import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";
-import { attribute, inviteOf, type Invite } from "../domain/referrals.ts";
-import { holdSlot } from "../domain/scheduling.ts";
+import { inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { checkTurnstile, visitorOf } from "../http/visitor.ts";
-import { saltedHash } from "../lib/hash.ts";
-import { addDays, indiaDate } from "../lib/india-time.ts";
-import { toE164 } from "../lib/mobile.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
 const CodeParams = z.object({ code: z.string().regex(/^[A-Za-z0-9]{4,12}$/) });
 
@@ -177,82 +170,6 @@ const waitlistRoute = createRoute({
   },
 });
 
-interface Pincode {
-  pincode: string;
-  area: string;
-  city: string;
-  served: number;
-}
-
-const pincodeOf = (db: D1Database, pin: string) =>
-  db
-    .prepare("SELECT pincode, area, city, served FROM serviceable_pincodes WHERE pincode = ?1")
-    .bind(pin)
-    .first<Pincode>();
-
-type Checked =
-  | { readonly ok: true; readonly mobile: string; readonly ipHash: string }
-  | {
-      readonly ok: false;
-      readonly status: 400 | 403 | 429 | 503;
-      readonly code: "invalid_request" | "turnstile_failed" | "rate_limited" | "unavailable";
-    };
-
-/** The number, the Turnstile check and the daily limits, as the booking form has them. */
-async function checkPerson(c: Context<AppEnv>, mobile: string, token: string): Promise<Checked> {
-  const mobileE164 = toE164(mobile);
-  if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request" };
-  const visitor = await visitorOf(c);
-  const turnstile = await checkTurnstile(c, token, visitor);
-  if (turnstile === "rejected") return { ok: false, status: 403, code: "turnstile_failed" };
-  if (turnstile === "unavailable") return { ok: false, status: 503, code: "unavailable" };
-  const { settings } = c.var.config;
-  const today = indiaDate(c.var.deps.now());
-  const db = c.env.DB;
-  const within =
-    (await takeOne(db, {
-      scope: "referral:mobile",
-      key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
-      window: today,
-      limit: settings.leadMobileDailyLimit,
-    })) &&
-    (await takeOne(db, { scope: "referral:ip", key: visitor.ipHash, window: today, limit: settings.leadIpDailyLimit }));
-  if (!within) return { ok: false, status: 429, code: "rate_limited" };
-  return { ok: true, mobile: mobileE164, ipHash: visitor.ipHash };
-}
-
-/** The person with this number, made if new, and the consent they gave on the page. */
-async function personWith(
-  db: D1Database,
-  input: {
-    mobile: string;
-    name: string;
-    purpose: "whatsapp_visits" | "contact";
-    notice: string;
-    ipHash: string;
-    now: Date;
-  },
-): Promise<string> {
-  const at = input.now.toISOString();
-  const person = await db
-    .prepare(
-      `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?1, ?2, ?3, ?4, 1)
-       ON CONFLICT (mobile_e164) DO UPDATE SET name = excluded.name, contactable = 1
-       RETURNING id`,
-    )
-    .bind(crypto.randomUUID(), at, input.mobile, input.name)
-    .first<{ id: string }>();
-  if (person === null) throw new Error("the person was not written");
-  await db
-    .prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-       VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6)`,
-    )
-    .bind(crypto.randomUUID(), person.id, input.purpose, input.notice, at, input.ipHash)
-    .run();
-  return person.id;
-}
-
 export function registerReferralLanding(app: App): void {
   const invite = (c: Context<AppEnv>, code: string): Promise<Invite | null> =>
     inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
@@ -291,86 +208,51 @@ export function registerReferralLanding(app: App): void {
   app.openapi(consultationRoute, async (c) => {
     const { code } = c.req.valid("param");
     const body = c.req.valid("json");
-    const { deps, requestId, log } = c.var;
-    const db = c.env.DB;
-    const now = deps.now();
-    if (!c.var.config.settings.selfServeBooking) return c.json(errorBody("ops_assisted", requestId), 409);
-
-    const first = addDays(indiaDate(now), 1);
-    const pincode = await pincodeOf(db, body.pincode);
-    if (pincode?.served !== 1 || body.date < first || body.date > addDays(first, BOOKING_DAYS - 1)) {
-      return c.json(errorBody("not_bookable", requestId), 422);
-    }
-    const checked = await checkPerson(c, body.mobile, body.turnstile_token);
-    if (!checked.ok) return c.json(errorBody(checked.code, requestId), checked.status);
-
-    const personId = await personWith(db, {
-      mobile: checked.mobile,
+    const booked = await bookConsultation(c, {
       name: body.name,
-      purpose: "whatsapp_visits",
-      notice: LANDING_NOTICES.consultation,
-      ipHash: checked.ipHash,
-      now,
+      mobile: body.mobile,
+      pincode: body.pincode,
+      date: body.date,
+      window: body.window,
+      lossExtent: null, // an invited friend is not asked where the hair loss is
+      turnstileToken: body.turnstile_token,
+      attribution: {},
+      invite: await invite(c, code),
     });
-    const found = await invite(c, code);
-    const credits =
-      found !== null &&
-      (await attribute(db, { invite: found, personId, via: "consultation", pincode: body.pincode, now }));
-
-    const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
-    const hold = await holdSlot(
-      db,
-      { personId, type: "consultation", date: body.date, window: body.window, price: free },
-      now,
-      HOLD_SECONDS,
+    if (!booked.ok) {
+      // The landing has said all along whether we come, so a refused pincode reads as not bookable.
+      const code422 = booked.status === 422 ? "not_bookable" : booked.code;
+      return c.json(errorBody(code422, c.var.requestId), booked.status);
+    }
+    return c.json(
+      {
+        state: "booked" as const,
+        date: booked.date,
+        window: booked.window,
+        area: booked.area,
+        credits: booked.credits,
+      },
+      201,
     );
-    if (hold === null) return c.json(errorBody("taken", requestId), 409);
-    await c.env.FSM_QUEUE.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
-    log.info("referral_consultation", { hold_id: hold.id, invited: found !== null, credits });
-    return c.json({ state: "booked" as const, date: body.date, window: body.window, area: pincode.area, credits }, 201);
   });
 
   app.openapi(waitlistRoute, async (c) => {
     const { code } = c.req.valid("param");
     const body = c.req.valid("json");
-    const { deps, requestId } = c.var;
-    const db = c.env.DB;
-    const now = deps.now();
-    const pincode = await pincodeOf(db, body.pincode);
-    if (pincode?.served === 1) return c.json(errorBody("not_bookable", requestId), 422);
-    const checked = await checkPerson(c, body.mobile, body.turnstile_token);
-    if (!checked.ok) return c.json(errorBody(checked.code, requestId), checked.status);
-
-    const personId = await personWith(db, {
-      mobile: checked.mobile,
+    const listed = await joinTheWaitlist(c, {
       name: body.name,
-      purpose: "contact",
-      notice: LANDING_NOTICES.waitlist,
-      ipHash: checked.ipHash,
-      now,
+      mobile: body.mobile,
+      pincode: body.pincode,
+      lossExtent: null,
+      launchAlert: body.launch_alert,
+      turnstileToken: body.turnstile_token,
+      attribution: {},
+      invite: await invite(c, code),
     });
-    const at = now.toISOString();
-    if (body.launch_alert) {
-      await db
-        .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-           VALUES (?1, ?2, 'whatsapp_launches', ?3, 1, ?4, ?5)`,
-        )
-        .bind(crypto.randomUUID(), personId, CURRENT_NOTICE.whatsapp_launches, at, checked.ipHash)
-        .run();
+    if (!listed.ok) {
+      const code422 = listed.status === 422 ? "not_bookable" : listed.code;
+      return c.json(errorBody(code422, c.var.requestId), listed.status);
     }
-    const found = await invite(c, code);
-    await db
-      .prepare(
-        `INSERT INTO waitlist_entries (id, pincode, person_id, referral_code, contact_consent_at, launch_alert,
-           created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
-         ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
-      )
-      .bind(crypto.randomUUID(), body.pincode, personId, found?.code ?? null, at, body.launch_alert ? 1 : 0)
-      .run();
-    const credits =
-      found !== null && (await attribute(db, { invite: found, personId, via: "waitlist", pincode: body.pincode, now }));
-    return c.json({ area: pincode?.area ?? null, credits }, 201);
+    return c.json({ area: listed.area, credits: listed.credits }, 201);
   });
 }

@@ -2,9 +2,14 @@
 // docs/openapi.json (npm run openapi); none is written by hand. Every call is
 // same-origin: mm-api serves /api/* on the site's own host.
 
-import type { components } from "./api-schema.ts";
+import type { components, paths } from "./api-schema.ts";
 
 type Schemas = components["schemas"];
+type Body<P extends keyof paths> = paths[P]["post"] extends {
+  requestBody?: { content: { "application/json": infer B } };
+}
+  ? B
+  : never;
 export type City = Schemas["City"];
 export type LeadRequest = Schemas["LeadRequest"];
 export type LeadResponse = Schemas["LeadResponse"];
@@ -18,6 +23,16 @@ export type FailureCode = Schemas["ResultFailed"]["failure_code"];
 export type ClaimRequest = Schemas["ClaimRequest"];
 export type ClaimResponse = Schemas["ClaimResponse"];
 export type Look = Schemas["Look"];
+export type Invite = Schemas["Invite"];
+export type PincodeAnswer = Schemas["PincodeAnswer"];
+export type ReferralConsultation = Schemas["ReferralConsultation"];
+export type ReferralWaitlist = Schemas["ReferralWaitlist"];
+export type Consultation = Schemas["Consultation"];
+export type Waitlist = Schemas["Waitlist"];
+export type PublicConsultationRequest = Body<"/api/consultation">;
+export type PublicWaitlistRequest = Body<"/api/waitlist">;
+export type ConsultationRequest = Body<"/api/r/{code}/consultation">;
+export type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
 
 /**
  * How long a poll waits for its answer. A request stuck on the way is dropped,
@@ -109,4 +124,46 @@ export async function fetchResult(jobId: string): Promise<ResultAnswer> {
   if (response.status === 202) return { kind: "pending" };
   if (response.status === 422) return { kind: "failed", failureCode: (body as Schemas["ResultFailed"]).failure_code };
   return { kind: "error", code: (body as Partial<Schemas["ErrorResponse"]> | null)?.error?.code ?? "network" };
+}
+
+// The referral landing at /r/:code. The invite usually arrives in the page the
+// mm-site Worker serves; it is fetched only where the Worker did not write it
+// (local dev). An unknown code still books or waits, without the invite.
+
+export function fetchInvite(code: string): Promise<Answer<Invite>> {
+  return call<Invite>(`/api/r/${code}`);
+}
+
+export function checkPincode(pincode: string): Promise<Answer<PincodeAnswer>> {
+  return call<PincodeAnswer>(`/api/pincodes/${pincode}`);
+}
+
+export function bookConsultation(
+  code: string,
+  request: ConsultationRequest,
+  idempotencyKey: string,
+): Promise<Answer<ReferralConsultation>> {
+  return post<ReferralConsultation>(`/api/r/${code}/consultation`, request, idempotencyKey);
+}
+
+export function joinWaitlist(
+  code: string,
+  request: WaitlistRequest,
+  idempotencyKey: string,
+): Promise<Answer<ReferralWaitlist>> {
+  return post<ReferralWaitlist>(`/api/r/${code}/waitlist`, request, idempotencyKey);
+}
+
+// The same two answers from the site's own page, which carries no invite
+// (docs/decisions/0051-booking-from-the-site.md).
+
+export function bookPublicConsultation(
+  request: PublicConsultationRequest,
+  idempotencyKey: string,
+): Promise<Answer<Consultation>> {
+  return post<Consultation>("/api/consultation", request, idempotencyKey);
+}
+
+export function joinPublicWaitlist(request: PublicWaitlistRequest, idempotencyKey: string): Promise<Answer<Waitlist>> {
+  return post<Waitlist>("/api/waitlist", request, idempotencyKey);
 }

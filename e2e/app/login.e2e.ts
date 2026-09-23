@@ -83,7 +83,8 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await tabs.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: "Refer" }).click();
-  await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
+  // Refer is the invite itself now (board F1); who has been fitted is a page of its own.
+  await expect(page.getByText("When a friend you refer is fitted, you both get 3 service visits free.")).toBeVisible();
   await page.goBack();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
 });

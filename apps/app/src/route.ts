@@ -5,7 +5,8 @@
 //   /visits            upcoming and past (C1); /visits/:id, one past visit (C9)
 //   /photos            the timeline (D1); /photos/compare (D2)
 //   /payments          payments and refunds (E1); /payments/:id, one entry (E2)
-//   /refer, /profile
+//   /refer             the invite (F1); /refer/fitted, who has been fitted (F5 and F6)
+//   /profile
 
 import { useEffect, useState } from "react";
 
@@ -18,6 +19,7 @@ export type Route =
   | { readonly page: "payments" }
   | { readonly page: "entry"; readonly id: string }
   | { readonly page: "refer" }
+  | { readonly page: "fitted" }
   | { readonly page: "profile" };
 
 export const TABS = ["/", "/visits", "/photos", "/payments", "/refer"] as const;
@@ -40,6 +42,7 @@ export function routeOf(path: string): Route {
   if (first === "visits" && UUID.test(second)) return { page: "visit", id: second };
   if (first === "payments" && UUID.test(second)) return { page: "entry", id: second };
   if (first === "photos" && second === "compare") return { page: "compare" };
+  if (first === "refer" && second === "fitted") return { page: "fitted" };
   return HOME;
 }
 
@@ -58,6 +61,7 @@ export function tabOf(route: Route): Tab | null {
     case "entry":
       return "/payments";
     case "refer":
+    case "fitted":
       return "/refer";
     case "profile":
       return null;

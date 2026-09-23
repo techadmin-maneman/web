@@ -220,7 +220,24 @@ describe("mm-site wrangler config", () => {
       ["env.production.vars", { X: "1" }],
       "site env.production: mm-site must not declare vars",
     ],
-    ["it declares code", ["main", "src/index.ts"], "mm-site is assets-only"],
+    // mm-site runs one Worker beside its assets, for the referral landing, and nothing else
+    // (docs/decisions/0027-referral-landing.md).
+    ["its entry is another file", ["main", "src/index.ts"], 'site top level: main must be "./src/worker.ts"'],
+    [
+      "the Worker answers paths beyond the landing",
+      ["env.staging.assets.run_worker_first", ["/r/*", "/api/*"]],
+      "site env.staging: assets.run_worker_first must be",
+    ],
+    [
+      "it binds a service that is not mm-api",
+      ["env.staging.services", [{ binding: "API", service: "mm-api-production" }]],
+      "site env.staging: services must be exactly API to mm-api-staging",
+    ],
+    [
+      "it binds anything besides mm-api",
+      ["env.staging.services", [{ binding: "OTHER", service: "mm-api-staging" }]],
+      "site env.staging: services must be exactly API to mm-api-staging",
+    ],
     [
       "its route is the API's",
       ["env.staging.routes.0.pattern", "staging.maneman.in/api/*"],

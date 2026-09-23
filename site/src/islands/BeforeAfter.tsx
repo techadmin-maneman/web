@@ -8,6 +8,7 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
+import { fitFrameToPhotos } from "../lib/frame-aspect.ts";
 import styles from "./BeforeAfter.module.css";
 
 interface Props {
@@ -31,6 +32,9 @@ export default function BeforeAfter(props: Props) {
   useEffect(() => {
     frame.current?.style.setProperty("--position", `${String(position)}%`);
   }, [position]);
+
+  // The result frame takes the shape of the photographs in it, so neither is cropped.
+  useEffect(() => fitFrameToPhotos(frame.current), [props.before, props.after]);
 
   const chevron = props.size === "teaser" ? 15 : 16;
   return (
