@@ -121,6 +121,19 @@ test("moves a job from the keyboard, and sends nothing until a reason is chosen"
   ]);
 });
 
+test("drags a block onto a window, which asks for the same reason", async ({ page }) => {
+  await open(page, { [MOVE]: json(MOVED) });
+
+  // The windows are offered once the drag has begun, so the drop is walked by hand.
+  const carried = await page.evaluateHandle(() => new DataTransfer());
+  await page.getByRole("button", { name: ROHIT }).dispatchEvent("dragstart", { dataTransfer: carried });
+  const target = page.getByRole("button", { name: TO_SANDEEP });
+  await target.dispatchEvent("dragover", { dataTransfer: carried });
+  await target.dispatchEvent("drop", { dataTransfer: carried });
+
+  await expect(page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" })).toBeVisible();
+});
+
 test("says which technician and which window clashed, and moves nothing", async ({ page }) => {
   await open(page, { [MOVE]: fails(409, "clash") });
 
