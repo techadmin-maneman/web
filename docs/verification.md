@@ -373,6 +373,8 @@ The ground was already laid: `serviceable_pincodes` holds 198 rows, every one se
 
 Four test people were made for this proof, each named "Staging test" with a random `9xxxxxxxxx` number: a referrer and three friends. **None of them signed in.** A login code goes out on WhatsApp and staging sends only to its allowlist, so for each test person a client session row was written into `sessions` by hand — the same row `openSession` writes, the SHA-256 of a random token. The login is not proven here; it belongs with the client app. Everything after the session is the real API, the real landing and the real ops console.
 
+**What this proof left in the owner's Zoho org**, to be removed with the rest of staging's test records (open point 10): four FSM contacts, `8229000000304260`, `8229000000305248`, `8229000000305253` and `8229000000305258`, of which the last was anonymised by the deletion proof below; and one consultation appointment, `8229000000304263`. In D1 the rows this proof arranged are named so they can be found: two appointments `staging-proof-m3-fit-a` and `-fit-b` with their visits, two try-on jobs and one credit grant under `staging-proof-expiry`.
+
 - [x] **A referred consultation is booked through the invite.**
   1. The referrer was made by booking a consultation on the site itself, `POST /api/consultation` at 07:46:26 (Janpath, 110001, 24 September, morning): 201, and the fsm-sync consumer booked it into FSM 7 s later as appointment `8229000000304263`.
   2. `GET /api/refer` with the referrer's session gave code **STE2V4** and the link `https://staging.maneman.in/r/STE2V4`, balance 0, card `house` at version 1, nobody fitted. `SELECT code, card_state, card_version FROM referral_codes;` agreed.
