@@ -692,13 +692,13 @@ Staging shares the real Zoho org (open point 10), so the records below are real 
 
 **What the evening's invoice work added**, all "Staging test" and all the owner's to clear:
 
-| FSM record                     | What it is                                                    | Left as                             |
-| ------------------------------ | ------------------------------------------------------------- | ----------------------------------- |
-| Work order `8229000000305514`  | Made to try the create against, one ₹2,000 Service visit line | `New`, `Billing_Status: "Invoiced"` |
-| Invoice `8229000000305524`     | INV-000002, raised by API on that work order                  | Draft                               |
-| Work order `8229000000304478`  | The end-to-end job, one ₹2,000 Service visit line             | Closed, invoiced by the provider    |
-| Invoice `8229000000304506`     | INV-000003, raised by `fsm.invoiceWorkOrder`                  | Draft                               |
-| Appointment `8229000000306324` | Its visit, 19:00–20:30 on 23 September, one technician        | Completed                           |
+| FSM record                             | What it is                                                    | Left as                             |
+| -------------------------------------- | ------------------------------------------------------------- | ----------------------------------- |
+| Work order `8229000000305514`, WO19    | Made to try the create against, one ₹2,000 Service visit line | `New`, `Billing_Status: "Invoiced"` |
+| Invoice `8229000000305524`, INV-000002 | The first raised by API, on that work order                   | Draft                               |
+| Work order `8229000000304478`, WO20    | The end-to-end job, one ₹2,000 Service visit line             | Closed, invoiced by the provider    |
+| Invoice `8229000000304506`, INV-000003 | Raised by `fsm.invoiceWorkOrder` on WO20                      | Draft                               |
+| Appointment `8229000000306324`         | Its visit, 19:00–20:30 on 23 September, one technician        | Completed                           |
 
 In Books that leaves two more draft invoices, `4242595000000064041` (INV-000002) and `4242595000000063068` (INV-000003), ₹2,000 each, no tax.
 
