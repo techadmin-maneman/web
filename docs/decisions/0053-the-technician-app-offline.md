@@ -1,4 +1,4 @@
-# 0038. The technician app offline: the outbox, the device and the camera
+# 0053. The technician app offline: the outbox, the device and the camera
 
 - Status: accepted
 - Date: 2026-09-23

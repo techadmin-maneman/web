@@ -1,6 +1,6 @@
 // The technician app's outbox, where its rules can be read: the event ID every
 // write carries, and the order a reconnected phone replays its queue in
-// (docs/decisions/0038-the-technician-app-offline.md).
+// (docs/decisions/0053-the-technician-app-offline.md).
 
 import { describe, expect, it } from "vitest";
 import { account, nextToSend, sendable, stoppedJobs, type Queued } from "../../apps/tech/src/store/replay.ts";

@@ -170,15 +170,28 @@ async function technicianFor(db: D1Database, fsm: FsmProvider, fsmId: string, at
   const known = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
   if (known !== null) return known.id;
 
+  await syncTechnicians(db, fsm, at);
+  const found = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
+  return found?.id ?? null;
+}
+
+/**
+ * Writes FSM's service resources over our copy: name, whether FSM still lists
+ * each as active, the number he logs in with and the territory the board groups
+ * him by. The technician login and the dispatch board both read this copy.
+ */
+export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: string): Promise<number> {
   const technicians = await fsm.technicians();
-  if (technicians.length === 0) return null;
+  if (technicians.length === 0) return 0;
   await db.batch(
     technicians.map((technician) =>
       db
         .prepare(
-          `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+          `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
            ON CONFLICT (fsm_id) DO UPDATE SET
-             name = excluded.name, initials = excluded.initials, active = excluded.active, updated_at = excluded.updated_at`,
+             name = excluded.name, initials = excluded.initials, active = excluded.active, zone = excluded.zone,
+             mobile_e164 = excluded.mobile_e164, updated_at = excluded.updated_at`,
         )
         .bind(
           crypto.randomUUID(),
@@ -186,12 +199,13 @@ async function technicianFor(db: D1Database, fsm: FsmProvider, fsmId: string, at
           technician.name,
           initialsOf(technician.name),
           technician.active ? 1 : 0,
+          technician.zone,
+          technician.mobile === null ? null : toE164(technician.mobile),
           at,
         ),
     ),
   );
-  const found = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
-  return found?.id ?? null;
+  return technicians.length;
 }
 
 /** The visit type of the first of an appointment's services that is one of ours. */
