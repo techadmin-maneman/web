@@ -6,7 +6,15 @@
 // same steps, with its own technician and at what the move costs.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Availability, type BookableType, type BookingWindow, type Hold, type MoveTerms } from "../api.ts";
+import {
+  api,
+  type Availability,
+  type BookableType,
+  type Booking,
+  type BookingWindow,
+  type Hold,
+  type MoveTerms,
+} from "../api.ts";
 import { booking } from "../content.ts";
 import { pay, type PayMethod } from "./checkout.ts";
 import { ConfirmedStep, DateStep, ExpiredStep, FailedStep, PayStep, WaitStep, WindowStep } from "./steps.tsx";
@@ -49,6 +57,8 @@ export function BookingSheet({
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const booked = useRef(false);
+  // True while Razorpay Checkout is open, and this sheet has stepped out of its way.
+  const paying = useRef(false);
 
   const load = useCallback(async () => {
     setStep({ kind: "loading" });
@@ -123,6 +133,22 @@ export function BookingSheet({
     } else setProblem(booking.failedToStart);
   };
 
+  /**
+   * A sheet opened with showModal() sits in the browser's top layer and makes
+   * the rest of the page inert, so Checkout's own window would be drawn under
+   * it and take no taps (proven on staging, 23 September 2026). The sheet
+   * therefore closes while Checkout is up, and rises again with the answer;
+   * `paying` keeps that close from letting the hold go.
+   */
+  const throughCheckout = async (checkout: NonNullable<Booking["checkout"]>, how: PayMethod) => {
+    paying.current = true;
+    dialog.current?.close();
+    const outcome = await pay(checkout, how).catch(() => "failed" as const);
+    dialog.current?.showModal();
+    paying.current = false;
+    return outcome;
+  };
+
   const payFor = async (hold: Hold, how: PayMethod) => {
     setBusy(true);
     setProblem(null);
@@ -134,7 +160,7 @@ export function BookingSheet({
       return;
     }
     const checkout = started.body.checkout;
-    const outcome = checkout === null ? "paid" : await pay(checkout, how).catch(() => "failed" as const);
+    const outcome = checkout === null ? "paid" : await throughCheckout(checkout, how);
     setBusy(false);
     if (outcome === "paid") setStep({ kind: "confirming", hold });
     else if (outcome === "failed") setStep({ kind: "failed", hold });
@@ -147,6 +173,8 @@ export function BookingSheet({
       className={styles.sheet}
       aria-labelledby="booking-title"
       onClose={() => {
+        // Stepping out of Checkout's way is not the client closing the sheet.
+        if (paying.current) return;
         // Closed before it was paid for, the hold is let go for someone else.
         if (step.kind === "pay" || step.kind === "failed") void api.releaseHold(step.hold.id);
         onClose(booked.current);
