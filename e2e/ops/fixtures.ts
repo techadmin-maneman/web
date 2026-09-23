@@ -369,6 +369,15 @@ export const NO_SHOWS = {
   ],
 };
 
+/**
+ * The same case with nothing measured: the address had no coordinates, so the
+ * route carries no distance at all (docs/decisions/0036-geocoding.md). Every
+ * case looks like this today, since no address has ever been geocoded.
+ */
+export const NO_SHOW_UNMEASURED = {
+  cases: [{ ...NO_SHOWS.cases[0], distance_m: null }],
+};
+
 // ---- Board B1: the pieces the client has been fitted with ----------------------
 
 /** The board's own three: one still in wear, one that split, and one rejected at the fit. */

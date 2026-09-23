@@ -70,6 +70,10 @@ export async function recordArrival(db: D1Database, input: ArrivalInput): Promis
       input.device.lat,
       input.device.lng,
       input.accuracyM,
+      // The column is NOT NULL, so an unmeasured arrival has to store something.
+      // The 0 is a filler, not a distance: address_id above is left null, and that
+      // is what every reader must go by. Reading this column alone would tell ops
+      // the technician stood at the door.
       measured?.distanceM ?? 0,
       input.radiusM,
       measured === null || measured.passed ? 1 : 0,
@@ -85,17 +89,18 @@ export async function recordArrival(db: D1Database, input: ArrivalInput): Promis
   };
 }
 
-/** The check-in the wait ran from: the latest one of this job that passed. */
-export async function latestArrival(
-  db: D1Database,
-  appointmentId: string,
-): Promise<{ id: string; at: string; distanceM: number } | null> {
-  const row = await db
+/**
+ * The check-in the wait ran from: the latest one of this job that passed. The
+ * case is keyed on it and ops read its distance from the row itself, so the
+ * distance is deliberately not carried here, where a 0 filler could be read as
+ * a measurement (docs/decisions/0036-geocoding.md).
+ */
+export async function latestArrival(db: D1Database, appointmentId: string): Promise<{ id: string; at: string } | null> {
+  return await db
     .prepare(
-      `SELECT id, at, distance_m FROM checkins WHERE appointment_id = ?1 AND passed = 1
+      `SELECT id, at FROM checkins WHERE appointment_id = ?1 AND passed = 1
        ORDER BY at DESC LIMIT 1`,
     )
     .bind(appointmentId)
-    .first<{ id: string; at: string; distance_m: number }>();
-  return row === null ? null : { id: row.id, at: row.at, distanceM: row.distance_m };
+    .first<{ id: string; at: string }>();
 }

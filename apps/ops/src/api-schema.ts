@@ -1838,8 +1838,8 @@ export interface components {
              * @description Fact one: when the technician arrived.
              */
             checked_in_at: string;
-            /** @description Fact two: how far from the address he was. */
-            distance_m: number;
+            /** @description Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured. */
+            distance_m: number | null;
             /** @description Fact three: when WhatsApp reported the visit message delivered; null if never. */
             message_delivered_at: string | null;
             /** Format: date-time */
