@@ -1121,6 +1121,26 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 }
 ```
 
+### GET /api/tasks
+
+What ops still have to do, by group, the longest wait first
+
+**200**: The groups with something in them
+
+```json
+{
+  "$ref": "#/components/schemas/Tasks"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -3082,6 +3102,129 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
   },
   "required": [
     "technicians"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Tasks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "overdue": {
+      "type": "integer",
+      "description": "How many are past their day in India, across every group."
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "string",
+            "enum": [
+              "replacement_order",
+              "referral_review",
+              "no_show_decision",
+              "number_change",
+              "erasure_request"
+            ]
+          },
+          "count": {
+            "type": "integer"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "description": "The longest wait first."
+          }
+        },
+        "required": [
+          "group",
+          "count",
+          "tasks"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "overdue",
+    "groups"
+  ],
+  "additionalProperties": false,
+  "description": "Derived at read time from the queues themselves; there is no tasks table."
+}
+```
+
+### Task
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The queued row's own id, so the task can be reached where it is decided."
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for a no-show, whose case names the technician and never the client."
+    },
+    "detail": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician."
+    },
+    "since": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When it started waiting."
+    },
+    "due": {
+      "type": "string",
+      "format": "date-time",
+      "description": "since plus the group's allowance, 48 hours for every group so far."
+    }
+  },
+  "required": [
+    "id",
+    "person",
+    "detail",
+    "since",
+    "due"
   ],
   "additionalProperties": false
 }
