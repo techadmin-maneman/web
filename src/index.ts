@@ -126,9 +126,10 @@ export default {
         log.info("visit_reminders_queued", { count: reminders.length });
       }
     }
-    // A finished job's invoice: FSM raises it, Books holds it (ADR 0055). Before the
-    // Books pass, which sets a client's advance against the invoice once there is one.
-    if (config.providers.FSM_PROVIDER !== "none") {
+    if (config.providers.FSM_PROVIDER !== "none" && config.providers.BOOKS_PROVIDER !== "none") {
+      // A finished job's invoice: FSM raises it, Books holds it, and the column keeps
+      // Books' ID (ADR 0055). Before the Books pass, which sets a client's advance
+      // against the invoice once there is one.
       const invoiceLog = log.child({ job: "invoices" });
       await raiseInvoices(workerEnv.DB, deps.fsm, deps.now(), invoiceLog)
         .then((done) => {
@@ -137,8 +138,7 @@ export default {
         .catch((error: unknown) => {
           invoiceLog.error("invoices_failed", { error });
         });
-    }
-    if (config.providers.FSM_PROVIDER !== "none" && config.providers.BOOKS_PROVIDER !== "none") {
+
       const booksLog = log.child({ job: "books_sync" });
       const options = {
         refundAccountId: config.settings.zohoFsm?.booksRefundAccountId ?? null,

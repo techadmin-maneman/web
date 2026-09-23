@@ -39,7 +39,7 @@ The proof proposed listing `/fsm/v1/Invoices` and matching `Work_Order.id`, and 
 
 **`appointments.fsm_invoice_id` holds Books' ID.** That is what `books.invoicePdf` and `books.invoice` take, and what they always took; nothing else read the column. The FSM mirror no longer writes it — an appointment's `Invoice_Id` is null even when its work order is invoiced — and `FsmAppointment` no longer carries a field nothing could use.
 
-**The pass runs on the five-minute cron** (`src/domain/fsm-invoices.ts`), with the Books pass and never in a client's path.
+**The pass runs on the five-minute cron** (`src/domain/fsm-invoices.ts`), just before the Books pass and never in a client's path. It runs where both FSM and Books are connected, since the ID it keeps is Books'.
 
 - Each run takes up to five completed visits whose invoice we do not hold, oldest first, and offers their work orders to FSM.
 - A work order FSM will not bill, or refuses, is stamped `invoice_checked_at` (migration 0029) and waits an hour, so a free consultation is not offered again every five minutes for ever.
