@@ -297,7 +297,7 @@ To switch one on:
    The config check fails if either comes without the other.
 
 5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
-6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md), the ops console is `mm-ops`, and the technician app is `mm-tech` (docs/decisions/0038-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then its deploy step says so and does nothing, so a release does not fail on a Worker that does not exist.
+6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md), the ops console is `mm-ops`, and the technician app is `mm-tech` (docs/decisions/0053-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then its deploy step says so and does nothing, so a release does not fail on a Worker that does not exist.
 
    ```sh
    npm run build:app -- --env <env>

@@ -15,7 +15,7 @@ import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
 
 export function Checklist({ id }: { id: string }) {
-  const { loaded, retry, at, of, finish, back } = useStep(id, "checklist");
+  const { loaded, retry, finish, back } = useStep(id, "checklist");
   const [done, setDone] = useState<readonly string[]>([]);
 
   if (loaded.state === "loading") return <Loading />;
@@ -27,8 +27,8 @@ export function Checklist({ id }: { id: string }) {
   return (
     <StepFrame
       title={copy.titles.checklist}
-      at={at}
-      of={of}
+      at={done.length}
+      of={items.length}
       action={copy.next}
       ready={all}
       unfinished={copy.checklist.unfinished}

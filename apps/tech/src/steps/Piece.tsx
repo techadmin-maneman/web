@@ -21,7 +21,7 @@ type Looked =
   { readonly state: "none" } | { readonly state: "unknown" } | { readonly state: "found"; readonly found: PieceLookup };
 
 export function Piece({ id }: { id: string }) {
-  const { loaded, retry, at, of, finish, back } = useStep(id, "piece");
+  const { loaded, retry, finish, back } = useStep(id, "piece");
   const [code, setCode] = useState("");
   const [looked, setLooked] = useState<Looked>({ state: "none" });
   const [looking, setLooking] = useState(false);
@@ -43,8 +43,6 @@ export function Piece({ id }: { id: string }) {
   return (
     <StepFrame
       title={copy.titles.piece}
-      at={at}
-      of={of}
       action={copy.next}
       ready={typed.length >= 3}
       onBack={back}

@@ -20,8 +20,9 @@ export function StepFrame({
   children,
 }: {
   readonly title: string;
-  readonly at: number;
-  readonly of: number;
+  /** How far through this screen's own work it is — angles taken, items ticked — or nothing. */
+  readonly at?: number;
+  readonly of?: number;
   readonly action: string;
   /** False keeps the action in place and dims it, as the board draws an unfinished list. */
   readonly ready: boolean;
@@ -38,7 +39,7 @@ export function StepFrame({
           <Icon d={BACK} size={24} />
         </button>
         <span className={styles.title}>{title}</span>
-        <span className={styles.progress}>{copy.of(at, of)}</span>
+        {at !== undefined && of !== undefined && <span className={styles.progress}>{copy.of(at, of)}</span>}
       </header>
 
       <div className={styles.body}>{children}</div>

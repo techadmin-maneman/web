@@ -12,7 +12,7 @@ import { closeOut as copy, job as jobCopy } from "../content.ts";
 import { TICK } from "../icons.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
-import { clockShort, lengthOf, todayInIndia } from "../lib/when.ts";
+import { clockShort, lengthOf, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { keptClosed } from "../store/jobs.ts";
@@ -93,7 +93,7 @@ export function CloseOut({ id }: { id: string }) {
         >
           {later === null
             ? copy.lastJob
-            : copy.nextJob(clockShort(later.starts_at), names.get(later.id) ?? jobCopy.locked.title)}
+            : copy.nextJob(clockShort(later.starts_at), names.get(later.id) ?? where(later.sector))}
         </button>
       </div>
     </main>

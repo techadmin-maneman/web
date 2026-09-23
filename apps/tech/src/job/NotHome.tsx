@@ -21,6 +21,9 @@ import { queue, replay, type Queued } from "../store/outbox.ts";
 import { go, stepPath } from "../route.ts";
 import styles from "./job.module.css";
 
+/** "Rohit M." → "Rohit", as the board writes the name on the door. */
+const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
+
 /** The phone's own fix, which the API measures against the address (src/policy/check-in.ts). */
 function position(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
@@ -51,7 +54,8 @@ export function NotHome({ job, queued }: { job: Job; queued: readonly Queued[] }
   const [arrival, setArrival] = useState<CheckIn | null>(null);
   const [noPosition, setNoPosition] = useState(false);
   const [asking, setAsking] = useState(false);
-  const here = checkedIn(job, queued);
+  // The card says so once it has caught up; until then the phone's own answer does.
+  const here = checkedIn(job, queued) || arrival?.passed === true;
 
   useEffect(() => {
     let current = true;
@@ -163,6 +167,9 @@ export function NotHome({ job, queued }: { job: Job; queued: readonly Queued[] }
       {here && (
         <section className={styles.stage}>
           <p className={styles.stageLabel}>{copy.appears.title}</p>
+          {job.client !== null && (
+            <p className={styles.failedLine}>{copy.appears.atTheDoor(firstName(job.client.name))}</p>
+          )}
           <p className={styles.stageBody}>{copy.appears.body}</p>
           <button className={styles.action} type="button" onClick={() => void start()}>
             {jobCopy.start}

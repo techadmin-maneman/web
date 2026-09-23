@@ -19,7 +19,7 @@ const ITEMS = copy.consumables.items;
 const MOST = 99;
 
 export function Consumables({ id }: { id: string }) {
-  const { loaded, retry, at, of, finish, back } = useStep(id, "consumables");
+  const { loaded, retry, finish, back } = useStep(id, "consumables");
   const [counts, setCounts] = useState<readonly number[]>(() => ITEMS.map(() => 0));
 
   if (loaded.state === "loading") return <Loading />;
@@ -39,8 +39,6 @@ export function Consumables({ id }: { id: string }) {
   return (
     <StepFrame
       title={copy.titles.consumables}
-      at={at}
-      of={of}
       action={copy.next}
       ready
       onBack={back}

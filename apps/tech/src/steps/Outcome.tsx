@@ -14,7 +14,7 @@ import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
 
 export function Outcome({ id }: { id: string }) {
-  const { loaded, retry, at, of, finish, back } = useStep(id, "outcome");
+  const { loaded, retry, finish, back } = useStep(id, "outcome");
   const [partial, setPartial] = useState(false);
   const [reason, setReason] = useState<PartialReason | null>(null);
 
@@ -27,8 +27,6 @@ export function Outcome({ id }: { id: string }) {
   return (
     <StepFrame
       title={copy.titles.outcome}
-      at={at}
-      of={of}
       action={copy.next}
       ready={ready}
       onBack={back}

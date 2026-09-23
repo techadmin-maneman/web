@@ -32,12 +32,6 @@ export function nextStep(job: Job, queued: readonly Queued[]): InJobStep | null 
   return stepsOf(job).find((step) => !sent.has(step)) ?? null;
 }
 
-/** How far through the six the job is, for the head of each step's screen. */
-export function stepNumber(job: Job, step: InJobStep): { at: number; of: number } {
-  const steps = stepsOf(job);
-  return { at: steps.indexOf(step) + 1, of: steps.length };
-}
-
 export const started = (job: Job, queued: readonly Queued[]): boolean => done(job, queued).has("start");
 export const checkedIn = (job: Job, queued: readonly Queued[]): boolean => done(job, queued).has("check_in");
 export const closed = (job: Job, queued: readonly Queued[]): boolean =>

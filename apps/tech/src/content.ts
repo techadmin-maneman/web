@@ -128,6 +128,7 @@ export const notHome = {
   },
   appears: {
     title: "He appears",
+    atTheDoor: (who: string) => `${who} is at the door`,
     body: "The timer stops. Nothing is charged.",
   },
 } as const;
