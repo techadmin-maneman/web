@@ -1,0 +1,106 @@
+/*
+ * Boards A1 and B1's frame: a 196 px column on ink, a 56 px header, and the
+ * section beneath it on paper. Only the section scrolls, so the navigation and
+ * the header stay where a focused control can always be reached (WCAG 2.4.11).
+ */
+
+.console {
+  display: flex;
+  height: 100dvh;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--ops-nav);
+  background: var(--ink);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  height: var(--header-h);
+  padding: 0 var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.mark {
+  width: var(--sp-24);
+  height: var(--sp-26);
+  fill: var(--gilt);
+}
+
+.brandName {
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-15);
+  color: var(--paper);
+}
+
+.sections {
+  margin: 0;
+  padding: var(--sp-14) 0;
+  list-style: none;
+}
+
+.section {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-20);
+  border-left: var(--rule-strong) solid transparent;
+  font-size: var(--fs-14);
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.section[aria-current="page"] {
+  border-left-color: var(--gilt);
+  background: var(--ink-deep);
+  color: var(--paper);
+}
+
+.section:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: baseline;
+  gap: var(--sp-16);
+  height: var(--header-h);
+  padding: 0 var(--sp-24);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-22);
+}
+
+.sub {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* Each section pads itself, as its board does. */
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-24);
+}

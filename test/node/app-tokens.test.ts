@@ -1,14 +1,17 @@
-// The client app takes every colour, size and space from packages/brand, as the
-// public site does (test/node/site-tokens.test.ts): no stylesheet writes a raw
-// value, and every token one uses is defined in tokens.css or tokens-phase2.css,
-// or is a property the stylesheet declares for itself, as the compare's divider
-// position is.
+// Each Phase 2 app takes every colour, size and space from packages/brand, as
+// the public site does (test/node/site-tokens.test.ts): no stylesheet writes a
+// raw value, and every token one uses is defined in tokens.css or
+// tokens-phase2.css, or is a property the stylesheet declares for itself, as
+// the compare's divider position is.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const SOURCE = "apps/app/src";
+const APPS = [
+  ["the client app", "apps/app/src"],
+  ["the ops console", "apps/ops/src"],
+] as const;
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -24,14 +27,14 @@ const defined = new Set([
   ...tokenNames("packages/brand/tokens-phase2.css"),
 ]);
 
-const stylesheets = files(SOURCE).filter((path) => path.endsWith(".css"));
-const components = files(SOURCE).filter((path) => path.endsWith(".tsx"));
-
 /** Media query conditions cannot use custom properties, so they keep their px. */
 const withoutMediaConditions = (css: string) =>
   css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@media[^{]*\{/g, "@media {");
 
-describe("the client app's design tokens", () => {
+describe.each(APPS)("%s's design tokens", (_app, source) => {
+  const stylesheets = files(source).filter((path) => path.endsWith(".css"));
+  const components = files(source).filter((path) => path.endsWith(".tsx"));
+
   it("has stylesheets to check", () => {
     expect(stylesheets.length).toBeGreaterThan(0);
   });

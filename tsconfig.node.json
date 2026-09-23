@@ -16,6 +16,7 @@
     "packages/*/*.ts",
     "apps/app/headers.ts",
     "apps/app/pwa.ts",
+    "apps/ops/headers.ts",
     "src/config/**/*.ts",
     "src/worker-configuration.d.ts",
     "vitest.config.ts",
@@ -25,10 +26,12 @@
   "exclude": [
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",
+    "scripts/fidelity-ops.ts",
     "scripts/fidelity-refer.ts",
     "scripts/lib/fidelity.ts",
     "scripts/serve-site.ts",
     "scripts/serve-app.ts",
+    "scripts/serve-ops.ts",
     "scripts/lighthouse.ts",
     "scripts/lib/static-server.ts"
   ]

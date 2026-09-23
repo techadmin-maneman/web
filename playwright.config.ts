@@ -1,10 +1,12 @@
-// Browser tests of the built site (e2e/), at the design's two widths, and of
-// the client app (e2e/app/) at its one. Each is served with /api/* passed to a
-// local mm-api, which runs the backend with its stub providers on a local D1.
-// The app is on app.localhost, so mm-api answers it as the client surface.
+// Browser tests of the built site (e2e/), at the design's two widths, of the
+// client app (e2e/app/) at its one, and of the ops console (e2e/ops/) at 1440.
+// Each is served with /api/* passed to a local mm-api, which runs the backend
+// with its stub providers on a local D1. The app is on app.localhost and the
+// console on ops.localhost, so mm-api answers each as its own surface.
 //
 //   node scripts/ensure-dev-vars.ts && npm run db:local
-//   npm run build:site -- --env local && npm run build:app -- --env local && npm run test:e2e
+//   npm run build:site -- --env local && npm run build:app -- --env local
+//   npm run build:ops -- --env local && npm run test:e2e
 
 import { defineConfig, devices } from "@playwright/test";
 
@@ -59,16 +61,21 @@ export default defineConfig({
       url: "http://127.0.0.1:4322/",
       reuseExistingServer: local,
     },
+    {
+      command: "node scripts/serve-ops.ts --env local --port 4323 --api http://127.0.0.1:8787",
+      url: "http://127.0.0.1:4323/",
+      reuseExistingServer: local,
+    },
   ],
   projects: [
     {
       name: "390",
-      testIgnore: "app/**",
+      testIgnore: ["app/**", "ops/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
     },
     {
       name: "1440",
-      testIgnore: "app/**",
+      testIgnore: ["app/**", "ops/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {
@@ -82,6 +89,19 @@ export default defineConfig({
         // tests (e2e/app/pwa.e2e.ts) allow it.
         serviceWorkers: "block",
         // The app's fades and sheets stand still, so axe never reads a page halfway in.
+        reducedMotion: "reduce",
+      },
+    },
+    {
+      // The ops console is a desk tool, drawn at 1440 (docs/fidelity-method.md).
+      name: "ops",
+      testMatch: "ops/**/*.e2e.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+        baseURL: "http://ops.localhost:4323",
+        // The console registers none, and a stale one would answer what page.route() means to fake.
+        serviceWorkers: "block",
         reducedMotion: "reduce",
       },
     },
