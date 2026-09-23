@@ -13,12 +13,17 @@
 //
 // Writes docs/fidelity/ops/<name>.jpg: the design on the left, the build on
 // the right. Differences in type, spacing, colour or order are defects.
+//
+// Board A1 draws the console whole at 1440 and shows it at 1000, so its pair is
+// the console's own frame brought down to 1000; every other pair is a panel
+// beside a panel, at its own size.
 
 import { rmSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
+import { BOARD } from "../e2e/ops/fixtures.ts";
 import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
@@ -28,8 +33,9 @@ const OPS = "http://127.0.0.1:4316";
 const DESIGN = "http://127.0.0.1:4315/Ops%20Console.dc.html";
 const OUT = resolve("docs/fidelity/ops");
 
-/** The console's own width, and the two widths its panels are drawn at. */
+/** The console's own width, the width the boards show it at, and its panels' two widths. */
 const CONSOLE = 1440;
+const SHOWN = 1000;
 const QUEUE = 660;
 const PANEL = 484;
 
@@ -37,6 +43,12 @@ const PANEL = 484;
 const IN_2027 = new Date("2027-09-22T05:00:00Z");
 /** India's 10:42, the time board B2 letters on the opened photographs. */
 const AT_1042 = new Date("2027-09-22T05:12:00Z");
+/**
+ * Two days before the week board A1 heads, Fri 19 to Thu 25 September, whose
+ * days fall as it draws them in 2025. Two days, so the visit A2 moves is more
+ * than 24 hours off and its panel carries no line about a charge.
+ */
+const BEFORE_THE_WEEK = new Date("2025-09-17T05:00:00Z");
 
 // ---- Board C1: the grants the fraud rules held ------------------------------
 
@@ -224,6 +236,9 @@ const photoFiles = Object.fromEntries(
 );
 
 const API: Api = {
+  // Boards A1 to A3 are answered with the week the browser tests use, so the
+  // board's figures are written once and both read beside it (e2e/ops/fixtures.ts).
+  "/api/dispatch": json(BOARD),
   "/api/referrals/held": json(HELD),
   "/api/referrers": json(REFERRERS),
   "/api/waitlist": json(AREAS),
@@ -255,7 +270,7 @@ async function openDesign(browser: Browser): Promise<Page> {
  * scrolls its own section; for a screenshot the page is let out of it, so a
  * panel taller than the window is caught whole.
  */
-async function openConsole(browser: Browser, path: string, at: Date = IN_2027): Promise<Page> {
+async function openConsole(browser: Browser, path: string, at: Date = IN_2027, letOut = true): Promise<Page> {
   // The console's policy would refuse the style that stills the page; screenshots set it aside.
   const page = await browser.newPage({
     viewport: { width: CONSOLE, height: 900 },
@@ -269,11 +284,17 @@ async function openConsole(browser: Browser, path: string, at: Date = IN_2027): 
   });
   await page.goto(`${OPS}${path}`);
   await settle(page);
-  await page.addStyleTag({
-    content: "#root > div { height: auto !important; } main { overflow: visible !important; }",
-  });
+  // Board A1 draws the console whole, so that one is shot inside its own frame.
+  if (letOut) {
+    await page.addStyleTag({
+      content: "#root > div { height: auto !important; } main { overflow: visible !important; }",
+    });
+  }
   return page;
 }
+
+/** The console at 1440, brought down to the 1000 px board A1 shows it at. */
+const shrink = (image: Buffer, width: number) => sharp(image).resize({ width }).png().toBuffer();
 
 /** A frame of the board, by its label. */
 const frame = (design: Page, label: string) => design.locator(`[data-screen-label="${label}"]`).screenshot();
@@ -283,6 +304,32 @@ const panelOf = (design: Page, label: string, nth: number) =>
   design.locator(`[data-screen-label="${label}"] > div`).nth(nth).screenshot();
 
 // ---- The pairs ----------------------------------------------------------------
+
+/**
+ * Boards A1, A2 and A3: the week's board, the drawer a block opens, and the
+ * reason a move carries. A2 and A3 are reached as ops reach them, by opening a
+ * block and moving it; nothing is written, because the panel sends only on
+ * "Move and notify".
+ */
+async function dispatch(browser: Browser, design: Page): Promise<void> {
+  const page = await openConsole(browser, "/dispatch", BEFORE_THE_WEEK, false);
+  const block = page.getByRole("button", { name: "Rohit M., Fri 19 Sep, morning" });
+  await block.waitFor();
+  await settle(page);
+  await pair(OUT, SHOWN, "a1-dispatch", await frame(design, "Dispatch"), await shrink(await page.screenshot(), SHOWN));
+
+  await block.click();
+  const drawer = page.getByRole("dialog", { name: "Rohit M." });
+  await drawer.getByText("Service visit · 1 slot").waitFor();
+  await pair(OUT, PANEL, "a3-block-drawer", await frame(design, "Dispatch · drawer"), await drawer.screenshot());
+
+  await page.getByRole("button", { name: "Move this visit" }).click();
+  await page.getByRole("button", { name: "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning" }).click();
+  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
+  await picker.getByText("Fri 19 Sep, morning → Sat 20 Sep, morning").waitFor();
+  await pair(OUT, PANEL, "a2-move-reason", await frame(design, "Dispatch · drag"), await picker.screenshot());
+  await page.close();
+}
 
 async function referrals(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/referrals");
@@ -365,6 +412,7 @@ try {
   rmSync(OUT, { recursive: true, force: true });
   console.log(`fidelity: the ops console at ${String(CONSOLE)} px`);
   const design = await openDesign(browser);
+  await dispatch(browser, design);
   await photos(browser, design);
   await consents(browser, design);
   await referrals(browser, design);
