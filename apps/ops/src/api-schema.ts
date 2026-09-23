@@ -1408,6 +1408,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What ops still have to do, by group, the longest wait first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The groups with something in them */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Tasks"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1793,8 +1838,8 @@ export interface components {
              * @description Fact one: when the technician arrived.
              */
             checked_in_at: string;
-            /** @description Fact two: how far from the address he was. */
-            distance_m: number;
+            /** @description Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured. */
+            distance_m: number | null;
             /** @description Fact three: when WhatsApp reported the visit message delivered; null if never. */
             message_delivered_at: string | null;
             /** Format: date-time */
@@ -1835,6 +1880,43 @@ export interface components {
                     revoked_at: string | null;
                 }[];
             }[];
+        };
+        /** @description Derived at read time from the queues themselves; there is no tasks table. */
+        Tasks: {
+            /** @description How many are past their day in India, across every group. */
+            overdue: number;
+            groups: {
+                /** @enum {string} */
+                group: "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request";
+                count: number;
+                /** @description The longest wait first. */
+                tasks: components["schemas"]["Task"][];
+            }[];
+        };
+        Task: {
+            /**
+             * Format: uuid
+             * @description The queued row's own id, so the task can be reached where it is decided.
+             */
+            id: string;
+            /** @description Null for a no-show, whose case names the technician and never the client. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician. */
+            detail: string | null;
+            /**
+             * Format: date-time
+             * @description When it started waiting.
+             */
+            since: string;
+            /**
+             * Format: date-time
+             * @description since plus the group's allowance, 48 hours for every group so far.
+             */
+            due: string;
         };
     };
     responses: never;

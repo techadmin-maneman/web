@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, NO_SHOWS } from "./fixtures.ts";
+import { answer, fails, json, NO_SHOW_UNMEASURED, NO_SHOWS } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Visit of Sun 19 Sep";
@@ -37,6 +37,19 @@ test("shows each case with the visit, the technician and the three facts", async
   await expect(first.getByText("240 m")).toBeVisible();
   await expect(first.getByText("Delivered 11:32 am")).toBeVisible();
   await expect(first.getByText("15 min · closed 11:47 am")).toBeVisible();
+});
+
+// ADR 0036: a distance that was never measured is not a distance of zero, and
+// this queue is where a client is charged for being out. The words must stand
+// where the number would, and no 0 may appear in the case at all.
+test("says the distance was never measured, and shows no number, when the route carries none", async ({ page }) => {
+  await answer(page, { "/api/no-shows": json(NO_SHOW_UNMEASURED) });
+  await page.goto("/no-shows");
+
+  const only = page.getByRole("listitem").filter({ hasText: FIRST });
+  await expect(only.getByText("Not measured")).toBeVisible();
+  await expect(only.getByText("0 m")).toBeHidden();
+  await expect(only).not.toContainText(/\b0\s*m\b/);
 });
 
 test("says so when the visit's WhatsApp was never delivered", async ({ page }) => {

@@ -1,7 +1,8 @@
-// One client's page (boards B2 and B3): finding them by their mobile number,
-// their photographs, which are audited before they are shown, and their
-// consents, which ops read and never change. The API is answered from
-// e2e/ops/fixtures.ts, since no route seeds a client's photographs.
+// One client's page (boards B1 to B3): finding them by their mobile number,
+// the pieces they have been fitted with, their photographs, which are audited
+// before they are shown, and their consents, which ops read and never change.
+// The API is answered from e2e/ops/fixtures.ts, since no route seeds a client's
+// pieces or photographs.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Route } from "@playwright/test";
@@ -16,6 +17,7 @@ import {
   jpeg,
   json,
   PHOTOS,
+  PIECES,
   RECORD,
 } from "./fixtures.ts";
 
@@ -32,6 +34,7 @@ async function clientRoutes(page: Page, over: Answers = {}): Promise<void> {
   for (const shot of PHOTOS.visits[0]?.photos ?? []) photos[`${RECORD_PATH}/photos/${shot.id}`] = jpeg(bytes);
   await answer(page, {
     [RECORD_PATH]: json(RECORD),
+    [`${RECORD_PATH}/pieces`]: json(PIECES),
     [`${RECORD_PATH}/photos`]: json(PHOTOS),
     [`${RECORD_PATH}/consents`]: json(CONSENTS),
     ...photos,
@@ -45,7 +48,11 @@ async function openClient(page: Page, path: string, over: Answers = {}): Promise
 }
 
 test("finds a client by their number, and sends the number in the body, never in the URL", async ({ page }) => {
-  await answer(page, { "/api/clients/search": json(CLIENT), [RECORD_PATH]: json(RECORD) });
+  await answer(page, {
+    "/api/clients/search": json(CLIENT),
+    [RECORD_PATH]: json(RECORD),
+    [`${RECORD_PATH}/pieces`]: json(PIECES),
+  });
   await page.goto("/clients");
 
   const sent = page.waitForRequest((request) => request.url().includes("/clients/search"));
@@ -71,8 +78,33 @@ test("says so when nobody holds the number", async ({ page }) => {
 test("heads the page with the client's standing, from the record", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("heading", NAME)).toBeVisible();
-  await expect(page.getByText("Fitted")).toBeVisible();
-  await expect(page.getByText("2 · expire 3 Jan 2028")).toBeVisible();
+  // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
+  await expect(page.getByRole("definition")).toHaveText(["Fitted", "2 · expire 3 Jan 2028"]);
+});
+
+test("opens on the pieces, as the board draws the page, and lists them in the board's columns", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`);
+  await expect(page.getByRole("link", { name: "Pieces" })).toHaveAttribute("aria-current", "page");
+
+  const piece = page.getByRole("row").filter({ hasText: "MM-STD-4417-B" });
+  await expect(piece).toContainText("Mono");
+  await expect(piece).toContainText("14 Nov 2026");
+  await expect(piece).toContainText("L-1109");
+  await expect(piece).toContainText("1 Jun 2027");
+  await expect(piece).toContainText("24 Jun 2027 · base split at crown");
+});
+
+test("writes a gap where FSM's asset has no supplier lot, replacement date or failure", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/pieces`);
+  const live = page.getByRole("row").filter({ hasText: "MM-STD-4417-C" });
+  // The piece still in wear has no failure; the one rejected at the fit has no lot and no replacement due.
+  await expect(live).toContainText("—");
+  await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-A" })).toContainText("—");
+});
+
+test("says so when the client has no piece yet", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/pieces`, { [`${RECORD_PATH}/pieces`]: json({ pieces: [] }) });
+  await expect(page.getByText("No piece has been fitted for this client.")).toBeVisible();
 });
 
 test("keeps the photographs locked, and says what opening them records", async ({ page }) => {
@@ -141,7 +173,7 @@ test("says when the client has asked to be erased", async ({ page }) => {
   await expect(page.getByText("Erasure requested 18 Sep 2027. It is not decided here.")).toBeVisible();
 });
 
-test("moves between the two tabs without reading the record again", async ({ page }) => {
+test("moves between the tabs without reading the record again", async ({ page }) => {
   let records = 0;
   await openClient(page, `/clients/${CLIENT.id}/photos`, {
     [RECORD_PATH]: (route) => {
@@ -152,6 +184,8 @@ test("moves between the two tabs without reading the record again", async ({ pag
   await expect(page.getByText("Locked")).toBeVisible();
   await page.getByRole("link", { name: "Consents" }).click();
   await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
+  await page.getByRole("link", { name: "Pieces" }).click();
+  await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   await page.getByRole("link", { name: "Photos" }).click();
   // Coming back locks them again: a second look is a second entry in the log.
   await expect(page.getByText("Locked")).toBeVisible();
@@ -167,7 +201,7 @@ test("says so when the client cannot be loaded, and loads them on Try again", as
   await expect(page.getByRole("heading", NAME)).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA finding a client, and on both tabs, locked and open", async ({ page }) => {
+test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", async ({ page }) => {
   const clean = async (label: string) => {
     const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
     expect(
@@ -181,7 +215,11 @@ test("meets WCAG 2.2 AA finding a client, and on both tabs, locked and open", as
   await expect(page.getByRole("button", { name: "Find the client" })).toBeVisible();
   await clean("/clients");
 
-  await openClient(page, `/clients/${CLIENT.id}/photos`);
+  await openClient(page, `/clients/${CLIENT.id}/pieces`);
+  await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
+  await clean("pieces");
+
+  await page.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Locked")).toBeVisible();
   await clean("photos, locked");
 

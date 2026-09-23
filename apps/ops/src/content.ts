@@ -16,7 +16,8 @@ export const shell = {
    * The sections the backend has routes for, in the design's order; the design
    * draws eight. Its third is "Payments", which this cannot be: no route totals
    * the day's money or lists a refund, so the section holds the no-show queue
-   * alone (docs/open-points.md, item 57).
+   * alone (docs/open-points.md, item 57). Settings is the one it draws that is
+   * not built; nothing here is settable.
    */
   sections: [
     { page: "/dispatch", label: "Dispatch" },
@@ -24,6 +25,7 @@ export const shell = {
     { page: "/no-shows", label: "No-shows" },
     { page: "/referrals", label: "Referrals" },
     { page: "/waitlist", label: "Waitlist" },
+    { page: "/tasks", label: "Tasks" },
     { page: "/technicians", label: "Technicians" },
   ],
 } as const;
@@ -252,12 +254,23 @@ export const clients = {
   states: { fitted: "Fitted", lead: "Booked", nothing_booked: "Nothing booked" },
   credits: (visits: number, expiry: string | null) =>
     expiry === null ? String(visits) : `${String(visits)} · expire ${expiry}`,
-  /** The two tabs of the design's eight that the ops routes answer. */
+  /** The three tabs of the design's eight that the ops routes answer, in its order. */
   tabs: [
-    { tab: "photos", label: "Photos" },
+    { tab: "pieces", label: "Pieces" },
     { tab: "consents", label: "Consents" },
+    { tab: "photos", label: "Photos" },
   ],
   failed: "We could not load this client.",
+  /** Board B1: every piece the client has been fitted with, from FSM's assets. */
+  pieces: {
+    title: "Pieces",
+    /** The board's six columns, in its order. */
+    columns: ["Piece", "Base", "Fitted", "Supplier lot", "Replace due", "Failed · reason"],
+    /** A piece that has failed, as the board writes it: "24 Jun · base split at crown". */
+    failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
+    // PLACEHOLDER: the board draws no client without a piece, and every client has none until they are fitted.
+    empty: "No piece has been fitted for this client.",
+  },
   photos: {
     locked: "Locked",
     title: (name: string) => `Photographs of ${name}`,
@@ -375,6 +388,12 @@ export const noShows = {
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
     /** The board writes "240 m · over 200 m fence"; the route gives the distance, not the radius in force. */
     distance: (metres: number) => `${String(metres)} m`,
+    /**
+     * An address with no coordinates cannot be measured against, so the route
+     * carries no distance (ADR 0036). Words rather than a number, because ops
+     * charge a client on these facts and nothing was measured here at all.
+     */
+    unmeasured: "Not measured · the address has no location",
     delivered: (time: string) => `Delivered ${time}`,
     /** PLACEHOLDER: the board's receipt always arrived; one that never did is this. */
     notDelivered: "Never delivered",
@@ -398,6 +417,52 @@ export const noShows = {
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
   },
+} as const;
+
+/**
+ * Board D2's queue. A task is not a record: it is a row in a queue the database
+ * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
+ * groups, of which two have something behind them; the other three here are
+ * queues it does not draw (docs/open-points.md, item 58).
+ */
+export const tasks = {
+  title: "Tasks",
+  /** The head's count, in oxblood, as the board writes "4 overdue". */
+  overdue: (count: number) => `${String(count)} overdue`,
+  /** Each group, lettered in small caps as the board letters its own two. */
+  groups: {
+    replacement_order: "Replacement order",
+    referral_review: "Referral review",
+    no_show_decision: "No-show decision",
+    number_change: "Number change",
+    erasure_request: "Erasure request",
+  } as Readonly<Record<string, string>>,
+  /** The first line: whose task it is. A no-show names no client, so it names the visit. */
+  visit: (date: string) => `Visit of ${date}`,
+  /** PLACEHOLDER: a queue whose row has lost the client it was about. */
+  unknown: "Client unknown",
+  /** The client's page, which the board draws no way to. */
+  open: (name: string) => `Open ${name}`,
+  /** The second line, one per group: the one fact the group turns on. */
+  subs: {
+    /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
+    replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
+    no_show_decision: (technician: string) => `${technician} attended`,
+    number_change: "Both numbers proven by code",
+    erasure_request: "Asked for in the client's own app",
+    // PLACEHOLDER: a held grant whose fraud signals were not recorded.
+    unknown: "Held for review",
+  },
+  /** The last column, as the board writes it: "2 days", "1 day", "Today", "Overdue 3". */
+  sla: {
+    today: "Today",
+    left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"}`,
+    over: (days: number) => `Overdue ${String(days)}`,
+  },
+  /** PLACEHOLDER: the board draws no note, and a queue with no buttons has to say where the work is done. */
+  note: "Nothing is closed here. A task leaves this list when the thing itself is decided, where it is decided.",
+  /** PLACEHOLDER: the board draws twelve tasks and no empty list. */
+  empty: "Nothing is waiting.",
 } as const;
 
 /**

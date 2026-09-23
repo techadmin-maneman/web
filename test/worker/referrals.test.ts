@@ -3,9 +3,12 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { confirmBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { newCode } from "../../src/domain/referrals.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
+import { createStubPayments } from "../../src/providers/razorpay.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const REFERRER = "11111111-1111-4111-8111-111111111111";
@@ -196,6 +199,36 @@ describe("POST /api/r/:code/consultation", () => {
       { FSM_QUEUE: fakeQueue() },
     );
     expect(await unknown.json()).toMatchObject({ state: "booked", credits: false });
+  });
+
+  it("reaches FSM, using the invite's pincode for the city the friend's booking never asks for", async () => {
+    await pincode("122018", "Gurgaon South City II", true);
+    const code = await codeOf();
+    const answer = await request(
+      site(),
+      `/api/r/${code}/consultation`,
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      { FSM_QUEUE: fakeQueue() },
+    );
+    expect(answer.status).toBe(201);
+    const hold = await env.DB.prepare(
+      "SELECT h.id FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE p.mobile_e164 = '+919810000002'",
+    ).first<{ id: string }>();
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: [{ id: "item-consult", name: "Consultation", type: "Service" }] });
+    // The friend has no lead, because the landing never asks where the hair loss is, and no saved address yet.
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), hold?.id ?? "", NOW, { labelAsTest: true })).toBe(
+      "booked",
+    );
+    expect(fsm.made.contacts).toMatchObject([{ city: "Gurgaon", lastName: "Bhatia" }]);
+    expect(fsm.made.visits).toHaveLength(1);
+    // The attribution names the consultation it produced, for ops' record.
+    const attributed = await env.DB.prepare(
+      `SELECT a.type FROM referral_attributions r JOIN appointments a ON a.id = r.consultation_appointment_id
+       WHERE r.code = ?1`,
+    )
+      .bind(code)
+      .first();
+    expect(attributed).toEqual({ type: "consultation" });
   });
 
   it("refuses an unserved pincode or a day out of range, and waits for ops while self-serve is off", async () => {
