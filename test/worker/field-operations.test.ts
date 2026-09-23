@@ -452,6 +452,39 @@ describe("the no-show", () => {
     expect(after?.decision).toBe("charged");
     expect(after?.decided_by).not.toBe("");
   });
+
+  // ADR 0036: "An address with no coordinates cannot be measured against ... It is
+  // never silently treated as a pass at zero metres." checkins.distance_m is NOT
+  // NULL, so the row stores 0 and names no address; ops must be given the second.
+  it("carries no distance when the address had no coordinates to measure against", async () => {
+    await env.DB.prepare("UPDATE addresses SET lat = NULL, lng = NULL WHERE id = 'addr-1'").run();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    // Sixteen minutes later the wait has run, and the technician closes the job.
+    const later = new Date(NOW.getTime() + 16 * 60_000);
+    const closed = await request(
+      appFor("local", fakeDependencies({ fsm, now: () => later }), {}, "tech"),
+      `/api/tech/jobs/${TODAY_JOB}/no-show`,
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "X-Client-Event-Id": "event-noshow-01" },
+      },
+      bindings(),
+    );
+    expect(closed.status).toBe(200);
+
+    const row = await env.DB.prepare("SELECT address_id, distance_m FROM checkins WHERE appointment_id = ?1")
+      .bind(TODAY_JOB)
+      .first<{ address_id: string | null; distance_m: number }>();
+    expect(row).toMatchObject({ address_id: null, distance_m: 0 });
+
+    const body = await (await request(ops, "/api/no-shows", {}, bindings())).text();
+    const cases = (JSON.parse(body) as { cases: { distance_m: number | null }[] }).cases;
+    expect(cases).toHaveLength(1);
+    expect(cases[0]?.distance_m).toBeNull();
+    // The 0 in the column must not reach ops as fact two under any spelling.
+    expect(body).not.toContain('"distance_m":0');
+  });
 });
 
 describe("dispatch", () => {

@@ -19,7 +19,12 @@ export interface NoShowCase {
   readonly visit_date: string | null;
   readonly technician: string | null;
   readonly checked_in_at: string;
-  readonly distance_m: number;
+  /**
+   * Null when there was nothing to measure against. `checkins.distance_m` is NOT
+   * NULL, so an unmeasured arrival stores 0 and names no address instead; the
+   * missing address, not the 0, is the fact (docs/decisions/0036-geocoding.md).
+   */
+  readonly distance_m: number | null;
   readonly message_delivered_at: string | null;
   readonly wait_ends_at: string;
   readonly closed_at: string | null;
@@ -57,7 +62,7 @@ export async function closeAsNoShow(
   input: {
     appointmentId: string;
     type: VisitType;
-    checkIn: { id: string; at: string; distanceM: number } | null;
+    checkIn: { id: string; at: string } | null;
     now: Date;
   },
 ): Promise<Closing> {
@@ -109,7 +114,8 @@ export async function listNoShowCases(
 ): Promise<NoShowCase[]> {
   const { results } = await db
     .prepare(
-      `SELECT n.id, n.appointment_id, n.wait_started_at AS checked_in_at, c.distance_m, n.message_delivered_at,
+      `SELECT n.id, n.appointment_id, n.wait_started_at AS checked_in_at, c.address_id, c.distance_m,
+         n.message_delivered_at,
          n.wait_ends_at, n.closed_at, n.decision, n.decided_at, a.window_start, t.name AS technician
        FROM no_show_cases n
        JOIN checkins c ON c.id = n.checkin_id
@@ -124,6 +130,7 @@ export async function listNoShowCases(
       id: string;
       appointment_id: string;
       checked_in_at: string;
+      address_id: string | null;
       distance_m: number;
       message_delivered_at: string | null;
       wait_ends_at: string;
@@ -139,7 +146,7 @@ export async function listNoShowCases(
     visit_date: row.window_start === null ? null : row.window_start.slice(0, 10),
     technician: row.technician,
     checked_in_at: row.checked_in_at,
-    distance_m: row.distance_m,
+    distance_m: row.address_id === null ? null : row.distance_m,
     message_delivered_at: row.message_delivered_at,
     wait_ends_at: row.wait_ends_at,
     closed_at: row.closed_at,
