@@ -1,7 +1,7 @@
-// One client's page (Ops Console, boards B2 and B3): who they are, then their
-// photographs or their consents. The board draws eight tabs; these are the two
-// the ops routes answer, and what it heads the page with is narrowed the same
-// way (docs/fidelity-method.md).
+// One client's page (Ops Console, boards B1 to B3): who they are, then their
+// pieces, their consents or their photographs. The board draws eight tabs;
+// these are the three the ops routes answer, and what it heads the page with is
+// narrowed the same way (docs/fidelity-method.md).
 
 import { longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
@@ -14,6 +14,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";
 import { Photos } from "./Photos.tsx";
+import { Pieces } from "./Pieces.tsx";
 
 const creditsOf = (credits: ClientRecord["credits"]) =>
   credits === null
@@ -43,11 +44,15 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   const [loaded, retry] = useLoad(load);
 
   return (
-    <Shell section="/clients" title={clients.title}>
+    <Shell section="/clients" title={clients.title} flush>
       {loaded.state === "loading" ? (
-        <Loading />
+        <div className={styles.waiting}>
+          <Loading />
+        </div>
       ) : loaded.state === "failed" ? (
-        <PanelFailed onRetry={retry} />
+        <div className={styles.waiting}>
+          <PanelFailed onRetry={retry} />
+        </div>
       ) : (
         <div className={styles.client}>
           <Head record={loaded.value} />
@@ -64,7 +69,9 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
             ))}
           </nav>
           <div className={styles.panel}>
-            {tab === "consents" ? (
+            {tab === "pieces" ? (
+              <Pieces clientId={clientId} />
+            ) : tab === "consents" ? (
               <Consents clientId={clientId} />
             ) : (
               <Photos clientId={clientId} name={loaded.value.name} />

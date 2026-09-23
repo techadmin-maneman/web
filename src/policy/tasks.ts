@@ -1,0 +1,50 @@
+// The ops console's task queue (docs/prompts/phase2-backend.md, "Endpoints" and
+// "Pieces tab"). The rules as the prompt states them, the groups they turn on,
+// and how long a task may wait.
+//
+// There is no `tasks` table and there is not going to be one. Every group below
+// is a queue the database already keeps: a held grant, an undecided no-show, a
+// number change waiting for ops, an erasure asked for, a piece past its
+// replacement date. A task is those rows read at the moment ops look, so it
+// cannot go stale, be closed twice or be left open by mistake. Closing a task
+// means doing the thing: the row leaves the queue on its own.
+//
+// The board draws four groups (Replacement order, At-risk client, Referral
+// review, Photo QA). Two of them have no record behind them, and three queues
+// the board does not draw do; what is built and what is not is item 58 of
+// docs/open-points.md.
+
+export const RULES = [
+  "The replacement due date follows the per-base cycle config already defined in this prompt.",
+  "Referral review queue: approve or reject, with the reason recorded.",
+  "GET /no-shows and POST /no-shows/:id/decision, for ops to charge or waive from the evidence.",
+  "number-change confirmations and deletion-request processing",
+] as const;
+
+/** The queues a task is read from, in the order the console lists them. */
+export const TASK_GROUPS = [
+  "replacement_order",
+  "referral_review",
+  "no_show_decision",
+  "number_change",
+  "erasure_request",
+] as const;
+export type TaskGroup = (typeof TASK_GROUPS)[number];
+
+/**
+ * How long a task may wait before it is overdue. The board writes "2 days",
+ * "1 day", "Today" and "Overdue 3" and names no group's own allowance, and the
+ * prompt states none, so every group waits the same two days: a placeholder
+ * until the owner rules each one (docs/open-points.md, item 58).
+ */
+export const TASK_SLA_HOURS: Readonly<Record<TaskGroup, number>> = {
+  replacement_order: 48,
+  referral_review: 48,
+  no_show_decision: 48,
+  number_change: 48,
+  erasure_request: 48,
+};
+
+/** When a task that started waiting at `since` falls due. */
+export const dueAt = (since: Date, group: TaskGroup): Date =>
+  new Date(since.getTime() + TASK_SLA_HOURS[group] * 3_600_000);
