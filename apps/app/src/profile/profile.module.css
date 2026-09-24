@@ -184,6 +184,12 @@
   color: var(--paper);
 }
 
+.primary:disabled {
+  background: var(--paper-shade);
+  color: var(--text-quiet);
+  cursor: default;
+}
+
 .row .primary,
 .row .secondary {
   margin-top: 0;

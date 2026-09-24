@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, putCard, type Refer } from "../api.ts";
 import { booking, profile, refer } from "../content.ts";
+import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { useSession } from "../session.ts";
 import { composeCard, firstFitPhotos } from "./card.ts";
 import styles from "./refer.module.css";
@@ -35,6 +36,9 @@ export function ShareSheet({ refer: state, onClose }: { refer: Refer; onClose: (
   const [problem, setProblem] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const changed = useRef(false);
+  // One card per intent: a second Allow records the consent again and builds the whole card again
+  // — the photographs fetched, composed and uploaded twice for one tap's worth of intent.
+  const [busy, once] = useOneAtATime();
 
   useEffect(() => {
     dialog.current?.showModal();
@@ -60,13 +64,21 @@ export function ShareSheet({ refer: state, onClose }: { refer: Refer; onClose: (
     setStep("share");
   }
 
-  async function useTheExample() {
-    if (state.card.state === "personal") {
-      await api.revokeCard();
-      changed.current = true;
-    }
-    setStep("share");
-  }
+  /** Board F3's Allow: the consent the photographs need, and then the card they make. */
+  const allowTheirOwn = () =>
+    once(async () => {
+      await api.switchConsent("photos_referral_cards", true);
+      await useTheirOwn();
+    });
+
+  const useTheExample = () =>
+    once(async () => {
+      if (state.card.state === "personal") {
+        await api.revokeCard();
+        changed.current = true;
+      }
+      setStep("share");
+    });
 
   async function copyLink() {
     await navigator.clipboard.writeText(state.link);
@@ -86,6 +98,8 @@ export function ShareSheet({ refer: state, onClose }: { refer: Refer; onClose: (
       ref={dialog}
       className={styles.sheet}
       aria-labelledby="share-title"
+      // Busy while a choice is being carried out, so a screen reader is told the sheet is working.
+      aria-busy={busy}
       onClose={() => {
         onClose(changed.current);
       }}
@@ -122,6 +136,7 @@ export function ShareSheet({ refer: state, onClose }: { refer: Refer; onClose: (
           <button
             className={styles.primary}
             type="button"
+            disabled={busy}
             onClick={() => {
               // Their own photographs need the consent first; the example needs nothing.
               if (which === "house") void useTheExample();
@@ -146,8 +161,9 @@ export function ShareSheet({ refer: state, onClose }: { refer: Refer; onClose: (
           <button
             className={styles.primary}
             type="button"
+            disabled={busy}
             onClick={() => {
-              void api.switchConsent("photos_referral_cards", true).then(() => useTheirOwn());
+              void allowTheirOwn();
             }}
           >
             {refer.consent.allow}
@@ -155,6 +171,7 @@ export function ShareSheet({ refer: state, onClose }: { refer: Refer; onClose: (
           <button
             className={styles.secondary}
             type="button"
+            disabled={busy}
             onClick={() => {
               setWhich("house");
               void useTheExample();

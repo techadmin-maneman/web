@@ -580,7 +580,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Switch one consent on or off. Each switch is kept, with its date */
+        /** Switch one consent on or off. Each switch is kept, with its date; a repeat is not a switch */
         patch: {
             parameters: {
                 query?: never;
@@ -1994,7 +1994,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Raise a grievance about how the client's data is handled */
+        /** Raise a grievance about how the client's data is handled. The same words, still open, are one */
         post: {
             parameters: {
                 query?: never;

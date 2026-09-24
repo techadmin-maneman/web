@@ -333,7 +333,7 @@ Request body:
 
 ### PATCH /api/consents/{purpose}
 
-Switch one consent on or off. Each switch is kept, with its date
+Switch one consent on or off. Each switch is kept, with its date; a repeat is not a switch
 
 Request body:
 
@@ -1276,7 +1276,7 @@ Everything held about the client, to download
 
 ### POST /api/grievances
 
-Raise a grievance about how the client's data is handled
+Raise a grievance about how the client's data is handled. The same words, still open, are one
 
 Request body:
 

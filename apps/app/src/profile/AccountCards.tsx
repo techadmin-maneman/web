@@ -8,6 +8,7 @@ import { useState } from "react";
 import { api, EXPORT_URL, type NumberChange, type Profile } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { login, profile, whatsapp } from "../content.ts";
+import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { mobileDigits } from "../login/mobile.ts";
 import styles from "./profile.module.css";
 
@@ -20,38 +21,43 @@ export function NumberChangeCard({ change, onChanged }: { change: NumberChange |
   const [codes, setCodes] = useState<Record<Which, string>>({ old: "", new: "" });
   const [notes, setNotes] = useState<Record<Which, string | null>>({ old: null, new: null });
   const [problem, setProblem] = useState<string | null>(null);
+  // Starting again withdraws the request just made and sends a fresh pair of codes, and each
+  // check spends one of a small budget of attempts. Either way, two taps cost twice for one intent.
+  const [busy, once] = useOneAtATime();
 
-  async function start() {
-    const digits = mobileDigits(typed);
-    if (digits === null) {
-      setProblem(copy.invalid);
-      return;
-    }
-    const answer = await api.startNumberChange(digits);
-    if (answer.ok) {
-      setProblem(null);
-      setCodes({ old: "", new: "" });
-      setNotes({ old: null, new: null });
+  const start = () =>
+    once(async () => {
+      const digits = mobileDigits(typed);
+      if (digits === null) {
+        setProblem(copy.invalid);
+        return;
+      }
+      const answer = await api.startNumberChange(digits);
+      if (answer.ok) {
+        setProblem(null);
+        setCodes({ old: "", new: "" });
+        setNotes({ old: null, new: null });
+        onChanged();
+      } else {
+        setProblem(answer.code === "rate_limited" ? copy.limited : answer.status === 400 ? copy.invalid : copy.failed);
+      }
+    });
+
+  const check = (requestId: string, pending: readonly Which[]) =>
+    once(async () => {
+      const next = { ...notes };
+      for (const which of pending) {
+        if (codes[which].length !== 6) continue;
+        const answer = await api.verifyNumberChange(requestId, which, codes[which]);
+        next[which] = !answer.ok
+          ? copy.failed
+          : answer.body.attempts_left === null
+            ? copy.proven
+            : login.code.mismatch(answer.body.attempts_left);
+      }
+      setNotes(next);
       onChanged();
-    } else {
-      setProblem(answer.code === "rate_limited" ? copy.limited : answer.status === 400 ? copy.invalid : copy.failed);
-    }
-  }
-
-  async function check(requestId: string, pending: readonly Which[]) {
-    const next = { ...notes };
-    for (const which of pending) {
-      if (codes[which].length !== 6) continue;
-      const answer = await api.verifyNumberChange(requestId, which, codes[which]);
-      next[which] = !answer.ok
-        ? copy.failed
-        : answer.body.attempts_left === null
-          ? copy.proven
-          : login.code.mismatch(answer.body.attempts_left);
-    }
-    setNotes(next);
-    onChanged();
-  }
+    });
 
   return (
     <section className={styles.card} aria-labelledby="change">
@@ -63,6 +69,7 @@ export function NumberChangeCard({ change, onChanged }: { change: NumberChange |
       ) : change?.state === "verifying" ? (
         <form
           noValidate
+          aria-busy={busy}
           onSubmit={(event) => {
             event.preventDefault();
             const pending: Which[] = [];
@@ -100,13 +107,14 @@ export function NumberChangeCard({ change, onChanged }: { change: NumberChange |
               </label>
             );
           })}
-          <button className={styles.primary} type="submit">
+          <button className={styles.primary} type="submit" disabled={busy}>
             {copy.check}
           </button>
         </form>
       ) : (
         <form
           noValidate
+          aria-busy={busy}
           onSubmit={(event) => {
             event.preventDefault();
             void start();
@@ -135,7 +143,7 @@ export function NumberChangeCard({ change, onChanged }: { change: NumberChange |
               {problem}
             </p>
           )}
-          <button className={styles.primary} type="submit">
+          <button className={styles.primary} type="submit" disabled={busy}>
             {copy.start}
           </button>
         </form>
@@ -166,12 +174,16 @@ export function DataCard() {
   const [writing, setWriting] = useState(false);
   const [text, setText] = useState("");
   const [state, setState] = useState<"idle" | "sent" | "failed">("idle");
+  // One concern per intent: every grievance ops see carries its own answer-time clock, and two
+  // rows would be one client's one concern counted twice (docs/decisions/0049-dpdp.md).
+  const [busy, once] = useOneAtATime();
 
-  async function send() {
-    const answer = await api.raiseGrievance(text);
-    setState(answer.ok ? "sent" : "failed");
-    if (answer.ok) setWriting(false);
-  }
+  const send = () =>
+    once(async () => {
+      const answer = await api.raiseGrievance(text);
+      setState(answer.ok ? "sent" : "failed");
+      if (answer.ok) setWriting(false);
+    });
 
   return (
     <section className={styles.card} aria-labelledby="data">
@@ -189,6 +201,7 @@ export function DataCard() {
       ) : writing ? (
         <form
           className={styles.confirm}
+          aria-busy={busy}
           onSubmit={(event) => {
             event.preventDefault();
             void send();
@@ -213,7 +226,7 @@ export function DataCard() {
             </p>
           )}
           <div className={styles.row}>
-            <button className={styles.primary} type="submit" disabled={text.trim() === ""}>
+            <button className={styles.primary} type="submit" disabled={busy || text.trim() === ""}>
               {copy.send}
             </button>
             <button

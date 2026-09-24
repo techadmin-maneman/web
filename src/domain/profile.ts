@@ -160,7 +160,17 @@ export async function consentsOf(db: D1Database, personId: string): Promise<Cons
   return records.map(({ purpose, granted, since }) => ({ purpose, granted, since }));
 }
 
-/** A switch is a new row: the consent record is append-only. */
+/**
+ * A switch is a new row: the consent record is append-only. The same answer again, under the same
+ * notice, is not a new answer and writes nothing; a notice that has changed since makes it one,
+ * because what the client agreed to has changed.
+ *
+ * The write settles it, rather than a read before it, so two taps on one Allow cannot both find
+ * the purpose unswitched and both record it. The ledger is append-only by trigger, so a second
+ * row could never be taken back afterwards (ADR 0058).
+ *
+ * The statement returns the row's date when it wrote one, and nothing when it did not.
+ */
 export function switchConsent(
   db: D1Database,
   options: { personId: string; purpose: ConsentPurpose; granted: boolean; ipHash: string; now: Date },
@@ -168,7 +178,13 @@ export function switchConsent(
   return db
     .prepare(
       `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7
+       WHERE NOT EXISTS (
+         SELECT 1 FROM (SELECT granted, notice_version FROM consents WHERE person_id = ?2 AND purpose = ?3
+                        ORDER BY created_at DESC, rowid DESC LIMIT 1)
+         WHERE granted = ?5 AND notice_version = ?4
+       )
+       RETURNING created_at`,
     )
     .bind(
       crypto.randomUUID(),

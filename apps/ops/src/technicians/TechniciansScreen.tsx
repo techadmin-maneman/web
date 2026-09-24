@@ -1,19 +1,51 @@
-// Technicians (Ops Console, board D3): who works, their zone, and the phones
-// they have logged in on. Revoking a phone ends its session and makes it drop
-// its cached jobs, so it asks before it sends (src/domain/technicians.ts).
+// Technicians (Ops Console, board D3): who works, their zone, the jobs they
+// have finished and how those ran, and the phones they have logged in on.
+// Revoking a phone ends its session and makes it drop its cached jobs, so it
+// asks before it sends (src/domain/technicians.ts).
 //
-// The board draws Jobs, Avg service and Skill beside the name; nothing gives
-// them, so the table carries the two columns the route answers and the phones
-// the board does not draw (docs/open-points.md, item 59).
+// The board's fifth column is Skill, and nothing records what a technician is
+// trained for, so it is not drawn and a line beneath the table says why
+// (docs/open-points.md, item 59).
 
-import { longDate } from "@maneman/web-kit/dates";
+import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { Fragment, useState } from "react";
-import { api, type Device, type Technician } from "../api.ts";
+import { api, type Device, type Technician, type TechnicianWork } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./technicians.module.css";
+
+/** The route's period ends the day after the last one counted; the note names that last day. */
+const lastDay = (exclusiveEnd: string) =>
+  new Date(Date.parse(`${exclusiveEnd}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * How long the technician's visits took, on average. A technician the phone
+ * timed none of reads as a gap, never as a nought: the jobs were done and
+ * nothing timed them. One who runs over the length their visits were planned
+ * for reads in brass, as the board letters its own long average.
+ */
+function Service({ figures }: { figures: TechnicianWork | undefined }) {
+  const copy = technicians.work;
+  const average = figures?.average_minutes ?? null;
+  const planned = figures?.average_planned_minutes ?? null;
+  if (figures === undefined || average === null || planned === null) {
+    return <span className={styles.none}>{technicians.unknown}</span>;
+  }
+
+  return (
+    <>
+      <span className={average - planned >= copy.overBy ? styles.over : undefined}>
+        {copy.average(Math.floor(average / 60), average % 60)}
+      </span>
+      {/* The average is of the jobs the phone timed, so it says so when that is not all of them. */}
+      {figures.timed_jobs < figures.jobs && (
+        <span className={styles.base}>{copy.base(figures.timed_jobs, figures.jobs)}</span>
+      )}
+    </>
+  );
+}
 
 /** Where a phone is: listed, asked about, sending, revoked here, or refused by the API. */
 type Revoking =
@@ -95,10 +127,23 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
 
 function Roster() {
   const [loaded, retry] = useLoad(api.technicians);
+  // The roster carries no period, so the figures are a read of their own; the
+  // table is one table either way, and waits for both.
+  const [work, retryWork] = useLoad(api.technicianWork);
 
-  if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "loading" || work.state === "loading") return <Loading />;
+  if (loaded.state === "failed" || work.state === "failed") {
+    return (
+      <PanelFailed
+        onRetry={() => {
+          retry();
+          retryWork();
+        }}
+      />
+    );
+  }
 
+  const figures = new Map(work.value.technicians.map((each) => [each.technician_id, each]));
   return (
     <section className={styles.panel} aria-labelledby="roster">
       <h2 className={styles.hiddenTitle} id="roster">
@@ -125,6 +170,10 @@ function Roster() {
                     {technician.name}
                   </th>
                   <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
+                  <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
+                  <td className={styles.service}>
+                    <Service figures={figures.get(technician.id)} />
+                  </td>
                 </tr>
                 {/* The board's row has no room for the phones, so they sit beneath the name. */}
                 <tr>
@@ -145,6 +194,10 @@ function Roster() {
           </tbody>
         </table>
       )}
+      <p className={styles.note}>
+        {technicians.work.period(fullDate(work.value.from), fullDate(lastDay(work.value.to)))}
+      </p>
+      <p className={styles.note}>{technicians.work.skill}</p>
     </section>
   );
 }

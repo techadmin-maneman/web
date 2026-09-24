@@ -1141,6 +1141,62 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
+### GET /api/payments
+
+A day's money: what was collected, what went back, and each charge kept or ruled on
+
+**200**: The day
+
+```json
+{
+  "$ref": "#/components/schemas/OpsDayMoney"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/technicians/work
+
+Per technician: jobs finished over a period, and how they ran against the planned length
+
+**200**: The technicians
+
+```json
+{
+  "$ref": "#/components/schemas/TechniciansWork"
+}
+```
+
+**400**: invalid_request: from is not before to
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -3232,6 +3288,267 @@ What ops still have to do, by group, the longest wait first
     "detail",
     "since",
     "due"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsDayMoney
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date the figures cover."
+    },
+    "collected": {
+      "type": "integer",
+      "description": "In paise. Captured on the day: the board's \"Collected today\"."
+    },
+    "refunds_processing": {
+      "type": "integer",
+      "description": "In paise. Asked for on the day and not back with the client yet: \"Refunds processing\"."
+    },
+    "refunded": {
+      "type": "integer",
+      "description": "In paise. Processed by Razorpay on the day, which the board draws no figure of its own for."
+    },
+    "charged": {
+      "type": "integer",
+      "description": "In paise. Kept from the client on the day: \"Charges and no-shows\", less the no-shows, which carry no amount."
+    },
+    "no_shows_charged": {
+      "type": "integer",
+      "description": "How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 57)."
+    },
+    "dispute": {
+      "type": "null",
+      "description": "The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 57)."
+    },
+    "charges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OpsCharge"
+      },
+      "description": "No-shows and late cancellations, the earliest first."
+    }
+  },
+  "required": [
+    "date",
+    "collected",
+    "refunds_processing",
+    "refunded",
+    "charged",
+    "no_shows_charged",
+    "dispute",
+    "charges"
+  ],
+  "additionalProperties": false,
+  "description": "Derived at read time from the payments themselves; no total is kept."
+}
+```
+
+### OpsCharge
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The change's or the case's own id."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "late_cancellation",
+        "no_show"
+      ]
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for a visit FSM never matched to one of our people."
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "description": "In paise. What was kept."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null on a no-show: ops record the ruling and nothing records an amount, because the charge itself is applied at P2-M5."
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the client cancelled, or when ops ruled on the no-show."
+    },
+    "visit_started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the visit was to start."
+    },
+    "change": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "cancelled",
+            "moved"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How the client ended the visit; null on a no-show, where they ended nothing."
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Who attended and found nobody in; null on a late cancellation."
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "person",
+    "amount",
+    "at",
+    "visit_started_at",
+    "change",
+    "technician"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechniciansWork
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "Exclusive: the day after the last one counted."
+    },
+    "technicians": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/TechnicianWork"
+      },
+      "description": "Every active technician, by name, including those who finished nothing."
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "technicians"
+  ],
+  "additionalProperties": false,
+  "description": "Counted at read time from the appointments themselves."
+}
+```
+
+### TechnicianWork
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "technician_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "jobs": {
+      "type": "integer",
+      "description": "Visits completed in the period."
+    },
+    "timed_jobs": {
+      "type": "integer",
+      "description": "Of those, the ones the phone timed from Start to the outcome: what the averages are the mean of."
+    },
+    "average_minutes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How long those took; null when the phone timed none of them."
+    },
+    "average_planned_minutes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the same jobs were planned to take, so the two can be read against each other."
+    },
+    "skill": {
+      "type": "null",
+      "description": "The board's \"First fit\" or \"Service\". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59)."
+    }
+  },
+  "required": [
+    "technician_id",
+    "jobs",
+    "timed_jobs",
+    "average_minutes",
+    "average_planned_minutes",
+    "skill"
   ],
   "additionalProperties": false
 }

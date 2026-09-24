@@ -38,8 +38,12 @@ export type DeletionRequest = Body<paths["/api/deletion-requests"]["get"]>["requ
 export type NumberChange = Body<paths["/api/number-changes"]["get"]>["changes"][number];
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
+export type DayMoney = Body<paths["/api/payments"]["get"]>;
+export type Charge = DayMoney["charges"][number];
 export type Technician = Body<paths["/api/technicians"]["get"]>["technicians"][number];
 export type Device = Technician["devices"][number];
+export type TechniciansWork = Body<paths["/api/technicians/work"]["get"]>;
+export type TechnicianWork = TechniciansWork["technicians"][number];
 export type Board = Body<paths["/api/dispatch"]["get"]>;
 export type BoardRow = Board["technicians"][number];
 export type BoardDay = BoardRow["days"][number];
@@ -141,6 +145,8 @@ export const api = {
   tasks: () => call<Tasks>("GET", "/api/tasks"),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => call<{ cases: NoShowCase[] }>("GET", "/api/no-shows?decision=undecided"),
+  /** Today's money, as board D1 heads it. The route takes a date; the board draws no way of asking for another. */
+  dayMoney: () => call<DayMoney>("GET", "/api/payments"),
   /** Charge the visit or waive it. Neither takes money: the charge follows the 24-hour policy at P2-M5. */
   decideNoShow: (id: string, decision: "charged" | "waived") =>
     call<{ decided: boolean }>("POST", `/api/no-shows/${id}/decision`, { decision }),
@@ -161,6 +167,8 @@ export const api = {
   decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>
     call<{ state: "confirmed" | "rejected" }>("POST", `/api/number-changes/${id}/decision`, { decision, reason }),
   technicians: () => call<{ technicians: Technician[] }>("GET", "/api/technicians"),
+  /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
+  technicianWork: () => call<TechniciansWork>("GET", "/api/technicians/work"),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
   revokeDevice: (id: string, deviceId: string) =>
     call<{ revoked_at: string }>("POST", `/api/technicians/${id}/devices/${encodeURIComponent(deviceId)}/revoke`),
