@@ -95,7 +95,7 @@ const TechniciansSchema = z
           ),
           leave: z
             .array(LeaveSchema)
-            .openapi({ description: "Leave that has not ended yet, soonest first (ADR 0060)." }),
+            .openapi({ description: "Leave that has not ended yet, soonest first (ADR 0062)." }),
         })
         .strict(),
     ),

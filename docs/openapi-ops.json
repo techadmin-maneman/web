@@ -1930,7 +1930,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TechnicianLeave"
                   },
-                  "description": "Leave that has not ended yet, soonest first (ADR 0060)."
+                  "description": "Leave that has not ended yet, soonest first (ADR 0062)."
                 }
               },
               "required": [
@@ -2024,6 +2024,7 @@
                 "group": {
                   "type": "string",
                   "enum": [
+                    "consultation_request",
                     "replacement_order",
                     "referral_review",
                     "no_show_decision",

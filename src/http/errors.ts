@@ -53,7 +53,7 @@ export const ERROR_CODES = [
   "superseded",
   "out_of_order",
   // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
-  // window, is away that day (ADR 0060), or FSM would not take the move.
+  // window, is away that day (ADR 0062), or FSM would not take the move.
   "clash",
   "on_leave",
   "fsm_refused",

@@ -9,7 +9,7 @@
 //
 // The last rule is quoted as the prompt writes it, and it is the one rule we do
 // not keep: FSM has nowhere to read a leave period from, so ops record leave in
-// the console and the same clash check reads it (ADR 0060).
+// the console and the same clash check reads it (ADR 0062).
 
 import { VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";

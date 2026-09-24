@@ -89,7 +89,7 @@ export const dispatch = {
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
     /** PLACEHOLDER: the board draws no board without technicians. */
     empty: "No technician is on this board.",
-    /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0060). */
+    /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
     away: "Away",
     awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
     /** Beneath the board, saying where leave comes from, since it is ours and not FSM's. */
@@ -99,7 +99,7 @@ export const dispatch = {
     title: "Unassigned",
     asked: (window: string) => `Asked · ${window}`,
     offered: (window: string) => `Offered · ${window}`,
-    /** No Request behind the visit recorded a window, so there is nothing to compare (ADR 0061). */
+    /** No Request behind the visit recorded a window, so there is nothing to compare (ADR 0063). */
     notAsked: "Asked · not recorded",
     /** Beneath the tray: where the asked window comes from, and why some rows have none. */
     same: "Asked is what the client picked on their booking. A visit booked without one says so.",
@@ -168,7 +168,7 @@ export const dispatch = {
      */
     clash: (technician: string, date: string, window: string) =>
       `${technician} already holds a job on ${date}, ${window}. Nothing was moved.`,
-    /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0060). */
+    /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0062). */
     onLeave: (technician: string, date: string) => `${technician} is away on ${date}. Nothing was moved.`,
     errors: {
       invalid_request: "That move is not one we can make. Nothing was moved.",
@@ -520,7 +520,7 @@ export const noShows = {
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
- * groups, of which two have something behind them; the other three here are
+ * groups, of which two have something behind them; the other four here are
  * queues it does not draw (docs/open-points.md, item 58).
  */
 export const tasks = {
@@ -529,6 +529,7 @@ export const tasks = {
   overdue: (count: number) => `${String(count)} overdue`,
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
+    consultation_request: "Consultation request",
     replacement_order: "Replacement order",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
@@ -543,6 +544,8 @@ export const tasks = {
   open: (name: string) => `Open ${name}`,
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
+    /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
+    consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
     replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
     no_show_decision: (technician: string) => `${technician} attended`,
@@ -622,7 +625,7 @@ export const technicians = {
   },
   /**
    * PLACEHOLDER: the design draws no leave anywhere, because FSM was thought to
-   * hold it. It does not (ADR 0060), so leave is recorded here and every line
+   * hold it. It does not (ADR 0062), so leave is recorded here and every line
    * below is ours.
    */
   leave: {

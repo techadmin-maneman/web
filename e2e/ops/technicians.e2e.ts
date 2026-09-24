@@ -171,7 +171,7 @@ test("says so when no technician is active", async ({ page }) => {
   await expect(page.getByText("No technician is active.")).toBeVisible();
 });
 
-// Leave is recorded here because FSM has nowhere to keep it (ADR 0060), and it
+// Leave is recorded here because FSM has nowhere to keep it (ADR 0062), and it
 // is the same rows the dispatch board reads, so it says what it does before it
 // is sent.
 test("lists the leave each technician is down for, and says when there is none", async ({ page }) => {

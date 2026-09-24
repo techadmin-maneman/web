@@ -3,7 +3,7 @@
 //
 // A technician's day is eight half-slots. What takes them: slots held and not
 // yet expired (slot_claims), live visits in the mirror, whether ops booked
-// them in FSM or a hold became one, and leave ops recorded (ADR 0060). A
+// them in FSM or a hold became one, and leave ops recorded (ADR 0062). A
 // technician holds one live job per window. A hold writes its claims in one
 // batch, and the claims' key stops two holds taking the same time; once a hold
 // is booked, its visit in the mirror takes the time instead. A visit being

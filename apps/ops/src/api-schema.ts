@@ -2148,7 +2148,7 @@ export interface components {
                     last_seen_at: string;
                     revoked_at: string | null;
                 }[];
-                /** @description Leave that has not ended yet, soonest first (ADR 0060). */
+                /** @description Leave that has not ended yet, soonest first (ADR 0062). */
                 leave: components["schemas"]["TechnicianLeave"][];
             }[];
         };
@@ -2178,7 +2178,7 @@ export interface components {
             overdue: number;
             groups: {
                 /** @enum {string} */
-                group: "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request";
+                group: "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request";
                 count: number;
                 /** @description The longest wait first. */
                 tasks: components["schemas"]["Task"][];

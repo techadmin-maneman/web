@@ -7,7 +7,7 @@ import { clashes, isMoveReason, MOVE_REASONS, moveRefusal, RULES, slotsFor } fro
 
 /** A technician whose day already holds a job starting in each of these windows. */
 const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLeave: false });
-/** The same technician, away that day (ADR 0060). */
+/** The same technician, away that day (ADR 0062). */
 const away = (...windows: BookingWindow[]) => ({ ...day(...windows), onLeave: true });
 
 describe("dispatch", () => {
@@ -60,7 +60,7 @@ describe("dispatch", () => {
     expect(moveRefusal(day("morning"), "morning", "")).toBe("unknown_reason");
   });
 
-  // The rule the prompt's last line asks for, kept our way (ADR 0060): the day
+  // The rule the prompt's last line asks for, kept our way (ADR 0062): the day
   // is refused outright, and named as leave so ops are not told it is merely full.
   it("refuses every window of a day the technician is away, and says it is leave", () => {
     expect(moveRefusal(away(), "morning", "client_asked")).toBe("on_leave");

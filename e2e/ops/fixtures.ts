@@ -196,7 +196,7 @@ export const BOARD = {
    * No client comes with an unassigned job: the route answers with the visit,
    * not the person. The first two are the tray's whole point — a client asked
    * for one window and is being offered another — and the last has no Request
-   * behind it, so nothing recorded what was asked (ADR 0061).
+   * behind it, so nothing recorded what was asked (ADR 0063).
    */
   unassigned: [
     {
@@ -233,7 +233,7 @@ export const BOARD = {
     },
   ],
   utilisation: DATES.map((date, day) => ({ date, percent: UTILISATION[day] ?? 0 })),
-  /** Leave ops recorded, clipped to this week: Faizan is away on the Sunday and Monday (ADR 0060). */
+  /** Leave ops recorded, clipped to this week: Faizan is away on the Sunday and Monday (ADR 0062). */
   leave: [
     {
       technician_id: BOARD_TECHNICIANS[3]?.id,
@@ -626,7 +626,7 @@ export const TECHNICIANS = {
       "SY",
       "Sec 1–39",
       [{ device_id: "device-3", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null }],
-      // Leave ops recorded here, which the dispatch board reads from the same rows (ADR 0060).
+      // Leave ops recorded here, which the dispatch board reads from the same rows (ADR 0062).
       [{ id: "89000000-0000-4000-8000-000000000001", from: "2027-10-02", to: "2027-10-06", note: "Family wedding" }],
     ),
     technician(3, "Faizan Ali", "FA", null, []),

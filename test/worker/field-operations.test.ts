@@ -591,7 +591,7 @@ describe("dispatch", () => {
   });
 });
 
-// Leave is ours because FSM has nowhere to keep it (ADR 0060). The point of
+// Leave is ours because FSM has nowhere to keep it (ADR 0062). The point of
 // putting it through the same clash check is that nothing has to remember to
 // ask: the board refuses it, and so does the client's own booking.
 describe("leave", () => {

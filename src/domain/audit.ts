@@ -32,7 +32,7 @@ export const AUDIT_ACTIONS = [
   "no_show.decide",
   "technician_device.revoke",
   // Leave ops record on a technician, which then refuses those days to booking
-  // and to the dispatch board alike (ADR 0060).
+  // and to the dispatch board alike (ADR 0062).
   "technician.leave",
   "technician.leave_cancelled",
 ] as const;

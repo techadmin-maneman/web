@@ -3,7 +3,8 @@
 //
 //   GET  /api/r/:code                 the invite: valid or unknown, with the referrer's first name if they agreed
 //   GET  /api/pincodes/:pin           whether we come there, and the area's name
-//   POST /api/r/:code/consultation    book a free consultation through the invite
+//   POST /api/r/:code/consultation    book a free consultation through the invite, or ask for one where
+//                                     self-serve booking is off and ops fix the hour on WhatsApp
 //   POST /api/r/:code/waitlist        wait for an unserved pincode, the invite held until 12 months after launch
 //   GET  /api/og/:code.jpg?v=         the invite's preview image: the referrer's card while it is live, else the
 //                                     house card; the version in the link is what makes a revoke reach new shares
@@ -120,12 +121,15 @@ const consultationRoute = createRoute({
   },
   responses: {
     201: {
-      description: "Booked",
+      description: "Booked, or asked for",
       content: {
         "application/json": {
           schema: z
             .object({
-              state: z.literal("booked"),
+              state: z.enum(["booked", "requested"]).openapi({
+                description:
+                  'A slot is held for a "booked" one; a "requested" one waits for ops, self-serve booking being off.',
+              }),
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
               area: z.string(),
@@ -138,7 +142,7 @@ const consultationRoute = createRoute({
     },
     400: errorResponse("invalid_request"),
     403: errorResponse("turnstile_failed"),
-    409: errorResponse("taken: that window has gone; ops_assisted: booking goes through WhatsApp for now"),
+    409: errorResponse("taken: that window has gone"),
     422: errorResponse("not_bookable: the pincode is not served, or the day is not open"),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -226,7 +230,7 @@ export function registerReferralLanding(app: App): void {
     }
     return c.json(
       {
-        state: "booked" as const,
+        state: booked.state,
         date: booked.date,
         window: booked.window,
         area: booked.area,

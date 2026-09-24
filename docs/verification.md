@@ -430,7 +430,7 @@ The owner ruled that the invoice is marked sent as it is raised, and shown on th
 ### Converting a Request, taken up again (24 September 2026)
 
 Open point 65 had stood as a capability FSM lacks. It is the same shape as the
-invoice: ours, not FSM's (ADR 0062). Run against the same org, on its own
+invoice: ours, not FSM's (ADR 0064). Run against the same org, on its own
 "Staging test" records; **REQ4 `8229000000304279` was read and not touched, and
 is left stranded as the evidence it is**.
 
@@ -452,7 +452,7 @@ is left stranded as the evidence it is**.
   `Request: { name: "REQ8", id: … }`, and the Request, read afterwards, was
   **"Work In Progress" with that work order in its `Work_Orders`** — with no
   blueprint call at all. The status follows the link.
-- **Also found, and it settles the tray's asked window** (ADR 0061). REQ4's
+- **Also found, and it settles the tray's asked window** (ADR 0063). REQ4's
   `Preference` read back unchanged three days on:
   `Preferred_Date_1 2026-09-25`, `Preference_Note "Morning, 9 am to 12 pm"`. A
   **service appointment's** own `Preference` subform, however, is read-only:
@@ -460,7 +460,7 @@ is left stranded as the evidence it is**.
   it answers `"record updated"` and stays null. A **work order's** `Preference`
   is writable and reads back. So the asked window is reached through the work
   order's `Request`, and never off the appointment.
-- **What FSM answers about availability** (ADR 0060). `Available_TimeSlots`
+- **What FSM answers about availability** (ADR 0062). `Available_TimeSlots`
   answered for tomorrow, six days out and twenty days out, and at six days left
   out the morning an appointment already held. The "at most 48 hours" in
   `fsm-trial.md` was read off the documentation and never tried; it is corrected
@@ -548,7 +548,7 @@ Four test people were made for this proof, each named "Staging test" with a rand
 - **The message on a handset.** Only allowlisted numbers receive anything, delivery receipts are not set up on the shared Evolution instance (open point 18), and the texts are placeholder (open point 19).
 - **The house card is a placeholder:** two tones and the gold rule, no photograph (open point 43).
 - **Every pincode is served** on staging (open point 21), so "not served" had to be arranged by hand and the real service area is not proven.
-- **With self-serve booking off**, the landing would answer `409 ops_assisted`. That is production's setting and it is still open (open point 41).
+- **With self-serve booking off**, the landing now records a request for ops instead of refusing (ADR 0059); staging runs with the flag on, so the requested path is covered by tests and not by this proof.
 - **The other three fraud rules** are covered by tests only. `shared_upi` could be shown on staging by paying both visits from the same test UPI handle.
 - **A first fit closed in FSM.** The grant was settled from appointments written into D1, so the leg from FSM's Completed through the mirror to `visits.outcome = 'done'` is P2-M2's to prove, not this one's.
 

@@ -10,9 +10,9 @@
 // the API answers with the code alone.
 //
 // A day a technician is away takes no job: the cell offers no window to drop
-// on, and the server refuses the move by name if one is sent anyway (ADR 0060).
+// on, and the server refuses the move by name if one is sent anyway (ADR 0062).
 // The tray's asked window is what the client picked, and a visit whose booking
-// recorded none says so rather than repeating the offered one (ADR 0061).
+// recorded none says so rather than repeating the offered one (ADR 0063).
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";

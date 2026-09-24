@@ -100,7 +100,7 @@
 }
 
 /*
- * A day ops recorded leave on (ADR 0060). It is shaded and labelled rather than
+ * A day ops recorded leave on (ADR 0062). It is shaded and labelled rather than
  * merely greyed: nothing can be dropped on it, and the server refuses it by name
  * even if something is.
  */

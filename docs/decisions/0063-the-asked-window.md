@@ -1,4 +1,4 @@
-# 0061. The asked window and the offered one
+# 0063. The asked window and the offered one
 
 - Status: accepted
 - Date: 2026-09-24
@@ -52,7 +52,7 @@ with the invoice link it has to walk for.
 **The asked window is resolved once per visit and stored, and the words are read
 from our own lead rather than parsed back out of FSM.**
 
-- `appointments.asked_window` and `asked_checked_at` (migration 0031).
+- `appointments.asked_window` and `asked_checked_at` (migration 0033).
 - `fsm.requestPreference(workOrderId)` reads the work order, follows its
   `Request` if it has one, and answers that Request's preference. Two reads, no
   write. Null when the work order names no Request.

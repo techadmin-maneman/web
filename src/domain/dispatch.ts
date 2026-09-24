@@ -9,7 +9,7 @@
 // "A technician cannot hold two live jobs in one window on one date. This check
 // runs on the server before any write to FSM": the refusal below happens before
 // anything is written anywhere. A technician on leave is refused the same way,
-// and named as away rather than busy (ADR 0060). Then FSM, then the mirror,
+// and named as away rather than busy (ADR 0062). Then FSM, then the mirror,
 // then the client's message. "The client's payment carries over and he is never
 // charged for a move ops make", so no amount is read or written here at all.
 
@@ -69,7 +69,7 @@ export interface Board {
   readonly utilisation: { date: string; percent: number }[];
   /**
    * Leave ops recorded, clipped to the board's own week, so a column is drawn
-   * away for exactly the days it is (ADR 0060). It does not come from FSM:
+   * away for exactly the days it is (ADR 0062). It does not come from FSM:
    * FSM's availability answers free time, never the reason for it.
    */
   readonly leave: { technician_id: string; from: string; to: string; note: string | null }[];

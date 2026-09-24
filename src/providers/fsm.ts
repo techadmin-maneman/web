@@ -37,7 +37,7 @@ export interface FsmAppointment {
  * The Request a work order was converted from, and what the client asked for on
  * it. FSM keeps the preference on the Request alone: the appointment has the
  * same subform and it is read-only there, silently dropping anything written
- * to it (ADR 0061).
+ * to it (ADR 0063).
  */
 export interface FsmRequestPreference {
   readonly requestId: string;

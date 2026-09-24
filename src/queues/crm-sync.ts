@@ -54,7 +54,7 @@ interface LeadRow {
   source: LeadSource;
   city: string | null;
   first_choice_window: VisitWindow | null;
-  loss_extent: LossExtent;
+  loss_extent: LossExtent | null;
   proposed_visit_date: string | null;
   utm_source: string | null;
   utm_campaign: string | null;

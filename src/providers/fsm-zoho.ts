@@ -631,7 +631,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
 
     // Two reads, no write. The work order names the Request it was converted
     // from, and the Request alone keeps the client's preference: FSM drops
-    // anything written to the same subform on an appointment (ADR 0061).
+    // anything written to the same subform on an appointment (ADR 0063).
     async requestPreference(workOrderId) {
       const [order] = records(
         await json("request_work_order", `/Work_Orders/${workOrderId}`),

@@ -1,4 +1,4 @@
-// A technician's leave, recorded by ops in the console (ADR 0060).
+// A technician's leave, recorded by ops in the console (ADR 0062).
 //
 // FSM cannot hold this for us: its availability calls answer free time, not why
 // time is not free, and its Time_Off module takes a type whose list lives in

@@ -173,7 +173,7 @@ export const api = {
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
   revokeDevice: (id: string, deviceId: string) =>
     call<{ revoked_at: string }>("POST", `/api/technicians/${id}/devices/${encodeURIComponent(deviceId)}/revoke`),
-  /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0060). */
+  /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
   recordLeave: (id: string, leave: { from: string; to: string; note: string | null }) =>
     call<{ id: string }>("POST", `/api/technicians/${id}/leave`, {
       from: leave.from,

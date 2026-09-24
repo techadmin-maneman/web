@@ -1,4 +1,4 @@
-# 0060. Leave on the dispatch board
+# 0062. Leave on the dispatch board
 
 - Status: accepted
 - Date: 2026-09-24
@@ -54,7 +54,7 @@ have a Technicians screen in our own console, while the owner is FSM's only user
 **Leave is recorded on our side, and read by the clash check that already
 reserves a technician's time.**
 
-- One table, `technician_leave` (migration 0031): the technician, a first and a
+- One table, `technician_leave` (migration 0033): the technician, a first and a
   last day of India's calendar, both inclusive, an optional note in ops' words,
   the Access identity that recorded it, and the identity that took it back.
 - `occupancy` (`src/domain/scheduling.ts`) reads it beside `slot_claims` and sets

@@ -7,7 +7,7 @@
 // trained for, so it is not drawn and a line beneath the table says why
 // (docs/open-points.md, item 59).
 //
-// Leave is recorded here because FSM has nowhere to keep it (ADR 0060). It is
+// Leave is recorded here because FSM has nowhere to keep it (ADR 0062). It is
 // not a note: the days it covers are refused to self-serve booking and to the
 // dispatch board alike, which is why the form says so before it is sent.
 

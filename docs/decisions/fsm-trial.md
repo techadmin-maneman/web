@@ -161,7 +161,7 @@ free time, never the reason time is not free. FSM does hold leave, in a
 
 Time-off types are built in FSM's Setup screens, which the API does not reach —
 the same wall as the workflow rules and the job-sheet template. So leave is
-recorded on our side (`docs/decisions/0060-leave-on-the-dispatch-board.md`).
+recorded on our side (`docs/decisions/0062-leave-on-the-dispatch-board.md`).
 
 ## Question 7, the Request's conversion: answered 24 September 2026
 
@@ -176,4 +176,4 @@ field. Tried on our own test contact: 201, the work order came back naming the
 Request, and the Request moved itself to "Work In Progress" with that work order
 in its `Work_Orders`, with no blueprint call. Every record made for it was
 labelled "Staging test" and deleted the same session
-(`docs/decisions/0062-converting-a-request.md`).
+(`docs/decisions/0064-converting-a-request.md`).

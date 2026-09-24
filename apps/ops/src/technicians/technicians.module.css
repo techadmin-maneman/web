@@ -212,7 +212,7 @@
   color: var(--error-on-paper);
 }
 
-/* ---- Leave, which the dispatch board and booking both read (ADR 0060) ----- */
+/* ---- Leave, which the dispatch board and booking both read (ADR 0062) ----- */
 
 .leave {
   margin-top: var(--sp-14);

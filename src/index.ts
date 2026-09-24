@@ -141,7 +141,7 @@ export default {
         });
 
       // What the client asked for, for the unassigned tray to show beside what
-      // it is offering them (ADR 0061). One read per visit, ever.
+      // it is offering them (ADR 0063). One read per visit, ever.
       const askedLog = log.child({ job: "asked_windows" });
       await resolveAskedWindows(workerEnv.DB, deps.fsm, deps.now(), askedLog)
         .then((done) => {

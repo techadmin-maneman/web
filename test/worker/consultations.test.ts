@@ -97,15 +97,39 @@ describe("POST /api/consultation", () => {
     ).toBe(422);
   });
 
-  it("sends the visitor to WhatsApp while self-serve booking is off", async () => {
+  // Ops fix the hour on WhatsApp while the flag is off, so the day the visitor
+  // asked for is recorded for them instead of being refused
+  // (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+  it("records a request for ops while self-serve booking is off, holding no slot", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const fsm = fakeQueue();
+    const crm = fakeQueue();
     const answer = await request(
       site({ selfServeBooking: false }),
       "/api/consultation",
       post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      { FSM_QUEUE: fsm, CRM_QUEUE: crm },
     );
-    expect(answer.status).toBe(409);
-    expect(await answer.json<{ error: { code: string } }>()).toMatchObject({ error: { code: "ops_assisted" } });
+
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual({
+      state: "requested",
+      date: "2026-09-23",
+      window: "morning",
+      area: "Gurgaon South City II",
+    });
+    expect(fsm.sent).toEqual([]);
+    expect(crm.sent).toHaveLength(1);
+    const asked = await env.DB.prepare(
+      `SELECT r.pincode, r.requested_date, r.requested_window, r.referral_code
+       FROM consultation_requests r JOIN people p ON p.id = r.person_id WHERE p.mobile_e164 = '+919810000002'`,
+    ).first();
+    expect(asked).toEqual({
+      pincode: "122018",
+      requested_date: "2026-09-23",
+      requested_window: "morning",
+      referral_code: null,
+    });
   });
 });
 
