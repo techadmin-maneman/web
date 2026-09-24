@@ -6,8 +6,11 @@
 import { Fragment } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
+import { DeletionsScreen } from "./deletions/DeletionsScreen.tsx";
 import { NoShowsScreen } from "./no-shows/NoShowsScreen.tsx";
 import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
+import { GrievancesScreen } from "./grievances/GrievancesScreen.tsx";
+import { NumberChangesScreen } from "./number-changes/NumberChangesScreen.tsx";
 import { ReferralsScreen } from "./referrals/ReferralsScreen.tsx";
 import { keyOf, routeOf, usePath, type Route } from "./route.ts";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
@@ -21,6 +24,9 @@ function Page({ route }: { route: Route }) {
   if (route.page === "no-shows") return <NoShowsScreen />;
   if (route.page === "tasks") return <TasksScreen />;
   if (route.page === "technicians") return <TechniciansScreen />;
+  if (route.page === "grievances") return <GrievancesScreen />;
+  if (route.page === "deletion-requests") return <DeletionsScreen />;
+  if (route.page === "number-changes") return <NumberChangesScreen />;
   if (route.clientId === null) return <FindClientScreen />;
   return <ClientScreen clientId={route.clientId} tab={route.tab} />;
 }

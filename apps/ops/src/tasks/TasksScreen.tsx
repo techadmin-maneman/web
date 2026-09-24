@@ -11,6 +11,7 @@ import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Task, type TaskGroup } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { referrals, tasks } from "../content.ts";
+import { daysUntil } from "../lib/due.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./tasks.module.css";
@@ -19,12 +20,6 @@ type Group = TaskGroup["group"];
 
 /** The fraud rules, as board C1 letters them: a held grant is the same grant on both boards. */
 const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
-
-/** Whole days in India from today to the day a task falls due: 0 is today, below zero is overdue. */
-function daysUntil(due: string, now: Date): number {
-  const midnight = (instant: string) => Date.parse(`${indiaDate(instant)}T00:00:00Z`);
-  return Math.round((midnight(due) - midnight(now.toISOString())) / 86_400_000);
-}
 
 /** The second line: the one fact the group turns on. */
 function subOf(group: Group, task: Task): string {
