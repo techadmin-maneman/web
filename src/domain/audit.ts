@@ -31,6 +31,11 @@ export const AUDIT_ACTIONS = [
   // no-show from its evidence, and ops revoking the phone a technician works from.
   "no_show.decide",
   "technician_device.revoke",
+  // The business inputs ops set for themselves (docs/decisions/0059-ops-editable-inputs.md):
+  // one of the rules, a price from a date, and whether we go to a pincode.
+  "setting.change",
+  "price.set",
+  "pincode.set",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

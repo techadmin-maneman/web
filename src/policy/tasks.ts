@@ -37,7 +37,9 @@ export type TaskGroup = (typeof TASK_GROUPS)[number];
  * prompt states none, so every group waits the same two days: a placeholder
  * until the owner rules each one (docs/open-points.md, item 58).
  */
-export const TASK_SLA_HOURS: Readonly<Record<TaskGroup, number>> = {
+export type Slas = Readonly<Record<TaskGroup, number>>;
+
+export const TASK_SLA_HOURS: Slas = {
   replacement_order: 48,
   referral_review: 48,
   no_show_decision: 48,
@@ -45,6 +47,10 @@ export const TASK_SLA_HOURS: Readonly<Record<TaskGroup, number>> = {
   erasure_request: 48,
 };
 
-/** When a task that started waiting at `since` falls due. */
-export const dueAt = (since: Date, group: TaskGroup): Date =>
-  new Date(since.getTime() + TASK_SLA_HOURS[group] * 3_600_000);
+/**
+ * When a task that started waiting at `since` falls due. The allowances ops
+ * have set, or the ones above: they are ops-editable inputs
+ * (docs/decisions/0060-ops-editable-inputs.md).
+ */
+export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS): Date =>
+  new Date(since.getTime() + sla[group] * 3_600_000);

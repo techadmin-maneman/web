@@ -61,7 +61,8 @@
                   "out_of_order",
                   "clash",
                   "fsm_refused",
-                  "too_early_to_close"
+                  "too_early_to_close",
+                  "no_service_area"
                 ]
               },
               "request_id": {
@@ -2030,7 +2031,7 @@
           "due": {
             "type": "string",
             "format": "date-time",
-            "description": "since plus the group's allowance, 48 hours for every group so far."
+            "description": "since plus the group's allowance, which ops set; 48 hours until they do."
           }
         },
         "required": [
@@ -2280,6 +2281,291 @@
           "average_minutes",
           "average_planned_minutes",
           "skill"
+        ],
+        "additionalProperties": false
+      },
+      "OpsSetting": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "min": {
+            "type": "integer"
+          },
+          "max": {
+            "type": "integer"
+          },
+          "keys": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "open"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null for one number, a list where the keys are fixed, \"open\" where ops name them."
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              }
+            ]
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              }
+            ],
+            "description": "The committed figure, in force until somebody sets one."
+          },
+          "source": {
+            "type": "string",
+            "description": "The module the default lives in."
+          },
+          "set_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "set_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "note",
+          "unit",
+          "min",
+          "max",
+          "keys",
+          "value",
+          "default",
+          "source",
+          "set_by",
+          "set_at"
+        ],
+        "additionalProperties": false
+      },
+      "SettingChange": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "Price": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string"
+          },
+          "amount_ex_gst": {
+            "type": "integer",
+            "description": "In paise, before GST."
+          },
+          "gst_percent": {
+            "type": "integer"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date",
+            "description": "India's date it applies from."
+          },
+          "in_force": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "item",
+          "tier",
+          "amount_ex_gst",
+          "gst_percent",
+          "valid_from",
+          "in_force"
+        ],
+        "additionalProperties": false
+      },
+      "PriceChange": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "tier": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "amount_ex_gst": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "gst_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 28
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "item",
+          "tier",
+          "amount_ex_gst",
+          "gst_percent",
+          "valid_from"
+        ],
+        "additionalProperties": false
+      },
+      "ServedPincode": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "served": {
+            "type": "boolean"
+          },
+          "launch_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "pincode",
+          "area",
+          "city",
+          "served",
+          "launch_on"
+        ],
+        "additionalProperties": false
+      },
+      "ServiceAreaChange": {
+        "type": "object",
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pincode": {
+                  "type": "string",
+                  "pattern": "^[1-8]\\d{5}$"
+                },
+                "served": {
+                  "type": "boolean"
+                },
+                "launch_on": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "pincode",
+                "served",
+                "launch_on"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "changes"
         ],
         "additionalProperties": false
       }
@@ -3925,6 +4211,315 @@
           },
           "400": {
             "description": "invalid_request: from is not before to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "summary": "Every business rule ops may change, with its unit, its bounds and who last set it",
+        "responses": {
+          "200": {
+            "description": "The rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OpsSetting"
+                      }
+                    }
+                  },
+                  "required": [
+                    "settings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/{name}": {
+      "post": {
+        "summary": "Set one rule, or send a null value to put the committed default back",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "checkin_radius_m",
+                "no_show_wait_min",
+                "address_unlock_hour",
+                "task_sla_hours",
+                "piece_cycle_days"
+              ]
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsSetting"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: the figure is outside what the rule allows, and fields names it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prices": {
+      "get": {
+        "summary": "The price book: every price, past, present and scheduled",
+        "responses": {
+          "200": {
+            "description": "Prices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Price"
+                      }
+                    },
+                    "today": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "max_amount_ex_gst": {
+                      "type": "integer"
+                    },
+                    "max_gst_percent": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "prices",
+                    "today",
+                    "max_amount_ex_gst",
+                    "max_gst_percent"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "A price from the date it applies. A change is a new row, so nothing already invoiced moves",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The book as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Price"
+                      }
+                    }
+                  },
+                  "required": [
+                    "prices"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names what was refused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/service-area": {
+      "get": {
+        "summary": "Every pincode we hold, its city, and whether a technician goes there",
+        "responses": {
+          "200": {
+            "description": "Pincodes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pincodes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServedPincode"
+                      }
+                    }
+                  },
+                  "required": [
+                    "pincodes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Which pincodes we go to, and from when. Only the pincodes named change",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceAreaChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "changed": {
+                      "type": "integer"
+                    },
+                    "served": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "changed",
+                    "served"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served",
             "content": {
               "application/json": {
                 "schema": {

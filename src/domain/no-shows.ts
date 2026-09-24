@@ -10,7 +10,7 @@
 // automatically", so a case opens undecided and waits for a person.
 
 import type { VisitType } from "../config/visit-types.ts";
-import { canCloseAsNoShow, waitEndsAt, type NoShowDecision } from "../policy/no-show.ts";
+import { canCloseAsNoShow, waitEndsAt, type NoShowDecision, type Waits } from "../policy/no-show.ts";
 
 /** The three facts, and nothing else. */
 export interface NoShowCase {
@@ -64,14 +64,16 @@ export async function closeAsNoShow(
     type: VisitType;
     checkIn: { id: string; at: string } | null;
     now: Date;
+    /** The waits in force, which ops set (ADR 0060). */
+    wait: Waits;
   },
 ): Promise<Closing> {
   const { checkIn } = input;
   if (checkIn === null) return { kind: "no_check_in" };
 
   const checkedInAt = new Date(checkIn.at);
-  const ends = waitEndsAt(checkedInAt, input.type);
-  if (!canCloseAsNoShow(checkedInAt, input.type, input.now)) {
+  const ends = waitEndsAt(checkedInAt, input.type, input.wait);
+  if (!canCloseAsNoShow(checkedInAt, input.type, input.now, input.wait)) {
     return { kind: "too_early", waitEndsAt: ends.toISOString() };
   }
 

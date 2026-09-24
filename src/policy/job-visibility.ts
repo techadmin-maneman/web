@@ -30,13 +30,19 @@ export function jobDay(windowStart: Date, now: Date): JobDay {
  * client list off a phone that might be lost, so the six hours it takes off
  * midnight are the point of it.
  */
-export const UNLOCK_TIME = "18:00";
+export const UNLOCK_HOUR = 18;
 
-/** When a job's address, access notes and client card unlock. */
-export const unlocksAt = (windowStart: Date): Date => indiaInstant(addDays(indiaDate(windowStart), -1), UNLOCK_TIME);
+/**
+ * The hour ops have set, or the one above. It is an ops-editable input
+ * (docs/decisions/0060-ops-editable-inputs.md), so every caller passes the
+ * hour in force; the default keeps the rule readable and standing on its own.
+ */
+export const unlocksAt = (windowStart: Date, hour: number = UNLOCK_HOUR): Date =>
+  indiaInstant(addDays(indiaDate(windowStart), -1), `${String(hour).padStart(2, "0")}:00`);
 
 /** Whether the address, access notes and client card are unlocked yet. */
-export const unlocked = (windowStart: Date, now: Date): boolean => now.getTime() >= unlocksAt(windowStart).getTime();
+export const unlocked = (windowStart: Date, now: Date, hour: number = UNLOCK_HOUR): boolean =>
+  now.getTime() >= unlocksAt(windowStart, hour).getTime();
 
 /** What a locked job carries: "only time, type and sector". */
 export const OUTLINE_FIELDS = ["window_start", "window_end", "type", "sector"] as const;
@@ -49,5 +55,5 @@ export const PAYMENT_BADGES = ["prepaid", "credit"] as const;
 export type PaymentBadge = (typeof PAYMENT_BADGES)[number];
 
 /** The fields a job may carry at this moment, so a route can build its answer from one list. */
-export const visibleFields = (windowStart: Date, now: Date): readonly string[] =>
-  unlocked(windowStart, now) ? [...OUTLINE_FIELDS, ...UNLOCKED_FIELDS] : OUTLINE_FIELDS;
+export const visibleFields = (windowStart: Date, now: Date, hour: number = UNLOCK_HOUR): readonly string[] =>
+  unlocked(windowStart, now, hour) ? [...OUTLINE_FIELDS, ...UNLOCKED_FIELDS] : OUTLINE_FIELDS;

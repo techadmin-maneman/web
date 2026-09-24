@@ -10,7 +10,9 @@
 // standing in for one and every real base falls through to the default.
 
 /** How long a piece on each base lasts before it is due for replacement, in days. */
-export const PIECE_CYCLE_DAYS: Readonly<Record<string, number>> = {
+export type Cycles = Readonly<Record<string, number>>;
+
+export const PIECE_CYCLE_DAYS: Cycles = {
   // 6 months. The map stays per base so a base can be given its own cycle
   // without touching anything that reads it; today none has one.
   PLACEHOLDER_STANDARD: 180,
@@ -19,8 +21,13 @@ export const PIECE_CYCLE_DAYS: Readonly<Record<string, number>> = {
 /** The cycle used for a base with no figure of its own, which is every base. */
 export const DEFAULT_PIECE_CYCLE_DAYS = 180;
 
-export const cycleDaysFor = (base: string | null): number =>
-  (base === null ? undefined : PIECE_CYCLE_DAYS[base]) ?? DEFAULT_PIECE_CYCLE_DAYS;
+/**
+ * The cycle for a base: the one ops have set, or the map above. The cycles are
+ * an ops-editable input (docs/decisions/0060-ops-editable-inputs.md), where
+ * `default` holds the figure for a base with none of its own.
+ */
+export const cycleDaysFor = (base: string | null, cycles: Cycles = PIECE_CYCLE_DAYS): number =>
+  (base === null ? undefined : cycles[base]) ?? cycles.default ?? DEFAULT_PIECE_CYCLE_DAYS;
 
 /**
  * The label a technician types, e.g. "MM-STD-4417-B": "MM", a base code, digits

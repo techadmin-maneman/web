@@ -16,8 +16,9 @@ export const shell = {
    * The sections the backend has routes for, in the design's order; the design
    * draws eight. Its third is drawn as "Payments" and built as "No-shows": the
    * day's money is there, over the queue, but the dispute the board rules on
-   * has no record behind it (docs/open-points.md, item 57). Settings is the one
-   * it draws that is not built; nothing here is settable.
+   * has no record behind it (docs/open-points.md, item 57). Settings is the
+   * eighth, built from ADR 0060: the prices, the service area and the rules
+   * ops set for themselves, none of which now needs a release.
    *
    * The last three are drawn on no board at all. They are what a client asks of
    * us about their own data, and every one was API-only until the P2-M6 proof
@@ -34,6 +35,7 @@ export const shell = {
     { page: "/grievances", label: "Grievances" },
     { page: "/deletion-requests", label: "Deletion requests" },
     { page: "/number-changes", label: "Number changes" },
+    { page: "/settings", label: "Settings" },
   ],
 } as const;
 
@@ -750,6 +752,119 @@ export const numberChanges = {
     errors: {
       number_in_use: "Another client holds that number already. Nothing was changed.",
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/**
+ * Settings: the business inputs ops set for themselves. The design draws this
+ * section and letters nothing inside it (docs/decisions/0060-ops-editable-inputs.md,
+ * docs/fidelity-method.md), so every line below is ours. Each field says its
+ * unit and what the figure may be before it is typed, not after it is refused:
+ * a form that sets a business rule has to be readable by whoever owns the rule.
+ */
+export const settings = {
+  title: "Settings",
+  sub: "A change takes effect within a minute. No release is needed.",
+  tabs: [
+    { tab: "rules", label: "Rules", path: "/settings" },
+    { tab: "prices", label: "Prices", path: "/settings/prices" },
+    { tab: "area", label: "Service area", path: "/settings/area" },
+  ],
+  rules: {
+    title: "Rules",
+    allowed: (min: number, max: number, unit: string) => `${String(min)} to ${String(max)} ${unit}, a whole number`,
+    setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
+    committed: (source: string) => `Nobody has set this. The figure in the code stands (${source}).`,
+    save: "Save",
+    saving: "Saving",
+    saved: "Saved.",
+    reset: "Use the figure in the code",
+    /** The open-keyed rule's extra row: a base FSM names, and the cycle for it. */
+    addKey: "Add a base",
+    keyName: "Base, exactly as FSM names it",
+    keyValue: "Days",
+    add: "Add",
+    defaultKey: "Every other base",
+    errors: {
+      invalid_request: "That figure is outside what this rule allows. Nothing was changed.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+  prices: {
+    title: "Prices",
+    note: "A price applies from the day you give it and never before, so nothing already invoiced moves.",
+    columns: ["Item", "Tier", "Before GST", "GST", "From", "State"],
+    inForce: "In force",
+    scheduled: "To come",
+    spent: "Past",
+    /** Paise as rupees: 3000000 reads "Rs. 30,000". */
+    rupees: (paise: number) => `Rs. ${(paise / 100).toLocaleString("en-IN")}`,
+    percent: (value: number) => `${String(value)}%`,
+    form: {
+      title: "Set a price",
+      item: "Item",
+      tier: "Tier",
+      amount: "Price before GST, in rupees",
+      amountHint: (maxPaise: number) => `Whole rupees, 0 to ${(maxPaise / 100).toLocaleString("en-IN")}.`,
+      gst: "GST",
+      gstHint: (max: number) => `A whole percentage, 0 to ${String(max)}.`,
+      from: "Applies from",
+      fromHint: "Today or a day after it. Write it as 2026-10-01.",
+      save: "Set this price",
+      saving: "Setting",
+      saved: "The price is set.",
+    },
+    errors: {
+      amount_ex_gst: "A price is in whole rupees, inside the range under the field. Nothing was changed.",
+      gst_percent: "GST is a whole percentage, inside the range under the field. Nothing was changed.",
+      valid_from: "A price applies from today or a day after it. Nothing was changed.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+  area: {
+    title: "Service area",
+    /**
+     * The file is what the owner already edits (data/pincodes/README.md), so
+     * the screen takes it back rather than asking for 198 rows to be retyped.
+     * The toggles are for the one-at-a-time change, which is what a launch is.
+     */
+    note: "The pincodes come from data/pincodes/ncr-pincodes.csv. Change a few here, or upload the file you have edited.",
+    city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
+    columns: ["Pincode", "Area", "Served", "Launch date"],
+    served: "Served",
+    launchOn: "Launch date",
+    launchHint: "Write it as 2026-10-01. A held referral invite for that area lapses twelve months from this day.",
+    save: "Save these pincodes",
+    saving: "Saving",
+    saved: (changed: number) => (changed === 1 ? "One pincode changed." : `${String(changed)} pincodes changed.`),
+    nothing: "Nothing to save: no pincode has changed.",
+    bulk: {
+      serve: (city: string) => `Serve all of ${city}`,
+      stop: (city: string) => `Stop serving ${city}`,
+    },
+    upload: {
+      title: "Upload the file",
+      label: "The CSV you have edited",
+      hint: "It needs a pincode column, and served and launch_on. Every other column is ignored.",
+      read: (changed: number) =>
+        changed === 1 ? "The file changes one pincode." : `The file changes ${String(changed)} pincodes.`,
+      none: "The file changes nothing. Every pincode in it already reads that way.",
+      apply: "Apply the file",
+      cancel: "Not now",
+      badDate: (pincode: string) => `${pincode}: a launch date has to be written as 2026-10-01.`,
+      badHeader: "That file has no pincode column. Save it as CSV, with its header row.",
+    },
+    download: "Download the current list",
+    downloadName: "service-area.csv",
+    errors: {
+      no_service_area: "That would leave no pincode served, and every client on the waitlist. Nothing was changed.",
+      /** A pincode we do not hold: the file is reference data, not a way to add one. */
+      invalid_request: "That names a pincode we do not hold. Nothing was changed.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
