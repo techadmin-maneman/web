@@ -378,6 +378,45 @@ export const NO_SHOW_UNMEASURED = {
   cases: [{ ...NO_SHOWS.cases[0], distance_m: null }],
 };
 
+/**
+ * Board D1's first card: the day's three figures, and the two charges beneath
+ * them. The amounts are the board's own, in paise as the route answers them.
+ * The late cancellation carries its evidence, "cancelled 9:14 am · visit was
+ * 10 am"; the no-show carries no amount, because nothing records what one was
+ * charged, so it is counted beside the figure instead of added to it.
+ */
+export const DAY_MONEY = {
+  date: "2027-09-22",
+  collected: 8_400_000,
+  refunds_processing: 708_000,
+  refunded: 236_000,
+  charged: 236_000,
+  no_shows_charged: 1,
+  dispute: null,
+  charges: [
+    {
+      id: "a1000000-0000-4000-8000-000000000001",
+      kind: "late_cancellation",
+      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
+      amount: 236_000,
+      at: "2027-09-22T03:44:00.000Z",
+      visit_started_at: "2027-09-22T04:30:00.000Z",
+      change: "cancelled",
+      technician: null,
+    },
+    {
+      id: "a1000000-0000-4000-8000-000000000002",
+      kind: "no_show",
+      person: { id: "11000000-0000-4000-8000-000000000005", name: "Karan Bose" },
+      amount: null,
+      at: "2027-09-22T05:00:00.000Z",
+      visit_started_at: "2027-09-22T06:00:00.000Z",
+      change: null,
+      technician: "Imran Qureshi",
+    },
+  ],
+};
+
 // ---- Board B1: the pieces the client has been fitted with ----------------------
 
 /** The board's own three: one still in wear, one that split, and one rejected at the fit. */
@@ -542,6 +581,43 @@ export const TECHNICIANS = {
       { device_id: "device-3", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null },
     ]),
     technician(3, "Faizan Ali", "FA", null, []),
+  ],
+};
+
+/**
+ * What each of them has finished, over the quarter the route counts by default.
+ * Faizan's is the board's own line, "18 minutes over on services", against the
+ * 90 minutes a service visit is planned for; Sandeep's average is of fewer jobs
+ * than he finished, because the phone timed only thirty of them.
+ */
+export const TECHNICIAN_WORK = {
+  from: "2027-06-24",
+  to: "2027-09-23",
+  technicians: [
+    {
+      technician_id: "88000000-0000-4000-8000-000000000001",
+      jobs: 48,
+      timed_jobs: 48,
+      average_minutes: 84,
+      average_planned_minutes: 90,
+      skill: null,
+    },
+    {
+      technician_id: "88000000-0000-4000-8000-000000000002",
+      jobs: 34,
+      timed_jobs: 30,
+      average_minutes: 91,
+      average_planned_minutes: 90,
+      skill: null,
+    },
+    {
+      technician_id: "88000000-0000-4000-8000-000000000003",
+      jobs: 29,
+      timed_jobs: 29,
+      average_minutes: 108,
+      average_planned_minutes: 90,
+      skill: null,
+    },
   ],
 };
 

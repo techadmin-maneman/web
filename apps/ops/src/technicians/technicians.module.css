@@ -58,13 +58,51 @@
   text-align: left;
 }
 
-/* The board's two columns, at the widths it draws them; the zone takes the slack its other three leave. */
+/* The board's columns, at the widths it draws them; the zone takes the slack Skill leaves. */
 .name {
   width: var(--ops-technician);
 }
 
 .zone {
   min-width: var(--ops-zone);
+  color: var(--text-muted);
+}
+
+.jobs {
+  width: var(--ops-jobs);
+  padding: var(--sp-9) var(--sp-4);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.service {
+  width: var(--ops-service);
+  padding: var(--sp-9) var(--sp-6);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* The third column is Jobs: a count, so it and its head read from the right, as the board sets them. */
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  padding-right: var(--sp-4);
+  text-align: right;
+}
+
+/* A technician who runs over the length their visits were planned for, in the brass the board's peaks take. */
+.over {
+  color: var(--brass-text);
+}
+
+/* What the average is of, when the phone timed fewer jobs than were finished. */
+.base {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.note {
+  margin: var(--sp-14) 0 0;
+  font-size: var(--fs-13);
+  line-height: 1.6;
   color: var(--text-muted);
 }
 

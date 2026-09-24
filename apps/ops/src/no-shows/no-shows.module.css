@@ -1,8 +1,11 @@
 /*
- * Board D1's queue, on the panel the board draws it on. The evidence reads as
- * the board's disputed charge does: the fact on the left, its value right and
+ * Board D1's two cards, on the panel the board draws them on: the day's money
+ * over the charges it was kept on, then the queue. The evidence reads as the
+ * board's disputed charge does: the fact on the left, its value right and
  * tabular, one hairline between each. Ink carries the one primary action, as
  * on board C1; gold stays with the navigation's selection.
+ *
+ * Every amount is lining and tabular, so a column of rupees reads as a column.
  */
 
 .column {
@@ -42,6 +45,121 @@
   padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-15);
   color: var(--text-muted);
+}
+
+/* ---- The day's money, and the charges beneath it --------------------------- */
+
+/* The board's card draws no heading; the panel still needs a name to be reached by. */
+.hiddenTitle {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Each figure stands on the top line, whatever its own name runs to. */
+.figures {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-32);
+  margin: 0;
+  padding: var(--sp-20) var(--sp-20) var(--sp-16);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+/* The amount over its name, as the board draws it; the pair is read in its own order. */
+.figure {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+/* Never broken across lines: a figure that wraps reads as two. */
+.amount {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.figureName {
+  margin-top: var(--sp-6);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* The second line of a figure's name: what the figure leaves out, or what it is not. */
+.aside {
+  display: block;
+  margin-top: var(--sp-2);
+}
+
+/*
+ * A figure with no record behind it: words where the amount would stand, in the
+ * ink of a name rather than of a number, so it cannot be read as a nought
+ * (docs/decisions/0036-geocoding.md).
+ */
+.unrecorded {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.chargesTitle {
+  margin: var(--sp-16) 0 0;
+  padding: 0 var(--sp-20);
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.charges {
+  margin: var(--sp-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Named apart from .charge, which is the queue's button and stands on ink. */
+.chargeRow {
+  padding: var(--sp-13) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.chargeLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-16);
+}
+
+.who {
+  font-size: var(--fs-15);
+}
+
+.chargeAmount {
+  font-size: var(--fs-15);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.evidence {
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-14);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* Between the cards, where the board draws its disputed charge, as its own captions read. */
+.caption {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-soft);
 }
 
 /* ---- One case, with its three facts --------------------------------------- */

@@ -25,8 +25,10 @@ import { registerOpsClients } from "./routes/ops-clients.ts";
 import { registerOpsDispatch } from "./routes/ops-dispatch.ts";
 import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
+import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsTasks } from "./routes/ops-tasks.ts";
+import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
@@ -116,6 +118,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsDispatch,
     registerOpsField,
     registerOpsTasks,
+    registerOpsPayments,
+    registerOpsTechnicians,
   ],
   tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],
 };
