@@ -749,6 +749,7 @@ The piece a label names
             "superseded",
             "out_of_order",
             "clash",
+            "on_leave",
             "fsm_refused",
             "too_early_to_close"
           ]

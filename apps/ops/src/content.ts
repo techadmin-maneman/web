@@ -89,22 +89,20 @@ export const dispatch = {
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
     /** PLACEHOLDER: the board draws no board without technicians. */
     empty: "No technician is on this board.",
-    /**
-     * The board draws a cell of leave, and none is ever shown: FSM answers about
-     * availability 48 hours ahead and the board is seven days
-     * (docs/open-points.md, item 53).
-     */
-    leave: "Leave is not shown. FSM answers about availability 48 hours ahead, and this board is seven days.",
+    /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0060). */
+    away: "Away",
+    awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
+    /** Beneath the board, saying where leave comes from, since it is ours and not FSM's. */
+    leave: "Leave is recorded on the Technicians screen. A day marked Away takes no job.",
   },
   tray: {
     title: "Unassigned",
     asked: (window: string) => `Asked · ${window}`,
     offered: (window: string) => `Offered · ${window}`,
-    /**
-     * The two are always the same window: FSM holds one time on an appointment,
-     * and no preference of the client's is read back (docs/open-points.md, item 54).
-     */
-    same: "Asked and offered are the same window: FSM holds one time on a visit.",
+    /** No Request behind the visit recorded a window, so there is nothing to compare (ADR 0061). */
+    notAsked: "Asked · not recorded",
+    /** Beneath the tray: where the asked window comes from, and why some rows have none. */
+    same: "Asked is what the client picked on their booking. A visit booked without one says so.",
     // PLACEHOLDER: the board draws four waiting and no empty tray.
     empty: "Nothing is waiting for a technician.",
   },
@@ -170,6 +168,8 @@ export const dispatch = {
      */
     clash: (technician: string, date: string, window: string) =>
       `${technician} already holds a job on ${date}, ${window}. Nothing was moved.`,
+    /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0060). */
+    onLeave: (technician: string, date: string) => `${technician} is away on ${date}. Nothing was moved.`,
     errors: {
       invalid_request: "That move is not one we can make. Nothing was moved.",
       not_found: "This visit is no longer live. Reload the board to see it as it stands.",
@@ -619,6 +619,37 @@ export const technicians = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER: the design draws no leave anywhere, because FSM was thought to
+   * hold it. It does not (ADR 0060), so leave is recorded here and every line
+   * below is ours.
+   */
+  leave: {
+    title: "Leave",
+    none: "No leave recorded.",
+    /** "19 Sep to 23 Sep", and "19 Sep" for a single day. */
+    period: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
+    add: "Record leave",
+    addLabel: (technician: string) => `Record leave for ${technician}`,
+    from: "First day",
+    to: "Last day",
+    note: "Note (optional)",
+    save: "Record it",
+    saving: "Recording",
+    cancel: "Cancel",
+    /** Taking leave back, which lets those days be worked again. */
+    take: "Take it back",
+    takeLabel: (period: string, technician: string) => `Take back ${technician}'s leave, ${period}`,
+    taking: "Taking it back",
+    effect: "Nobody can be booked or assigned on these days until the leave is taken back.",
+    errors: {
+      invalid_request:
+        "Those dates do not work: the last day cannot come before the first, and leave runs a year at most.",
+      not_found: "That technician or that leave is no longer here. Reload to see the roster as it stands.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Please try again.",
+    },
   },
 } as const;
 

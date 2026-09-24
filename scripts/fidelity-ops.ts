@@ -246,6 +246,8 @@ const worker = (n: number, name: string, initials: string, zone: string, seen: s
   initials,
   zone,
   devices: [phone(`device-${String(n)}`, "Chrome on Android", seen)],
+  // The board draws no leave; the console's own Leave block then reads "No leave recorded".
+  leave: [],
 });
 const TECHNICIANS = {
   technicians: [

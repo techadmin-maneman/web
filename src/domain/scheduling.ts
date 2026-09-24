@@ -2,12 +2,13 @@
 // (docs/decisions/0034-clash-check.md, 0035-window-slot-map.md).
 //
 // A technician's day is eight half-slots. What takes them: slots held and not
-// yet expired (slot_claims), and live visits in the mirror, whether ops booked
-// them in FSM or a hold became one. A technician holds one live job per
-// window. A hold writes its claims in one batch, and the claims' key stops two
-// holds taking the same time; once a hold is booked, its visit in the mirror
-// takes the time instead. A visit being moved keeps its technician, and its
-// own time does not count against the move (docs/decisions/0046-moving-and-cancelling.md).
+// yet expired (slot_claims), live visits in the mirror, whether ops booked
+// them in FSM or a hold became one, and leave ops recorded (ADR 0060). A
+// technician holds one live job per window. A hold writes its claims in one
+// batch, and the claims' key stops two holds taking the same time; once a hold
+// is booked, its visit in the mirror takes the time instead. A visit being
+// moved keeps its technician, and its own time does not count against the move
+// (docs/decisions/0046-moving-and-cancelling.md).
 
 import {
   BOOKING_WINDOWS,
@@ -28,9 +29,11 @@ import type { Price } from "./price-book.ts";
 export interface Day {
   readonly units: Set<number>;
   readonly windows: Set<BookingWindow>;
+  /** Leave: the whole day is out, whatever else is on it. */
+  onLeave: boolean;
 }
 
-const emptyDay = (): Day => ({ units: new Set(), windows: new Set() });
+const emptyDay = (): Day => ({ units: new Set(), windows: new Set(), onLeave: false });
 
 /** The window a time of day in India falls in. */
 export function windowAt(time: string): BookingWindow {
@@ -48,7 +51,7 @@ export function unitAt(time: string): number {
 
 /** Where a visit of this type can start in this window, given the day; null if it cannot. */
 export function placement(day: Day, window: BookingWindow, type: VisitType): number | null {
-  if (clashes(day, window)) return null;
+  if (day.onLeave || clashes(day, window)) return null;
   const { units } = VISIT_BLOCKS[type];
   for (const start of WINDOW_SLOT_MAP[window]) {
     if (start + units > UNITS_PER_DAY) continue;
@@ -77,7 +80,7 @@ async function techniciansFor(db: D1Database, moving: Moving | null): Promise<Te
   return moving === null ? technicians : technicians.filter((technician) => technician.id === moving.technicianId);
 }
 
-/** Technicians FSM lists as active. Leave from FSM's availability arrives with dispatch (P2-M4). */
+/** Technicians FSM lists as active. Whether one is away on a given day is `occupancy`'s answer, not this one's. */
 export async function activeTechnicians(db: D1Database): Promise<Technician[]> {
   const { results } = await db
     .prepare("SELECT id, name, initials FROM technicians WHERE active = 1 ORDER BY name")
@@ -131,6 +134,23 @@ export async function occupancy(
     const day = dayOf(technicianId, date);
     if (kind === "unit") day.units.add(Number(value));
     else day.windows.add(value as BookingWindow);
+  }
+
+  // Leave takes the whole day, so the day is marked rather than its slots filled:
+  // ops are told the technician is away, not that every window happens to be busy.
+  const leave = await db
+    .prepare(
+      `SELECT technician_id, from_date, to_date FROM technician_leave
+       WHERE cancelled_at IS NULL AND from_date <= ?2 AND to_date >= ?1`,
+    )
+    .bind(from, to)
+    .all<{ technician_id: string; from_date: string; to_date: string }>();
+  for (const period of leave.results) {
+    // Both ends are inclusive, and the dates sort as they read, so a plain comparison walks the period.
+    let date = period.from_date < from ? from : period.from_date;
+    for (; date <= period.to_date && date <= to; date = addDays(date, 1)) {
+      dayOf(period.technician_id, date).onLeave = true;
+    }
   }
 
   const visits = await db

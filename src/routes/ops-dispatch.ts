@@ -57,7 +57,10 @@ const BoardSchema = z
         .object({
           appointment_id: z.uuid(),
           type: z.union([z.enum(VISIT_TYPES), z.null()]),
-          asked_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
+          asked_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]).openapi({
+            description:
+              "The window the client asked for, from the Request behind the visit; null where nothing recorded one.",
+          }),
           offered_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
           date: z.union([z.iso.date(), z.null()]),
           sector: z.union([z.string(), z.null()]),
@@ -68,8 +71,20 @@ const BoardSchema = z
       .array(z.object({ date: z.iso.date(), percent: z.number().int() }).strict())
       .openapi({ description: "Each column's utilisation, in per cent. Written to events daily as well." }),
     leave: z
-      .array(z.object({ technician_id: z.uuid(), from: z.iso.date(), to: z.iso.date() }).strict())
-      .openapi({ description: "Always empty: FSM's availability answers 48 hours ahead and the board is seven days." }),
+      .array(
+        z
+          .object({
+            technician_id: z.uuid(),
+            from: z.iso.date(),
+            to: z.iso.date(),
+            note: z.union([z.string(), z.null()]),
+          })
+          .strict(),
+      )
+      .openapi({
+        description:
+          "Leave ops recorded, clipped to this week. Not from FSM: its availability answers free time, not leave.",
+      }),
   })
   .strict()
   .openapi("DispatchBoard");
@@ -125,7 +140,9 @@ const assignRoute = createRoute({
     400: errorResponse("invalid_request"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
-    409: errorResponse("clash: the technician already holds a job in that window on that date"),
+    409: errorResponse(
+      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day",
+    ),
     502: errorResponse("fsm_refused: FSM would not take it; nothing moved"),
   },
 });
@@ -140,7 +157,7 @@ const moveRoute = createRoute({
     400: errorResponse("invalid_request"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
-    409: errorResponse("clash"),
+    409: errorResponse("clash; on_leave"),
     502: errorResponse("fsm_refused"),
   },
 });
@@ -188,9 +205,10 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   if (outcome.kind === "refused") {
     // "unknown_reason" here means the job has no technician and none was named:
     // the reason itself is already one of the design's list, by the schema.
-    return outcome.reason === "clash"
-      ? c.json(errorBody("clash", requestId), 409)
-      : c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
+    if (outcome.reason === "unknown_reason") {
+      return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
+    }
+    return c.json(errorBody(outcome.reason, requestId), 409);
   }
   if (outcome.kind === "fsm_refused") {
     log.warn("dispatch_move_refused_by_fsm", { appointment_id: input.appointmentId, move_id: outcome.moveId });

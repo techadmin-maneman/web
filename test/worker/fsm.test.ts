@@ -11,6 +11,7 @@ import {
   fsmAttachmentRecord,
   fsmContactRecord,
   fsmInvoiceRecord,
+  fsmRequestRecord,
   fsmUserRecord,
   fsmWorkOrderRecord,
 } from "./fsm-fixtures.ts";
@@ -377,6 +378,51 @@ describe("FSM: billing a finished job", () => {
     await expect(provider.invoiceWorkOrder("wo-1")).rejects.toThrow(
       "Zoho 400 2031: One or more line items are already invoiced",
     );
+  });
+});
+
+describe("FSM: what the client asked for", () => {
+  it("follows the work order's Request to the preference our booking wrote on it", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1`]: () =>
+        json({ data: [fsmWorkOrderRecord({ Request: { name: "REQ1", id: "req-1" } })] }),
+      [`${FSM_API}/Requests/req-1`]: () => json({ data: [fsmRequestRecord()] }),
+    });
+
+    expect(await provider.requestPreference("wo-1")).toEqual({
+      requestId: "req-1",
+      preferredDate: "2026-09-25",
+      preferenceNote: "Morning, 9 am to 12 pm",
+    });
+    // Two reads and no write: nothing about the visit is changed by asking.
+    expect(calls.filter((call) => call.method !== "GET" && !call.url.includes("oauth"))).toEqual([]);
+  });
+
+  it("answers nothing for a work order our own booking made, which names no Request", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1`]: () => json({ data: [fsmWorkOrderRecord()] }),
+    });
+
+    expect(await provider.requestPreference("wo-1")).toBeNull();
+    // The Request is never read, because there is none to read.
+    expect(calls.some((call) => call.url.includes("/Requests/"))).toBe(false);
+  });
+
+  it("answers the Request with no preference on it as one with nothing asked for", async () => {
+    const { fsm: provider } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-1`]: () =>
+        json({ data: [fsmWorkOrderRecord({ Request: { name: "REQ1", id: "req-1" } })] }),
+      [`${FSM_API}/Requests/req-1`]: () => json({ data: [fsmRequestRecord({ Preference: null })] }),
+    });
+
+    expect(await provider.requestPreference("wo-1")).toEqual({
+      requestId: "req-1",
+      preferredDate: null,
+      preferenceNote: null,
+    });
   });
 });
 

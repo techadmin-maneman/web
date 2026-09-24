@@ -70,6 +70,30 @@ export function fsmWorkOrderRecord(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/**
+ * A Request as FSM holds it, read back from the real org on 24 September 2026:
+ * the preference our own booking wrote is still on it, in its own subform.
+ */
+export function fsmRequestRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "req-1",
+    Name: "REQ1",
+    Status: "New",
+    Summary: "Consultation for Rohit Malhotra",
+    Contact: { name: "Rohit Malhotra", id: "contact-1" },
+    Due_Date: "2026-09-25",
+    Preference: {
+      Preferred_Date_1: "2026-09-25",
+      Preferred_Date_2: null,
+      Preference_Note: "Morning, 9 am to 12 pm",
+      Preferred_Time: null,
+    },
+    Work_Orders: [],
+    Modified_Time: "2026-09-23T13:20:17+05:30",
+    ...overrides,
+  };
+}
+
 /** An invoice as FSM holds it: FSM's own record, and Books' ID for the document itself. */
 export function fsmInvoiceRecord(overrides: Record<string, unknown> = {}) {
   return {

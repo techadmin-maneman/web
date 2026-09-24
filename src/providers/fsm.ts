@@ -33,6 +33,20 @@ export interface FsmAppointment {
   readonly modifiedAt: string;
 }
 
+/**
+ * The Request a work order was converted from, and what the client asked for on
+ * it. FSM keeps the preference on the Request alone: the appointment has the
+ * same subform and it is read-only there, silently dropping anything written
+ * to it (ADR 0061).
+ */
+export interface FsmRequestPreference {
+  readonly requestId: string;
+  /** YYYY-MM-DD, the day the client asked for; null where they named none. */
+  readonly preferredDate: string | null;
+  /** The window they asked for, in the words we wrote (`NewFsmRequest.preferenceNote`). */
+  readonly preferenceNote: string | null;
+}
+
 /** A work order's invoice. FSM's Invoices module is a link: the document itself lives in Books. */
 export interface FsmInvoice {
   /** FSM's own record, e.g. the one its Invoices screen shows. */
@@ -207,6 +221,12 @@ export interface FsmProvider {
    * comes back the same. Null when there is nothing to bill.
    */
   invoiceWorkOrder(workOrderId: string): Promise<FsmInvoice | null>;
+  /**
+   * What the client asked for on the Request this work order came from. Null
+   * when the work order names no Request, which is every visit our own booking
+   * makes: those are booked into the window the client picked.
+   */
+  requestPreference(workOrderId: string): Promise<FsmRequestPreference | null>;
   /** Anonymises an erased client's contact: name, numbers, e-mail and street; the city stays for the records. */
   eraseContact(contactId: string): Promise<void>;
 }
@@ -231,6 +251,8 @@ export interface StubFsmWorld {
   readonly files: Record<string, { bytes: Uint8Array; contentType: string }>;
   /** Pieces by contact ID. */
   readonly assets?: Record<string, FsmAsset[]>;
+  /** What the Request behind each work order asked for, by work order ID; a work order not here names no Request. */
+  readonly preferences?: Record<string, FsmRequestPreference>;
   /** The transitions each appointment offers, by appointment ID; the default is below. */
   readonly transitions?: Record<string, string[]>;
   /** Work orders with nothing to bill, as a free consultation has. */
@@ -290,7 +312,8 @@ export type StubFsmStep =
   | "updateAppointment"
   | "attachToAppointment"
   | "rescheduleVisit"
-  | "invoiceWorkOrder";
+  | "invoiceWorkOrder"
+  | "requestPreference";
 
 /**
  * Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it,
@@ -426,6 +449,10 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       made.invoiced.push(workOrderId);
       return Promise.resolve(invoice);
     },
+    requestPreference: (workOrderId) => {
+      checkFailure("requestPreference");
+      return Promise.resolve(world.preferences?.[workOrderId] ?? null);
+    },
     eraseContact: (contactId) => {
       made.erased.push(contactId);
       return Promise.resolve();
@@ -450,6 +477,7 @@ function createUnconnectedFsm(): FsmProvider {
     rescheduleVisit: off,
     cancelVisit: off,
     invoiceWorkOrder: off,
+    requestPreference: off,
     eraseContact: off,
     assets: off,
     createAsset: off,

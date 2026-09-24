@@ -9,13 +9,22 @@
 // a refusal names the technician and the window the board asked for, because
 // the API answers with the code alone.
 //
-// Two things the board cannot show honestly and therefore does not: leave,
-// which FSM answers about only 48 hours ahead, and an asked window different
-// from the offered one (docs/open-points.md, items 53 and 54).
+// A day a technician is away takes no job: the cell offers no window to drop
+// on, and the server refuses the move by name if one is sent anyway (ADR 0060).
+// The tray's asked window is what the client picked, and a visit whose booking
+// recorded none says so rather than repeating the offered one (ADR 0061).
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Block, type BoardRow, type BookingWindow, type Landing, type MoveReason } from "../api.ts";
+import {
+  api,
+  type Block,
+  type Board,
+  type BoardRow,
+  type BookingWindow,
+  type Landing,
+  type MoveReason,
+} from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useLoad } from "../lib/useLoad.ts";
@@ -49,6 +58,10 @@ function refusalFor(code: string): string {
   return errors[code] ?? dispatch.landing.errors.unknown;
 }
 
+/** Leave covers whole days, both ends included, and the route clips it to this week. */
+const isAway = (leave: Board["leave"], technicianId: string, date: string) =>
+  leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
+
 /** "19 to 25 Sep", and "28 Sep to 4 Oct" across a month's end. */
 function weekOf(dates: readonly string[]): string | undefined {
   const first = dates[0];
@@ -77,6 +90,8 @@ interface CellProps {
   readonly technician: BoardRow;
   readonly date: string;
   readonly blocks: readonly Block[];
+  /** Ops recorded leave for this technician on this day, so it takes no job. */
+  readonly away: boolean;
   /** The job in hand, whose windows this cell offers while it is being placed. */
   readonly moving: Job | null;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
@@ -84,10 +99,20 @@ interface CellProps {
   readonly onLand: (to: Target) => void;
 }
 
-/** One technician's day: the blocks on it, and, while a job is in hand, its three windows. */
-function Cell({ technician, date, blocks, moving, onOpen, onTake, onLand }: CellProps) {
+/**
+ * One technician's day: the blocks on it, and, while a job is in hand, its
+ * three windows. A day marked away still draws whatever it holds — leave
+ * recorded after a job was assigned must not hide that job — and offers no
+ * window to put another one in.
+ */
+function Cell({ technician, date, blocks, away, moving, onOpen, onTake, onLand }: CellProps) {
   return (
-    <td className={styles.cell}>
+    <td className={away ? `${styles.cell} ${styles.away}` : styles.cell}>
+      {away && (
+        <span className={styles.awayMark} aria-label={dispatch.board.awayLabel(technician.name, shortDate(date))}>
+          {dispatch.board.away}
+        </span>
+      )}
       {blocks.map((block) => {
         const job: Job = { kind: "block", block, technician, date };
         return (
@@ -111,7 +136,7 @@ function Cell({ technician, date, blocks, moving, onOpen, onTake, onLand }: Cell
           </button>
         );
       })}
-      {moving !== null && (
+      {moving !== null && !away && (
         <div className={styles.targets}>
           {WINDOWS.map((window) => (
             <button
@@ -207,11 +232,13 @@ export function DispatchScreen() {
         return;
       }
       // Nothing was written: the check runs before FSM is touched. The API answers
-      // "clash" with the code alone, so the board names what it asked for itself.
+      // with the code alone, so the board names what it asked for itself.
       const refusal =
         answer.code === "clash"
           ? dispatch.landing.clash(to.technician.name, shortDate(to.date), windowWord(to.window))
-          : refusalFor(answer.code);
+          : answer.code === "on_leave"
+            ? dispatch.landing.onLeave(to.technician.name, shortDate(to.date))
+            : refusalFor(answer.code);
       setMove({ job, to: null, sending: false, refusal });
       board.current?.focus();
     },
@@ -303,6 +330,7 @@ export function DispatchScreen() {
                           </th>
                           {loaded.value.dates.map((date) => (
                             <Cell
+                              away={isAway(loaded.value.leave, technician.technician_id, date)}
                               blocks={technician.days.find((day) => day.date === date)?.blocks ?? []}
                               date={date}
                               key={date}
@@ -357,7 +385,9 @@ export function DispatchScreen() {
                             </span>
                           </span>
                           <span className={styles.trayLine}>
-                            {dispatch.tray.asked(whenWord(each.date, each.asked_window))}
+                            {each.asked_window === null
+                              ? dispatch.tray.notAsked
+                              : dispatch.tray.asked(whenWord(each.date, each.asked_window))}
                           </span>
                           <span className={styles.trayLine}>
                             {dispatch.tray.offered(whenWord(each.date, each.offered_window))}

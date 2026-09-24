@@ -328,7 +328,7 @@ Two other proof runs were working against the same staging database and the same
 
 - [x] **A staff-run job appears in `/visits` with its five-angle before-and-after set.**
   1. **The lead.** `scripts/staging-lead.ts` booked Gurgaon, weekday morning, at **07:47:10.409**. Lead `0a5ef320-0413-4525-9fad-7de71a9c31f0`, proposed date 2026-09-25, window "before noon". `leads.fsm_request_id` held `8229000000304279` by **07:47:19.687** — 9.3 s. FSM's Request REQ4 has the summary "Staging test: Consultation for Staging test", `Preference_Note` "Morning, 9 am to 12 pm", `Preferred_Date_1` and `Due_Date` 2026-09-25, and the contact `8229000000305231` the sync created.
-  2. **Scheduling it in FSM did not go the way the prompt describes.** The Request's blueprint transition **"Convert to Work Order" answered SUCCESS and created no work order**: the Request moved to "Work In Progress", its `Work_Orders` stayed empty, and the org held the same single work order before and after. FSM's own screen opens a form there, which the API does not. So the job was made the way our own booking makes one: work order `8229000000305234` (WO13) of type Service on the Service visit item with the contact's addresses, and appointment `8229000000304285` (AP-14) on its service line, assigned to the one technician, 14:00 to 15:30 India time.
+  2. **Scheduling it in FSM did not go the way the prompt describes.** The Request's blueprint transition **"Convert to Work Order" answered SUCCESS and created no work order**: the Request moved to "Work In Progress", its `Work_Orders` stayed empty, and the org held the same single work order before and after. ~~FSM's own screen opens a form there, which the API does not.~~ **The second half was wrong, and "Converting a Request, taken up again" below corrects it: the API can convert a Request; the blueprint transition is simply not what does it.** So the job was made the way our own booking makes one: work order `8229000000305234` (WO13) of type Service on the Service visit item with the contact's addresses, and appointment `8229000000304285` (AP-14) on its service line, assigned to the one technician, 14:00 to 15:30 India time.
   3. **The hint arrived and the mirror wrote the copy.** `webhook_inbox` row `fcb09d2c-65e3-4ffd-ae0b-63c6f0d09852` at **07:52:31.574**, 0.6 s after the appointment was created; the copy `ab7b388c-c8d1-4525-af6a-010c30e3f944` was written at **07:52:45.144**, matched to the person by mobile number, type `service`, status `scheduled`, technician and city as FSM has them. Four hints were taken for this appointment over the run — one for the create, three for Dispatch, Start Work and Complete Work — each once, none with an error. The first was processed in 15.8 s and the second in 7.1 s; the last two took 46.2 s and 40.5 s, because the photographs were copied in them.
   4. **The job was run in FSM**: ten photographs attached, then Dispatch, Start Work and Complete Work, and the work order Completed and Closed. The photographs are 240 × 160 PNGs made for the test — flat colour, no person in them — named `before-front.png` through `after-hair.png`.
      - **The first ten attempts failed.** FSM answered `400 INVALID_DATA`, `"required field not found"` for `File_Id`. The upload to `/fsm/v1/files` answers `{ data: { file_id } }`, but the Attachments module takes **`File_Id`**, and `src/providers/fsm-zoho.ts` sent `file_id`. Sent as `File_Id`, all ten attached. **Fixed**, with `test/worker/fsm.test.ts` › "attaches an uploaded file by File_Id" to hold it. Nothing else uses that call yet: the mirror only reads attachments, and the technician app's own upload (P2-M4) is what would have hit it.
@@ -366,7 +366,7 @@ Two other proof runs were working against the same staging database and the same
 
 - **`attachToAppointment` sent the wrong field name.** FSM's Attachments module takes `File_Id`; we sent `file_id`, and every attachment was refused with `400 INVALID_DATA`. Fixed, with a test. The mirror only reads attachments, so nothing in P2-M2 depended on it; the technician app's own upload (P2-M4) does.
 - **An invoice cannot be raised over FSM's API, and once raised by hand the mirror never finds it** (open point 64). FSM leaves `Invoice_Id` null on the appointment and gives the work order no invoice ID either, so `appointments.fsm_invoice_id` stays null and the app shows "still generating" for an invoice that exists. It is the one link missing from an otherwise working path. — **Both halves were wrong about FSM and right about us. Taken up the same evening; see below.**
-- **"Convert to Work Order" over the API creates no work order** (open point 65). A Request converted that way is left at "Work In Progress" with nothing behind it.
+- **"Convert to Work Order" over the API creates no work order** (open point 65). A Request converted that way is left at "Work In Progress" with nothing behind it. — **Right about the transition and wrong about FSM. Taken up on 24 September 2026; see below.**
 - **A Zoho auth outage refunds paid bookings.** Minting access tokens by hand alongside the Worker exhausted Zoho's refresh quota for about ten minutes; every FSM call on staging failed with `Access Denied`, and three bookings in flight were given up on after five attempts and refunded, with an alert each (open point 60). The outage was this proof's doing, and it recovered on its own, but the behaviour it exposed is the owner's to rule on.
 
 ### The invoice, taken up again (23 September 2026, evening)
@@ -426,6 +426,53 @@ The owner ruled that the invoice is marked sent as it is raised, and shown on th
 - **The trial's clock.** FSM and Books are on trials that end around 6 October 2026 (open point 9). After that FSM drops to Free, which has no assets or job sheets, so this proof must be run before then, or after a subscription.
 - **Production's side is absent.** Production holds `FSM_PROVIDER`, `BOOKS_PROVIDER` and `PAYMENTS_PROVIDER` at `none` until Phase 2's release, and its photographs bucket and its FSM queue are not created (open points 32 and 33).
 - **The invoice pass has not run on staging, and the app has not served a tax invoice.** What is proven is the provider, against the real org, and the five-minute pass around it in `test/worker/fsm-invoices.test.ts`. What is not is `raiseInvoices` running on the staging Worker, writing `appointments.fsm_invoice_id`, and `GET /api/documents/{visit_id}` streaming the PDF to a signed-in client. The evening's session had the Zoho credentials and no Cloudflare API token, so staging's database and its logs could not be read and no session row could be written; staging was also mid-release for another branch. **What would prove it:** deploy this commit to staging, run one service job in FSM to a close, then watch a five-minute pass log `invoices_raised`, `SELECT fsm_invoice_id FROM appointments WHERE fsm_id = …`, and open `GET /api/documents/{visit_id}` with a client session.
+
+### Converting a Request, taken up again (24 September 2026)
+
+Open point 65 had stood as a capability FSM lacks. It is the same shape as the
+invoice: ours, not FSM's (ADR 0062). Run against the same org, on its own
+"Staging test" records; **REQ4 `8229000000304279` was read and not touched, and
+is left stranded as the evidence it is**.
+
+- **Why the transition reports success and does nothing.**
+  `GET /fsm/v1/Requests/{id}/actions/blueprint/transitions` on a Request at "New"
+  declares `Convert to Work Order` as `action_type: "RECORDACTION"`,
+  `next_field_value: "Work In Progress"`, and — unlike `Cancel` and `Terminate`,
+  which each declare a mandatory `Notes` field — **no `fields` at all**. There is
+  nothing to supply and nothing built from it: the transition writes `Status`.
+  FSM says so itself, answering `"message": "record updated"`.
+  - Reproduced twice, on two Requests of ours: the bare
+    `PUT .../actions/blueprint` with the transition ID, and the same call
+    carrying `Type`, `Due_Date`, `Territory` and `Service_Line_Items` under
+    `data`. Both **200 SUCCESS**, both moved the Request to "Work In Progress",
+    and the org held the same work orders before and after. A richer body changes
+    nothing, because the transition was never what creates the work order.
+- **What does convert it.** `POST /fsm/v1/Work_Orders` takes a **`Request`**
+  field. With it: **201**; the work order came back carrying
+  `Request: { name: "REQ8", id: … }`, and the Request, read afterwards, was
+  **"Work In Progress" with that work order in its `Work_Orders`** — with no
+  blueprint call at all. The status follows the link.
+- **Also found, and it settles the tray's asked window** (ADR 0061). REQ4's
+  `Preference` read back unchanged three days on:
+  `Preferred_Date_1 2026-09-25`, `Preference_Note "Morning, 9 am to 12 pm"`. A
+  **service appointment's** own `Preference` subform, however, is read-only:
+  sent at create it is dropped (201, all four fields null), and sent as an edit
+  it answers `"record updated"` and stays null. A **work order's** `Preference`
+  is writable and reads back. So the asked window is reached through the work
+  order's `Request`, and never off the appointment.
+- **What FSM answers about availability** (ADR 0060). `Available_TimeSlots`
+  answered for tomorrow, six days out and twenty days out, and at six days left
+  out the morning an appointment already held. The "at most 48 hours" in
+  `fsm-trial.md` was read off the documentation and never tried; it is corrected
+  there. What FSM will not answer is leave: `Time_Off` exists and is empty, and
+  takes a `Time_Off_Type` whose list lives in FSM's Setup screens.
+- **Every record made for this was deleted the same session**, and the org was
+  read afterwards to confirm it held the three Requests it held before: contact
+  `8229000000305643`, Requests `8229000000305648`, `8229000000305659` and
+  `8229000000306401`, work orders `8229000000305664` and `8229000000305677` with
+  their service lines, and appointment `8229000000304694`.
+- **What staging cannot prove here:** nothing was deployed for this. It is the
+  API against the org, not the Worker; no code of ours converts a Request.
 
 ## P2-M3: referrals and the waitlist
 

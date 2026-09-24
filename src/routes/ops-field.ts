@@ -3,8 +3,10 @@
 //   GET  /api/no-shows                                   the cases, with their evidence
 //   POST /api/no-shows/:id/decision                      charge or waive, from the evidence
 //   GET  /api/clients/:id/pieces                         the pieces tab
-//   GET  /api/technicians                                who works, and the phones they work from
+//   GET  /api/technicians                                who works, the phones they work from, and their leave
 //   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs
+//   POST /api/technicians/:id/leave                      record leave; the board and booking both refuse those days
+//   POST /api/technicians/:id/leave/:leave/cancel        take it back
 //
 // "A no-show is charged under the 24-hour policy. The charge is applied by ops
 // from the evidence, never automatically": nothing here charges anybody. The
@@ -14,10 +16,12 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { actorOf, recordAudit } from "../domain/audit.ts";
+import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
 import { decideNoShow, listNoShowCases } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { devicesOf, revokeDevice } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { PieceSchema } from "./tech-pieces.ts";
 
@@ -60,6 +64,16 @@ const ClientPiecesSchema = z
   .strict()
   .openapi("ClientPieces");
 
+const LeaveSchema = z
+  .object({
+    id: z.uuid(),
+    from: z.iso.date(),
+    to: z.iso.date().openapi({ description: "Inclusive: a single day's leave has the same date twice." }),
+    note: z.union([z.string(), z.null()]),
+  })
+  .strict()
+  .openapi("TechnicianLeave");
+
 const TechniciansSchema = z
   .object({
     technicians: z.array(
@@ -79,12 +93,24 @@ const TechniciansSchema = z
               })
               .strict(),
           ),
+          leave: z
+            .array(LeaveSchema)
+            .openapi({ description: "Leave that has not ended yet, soonest first (ADR 0060)." }),
         })
         .strict(),
     ),
   })
   .strict()
   .openapi("Technicians");
+
+const LeaveRequestSchema = z
+  .object({
+    from: z.iso.date(),
+    to: z.iso.date(),
+    note: z.string().min(1).max(200).optional().openapi({ description: "Why, in ops' words. Never a medical detail." }),
+  })
+  .strict()
+  .openapi("TechnicianLeaveRequest");
 
 const noShowsRoute = createRoute({
   method: "get",
@@ -122,10 +148,35 @@ const piecesRoute = createRoute({
 const techniciansRoute = createRoute({
   method: "get",
   path: "/api/technicians",
-  summary: "Active technicians and the phones they have logged in on",
+  summary: "Active technicians, the phones they have logged in on, and the leave they are down for",
   responses: {
     200: { description: "The technicians", ...json(TechniciansSchema) },
     403: errorResponse("access_required"),
+  },
+});
+
+const leaveRoute = createRoute({
+  method: "post",
+  path: "/api/technicians/{id}/leave",
+  summary: "Record leave. Those days are then refused to booking and to the dispatch board alike",
+  request: { params: z.object({ id: z.uuid() }), body: { required: true, ...json(LeaveRequestSchema) } },
+  responses: {
+    200: { description: "Recorded", ...json(z.object({ id: z.uuid() }).strict()) },
+    400: errorResponse(`invalid_request: to is before from, or more than ${String(LEAVE_MAX_DAYS)} days ahead`),
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such active technician"),
+  },
+});
+
+const cancelLeaveRoute = createRoute({
+  method: "post",
+  path: "/api/technicians/{id}/leave/{leave}/cancel",
+  summary: "Take leave back, so those days can be worked again",
+  request: { params: z.object({ id: z.uuid(), leave: z.uuid() }) },
+  responses: {
+    200: { description: "Cancelled", ...json(z.object({ cancelled: z.boolean() }).strict()) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such leave of that technician's"),
   },
 });
 
@@ -211,10 +262,77 @@ export function registerOpsField(app: App): void {
     const { results } = await c.env.DB.prepare(
       "SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name",
     ).all<{ id: string; name: string; initials: string; zone: string | null }>();
+    // Leave is one read for the whole roster, not one per technician.
+    const leave = await leaveFrom(c.env.DB, indiaDate(c.var.deps.now()));
     const technicians = await Promise.all(
-      results.map(async (technician) => ({ ...technician, devices: await devicesOf(c.env.DB, technician.id) })),
+      results.map(async (technician) => ({
+        ...technician,
+        devices: await devicesOf(c.env.DB, technician.id),
+        leave: leave
+          .filter((period) => period.technician_id === technician.id)
+          .map(({ id, from, to, note }) => ({ id, from, to, note })),
+      })),
     );
     return c.json({ technicians }, 200);
+  });
+
+  app.openapi(leaveRoute, async (c) => {
+    const identity = c.var.accessIdentity;
+    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const { id } = c.req.valid("param");
+    const { from, to, note } = c.req.valid("json");
+    const now = c.var.deps.now();
+
+    const outcome = await recordLeave(
+      c.env.DB,
+      { technicianId: id, from, to, note: note ?? null, actor: actorOf(identity).id },
+      indiaDate(now),
+      now,
+    );
+    if (outcome.kind === "no_such_technician") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (outcome.kind === "bad_dates") return c.json(errorBody("invalid_request", c.var.requestId, ["to"]), 400);
+
+    await recordAudit(
+      c.env.DB,
+      {
+        surface: "ops",
+        actor: actorOf(identity),
+        action: "technician.leave",
+        subject: { kind: "technician", id },
+        requestId: c.var.requestId,
+        detail: { from, to },
+      },
+      now,
+    );
+    return c.json({ id: outcome.id }, 200);
+  });
+
+  app.openapi(cancelLeaveRoute, async (c) => {
+    const identity = c.var.accessIdentity;
+    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const { id, leave } = c.req.valid("param");
+    const now = c.var.deps.now();
+
+    const cancelled = await cancelLeave(
+      c.env.DB,
+      { technicianId: id, leaveId: leave, actor: actorOf(identity).id },
+      now,
+    );
+    if (!cancelled) return c.json(errorBody("not_found", c.var.requestId), 404);
+
+    await recordAudit(
+      c.env.DB,
+      {
+        surface: "ops",
+        actor: actorOf(identity),
+        action: "technician.leave_cancelled",
+        subject: { kind: "technician", id },
+        requestId: c.var.requestId,
+        detail: { leave_id: leave },
+      },
+      now,
+    );
+    return c.json({ cancelled: true }, 200);
   });
 
   app.openapi(revokeRoute, async (c) => {

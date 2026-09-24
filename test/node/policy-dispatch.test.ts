@@ -6,7 +6,9 @@ import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "
 import { clashes, isMoveReason, MOVE_REASONS, moveRefusal, RULES, slotsFor } from "../../src/policy/dispatch.ts";
 
 /** A technician whose day already holds a job starting in each of these windows. */
-const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows) });
+const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLeave: false });
+/** The same technician, away that day (ADR 0060). */
+const away = (...windows: BookingWindow[]) => ({ ...day(...windows), onLeave: true });
 
 describe("dispatch", () => {
   it(RULES[0], () => {
@@ -56,5 +58,15 @@ describe("dispatch", () => {
     expect(moveRefusal(day("morning"), "morning", "client_asked")).toBe("clash");
     // The reason is checked first: a move nobody can explain is refused either way.
     expect(moveRefusal(day("morning"), "morning", "")).toBe("unknown_reason");
+  });
+
+  // The rule the prompt's last line asks for, kept our way (ADR 0060): the day
+  // is refused outright, and named as leave so ops are not told it is merely full.
+  it("refuses every window of a day the technician is away, and says it is leave", () => {
+    expect(moveRefusal(away(), "morning", "client_asked")).toBe("on_leave");
+    expect(moveRefusal(away(), "afternoon", "zone_rebalance")).toBe("on_leave");
+    expect(moveRefusal(away(), "evening", "running_over")).toBe("on_leave");
+    // An empty window on a day off is still leave, not a clash.
+    expect(moveRefusal(away("evening"), "morning", "client_asked")).toBe("on_leave");
   });
 });

@@ -27,7 +27,9 @@
 //   PUT  /fsm/v1/Service_Appointments/{id}/actions/blueprint     start, close or terminate, with its mandatory note
 //   POST /fsm/v1/files                                           multipart; answers { data: { file_id } }
 //   POST /fsm/v1/Service_Appointments/{id}/Attachments           attaches an uploaded file
-//   GET  /fsm/v1/Work_Orders/{id}                                { data: [work order with its service lines] }
+//   GET  /fsm/v1/Work_Orders/{id}                                { data: [work order with its service lines, and the
+//        Request it was converted from] }
+//   GET  /fsm/v1/Requests/{id}                                   { data: [request with its Preference subform] }
 //   POST /fsm/v1/Invoices                                        the work order, the line IDs and $finance_data;
 //        answers Books' ID under data.Invoices[0].finance_data.Invoice_Id
 //   GET  /fsm/v1/Invoices/{id}                                   { data: [invoice with ZBilling_InvoiceId] }
@@ -94,6 +96,15 @@ const WorkOrderBilling = z.object({
 
 /** An invoice as FSM holds it: the link, and Books' ID for the document itself. */
 const Invoice = z.object({ id: z.string(), ZBilling_InvoiceId: z.string().nullish() });
+
+/** The Request a work order was converted from; absent on one our own booking made outright. */
+const WorkOrderRequest = z.object({ Request: Reference });
+
+/** What the client asked for, as `createRequest` wrote it. */
+const RequestPreference = z.object({
+  id: z.string(),
+  Preference: z.object({ Preferred_Date_1: z.string().nullish(), Preference_Note: z.string().nullish() }).nullish(),
+});
 
 /** A raised invoice: FSM's new record, with Books' ID for it under finance_data. */
 const Raised = z.object({
@@ -616,6 +627,27 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       const raised = Raised.parse(answer).data.Invoices[0];
       if (raised === undefined) throw new ZohoError(response.status, "NO_ID", "the invoice answered without its ID");
       return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id, created: true };
+    },
+
+    // Two reads, no write. The work order names the Request it was converted
+    // from, and the Request alone keeps the client's preference: FSM drops
+    // anything written to the same subform on an appointment (ADR 0061).
+    async requestPreference(workOrderId) {
+      const [order] = records(
+        await json("request_work_order", `/Work_Orders/${workOrderId}`),
+        "data",
+        WorkOrderRequest,
+      );
+      const requestId = order?.Request?.id;
+      if (requestId === undefined) return null;
+
+      const [asked] = records(await json("request_preference", `/Requests/${requestId}`), "data", RequestPreference);
+      if (asked === undefined) return null;
+      return {
+        requestId,
+        preferredDate: asked.Preference?.Preferred_Date_1 ?? null,
+        preferenceNote: asked.Preference?.Preference_Note ?? null,
+      };
     },
 
     // Tried on the real org on 22 September 2026: the name, numbers and e-mail clear, and the street can be

@@ -57,19 +57,52 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
   );
 });
 
-test("shows no leave anywhere, and says why", async ({ page }) => {
+test("marks the days a technician is away, and still shows the jobs already on them", async ({ page }) => {
   await open(page);
-  await expect(page.getByText("Leave")).toHaveCount(1);
-  await expect(page.getByText("FSM answers about availability 48 hours ahead")).toBeVisible();
+  // Faizan is away on the Sunday and the Monday, and holds a job on each.
+  await expect(page.getByLabel("Faizan Ali is away on Sun 21 Sep")).toBeVisible();
+  await expect(page.getByLabel("Faizan Ali is away on Mon 22 Sep")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Nitin R., Sun 21 Sep, afternoon" })).toBeVisible();
+  await expect(page.getByLabel("Faizan Ali is away on Tue 23 Sep")).toBeHidden();
+  await expect(page.getByText("Leave is recorded on the Technicians screen")).toBeVisible();
 });
 
-test("lists the unassigned tray, and says why asked and offered never differ", async ({ page }) => {
+test("offers no window on a day off, so a job cannot be dropped there at all", async ({ page }) => {
+  await open(page);
+  await press(page, ROHIT);
+  await press(page, "Move this visit");
+
+  // Every other technician's Sunday offers its three windows; Faizan's offers none.
+  await expect(page.getByRole("button", { name: "Move Rohit M. to Arjun Negi, Sun 21 Sep, morning" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Move Rohit M\. to Faizan Ali, Sun 21 Sep/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Move Rohit M\. to Faizan Ali, Tue 23 Sep/ })).toHaveCount(3);
+});
+
+test("names leave when the server refuses a move onto a day off", async ({ page }) => {
+  await open(page, { [MOVE]: fails(409, "on_leave") });
+  await press(page, ROHIT);
+  await press(page, "Move this visit");
+  await press(page, "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning");
+  await page.getByRole("radio", { name: "Zone rebalance" }).focus();
+  await page.keyboard.press("Space");
+  await press(page, "Move and notify");
+
+  await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav is away on Sat 20 Sep. Nothing was moved.");
+});
+
+test("lists the unassigned tray with what was asked beside what is offered", async ({ page }) => {
   await open(page);
   const tray = page.getByRole("complementary", { name: "Unassigned" });
-  await expect(tray.getByRole("listitem").first()).toContainText("First fit");
-  await expect(tray.getByRole("listitem").first()).toContainText("Asked · Sat, morning");
-  await expect(tray.getByRole("listitem").first()).toContainText("Offered · Sat, morning");
-  await expect(tray.getByText("FSM holds one time on a visit")).toBeVisible();
+  const first = tray.getByRole("listitem").first();
+  await expect(first).toContainText("First fit");
+  // The whole point of the tray: the client asked for a morning and is being offered an evening.
+  await expect(first).toContainText("Asked · Sat, morning");
+  await expect(first).toContainText("Offered · Sat, evening");
+  // A visit with no Request behind it says so, rather than repeating the offered window.
+  const last = tray.getByRole("listitem").last();
+  await expect(last).toContainText("Asked · not recorded");
+  await expect(last).toContainText("Offered · Sun, afternoon");
+  await expect(tray.getByText("Asked is what the client picked on their booking")).toBeVisible();
 });
 
 test("opens a block's drawer with what the board knows of the visit", async ({ page }) => {

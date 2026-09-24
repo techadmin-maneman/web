@@ -886,7 +886,7 @@ Request body:
 }
 ```
 
-**409**: clash: the technician already holds a job in that window on that date
+**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day
 
 ```json
 {
@@ -946,7 +946,7 @@ Request body:
 }
 ```
 
-**409**: clash
+**409**: clash; on_leave
 
 ```json
 {
@@ -1065,7 +1065,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 
 ### GET /api/technicians
 
-Active technicians and the phones they have logged in on
+Active technicians, the phones they have logged in on, and the leave they are down for
 
 **200**: The technicians
 
@@ -1076,6 +1076,97 @@ Active technicians and the phones they have logged in on
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians/{id}/leave
+
+Record leave. Those days are then refused to booking and to the dispatch board alike
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianLeaveRequest"
+}
+```
+
+**200**: Recorded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: to is before from, or more than 365 days ahead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such active technician
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians/{id}/leave/{leave}/cancel
+
+Take leave back, so those days can be worked again
+
+**200**: Cancelled
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cancelled": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "cancelled"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such leave of that technician's
 
 ```json
 {
@@ -1245,6 +1336,7 @@ Per technician: jobs finished over a period, and how they ran against the planne
             "superseded",
             "out_of_order",
             "clash",
+            "on_leave",
             "fsm_refused",
             "too_early_to_close"
           ]
@@ -2590,7 +2682,8 @@ Per technician: jobs finished over a period, and how they ran against the planne
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The window the client asked for, from the Request behind the visit; null where nothing recorded one."
           },
           "offered_window": {
             "anyOf": [
@@ -2677,16 +2770,27 @@ Per technician: jobs finished over a period, and how they ran against the planne
           "to": {
             "type": "string",
             "format": "date"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "technician_id",
           "from",
-          "to"
+          "to",
+          "note"
         ],
         "additionalProperties": false
       },
-      "description": "Always empty: FSM's availability answers 48 hours ahead and the board is seven days."
+      "description": "Leave ops recorded, clipped to this week. Not from FSM: its availability answers free time, not leave."
     }
   },
   "required": [
@@ -3241,6 +3345,13 @@ Per technician: jobs finished over a period, and how they ran against the planne
               ],
               "additionalProperties": false
             }
+          },
+          "leave": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicianLeave"
+            },
+            "description": "Leave that has not ended yet, soonest first (ADR 0060)."
           }
         },
         "required": [
@@ -3248,7 +3359,8 @@ Per technician: jobs finished over a period, and how they ran against the planne
           "name",
           "initials",
           "zone",
-          "devices"
+          "devices",
+          "leave"
         ],
         "additionalProperties": false
       }
@@ -3256,6 +3368,75 @@ Per technician: jobs finished over a period, and how they ran against the planne
   },
   "required": [
     "technicians"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianLeave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "Inclusive: a single day's leave has the same date twice."
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "from",
+    "to",
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianLeaveRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Why, in ops' words. Never a medical detail."
+    }
+  },
+  "required": [
+    "from",
+    "to"
   ],
   "additionalProperties": false
 }

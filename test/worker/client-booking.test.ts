@@ -65,13 +65,20 @@ beforeEach(async () => {
 
 describe("the working day", () => {
   it("places a visit at the first free half-slot of its window, one job per window", () => {
-    const empty = { units: new Set<number>(), windows: new Set<"morning" | "afternoon" | "evening">() };
+    const empty = { units: new Set<number>(), windows: new Set<"morning" | "afternoon" | "evening">(), onLeave: false };
     expect(placement(empty, "afternoon", "service")).toBe(2);
-    expect(placement({ units: new Set([2, 3]), windows: new Set() }, "afternoon", "service")).toBe(4);
-    expect(placement({ units: new Set(), windows: new Set(["afternoon"]) }, "afternoon", "service")).toBeNull();
+    expect(placement({ ...empty, units: new Set([2, 3]) }, "afternoon", "service")).toBe(4);
+    expect(placement({ ...empty, windows: new Set(["afternoon"] as const) }, "afternoon", "service")).toBeNull();
     // A first fit is two slots: it cannot start in the evening's last half-slots.
     expect(placement(empty, "evening", "first_fit")).toBeNull();
     expect(placement(empty, "morning", "first_fit")).toBe(0);
+  });
+
+  it("offers a technician on leave no window at all, whatever else their day holds", () => {
+    const away = { units: new Set<number>(), windows: new Set<"morning" | "afternoon" | "evening">(), onLeave: true };
+    expect(placement(away, "morning", "service")).toBeNull();
+    expect(placement(away, "afternoon", "consultation")).toBeNull();
+    expect(placement(away, "evening", "service")).toBeNull();
   });
 
   it("reads a time of day as its half-slot and window", () => {

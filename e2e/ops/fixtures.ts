@@ -192,13 +192,18 @@ export const BOARD = {
       ]),
     },
   ],
-  /** No client comes with an unassigned job: the route answers with the visit, not the person. */
+  /**
+   * No client comes with an unassigned job: the route answers with the visit,
+   * not the person. The first two are the tray's whole point — a client asked
+   * for one window and is being offered another — and the last has no Request
+   * behind it, so nothing recorded what was asked (ADR 0061).
+   */
   unassigned: [
     {
       appointment_id: "78000000-0000-4000-8000-000000000001",
       type: "first_fit",
       asked_window: "morning",
-      offered_window: "morning",
+      offered_window: "evening",
       date: DATES[1],
       sector: "Sec 43",
     },
@@ -206,7 +211,7 @@ export const BOARD = {
       appointment_id: "78000000-0000-4000-8000-000000000002",
       type: "service",
       asked_window: "evening",
-      offered_window: "evening",
+      offered_window: "morning",
       date: DATES[1],
       sector: "Sec 12",
     },
@@ -221,15 +226,22 @@ export const BOARD = {
     {
       appointment_id: "78000000-0000-4000-8000-000000000004",
       type: "replacement",
-      asked_window: "afternoon",
+      asked_window: null,
       offered_window: "afternoon",
       date: DATES[2],
       sector: "Sohna",
     },
   ],
   utilisation: DATES.map((date, day) => ({ date, percent: UTILISATION[day] ?? 0 })),
-  /** Always empty: FSM answers about availability 48 hours ahead (docs/open-points.md, item 53). */
-  leave: [],
+  /** Leave ops recorded, clipped to this week: Faizan is away on the Sunday and Monday (ADR 0060). */
+  leave: [
+    {
+      technician_id: BOARD_TECHNICIANS[3]?.id,
+      from: DATES[2],
+      to: DATES[3],
+      note: "Family wedding",
+    },
+  ],
 };
 
 export const MOVED = { move_id: "79000000-0000-4000-8000-000000000001", messaged: true };
@@ -594,7 +606,8 @@ const technician = (
   initials: string,
   zone: string | null,
   devices: { device_id: string; label: string | null; last_seen_at: string; revoked_at: string | null }[],
-) => ({ id: `88000000-0000-4000-8000-00000000000${String(n)}`, name, initials, zone, devices });
+  leave: { id: string; from: string; to: string; note: string | null }[] = [],
+) => ({ id: `88000000-0000-4000-8000-00000000000${String(n)}`, name, initials, zone, devices, leave });
 
 export const TECHNICIANS = {
   technicians: [
@@ -607,12 +620,21 @@ export const TECHNICIANS = {
         revoked_at: "2027-08-05T05:00:00.000Z",
       },
     ]),
-    technician(2, "Sandeep Yadav", "SY", "Sec 1–39", [
-      { device_id: "device-3", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null },
-    ]),
+    technician(
+      2,
+      "Sandeep Yadav",
+      "SY",
+      "Sec 1–39",
+      [{ device_id: "device-3", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null }],
+      // Leave ops recorded here, which the dispatch board reads from the same rows (ADR 0060).
+      [{ id: "89000000-0000-4000-8000-000000000001", from: "2027-10-02", to: "2027-10-06", note: "Family wedding" }],
+    ),
     technician(3, "Faizan Ali", "FA", null, []),
   ],
 };
+
+export const LEAVE_RECORDED = { id: "89000000-0000-4000-8000-000000000002" };
+export const LEAVE_CANCELLED = { cancelled: true };
 
 /**
  * What each of them has finished, over the quarter the route counts by default.
