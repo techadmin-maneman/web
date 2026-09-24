@@ -283,21 +283,24 @@ export function PayStep(props: {
 }
 
 /** Board C6: the payment failed, and the hold's time left. */
-export function FailedStep({ hold, onRetry, onAnother }: { hold: Hold; onRetry: () => void; onAnother: () => void }) {
+export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => void; onAnother: () => void }) {
+  const { hold, busy, onRetry, onAnother } = props;
   const copy = booking.failed;
   const left = useHoldLeft(hold);
   return (
-    <div role="alert">
+    // Busy while the payment is being started again, so a screen reader is told the step is working
+    // and holds the alert until it has something new to read.
+    <div role="alert" aria-busy={busy}>
       <p className={styles.caption}>{copy.label}</p>
       <div className={styles.failed}>
         <p className={styles.outcome}>{copy.title}</p>
         <p className={styles.outcomeLine}>{copy.held(minutesAndSeconds(left))}</p>
       </div>
       <div className={styles.pair}>
-        <button className={styles.primary} type="button" onClick={onRetry}>
+        <button className={styles.primary} type="button" disabled={busy} onClick={onRetry}>
           {copy.retry}
         </button>
-        <button className={styles.secondary} type="button" onClick={onAnother}>
+        <button className={styles.secondary} type="button" disabled={busy} onClick={onAnother}>
           {copy.another}
         </button>
       </div>
