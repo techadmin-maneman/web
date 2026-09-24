@@ -21,21 +21,23 @@ export type Keeping = "asking" | "granted" | "refused" | "unknown";
 
 interface Kept {
   readonly key: "keeping";
-  readonly keeping: Keeping;
+  /** Only ever "granted": see below. */
+  readonly keeping: "granted";
 }
 
 /**
- * Asks once per store, and remembers the answer. A wipe takes it with
- * everything else, so the next sign-in asks again — which is right: an
- * installed app and the browser it was installed from are two stores, and the
- * answer for one says nothing about the other.
+ * Asks the phone, and remembers only a yes. A refusal is asked again on the
+ * next start, because a browser's heuristics warm to an app it sees often and
+ * today's no can be next week's yes; remembering it would leave the warning
+ * standing long after it stopped being true. A wipe takes the yes with
+ * everything else, which is right: an installed app and the browser it was
+ * installed from are two stores, and one's answer says nothing about the other.
  */
 export async function askToKeep(): Promise<Keeping> {
-  const kept = await get<Kept>("device", "keeping");
-  if (kept !== null) return kept.keeping;
+  if ((await get<Kept>("device", "keeping")) !== null) return "granted";
 
   const keeping = await ask();
-  await put("device", { key: "keeping", keeping } satisfies Kept);
+  if (keeping === "granted") await put("device", { key: "keeping", keeping } satisfies Kept);
   return keeping;
 }
 
