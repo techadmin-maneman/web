@@ -33,7 +33,8 @@ export const WINDOW_SLOT_MAP: Readonly<Record<BookingWindow, readonly number[]>>
 /**
  * Each visit type's block, in half-slots (consultation and service one slot,
  * replacement one and a half, first fit two), and how long FSM books it for.
- * The service's 90 minutes is board B1's (docs/open-points.md, item 23).
+ * The owner kept the design's four lengths on 24 September 2026, the service's
+ * 90 minutes among them (docs/open-points.md, "Visit lengths").
  */
 export const VISIT_BLOCKS: Readonly<Record<VisitType, { readonly units: number; readonly minutes: number }>> = {
   consultation: { units: 2, minutes: 60 },

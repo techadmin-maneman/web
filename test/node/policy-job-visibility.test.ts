@@ -16,6 +16,8 @@ import {
 const NOW = new Date("2026-09-21T06:30:00Z");
 /** Noon in India on a date. */
 const noon = (date: string) => new Date(`${date}T06:30:00Z`);
+/** 6 pm in India on a date, the hour a job unlocks at. */
+const sixPm = (date: string) => new Date(`${date}T12:30:00Z`);
 
 describe("job visibility", () => {
   it(RULES[0], () => {
@@ -33,14 +35,33 @@ describe("job visibility", () => {
 
   it(RULES[1], () => {
     const wednesday = noon("2026-09-23");
-    // It unlocks at midnight in India at the start of Tuesday, the day before.
-    expect(unlocksAt(wednesday)).toEqual(new Date("2026-09-21T18:30:00Z"));
+    // It unlocks at 6 pm in India on Tuesday, the day before.
+    expect(unlocksAt(wednesday)).toEqual(new Date("2026-09-22T12:30:00Z"));
     expect(unlocked(wednesday, NOW)).toBe(false);
     expect(visibleFields(wednesday, NOW)).toEqual([...OUTLINE_FIELDS]);
 
     const tuesday = noon("2026-09-22");
-    expect(unlocked(tuesday, NOW)).toBe(true);
-    expect(visibleFields(tuesday, NOW)).toContain("access_notes");
+    expect(unlocksAt(tuesday)).toEqual(new Date("2026-09-21T12:30:00Z"));
+    expect(visibleFields(tuesday, sixPm("2026-09-21"))).toContain("access_notes");
+  });
+
+  it("holds tomorrow's address back until 6 pm today, which is the point of the rule", () => {
+    // Tomorrow's job is on the list from midnight, collapsed; its address is not.
+    const tomorrow = noon("2026-09-22");
+    expect(jobDay(tomorrow, NOW)).toBe("tomorrow");
+    expect(unlocked(tomorrow, NOW)).toBe(false);
+
+    const sixPmToday = sixPm("2026-09-21");
+    expect(unlocked(tomorrow, new Date(sixPmToday.getTime() - 1))).toBe(false);
+    expect(unlocked(tomorrow, sixPmToday)).toBe(true);
+  });
+
+  it("takes the day before from India's calendar, not from UTC's", () => {
+    // 01:00 on Tuesday in India is still Monday in UTC. The day before is
+    // Monday, so it unlocks at 6 pm on Monday and not at 6 pm on Sunday.
+    expect(unlocksAt(new Date("2026-09-21T19:30:00Z"))).toEqual(new Date("2026-09-21T12:30:00Z"));
+    // 23:45 on Monday in India is Monday in UTC too, and unlocks on Sunday.
+    expect(unlocksAt(new Date("2026-09-21T18:15:00Z"))).toEqual(new Date("2026-09-20T12:30:00Z"));
   });
 
   it("leaves today's and yesterday's jobs unlocked", () => {

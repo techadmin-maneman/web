@@ -2,10 +2,11 @@
 // the API leaves it out of the other types' `steps`, so this screen is never
 // reached for them.
 //
-// The board draws "Scan the piece". Labels carry no barcode yet
-// (docs/open-points.md, item 25), so the code is typed and then checked against
-// the mirror, which works with no signal only once it has been looked up: a
-// code we do not know still goes on the job as the technician entered it.
+// The board draws "Scan the piece". The owner ruled on 24 September 2026 that
+// labels carry neither a barcode nor a QR code (docs/open-points.md, "Piece
+// labels"), so the code is typed and then checked against the mirror, which
+// works with no signal only once it has been looked up: a code we do not know
+// still goes on the job as the technician entered it.
 
 import { useState } from "react";
 import { api, type PieceLookup } from "../api.ts";
