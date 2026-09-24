@@ -28,11 +28,14 @@ export function todayInIndia(now: Date = new Date()): string {
   return new Date(now.getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-export function dayAfter(date: string): string {
-  return new Date(new Date(`${date}T00:00:00Z`).getTime() + 86_400_000).toISOString().slice(0, 10);
+export function dayBefore(date: string): string {
+  return new Date(new Date(`${date}T00:00:00Z`).getTime() - 86_400_000).toISOString().slice(0, 10);
 }
 
 const at = (date: string, time: string) => `${date}T${time}:00.000Z`;
+
+/** 6 pm in India on the day before the visit, when its address unlocks (src/policy/job-visibility.ts). */
+const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 
 export function jobsToday(date: string) {
   return [
@@ -48,7 +51,7 @@ export function jobsToday(date: string) {
       status: "scheduled",
       badge: "prepaid",
       unlocked: true,
-      unlocks_at: at(dayAfter(date), "18:30"),
+      unlocks_at: unlocksAt(date),
     },
     {
       id: SECOND_JOB_ID,
@@ -62,7 +65,7 @@ export function jobsToday(date: string) {
       status: "scheduled",
       badge: "credit",
       unlocked: true,
-      unlocks_at: at(dayAfter(date), "18:30"),
+      unlocks_at: unlocksAt(date),
     },
     {
       id: LOCKED_JOB_ID,
@@ -76,7 +79,7 @@ export function jobsToday(date: string) {
       status: "scheduled",
       badge: "prepaid",
       unlocked: false,
-      unlocks_at: at(dayAfter(date), "18:30"),
+      unlocks_at: unlocksAt(date),
     },
   ];
 }

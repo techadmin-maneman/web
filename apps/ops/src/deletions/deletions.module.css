@@ -1,0 +1,268 @@
+/*
+ * The deletion queue, on the panel and at the width the boards' own queues use
+ * (C1 and D1). The design draws no board for it, so nothing here is new
+ * except the confirmation, which is board D3's revoke carried further: the
+ * warning in oxblood, then what is destroyed and what is kept, then a check
+ * that the request came from the client, before the button is usable at all.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-panel);
+}
+
+.panel {
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--sp-14) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.panelTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-22);
+}
+
+.count {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* ---- One request ----------------------------------------------------------- */
+
+.requests {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.request {
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-16);
+}
+
+/* The client's name, which reaches their record; opening it is audited. */
+.name {
+  font-size: var(--fs-15);
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.name:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.left {
+  flex-shrink: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Past the seven days the record allows, in oxblood, as board D2 marks one. */
+.late {
+  color: var(--error-on-paper);
+}
+
+.who {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- The confirmation ------------------------------------------------------ */
+
+.confirm {
+  margin-top: var(--sp-14);
+  padding: var(--sp-14) var(--sp-16);
+  border: var(--hairline) solid var(--error-on-paper);
+}
+
+/* The panel takes focus as it opens, so the outline has to be its own. */
+.confirm:focus-visible {
+  outline: var(--rule-strong) solid var(--error-on-paper);
+  outline-offset: var(--sp-2);
+}
+
+.warning {
+  margin: 0;
+  font-size: var(--fs-15);
+  line-height: 1.5;
+  color: var(--error-on-paper);
+}
+
+.what {
+  margin-top: var(--sp-12);
+}
+
+.whatTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-14);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.whatItems {
+  margin: var(--sp-4) 0 0;
+  padding-left: var(--sp-18);
+}
+
+.whatItem {
+  font-size: var(--fs-14);
+  line-height: 1.5;
+}
+
+.checkLine {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-10);
+  margin-top: var(--sp-14);
+  padding-top: var(--sp-12);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.check {
+  flex-shrink: 0;
+  width: var(--sp-18);
+  height: var(--sp-18);
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.check:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.checkLabel {
+  font-size: var(--fs-14);
+  line-height: 1.4;
+}
+
+/* ---- The reason a rejection carries ---------------------------------------- */
+
+.reason {
+  margin-top: var(--sp-14);
+}
+
+.reasonLabel {
+  display: block;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.reasonField {
+  display: block;
+  width: 100%;
+  min-height: var(--sp-48);
+  margin-top: var(--sp-6);
+  padding: var(--sp-8) var(--sp-10);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper-light);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+  resize: vertical;
+}
+
+.reasonField:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.reasonHint {
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* ---- The two decisions ----------------------------------------------------- */
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+  margin-top: var(--sp-14);
+}
+
+.delete,
+.quiet {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-18);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/*
+ * The one action on the console drawn in oxblood: nothing else here destroys
+ * anything. Ink carries the primary action everywhere else.
+ */
+.delete {
+  border: var(--hairline) solid var(--error-on-paper);
+  background: var(--error-on-paper);
+  color: var(--paper);
+}
+
+.quiet {
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+}
+
+.delete:disabled,
+.quiet:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.delete:focus-visible,
+.quiet:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+.error {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.note {
+  margin: 0;
+  padding: var(--sp-14) var(--sp-20);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-muted);
+}

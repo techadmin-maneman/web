@@ -693,7 +693,7 @@ The photo notice promises that a person's data is deleted the same day they ask.
 
 **Zoho's history.** Blanking the fields may leave the old values in the record's timeline. If the person or legal asks for full removal, delete the record in Zoho, then delete it from the recycle bin as well. D1's lead history is unaffected.
 
-**A client's account (Phase 2).** A request from the app waits in ops' deletion requests. Processing it runs the same erasure, and also:
+**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**, and is decided there rather than by API. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also:
 
 - deletes their visit photographs from the client-photos bucket;
 - deletes their saved addresses;
@@ -705,7 +705,9 @@ Check FSM as you check Zoho:
 SELECT erased_at, fsm_erased_at, fsm_erasure_attempts FROM people WHERE id = '<person_id>';
 ```
 
-A request waiting 5 days alerts ops: process it before its 7 days run out. Invoices stay in Books for 8 years, by law.
+A request waiting 5 days alerts ops: process it before its 7 days run out. The console counts the days left against each request. Invoices stay in Books for 8 years, by law.
+
+**A grievance, and a change of number.** Both are answered in the console too: **Grievances** holds what a client has said about the way we use their data, and recording your answer closes it — it messages nobody, so send your answer on WhatsApp yourself first. **Number changes** holds the changes whose codes both numbers have already proven; confirming one is what moves the client onto the new number. Every decision on all three is written to `audit_log` under the Access identity that made it.
 
 ---
 

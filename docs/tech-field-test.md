@@ -18,6 +18,8 @@ Print this, or copy it into a notes app, and fill it in as you go.
 
 ## Before you start
 
+**Do `docs/technician-test-setup.md` first.** It is twenty minutes on any phone, anywhere, and it proves the sign-in, the six steps of a job and the day-before unlock before anyone books a working day for this. It also sets a technician up without touching Zoho, which is worth knowing: the sign-in reads our own database and not FSM, so step 1 below is how a **real** technician gets listed, not a condition of logging in.
+
 Ops do these once. Tick each before the phone leaves the office.
 
 | #   | Set up                                                                                                                                                                                    | Done |

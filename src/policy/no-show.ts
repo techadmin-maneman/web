@@ -15,9 +15,10 @@ export const RULES = [
 
 /**
  * How long the technician waits before he may close a job as a no-show. The
- * prompt gives 15 minutes and leaves a first fit open, so every type waits the
- * same: a placeholder until the owner rules each type
- * (docs/open-points.md, item 47).
+ * prompt gives 15 minutes and leaves a first fit open; the owner ruled on
+ * 24 September 2026 that every type waits the same 15 minutes
+ * (docs/open-points.md, "The no-show wait"). It stays one number per type so a
+ * type can be given its own later without touching anything that reads it.
  */
 export const NO_SHOW_WAIT_MIN: Readonly<Record<VisitType, number>> = {
   consultation: 15,

@@ -2,6 +2,29 @@
 
 `ncr-pincodes.csv` lists the 198 pincodes of the five cities Phase 1 serves: Delhi 103, Gurgaon 29, Noida 26, Ghaziabad 25 and Faridabad 15. It is the starting point for the service area (`docs/phase2-inputs.md`, section 7), which P2-M3's `serviceable_pincodes` table is loaded from.
 
+## The columns
+
+One row per pincode. The header names the columns and `scripts/import-pincodes.ts` finds them by name, so the order does not matter and the names have to match exactly.
+
+| Column                  | What it holds                                                                                                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pincode`               | The six digits. One row each, and the row's identity: do not change one                                                                                                      |
+| `city`                  | Delhi, Gurgaon, Noida, Ghaziabad or Faridabad                                                                                                                                |
+| `district`              | The delivering office's district, from the directory. Not used by the app                                                                                                    |
+| `state`                 | Delhi, Haryana or Uttar Pradesh. Not used by the app                                                                                                                         |
+| `office_names`          | The post offices in that pincode, separated by semicolons. The app names the area from the shortest of them, so a client sees "Saket" and not "Distt Court Complex Saket SO" |
+| `latitude`, `longitude` | The delivering office's point, for a rough map only. Never used to measure a distance                                                                                        |
+| **`served`**            | **Yours to fill in.** `yes` if a technician goes there; anything else, including blank, means not served                                                                     |
+| **`launch_on`**         | **Yours to fill in.** The date that pincode started, or is planned to start                                                                                                  |
+
+**What `served` decides:** whether the app offers a booking at that pincode at all. A client at a pincode that is not served is offered the waitlist instead, and one at a pincode that is not in this file at all is treated the same way.
+
+**What a date in `launch_on` means:** the day a technician started coming, or will start. It is read as midnight in India on that day. It does **not** hold booking back — `served` alone does that — so a pincode marked `yes` with a date next month takes bookings today. What the date is for is the waitlist: an invite sent to someone who waited for that area lapses twelve months after it launched, and that clock starts here.
+
+**Write the date as `2026-10-01`** — the year, the month, then the day. Excel and Google Sheets like to turn a date cell into `01-10-2026` or `1 Oct 2026` when they save, and the import stops with an error rather than guess which is the month. If your spreadsheet keeps changing it, format the two columns as plain text before you type in them, then save as CSV.
+
+Leave a pincode you have not decided on blank in both columns. Blank is "not served", which is the safe answer.
+
 ## Source and licence
 
 - **Source:** "All India Pincode Directory till last month", published by the Department of Posts on data.gov.in (resource `5c2f62fe-5afa-4119-a499-fec9d604d5bd`), last updated 3 October 2025. Downloaded on 22 September 2026 through the data.gov.in API.

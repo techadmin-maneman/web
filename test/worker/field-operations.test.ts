@@ -172,7 +172,8 @@ describe("the day's jobs", () => {
       address: null,
       access_notes: null,
       client: null,
-      unlocks_at: "2026-09-23T18:30:00.000Z",
+      // 6 pm in India on the day before the visit (src/policy/job-visibility.ts).
+      unlocks_at: "2026-09-24T12:30:00.000Z",
     });
     expect(JSON.stringify(job)).not.toContain("House 7");
     expect(JSON.stringify(job)).not.toContain("9810000001");

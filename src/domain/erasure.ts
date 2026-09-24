@@ -5,7 +5,7 @@
 // In order: the photos and results are deleted from R2, with a client's visit
 // photographs (docs/decisions/0049-dpdp.md), then one D1 batch blanks the
 // person, ends their sessions, cancels their unsent messages, expires their jobs,
-// deletes their addresses and number changes, and records the withdrawal. The
+// deletes their photograph sets, addresses and number changes, and records the withdrawal. The
 // CRM and FSM are updated afterwards, by their queues from the sweeper. R2 goes
 // first so that a failure part-way leaves the person findable, and the request
 // can simply be repeated.
@@ -120,6 +120,14 @@ export async function erasePerson(env: ErasureEnv, mobileE164: string, now: Date
     db
       .prepare(
         `DELETE FROM photos WHERE photo_set_id IN (SELECT s.id FROM photo_sets s
+           JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1)`,
+      )
+      .bind(personId),
+    // The sets the photographs stood in go with them, after them for the foreign key. An empty set
+    // holds no personal data, but it is a record of photographs that no longer exist.
+    db
+      .prepare(
+        `DELETE FROM photo_sets WHERE id IN (SELECT s.id FROM photo_sets s
            JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1)`,
       )
       .bind(personId),
