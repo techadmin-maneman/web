@@ -177,6 +177,46 @@ const NO_SHOWS = {
   ],
 };
 
+/**
+ * The day's money over its charges, board D1's first card: its own three
+ * figures and its two charges. The board prices the no-show at Rs. 2,360 like
+ * the late cancellation; nothing here records what a no-show was charged, so
+ * the third figure holds the cancellation alone and counts the no-show beside
+ * it (docs/open-points.md, item 57).
+ */
+const DAY_MONEY = {
+  date: "2027-09-22",
+  collected: 8_400_000,
+  refunds_processing: 708_000,
+  refunded: 236_000,
+  charged: 236_000,
+  no_shows_charged: 1,
+  dispute: null,
+  charges: [
+    {
+      id: "b1000000-0000-4000-8000-000000000001",
+      kind: "no_show",
+      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
+      amount: null,
+      // Ruled this morning on yesterday's visit, so the list's own order is the route's.
+      at: "2027-09-22T02:30:00.000Z",
+      visit_started_at: "2027-09-21T06:00:00.000Z",
+      change: null,
+      technician: "Imran Qureshi",
+    },
+    {
+      id: "b1000000-0000-4000-8000-000000000002",
+      kind: "late_cancellation",
+      person: { id: "11000000-0000-4000-8000-000000000005", name: "Aman Tyagi" },
+      amount: 236_000,
+      at: "2027-09-22T03:44:00.000Z",
+      visit_started_at: "2027-09-22T04:30:00.000Z",
+      change: "cancelled",
+      technician: null,
+    },
+  ],
+};
+
 // ---- Board D3: the roster, with the phones the board does not draw -----------
 
 const phone = (id: string, label: string | null, seen: string) => ({
@@ -199,6 +239,21 @@ const TECHNICIANS = {
     worker(3, "Arjun Negi", "AN", "DLF 1–5", "2027-09-21"),
     worker(4, "Faizan Ali", "FA", "Sohna Rd", "2027-09-20"),
   ],
+};
+
+/** The board's own four averages, against the 90 minutes a service visit is planned for. */
+const figures = (n: number, jobs: number, timed: number, minutes: number) => ({
+  technician_id: `88000000-0000-4000-8000-00000000000${String(n)}`,
+  jobs,
+  timed_jobs: timed,
+  average_minutes: minutes,
+  average_planned_minutes: 90,
+  skill: null,
+});
+const TECHNICIAN_WORK = {
+  from: "2027-06-24",
+  to: "2027-09-23",
+  technicians: [figures(1, 48, 48, 84), figures(2, 41, 41, 91), figures(3, 44, 44, 79), figures(4, 29, 29, 108)],
 };
 
 const consent = (purpose: string, state: string, version: string | null, at: string | null) => ({
@@ -247,10 +302,12 @@ const API: Api = {
   [`/api/clients/${CLIENT_ID}/pieces`]: json(PIECES),
   [`/api/clients/${CLIENT_ID}/photos`]: json(PHOTOS),
   [`/api/clients/${CLIENT_ID}/consents`]: json(CONSENTS),
+  "/api/payments": json(DAY_MONEY),
   "/api/no-shows": json(NO_SHOWS),
   // The tasks are read against IN_2027, the day their dates are written for (e2e/ops/fixtures.ts).
   "/api/tasks": json(TASKS),
   "/api/technicians": json(TECHNICIANS),
+  "/api/technicians/work": json(TECHNICIAN_WORK),
   ...photoFiles,
 };
 
@@ -376,12 +433,17 @@ async function photos(browser: Browser, design: Page): Promise<void> {
 }
 
 /**
- * Board D1. The board's frame draws the day's money over the charges, then the
- * disputed charge beside it; only the evidence and a ruling have a route, so
- * the queue is paired with the second card, the one that holds them.
+ * Board D1, both of its cards. The first is the day's money over the charges it
+ * was kept on; the second is a disputed charge, and nothing records one, so the
+ * queue of cases is paired with it as the card that holds the evidence and the
+ * ruling.
  */
 async function noShows(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/no-shows");
+  const money = page.getByRole("region", { name: "Today" });
+  await money.getByText("Cancelled 9:14 am · visit was 10 am").waitFor();
+  await pair(OUT, PANEL, "d1-day-money", await panelOf(design, "Payments", 0), await money.screenshot());
+
   const panel = page.getByRole("region", { name: "Waiting for a decision" });
   await panel.getByText("Delivered 11:32 am").waitFor();
   await pair(OUT, PANEL, "d1-no-shows", await panelOf(design, "Payments", 1), await panel.screenshot());
@@ -410,11 +472,11 @@ async function tasks(browser: Browser, design: Page): Promise<void> {
   await page.close();
 }
 
-/** Board D3, the roster, with each technician's phones beneath his name. */
+/** Board D3, the roster and its figures, with each technician's phones beneath his name. */
 async function technicians(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/technicians");
   const panel = page.getByRole("region", { name: "Technicians" });
-  await panel.getByText("Faizan Ali").waitFor();
+  await panel.getByText("1 h 48 m").waitFor();
   await pair(OUT, PANEL, "d3-technicians", await frame(design, "Technicians"), await panel.screenshot());
   await page.close();
 }

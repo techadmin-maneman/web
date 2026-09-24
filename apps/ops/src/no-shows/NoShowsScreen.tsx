@@ -1,6 +1,7 @@
-// No-shows (Ops Console, board D1): each case with the three facts ops rule
-// on, charged or waived here. The board draws this queue beneath the day's
-// money and beside a disputed charge; neither has a route, so neither is built
+// No-shows (Ops Console, board D1): the day's money over the charges it was
+// kept on, then each case with the three facts ops rule on, charged or waived
+// here. The board's second card is a disputed charge; nothing records a dispute
+// and no client can raise one, so it is a line between the two and not a card
 // (docs/open-points.md, item 57).
 //
 // Nothing here takes money. The server never charges by itself, and this
@@ -8,8 +9,9 @@
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useState } from "react";
-import { api, type NoShowCase } from "../api.ts";
+import { api, type Charge, type NoShowCase } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { noShows } from "../content.ts";
 import { useLoad } from "../lib/useLoad.ts";
@@ -17,6 +19,90 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./no-shows.module.css";
 
 type Choice = "charged" | "waived";
+
+/** The charge's first line: the client, then what it was. */
+function whoOf(charge: Charge): string {
+  const copy = noShows.money.charges;
+  const name = charge.person?.name ?? copy.unknown;
+  if (charge.kind === "no_show") return copy.noShow(name);
+  return charge.change === "moved" ? copy.moved(name) : copy.cancelled(name);
+}
+
+/** The line of evidence beneath it, in the board's own words. */
+function evidenceOf(charge: Charge): string {
+  const copy = noShows.money.charges;
+  const was = charge.visit_started_at === null ? copy.undated : indiaClock(charge.visit_started_at);
+  if (charge.kind !== "no_show") return copy.changed(indiaClock(charge.at), was);
+  return charge.technician === null ? copy.unattended(was) : copy.attended(charge.technician, was);
+}
+
+function Charges({ charges }: { charges: readonly Charge[] }) {
+  const copy = noShows.money.charges;
+  if (charges.length === 0) return <p className={styles.empty}>{copy.empty}</p>;
+
+  return (
+    <ul className={styles.charges}>
+      {charges.map((charge) => (
+        <li className={styles.chargeRow} key={charge.id}>
+          <div className={styles.chargeLine}>
+            <span className={styles.who}>{whoOf(charge)}</span>
+            {/* A no-show carries no amount: ops rule on the evidence, and P2-M5 applies the charge. */}
+            {charge.amount === null ? (
+              <span className={styles.unrecorded}>{copy.noAmount}</span>
+            ) : (
+              <span className={styles.chargeAmount}>{rupees(charge.amount)}</span>
+            )}
+          </div>
+          <p className={styles.evidence}>{evidenceOf(charge)}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Money() {
+  const [loaded, retry] = useLoad(api.dayMoney);
+  const copy = noShows.money;
+
+  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+
+  const day = loaded.value;
+  return (
+    <section className={styles.panel} aria-labelledby="day-money">
+      <h2 className={styles.hiddenTitle} id="day-money">
+        {copy.title}
+      </h2>
+      <dl className={styles.figures}>
+        <div className={styles.figure}>
+          <dt className={styles.figureName}>{copy.figures.collected}</dt>
+          <dd className={styles.amount}>{rupees(day.collected)}</dd>
+        </div>
+        <div className={styles.figure}>
+          <dt className={styles.figureName}>
+            {copy.figures.processing}
+            {day.refunded > 0 && <span className={styles.aside}>{copy.refunded(rupees(day.refunded))}</span>}
+          </dt>
+          <dd className={styles.amount}>{rupees(day.refunds_processing)}</dd>
+        </div>
+        <div className={styles.figure}>
+          <dt className={styles.figureName}>
+            {copy.figures.charged}
+            {/*
+             * Nothing records what a no-show was charged, so the figure holds
+             * what was kept and says what it leaves out, rather than pricing a
+             * no-show the system never priced (ADR 0036, PR #89).
+             */}
+            {day.no_shows_charged > 0 && <span className={styles.aside}>{copy.uncharged(day.no_shows_charged)}</span>}
+          </dt>
+          <dd className={styles.amount}>{rupees(day.charged)}</dd>
+        </div>
+      </dl>
+      <h3 className={styles.chargesTitle}>{copy.charges.title}</h3>
+      <Charges charges={day.charges} />
+    </section>
+  );
+}
 
 /** Where a case is in its decision: waiting, sending, or refused by the API. */
 type Decision =
@@ -146,6 +232,9 @@ export function NoShowsScreen() {
   return (
     <Shell section="/no-shows" title={noShows.title}>
       <div className={styles.column}>
+        <Money />
+        {/* The board's second card is a disputed charge; the queue stands where it does. */}
+        <p className={styles.caption}>{noShows.money.noDispute}</p>
         <Queue />
       </div>
     </Shell>

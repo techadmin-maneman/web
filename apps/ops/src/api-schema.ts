@@ -1453,6 +1453,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A day's money: what was collected, what went back, and each charge kept or ruled on */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description India's calendar date; today when it is left out. */
+                    date?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsDayMoney"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/technicians/work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per technician: jobs finished over a period, and how they ran against the planned length */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description India's calendar date the count starts on; 90 days back when it is left out. */
+                    from?: string;
+                    /** @description Exclusive; tomorrow when it is left out. */
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The technicians */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechniciansWork"];
+                    };
+                };
+                /** @description invalid_request: from is not before to */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1917,6 +2033,82 @@ export interface components {
              * @description since plus the group's allowance, 48 hours for every group so far.
              */
             due: string;
+        };
+        /** @description Derived at read time from the payments themselves; no total is kept. */
+        OpsDayMoney: {
+            /**
+             * Format: date
+             * @description India's calendar date the figures cover.
+             */
+            date: string;
+            /** @description In paise. Captured on the day: the board's "Collected today". */
+            collected: number;
+            /** @description In paise. Asked for on the day and not back with the client yet: "Refunds processing". */
+            refunds_processing: number;
+            /** @description In paise. Processed by Razorpay on the day, which the board draws no figure of its own for. */
+            refunded: number;
+            /** @description In paise. Kept from the client on the day: "Charges and no-shows", less the no-shows, which carry no amount. */
+            charged: number;
+            /** @description How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 57). */
+            no_shows_charged: number;
+            /** @description The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 57). */
+            dispute: null;
+            /** @description No-shows and late cancellations, the earliest first. */
+            charges: components["schemas"]["OpsCharge"][];
+        };
+        OpsCharge: {
+            /**
+             * Format: uuid
+             * @description The change's or the case's own id.
+             */
+            id: string;
+            /** @enum {string} */
+            kind: "late_cancellation" | "no_show";
+            /** @description Null for a visit FSM never matched to one of our people. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** @description Null on a no-show: ops record the ruling and nothing records an amount, because the charge itself is applied at P2-M5. */
+            amount: number | null;
+            /**
+             * Format: date-time
+             * @description When the client cancelled, or when ops ruled on the no-show.
+             */
+            at: string;
+            /** @description When the visit was to start. */
+            visit_started_at: string | null;
+            /** @description How the client ended the visit; null on a no-show, where they ended nothing. */
+            change: ("cancelled" | "moved") | null;
+            /** @description Who attended and found nobody in; null on a late cancellation. */
+            technician: string | null;
+        };
+        /** @description Counted at read time from the appointments themselves. */
+        TechniciansWork: {
+            /** Format: date */
+            from: string;
+            /**
+             * Format: date
+             * @description Exclusive: the day after the last one counted.
+             */
+            to: string;
+            /** @description Every active technician, by name, including those who finished nothing. */
+            technicians: components["schemas"]["TechnicianWork"][];
+        };
+        TechnicianWork: {
+            /** Format: uuid */
+            technician_id: string;
+            /** @description Visits completed in the period. */
+            jobs: number;
+            /** @description Of those, the ones the phone timed from Start to the outcome: what the averages are the mean of. */
+            timed_jobs: number;
+            /** @description How long those took; null when the phone timed none of them. */
+            average_minutes: number | null;
+            /** @description What the same jobs were planned to take, so the two can be read against each other. */
+            average_planned_minutes: number | null;
+            /** @description The board's "First fit" or "Service". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59). */
+            skill: null;
         };
     };
     responses: never;
