@@ -14,7 +14,8 @@ test("opens on the dispatch board, with the console's sections beside it", async
   await expect(page.getByRole("heading", { level: 1, name: "Dispatch" })).toBeVisible();
   const sections = page.getByRole("navigation", { name: "Operations" });
   // The design's eight, less Settings, which nothing here can set, and with
-  // No-shows where it writes Payments (docs/open-points.md, item 57).
+  // No-shows where it writes Payments (docs/open-points.md, item 57). The last
+  // three are drawn on no board at all (docs/fidelity-method.md).
   await expect(sections.getByRole("link")).toHaveText([
     "Dispatch",
     "Clients",
@@ -23,6 +24,9 @@ test("opens on the dispatch board, with the console's sections beside it", async
     "Waitlist",
     "Tasks",
     "Technicians",
+    "Grievances",
+    "Deletion requests",
+    "Number changes",
   ]);
   await expect(sections.getByRole("link", { name: "Dispatch" })).toHaveAttribute("aria-current", "page");
 });
