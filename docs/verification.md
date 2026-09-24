@@ -684,6 +684,50 @@ The fixtures (`e2e/tech-staging/seed.ts`) are written straight into `maneman-sta
 
 It also carries the one leg of sign-in this run could not walk: a real login code, on a real handset, end to end.
 
+### The login code, sent for real, 24 September 2026
+
+The run above proved the code request and a wrong code, and said plainly that **the right code had never been through the real API** because no desktop can read one. Half of that gap is now closed: a code was asked for against the deployed staging API for the owner's own handset, and the deployed Worker sent it. The other half — the six digits opening a session — is the owner's to walk, and `docs/technician-test-setup.md` is the page they walk it from.
+
+**What was put into staging, and what it is.** A technician row written straight into `maneman-staging` with `wrangler d1 execute --env staging --remote`, by `scripts/seed-technician-tester.ts`, which takes the number from the environment and never writes it down:
+
+| Row                  | What                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One technician       | `fsm_id` `tech-tester-522a73f9`, name "Test Technician", initials TT, `active` 1, `zone` Gurgaon, `mobile_e164` the owner's own — the one row that carries it |
+| One client           | "Staging test", a random `9xxxxxxxxx` test number, contactable                                                                                                |
+| One address          | Sector 45, Gurgaon, pincode 122003 (a served pincode), **no `lat` or `lng`**                                                                                  |
+| Three visits         | Service visits at 10:00 India on 24, 25 and 27 September, all `scheduled`: a job today, a job tomorrow, and a third that is still locked                      |
+| No device or session | On purpose. The point of this fixture is that a person signs in himself, and the first sign-in enrols the phone (`openTechnicianSession`)                     |
+
+The address has no coordinates deliberately. An address with none cannot be measured against, so the check-in is accepted wherever the phone is (`src/domain/check-ins.ts`) and the owner is not obliged to stand in Sector 45 to see the rest of the app. The 200 m geofence stays `docs/tech-field-test.md`'s to measure, at real addresses.
+
+**The code was sent, and here is the evidence.** `POST https://tech-staging.maneman.in/api/tech/auth/otp`, with an `Origin` of the host's own and the `mm-ci-staging` Access service token, answered `202 {"challenge_id":…,"expires_in_s":600}`. The challenge row is in staging's `otp_challenges`, with `technician_login` 1, `technician_id` the row above, and `code_hash` **not null** — which only happens when the number matched an active technician, since a challenge for an unrecognised number holds no hash at all. Then, from `wrangler tail --env staging`:
+
+```json
+{
+  "level": "info",
+  "event": "login_code_sent",
+  "time": "2026-09-24T01:41:01.125Z",
+  "worker": "mm-api",
+  "environment": "staging",
+  "surface": "tech",
+  "request_id": "1df4a1f2-a97b-4a4f-8549-1142b8e3d5dc",
+  "channel": "whatsapp"
+}
+```
+
+`login_code_sent` is written only when the WhatsApp provider accepted the message (`src/http/send-code.ts`). A number off staging's allowlist logs `login_code_skipped` instead, which is what every earlier proof saw, and a provider refusal logs `login_code_failed`. Neither appeared. The code itself was never read, and the session was not opened: that is the owner's to do, on their phone.
+
+**The fixture was read back through the deployed API, so the owner will not meet an empty list.** A session was written the way `openTechnicianSession` writes one, bound to a throwaway device ID, and taken out again immediately afterwards; staging holds no technician session or device now. Through it, `GET /api/tech/me` answered `200 {"name":"Test Technician","first_name":"Test","initials":"TT",…}`; `GET /api/tech/jobs?date=2026-09-24` answered one job, `sector "Sector 45"`, `badge "prepaid"`, `unlocked true`; the card carried the address, the access note and the client; and the 27 September card answered `unlocked false`, `address null`, `client null`, with the sector kept. The job's steps came back as five — `before_photos`, `checklist`, `consumables`, `after_photos`, `outcome` — because a service visit skips the piece.
+
+**`outbound_messages` holds nothing for a login code, and is not where to look.** There is no `login_code` kind in `MESSAGE_KINDS`, and `sendCodeAfterResponse` hands the code straight to the provider rather than queueing a row, so that a real send takes no longer to answer than a challenge that sends nothing (ADR 0030). The newest row in the table is still the previous day's `visit_reminder`. The Worker's log is the delivery record for a code, and the four events above are the whole of it.
+
+**The technician login does not depend on FSM.** `findFieldTechnician` reads `technicians` in D1 and nowhere else. `POST /api/tech/auth/otp` calls FSM only when that read comes back empty, and then only as a refresh so that a technician added to FSM today does not wait for the nightly reconciliation. The row above has no Zoho record behind it, and the send above is the proof that none is needed. Open point 12 is corrected accordingly: it governs how a real technician's number reaches the mirror in production, not whether this test can be run.
+
+**Two things about the fixture that are not faults but will be noticed.**
+
+- **Every job event will fail to reach FSM.** The visits are mirror rows with no Zoho appointment behind them, so each step is retried four times and then marked `rejected`, and the fifth attempt alerts ops: "A technician's `start` did not reach FSM after 5 attempts…". About six alerts over one job, roughly seven minutes behind each step. PR #87 avoided these by tearing its fixture down before the fifth attempt; this fixture has to stand, so they will fire. `docs/technician-test-setup.md` warns the owner to tell whoever watches the alert channel.
+- **An active technician is one the booking availability offers**, so anything else using staging can take a slot on him while the fixture stands, exactly as happened during the run above. `scripts/seed-technician-tester.ts --clear` takes the claims and the holds out with everything else, and it is what removes the owner's number from staging again.
+
 ## What the P2-M2 and P2-M5 proofs left in the owner's org
 
 Staging shares the real Zoho org (open point 10), so the records below are real and are the owner's to keep or clear. Every one of them is labelled "Staging test". Nothing was deleted, because two of them are still wanted: **WO13 carries the invoice the owner raised by hand**, INV-000001, which the invoice check still waits on for the reason in open point 64; and the first fit is the visit a move was proven on.
