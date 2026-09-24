@@ -74,6 +74,12 @@
   text-decoration: none;
 }
 
+.primary:disabled {
+  background: var(--paper-shade);
+  color: var(--text-quiet);
+  cursor: default;
+}
+
 /* The two ways on, at the foot of the screen (board F1). */
 .actions {
   margin-top: auto;
@@ -88,6 +94,11 @@
   color: var(--text);
   text-decoration: underline;
   text-underline-offset: var(--sp-4);
+}
+
+.secondary:disabled {
+  color: var(--text-quiet);
+  cursor: default;
 }
 
 /* Board F1's quiet way to the tracker, and F6's revoke. */

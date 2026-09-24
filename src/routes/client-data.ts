@@ -1,6 +1,7 @@
 // A client's rights over their data (docs/decisions/0049-dpdp.md), on the client surface:
 //   GET  /api/me/export     everything we hold about them, as a JSON file: the right of access
-//   POST /api/grievances    a grievance, for ops to answer: the right of redress
+//   POST /api/grievances    a grievance, for ops to answer: the right of redress. The same words,
+//                           still open, are one grievance however often they are sent (ADR 0058)
 // Correction is the profile itself (address, number change); erasure is the deletion request (ADR 0042).
 // Each is audited under the client.
 
@@ -26,7 +27,7 @@ const exportRoute = createRoute({
 const grievanceRoute = createRoute({
   method: "post",
   path: "/api/grievances",
-  summary: "Raise a grievance about how the client's data is handled",
+  summary: "Raise a grievance about how the client's data is handled. The same words, still open, are one",
   request: {
     body: {
       required: true,
@@ -133,11 +134,30 @@ export function registerClientData(app: App): void {
     if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
     const db = c.env.DB;
     const now = c.var.deps.now();
+    const { text } = c.req.valid("json");
     const id = crypto.randomUUID();
-    await db
-      .prepare("INSERT INTO grievances (id, person_id, text, state, created_at) VALUES (?1, ?2, ?3, 'open', ?4)")
-      .bind(id, session.subjectId, c.req.valid("json").text, now.toISOString())
-      .run();
+    // One open grievance per client per wording. The same words, still unanswered, are the same
+    // concern however many times Send is tapped, and each row ops see carries its own answer-time
+    // clock. The write settles it rather than a read before it, so two requests in the same moment
+    // cannot both find nothing and both record one (ADR 0058).
+    const raised = await db
+      .prepare(
+        `INSERT INTO grievances (id, person_id, text, state, created_at)
+         SELECT ?1, ?2, ?3, 'open', ?4
+         WHERE NOT EXISTS (SELECT 1 FROM grievances WHERE person_id = ?2 AND text = ?3 AND state = 'open')
+         RETURNING id`,
+      )
+      .bind(id, session.subjectId, text, now.toISOString())
+      .first<string>("id");
+    if (raised === null) {
+      // The tap that recorded nothing answers with the grievance the other raised, so both name
+      // one concern and ops are alerted about it once.
+      const already = await db
+        .prepare("SELECT id FROM grievances WHERE person_id = ?1 AND text = ?2 ORDER BY created_at DESC LIMIT 1")
+        .bind(session.subjectId, text)
+        .first<string>("id");
+      return c.json({ id: already ?? id, state: "open" as const }, 201);
+    }
     await recordAudit(
       db,
       {

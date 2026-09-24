@@ -5,6 +5,7 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
+import { holdOpen } from "./one-tap.ts";
 
 const CODE = "246810";
 const WRONG = "135791";
@@ -103,6 +104,27 @@ test("a wrong code says so, in the design's words, and the fifth voids it", asyn
 
   await page.getByRole("button", { name: "Send a new code" }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
+  await enter(page, CODE);
+  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+});
+
+test("asks for one fresh code when the client taps for one twice", async ({ page, request }) => {
+  await sendCode(page, await booked(request));
+  for (let attempt = 0; attempt < 5; attempt += 1) await enter(page, WRONG);
+  await expect(page.getByRole("alert")).toHaveText("That code did not match. It no longer works.");
+
+  // A second code bills a second send, voids the first, and takes another from the day's
+  // ceiling for this number: two taps can leave a client unable to log in at all.
+  const held = await holdOpen(page, "**/api/auth/otp");
+  const fresh = page.getByRole("button", { name: "Send a new code" });
+  await fresh.click();
+  const liveWhileBusy = await fresh.isEnabled();
+  // Forced, because the tap this guards against is one the client makes whether it is taken or not.
+  await fresh.click({ force: true });
+
+  // The fresh code has landed, so any second request has been sent by now: they were let go together.
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect({ asked: held.asked(), liveWhileBusy }).toEqual({ asked: 1, liveWhileBusy: false });
   await enter(page, CODE);
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
 });

@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { api, type LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
+import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
 import { MobileScreen } from "./MobileScreen.tsx";
@@ -19,51 +20,50 @@ const MOBILE_ERRORS: Readonly<Record<string, string>> = login.mobile.errors;
 export function Login({ onSignedIn }: { onSignedIn: () => void }) {
   const [step, setStep] = useState<Step>({ kind: "mobile" });
   const [mobile, setMobile] = useState("");
-  const [busy, setBusy] = useState(false);
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
+  // One code at a time: a second send bills a second code, voids the first, and takes another
+  // from this number's daily ceiling, which can leave a client unable to log in at all.
+  const [busy, once] = useOneAtATime();
 
-  async function send(digits: string) {
-    setBusy(true);
-    setMobile(digits);
-    const answer = await api.sendCode(digits);
-    setBusy(false);
-    if (!answer.ok) {
-      setMobileError(MOBILE_ERRORS[answer.code] ?? login.mobile.errors.unknown);
-      setStep({ kind: "mobile" });
-      return;
-    }
-    setMobileError(null);
-    setProblem(null);
-    setStep({ kind: "code", challenge: answer.body });
-  }
-
-  async function sendAgain(challenge: LoginChallenge, channel: "whatsapp" | "sms") {
-    setBusy(true);
-    const answer = await (channel === "sms"
-      ? api.smsCode(challenge.challenge_id)
-      : api.resendCode(challenge.challenge_id));
-    setBusy(false);
-    if (answer.ok) {
+  const send = (digits: string) =>
+    once(async () => {
+      setMobile(digits);
+      const answer = await api.sendCode(digits);
+      if (!answer.ok) {
+        setMobileError(MOBILE_ERRORS[answer.code] ?? login.mobile.errors.unknown);
+        setStep({ kind: "mobile" });
+        return;
+      }
+      setMobileError(null);
       setProblem(null);
       setStep({ kind: "code", challenge: answer.body });
-    } else {
-      setProblem(answer.status === 410 ? { kind: "closed" } : { kind: "failed" });
-    }
-  }
+    });
 
-  async function verify(challenge: LoginChallenge, code: string) {
-    setBusy(true);
-    const answer = await api.verify(challenge.challenge_id, code);
-    setBusy(false);
-    if (!answer.ok) {
-      setProblem(answer.status === 410 ? { kind: "closed" } : { kind: "failed" });
-    } else if (answer.body.verified) {
-      onSignedIn();
-    } else {
-      setProblem({ kind: "mismatch", left: answer.body.attempts_left });
-    }
-  }
+  const sendAgain = (challenge: LoginChallenge, channel: "whatsapp" | "sms") =>
+    once(async () => {
+      const answer = await (channel === "sms"
+        ? api.smsCode(challenge.challenge_id)
+        : api.resendCode(challenge.challenge_id));
+      if (answer.ok) {
+        setProblem(null);
+        setStep({ kind: "code", challenge: answer.body });
+      } else {
+        setProblem(answer.status === 410 ? { kind: "closed" } : { kind: "failed" });
+      }
+    });
+
+  const verify = (challenge: LoginChallenge, code: string) =>
+    once(async () => {
+      const answer = await api.verify(challenge.challenge_id, code);
+      if (!answer.ok) {
+        setProblem(answer.status === 410 ? { kind: "closed" } : { kind: "failed" });
+      } else if (answer.body.verified) {
+        onSignedIn();
+      } else {
+        setProblem({ kind: "mismatch", left: answer.body.attempts_left });
+      }
+    });
 
   if (step.kind === "mobile") {
     return (
