@@ -191,12 +191,12 @@ Phase 1 serves five NCR cities, but the Phase 2 designs say Gurgaon only (ADR 00
 
 The list comes from the Department of Posts' public directory, under the government's open-data licence. Each row names the post offices in the pincode, so you can tell the areas apart. `data/pincodes/README.md` records the source and the caveats. For example, it includes Greater Noida and the rural edges: Pataudi, Tigaon, Loni, Dadri and Jewar.
 
-**Your part:** open the file in Excel or Google Sheets and fill in the last two columns:
+**Your part**, which you said on 24 September 2026 you would do yourself: open the file in Excel or Google Sheets and fill in the last two columns:
 
-- `served`: `yes` for each pincode a technician goes to today;
-- `launch_on`: the date it started, or the planned date for one launching later.
+- `served`: `yes` for each pincode a technician goes to. Anything else, blank included, means we do not go there, and a client at that pincode is offered the waitlist instead of a booking;
+- `launch_on`: the date that pincode started, or is planned to start. Write it as `2026-10-01` — year, month, day — because a spreadsheet's `01-10-2026` cannot be read without guessing which is the month.
 
-Then save it as CSV in the same place and tell me. Answering per city is enough if whole cities are served ("all of Gurgaon and Delhi, from 1 October").
+Every column is explained in `data/pincodes/README.md`. Then save it as CSV in the same place and tell me. Answering per city is enough if whole cities are served ("all of Gurgaon and Delhi, from 1 October").
 
 ### 8. Referral rulings
 

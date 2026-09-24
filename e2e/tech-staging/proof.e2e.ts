@@ -28,6 +28,7 @@ const sameOrigin = (host: string, headers: Record<string, string> = {}) => ({ ..
 
 interface Card {
   unlocked: boolean;
+  unlocks_at: string;
   sector: string | null;
   address: { lat: number | null; lng: number | null } | null;
   client: { name: string } | null;
@@ -192,11 +193,19 @@ test("the day's list, and the card that unlocks the day before", async ({ page, 
   await expect(page.getByRole("heading", { name: "1 job today" })).toBeVisible();
   await expect(page.getByText(`First at 10 am · ${fixture.sector}`)).toBeVisible();
 
-  // Tomorrow's job unlocked at midnight today, so its card carries the address.
+  // Tomorrow's job unlocks at 6 pm today, with the day-before WhatsApp, so
+  // before then its card is withheld like any other and after it carries the
+  // address. Which of the two this run proves depends on the hour it is run at.
   const tomorrow = await bodyOf<Card>(await page.request.get(`/api/tech/jobs/${fixture.tomorrow.id}`));
-  record("tomorrow's card", { unlocked: tomorrow.unlocked, has_address: tomorrow.address !== null });
-  expect(tomorrow.unlocked).toBe(true);
-  expect(tomorrow.address?.lat ?? 0).toBeCloseTo(fixture.address.lat, 4);
+  const open = Date.now() >= Date.parse(tomorrow.unlocks_at);
+  record("tomorrow's card", {
+    unlocks_at: tomorrow.unlocks_at,
+    unlocked: tomorrow.unlocked,
+    has_address: tomorrow.address !== null,
+  });
+  expect(tomorrow.unlocked).toBe(open);
+  if (open) expect(tomorrow.address?.lat ?? 0).toBeCloseTo(fixture.address.lat, 4);
+  else expect(tomorrow.address).toBeNull();
 
   // Three days out: the API withholds the address and the client, not the screen.
   const later = await bodyOf<Card>(await page.request.get(`/api/tech/jobs/${fixture.later.id}`));

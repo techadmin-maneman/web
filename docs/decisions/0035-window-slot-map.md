@@ -17,10 +17,10 @@ The client app offers three windows: morning 9–12, afternoon 12–4, evening 4
 | Window    | morning | morning | afternoon | afternoon | afternoon | afternoon | evening | evening |
 
 - **`WINDOW_SLOT_MAP`** is the half-slots a visit booked in each window may start in: morning 0–1, afternoon 2–5, evening 6–7. A visit may run on past its window's end, but not past the day's last half-slot, so a first fit cannot start in the evening.
-- **FSM books a visit** from its half-slot's start for its length: consultation 60 minutes, service 90 (board B1; item 23), replacement 135, first fit 180.
+- **FSM books a visit** from its half-slot's start for its length: consultation 60 minutes, service 90, replacement 135, first fit 180. The owner kept all four on 24 September 2026, so these are decisions and not the design's guesses (`docs/open-points.md`, "Visit lengths").
 - **Slots are counted in halves** so a replacement's block is whole.
 
 ## Consequences
 
 - The client's window and FSM's times agree: a visit starting at 12:00 is an afternoon visit to both, and the mirror reads it back as one.
-- The owner rules the real times, lengths and map. Each is one constant.
+- The owner rules the real times and map. Each is one constant. The lengths are ruled.

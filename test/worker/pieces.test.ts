@@ -75,8 +75,8 @@ describe("the mirror of FSM's assets", () => {
       base: "Standard base",
       supplier_lot: "LOT-2026-07",
       fitted_at: "2026-07-01",
-      // 240 days on from the fit: a placeholder until the owner rules the cycle.
-      replacement_due_at: "2027-02-26",
+      // 180 days on from the fit, the cycle the owner ruled for every base.
+      replacement_due_at: "2026-12-28",
       failed_at: null,
     });
   });
@@ -99,7 +99,7 @@ describe("a piece the technician fitted", () => {
       base: "Standard base",
       supplierLot: "LOT-2026-09",
       fittedOn: "2026-09-21",
-      replacementDue: "2027-05-19",
+      replacementDue: "2027-03-20",
       now: NOW,
     };
     const first = await recordFittedPiece(env.DB, fsm, fitted);
@@ -153,7 +153,7 @@ describe("the label the technician scans", () => {
         base: "Standard base",
         supplier_lot: "LOT-2026-07",
         fitted_at: "2026-07-01",
-        replacement_due_at: "2027-02-26",
+        replacement_due_at: "2026-12-28",
         failed_at: null,
         failure_reason: null,
       },
@@ -178,7 +178,7 @@ describe("GET /api/clients/:id/pieces", () => {
           base: "Standard base",
           supplier_lot: "LOT-2026-07",
           fitted_at: "2026-07-01",
-          replacement_due_at: "2027-02-26",
+          replacement_due_at: "2026-12-28",
           failed_at: null,
           failure_reason: null,
         },
