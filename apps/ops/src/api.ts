@@ -32,6 +32,11 @@ export type Tasks = Body<paths["/api/tasks"]["get"]>;
 export type TaskGroup = Tasks["groups"][number];
 export type Task = TaskGroup["tasks"][number];
 
+/** The three queues a client's rights over their data put in front of ops (docs/decisions/0049-dpdp.md). */
+export type Grievance = Body<paths["/api/grievances"]["get"]>["grievances"][number];
+export type DeletionRequest = Body<paths["/api/deletion-requests"]["get"]>["requests"][number];
+export type NumberChange = Body<paths["/api/number-changes"]["get"]>["changes"][number];
+
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
 export type Charge = DayMoney["charges"][number];
@@ -145,6 +150,22 @@ export const api = {
   /** Charge the visit or waive it. Neither takes money: the charge follows the 24-hour policy at P2-M5. */
   decideNoShow: (id: string, decision: "charged" | "waived") =>
     call<{ decided: boolean }>("POST", `/api/no-shows/${id}/decision`, { decision }),
+  /** The grievances nobody has answered yet, oldest first. */
+  grievances: () => call<{ grievances: Grievance[] }>("GET", "/api/grievances"),
+  /** Ops' answer, which closes the grievance. Nothing sends it to the client; ops do that themselves. */
+  resolveGrievance: (id: string, response: string) =>
+    call<{ state: "resolved" }>("POST", `/api/grievances/${id}/resolve`, { response }),
+  deletionRequests: () => call<{ requests: DeletionRequest[] }>("GET", "/api/deletion-requests"),
+  /**
+   * "delete" erases the client at once and cannot be undone; "reject" needs a
+   * reason. The route wants the field either way, so a deletion sends it as null.
+   */
+  decideDeletion: (id: string, decision: "delete" | "reject", reason: string | null) =>
+    call<{ state: "done" | "rejected" }>("POST", `/api/deletion-requests/${id}/decision`, { decision, reason }),
+  numberChanges: () => call<{ changes: NumberChange[] }>("GET", "/api/number-changes"),
+  /** Confirming moves the client to the new number; rejecting needs a reason. */
+  decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>
+    call<{ state: "confirmed" | "rejected" }>("POST", `/api/number-changes/${id}/decision`, { decision, reason }),
   technicians: () => call<{ technicians: Technician[] }>("GET", "/api/technicians"),
   /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
   technicianWork: () => call<TechniciansWork>("GET", "/api/technicians/work"),

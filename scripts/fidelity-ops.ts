@@ -194,7 +194,7 @@ const DAY_MONEY = {
   dispute: null,
   charges: [
     {
-      id: "a1000000-0000-4000-8000-000000000001",
+      id: "b1000000-0000-4000-8000-000000000001",
       kind: "no_show",
       person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
       amount: null,
@@ -205,7 +205,7 @@ const DAY_MONEY = {
       technician: "Imran Qureshi",
     },
     {
-      id: "a1000000-0000-4000-8000-000000000002",
+      id: "b1000000-0000-4000-8000-000000000002",
       kind: "late_cancellation",
       person: { id: "11000000-0000-4000-8000-000000000005", name: "Aman Tyagi" },
       amount: 236_000,

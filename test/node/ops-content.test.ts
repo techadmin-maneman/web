@@ -3,7 +3,9 @@
 // site's booking page.
 
 import { describe, expect, it } from "vitest";
-import { BOOKING_URL, dispatch, waitlist } from "../../apps/ops/src/content.ts";
+import { profile } from "../../apps/app/src/content.ts";
+import { BOOKING_URL, deletions, dispatch, grievances, waitlist } from "../../apps/ops/src/content.ts";
+import { DELETION_ALERT_AFTER_MS } from "../../src/domain/deletion.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { HOSTNAME } from "../../src/config/environments.ts";
 import { BOOKING_WINDOWS, WINDOW_TIMES } from "../../src/config/scheduling.ts";
@@ -21,6 +23,23 @@ describe("the ops console's content", () => {
   it("sends people to the public site's booking page, in each environment", () => {
     expect(BOOKING_URL.staging).toBe(`https://${HOSTNAME.staging}/book`);
     expect(BOOKING_URL.production).toBe(`https://${HOSTNAME.production}/book`);
+  });
+});
+
+// Ops are shown how long a request has left against a time we have already
+// promised the client, so the two have to be the same number
+// (docs/decisions/0049-dpdp.md, docs/open-points.md, item 42).
+describe("what the DPDP queues promise", () => {
+  it("counts a grievance down to the answer time the client's app names", () => {
+    expect(profile.data.sent).toContain(`within ${String(grievances.queue.answerDays)} days`);
+    expect(grievances.queue.note(grievances.queue.answerDays)).toContain(
+      `within ${String(grievances.queue.answerDays)} days`,
+    );
+  });
+
+  it("counts a deletion request down to a window the ops alert falls inside", () => {
+    const alertAfterDays = DELETION_ALERT_AFTER_MS / 86_400_000;
+    expect(deletions.queue.processDays).toBeGreaterThan(alertAfterDays);
   });
 });
 

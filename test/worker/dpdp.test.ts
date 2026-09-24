@@ -70,10 +70,12 @@ describe("erasure reaches Phase 2's data", () => {
     expect(summary).toMatchObject({ visitPhotosDeleted: 1 });
     expect(await env.CLIENT_PHOTOS.get("visits/p/front.jpg")).toBeNull();
     const left = await env.DB.prepare(
-      `SELECT (SELECT COUNT(*) FROM photos) AS photos, (SELECT COUNT(*) FROM addresses) AS addresses,
-         (SELECT text FROM grievances) AS grievance, (SELECT COUNT(*) FROM appointments) AS visits`,
+      `SELECT (SELECT COUNT(*) FROM photos) AS photos, (SELECT COUNT(*) FROM photo_sets) AS sets,
+         (SELECT COUNT(*) FROM addresses) AS addresses, (SELECT text FROM grievances) AS grievance,
+         (SELECT COUNT(*) FROM appointments) AS visits`,
     ).first();
-    expect(left).toEqual({ photos: 0, addresses: 0, grievance: "Erased", visits: 1 });
+    // The sets go with the photographs: an empty one is a record of pictures that no longer exist.
+    expect(left).toEqual({ photos: 0, sets: 0, addresses: 0, grievance: "Erased", visits: 1 });
   });
 
   it("anonymises the FSM contact afterwards, through the sweeper and the fsm-sync queue, once", async () => {
@@ -173,6 +175,62 @@ describe("grievances", () => {
       state: "resolved",
     });
     expect((await resolve("again")).status).toBe(404);
+  });
+});
+
+describe("ops deciding a deletion request", () => {
+  /** A request from the client, as their own app makes one. */
+  async function requested(): Promise<string> {
+    const made = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/deletion-request", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: "https://maneman.test" },
+    });
+    expect(made.status).toBe(202);
+    return (await env.DB.prepare("SELECT id FROM deletion_requests").first<string>("id")) ?? "";
+  }
+
+  function decide(id: string, body: unknown, bindings: Partial<Env>) {
+    return request(
+      appFor("local", fakeDependencies(), {}, "ops"),
+      `/api/deletion-requests/${id}/decision`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify(body),
+      },
+      bindings,
+    );
+  }
+
+  // Open point 63: the sweeper would find them minutes later, where POST /api/erasure
+  // queues the CRM within seconds. Both doors are now as quick as each other.
+  it("queues the CRM and the FSM contact itself, rather than waiting for the sweeper", async () => {
+    const id = await requested();
+    const crm = fakeQueue();
+    const fsm = fakeQueue();
+    const answer = await decide(id, { decision: "delete", reason: null }, { CRM_QUEUE: crm, FSM_QUEUE: fsm });
+
+    expect(await answer.json()).toEqual({ state: "done" });
+    expect(crm.sent).toMatchObject([{ erase_person_id: PERSON }]);
+    expect(fsm.sent).toMatchObject([{ erase_person_id: PERSON }]);
+  });
+
+  it("queues neither when the request is rejected, since nobody has been erased", async () => {
+    const id = await requested();
+    const crm = fakeQueue();
+    const fsm = fakeQueue();
+    const answer = await decide(
+      id,
+      { decision: "reject", reason: "Not the number's owner" },
+      {
+        CRM_QUEUE: crm,
+        FSM_QUEUE: fsm,
+      },
+    );
+
+    expect(await answer.json()).toEqual({ state: "rejected" });
+    expect(crm.sent).toEqual([]);
+    expect(fsm.sent).toEqual([]);
   });
 });
 

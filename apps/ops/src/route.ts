@@ -11,9 +11,12 @@
 //   /no-shows               the no-show cases and their evidence (D1's queue)
 //   /tasks                  what ops still have to do, by group (D2)
 //   /technicians            who works, and the phones they work from (D3)
+//   /grievances             the concerns clients have raised, answered here
+//   /deletion-requests      the accounts clients have asked us to erase
+//   /number-changes         the numbers clients are moving to, confirmed here
 //
-// Anything else, "/" included, is the dispatch board, which is what the design
-// opens on.
+// The last three are drawn on no board (docs/fidelity-method.md). Anything
+// else, "/" included, is the dispatch board, which is what the design opens on.
 
 import { useEffect, useState } from "react";
 
@@ -28,6 +31,9 @@ export type Route =
   | { readonly page: "no-shows" }
   | { readonly page: "tasks" }
   | { readonly page: "technicians" }
+  | { readonly page: "grievances" }
+  | { readonly page: "deletion-requests" }
+  | { readonly page: "number-changes" }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
 const DISPATCH: Route = { page: "dispatch" };
@@ -42,6 +48,9 @@ export function routeOf(path: string): Route {
   if (path === "/no-shows") return { page: "no-shows" };
   if (path === "/tasks") return { page: "tasks" };
   if (path === "/technicians") return { page: "technicians" };
+  if (path === "/grievances") return { page: "grievances" };
+  if (path === "/deletion-requests") return { page: "deletion-requests" };
+  if (path === "/number-changes") return { page: "number-changes" };
   if (path === "/clients") return { page: "clients", clientId: null, tab: tabOf(undefined) };
   const client = CLIENT_PATH.exec(path);
   if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: tabOf(client[2]) };

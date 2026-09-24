@@ -76,11 +76,19 @@ export async function startBooking(
     receipt: hold.id,
     notes: { hold_id: hold.id, person_id: hold.person_id },
   });
-  await db
-    .prepare("UPDATE slot_holds SET razorpay_order_id = ?1, updated_at = ?2 WHERE id = ?3")
+  // Two bookings of one hold at the same moment both found no order, and both made one. The write
+  // settles which of them is the hold's, and the one that lost answers with the winner's, so a hold
+  // is only ever paid for on the order it names (ADR 0057).
+  const claimed = await db
+    .prepare(
+      `UPDATE slot_holds SET razorpay_order_id = ?1, updated_at = ?2
+       WHERE id = ?3 AND razorpay_order_id IS NULL RETURNING razorpay_order_id`,
+    )
     .bind(order.id, now.toISOString(), hold.id)
-    .run();
-  return { kind: "pay", orderId: order.id };
+    .first();
+  if (claimed !== null) return { kind: "pay", orderId: order.id };
+  const won = (await holdOf(db, holdId))?.razorpay_order_id ?? null;
+  return won === null ? null : { kind: "pay", orderId: won };
 }
 
 export type Confirmed = "booked" | "already_booked" | "not_paid" | "refunded" | "lapsed";

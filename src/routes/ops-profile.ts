@@ -4,7 +4,8 @@
 //   POST /api/number-changes/:id/decision     confirm or reject
 //   GET  /api/deletion-requests               requests waiting for ops
 //   POST /api/deletion-requests/:id/decision  delete (the Phase 1 erasure) or reject
-// Each decision is audited under the member of staff who made it.
+// Each decision is audited under the member of staff who made it. Ops answer
+// all three in the console's own sections (apps/ops/src).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -13,6 +14,8 @@ import { actorOf, recordAudit, type AuditAction } from "../domain/audit.ts";
 import { decideDeletion, deletionsWaiting } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import type { CrmSyncMessage } from "../queues/crm-sync.ts";
+import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const Reason = z
@@ -204,16 +207,35 @@ export function registerOpsProfile(app: App): void {
     if (decision === "reject" && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
-    const waiting = await c.env.DB.prepare("SELECT id FROM deletion_requests WHERE id = ?1 AND state = 'requested'")
+    const waiting = await c.env.DB.prepare(
+      "SELECT person_id FROM deletion_requests WHERE id = ?1 AND state = 'requested'",
+    )
       .bind(id)
-      .first();
+      .first<{ person_id: string }>();
     if (waiting === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     // Audited before it runs: an erasure cannot be undone.
     await auditDecision(c, "deletion.decide", { kind: "deletion", id }, decision);
     const outcome = await decideDeletion(c.env, { id, decision, staff: staffOf(c).id, reason, now: c.var.deps.now() });
     if (outcome === "not_waiting") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (decision === "delete") await queueOutsideErasure(c, waiting.person_id);
     return c.json({ state: decision === "delete" ? ("done" as const) : ("rejected" as const) }, 200);
   });
+}
+
+/**
+ * The blanking of the CRM record and the FSM contact, queued here rather than
+ * left to the five-minute sweeper, so this door is as quick as the other one
+ * (`POST /api/erasure`). Both consumers do nothing for a person already done,
+ * so the sweeper finding them as well costs nothing.
+ */
+async function queueOutsideErasure(c: Context<AppEnv>, personId: string): Promise<void> {
+  const message = { erase_person_id: personId, request_id: c.var.requestId };
+  try {
+    await c.env.CRM_QUEUE.send(message satisfies CrmSyncMessage);
+    if (c.var.config.providers.FSM_PROVIDER !== "none") await c.env.FSM_QUEUE.send(message satisfies FsmSyncMessage);
+  } catch (error) {
+    c.var.log.warn("erasure_enqueue_failed", { person_id: personId, error }); // the sweeper sends it on
+  }
 }
 
 async function namesOf(db: D1Database, personIds: readonly string[]): Promise<Map<string, string>> {
