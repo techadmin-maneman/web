@@ -6,18 +6,28 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, TECHNICIAN_WORK, TECHNICIANS } from "./fixtures.ts";
+import { answer, fails, json, LEAVE_CANCELLED, LEAVE_RECORDED, TECHNICIAN_WORK, TECHNICIANS } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-const REVOKE = "/api/technicians/88000000-0000-4000-8000-000000000001/devices/device-1/revoke";
+const IMRAN = "88000000-0000-4000-8000-000000000001";
+const SANDEEP = "88000000-0000-4000-8000-000000000002";
+const REVOKE = `/api/technicians/${IMRAN}/devices/device-1/revoke`;
+const LEAVE = `/api/technicians/${IMRAN}/leave`;
+const CANCEL = `/api/technicians/${SANDEEP}/leave/89000000-0000-4000-8000-000000000001/cancel`;
 const WORK = "/api/technicians/work";
 const PHONE = "Revoke Chrome on Android of Imran Qureshi";
 
-async function open(page: Page, revoke = json({ revoked_at: "2027-09-22T06:00:00.000Z" })): Promise<void> {
+async function open(
+  page: Page,
+  revoke = json({ revoked_at: "2027-09-22T06:00:00.000Z" }),
+  leave = json(LEAVE_RECORDED),
+): Promise<void> {
   await answer(page, {
     "/api/technicians": json(TECHNICIANS),
     [WORK]: json(TECHNICIAN_WORK),
     [REVOKE]: revoke,
+    [LEAVE]: leave,
+    [CANCEL]: json(LEAVE_CANCELLED),
   });
   await page.goto("/technicians");
   await expect(page.getByRole("heading", { level: 1, name: "Technicians" })).toBeVisible();
@@ -161,7 +171,50 @@ test("says so when no technician is active", async ({ page }) => {
   await expect(page.getByText("No technician is active.")).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA with a roster, and with a revoke open", async ({ page }) => {
+// Leave is recorded here because FSM has nowhere to keep it (ADR 0062), and it
+// is the same rows the dispatch board reads, so it says what it does before it
+// is sent.
+test("lists the leave each technician is down for, and says when there is none", async ({ page }) => {
+  await open(page);
+  await expect(page.getByText("2 Oct 2027 to 6 Oct 2027")).toBeVisible();
+  await expect(page.getByText("Family wedding")).toBeVisible();
+  await expect(page.getByText("No leave recorded.")).toHaveCount(2);
+});
+
+test("records leave, saying first that nobody can be booked on those days", async ({ page }) => {
+  await open(page);
+  await page.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
+  await expect(page.getByText("Nobody can be booked or assigned on these days")).toBeVisible();
+
+  const form = page.locator("form").first();
+  await form.getByLabel("First day").fill("2027-10-12");
+  await form.getByLabel("Last day").fill("2027-10-14");
+  await form.getByLabel("Note (optional)").fill("Away");
+
+  const sent = page.waitForRequest((request) => request.url().endsWith(LEAVE) && request.method() === "POST");
+  await form.getByRole("button", { name: "Record it" }).click();
+  expect((await sent).postDataJSON()).toEqual({ from: "2027-10-12", to: "2027-10-14", note: "Away" });
+});
+
+test("says so when the dates do not make a period, and records nothing", async ({ page }) => {
+  await open(page, undefined, fails(400, "invalid_request"));
+  await page.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
+  const form = page.locator("form").first();
+  await form.getByLabel("First day").fill("2027-10-14");
+  await form.getByLabel("Last day").fill("2027-10-12");
+  await form.getByRole("button", { name: "Record it" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("the last day cannot come before the first");
+});
+
+test("takes leave back, which lets those days be worked again", async ({ page }) => {
+  await open(page);
+  const sent = page.waitForRequest((request) => request.url().endsWith(CANCEL) && request.method() === "POST");
+  await page.getByRole("button", { name: "Take back Sandeep Yadav's leave, 2 Oct 2027 to 6 Oct 2027" }).click();
+  await sent;
+});
+
+test("meets WCAG 2.2 AA with a roster, with a revoke open, and with the leave form open", async ({ page }) => {
   await open(page);
   const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(full.violations.map((violation) => violation.id)).toEqual([]);
@@ -169,4 +222,8 @@ test("meets WCAG 2.2 AA with a roster, and with a revoke open", async ({ page })
   await page.getByRole("button", { name: PHONE }).click();
   const asking = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(asking.violations.map((violation) => violation.id)).toEqual([]);
+
+  await page.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
+  const recording = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(recording.violations.map((violation) => violation.id)).toEqual([]);
 });

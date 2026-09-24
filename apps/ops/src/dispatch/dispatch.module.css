@@ -99,6 +99,24 @@
   vertical-align: top;
 }
 
+/*
+ * A day ops recorded leave on (ADR 0062). It is shaded and labelled rather than
+ * merely greyed: nothing can be dropped on it, and the server refuses it by name
+ * even if something is.
+ */
+.away {
+  background: var(--paper-shade);
+}
+
+.awayMark {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-13);
+  letter-spacing: var(--tracking-12);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 /* ---- One job on the board ------------------------------------------------ */
 
 .block {
@@ -239,10 +257,7 @@
   color: var(--text-muted);
 }
 
-/*
- * What the board cannot show: leave, and an asked window of its own. Each says
- * so where it would have been drawn (docs/open-points.md, items 53 and 54).
- */
+/* Where leave is recorded, and where the tray's asked window comes from. */
 .note {
   margin: 0;
   padding: var(--sp-11) var(--sp-14);

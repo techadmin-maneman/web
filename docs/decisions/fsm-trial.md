@@ -78,6 +78,7 @@ Run through the API against the org the owner confirmed as the real one, while i
    - `getAvailableServiceResources` returns each technician with `is_available` and any `conflicting_appointments`.
    - `Available_TimeSlots` returns free slots of the asked length (90 minutes tried), and leaves out booked time.
    - The working day is FSM's own setting: slots began at 09:00.
+   - ~~Within at most 48 hours, as the documentation says.~~ **Wrong; corrected 24 September 2026.** See "Question 6, how far ahead, and leave" at the end of this document. The 48 hours was read off the documentation page and never tried past a day; both calls answer for any date asked.
 7. **Writes.**
    - Creating an appointment works. Each work order's service line can be in **one appointment only**.
    - **Rescheduling must use `PUT /Service_Appointments/{id}/actions/reschedule`.** A plain edit of the times answers "record updated" but changes nothing.
@@ -121,3 +122,58 @@ The Books half was answered on 22 September: an FSM contact carries `ZBilling_Id
 **The CRM side could not be opened from here.** The Worker's CRM refresh token is scoped `ZohoCRM.modules.leads.ALL`, notes, search and the settings reads; `GET /crm/v8/Contacts`, `/Accounts`, `/Deals` and `/settings/modules` each answer 401 `OAUTH_SCOPE_MISMATCH`. So `ZCRM_Id` is a link we can follow from our own side (`people.fsm_contact_id` → FSM's contact → `ZCRM_Id`) but not one we can yet read or write at the far end. What that means for a client's history is ADR 0059; the scope itself is open point 73.
 
 **The CRM's Contacts module is stock.** `GET /crm/v8/settings/fields?module=Contacts` lists 60 fields, every one of Zoho's own: no `D1_Person_ID` and no FSM field. Whatever the integration syncs, it syncs into the standard fields.
+
+## Question 6, how far ahead, and leave: answered 24 September 2026
+
+Read-only against the real org, on the credentials the Worker uses, with the
+access token cached for the hour it lasts. Nothing was written.
+
+**Both availability calls answer for any date.** The 48 hours under the
+documentation above is not a limit this org enforces:
+
+| Asked                                                        | FSM answered                                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `Available_TimeSlots`, tomorrow                              | 200, eleven hour-long slots from 09:00                                               |
+| `Available_TimeSlots`, six days out                          | 200, and the morning missing: the 09:30 appointment already on that day was left out |
+| `Available_TimeSlots`, twenty days out                       | 200, the full day                                                                    |
+| `getAvailableServiceResources`, one, six and twenty days out | 200 each, the one technician with `is_available: true`                               |
+
+Their parameters are not the ones first tried, and a wrong name is refused
+plainly: `getAvailableServiceResources` wants `start_date_time` and
+`end_date_time` in its query, and `Available_TimeSlots` wants a body of
+`date_time_range: { start, end }`, `duration` and `service_resources`.
+
+**Neither answers leave, and FSM has nowhere we can write it.** The calls give
+free time, never the reason time is not free. FSM does hold leave, in a
+**`Time_Off`** module, and that module cannot be used through the API here:
+
+- `GET /fsm/v1/Time_Off` answers **204**, which is this API's empty list: the
+  module exists and holds nothing. `Shifts`, `Service_Resource_Shifts`, `Leaves`,
+  `Holidays`, `Working_Hours`, `Availability` and `Service_Resource_Availability`
+  all answer `400 INVALID_MODULE`, so they are not modules at all. `Crews` and
+  `Trips` answer 204 as well.
+- A create is refused first with `Time_Off_Type is missing` and then, with any
+  value supplied, `Invalid value provided for Time_Off_Type`. It is a lookup, not
+  a word we can choose.
+- Its list cannot be read: `Time_Off_Types` and every spelling tried is
+  `400 INVALID_MODULE`, and `GET /fsm/v1/settings/fields?module=Time_Off` is
+  `401 OAUTH_SCOPE_MISMATCH` on this refresh token.
+
+Time-off types are built in FSM's Setup screens, which the API does not reach —
+the same wall as the workflow rules and the job-sheet template. So leave is
+recorded on our side (`docs/decisions/0062-leave-on-the-dispatch-board.md`).
+
+## Question 7, the Request's conversion: answered 24 September 2026
+
+The blueprint transition **"Convert to Work Order" is a write of `Status` and
+nothing else**, which is why it answers `SUCCESS` and leaves the Request with no
+work order. The transitions list says so: `Cancel` and `Terminate` each declare a
+mandatory `Notes` field, and `Convert to Work Order` declares **no fields at
+all**. FSM's answer is `"message": "record updated"`.
+
+What converts a Request is `POST /fsm/v1/Work_Orders` carrying a **`Request`**
+field. Tried on our own test contact: 201, the work order came back naming the
+Request, and the Request moved itself to "Work In Progress" with that work order
+in its `Work_Orders`, with no blueprint call. Every record made for it was
+labelled "Staging test" and deleted the same session
+(`docs/decisions/0064-converting-a-request.md`).

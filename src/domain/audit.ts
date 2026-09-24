@@ -31,6 +31,10 @@ export const AUDIT_ACTIONS = [
   // no-show from its evidence, and ops revoking the phone a technician works from.
   "no_show.decide",
   "technician_device.revoke",
+  // Leave ops record on a technician, which then refuses those days to booking
+  // and to the dispatch board alike (ADR 0062).
+  "technician.leave",
+  "technician.leave_cancelled",
   // The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md):
   // one of the rules, a price from a date, and whether we go to a pincode.
   "setting.change",

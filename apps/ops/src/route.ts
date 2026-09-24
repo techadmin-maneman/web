@@ -11,7 +11,7 @@
 //   /clients/:id/history    how often they have been served, and what they have bought
 //   /no-shows               the no-show cases and their evidence (D1's queue)
 //   /tasks                  what ops still have to do, by group (D2)
-//   /technicians            who works, and the phones they work from (D3)
+//   /technicians            who works, the phones they work from, and their leave (D3)
 //   /grievances             the concerns clients have raised, answered here
 //   /deletion-requests      the accounts clients have asked us to erase
 //   /number-changes         the numbers clients are moving to, confirmed here

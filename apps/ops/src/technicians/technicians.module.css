@@ -211,3 +211,80 @@
   font-size: var(--fs-13);
   color: var(--error-on-paper);
 }
+
+/* ---- Leave, which the dispatch board and booking both read (ADR 0062) ----- */
+
+.leave {
+  margin-top: var(--sp-14);
+  padding-top: var(--sp-12);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.leaveTitle {
+  margin: 0 0 var(--sp-8);
+  font-size: var(--fs-13);
+  font-weight: 400;
+  letter-spacing: var(--tracking-12);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.leaveList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.leaveRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-12);
+  padding: var(--sp-6) 0;
+}
+
+.leavePeriod {
+  font-size: var(--fs-14);
+  white-space: nowrap;
+}
+
+.leaveNote {
+  flex: 1;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.leaveForm {
+  margin-top: var(--sp-8);
+}
+
+.fields {
+  display: flex;
+  gap: var(--sp-12);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-8);
+}
+
+.label {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.input {
+  min-height: var(--tap);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text);
+}
+
+.input:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}

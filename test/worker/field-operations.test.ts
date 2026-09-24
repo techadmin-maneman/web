@@ -12,6 +12,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App } from "../../src/app.ts";
+import { occupancy, placement } from "../../src/domain/scheduling.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, STUB_TRANSITIONS, type StubFsm } from "../../src/providers/fsm.ts";
@@ -547,7 +548,7 @@ describe("dispatch", () => {
     expect(messageQueue.sent).toHaveLength(1);
   });
 
-  it("carries no amount on the board, and leaves leave empty while FSM answers 48 hours", async () => {
+  it("carries no amount on the board, and no leave where none is recorded", async () => {
     const answer = await request(ops, "/api/dispatch?from=2026-09-21", {}, bindings());
     const body = await answer.text();
 
@@ -587,6 +588,103 @@ describe("dispatch", () => {
       .bind(TODAY_JOB)
       .first<{ window_start: string }>();
     expect(unmoved?.window_start).toBe("2026-09-21T07:30:00.000Z");
+  });
+});
+
+// Leave is ours because FSM has nowhere to keep it (ADR 0062). The point of
+// putting it through the same clash check is that nothing has to remember to
+// ask: the board refuses it, and so does the client's own booking.
+describe("leave", () => {
+  const recordLeave = (technicianId: string, from: string, to: string, note?: string) =>
+    opsPost(`/api/technicians/${technicianId}/leave`, { from, to, ...(note === undefined ? {} : { note }) });
+
+  it("refuses a job on a day the technician is away, and names it as leave, not a clash", async () => {
+    // Sameer is away on the 22nd; his day is otherwise empty.
+    expect((await recordLeave(SAMEER, "2026-09-22", "2026-09-23", "Family wedding")).status).toBe(200);
+
+    const answer = await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      technician_id: SAMEER,
+      date: "2026-09-22",
+      window: "morning",
+      reason: "zone_rebalance",
+    });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "on_leave" } });
+    // Refused before any write, here as for a clash.
+    expect(fsm.made.assigned).toEqual([]);
+    expect(fsm.made.rescheduled).toEqual([]);
+    const unmoved = await env.DB.prepare("SELECT technician_id FROM appointments WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .first<{ technician_id: string }>();
+    expect(unmoved?.technician_id).toBe(IMRAN);
+  });
+
+  it("draws the leave on the board, clipped to the week it shows", async () => {
+    // A fortnight from the 20th: the board's week ends on the 27th.
+    expect((await recordLeave(IMRAN, "2026-09-20", "2026-10-03")).status).toBe(200);
+
+    const board = await (
+      await request(ops, "/api/dispatch?from=2026-09-21", {}, bindings())
+    ).json<{ leave: { technician_id: string; from: string; to: string; note: string | null }[] }>();
+    expect(board.leave).toEqual([{ technician_id: IMRAN, from: "2026-09-21", to: "2026-09-27", note: null }]);
+  });
+
+  it("takes leave back, and the day can be worked again", async () => {
+    const recorded = await recordLeave(SAMEER, "2026-09-22", "2026-09-22");
+    const { id } = await recorded.json<{ id: string }>();
+
+    expect((await opsPost(`/api/technicians/${SAMEER}/leave/${id}/cancel`, {})).status).toBe(200);
+    // A second cancel finds nothing: the row is already taken back.
+    expect((await opsPost(`/api/technicians/${SAMEER}/leave/${id}/cancel`, {})).status).toBe(404);
+
+    const answer = await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      technician_id: SAMEER,
+      date: "2026-09-22",
+      window: "morning",
+      reason: "zone_rebalance",
+    });
+    expect(answer.status).toBe(200);
+  });
+
+  it("refuses dates that do not make a period, and records nothing", async () => {
+    expect((await recordLeave(SAMEER, "2026-09-23", "2026-09-22")).status).toBe(400);
+    expect((await recordLeave(SAMEER, "2026-09-22", "2028-09-22")).status).toBe(400);
+    const rows = await env.DB.prepare("SELECT COUNT(*) AS n FROM technician_leave").first<{ n: number }>();
+    expect(rows?.n).toBe(0);
+  });
+
+  it("is recorded against the ops user who entered it", async () => {
+    await recordLeave(IMRAN, "2026-09-24", "2026-09-24", "Doctor");
+    const row = await env.DB.prepare("SELECT technician_id, note, actor FROM technician_leave").first<{
+      technician_id: string;
+      note: string;
+      actor: string;
+    }>();
+    expect(row).toMatchObject({ technician_id: IMRAN, note: "Doctor" });
+    expect(row?.actor).not.toBe("");
+
+    const audit = await env.DB.prepare("SELECT action FROM audit_log WHERE subject_id = ?1").bind(IMRAN).first<{
+      action: string;
+    }>();
+    expect(audit?.action).toBe("technician.leave");
+  });
+
+  it("keeps a client from booking the day at all, so the two cannot disagree", async () => {
+    await recordLeave(IMRAN, "2026-09-24", "2026-09-24");
+    await recordLeave(SAMEER, "2026-09-24", "2026-09-24");
+
+    const board = await (
+      await request(ops, "/api/dispatch?from=2026-09-21", {}, bindings())
+    ).json<{ leave: { technician_id: string }[] }>();
+    expect(board.leave.map((period) => period.technician_id).sort()).toEqual([IMRAN, SAMEER].sort());
+
+    const held = await occupancy(env.DB, "2026-09-24", "2026-09-24", NOW);
+    expect(held(IMRAN, "2026-09-24").onLeave).toBe(true);
+    expect(placement(held(IMRAN, "2026-09-24"), "morning", "service")).toBeNull();
+    expect(placement(held(IMRAN, "2026-09-25"), "morning", "service")).not.toBeNull();
   });
 });
 

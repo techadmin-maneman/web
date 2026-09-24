@@ -1018,7 +1018,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash: the technician already holds a job in that window on that date */
+                /** @description clash: the technician already holds a job in that window on that date; on_leave: they are away that day */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1103,7 +1103,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash */
+                /** @description clash; on_leave */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1310,7 +1310,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Active technicians and the phones they have logged in on */
+        /** Active technicians, the phones they have logged in on, and the leave they are down for */
         get: {
             parameters: {
                 query?: never;
@@ -1342,6 +1342,137 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/technicians/{id}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record leave. Those days are then refused to booking and to the dispatch board alike */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianLeaveRequest"];
+                };
+            };
+            responses: {
+                /** @description Recorded */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
+                };
+                /** @description invalid_request: to is before from, or more than 365 days ahead */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such active technician */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/technicians/{id}/leave/{leave}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take leave back, so those days can be worked again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    leave: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Cancelled */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            cancelled: boolean;
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such leave of that technician's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -1870,7 +2001,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "clash" | "fsm_refused" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -2182,6 +2313,7 @@ export interface components {
                 /** Format: uuid */
                 appointment_id: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                /** @description The window the client asked for, from the Request behind the visit; null where nothing recorded one. */
                 asked_window: ("morning" | "afternoon" | "evening") | null;
                 offered_window: ("morning" | "afternoon" | "evening") | null;
                 date: string | null;
@@ -2193,7 +2325,7 @@ export interface components {
                 date: string;
                 percent: number;
             }[];
-            /** @description Always empty: FSM's availability answers 48 hours ahead and the board is seven days. */
+            /** @description Leave ops recorded, clipped to this week. Not from FSM: its availability answers free time, not leave. */
             leave: {
                 /** Format: uuid */
                 technician_id: string;
@@ -2201,6 +2333,7 @@ export interface components {
                 from: string;
                 /** Format: date */
                 to: string;
+                note: string | null;
             }[];
         };
         DispatchBlock: {
@@ -2309,7 +2442,29 @@ export interface components {
                     last_seen_at: string;
                     revoked_at: string | null;
                 }[];
+                /** @description Leave that has not ended yet, soonest first (ADR 0062). */
+                leave: components["schemas"]["TechnicianLeave"][];
             }[];
+        };
+        TechnicianLeave: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            from: string;
+            /**
+             * Format: date
+             * @description Inclusive: a single day's leave has the same date twice.
+             */
+            to: string;
+            note: string | null;
+        };
+        TechnicianLeaveRequest: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** @description Why, in ops' words. Never a medical detail. */
+            note?: string;
         };
         /** @description Derived at read time from the queues themselves; there is no tasks table. */
         Tasks: {

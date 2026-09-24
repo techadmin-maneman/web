@@ -8,9 +8,10 @@
 //
 // "A technician cannot hold two live jobs in one window on one date. This check
 // runs on the server before any write to FSM": the refusal below happens before
-// anything is written anywhere. Then FSM, then the mirror, then the client's
-// message. "The client's payment carries over and he is never charged for a
-// move ops make", so no amount is read or written here at all.
+// anything is written anywhere. A technician on leave is refused the same way,
+// and named as away rather than busy (ADR 0062). Then FSM, then the mirror,
+// then the client's message. "The client's payment carries over and he is never
+// charged for a move ops make", so no amount is read or written here at all.
 
 import { SLOTS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
@@ -18,6 +19,7 @@ import { addDays, indiaDate, indiaInstant, indiaIso, indiaTime } from "../lib/in
 import { moveRefusal, slotsFor, type MoveReason, type MoveRefusal } from "../policy/dispatch.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
+import { leaveBetween } from "./leave.ts";
 import { occupancy, placement, unitAt, visitTimes, windowAt } from "./scheduling.ts";
 import { visitMessage } from "./visit-messages.ts";
 
@@ -66,11 +68,11 @@ export interface Board {
   /** Per day: the share of the day's slots taken, across every technician on the board. */
   readonly utilisation: { date: string; percent: number }[];
   /**
-   * "Leave periods come from FSM technician availability." FSM answers only 48
-   * hours ahead (docs/decisions/fsm-trial.md, question 6) and the board is seven
-   * days, so it is always empty for now (docs/open-points.md, item 53).
+   * Leave ops recorded, clipped to the board's own week, so a column is drawn
+   * away for exactly the days it is (ADR 0062). It does not come from FSM:
+   * FSM's availability answers free time, never the reason for it.
    */
-  readonly leave: { technician_id: string; from: string; to: string }[];
+  readonly leave: { technician_id: string; from: string; to: string; note: string | null }[];
 }
 
 const LIVE = "('scheduled', 'dispatched', 'in_progress')";
@@ -88,7 +90,7 @@ export async function dispatchBoard(db: D1Database, options: { from: string; cit
 
   const scheduled = await db
     .prepare(
-      `SELECT a.id, a.type, a.status, a.window_start, a.technician_id, a.service_city, d.locality,
+      `SELECT a.id, a.type, a.status, a.window_start, a.technician_id, a.service_city, a.asked_window, d.locality,
          p.name AS client_name
        FROM appointments a
        LEFT JOIN people p ON p.id = a.person_id
@@ -117,13 +119,20 @@ export async function dispatchBoard(db: D1Database, options: { from: string; cit
   });
 
   const unassigned = scheduled.results.filter((job) => job.technician_id === null).map(unassignedOf);
+  const leave = await leaveBetween(db, options.from, last);
   return {
     from: options.from,
     dates,
     technicians: rows,
     unassigned,
     utilisation: utilisationOf(rows, dates),
-    leave: [],
+    leave: leave.map((period) => ({
+      technician_id: period.technician_id,
+      // Clipped to the week, so the board draws the days it has columns for and no others.
+      from: period.from < options.from ? options.from : period.from,
+      to: period.to > last ? last : period.to,
+      note: period.note,
+    })),
   };
 }
 
@@ -136,6 +145,7 @@ interface BoardJobRow {
   service_city: string | null;
   locality: string | null;
   client_name: string | null;
+  asked_window: BookingWindow | null;
 }
 
 function blockOf(job: BoardJobRow): Block {
@@ -157,9 +167,10 @@ function unassignedOf(job: BoardJobRow): UnassignedJob {
   return {
     appointment_id: job.id,
     type: job.type,
-    // FSM holds one time, so the asked and offered windows are the same until a
-    // Request records a preference of its own (docs/open-points.md, item 54).
-    asked_window: windowAt(indiaTime(start)),
+    // What the client asked for, resolved from the Request behind the visit (ADR
+    // 0060). Null where nothing recorded one, and the tray says so in words: the
+    // offered window is never repeated as though it were the asked one.
+    asked_window: job.asked_window,
     offered_window: windowAt(indiaTime(start)),
     date: indiaDate(start),
     sector: job.locality ?? job.service_city,

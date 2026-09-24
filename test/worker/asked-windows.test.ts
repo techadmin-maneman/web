@@ -1,0 +1,168 @@
+// What the client asked for, as against what the board is offering (ADR 0063).
+// Every name and number here is made up.
+
+import { env } from "cloudflare:workers";
+import { beforeEach, describe, expect, it } from "vitest";
+import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
+import { createLogger } from "../../src/log.ts";
+import { createStubFsm, EMPTY_FSM, type StubFsm, type StubFsmWorld } from "../../src/providers/fsm.ts";
+import { ZohoError } from "../../src/providers/zoho-http.ts";
+import { captureLogs, NOW } from "./helpers.ts";
+
+const PERSON = "11111111-1111-4111-8111-111111111111";
+const VISIT = "22222222-2222-4222-8222-222222222222";
+const LEAD = "33333333-3333-4333-8333-333333333333";
+
+const world = (overrides: Partial<StubFsmWorld>): StubFsmWorld => ({ ...EMPTY_FSM, ...overrides });
+
+const pass = (fsm: StubFsm) => resolveAskedWindows(env.DB, fsm, NOW, createLogger());
+
+/** A stub whose one call FSM turns down, with the status it turned it down under. */
+const refuses = (error: ZohoError): StubFsm => ({
+  ...createStubFsm(EMPTY_FSM),
+  requestPreference: () => Promise.reject(error),
+});
+
+/** An unassigned visit as the mirror writes one: ops have not put it on anybody yet. */
+async function visit(id = VISIT, workOrderId: string | null = "fsm-wo-1") {
+  await env.DB.prepare(
+    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status,
+       window_start, window_end, fsm_modified_at, synced_at)
+     VALUES (?1, ?2, ?3, ?4, 'consultation', 'scheduled', 'Scheduled', '2026-09-25T09:30:00.000Z',
+       '2026-09-25T10:30:00.000Z', ?5, ?5)`,
+  )
+    .bind(id, `fsm-${id}`, workOrderId, PERSON, NOW.toISOString())
+    .run();
+}
+
+/** The booking we sent to FSM as a Request, with the window the client picked on it. */
+async function lead(window: string, requestId: string | null = "fsm-req-1") {
+  await env.DB.prepare(
+    `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, sync_state,
+       request_id, fsm_request_id)
+     VALUES (?1, ?2, ?3, 'form', 'Gurgaon', ?4, 'crown', 'synced', 'test-request', ?5)`,
+  )
+    .bind(LEAD, PERSON, NOW.toISOString(), window, requestId)
+    .run();
+}
+
+const asked = (id = VISIT) =>
+  env.DB.prepare("SELECT asked_window, asked_checked_at FROM appointments WHERE id = ?1")
+    .bind(id)
+    .first<{ asked_window: string | null; asked_checked_at: string | null }>();
+
+let logs: ReturnType<typeof captureLogs>;
+beforeEach(async () => {
+  logs = captureLogs();
+  await env.DB.prepare(
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
+  )
+    .bind(PERSON, NOW.toISOString())
+    .run();
+});
+
+describe("the window the client asked for", () => {
+  it("reads it from the lead behind the Request the visit's work order names", async () => {
+    await visit();
+    await lead("weekday_am");
+    const fsm = createStubFsm(
+      world({
+        preferences: {
+          "fsm-wo-1": { requestId: "fsm-req-1", preferredDate: "2026-09-25", preferenceNote: "Morning, 9 am to 12 pm" },
+        },
+      }),
+    );
+
+    expect(await pass(fsm)).toEqual({ resolved: 1 });
+    expect(await asked()).toEqual({ asked_window: "morning", asked_checked_at: NOW.toISOString() });
+  });
+
+  it("reads an evening booking as evening: the booking form offers those two", async () => {
+    await visit();
+    await lead("weekend_pm");
+    const fsm = createStubFsm(
+      world({
+        preferences: { "fsm-wo-1": { requestId: "fsm-req-1", preferredDate: null, preferenceNote: null } },
+      }),
+    );
+
+    expect(await pass(fsm)).toEqual({ resolved: 1 });
+    expect((await asked())?.asked_window).toBe("evening");
+  });
+
+  /*
+   * The rule this whole point turns on: never show a window the system cannot
+   * know. A visit our own booking made has no Request behind it, so there is
+   * nothing the client "asked" for beyond the time they were given, and the
+   * column stays null for the tray to say so in words.
+   */
+  it("leaves the window null where no Request is behind the visit, and never looks again", async () => {
+    await visit();
+    const fsm = createStubFsm(EMPTY_FSM);
+
+    expect(await pass(fsm)).toEqual({ resolved: 0 });
+    expect(await asked()).toEqual({ asked_window: null, asked_checked_at: NOW.toISOString() });
+
+    // Marked looked-at, so the next pass has nothing to ask FSM about.
+    expect(await pass(fsm)).toEqual({ resolved: 0 });
+  });
+
+  it("leaves it null where the Request is FSM's own, with no lead of ours behind it", async () => {
+    await visit();
+    await lead("weekday_am", "fsm-req-someone-elses");
+    const fsm = createStubFsm(
+      world({
+        preferences: { "fsm-wo-1": { requestId: "fsm-req-1", preferredDate: null, preferenceNote: null } },
+      }),
+    );
+
+    expect(await pass(fsm)).toEqual({ resolved: 0 });
+    expect((await asked())?.asked_window).toBeNull();
+  });
+
+  it("asks FSM once: a visit already looked at is left alone by the next pass", async () => {
+    await visit();
+    await lead("weekday_am");
+    let reads = 0;
+    const fsm = createStubFsm(
+      world({
+        preferences: { "fsm-wo-1": { requestId: "fsm-req-1", preferredDate: null, preferenceNote: null } },
+      }),
+    );
+    const counted: StubFsm = {
+      ...fsm,
+      requestPreference: (workOrderId) => {
+        reads += 1;
+        return fsm.requestPreference(workOrderId);
+      },
+    };
+
+    await pass(counted);
+    await pass(counted);
+    expect(reads).toBe(1);
+  });
+
+  it("does not ask about a visit FSM has no work order for", async () => {
+    await visit(VISIT, null);
+    const fsm = createStubFsm(EMPTY_FSM);
+
+    expect(await pass(fsm)).toEqual({ resolved: 0 });
+    expect(await asked()).toEqual({ asked_window: null, asked_checked_at: null });
+  });
+
+  it("logs a visit FSM refuses and leaves it to be asked about again", async () => {
+    await visit();
+    const refusing = refuses(new ZohoError(404, "NO_WORK_ORDER", "gone"));
+
+    expect(await pass(refusing)).toEqual({ resolved: 0 });
+    // Nothing is stamped, so nothing is decided from an answer FSM never gave.
+    expect(await asked()).toEqual({ asked_window: null, asked_checked_at: null });
+    expect(logs.lines().map((line) => line.event)).toContain("asked_window_refused");
+  });
+
+  it("gives up the pass when FSM itself is down, rather than marking visits looked at", async () => {
+    await visit();
+    await expect(pass(refuses(new ZohoError(500, "INTERNAL_ERROR", "down")))).rejects.toThrow();
+    expect((await asked())?.asked_checked_at).toBeNull();
+  });
+});

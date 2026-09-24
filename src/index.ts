@@ -9,6 +9,7 @@ import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch, type MessagingMessage } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
+import { resolveAskedWindows } from "./domain/asked-windows.ts";
 import { syncBooks } from "./domain/books-sync.ts";
 import { recordUtilisation } from "./domain/dispatch.ts";
 import { raiseInvoices } from "./domain/fsm-invoices.ts";
@@ -137,6 +138,17 @@ export default {
         })
         .catch((error: unknown) => {
           invoiceLog.error("invoices_failed", { error });
+        });
+
+      // What the client asked for, for the unassigned tray to show beside what
+      // it is offering them (ADR 0063). One read per visit, ever.
+      const askedLog = log.child({ job: "asked_windows" });
+      await resolveAskedWindows(workerEnv.DB, deps.fsm, deps.now(), askedLog)
+        .then((done) => {
+          if (done.resolved > 0) askedLog.info("asked_windows_resolved", done);
+        })
+        .catch((error: unknown) => {
+          askedLog.error("asked_windows_failed", { error });
         });
 
       const booksLog = log.child({ job: "books_sync" });

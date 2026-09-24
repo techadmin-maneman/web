@@ -6,10 +6,14 @@
 // The board's fifth column is Skill, and nothing records what a technician is
 // trained for, so it is not drawn and a line beneath the table says why
 // (docs/open-points.md, item 59).
+//
+// Leave is recorded here because FSM has nowhere to keep it (ADR 0062). It is
+// not a note: the days it covers are refused to self-serve booking and to the
+// dispatch board alike, which is why the form says so before it is sent.
 
 import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { Fragment, useState } from "react";
-import { api, type Device, type Technician, type TechnicianWork } from "../api.ts";
+import { api, type Device, type Leave, type Technician, type TechnicianWork } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useLoad } from "../lib/useLoad.ts";
@@ -125,6 +129,164 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
   );
 }
 
+/** How a period reads once recorded: "19 Sep 2026 to 23 Sep 2026", or one date on its own. */
+const periodOf = (leave: Leave) => technicians.leave.period(fullDate(leave.from), fullDate(leave.to));
+
+/**
+ * One technician's leave: what is recorded, and the form that records more.
+ * Every change reloads the roster, because the dispatch board reads the same
+ * rows and the two must not disagree.
+ */
+function LeaveBlock({ technician, onChange }: { technician: Technician; onChange: () => void }) {
+  const copy = technicians.leave;
+  const [form, setForm] = useState<{ from: string; to: string; note: string } | null>(null);
+  const [sending, setSending] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  /** Why it was refused, in the console's words; nothing was recorded either way. */
+  const refusal = (code: string): string => {
+    const errors: Readonly<Record<string, string | undefined>> = copy.errors;
+    return errors[code] ?? copy.errors.unknown;
+  };
+
+  const send = async (entry: { from: string; to: string; note: string }) => {
+    setSending(true);
+    setFailed(null);
+    const answer = await api.recordLeave(technician.id, {
+      from: entry.from,
+      to: entry.to,
+      note: entry.note.trim() === "" ? null : entry.note.trim(),
+    });
+    setSending(false);
+    if (!answer.ok) {
+      setFailed(refusal(answer.code));
+      return;
+    }
+    setForm(null);
+    onChange();
+  };
+
+  const take = async (leave: Leave) => {
+    setSending(true);
+    setFailed(null);
+    const answer = await api.cancelLeave(technician.id, leave.id);
+    setSending(false);
+    if (answer.ok) onChange();
+    else setFailed(refusal(answer.code));
+  };
+
+  return (
+    <div className={styles.leave}>
+      <h3 className={styles.leaveTitle}>{copy.title}</h3>
+      {technician.leave.length === 0 ? (
+        <p className={styles.none}>{copy.none}</p>
+      ) : (
+        <ul className={styles.leaveList}>
+          {technician.leave.map((leave) => (
+            <li className={styles.leaveRow} key={leave.id}>
+              <span className={styles.leavePeriod}>{periodOf(leave)}</span>
+              {leave.note !== null && <span className={styles.leaveNote}>{leave.note}</span>}
+              <button
+                className={styles.quiet}
+                type="button"
+                disabled={sending}
+                aria-label={copy.takeLabel(periodOf(leave), technician.name)}
+                onClick={() => void take(leave)}
+              >
+                {sending ? copy.taking : copy.take}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {form === null ? (
+        <div className={styles.actions}>
+          <button
+            className={styles.quiet}
+            type="button"
+            aria-label={copy.addLabel(technician.name)}
+            onClick={() => {
+              setFailed(null);
+              setForm({ from: "", to: "", note: "" });
+            }}
+          >
+            {copy.add}
+          </button>
+        </div>
+      ) : (
+        <form
+          className={styles.leaveForm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void send(form);
+          }}
+        >
+          <p className={styles.warning}>{copy.effect}</p>
+          <div className={styles.fields}>
+            <label className={styles.field}>
+              <span className={styles.label}>{copy.from}</span>
+              <input
+                className={styles.input}
+                type="date"
+                required
+                value={form.from}
+                onChange={(event) => {
+                  setForm({ ...form, from: event.target.value });
+                }}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{copy.to}</span>
+              <input
+                className={styles.input}
+                type="date"
+                required
+                value={form.to}
+                onChange={(event) => {
+                  setForm({ ...form, to: event.target.value });
+                }}
+              />
+            </label>
+          </div>
+          <label className={styles.field}>
+            <span className={styles.label}>{copy.note}</span>
+            <input
+              className={styles.input}
+              type="text"
+              maxLength={200}
+              value={form.note}
+              onChange={(event) => {
+                setForm({ ...form, note: event.target.value });
+              }}
+            />
+          </label>
+          <div className={styles.actions}>
+            <button className={styles.revoke} type="submit" disabled={sending}>
+              {sending ? copy.saving : copy.save}
+            </button>
+            <button
+              className={styles.quiet}
+              type="button"
+              disabled={sending}
+              onClick={() => {
+                setForm(null);
+              }}
+            >
+              {copy.cancel}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {failed !== null && (
+        <p className={styles.error} role="alert">
+          {failed}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Roster() {
   const [loaded, retry] = useLoad(api.technicians);
   // The roster carries no period, so the figures are a read of their own; the
@@ -175,7 +337,7 @@ function Roster() {
                     <Service figures={figures.get(technician.id)} />
                   </td>
                 </tr>
-                {/* The board's row has no room for the phones, so they sit beneath the name. */}
+                {/* The board's row has no room for the phones or the leave, so both sit beneath the name. */}
                 <tr>
                   <td className={styles.phones} colSpan={technicians.columns.length}>
                     {technician.devices.length === 0 ? (
@@ -187,6 +349,7 @@ function Roster() {
                         ))}
                       </ul>
                     )}
+                    <LeaveBlock technician={technician} onChange={retry} />
                   </td>
                 </tr>
               </Fragment>

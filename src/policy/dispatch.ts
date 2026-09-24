@@ -6,6 +6,10 @@
 // and a half is a whole number (docs/decisions/0035-window-slot-map.md). Where a
 // visit fits inside a window is src/domain/scheduling.ts; the rule below is the
 // one the prompt states, and both booking and dispatch answer to it.
+//
+// The last rule is quoted as the prompt writes it, and it is the one rule we do
+// not keep: FSM has nowhere to read a leave period from, so ops record leave in
+// the console and the same clash check reads it (ADR 0062).
 
 import { VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
@@ -24,11 +28,12 @@ export const slotsFor = (type: VisitType): number => VISIT_BLOCKS[type].units / 
 
 /**
  * What one technician already holds on one date: the windows his live jobs and
- * unexpired holds start in. A visit being moved is left out of its own day, as
- * `occupancy` does with `exceptVisitId`.
+ * unexpired holds start in, and whether he is away. A visit being moved is left
+ * out of its own day, as `occupancy` does with `exceptVisitId`.
  */
 export interface TechnicianDay {
   readonly windows: ReadonlySet<BookingWindow>;
+  readonly onLeave: boolean;
 }
 
 /** The clash: the technician already holds a live job in this window on this date. */
@@ -51,9 +56,11 @@ export const isMoveReason = (reason: string): reason is MoveReason =>
  * Why ops' move cannot be made; null when it can. The check runs on the server
  * before any write to FSM, so a refusal means nothing was written anywhere.
  */
-export type MoveRefusal = "unknown_reason" | "clash";
+export type MoveRefusal = "unknown_reason" | "clash" | "on_leave";
 
+/** Leave is answered before the clash, so ops are told the technician is away rather than merely busy. */
 export function moveRefusal(day: TechnicianDay, window: BookingWindow, reason: string): MoveRefusal | null {
   if (!isMoveReason(reason)) return "unknown_reason";
+  if (day.onLeave) return "on_leave";
   return clashes(day, window) ? "clash" : null;
 }
