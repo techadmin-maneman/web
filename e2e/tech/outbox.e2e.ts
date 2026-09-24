@@ -46,6 +46,58 @@ test("holds a step taken with no signal, and replays it when the signal returns"
   await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
 });
 
+test("warns when the phone will not promise to keep the queue, and says how long it has waited", async ({
+  page,
+  context,
+}) => {
+  // WebKit grants persistent storage on heuristics and may refuse; this is that
+  // refusal, which the app must meet by saying so (apps/tech/src/store/persist.ts).
+  await page.addInitScript(() => {
+    const storage = navigator.storage as { persist?: () => Promise<boolean> } | undefined;
+    if (storage !== undefined) storage.persist = () => Promise.resolve(false);
+  });
+  const fake = await fakeTech(page);
+  await intoTheBasement(page, context, fake);
+
+  await page.getByRole("button", { name: "Start job" }).click();
+  await expect(page.getByText("Before photos")).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+
+  await expect(page.getByText("This phone has not promised to keep unsent work")).toBeVisible();
+  const onToday = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(onToday.violations.map((violation) => violation.id)).toEqual([]);
+
+  // And the queue itself names how long the work has been on the phone alone.
+  await page.getByRole("link", { name: /1 action waiting/ }).click();
+  await expect(page.getByText("This phone has not promised to keep unsent work")).toBeVisible();
+  await expect(page.getByText(/^Waiting since /)).toBeVisible();
+
+  const onWaiting = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(onWaiting.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("says nothing about keeping the queue when the phone has promised to", async ({ page, context }) => {
+  await page.addInitScript(() => {
+    const storage = navigator.storage as { persist?: () => Promise<boolean> } | undefined;
+    if (storage !== undefined) storage.persist = () => Promise.resolve(true);
+  });
+  const fake = await fakeTech(page);
+  await intoTheBasement(page, context, fake);
+
+  await page.getByRole("button", { name: "Start job" }).click();
+  await expect(page.getByText("Before photos")).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+
+  await expect(page.getByRole("link", { name: /1 action waiting/ })).toBeVisible();
+  await expect(page.getByText("This phone has not promised to keep unsent work")).toHaveCount(0);
+});
+
 test("accounts plainly for what has not reached us, and says what changed on a supersede", async ({
   page,
   context,

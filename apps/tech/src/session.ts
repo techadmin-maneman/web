@@ -5,9 +5,14 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { Me } from "./api.ts";
 
+/** Why the sign-in is showing: this store never held a session, its session ended, or ops revoked the phone. */
+export type Out = "fresh" | "ended" | "revoked";
+
 export interface Session {
   readonly me: Me;
   readonly offline: boolean;
+  /** The phone would not promise to keep the outbox, so unsent work can be evicted (./store/persist.ts). */
+  readonly atRisk: boolean;
   readonly signOut: () => void;
 }
 

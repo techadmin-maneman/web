@@ -7,11 +7,12 @@
 // queue can go on.
 
 import { Icon } from "../components/Icon.tsx";
-import { queue as copy, stopped as stoppedCopy } from "../content.ts";
+import { atRisk as atRiskCopy, queue as copy, stopped as stoppedCopy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { BACK } from "../icons.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
+import { clock } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
 import { account, forget, replay, type JobAccount } from "../store/outbox.ts";
@@ -28,7 +29,7 @@ function why(stopped: NonNullable<JobAccount["stopped"]>): string {
 }
 
 export function WaitingScreen() {
-  const { offline } = useSession();
+  const { offline, atRisk } = useSession();
   const waiting = useOutbox();
   const names = useNames(waiting);
 
@@ -38,6 +39,15 @@ export function WaitingScreen() {
 
   const jobs = [...new Set([...sets.keys(), ...held.map((line) => line.job_id)])];
   const name = (id: string) => names.get(id) ?? id.slice(0, 8);
+
+  /** When this job's oldest unsent thing was taken: a half-captured set has frames and no event yet. */
+  const since = (id: string): number | null => {
+    const times = [
+      ...waiting.events.filter((event) => event.job_id === id).map((event) => event.queued_at),
+      ...waiting.frames.filter((frame) => frame.job_id === id).map((frame) => frame.kept_at),
+    ];
+    return times.length === 0 ? null : Math.min(...times);
+  };
 
   return (
     <main className={styles.screen}>
@@ -59,6 +69,12 @@ export function WaitingScreen() {
         <p className={styles.nothing}>{copy.nothing}</p>
       ) : (
         <>
+          {atRisk && (
+            <div className={styles.atRisk} role="status">
+              <p className={styles.atRiskTitle}>{atRiskCopy.title}</p>
+              <p className={styles.atRiskBody}>{atRiskCopy.body}</p>
+            </div>
+          )}
           <div className={styles.sets}>
             <Icon className={styles.setsIcon} d={ICONS_P2.uploadQueue} size={20} />
             <span className={styles.setsLine}>{copy.waiting(sets.size)}</span>
@@ -68,6 +84,7 @@ export function WaitingScreen() {
               const frames = sets.get(id) ?? 0;
               const line = held.find((entry) => entry.job_id === id);
               const stopped = line?.stopped ?? null;
+              const taken = since(id);
               return (
                 <li className={styles.job} key={id}>
                   <div className={styles.jobTop}>
@@ -85,6 +102,8 @@ export function WaitingScreen() {
                   {line !== undefined && line.waiting > 0 && (
                     <p className={styles.count}>{copy.events(line.waiting)}</p>
                   )}
+                  {/* How long it has been on the phone, which is how much an eviction would take. */}
+                  {taken !== null && <p className={styles.count}>{copy.since(clock(new Date(taken).toISOString()))}</p>}
                   {stopped !== null && (
                     <div className={styles.stopped} role="alert">
                       <p className={styles.stoppedLine}>{why(stopped)}</p>

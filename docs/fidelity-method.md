@@ -75,6 +75,8 @@ These differences are known and stand:
 | -------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | A1       | The initials chip carries "Sign out"                                | The board draws the initials alone and no way out; the Prototype's technician screen has this chip             |
 | A1       | A line above the list when the outbox is holding something          | The prompt's "plain account of what has not yet reached us"; the board draws the queue on A2                   |
+| A1       | A caution beneath it when the phone will not promise to keep it     | An iPhone may refuse persistent storage and evict the outbox; the technician hears so rather than losing it    |
+| A2       | The same caution, and "Waiting since 9:41 am" on each job           | The age of unsent work is how much an eviction would take; no board draws a phone that will not keep it        |
 | A1, A3   | No "1 slot" beneath a job's time                                    | `GET /api/tech/jobs` answers a start and an end, not a count of slots; the block per type is dispatch's config |
 | A1       | No "· 3.1 km" beside the sector                                     | No route gives the distance, and asking for the phone's position to open the day is not what board B5 asks for |
 | A1       | The 5:30 consultation is "Prepaid", where the board writes "Free"   | The badge is `prepaid` or `credit` and nothing else: "No response to a technician carries an amount"           |
@@ -97,6 +99,7 @@ These differences are known and stand:
 | B4       | The next job is named by its sector until its card is fetched       | Same as A1: the day's list carries no client                                                                   |
 | B5       | No delivery receipt: "Ops get the check-in time and the distance."  | No technician route answers the day-before WhatsApp's delivery receipt; ops see it, the technician does not    |
 | B5       | The wait's minutes come from the check-in's answer                  | `NO_SHOW_WAIT_MIN` is the backend's, and `wait_ends_at` is the only place it reaches the phone                 |
+| Sign-in  | A line explaining an app opened from the home screen                | An installed iOS app has its own cookie jar, so its first sign-in needs a reason (ADR 0053)                    |
 
 ## The referral landing (P2-F3)
 

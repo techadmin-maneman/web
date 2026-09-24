@@ -122,6 +122,8 @@ export default defineConfig({
       // The technician app, at the width its boards are drawn at (design/phase2/Technician App.dc.html).
       name: "tech",
       testMatch: "tech/**/*.e2e.ts",
+      // ios.e2e.ts is the same app on WebKit and has its own project below.
+      testIgnore: "tech/ios.e2e.ts",
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 390, height: 844 },
@@ -132,6 +134,33 @@ export default defineConfig({
         permissions: ["camera"],
         launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
         // The steps stand still, so axe never reads a screen halfway in.
+        reducedMotion: "reduce",
+      },
+    },
+    {
+      /*
+       * The technician app on WebKit, since the owner ruled that technicians
+       * use any phone, including iPhones (docs/open-points.md, item 27). It is
+       * the engine an iPhone runs and it is **not** Safari on iOS: it has none
+       * of Safari's storage policy, its seven-day cap or its Home Screen Web
+       * Apps, so it proves the app's code paths run there and nothing about
+       * what an iPhone keeps. Only e2e/tech/ios.e2e.ts runs here — a second
+       * engine over every screen would double the run for little, and the
+       * camera's fake device is Chromium's alone.
+       *
+       * It is not in `npm run test:e2e`, which names its projects: CI installs
+       * Chromium alone, and nobody has yet watched WebKit run on the shared
+       * runner. `npm run test:tech-ios` runs it, after `npx playwright install
+       * webkit`. Putting it in CI is two lines — webkit on the install step in
+       * .github/workflows/ci.yml, and this project on `test:e2e`.
+       */
+      name: "tech-ios",
+      testMatch: "tech/ios.e2e.ts",
+      use: {
+        ...devices["iPhone 15"],
+        baseURL: "http://tech.localhost:4324",
+        // A stale worker would answer what page.route() means to fake, as in "tech".
+        serviceWorkers: "block",
         reducedMotion: "reduce",
       },
     },

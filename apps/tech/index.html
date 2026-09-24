@@ -7,6 +7,16 @@
     <meta name="theme-color" content="#0e1728" />
     <title>Mane Man technician</title>
     <link rel="icon" type="image/svg+xml" href="../../design/brand/favicon-32.svg" />
+    <!--
+      The home screen is where an iPhone keeps this app's store: an installed
+      web app is exempt from Safari's seven-day cap on script-writable storage
+      and is the heuristic WebKit grants persistence on (apps/tech/sw-build.ts).
+      The manifest carries display: standalone for iOS 16.4 and later; the Apple
+      meta below is the only thing an older iPhone reads.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
   </head>
   <body>
     <div id="root"></div>

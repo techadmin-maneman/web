@@ -9,10 +9,10 @@
 // address and the client card until the day before, so the card simply has none.
 
 import { useCallback } from "react";
-import type { Job } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { badges, job as copy, types, typesLower } from "../content.ts";
 import { BACK, PIN } from "../icons.ts";
+import { addressLine, wayTo } from "../lib/navigate.ts";
 import { closed, nextStep, started } from "../lib/progress.ts";
 import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
@@ -21,13 +21,6 @@ import { go, stepPath } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { NotHome } from "./NotHome.tsx";
 import styles from "./job.module.css";
-
-/** The address as one line, from the parts the API keeps it in. */
-function addressLine(parts: NonNullable<Job["address"]>): string {
-  return [parts.line1, parts.line2, parts.locality, `${parts.city} ${parts.pincode}`]
-    .filter((part) => part !== null && part.trim() !== "")
-    .join(", ");
-}
 
 export function JobScreen({ id }: { id: string }) {
   const waiting = useOutbox();
@@ -80,7 +73,8 @@ export function JobScreen({ id }: { id: string }) {
           <section className={styles.address}>
             <p className={styles.line}>{addressLine(job.address)}</p>
             {job.access_notes !== null && <p className={styles.access}>{job.access_notes}</p>}
-            <a className={styles.navigate} href={`geo:0,0?q=${encodeURIComponent(addressLine(job.address))}`}>
+            {/* A new tab, so a technician who has taken the route back still has the app open behind it. */}
+            <a className={styles.navigate} href={wayTo(job.address)} target="_blank" rel="noopener noreferrer">
               <Icon d={PIN} size={21} />
               <span>{copy.navigate}</span>
             </a>

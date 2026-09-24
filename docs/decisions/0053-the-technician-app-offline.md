@@ -42,3 +42,52 @@ The owner ruled on 23 September 2026 that we build our own interface over FSM (`
 - **The app follows the API, not the boards.** `npm run openapi` writes `apps/tech/src/api-schema.ts` from the schemas that serve the routes, and `apps/tech/src/routes.ts` assumes nothing. What the boards draw and the API cannot answer — a job's slots, its distance, a "Free" badge, a piece card on the job, last visit's photograph, the day-before WhatsApp's delivery receipt — is recorded beside the fidelity pairs in `docs/fidelity-method.md`.
 - **The check-in is queued like every other write, and its answer is kept.** It is the one write whose answer a screen needs: how far the phone was from the door, and when the no-show wait ends. Both are kept beside the job (`apps/tech/src/store/jobs.ts`), so a reload does not lose the countdown. A check-in queued in a basement says so, and the check runs when there is signal.
 - **The close-out's duration is the phone's.** It runs from the `started_at` the API keeps to the instant the technician took the outcome, because nothing gives the closing time back.
+
+---
+
+## Update, 24 September 2026: the phones are any phones, and one of them is an iPhone
+
+The owner ruled open point 27:
+
+> Any phone, including iPhones.
+
+The decision above assumed the opposite. "The prompt asks for company Android phones for this reason; it is `docs/open-points.md`'s item 27" was the whole of this ADR's answer to eviction, and it is now no answer at all. Three things in the app followed from the assumption, and this section records what each becomes. The Navigate link is the fourth and is ADR 0054's, which had already written the replacement.
+
+### The home screen is where an iPhone keeps this store, so the app is installable
+
+An iPhone does not treat an installed web app as a bookmark. It is a separate copy of the app with its own cookie jar, its own IndexedDB, its own service worker — and, the part that matters here, its own standing with the storage policy.
+
+Two things Apple has published decide the design:
+
+- **The seven-day cap.** WebKit deletes "Indexed DB, LocalStorage, Media keys, SessionStorage, Service Worker registrations and cache" after seven days of Safari use without interaction with the site. And, in the same post: web applications added to the home screen "have their own counter of days of use… Their days of use will match actual use of the web application which resets the timer. We do not expect the first-party in such a web application to have its website data deleted" (webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/).
+- **What earns persistent storage.** "By default, all origins use a best-effort mode, which means their persistence is not guaranteed and their data can be evicted"; an origin escapes eviction only if "it has active page at the time of eviction, or its storage is in persistent mode"; and WebKit "currently grants a request based on heuristics like whether the website is opened as a Home Screen Web App" (webkit.org/blog/14403/updates-to-storage-policy/). The eviction order is least-recently-used, where "the last use time is the time of the last user interaction, or the time of the last storage operation".
+
+So installing to the home screen is not a convenience on an iPhone. It is the difference between a store Safari may clear after a quiet week and one it is not expected to, and it is the thing that makes `navigator.storage.persist()` likely to be granted at all. The app had neither manifest nor icons — "it is opened from a link ops send, not installed from a store" — and a home-screen shortcut without `display: standalone` opens in Safari and buys none of this. **`apps/tech/sw-build.ts` now emits a manifest and the icons, and `apps/tech/index.html` links them**, on the client app's pattern (`apps/app/pwa.ts`). `docs/tech-field-test.md` asks the technician to install it as the first step of the iPhone pass.
+
+### An installed app is signed out, and the app says so
+
+The cost of installing is a second sign-in: the installed copy's cookie jar is empty, `GET /tech/me` answers `401 session_required`, and a technician who signed in an hour ago is looking at a sign-in screen. ADR 0029 named this ("An installed iOS web app has its own cookie store") and left it there.
+
+The app now tells the three cases apart. `App` reads whether this store had ever held a session **before** it wipes, so the sign-in knows whether it is showing because ops revoked the phone, because a session ended, or because this store has never had one. A store that has never had one, in an app running standalone, is the installed copy and nothing else, and the sign-in says so in the app's own words (`apps/tech/src/content.ts`). A first sign-in in a browser says nothing extra, because nothing has happened that needs explaining.
+
+### The old device row is left, not revoked and not merged
+
+A second cookie jar means a second `device_id` and a second `technician_devices` row: one handset, two rows.
+
+- **Not merged.** A device row names one storage container — one thing ops can revoke, and one thing `wiped_at` records the wiping of. Two containers genuinely exist. Merging them would let a revoke clear one and claim both, and would leave the browser copy holding a client's name, mobile and address with no row left to revoke it by. That is the opposite of what the revoke is for (ADR 0031).
+- **Not revoked automatically.** Nothing tells us the two rows are one handset. The device ID is the app's own, from its storage, "never a hardware serial" (ADR 0052), and the app fingerprints nothing on purpose. The only signal available is that the same technician signed in somewhere else — which is also exactly what a loaner phone looks like, and revoking on that signal would wipe the phone he is holding. Worse, a revoke wipes the store, and the browser copy may still be carrying a check-in and two photograph sets that never went up. Automatically revoking would turn a second sign-in into lost evidence, which is the failure this whole section exists to prevent.
+- **Left.** Each row keeps its own session, 90 days from last use, and ops revoke by hand from board D3 when a phone goes. The price is that a technician who installs the app has two rows for one handset until the browser copy's session lapses. It is paid openly: the sign-in says the browser copy is still signed in and still holding whatever it has not sent, and the field test has ops look at both rows.
+
+### The phone is asked to keep the store, and told to say so when it will not
+
+`apps/tech/src/store/persist.ts` asks `navigator.storage.persist()` once per store, after a session is established, and keeps the answer beside the device ID — so a wipe takes it too, which is right: the installed app and the browser it was installed from are two stores, and one's answer says nothing about the other's.
+
+When the answer is no, or the browser has no `StorageManager` to ask, the technician is told — but only while there is something in the outbox, because the warning is about that queue and not about the phone. Today carries the line beneath what is waiting, and `/waiting` carries it above the list along with **how long** each job's oldest unsent thing has been on the phone. Nothing is hidden and nothing is dramatised: the remedy is to get to signal and let the queue empty, and that is what the words say.
+
+Beside it, the outbox is now replayed whenever the app comes to the front, not only when `online` fires. iOS is unreliable about that event, and a phone that found signal in a pocket has no other moment to notice. The less time a job spends only on the phone, the less of it an eviction can take.
+
+### What could not be established from a desk
+
+`playwright.config.ts` gains a `tech-ios` project on WebKit, and `e2e/tech/ios.e2e.ts` runs the app on it. **WebKit in Playwright is the engine an iPhone runs and it is not Safari on iOS**: no Intelligent Tracking Prevention, no seven-day cap, no Home Screen Web Apps, and no reason for its answers about storage to match Safari's. What it proves is that nothing in this app is Chromium-only. Measured there on 24 September 2026, for the record rather than as a claim about any iPhone: `navigator.storage.persist()` answered **false**, `persisted()` stayed false, and the quota was **1,000 MB** — the same order as Safari's own per-origin quota. Headless Chromium answered false as well, on its own heuristics.
+
+What no desk can settle, and what `docs/tech-field-test.md`'s iPhone pass asks: whether a real iPhone grants persistence once the app is on the home screen; whether an installed app's store survives a week of not being opened; whether `getUserMedia` gives ten usable frames through iOS's own camera pipeline; and whether the installed app keeps its session across an iOS update. Until those are answered, an iPhone is a phone the app degrades safely on, not a phone the offline outbox is proven on.

@@ -122,6 +122,26 @@
   color: var(--paper);
 }
 
+/* A caution, not a failure: an outlined block, with none of the banner's gold. */
+.atRisk {
+  flex-shrink: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.atRiskTitle {
+  margin: 0;
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.atRiskBody {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-16);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
 .list {
   margin: 0;
   padding: 0;

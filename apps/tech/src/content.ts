@@ -25,6 +25,11 @@ export const signIn = {
   sendCode: "Send the code",
   // PLACEHOLDER: the Prototype shows the code field from the start.
   codeSent: "A six-digit code is on its way.",
+  // PLACEHOLDER: neither file draws the app opened from the home screen. An
+  // installed iPhone app has its own cookie jar, so the first sign-in inside it
+  // is a second one and looks like the account has gone (ADR 0053's update).
+  installed:
+    "This is the app on your home screen, and it signs in separately from the browser. Sign in once more here and use this one from now on. Anything the browser was still sending goes up from the browser.",
 } as const;
 
 export const today = {
@@ -49,6 +54,17 @@ export const today = {
   retry: "Try again",
 } as const;
 
+/**
+ * When the phone would not promise to keep what the outbox holds: a warning,
+ * not an error. Nothing is lost yet, and getting to signal is what saves it
+ * (apps/tech/src/store/persist.ts).
+ */
+export const atRisk = {
+  // PLACEHOLDER: neither file draws a phone that will not promise to keep its store.
+  title: "This phone has not promised to keep unsent work",
+  body: "Get to signal today and let the queue empty. A phone left unused for weeks can clear it.",
+} as const;
+
 export const queue = {
   waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
   never: "Never written to this phone's gallery.",
@@ -65,6 +81,8 @@ export const queue = {
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
   read: "Got it",
   back: "Back",
+  // PLACEHOLDER: the board draws the sets, not how long they have been waiting.
+  since: (time: string) => `Waiting since ${time}`,
 } as const;
 
 /**

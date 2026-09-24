@@ -1,0 +1,50 @@
+// The way to the door, on any phone (docs/decisions/0054-address-capture.md).
+// The rule is one line: a Google Maps URL, the pin when there is one and the
+// typed address when there is not, and never a scheme an iPhone ignores.
+
+import { describe, expect, it } from "vitest";
+import { addressLine, wayTo } from "../../apps/tech/src/lib/navigate.ts";
+
+const WITH_PIN = {
+  line1: "Tower C, 14th floor",
+  line2: null,
+  locality: "Sector 65",
+  city: "Gurgaon",
+  pincode: "122018",
+  lat: 28.39,
+  lng: 77.07,
+};
+
+const TYPED = { ...WITH_PIN, lat: null, lng: null };
+
+describe("addressLine", () => {
+  it("joins the parts the API keeps an address in", () => {
+    expect(addressLine(WITH_PIN)).toBe("Tower C, 14th floor, Sector 65, Gurgaon 122018");
+  });
+
+  it("leaves out a part the client did not fill in", () => {
+    expect(addressLine({ ...WITH_PIN, line2: "   " })).toBe("Tower C, 14th floor, Sector 65, Gurgaon 122018");
+  });
+});
+
+describe("wayTo", () => {
+  it("takes the pin when the address has one, because that is the door", () => {
+    expect(wayTo(WITH_PIN)).toBe("https://www.google.com/maps/dir/?api=1&destination=28.39%2C77.07");
+  });
+
+  it("falls back to the typed address when there is no pin", () => {
+    expect(wayTo(TYPED)).toBe(
+      "https://www.google.com/maps/dir/?api=1&destination=Tower%20C%2C%2014th%20floor%2C%20Sector%2065%2C%20Gurgaon%20122018",
+    );
+  });
+
+  it("is an https link on both platforms, and never the geo: scheme iOS ignores", () => {
+    for (const address of [WITH_PIN, TYPED]) {
+      expect(wayTo(address).startsWith("https://")).toBe(true);
+      expect(wayTo(address)).not.toContain("geo:");
+      // "api=1 is required" (ADR 0054), and the URL is capped at 2,048 characters.
+      expect(wayTo(address)).toContain("api=1");
+      expect(wayTo(address).length).toBeLessThan(2048);
+    }
+  });
+});
