@@ -39,6 +39,12 @@ export interface FsmInvoice {
   readonly id: string;
   /** The same invoice in Books, which is where its number and its PDF come from. */
   readonly booksInvoiceId: string;
+  /**
+   * True when this call raised it, false when the work order already had one —
+   * raised by hand in FSM, or by an earlier pass. Only an invoice this call
+   * raised is ever marked sent (ADR 0056).
+   */
+  readonly created: boolean;
 }
 
 export interface FsmContact {
@@ -413,9 +419,9 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       if (world.unbillable?.includes(workOrderId) === true) return Promise.resolve(null);
       // One invoice per work order, as FSM gives, however often it is asked for.
       const raised = invoices.get(workOrderId);
-      if (raised !== undefined) return Promise.resolve(raised);
+      if (raised !== undefined) return Promise.resolve({ ...raised, created: false });
       const id = crypto.randomUUID();
-      const invoice = { id: `stub-fsm-invoice-${id}`, booksInvoiceId: `stub-invoice-${id}` };
+      const invoice = { id: `stub-fsm-invoice-${id}`, booksInvoiceId: `stub-invoice-${id}`, created: true };
       invoices.set(workOrderId, invoice);
       made.invoiced.push(workOrderId);
       return Promise.resolve(invoice);

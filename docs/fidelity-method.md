@@ -45,6 +45,8 @@ These differences are known and stand:
 | B1       | Reschedule and Add a note are the same width                                                      | As on B2, whose pair matched; the design pads the second button                                   |
 | C1       | No "Prepaid"                                                                                      | Prepayment arrives with booking (P2-M5)                                                           |
 | C9, D1   | The photographs carry no captions; C9 has no "What was done"                                      | The prompt: "no captions"; what was done arrives with the job sheet (P2-M4)                       |
+| C9       | The visit's tax invoice sits beneath its facts; the board draws no invoice at all                 | The owner's ruling of 23 September 2026: the invoice is shown beside the service (ADR 0056)       |
+| C9       | No pair for "still generating" or "No charge"                                                     | The board has no frame for either; the pair is shot with the invoice issued                       |
 | D3       | The photograph opens large in a sheet, above the download line, with Close                        | A tap on a thumbnail shows the photograph; the board draws the download line alone                |
 | E1       | Newest first, and no charge or credit                                                             | The board lists its entries in no order; charges and credits arrive with P2-M5 and P2-M3          |
 | E2       | "UPI", without the UPI app                                                                        | Razorpay does not always say which app paid; the owner ruled to show "UPI" (ADR 0025, item 29)    |

@@ -2399,7 +2399,11 @@ Request body:
               "type": "null"
             }
           ],
-          "description": "The visit's invoice, for GET /api/documents/{id}, once Books has raised it."
+          "description": "The visit's invoice, for GET /api/documents/{id}, once Books has issued it."
+        },
+        "invoice_expected": {
+          "type": "boolean",
+          "description": "Whether this visit is billed at all: false for a free visit, and for one that is not finished. With no document_id and this false, no invoice will ever exist."
         }
       },
       "required": [
@@ -2407,7 +2411,8 @@ Request body:
         "outcome",
         "what_was_done",
         "photos",
-        "document_id"
+        "document_id",
+        "invoice_expected"
       ],
       "additionalProperties": false
     }
@@ -2974,7 +2979,7 @@ Request body:
                   "type": "null"
                 }
               ],
-              "description": "The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it."
+              "description": "The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it."
             },
             "receipt": {
               "anyOf": [

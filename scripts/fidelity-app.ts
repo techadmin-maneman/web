@@ -93,13 +93,15 @@ const photoSet = (ink: string) => ({
 });
 const PHOTO_FILES = { ink: "#16233a", frame: "#131c2e", raised: "#1a2740" } as const;
 
+/** The visit's own tax invoice, issued, is drawn beneath its facts; the board has no row for it (ADR 0056). */
 const VISIT_DETAIL = {
   ...AUGUST,
   duration_minutes: 85,
   outcome: "done",
   what_was_done: null,
   photos: photoSet("ink"),
-  document_id: null,
+  document_id: AUGUST.id,
+  invoice_expected: true,
 };
 
 const timeline = (inks: readonly [string, string, string]) => ({
@@ -449,7 +451,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await pair(OUT, WIDTH, "c1-visits", await frame(design, "Visits · list"), await shot(visits));
   await visits.close();
 
-  // C9's "What was done" arrives with the job sheet (P2-M4).
+  // C9's "What was done" arrives with the job sheet (P2-M4); its tax invoice is not on the board at all.
   const detail = await openApp(browser, `/visits/${AUGUST.id}`, {
     ...me,
     [`/api/visits/${AUGUST.id}`]: json(VISIT_DETAIL),

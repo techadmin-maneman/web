@@ -127,13 +127,13 @@ export default {
       }
     }
     if (config.providers.FSM_PROVIDER !== "none" && config.providers.BOOKS_PROVIDER !== "none") {
-      // A finished job's invoice: FSM raises it, Books holds it, and the column keeps
-      // Books' ID (ADR 0055). Before the Books pass, which sets a client's advance
-      // against the invoice once there is one.
+      // A finished job's invoice: FSM raises it, Books holds it and marks it sent,
+      // and the column keeps Books' ID (ADRs 0055 and 0056). Before the Books pass,
+      // which sets a client's advance against the invoice once it is issued.
       const invoiceLog = log.child({ job: "invoices" });
-      await raiseInvoices(workerEnv.DB, deps.fsm, deps.now(), invoiceLog)
+      await raiseInvoices(workerEnv.DB, deps.fsm, deps.books, deps.now(), invoiceLog, deps.alert)
         .then((done) => {
-          if (done.invoiced > 0) invoiceLog.info("invoices_raised", done);
+          if (done.raised + done.issued > 0) invoiceLog.info("invoices_raised", done);
         })
         .catch((error: unknown) => {
           invoiceLog.error("invoices_failed", { error });

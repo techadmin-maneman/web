@@ -2262,8 +2262,10 @@ export interface components {
             /** @description What the technician did, from the job sheet (P2-M4). */
             what_was_done: null;
             photos: components["schemas"]["PhotoSet"];
-            /** @description The visit's invoice, for GET /api/documents/{id}, once Books has raised it. */
+            /** @description The visit's invoice, for GET /api/documents/{id}, once Books has issued it. */
             document_id: string | null;
+            /** @description Whether this visit is billed at all: false for a free visit, and for one that is not finished. With no document_id and this false, no invoice will ever exist. */
+            invoice_expected: boolean;
         };
         /** @description Each angle in the order front, top, left, right, hair; missing angles left out. */
         PhotoSet: {
@@ -2404,7 +2406,7 @@ export interface components {
         };
         PaymentDetail: components["schemas"]["PaymentEntry"] & {
             documents: {
-                /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it. */
+                /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it. */
                 invoice: string | null;
                 /** @description The payment's receipt, for GET /api/payments/{id}/receipt, once the payment is recorded in Books. */
                 receipt: string | null;

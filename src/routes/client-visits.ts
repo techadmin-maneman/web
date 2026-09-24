@@ -66,7 +66,12 @@ const VisitDetailSchema = VisitSummarySchema.extend({
   photos: PhotoSetSchema,
   document_id: z
     .union([z.uuid(), z.null()])
-    .openapi({ description: "The visit's invoice, for GET /api/documents/{id}, once Books has raised it." }),
+    .openapi({ description: "The visit's invoice, for GET /api/documents/{id}, once Books has issued it." }),
+  invoice_expected: z.boolean().openapi({
+    description:
+      "Whether this visit is billed at all: false for a free visit, and for one that is not finished. " +
+      "With no document_id and this false, no invoice will ever exist.",
+  }),
 }).openapi("VisitDetail");
 
 const VisitsSchema = z

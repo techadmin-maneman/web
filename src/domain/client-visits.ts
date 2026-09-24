@@ -7,6 +7,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
+import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
 
@@ -164,8 +165,27 @@ export interface VisitDetail extends VisitSummary {
   /** What the technician did; arrives with the job sheet (P2-M4). */
   readonly what_was_done: null;
   readonly photos: PhotoSet;
-  /** The visit's invoice, for GET /api/documents/{id}, once Books has raised it. */
+  /** The visit's invoice, for GET /api/documents/{id}, once Books has issued it. */
   readonly document_id: string | null;
+  /**
+   * Whether this visit is billed at all: false for a free one, and for one that
+   * is not finished. Without it the app could only say "still generating" for
+   * ever about a consultation that will never have an invoice (ADR 0056).
+   */
+  readonly invoice_expected: boolean;
+}
+
+/**
+ * A visit is billed when the price book charges for its type on the day it
+ * happened. A free consultation totals nothing and FSM raises no invoice for
+ * it (ADR 0055). A visit whose service is not one of ours is unpriced here and
+ * counts as billed: FSM knows its total, we do not.
+ */
+async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boolean> {
+  if (row.status !== "completed") return false;
+  if (row.type === null) return true;
+  const price = await priceOf(db, row.type, indiaDate(new Date(row.window_start)));
+  return price === null || price.amount_ex_gst > 0;
 }
 
 /** One of the client's visits with its photographs; null for a visit that is not theirs. */
@@ -178,14 +198,14 @@ export async function visitDetail(
 ): Promise<VisitDetail | null> {
   const row = await db
     .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS}, a.fsm_invoice_id, v.duration_minutes, v.outcome
+      `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, v.duration_minutes, v.outcome
        FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id LEFT JOIN visits v ON v.appointment_id = a.id
        WHERE ${LIVE} AND a.id = ?2`,
     )
     .bind(personId, visitId)
     .first<
       AppointmentRow & {
-        fsm_invoice_id: string | null;
+        invoice_issued_at: string | null;
         duration_minutes: number | null;
         outcome: "done" | "partial" | null;
       }
@@ -198,7 +218,8 @@ export async function visitDetail(
     outcome: row.outcome,
     what_was_done: null,
     photos: photos.get(row.id) ?? { before: [], after: [] },
-    document_id: row.fsm_invoice_id === null ? null : row.id,
+    document_id: row.invoice_issued_at === null ? null : row.id,
+    invoice_expected: await invoiceExpected(db, row),
   };
 }
 

@@ -41,9 +41,10 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByRole("button", { name: "Book your next visit" })).toBeVisible();
 
   const past = page.getByRole("main").getByRole("link");
-  await expect(past).toHaveCount(2);
+  await expect(past).toHaveCount(3);
   await expect(past.nth(0)).toContainText(`${fullDate(client.service.date)}Service visit · Imran`);
   await expect(past.nth(1)).toContainText(`${fullDate(client.firstFit.date)}First fit · Imran`);
+  await expect(past.nth(2)).toContainText(`${fullDate(client.consultation.date)}Consultation · Imran`);
 
   await past.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.service.date) })).toBeVisible();
@@ -53,6 +54,37 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect.poll(() => front.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
   await page.getByRole("link", { name: "Back to visits" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
+});
+
+// The owner's ruling of 23 September 2026: the invoice appears beside the visit, and a free visit says so
+// rather than promising a document that will never come (ADR 0056).
+test("a past visit carries its own invoice, or says why there is none", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+
+  await page.goto(`/visits/${client.service.id}`);
+  const invoice = page.getByRole("link", { name: "Tax invoice" });
+  await expect(invoice).toHaveAttribute("href", `/api/documents/${client.service.id}`);
+  await expect(invoice).toHaveAttribute("target", "_blank");
+  // The whole accessible name, so a screen reader is told the link leaves the app.
+  await expect(invoice).toHaveAccessibleName("Tax invoice PDF, opens in a new tab");
+  const served = await page.evaluate(
+    async (url) => (await fetch(url)).headers.get("Content-Type"),
+    `/api/documents/${client.service.id}`,
+  );
+  expect(served).toBe("application/pdf");
+
+  // The first fit is billed, and its invoice has not been raised yet.
+  await page.goto(`/visits/${client.firstFit.id}`);
+  await expect(page.getByText("The invoice is still generating. Usually ready within the hour.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Tax invoice" })).toHaveCount(0);
+  // No notification is offered here: the invoice simply appears next time the client looks.
+  await expect(page.getByRole("link", { name: "Notify me" })).toHaveCount(0);
+
+  // The consultation was free, so no invoice will ever exist.
+  await page.goto(`/visits/${client.consultation.id}`);
+  await expect(page.getByText("No charge for this visit, so there is no invoice.")).toBeVisible();
 });
 
 test("Photos: the timeline, a photograph saved to the phone, and the compare", async ({ page }) => {
@@ -161,7 +193,11 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByText("Service visit · 12 to 4 pm · Imran")).toBeVisible();
   await scan();
   await page.goto(`/visits/${client.service.id}`);
-  await expect(page.getByText("Imran Qureshi")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Tax invoice" })).toBeVisible();
+  await scan();
+  // The same screen with no invoice to open, which reads as a line rather than a link.
+  await page.goto(`/visits/${client.consultation.id}`);
+  await expect(page.getByText("No charge for this visit, so there is no invoice.")).toBeVisible();
   await scan();
   await tab(page, "Photos").click();
   await page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` }).click();

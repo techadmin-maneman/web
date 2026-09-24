@@ -86,7 +86,7 @@ const PaymentDetailSchema = PaymentEntrySchema.extend({
     .object({
       invoice: z
         .union([z.uuid(), z.null()])
-        .openapi({ description: "The visit's tax invoice, for GET /api/documents/{id}, once Books has raised it." }),
+        .openapi({ description: "The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it." }),
       receipt: z.union([z.uuid(), z.null()]).openapi({
         description:
           "The payment's receipt, for GET /api/payments/{id}/receipt, once the payment is recorded in Books.",
@@ -171,7 +171,7 @@ interface PaymentRow extends VisitColumns {
   refunded_amount: number;
   status: "authorized" | "captured" | "refunded" | "partially_refunded";
   method: string | null;
-  fsm_invoice_id: string | null;
+  invoice_issued_at: string | null;
   books_payment_id: string | null;
   kind: "visit" | "late_fee";
   charged_change: "moved" | "replaced" | "cancelled" | null;
@@ -194,7 +194,7 @@ const VISIT_JOIN = `LEFT JOIN appointments a ON a.id = p.appointment_id AND a.de
 
 // The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee.
 const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.refunded_amount, p.status, p.method,
-    p.books_payment_id, p.kind, a.id AS appointment_id, a.window_start, a.type, a.fsm_invoice_id,
+    p.books_payment_id, p.kind, a.id AS appointment_id, a.window_start, a.type, a.invoice_issued_at,
     c.kind AS charged_change, c.created_at AS charged_at, c.was_start AS charged_visit_start,
     c.kept_amount AS charged_amount
   FROM payments p ${VISIT_JOIN}
@@ -281,7 +281,7 @@ export function registerClientPayments(app: App): void {
     const id = c.req.valid("param").id;
     const payment = await db.prepare(`${PAYMENT_QUERY} AND p.id = ?2`).bind(session.subjectId, id).first<PaymentRow>();
     if (payment !== null) {
-      const invoice = payment.fsm_invoice_id === null ? null : payment.appointment_id;
+      const invoice = payment.invoice_issued_at === null ? null : payment.appointment_id;
       const receipt = payment.books_payment_id === null ? null : payment.id;
       return c.json({ ...paymentOf(payment), documents: { invoice, receipt } }, 200);
     }
@@ -307,13 +307,17 @@ export function registerClientPayments(app: App): void {
   app.openapi(documentRoute, async (c) => {
     const session = c.var.clientSession;
     if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    // A raised invoice is still a draft until the pass marks it sent, and a draft is not a document
+    // the client may open (ADR 0056): until then this answers "not ready", as it did before it was raised.
     const visit = await c.env.DB.prepare(
-      "SELECT fsm_invoice_id FROM appointments WHERE id = ?1 AND person_id = ?2 AND deleted_at IS NULL",
+      `SELECT fsm_invoice_id, invoice_issued_at FROM appointments
+       WHERE id = ?1 AND person_id = ?2 AND deleted_at IS NULL`,
     )
       .bind(c.req.valid("param").id, session.subjectId)
-      .first<{ fsm_invoice_id: string | null }>();
+      .first<{ fsm_invoice_id: string | null; invoice_issued_at: string | null }>();
     if (visit === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    const pdf = visit.fsm_invoice_id === null ? null : await c.var.deps.books.invoicePdf(visit.fsm_invoice_id);
+    const issued = visit.invoice_issued_at === null ? null : visit.fsm_invoice_id;
+    const pdf = issued === null ? null : await c.var.deps.books.invoicePdf(issued);
     if (pdf === null) return c.json(errorBody("not_ready", c.var.requestId), 409);
     return pdfResponse(pdf.body, "invoice.pdf");
   });

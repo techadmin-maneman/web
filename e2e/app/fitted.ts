@@ -5,9 +5,12 @@
 // number is made up, and the photographs are plain blocks, never a person.
 //
 // The client has a service visit booked in three days; a service visit done
-// 20 days ago, paid by UPI, partly refunded, and invoiced by (stub) Books; and
-// a first fit done 60 days ago, paid by card. The service visit has front and
-// hairline photographs after it, and the first fit a front.
+// 20 days ago, paid by UPI, partly refunded, and invoiced and issued by (stub)
+// Books; a first fit done 60 days ago, paid by card, whose invoice is not
+// raised yet; and a free consultation done 90 days ago, which is never
+// invoiced at all. Those are the three states a visit's invoice can be in
+// (ADR 0056). The service visit has front and hairline photographs after it,
+// and the first fit a front.
 //
 // e2e/global-setup.ts seeds the client once, before any test runs: wrangler
 // writing to the local database while mm-api does would meet it on SQLite's
@@ -38,6 +41,8 @@ export interface Fitted {
   readonly next: FittedVisit;
   readonly service: FittedVisit;
   readonly firstFit: FittedVisit;
+  /** Free, so it never has an invoice. */
+  readonly consultation: FittedVisit;
   /** The service visit's payment, which Books has recorded, and its reference. */
   readonly servicePayment: string;
   readonly reference: string;
@@ -71,11 +76,12 @@ export async function seedFitted(): Promise<void> {
   const now = new Date().toISOString();
   const id = () => crypto.randomUUID();
   const [person, technician] = [id(), id()];
-  const [next, service, firstFit] = [day(3), day(-20), day(-60)];
-  const visits = { next: id(), service: id(), firstFit: id() };
+  const [next, service, firstFit, consultation] = [day(3), day(-20), day(-60), day(-90)];
+  const visits = { next: id(), service: id(), firstFit: id(), consultation: id() };
   const [servicePaid, firstFitPaid] = [id(), id()];
   const reference = `MM-2099-${String(Math.floor(Math.random() * 1e6)).padStart(6, "0")}`;
 
+  /** An invoice is the client's to open only once Books has issued it, which is what `invoice` being set means. */
   const appointment = (
     appointmentId: string,
     type: string,
@@ -96,6 +102,7 @@ export async function seedFitted(): Promise<void> {
       "Gurgaon",
       "122018",
       invoice,
+      invoice === null ? null : now,
       now,
       now,
     );
@@ -105,10 +112,12 @@ export async function seedFitted(): Promise<void> {
     `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
        VALUES ${row(technician, `e2e-${technician}`, "Imran Qureshi", "IQ", 1, now)};`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
-       fsm_status, service_city, service_pincode, fsm_invoice_id, fsm_modified_at, synced_at) VALUES
+       fsm_status, service_city, service_pincode, fsm_invoice_id, invoice_issued_at, fsm_modified_at,
+       synced_at) VALUES
        ${appointment(visits.next, "service", next, "scheduled", null)},
        ${appointment(visits.service, "service", service, "completed", `stub-e2e-${visits.service}`)},
-       ${appointment(visits.firstFit, "first_fit", firstFit, "completed", null)};`,
+       ${appointment(visits.firstFit, "first_fit", firstFit, "completed", null)},
+       ${appointment(visits.consultation, "consultation", consultation, "completed", null)};`,
     `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at) VALUES
        ${row(id(), visits.service, service.start, service.end, 85, "done", now)},
        ${row(id(), visits.firstFit, firstFit.start, firstFit.end, 150, "done", now)};`,
@@ -171,6 +180,7 @@ export async function seedFitted(): Promise<void> {
     next: { id: visits.next, date: next.date },
     service: { id: visits.service, date: service.date },
     firstFit: { id: visits.firstFit, date: firstFit.date },
+    consultation: { id: visits.consultation, date: consultation.date },
     servicePayment: servicePaid,
     reference,
   };

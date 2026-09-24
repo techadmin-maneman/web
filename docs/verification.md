@@ -407,6 +407,16 @@ Not the shapes a test asserts: `src/providers/fsm-zoho.ts` as it stands, given t
 - **It billed the closed job.** `invoiceWorkOrder("8229000000304478")` logged `invoice_work_order` 200 then `create_invoice` **201** at **13:39:26 UTC** and answered `{ id: "8229000000304506", booksInvoiceId: "4242595000000063068" }`. In Books: **INV-000003**, draft, ₹2,000, balance ₹2,000, customer "Staging test", `tax_total` 0, one line "Service visit × 1 = 2000". `GET /books/v3/invoices/4242595000000063068?accept=pdf` answers **200 `application/pdf`** — the same call `GET /api/documents/{visit_id}` makes.
 - **Asked again, it raised nothing.** The same call at 13:39:32 logged `invoice_work_order` then `invoice` — two reads, no create — and answered the same two IDs. That is the path a job the owner invoices by hand takes.
 
+### Issuing it, and showing it beside the visit (23 September 2026)
+
+The owner ruled that the invoice is marked sent as it is raised, and shown on the visit's own screen (ADR 0056). **Nothing here was run against the owner's org, and no Zoho record was created by it**: issuing is an accounting act, and the rule that no existing draft is ever sent means the code cannot be exercised against the org without first raising a fresh invoice there. What is proven is the code around it.
+
+- `test/worker/fsm-invoices.test.ts` covers the pass, including the two that matter: a draft the work order already had is **never** sent, whoever raised it, and a send Books refuses leaves the invoice unshown, logs `invoice_not_issued` and alerts ops, and is not tried again.
+- `test/worker/client-visits.test.ts` and `test/worker/client-payments.test.ts` hold every client-facing door — `document_id`, `documents.invoice` and `GET /api/documents/{id}` — to waiting for `invoice_issued_at`, so a draft answers `409 not_ready` as it did before it was raised.
+- `e2e/app/fitted.e2e.ts` shows the three states on the real screen at 390 px, with axe at WCAG 2.2 AA on two of them.
+
+**What would prove it on staging:** deploy, deal with the backlog's drafts by hand first (they are never sent from code), then run one service job in FSM to a close and watch a five-minute pass log `invoices_raised` with `issued: 1`; read `invoice_issued_at` on the appointment; open `GET /api/documents/{visit_id}` with a client session; and check in Books that the invoice reads Sent and that the client's advance has been applied to it by the next Books pass.
+
 ### What staging cannot prove yet
 
 - **Nobody signed in.** Staging messages only its allowlist, so the login code never leaves the Worker for a test number, and the sessions here were written by hand. The code path itself — `POST /api/auth/otp`, then `POST /api/auth/verify` — needs the owner's handset.
@@ -688,7 +698,7 @@ Staging shares the real Zoho org (open point 10), so the records below are real 
 | 8229000000306269 | 8229000000304388 | A credit booking                     | Cancelled at free notice                   |
 | 8229000000305397 | 8229000000306278 | The first fit, moved at a late fee   | **Scheduled, 30 September**                |
 
-**Zoho Books.** Three customer payments — `4242595000000067002` (₹2,000), `4242595000000069003` (₹30,000) and `4242595000000071002` (₹4,000) — and one refund, `4242595000000072002` (₹2,000), each described "Staging test: Razorpay …". Also the draft invoice FSM raised on WO13, `4242595000000064030` (INV-000001, ₹2,000, no tax). No payment is applied to it, because it is a draft (open point 70).
+**Zoho Books.** Three customer payments — `4242595000000067002` (₹2,000), `4242595000000069003` (₹30,000) and `4242595000000071002` (₹4,000) — and one refund, `4242595000000072002` (₹2,000), each described "Staging test: Razorpay …". Also the draft invoice FSM raised on WO13, `4242595000000064030` (INV-000001, ₹2,000, no tax). No payment is applied to it, because it is a draft, and nothing in the code will ever send it (ADR 0056): it stays the owner's to send or delete.
 
 **What the evening's invoice work added**, all "Staging test" and all the owner's to clear:
 

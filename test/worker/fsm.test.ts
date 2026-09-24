@@ -308,7 +308,12 @@ describe("FSM: billing a finished job", () => {
         ),
     });
 
-    expect(await provider.invoiceWorkOrder("wo-1")).toEqual({ id: "fsm-invoice-1", booksInvoiceId: "books-invoice-1" });
+    // `created` is what lets the pass send only an invoice it has just raised (ADR 0056).
+    expect(await provider.invoiceWorkOrder("wo-1")).toEqual({
+      id: "fsm-invoice-1",
+      booksInvoiceId: "books-invoice-1",
+      created: true,
+    });
     expect(calls[2]?.method).toBe("POST");
     // Without the line IDs FSM answers a bare 500, whatever else the body carries.
     expect(JSON.parse(calls[2]?.body ?? "null")).toEqual({
@@ -343,7 +348,11 @@ describe("FSM: billing a finished job", () => {
       [`${FSM_API}/Invoices/fsm-invoice-1`]: () => json({ data: [fsmInvoiceRecord()] }),
     });
 
-    expect(await provider.invoiceWorkOrder("wo-1")).toEqual({ id: "fsm-invoice-1", booksInvoiceId: "books-invoice-1" });
+    expect(await provider.invoiceWorkOrder("wo-1")).toEqual({
+      id: "fsm-invoice-1",
+      booksInvoiceId: "books-invoice-1",
+      created: false,
+    });
     expect(calls.map((call) => call.method)).toEqual(["POST", "GET", "GET"]); // the token, then two reads: nothing raised
   });
 

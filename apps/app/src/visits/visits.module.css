@@ -117,7 +117,7 @@
   color: var(--text-quiet);
 }
 
-/* Board C9. */
+/* Board C9, and the visit's tax invoice beneath its facts (ADR 0056). */
 .detail {
   display: flex;
   flex-direction: column;
@@ -156,8 +156,45 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The one document row, drawn as board E2 draws a tax document. */
+.invoice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  min-height: var(--btn-lg);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper-light);
+  font-size: var(--fs-16);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.invoiceIcon {
+  flex-shrink: 0;
+  color: var(--ink);
+}
+
+.invoiceLine {
+  margin: 0;
+  font-size: var(--fs-16);
+  line-height: 1.55;
+}
+
+/* Said to a screen reader only: the link leaves the app for a PDF. */
+.away {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .row:focus-visible,
-.book:focus-visible {
+.book:focus-visible,
+.invoice:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--focus-offset);
 }

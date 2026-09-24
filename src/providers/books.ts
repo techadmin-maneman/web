@@ -6,6 +6,7 @@
 //
 //   GET  /books/v3/invoices/{id}?organization_id=                     { invoice: {...} }
 //   GET  /books/v3/invoices/{id}?organization_id=&accept=pdf          the PDF
+//   POST /books/v3/invoices/{id}/status/sent?organization_id=         marks a draft sent
 //   POST /books/v3/customerpayments?organization_id=                  { payment: { payment_id } }
 //   GET  /books/v3/customerpayments/{id}?organization_id=&accept=pdf  the receipt
 //   POST /books/v3/invoices/{id}/credits?organization_id=             a payment applied to an invoice
@@ -59,6 +60,12 @@ export interface NewBooksRefund {
 
 export interface BooksProvider {
   invoice(id: string): Promise<BooksInvoice | null>;
+  /**
+   * Marks a draft sent, which is what makes it a valid tax invoice
+   * (ADR 0056). Only `raiseInvoices` calls it, and only for an invoice it has
+   * just raised: an issued invoice can be undone only with a credit note.
+   */
+  issueInvoice(id: string): Promise<void>;
   /** Null while Books has no such invoice, which the app shows as "Document unavailable". */
   invoicePdf(id: string): Promise<BooksPdf | null>;
   /** Records a payment; returns Books' ID for it. */
@@ -88,7 +95,15 @@ export function createBooksProvider(
   }
   if (provider === "stub") return createStubBooks();
   const off = () => Promise.reject(new Error("Books is not connected here (BOOKS_PROVIDER is none)"));
-  return { invoice: off, invoicePdf: off, recordPayment: off, receiptPdf: off, applyToInvoice: off, recordRefund: off };
+  return {
+    invoice: off,
+    issueInvoice: off,
+    invoicePdf: off,
+    recordPayment: off,
+    receiptPdf: off,
+    applyToInvoice: off,
+    recordRefund: off,
+  };
 }
 
 const Invoice = z.object({
@@ -137,6 +152,14 @@ function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: Depende
           status: invoice.status,
         };
       }),
+
+    async issueInvoice(id) {
+      await request("issue_invoice", `/books/v3/invoices/${encodeURIComponent(id)}/status/sent?${org}`, {
+        method: "POST",
+        body: {},
+      });
+    },
+
     invoicePdf: (id) =>
       orNull(async () => {
         const response = await request("invoice_pdf", path(id, "&accept=pdf"));
@@ -201,6 +224,8 @@ export interface StubBooks extends BooksProvider {
     readonly payments: NewBooksPayment[];
     readonly applied: { paymentId: string; invoiceId: string; amount: number }[];
     readonly refunds: (NewBooksRefund & { paymentId: string })[];
+    /** The invoices marked sent, in the order they were. */
+    readonly issued: string[];
   };
 }
 
@@ -211,13 +236,15 @@ const blankPdf = () => ({
 
 /**
  * Local and test stand-in: every invoice ID starting "stub-" exists, as a blank page, and so does every payment
- * it records. Its IDs are unique, as a new stub answers each local request.
+ * it records. Its IDs are unique, as a new stub answers each local request. An invoice is a draft until it is
+ * issued, as Books has it.
  */
 export function createStubBooks(): StubBooks {
   const made = {
     payments: [] as NewBooksPayment[],
     applied: [] as { paymentId: string; invoiceId: string; amount: number }[],
     refunds: [] as (NewBooksRefund & { paymentId: string })[],
+    issued: [] as string[],
   };
   return {
     made,
@@ -234,6 +261,10 @@ export function createStubBooks(): StubBooks {
       made.refunds.push({ ...refund, paymentId });
       return Promise.resolve(`stub-refund-${crypto.randomUUID()}`);
     },
+    issueInvoice: (id) => {
+      made.issued.push(id);
+      return Promise.resolve();
+    },
     invoice: (id) =>
       Promise.resolve(
         id.startsWith("stub-")
@@ -243,7 +274,7 @@ export function createStubBooks(): StubBooks {
               date: "2026-09-22",
               total: 0,
               balance: 0,
-              status: "draft",
+              status: made.issued.includes(id) ? "sent" : "draft",
             }
           : null,
       ),
