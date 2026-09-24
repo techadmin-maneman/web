@@ -6,7 +6,8 @@
 //   POST  /api/number-change          a code to each number
 //   POST  /api/number-change/verify   one number's code; with both, the change waits for ops
 //   POST  /api/deletion-request
-// Each consent switch is audited in the same batch as the switch. A number
+// Each consent switch is audited in the same batch as the switch, and a switch
+// to the state a purpose already holds writes no ledger row (ADR 0058). A number
 // change or deletion request is audited as it is made; its effect comes only
 // with ops' decision, which is audited in turn (src/routes/ops-profile.ts).
 
@@ -192,7 +193,7 @@ const ConsentSwitchSchema = z.object({ granted: z.boolean() }).strict().openapi(
 export const consentRoute = createRoute({
   method: "patch",
   path: "/api/consents/{purpose}",
-  summary: "Switch one consent on or off. Each switch is kept, with its date",
+  summary: "Switch one consent on or off. Each switch is kept, with its date; a repeat is not a switch",
   request: {
     params: z.object({ purpose: z.enum(CONSENT_PURPOSES) }),
     body: { required: true, ...json(ConsentSwitchSchema) },
@@ -441,7 +442,7 @@ export function registerClientProfile(app: App): void {
     const { granted } = c.req.valid("json");
     const now = c.var.deps.now();
     const db = c.env.DB;
-    await db.batch([
+    const [switched] = await db.batch<{ created_at: string }>([
       switchConsent(db, { personId, purpose, granted, ipHash: (await visitorOf(c)).ipHash, now }),
       auditStatement(
         db,
@@ -451,7 +452,11 @@ export function registerClientProfile(app: App): void {
     ]);
     // "You can switch it off at any time, and new opens will show our house example instead."
     if (purpose === "photos_referral_cards" && !granted) await revokeCard(db, c.env.REFERRAL_CARDS, personId, now);
-    return c.json({ purpose, granted, since: now.toISOString() }, 200);
+    // A request that changed nothing is answered with the date the ledger holds, not with its own
+    // moment: the client is told when they agreed, which is not necessarily now (ADR 0058).
+    const written = switched?.results[0]?.created_at;
+    const since = written ?? (await consentsOf(db, personId)).find((one) => one.purpose === purpose)?.since;
+    return c.json({ purpose, granted, since: since ?? now.toISOString() }, 200);
   });
 
   app.openapi(numberChangeRoute, async (c) => {

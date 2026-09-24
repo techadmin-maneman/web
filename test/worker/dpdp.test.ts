@@ -176,6 +176,37 @@ describe("grievances", () => {
     });
     expect((await resolve("again")).status).toBe(404);
   });
+
+  it("are one grievance when the same words arrive twice at the same moment", async () => {
+    const deps = fakeDependencies();
+    const client = appFor("local", deps, {}, "client");
+    const raise = () =>
+      request(client, "/api/grievances", {
+        method: "POST",
+        headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify({ text: "Please explain who sees my photographs." }),
+      });
+
+    // Both taps are in flight together, as they are when a client taps Send twice on board G2.
+    const both = await Promise.all([raise(), raise()]);
+    expect(both.map((answer) => answer.status)).toEqual([201, 201]);
+    const ids = await Promise.all(both.map(async (answer) => (await answer.json<{ id: string }>()).id));
+    // One row, so one answer-time clock; and the tap that wrote nothing is answered with the
+    // grievance the other raised, so both taps name the same concern (ADR 0058).
+    expect(ids[0]).toBe(ids[1]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS rows FROM grievances").first()).toEqual({ rows: 1 });
+    expect(deps.alerts).toEqual([`A client raised grievance ${ids[0]}; answer it in the ops console.`]);
+
+    // The same words again, once ops have answered, are a second concern and a second clock.
+    const ops = appFor("local", fakeDependencies(), {}, "ops");
+    await request(ops, `/api/grievances/${ids[0]}/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ response: "Explained on WhatsApp." }),
+    });
+    expect((await (await raise()).json<{ id: string }>()).id).not.toBe(ids[0]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS rows FROM grievances").first()).toEqual({ rows: 2 });
+  });
 });
 
 describe("ops deciding a deletion request", () => {

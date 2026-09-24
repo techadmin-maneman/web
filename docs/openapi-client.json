@@ -2635,7 +2635,7 @@
     },
     "/api/consents/{purpose}": {
       "patch": {
-        "summary": "Switch one consent on or off. Each switch is kept, with its date",
+        "summary": "Switch one consent on or off. Each switch is kept, with its date; a repeat is not a switch",
         "parameters": [
           {
             "schema": {
@@ -4036,7 +4036,7 @@
     },
     "/api/grievances": {
       "post": {
-        "summary": "Raise a grievance about how the client's data is handled",
+        "summary": "Raise a grievance about how the client's data is handled. The same words, still open, are one",
         "requestBody": {
           "required": true,
           "content": {

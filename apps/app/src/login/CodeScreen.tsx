@@ -89,7 +89,9 @@ export function CodeScreen(props: Props) {
         <p className={styles.lead}>{sent(masked(props.mobile))}</p>
         <CodeField value={code} label={copy.label} invalid={problem !== null} onChange={setCode} />
         {message !== null && (
-          <p className={styles.error} role="alert">
+          // Busy while a code is on its way, so a screen reader is told the screen is working
+          // rather than re-reading the problem the client has already acted on.
+          <p className={styles.error} role="alert" aria-busy={props.busy}>
             {message}
           </p>
         )}
@@ -104,7 +106,7 @@ export function CodeScreen(props: Props) {
             </button>
           )}
           {closed ? (
-            <button className={styles.link} type="button" onClick={props.onFresh}>
+            <button className={styles.link} type="button" onClick={props.onFresh} disabled={props.busy}>
               <span>{copy.fresh}</span>
             </button>
           ) : resendIn > 0 ? (

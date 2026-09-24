@@ -280,6 +280,38 @@ describe("PATCH /api/consents/:purpose", () => {
     expect(await auditActions()).toEqual(["consent.switch", "consent.switch"]);
   });
 
+  it("keeps one row when the same switch arrives twice at the same moment", async () => {
+    // Both taps are in flight together, as they are when a client taps Allow twice on board F3.
+    const both = await Promise.all([
+      send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true }),
+      send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true }),
+    ]);
+    expect(both.map((answer) => answer.status)).toEqual([200, 200]);
+    // A switch to the state the purpose already holds is not a switch. The ledger is append-only
+    // by trigger, so a second row could never be taken back afterwards (ADR 0058).
+    expect(await env.DB.prepare("SELECT COUNT(*) AS rows FROM consents").first()).toEqual({ rows: 1 });
+    // The tap that wrote nothing is answered with the date the ledger holds, not with its own moment.
+    const given = { purpose: "whatsapp_visits", granted: true, since: NOW.toISOString() };
+    expect(await Promise.all(both.map((answer) => answer.json()))).toEqual([given, given]);
+  });
+
+  it("records the same answer again when the notice behind it has changed", async () => {
+    // The referral-card notice gained a line and became v2 (src/config/notices.ts), so a client
+    // who agreed under v1 is agreeing to something new, and the ledger says so.
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+       VALUES ('c-old', 'p1', 'photos_referral_cards', 'photos-referral-cards-v1', 1, ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await send(client, "PATCH", "/api/consents/photos_referral_cards", { granted: true });
+    const rows = await env.DB.prepare("SELECT notice_version FROM consents ORDER BY created_at, rowid").all();
+    expect(rows.results).toEqual([
+      { notice_version: "photos-referral-cards-v1" },
+      { notice_version: "photos-referral-cards-v2" },
+    ]);
+  });
+
   it("switches only the five purposes, never a Phase 1 agreement", async () => {
     expect((await send(client, "PATCH", "/api/consents/contact", { granted: false })).status).toBe(400);
   });

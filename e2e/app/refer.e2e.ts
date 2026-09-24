@@ -5,6 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
+import { holdOpen } from "./one-tap.ts";
 import { logIn } from "./signed-in.ts";
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
@@ -44,4 +45,36 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("records one consent, and builds one card, when Allow is tapped twice", async ({ page }) => {
+  await logIn(page, fittedClient().mobile);
+  await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
+  await page.getByRole("button", { name: "Share an invite" }).click();
+  const sheet = page.getByRole("dialog", { name: "Which card?" });
+  await sheet.getByRole("radio", { name: "My before and after" }).click();
+  await sheet.getByRole("button", { name: "Continue to share" }).click();
+
+  // The consent ledger is append-only by trigger, so a second row is a permanent record of an
+  // agreement given once; and each Allow builds the whole card again. The timeline is the first
+  // of that pipeline's four fetches, and the only one this fixture reaches: its first fit has an
+  // after photograph and no before, so nothing is composed or uploaded here (e2e/app/fitted.ts).
+  const consents = await holdOpen(page, "**/api/consents/*");
+  let builds = 0;
+  page.on("request", (sent) => {
+    if (sent.method() === "GET" && sent.url().endsWith("/api/photos")) builds += 1;
+  });
+
+  const allow = page.getByRole("button", { name: "Allow for referral cards" });
+  await allow.click();
+  const liveWhileBusy = await allow.isEnabled();
+  // Forced, because the tap this guards against is one the client makes whether it is taken or not.
+  await allow.click({ force: true });
+
+  await expect(page.getByRole("heading", { name: /^Preview/ })).toBeVisible();
+  expect({ consents: consents.asked(), builds, liveWhileBusy }).toEqual({
+    consents: 1,
+    builds: 1,
+    liveWhileBusy: false,
+  });
 });

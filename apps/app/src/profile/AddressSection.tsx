@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { api, type Address } from "../api.ts";
 import { profile } from "../content.ts";
+import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { BuildingSearch } from "./BuildingSearch.tsx";
 import styles from "./profile.module.css";
 
@@ -61,29 +62,35 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
   // Google's autocomplete on the free per-session price rather than per
   // keystroke (docs/decisions/0054-address-capture.md).
   const [sessionToken, setSessionToken] = useState("");
+  // One save per intent: a second sends the same session token again, and Google bills a second
+  // Place Details resolution against a session that was meant to close once (ADR 0054).
+  const [busy, once] = useOneAtATime();
 
-  async function save(chosenDraft: Address) {
-    // A building chosen from the search is the address's first line, so the
-    // "House, flat or building" field is not shown and not asked for twice.
-    const draft: Address = given(chosenDraft.building) ? { ...chosenDraft, line1: chosenDraft.building } : chosenDraft;
-    if (!complete(draft)) {
-      setProblem(copy.form.invalid);
-      return;
-    }
-    const answer = await api.saveAddress({
-      ...draft,
-      line2: draft.line2?.trim() === "" ? null : draft.line2,
-      access_notes: draft.access_notes?.trim() === "" ? null : draft.access_notes,
-      session_token: sessionToken,
+  const save = (chosenDraft: Address) =>
+    once(async () => {
+      // A building chosen from the search is the address's first line, so the
+      // "House, flat or building" field is not shown and not asked for twice.
+      const draft: Address = given(chosenDraft.building)
+        ? { ...chosenDraft, line1: chosenDraft.building }
+        : chosenDraft;
+      if (!complete(draft)) {
+        setProblem(copy.form.invalid);
+        return;
+      }
+      const answer = await api.saveAddress({
+        ...draft,
+        line2: draft.line2?.trim() === "" ? null : draft.line2,
+        access_notes: draft.access_notes?.trim() === "" ? null : draft.access_notes,
+        session_token: sessionToken,
+      });
+      if (answer.ok) {
+        setEditing(null);
+        setProblem(null);
+        onSaved();
+      } else {
+        setProblem(copy.change.failed);
+      }
     });
-    if (answer.ok) {
-      setEditing(null);
-      setProblem(null);
-      onSaved();
-    } else {
-      setProblem(copy.change.failed);
-    }
-  }
 
   function edit() {
     setEditing(address ?? EMPTY);
@@ -135,6 +142,7 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
         <form
           className={styles.form}
           noValidate
+          aria-busy={busy}
           onSubmit={(event) => {
             event.preventDefault();
             void save(editing);
@@ -174,7 +182,7 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
             </p>
           )}
           <div className={styles.row}>
-            <button className={styles.primary} type="submit">
+            <button className={styles.primary} type="submit" disabled={busy}>
               {copy.form.save}
             </button>
             <button
