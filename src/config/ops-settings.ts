@@ -1,5 +1,5 @@
 // The business inputs ops set for themselves, and the bounds they set them
-// within (docs/decisions/0060-ops-editable-inputs.md).
+// within (docs/decisions/0061-ops-editable-inputs.md).
 //
 // Each entry names the number's unit, what it may be, and the committed value
 // it falls back to. The committed value stays where it always was -- in

@@ -26,6 +26,7 @@ const PAGES = [
   "/book?state=served",
   "/book?state=unserved",
   "/book?state=booked",
+  "/book?state=requested",
   "/book?state=listed",
   "/privacy",
   "/terms",
@@ -34,6 +35,7 @@ const PAGES = [
   "/r/RM4K7P?state=served",
   "/r/RM4K7P?state=unserved",
   "/r/RM4K7P?state=booked",
+  "/r/RM4K7P?state=requested",
   "/r/RM4K7P?state=listed",
   "/no-such-page",
 ];

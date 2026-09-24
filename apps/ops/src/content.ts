@@ -17,7 +17,7 @@ export const shell = {
    * draws eight. Its third is drawn as "Payments" and built as "No-shows": the
    * day's money is there, over the queue, but the dispute the board rules on
    * has no record behind it (docs/open-points.md, item 57). Settings is the
-   * eighth, built from ADR 0060: the prices, the service area and the rules
+   * eighth, built from ADR 0061: the prices, the service area and the rules
    * ops set for themselves, none of which now needs a release.
    *
    * The last three are drawn on no board at all. They are what a client asks of
@@ -522,7 +522,7 @@ export const noShows = {
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
- * groups, of which two have something behind them; the other three here are
+ * groups, of which two have something behind them; the other four here are
  * queues it does not draw (docs/open-points.md, item 58).
  */
 export const tasks = {
@@ -531,6 +531,7 @@ export const tasks = {
   overdue: (count: number) => `${String(count)} overdue`,
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
+    consultation_request: "Consultation request",
     replacement_order: "Replacement order",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
@@ -545,6 +546,8 @@ export const tasks = {
   open: (name: string) => `Open ${name}`,
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
+    /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
+    consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
     replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
     no_show_decision: (technician: string) => `${technician} attended`,
@@ -760,7 +763,7 @@ export const numberChanges = {
 
 /**
  * Settings: the business inputs ops set for themselves. The design draws this
- * section and letters nothing inside it (docs/decisions/0060-ops-editable-inputs.md,
+ * section and letters nothing inside it (docs/decisions/0061-ops-editable-inputs.md,
  * docs/fidelity-method.md), so every line below is ours. Each field says its
  * unit and what the figure may be before it is typed, not after it is refused:
  * a form that sets a business rule has to be readable by whoever owns the rule.

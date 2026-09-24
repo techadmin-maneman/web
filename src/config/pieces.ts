@@ -23,7 +23,7 @@ export const DEFAULT_PIECE_CYCLE_DAYS = 180;
 
 /**
  * The cycle for a base: the one ops have set, or the map above. The cycles are
- * an ops-editable input (docs/decisions/0060-ops-editable-inputs.md), where
+ * an ops-editable input (docs/decisions/0061-ops-editable-inputs.md), where
  * `default` holds the figure for a base with none of its own.
  */
 export const cycleDaysFor = (base: string | null, cycles: Cycles = PIECE_CYCLE_DAYS): number =>

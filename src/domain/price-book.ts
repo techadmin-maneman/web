@@ -2,7 +2,7 @@
 // source of prices for the app. Amounts are in paise.
 //
 // Ops set every price from the console, each from the date it applies
-// (docs/decisions/0060-ops-editable-inputs.md). A change is a new row and never
+// (docs/decisions/0061-ops-editable-inputs.md). A change is a new row and never
 // an edit, so an invoice already issued keeps the figure it was issued under
 // and priceOf still reads that row for that day.
 

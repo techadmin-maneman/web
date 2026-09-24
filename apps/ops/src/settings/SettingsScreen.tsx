@@ -1,5 +1,5 @@
 // Settings, the eighth section of the design's navigation and the one it
-// letters nothing inside (docs/decisions/0060-ops-editable-inputs.md). Three
+// letters nothing inside (docs/decisions/0061-ops-editable-inputs.md). Three
 // panels, because the three hold their history differently: a rule applies from
 // the moment it is set, a price applies from a date and keeps every earlier
 // row, and a pincode's launch date is a promise the waitlist counts from.

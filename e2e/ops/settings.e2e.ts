@@ -1,5 +1,5 @@
 // Settings: the business inputs ops set for themselves
-// (docs/decisions/0060-ops-editable-inputs.md). Three panels, and the thing
+// (docs/decisions/0061-ops-editable-inputs.md). Three panels, and the thing
 // each one has to get right is the same: say the unit and the bounds before
 // anything is typed, and say what went wrong when a figure is refused.
 

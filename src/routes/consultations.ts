@@ -65,7 +65,9 @@ const WaitlistRequestSchema = z
 
 const ConsultationSchema = z
   .object({
-    state: z.literal("booked"),
+    state: z.enum(["booked", "requested"]).openapi({
+      description: 'A slot is held for a "booked" one; a "requested" one waits for ops, self-serve booking being off.',
+    }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     area: z.string(),
@@ -84,10 +86,10 @@ const consultationRoute = createRoute({
   summary: "Book a free consultation",
   request: { body: { content: { "application/json": { schema: ConsultationRequestSchema } } } },
   responses: {
-    201: { description: "Booked", content: { "application/json": { schema: ConsultationSchema } } },
+    201: { description: "Booked, or asked for", content: { "application/json": { schema: ConsultationSchema } } },
     400: errorResponse("invalid_request"),
     403: errorResponse("turnstile_failed"),
-    409: errorResponse("taken: that window has gone; ops_assisted: booking goes through WhatsApp for now"),
+    409: errorResponse("taken: that window has gone"),
     422: errorResponse("invalid_request: the pincode is not served, or the day is not open"),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -124,7 +126,7 @@ export function registerConsultations(app: App): void {
       invite: null,
     });
     if (!booked.ok) return c.json(errorBody(booked.code, c.var.requestId), booked.status);
-    return c.json({ state: "booked" as const, date: booked.date, window: booked.window, area: booked.area }, 201);
+    return c.json({ state: booked.state, date: booked.date, window: booked.window, area: booked.area }, 201);
   });
 
   app.openapi(waitlistRoute, async (c) => {

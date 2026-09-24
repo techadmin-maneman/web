@@ -59,7 +59,7 @@ export const ERROR_CODES = [
   // The no-show wait has not run out yet (src/policy/no-show.ts).
   "too_early_to_close",
   // A service-area change that would leave no pincode served at all, and every
-  // client on the waitlist (docs/decisions/0060-ops-editable-inputs.md).
+  // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).
   "no_service_area",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];

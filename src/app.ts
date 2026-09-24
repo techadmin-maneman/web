@@ -60,7 +60,7 @@ export type AppEnv = {
     config: StaticConfig;
     deps: Dependencies;
     checkIdentity: IdentityCheck;
-    /** The business inputs ops set, cached per isolate (ADR 0060). */
+    /** The business inputs ops set, cached per isolate (ADR 0061). */
     readOpsInputs: ReadOpsInputs;
     surface: Surface;
     /** Set on the ops surface by requireAccess. */

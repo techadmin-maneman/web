@@ -1,5 +1,5 @@
 // Reading and writing the business inputs ops set for themselves
-// (migrations/0031_ops_settings.sql, docs/decisions/0060-ops-editable-inputs.md).
+// (migrations/0033_ops_settings.sql, docs/decisions/0061-ops-editable-inputs.md).
 //
 // The whole store is one small query -- at most one row per name in the
 // register -- read once per isolate and held for SETTINGS_TTL_MS. So a change

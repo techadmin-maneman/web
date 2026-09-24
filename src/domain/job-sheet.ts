@@ -34,7 +34,7 @@ export interface FsmWriteDeps {
   readonly bucket: R2Bucket;
   readonly fsm: FsmProvider;
   readonly labelAsTest: boolean;
-  /** The replacement cycles in force, which ops set (ADR 0060). */
+  /** The replacement cycles in force, which ops set (ADR 0061). */
   readonly cycles: Cycles;
 }
 

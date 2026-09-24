@@ -1,4 +1,4 @@
-// The business inputs in force, for a route (docs/decisions/0060-ops-editable-inputs.md).
+// The business inputs in force, for a route (docs/decisions/0061-ops-editable-inputs.md).
 //
 // Every route reads them the same way: through the isolate's cache, and with
 // the same line in the log when the store cannot be read at all. It falls back

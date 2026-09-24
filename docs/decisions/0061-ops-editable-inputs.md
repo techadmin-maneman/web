@@ -1,4 +1,4 @@
-# 0060. The business inputs ops change without a developer
+# 0061. The business inputs ops change without a developer
 
 - Status: accepted
 - Date: 2026-09-24

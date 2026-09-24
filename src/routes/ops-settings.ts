@@ -1,5 +1,5 @@
 // The business inputs ops set for themselves, behind Access (Ops Console, the
-// Settings section the design draws; docs/decisions/0060-ops-editable-inputs.md):
+// Settings section the design draws; docs/decisions/0061-ops-editable-inputs.md):
 //   GET  /api/settings              every rule ops may change, with its unit and its bounds
 //   POST /api/settings/:name        set one, or send null to put the default back
 //   GET  /api/prices                the price book, with the row in force marked

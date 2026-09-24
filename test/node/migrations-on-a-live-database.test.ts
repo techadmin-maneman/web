@@ -61,8 +61,7 @@ describe("the migrations, against a database that is in use", () => {
   });
 
   // A booking made on the site has a date and a window of its own, and no rough
-  // preference; it does say where the hair loss is, which the column still requires
-  // (migration 0025 was withdrawn, docs/decisions/0051-booking-from-the-site.md).
+  // preference; it does say where the hair loss is, because its form asks.
   it("takes a booking's lead, which names a loss extent and no rough window", () => {
     const seedAfter = MIGRATIONS.find((file) => file.startsWith("0003")) ?? "";
     const db = migrate(seedAfter);
@@ -72,6 +71,28 @@ describe("the migrations, against a database that is in use", () => {
     );
     const booked = db.prepare("SELECT first_choice_window, loss_extent FROM leads WHERE id = 'l2'").get();
     expect(booked).toEqual({ first_choice_window: null, loss_extent: "receding" });
+    db.close();
+  });
+
+  // Migration 0031 swaps the column in place rather than rebuilding the table,
+  // which is what withdrew 0025: the seeded try-on job above still points at its
+  // lead afterwards, and the seeded lead keeps the extent it was written with.
+  it("takes an invited friend's lead, which names no loss extent", () => {
+    const seedAfter = MIGRATIONS.find((file) => file.startsWith("0003")) ?? "";
+    const db = migrate(seedAfter);
+    db.exec(
+      `INSERT INTO leads (id, person_id, created_at, source, city, proposed_visit_date, request_id)
+       VALUES ('l3', 'p1', '${AT}', 'form', 'Gurgaon', '2026-09-25', 'r3')`,
+    );
+    expect(db.prepare("SELECT loss_extent FROM leads WHERE id = 'l3'").get()).toEqual({ loss_extent: null });
+
+    // The three answers are still the only ones the column takes.
+    expect(() => {
+      db.exec(
+        `INSERT INTO leads (id, person_id, created_at, source, loss_extent, request_id)
+         VALUES ('l4', 'p1', '${AT}', 'form', 'thinning', 'r4')`,
+      );
+    }).toThrow();
     db.close();
   });
 });

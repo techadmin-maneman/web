@@ -64,7 +64,7 @@ export async function closeAsNoShow(
     type: VisitType;
     checkIn: { id: string; at: string } | null;
     now: Date;
-    /** The waits in force, which ops set (ADR 0060). */
+    /** The waits in force, which ops set (ADR 0061). */
     wait: Waits;
   },
 ): Promise<Closing> {

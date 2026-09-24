@@ -1,5 +1,5 @@
 // Where we go, and from when (serviceable_pincodes, migration 0021;
-// docs/decisions/0060-ops-editable-inputs.md).
+// docs/decisions/0061-ops-editable-inputs.md).
 //
 // `served` decides whether the app offers a booking at a pincode at all; a
 // client at one we do not serve is offered the waitlist instead. `launched_at`

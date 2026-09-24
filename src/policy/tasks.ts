@@ -3,14 +3,14 @@
 // and how long a task may wait.
 //
 // There is no `tasks` table and there is not going to be one. Every group below
-// is a queue the database already keeps: a held grant, an undecided no-show, a
-// number change waiting for ops, an erasure asked for, a piece past its
-// replacement date. A task is those rows read at the moment ops look, so it
-// cannot go stale, be closed twice or be left open by mistake. Closing a task
-// means doing the thing: the row leaves the queue on its own.
+// is a queue the database already keeps: a consultation asked for, a held grant,
+// an undecided no-show, a number change waiting for ops, an erasure asked for, a
+// piece past its replacement date. A task is those rows read at the moment ops
+// look, so it cannot go stale, be closed twice or be left open by mistake.
+// Closing a task means doing the thing: the row leaves the queue on its own.
 //
 // The board draws four groups (Replacement order, At-risk client, Referral
-// review, Photo QA). Two of them have no record behind them, and three queues
+// review, Photo QA). Two of them have no record behind them, and four queues
 // the board does not draw do; what is built and what is not is item 58 of
 // docs/open-points.md.
 
@@ -23,6 +23,7 @@ export const RULES = [
 
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [
+  "consultation_request",
   "replacement_order",
   "referral_review",
   "no_show_decision",
@@ -40,6 +41,7 @@ export type TaskGroup = (typeof TASK_GROUPS)[number];
 export type Slas = Readonly<Record<TaskGroup, number>>;
 
 export const TASK_SLA_HOURS: Slas = {
+  consultation_request: 48,
   replacement_order: 48,
   referral_review: 48,
   no_show_decision: 48,
@@ -50,7 +52,7 @@ export const TASK_SLA_HOURS: Slas = {
 /**
  * When a task that started waiting at `since` falls due. The allowances ops
  * have set, or the ones above: they are ops-editable inputs
- * (docs/decisions/0060-ops-editable-inputs.md).
+ * (docs/decisions/0061-ops-editable-inputs.md).
  */
 export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS): Date =>
   new Date(since.getTime() + sla[group] * 3_600_000);

@@ -1,5 +1,5 @@
 // Reading and writing the service-area CSV in the browser
-// (data/pincodes/README.md, docs/decisions/0060-ops-editable-inputs.md).
+// (data/pincodes/README.md, docs/decisions/0061-ops-editable-inputs.md).
 //
 // The owner marks the served pincodes in a spreadsheet, which is a far better
 // tool for 198 rows than any web form, so the console takes that file back

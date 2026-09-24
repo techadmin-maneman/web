@@ -731,7 +731,7 @@ export const ERASURE_REQUESTED = {
 };
 
 /**
- * Settings (docs/decisions/0060-ops-editable-inputs.md). The rules are the
+ * Settings (docs/decisions/0061-ops-editable-inputs.md). The rules are the
  * register's own, one of each shape: a single number nobody has set, a set of
  * keys somebody has, and the open-keyed cycles. The prices and the pincodes are
  * the committed figures and three of NCR's own six-digit numbers.

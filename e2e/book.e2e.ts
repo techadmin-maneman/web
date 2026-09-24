@@ -106,8 +106,15 @@ test("a pincode we do not serve takes the number, with the launch alert offered"
   expect(requests[0]?.postDataJSON()).toMatchObject({ contact_consent: true, launch_alert: true });
 });
 
-test("booking through WhatsApp for now says so, and keeps the form", async ({ page }) => {
-  await mockApi(page, { consultation: { status: 409, body: { error: { code: "ops_assisted", request_id: "r" } } } });
+// While self-serve booking is off the page asks rather than books, and the day
+// asked for waits for ops (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+test("booking through WhatsApp for now is confirmed as a request, not refused", async ({ page }) => {
+  await mockApi(page, {
+    consultation: {
+      status: 201,
+      body: { state: "requested", date: "2026-09-25", window: "morning", area: SERVED.area },
+    },
+  });
   await visit(page, "/book");
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
@@ -117,8 +124,9 @@ test("booking through WhatsApp for now says so, and keeps the form", async ({ pa
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Booking goes through WhatsApp for now.", { exact: false })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
+  await expect(page.getByText("Consultation requested")).toBeVisible();
+  await expect(page.getByText("We message you on WhatsApp to fix the hour.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeHidden();
 });
 
 test("an empty submit shows each error, announced, and sends nothing", async ({ page }) => {

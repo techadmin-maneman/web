@@ -1,4 +1,4 @@
-// Where we go, and from when (docs/decisions/0060-ops-editable-inputs.md).
+// Where we go, and from when (docs/decisions/0061-ops-editable-inputs.md).
 //
 // 198 pincodes is more than any web form should ask anybody to work through,
 // and the owner already marks them in a spreadsheet (data/pincodes/README.md).

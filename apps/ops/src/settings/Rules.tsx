@@ -1,6 +1,6 @@
 // The rules ops set for themselves: the check-in radius, the no-show wait,
 // when a job's address unlocks, how long a task may wait, and the replacement
-// cycle per base (docs/decisions/0060-ops-editable-inputs.md).
+// cycle per base (docs/decisions/0061-ops-editable-inputs.md).
 //
 // Every field says its unit and its bounds before anything is typed, and a
 // refusal names the field it came from. A draft is held as text, never as a

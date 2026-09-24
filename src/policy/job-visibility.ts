@@ -34,7 +34,7 @@ export const UNLOCK_HOUR = 18;
 
 /**
  * The hour ops have set, or the one above. It is an ops-editable input
- * (docs/decisions/0060-ops-editable-inputs.md), so every caller passes the
+ * (docs/decisions/0061-ops-editable-inputs.md), so every caller passes the
  * hour in force; the default keeps the rule readable and standing on its own.
  */
 export const unlocksAt = (windowStart: Date, hour: number = UNLOCK_HOUR): Date =>

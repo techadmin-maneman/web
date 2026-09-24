@@ -31,7 +31,7 @@ export const NO_SHOW_WAIT_MIN: Waits = {
 
 /**
  * When the wait that started at check-in ends. The waits ops have set, or the
- * ones above: they are ops-editable inputs (docs/decisions/0060-ops-editable-inputs.md),
+ * ones above: they are ops-editable inputs (docs/decisions/0061-ops-editable-inputs.md),
  * so every caller passes what is in force and the rule still stands on its own.
  */
 export const waitEndsAt = (checkedInAt: Date, type: VisitType, wait: Waits = NO_SHOW_WAIT_MIN): Date =>

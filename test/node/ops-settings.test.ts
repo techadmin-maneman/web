@@ -1,5 +1,5 @@
 // The register of business inputs ops set for themselves
-// (src/config/ops-settings.ts, docs/decisions/0060-ops-editable-inputs.md).
+// (src/config/ops-settings.ts, docs/decisions/0061-ops-editable-inputs.md).
 //
 // Two things are held here: that a figure outside the bounds never reaches the
 // store and the refusal says what is allowed, and that the whole register stays
@@ -119,11 +119,11 @@ describe("the cost of reading them", () => {
    * for SETTINGS_TTL_MS. The bound is not a guess at how many isolates run: the
    * free plan stops the day at 100,000 requests, and a request reads the
    * register at most once, so the ceiling is that times the register's length
-   * however the cache behaves. ADR 0060 claims a fifth of D1's day for it,
+   * however the cache behaves. ADR 0061 claims a fifth of D1's day for it,
    * which leaves room for ten inputs; the eleventh fails here rather than on a
    * Friday.
    */
-  it("stays inside the fifth of D1's day ADR 0060 claims, even if no request ever hit the cache", () => {
+  it("stays inside the fifth of D1's day ADR 0061 claims, even if no request ever hit the cache", () => {
     const worstCaseRows = FREE_TIER.workersRequestsPerDay * OPS_SETTINGS.length;
     expect(worstCaseRows).toBeLessThanOrEqual(FREE_TIER.d1RowsReadPerDay / 5);
   });

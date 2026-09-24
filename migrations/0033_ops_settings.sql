@@ -1,5 +1,5 @@
--- Migration number: 0031
--- The business inputs ops set for themselves (docs/decisions/0060-ops-editable-inputs.md).
+-- Migration number: 0033
+-- The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md).
 -- One row per input in src/config/ops-settings.ts's register; a row that is not
 -- here means the committed default is in force, so an empty table is a working
 -- system and never a zero.

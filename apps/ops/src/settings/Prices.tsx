@@ -1,4 +1,4 @@
-// The price book (docs/decisions/0060-ops-editable-inputs.md). Every price the
+// The price book (docs/decisions/0061-ops-editable-inputs.md). Every price the
 // app charges is a row here, and a change is a new row from the day it applies,
 // so an invoice already issued keeps the figure it was issued under.
 //

@@ -1,5 +1,5 @@
 // The business inputs ops set for themselves, on the ops surface
-// (src/routes/ops-settings.ts, docs/decisions/0060-ops-editable-inputs.md). NOW
+// (src/routes/ops-settings.ts, docs/decisions/0061-ops-editable-inputs.md). NOW
 // is Monday 21 September 2026, 12 noon in India. Every pincode here is real
 // only as a number; nothing is a person, a mobile or an address.
 //
@@ -102,16 +102,20 @@ describe("setting one", () => {
 
   it("names the key inside a set, so the form can point at the box", async () => {
     const answer = await post("/api/settings/task_sla_hours", {
-      value: {
-        replacement_order: 48,
-        referral_review: 0,
-        no_show_decision: 48,
-        number_change: 48,
-        erasure_request: 48,
-      },
+      value: { ...COMMITTED.taskSlaHours, referral_review: 0 },
     });
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { fields: ["task_sla_hours.referral_review"] } });
+  });
+
+  /**
+   * Every queue on board D2, the consultation request #107 added among them.
+   * A queue with no allowance of its own would fall due the moment it opened.
+   */
+  it("wants an allowance for every task group, and refuses a set that leaves one out", async () => {
+    const { consultation_request: _left_out, ...short } = COMMITTED.taskSlaHours;
+    expect((await post("/api/settings/task_sla_hours", { value: short })).status).toBe(400);
+    expect((await post("/api/settings/task_sla_hours", { value: COMMITTED.taskSlaHours })).status).toBe(200);
   });
 
   it("lets ops name a base of their own and give it its own cycle", async () => {

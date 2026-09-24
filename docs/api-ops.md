@@ -3522,6 +3522,7 @@ Request body:
           "group": {
             "type": "string",
             "enum": [
+              "consultation_request",
               "replacement_order",
               "referral_review",
               "no_show_decision",
