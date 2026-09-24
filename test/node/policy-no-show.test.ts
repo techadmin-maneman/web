@@ -28,7 +28,8 @@ describe("no-show", () => {
 
   it(RULES[4], () => {
     // The wait is per visit type, so a first fit can be given its own without
-    // touching this rule. Every type waits 15 minutes until the owner rules.
+    // touching this rule. The owner ruled 15 minutes for every type on
+    // 24 September 2026, a first fit included.
     for (const type of VISIT_TYPES) expect(NO_SHOW_WAIT_MIN[type]).toBe(15);
   });
 

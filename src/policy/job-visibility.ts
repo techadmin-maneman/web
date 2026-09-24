@@ -21,12 +21,19 @@ export function jobDay(windowStart: Date, now: Date): JobDay {
 }
 
 /**
- * When a job's address, access notes and client card unlock: midnight in India
- * at the start of the day before the visit. The prompt says "the day before"
- * and names no hour, so this is the plain reading and a placeholder until the
- * owner rules it (docs/open-points.md, item 48).
+ * The India clock time a job unlocks at on the day before the visit. The owner
+ * ruled 6 pm on 24 September 2026 (docs/open-points.md, "When a job's address
+ * unlocks"): the technician sees the address at the moment the client is told
+ * someone is coming, since the day-before WhatsApp goes at 6 pm (ADR 0047).
+ *
+ * It is a privacy boundary, not a convenience: it is what keeps a whole day's
+ * client list off a phone that might be lost, so the six hours it takes off
+ * midnight are the point of it.
  */
-export const unlocksAt = (windowStart: Date): Date => indiaInstant(addDays(indiaDate(windowStart), -1), "00:00");
+export const UNLOCK_TIME = "18:00";
+
+/** When a job's address, access notes and client card unlock. */
+export const unlocksAt = (windowStart: Date): Date => indiaInstant(addDays(indiaDate(windowStart), -1), UNLOCK_TIME);
 
 /** Whether the address, access notes and client card are unlocked yet. */
 export const unlocked = (windowStart: Date, now: Date): boolean => now.getTime() >= unlocksAt(windowStart).getTime();

@@ -2,7 +2,7 @@
 // prompt's own words (src/policy/dispatch.ts).
 
 import { describe, expect, it } from "vitest";
-import { SLOTS_PER_DAY, UNITS_PER_DAY, type BookingWindow } from "../../src/config/scheduling.ts";
+import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../../src/config/scheduling.ts";
 import { clashes, isMoveReason, MOVE_REASONS, moveRefusal, RULES, slotsFor } from "../../src/policy/dispatch.ts";
 
 /** A technician whose day already holds a job starting in each of these windows. */
@@ -19,6 +19,15 @@ describe("dispatch", () => {
     expect(slotsFor("service")).toBe(1);
     expect(slotsFor("replacement")).toBe(1.5);
     expect(slotsFor("first_fit")).toBe(2);
+  });
+
+  it("books each visit for the length the owner ruled on 24 September 2026", () => {
+    // What FSM holds the appointment for, and what a technician's day is
+    // measured against (docs/open-points.md, "Visit lengths").
+    expect(VISIT_BLOCKS.consultation.minutes).toBe(60);
+    expect(VISIT_BLOCKS.service.minutes).toBe(90);
+    expect(VISIT_BLOCKS.replacement.minutes).toBe(135);
+    expect(VISIT_BLOCKS.first_fit.minutes).toBe(180);
   });
 
   it(RULES[2], () => {

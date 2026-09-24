@@ -173,7 +173,7 @@ export const steps = {
     none: "None used",
   },
   piece: {
-    // PLACEHOLDER: labels carry no barcode yet (open point 25), so the code is typed, not scanned.
+    // The owner ruled out a barcode and a QR code on 24 September 2026, so the code is typed, never scanned.
     label: "The label code",
     placeholder: "MM-STD-4417-B",
     look: "Check the label",
