@@ -107,7 +107,7 @@ After this, ops check the technician's phones on board D3 and write down what th
 
 This is the most important part of the day. The app checks that you are within **200 m** of the address before it lets you start. Nobody knows yet whether 200 m is the right number, because nobody has measured how wrong a phone's position is at an Indian address (open point 46). **These three readings are the evidence that settles it.**
 
-Run steps 1 to 7 at **each** of the three buildings.
+Run steps 1 to 8 at **each** of the three buildings.
 
 ### The three buildings
 
@@ -372,6 +372,8 @@ If a second iPhone is available, sign in on it **in Safari only**, leave the sam
 ---
 
 ## At the end of the day
+
+> **On an iPhone running Part 6, do not sign out yet.** Part 6 needs the half-finished job left exactly where it is. Do the three steps below on the eighth day instead, once Part 6 is answered.
 
 1. Tap **Sign out** on the day's jobs screen.
 2. You should be back at **Technician sign in**.
