@@ -750,7 +750,8 @@ The piece a label names
             "out_of_order",
             "clash",
             "fsm_refused",
-            "too_early_to_close"
+            "too_early_to_close",
+            "no_service_area"
           ]
         },
         "request_id": {

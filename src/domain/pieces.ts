@@ -10,7 +10,7 @@
 // no signal. A code the copy does not know is looked up in FSM once, in case
 // the piece was added there after the last sync.
 
-import { cycleDaysFor } from "../config/pieces.ts";
+import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { addDays } from "../lib/india-time.ts";
 import type { FsmAsset, FsmProvider } from "../providers/fsm.ts";
 
@@ -75,18 +75,25 @@ export async function syncPieces(
   fsm: FsmProvider,
   client: { personId: string; fsmContactId: string },
   now: Date,
+  cycles: Cycles,
 ): Promise<number> {
   const assets = await fsm.assets(client.fsmContactId);
   if (assets.length === 0) return 0;
   const at = now.toISOString();
-  await db.batch(assets.map((asset) => upsertStatement(db, client.personId, asset, at)));
+  await db.batch(assets.map((asset) => upsertStatement(db, client.personId, asset, at, cycles)));
   return assets.length;
 }
 
-function upsertStatement(db: D1Database, personId: string, asset: FsmAsset, at: string): D1PreparedStatement {
+function upsertStatement(
+  db: D1Database,
+  personId: string,
+  asset: FsmAsset,
+  at: string,
+  cycles: Cycles,
+): D1PreparedStatement {
   const base = asset.productName;
   const fittedAt = asset.installedAt;
-  const due = fittedAt === null ? null : addDays(fittedAt.slice(0, 10), cycleDaysFor(base));
+  const due = fittedAt === null ? null : addDays(fittedAt.slice(0, 10), cycleDaysFor(base, cycles));
   const failed = asset.status !== null && /fail|replac|retired/i.test(asset.status);
   return db
     .prepare(

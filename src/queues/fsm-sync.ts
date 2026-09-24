@@ -21,6 +21,7 @@ import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
 import { eventById, markFsmWrite } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
+import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { MessagingMessage } from "./messaging.ts";
@@ -189,7 +190,13 @@ async function writeJobEvent(
 
   try {
     const outcome = await writeEventToFsm(
-      { db, bucket: env.CLIENT_PHOTOS, fsm: deps.fsm, labelAsTest: options.labelAsTest },
+      {
+        db,
+        bucket: env.CLIENT_PHOTOS,
+        fsm: deps.fsm,
+        labelAsTest: options.labelAsTest,
+        cycles: (await readOpsInputs(db, deps.now())).pieceCycleDays,
+      },
       job,
       event,
       deps.now(),

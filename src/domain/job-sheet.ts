@@ -13,7 +13,7 @@
 // rather than losing the technician's work.
 
 import { CHECKLIST } from "../config/job-sheet.ts";
-import { cycleDaysFor } from "../config/pieces.ts";
+import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaIso } from "../lib/india-time.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
@@ -34,6 +34,8 @@ export interface FsmWriteDeps {
   readonly bucket: R2Bucket;
   readonly fsm: FsmProvider;
   readonly labelAsTest: boolean;
+  /** The replacement cycles in force, which ops set (ADR 0061). */
+  readonly cycles: Cycles;
 }
 
 /** What the write did, for the log: never the event's contents. */
@@ -109,7 +111,7 @@ async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, n
     base,
     supplierLot: lot,
     fittedOn: event.occurredAt.slice(0, 10),
-    replacementDue: addDays(event.occurredAt.slice(0, 10), cycleDaysFor(base)),
+    replacementDue: addDays(event.occurredAt.slice(0, 10), cycleDaysFor(base, deps.cycles)),
     now,
   });
 }

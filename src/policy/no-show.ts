@@ -20,20 +20,30 @@ export const RULES = [
  * (docs/open-points.md, "The no-show wait"). It stays one number per type so a
  * type can be given its own later without touching anything that reads it.
  */
-export const NO_SHOW_WAIT_MIN: Readonly<Record<VisitType, number>> = {
+export type Waits = Readonly<Record<VisitType, number>>;
+
+export const NO_SHOW_WAIT_MIN: Waits = {
   consultation: 15,
   service: 15,
   replacement: 15,
   first_fit: 15,
 };
 
-/** When the wait that started at check-in ends. */
-export const waitEndsAt = (checkedInAt: Date, type: VisitType): Date =>
-  new Date(checkedInAt.getTime() + NO_SHOW_WAIT_MIN[type] * 60_000);
+/**
+ * When the wait that started at check-in ends. The waits ops have set, or the
+ * ones above: they are ops-editable inputs (docs/decisions/0061-ops-editable-inputs.md),
+ * so every caller passes what is in force and the rule still stands on its own.
+ */
+export const waitEndsAt = (checkedInAt: Date, type: VisitType, wait: Waits = NO_SHOW_WAIT_MIN): Date =>
+  new Date(checkedInAt.getTime() + wait[type] * 60_000);
 
 /** Whether the technician may close the job as a no-show yet. */
-export const canCloseAsNoShow = (checkedInAt: Date, type: VisitType, now: Date): boolean =>
-  now.getTime() >= waitEndsAt(checkedInAt, type).getTime();
+export const canCloseAsNoShow = (
+  checkedInAt: Date,
+  type: VisitType,
+  now: Date,
+  wait: Waits = NO_SHOW_WAIT_MIN,
+): boolean => now.getTime() >= waitEndsAt(checkedInAt, type, wait).getTime();
 
 /** The three facts ops rule on, and nothing else. */
 export interface Evidence {

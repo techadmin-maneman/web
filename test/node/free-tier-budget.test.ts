@@ -67,6 +67,8 @@ describe("free-tier budget", () => {
   it("reads the allowances Cloudflare publishes", () => {
     expect(FREE_TIER).toEqual({
       queueOperationsPerDay: 10_000,
+      workersRequestsPerDay: 100_000,
+      d1RowsReadPerDay: 5_000_000,
       r2StorageBytes: 10e9,
       r2ClassAPerMonth: 1_000_000,
       r2ClassBPerMonth: 10_000_000,

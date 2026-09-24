@@ -37,6 +37,15 @@ export type Grievance = Body<paths["/api/grievances"]["get"]>["grievances"][numb
 export type DeletionRequest = Body<paths["/api/deletion-requests"]["get"]>["requests"][number];
 export type NumberChange = Body<paths["/api/number-changes"]["get"]>["changes"][number];
 
+/** The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md). */
+export type OpsSetting = Body<paths["/api/settings"]["get"]>["settings"][number];
+export type SettingValue = OpsSetting["value"];
+export type PriceBook = Body<paths["/api/prices"]["get"]>;
+export type Price = PriceBook["prices"][number];
+export type PriceChange = Sent<paths["/api/prices"]["post"]>;
+export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
+export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
+
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
 export type Charge = DayMoney["charges"][number];
@@ -172,4 +181,16 @@ export const api = {
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
   revokeDevice: (id: string, deviceId: string) =>
     call<{ revoked_at: string }>("POST", `/api/technicians/${id}/devices/${encodeURIComponent(deviceId)}/revoke`),
+  /** Every rule ops may change, with its unit, its bounds and who last set it (ADR 0061). */
+  settings: () => call<{ settings: OpsSetting[] }>("GET", "/api/settings"),
+  /** One rule. A null value puts the figure in the code back and removes the row. */
+  setSetting: (name: string, value: SettingValue | null) =>
+    call<OpsSetting>("POST", `/api/settings/${encodeURIComponent(name)}`, { value }),
+  prices: () => call<PriceBook>("GET", "/api/prices"),
+  /** A price from the day it applies. The book gains a row; nothing already invoiced moves. */
+  setPrice: (price: PriceChange) => call<{ prices: Price[] }>("POST", "/api/prices", price),
+  serviceArea: () => call<{ pincodes: ServedPincode[] }>("GET", "/api/service-area"),
+  /** Only the pincodes named change. The route refuses a change that would leave none served. */
+  setServiceArea: (changes: readonly AreaChange[]) =>
+    call<{ changed: number; served: number }>("POST", "/api/service-area", { changes }),
 };

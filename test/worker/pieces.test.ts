@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
 import { recordUtilisation } from "../../src/domain/dispatch.ts";
+import { COMMITTED } from "../../src/domain/ops-settings.ts";
 import { piecesOf, recordFailedPiece, recordFittedPiece, syncPieces } from "../../src/domain/pieces.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createStubFsm, EMPTY_FSM, type FsmAsset, type StubFsm } from "../../src/providers/fsm.ts";
@@ -67,7 +68,9 @@ beforeEach(async () => {
 
 describe("the mirror of FSM's assets", () => {
   it("computes the replacement due date from the base's cycle, which FSM has no field for", async () => {
-    expect(await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW)).toBe(1);
+    expect(
+      await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays),
+    ).toBe(1);
 
     const [piece] = await piecesOf(env.DB, PERSON);
     expect(piece).toMatchObject({
@@ -82,8 +85,8 @@ describe("the mirror of FSM's assets", () => {
   });
 
   it("writes FSM's answer over the copy, and never doubles a piece", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW);
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW);
+    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
+    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
 
     expect(await piecesOf(env.DB, PERSON)).toHaveLength(1);
   });
@@ -117,7 +120,7 @@ describe("a piece the technician fitted", () => {
   });
 
   it("marks a failed piece in FSM and keeps the reason on our side", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW);
+    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
 
     const done = await recordFailedPiece(env.DB, fsm, {
       pieceCode: "MM-STD-4417-B",
@@ -134,7 +137,7 @@ describe("a piece the technician fitted", () => {
 
 describe("the label the technician scans", () => {
   it("is found in the mirror, and says whether it is this job's client's", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW);
+    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
     const cookie = `mm_tech=${await openTechnicianSession(env.DB, {
       technicianId: IMRAN,
       deviceId: "phone-abc-123",
