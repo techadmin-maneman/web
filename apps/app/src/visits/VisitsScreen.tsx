@@ -3,8 +3,13 @@
 // yet in FSM, shows as the one upcoming. "Book your next visit" opens WhatsApp
 // to ops while self-serve booking is off, and waits for the connection
 // offline. C1's "Prepaid" arrives with prepayment (P2-M5).
+//
+// Beneath them, the client's own record, which the board draws nowhere: how
+// often they have been served, what they have bought, what they have paid, and
+// the month their piece falls due (docs/fidelity-method.md).
 
-import { fullDate, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type Visits } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { BookButton } from "../booking/BookButton.tsx";
@@ -18,6 +23,8 @@ import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import styles from "./visits.module.css";
 
+const copy = visits.record;
+
 /** An upcoming visit's card, as C1 draws it: the date, then what, when and who. */
 function Upcoming({ date, parts }: { date: string; parts: readonly string[] }) {
   return (
@@ -25,6 +32,58 @@ function Upcoming({ date, parts }: { date: string; parts: readonly string[] }) {
       <p className={styles.cardDate}>{shortDate(date)}</p>
       <p className={styles.cardWhat}>{parts.join(" · ")}</p>
     </li>
+  );
+}
+
+/**
+ * The client's own record, beneath their visits. It sits at the foot so board
+ * C1's own two lists stand where it draws them, and nothing is drawn at all
+ * until there is something true to say: a client with no visit and no piece has
+ * no record, and sees C1 exactly as it is drawn.
+ *
+ * The replacement is given as a month, never a day. The date is worked out
+ * afresh from FSM's install date on every sync, so a day shown here could move
+ * under the client who read it (ADR 0059).
+ */
+function Record({ history }: { history: Visits["history"] }) {
+  const due = history.replacement_due;
+  if (history.visits === 0 && due === null) return null;
+  const now = new Date();
+  const thisMonth = `${String(now.getFullYear())}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const month = due === null ? "" : listMonth(due.month, now.getFullYear());
+  return (
+    <section className={styles.record} aria-labelledby="record">
+      <h2 className={`${styles.label ?? ""} ${styles.recordLabel ?? ""}`} id="record">
+        {copy.label}
+      </h2>
+      {due !== null && (
+        <div className={styles.due}>
+          <p className={styles.dueLine}>{due.month < thisMonth ? copy.overdue(month) : copy.due(month)}</p>
+          <p className={styles.dueNote}>{copy.approximate}</p>
+        </div>
+      )}
+      <dl className={styles.facts}>
+        <Fact
+          label={copy.rows.firstFit}
+          value={history.first_fit_on === null ? copy.noFirstFit : fullDate(history.first_fit_on)}
+        />
+        <Fact label={copy.rows.services} value={String(history.services)} />
+        <Fact label={copy.rows.replacements} value={String(history.replacements)} />
+        <Fact label={copy.rows.spend} value={rupees(history.spend)} note={copy.gst} />
+      </dl>
+    </section>
+  );
+}
+
+function Fact({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className={styles.fact}>
+      <dt>{label}</dt>
+      <dd className={styles.numeric}>
+        {value}
+        {note !== undefined && <span className={styles.factNote}>{note}</span>}
+      </dd>
+    </div>
   );
 }
 
@@ -72,6 +131,7 @@ function VisitList({ list, consultation }: { list: Visits; consultation: Me["con
           </ul>
         </>
       )}
+      <Record history={list.history} />
     </>
   );
 }

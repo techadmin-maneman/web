@@ -10,7 +10,8 @@
 // raised yet; and a free consultation done 90 days ago, which is never
 // invoiced at all. Those are the three states a visit's invoice can be in
 // (ADR 0056). The service visit has front and hairline photographs after it,
-// and the first fit a front.
+// and the first fit a front. One piece was fitted at the first fit and is
+// still in wear, so the client has a replacement falling due.
 //
 // e2e/global-setup.ts seeds the client once, before any test runs: wrangler
 // writing to the local database while mm-api does would meet it on SQLite's
@@ -46,6 +47,8 @@ export interface Fitted {
   /** The service visit's payment, which Books has recorded, and its reference. */
   readonly servicePayment: string;
   readonly reference: string;
+  /** The piece fitted at the first fit, and the day it falls due: 180 days on (src/config/pieces.ts). */
+  readonly piece: { readonly code: string; readonly due: string };
 }
 
 export const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
@@ -78,8 +81,10 @@ export async function seedFitted(): Promise<void> {
   const [person, technician] = [id(), id()];
   const [next, service, firstFit, consultation] = [day(3), day(-20), day(-60), day(-90)];
   const visits = { next: id(), service: id(), firstFit: id(), consultation: id() };
-  const [servicePaid, firstFitPaid] = [id(), id()];
+  const [servicePaid, firstFitPaid, piece] = [id(), id(), id()];
   const reference = `MM-2099-${String(Math.floor(Math.random() * 1e6)).padStart(6, "0")}`;
+  const pieceCode = "MM-STD-4417-B";
+  const pieceDue = day(120).date;
 
   /** An invoice is the client's to open only once Books has issued it, which is what `invoice` being set means. */
   const appointment = (
@@ -127,6 +132,10 @@ export async function seedFitted(): Promise<void> {
        ${row(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, 3000000, "INR", "card", "captured", firstFit.end, firstFit.end, now, null)};`,
     `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, updated_at)
        VALUES ${row(id(), servicePaid, `rfnd_${servicePaid}`, 100000, "created", "normal", day(-18).end, now)};`,
+    // The piece fitted at the first fit, still in wear, due 180 days after it.
+    `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, supplier_lot, fitted_at, replacement_due_at,
+       appointment_id, synced_at) VALUES
+       ${row(piece, `e2e-${piece}`, person, pieceCode, "Mono", "L-1109", firstFit.date, pieceDue, visits.firstFit, now)};`,
   ];
 
   const taken = [
@@ -183,6 +192,7 @@ export async function seedFitted(): Promise<void> {
     consultation: { id: visits.consultation, date: consultation.date },
     servicePayment: servicePaid,
     reference,
+    piece: { code: pieceCode, due: pieceDue },
   };
   process.env[HANDOVER] = JSON.stringify(client);
 }

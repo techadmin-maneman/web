@@ -253,19 +253,27 @@ export const clients = {
   },
   /**
    * The line beneath the name. The board draws five: tier, status, the usual
-   * technician, credits and when a replacement is due. Nothing records a tier,
-   * a usual technician or a replacement date (docs/fidelity-method.md).
+   * technician, credits and when a replacement is due. Nothing records a tier
+   * or a usual technician (docs/fidelity-method.md); the replacement date is
+   * the piece in wear's, as a month, exactly as the board writes it.
    */
-  meta: { state: "Status", credits: "Credits" },
+  meta: { state: "Status", credits: "Credits", replacement: "Replacement due" },
   // PLACEHOLDER: the board writes "Active"; the API's three states are these.
   states: { fitted: "Fitted", lead: "Booked", nothing_booked: "Nothing booked" },
   credits: (visits: number, expiry: string | null) =>
     expiry === null ? String(visits) : `${String(visits)} · expire ${expiry}`,
-  /** The three tabs of the design's eight that the ops routes answer, in its order. */
+  /**
+   * PLACEHOLDER: the board draws no client without a piece. A client wearing
+   * none falls due on no date at all, so the head says so rather than drawing
+   * the gap a missing figure would draw.
+   */
+  noPiece: "No piece fitted",
+  /** The tabs of the design's eight that the ops routes answer, in its order, and History, which it draws none of. */
   tabs: [
     { tab: "pieces", label: "Pieces" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
+    { tab: "history", label: "History" },
   ],
   failed: "We could not load this client.",
   /** Board B1: every piece the client has been fitted with, from FSM's assets. */
@@ -331,6 +339,36 @@ export const clients = {
       requested: (date: string) => `Erasure requested ${date}. It is not decided here.`,
       rejected: (date: string) => `Erasure requested ${date} and refused.`,
     },
+  },
+  /*
+   * The client's record in figures (src/domain/client-history.ts). The design
+   * draws no such tab, so every line below is a placeholder; the figures
+   * themselves are the ones the board's own drawer implies, "Visits so far: 11
+   * · last 22 Aug", and the head's "Replacement due".
+   *
+   * A count of nought is a true nought and is written as one. A figure nothing
+   * records is written in words, never as a dash or a zero (PR #89, PR #100).
+   */
+  history: {
+    title: "History",
+    rows: {
+      firstFit: "First fit",
+      visits: "Visits",
+      services: "Service visits",
+      replacements: "Replacements",
+      lastVisit: "Last visit",
+      replacement: "Replacement due",
+      spend: "Paid",
+    },
+    /** A client we have never fitted, and one whose earlier visits FSM never held, read the same from here. */
+    noFirstFit: "No first fit on record",
+    noVisit: "No visit done yet",
+    /** The day ops order a piece against, with the piece it is for, as board D2's task queue names one. */
+    due: (date: string, piece: string) => `${date} · ${piece}`,
+    noPiece: "No piece fitted, so no date",
+    note:
+      "Counted from the visits and payments themselves when this page is opened. " +
+      "Nothing keeps a tally, so no figure here can drift from the records beneath it.",
   },
 } as const;
 

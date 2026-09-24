@@ -2336,13 +2336,97 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/VisitSummary"
       }
+    },
+    "history": {
+      "$ref": "#/components/schemas/ClientHistory"
     }
   },
   "required": [
     "upcoming",
-    "past"
+    "past",
+    "history"
   ],
   "additionalProperties": false
+}
+```
+
+### ClientHistory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer",
+      "description": "Every visit done: a completed visit with a window."
+    },
+    "services": {
+      "type": "integer"
+    },
+    "replacements": {
+      "type": "integer"
+    },
+    "first_fit_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date. Null when no first fit is on record, which is not the same as none."
+    },
+    "last_visit_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date of the latest visit done."
+    },
+    "spend": {
+      "type": "integer",
+      "description": "In paise: every payment captured, less what has gone back. A credit adds nothing."
+    },
+    "replacement_due": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$"
+            }
+          },
+          "required": [
+            "month"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day: FSM's install date is read again on every sync, so the day can move (ADR 0059)."
+    }
+  },
+  "required": [
+    "visits",
+    "services",
+    "replacements",
+    "first_fit_on",
+    "last_visit_on",
+    "spend",
+    "replacement_due"
+  ],
+  "additionalProperties": false,
+  "description": "What the client's record adds up to, derived at read time."
 }
 ```
 

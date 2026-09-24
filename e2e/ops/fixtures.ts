@@ -274,6 +274,36 @@ export const RECORD = {
     ],
   },
   payments: [],
+  /*
+   * What the record adds up to (src/domain/client-history.ts): the board's own
+   * client, fitted in November 2026 and served since, with the piece B1 draws
+   * still in wear and falling due in the month the board's head writes.
+   */
+  history: {
+    visits: 6,
+    services: 4,
+    replacements: 1,
+    first_fit_on: "2026-11-14",
+    last_visit_on: "2027-08-22",
+    spend: 4_956_000,
+    replacement_due: { on: "2028-03-01", month: "2028-03", piece_code: "MM-STD-4417-C" },
+  },
+};
+
+/** The same client before any of it: no visit done, no piece in wear, nothing paid. */
+export const NEW_RECORD = {
+  ...RECORD,
+  state: "lead",
+  visits: { upcoming: [], past: [] },
+  history: {
+    visits: 0,
+    services: 0,
+    replacements: 0,
+    first_fit_on: null,
+    last_visit_on: null,
+    spend: 0,
+    replacement_due: null,
+  },
 };
 
 const ANGLES = ["front", "top", "left", "right", "hair"] as const;

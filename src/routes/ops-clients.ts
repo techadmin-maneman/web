@@ -1,7 +1,7 @@
 // One client's record on the ops surface behind Access (Ops Console, B1 to B3;
 // docs/decisions/0031-access-and-audit.md):
 //   POST /api/clients/search               find a client by mobile number
-//   GET  /api/clients/:id                  who they are, their address, their visits and their payments
+//   GET  /api/clients/:id                  who they are, their address, their visits, their payments and their history
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   GET  /api/clients/:id/photos/:photoId  one photograph, audited before its bytes leave
 //   GET  /api/clients/:id/consents         every consent with its notice version and date, and any deletion request
@@ -33,8 +33,9 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES } from "../policy/consents.ts";
+import { clientHistory } from "../domain/client-history.ts";
 import { EntrySchema, paymentEntries } from "./client-payments.ts";
-import { VisitSummarySchema } from "./client-visits.ts";
+import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const clientId = z.object({ id: z.uuid() });
@@ -60,6 +61,21 @@ const ClientVisitSchema = VisitSummarySchema.extend({
     .openapi({ description: "What FSM closed the visit as; null until it is closed." }),
 }).openapi("ClientVisit");
 
+/**
+ * The same derivation the client reads of themselves, with the replacement's
+ * own day beside the month: ops order a piece against a date, and the board's
+ * task queue already names one (src/domain/tasks.ts).
+ */
+const OpsHistorySchema = z
+  .object({
+    ...HISTORY_FIGURES,
+    replacement_due: z
+      .union([z.object({ on: z.iso.date(), month: z.string(), piece_code: z.string() }).strict(), z.null()])
+      .openapi({ description: "When the piece now in wear falls due; null when the client is wearing none." }),
+  })
+  .strict()
+  .openapi("ClientRecordHistory");
+
 const ClientRecordSchema = z
   .object({
     id: z.uuid(),
@@ -76,6 +92,7 @@ const ClientRecordSchema = z
       .strict()
       .openapi({ description: "Upcoming soonest first; past newest first." }),
     payments: z.array(EntrySchema).openapi({ description: "Payments and refunds as one list, newest first." }),
+    history: OpsHistorySchema,
   })
   .strict()
   .openapi("ClientRecord");
@@ -170,7 +187,7 @@ const searchRoute = createRoute({
 const recordRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}",
-  summary: "The client's record: who they are, their address, their visits and their payments",
+  summary: "The client's record: who they are, their address, their visits, their payments and their history",
   request: { params: clientId },
   responses: { 200: { description: "The record", ...json(ClientRecordSchema) }, 404: unknownClient },
 });
@@ -255,12 +272,13 @@ export function registerOpsClients(app: App): void {
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const now = c.var.deps.now();
-    const [address, credits, visits, fitted, payments, proposal] = await Promise.all([
+    const [address, credits, visits, fitted, payments, history, proposal] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
       listVisits(db, id, now),
       isFitted(db, id),
       paymentEntries(db, id),
+      clientHistory(db, id),
       // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
       db
         .prepare("SELECT 1 FROM leads WHERE person_id = ?1 AND proposed_visit_date IS NOT NULL LIMIT 1")
@@ -295,6 +313,7 @@ export function registerOpsClients(app: App): void {
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         visits: { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) },
         payments,
+        history,
       },
       200,
     );

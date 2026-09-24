@@ -133,6 +133,21 @@ const RECORD = {
   credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
   visits: { upcoming: [], past: [] },
   payments: [],
+  /*
+   * The board's own client, counted from the visits and ledger the client app's
+   * boards draw of him: a first fit, two service visits and a replacement, and
+   * the piece B1's table still has in wear, falling due in the month the page
+   * head writes.
+   */
+  history: {
+    visits: 4,
+    services: 2,
+    replacements: 1,
+    first_fit_on: "2026-11-14",
+    last_visit_on: "2027-08-22",
+    spend: 6_018_000,
+    replacement_due: { on: "2028-03-01", month: "2028-03", piece_code: "MM-STD-4417-C" },
+  },
 };
 
 /** The board draws one visit's five angles; a visit whose before set was not taken is that. */
