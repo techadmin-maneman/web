@@ -6,12 +6,12 @@
 // already defined in this prompt", but no cycle is written anywhere in it. The
 // owner ruled the cycle on 24 September 2026: 180 days, the same for every base
 // (docs/open-points.md, "The per-base replacement cycle"). The bases themselves
-// are still unnamed until the price book names them, which is why the one entry
-// below stands in for all of them.
+// are unnamed until the price book names them, so the entry below is a name
+// standing in for one and every real base falls through to the default.
 
 /** How long a piece on each base lasts before it is due for replacement, in days. */
 export const PIECE_CYCLE_DAYS: Readonly<Record<string, number>> = {
-  // 6 months. The map stays per base so one base can be given its own cycle
+  // 6 months. The map stays per base so a base can be given its own cycle
   // without touching anything that reads it; today none has one.
   PLACEHOLDER_STANDARD: 180,
 };
