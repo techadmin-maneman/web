@@ -75,7 +75,11 @@ test("opens a job's card with its address, access notes and the way in (board A3
   await expect(page.getByText("9:30 am · service")).toBeVisible();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("Gate code 4417 · visitor bay B")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Navigate" })).toHaveAttribute("href", /^geo:/);
+  // A Maps URL now, not `geo:`, which an iPhone ignores (ADR 0054; e2e/tech/job.e2e.ts).
+  await expect(page.getByRole("link", { name: "Navigate" })).toHaveAttribute(
+    "href",
+    /^https:\/\/www\.google\.com\/maps\/dir\//,
+  );
   await expect(page.getByRole("button", { name: "I have arrived" })).toBeVisible();
 
   const results = await wcag(page);

@@ -53,6 +53,28 @@ test("the sign-in meets WCAG 2.2 AA", async ({ page }) => {
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
+test("says why an app opened from the home screen is signed out, and nothing of the kind in a tab", async ({
+  page,
+}) => {
+  // An installed iOS web app has its own cookie jar, so the API sees no session
+  // on a phone the technician signed in on an hour ago (ADR 0053).
+  await page.route("**/api/tech/me", (route) =>
+    route.fulfill({ status: 401, json: { error: { code: "session_required", request_id: "test" } } }),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByText(/This is the app on your home screen/)).toHaveCount(0);
+
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "standalone", { value: true, configurable: true });
+  });
+  await page.reload();
+  await expect(page.getByText(/This is the app on your home screen/)).toBeVisible();
+
+  const results = await wcag(page);
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
 test("signs the phone out and forgets everything it held", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/");

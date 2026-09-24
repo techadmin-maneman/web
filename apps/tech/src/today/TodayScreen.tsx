@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "../components/Icon.tsx";
 import { Mark } from "../components/Mark.tsx";
-import { queue as queueCopy, today as copy } from "../content.ts";
+import { atRisk as atRiskCopy, queue as queueCopy, today as copy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { CHEVRON_DOWN } from "../icons.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
@@ -18,7 +18,7 @@ import { JobRow } from "./JobRow.tsx";
 import styles from "./today.module.css";
 
 export function TodayScreen() {
-  const { me, offline, signOut } = useSession();
+  const { me, offline, atRisk, signOut } = useSession();
   const date = todayInIndia();
   const [day, retry] = useDay(date);
   const [tomorrow] = useDay(dayAfter(date));
@@ -94,6 +94,18 @@ export function TodayScreen() {
               : queueCopy.events(waiting.events.length)}
           </span>
         </a>
+      )}
+
+      {/*
+        The phone would not promise to keep its store, and there is work in it.
+        Only worth saying when both are true: the warning is about this queue,
+        not about the phone (apps/tech/src/store/persist.ts).
+      */}
+      {atRisk && (waiting.events.length > 0 || waiting.frames.length > 0) && (
+        <div className={styles.atRisk} role="status">
+          <p className={styles.atRiskTitle}>{atRiskCopy.title}</p>
+          <p className={styles.atRiskBody}>{atRiskCopy.body}</p>
+        </div>
       )}
 
       {day.state === "loading" && <Loading />}

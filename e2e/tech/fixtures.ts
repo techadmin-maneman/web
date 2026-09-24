@@ -99,7 +99,7 @@ export interface Progress {
   outcome: string | null;
 }
 
-export function card(date: string, progress: Progress) {
+export function card(date: string, progress: Progress, pin = true) {
   const [first] = jobsToday(date);
   return {
     ...first,
@@ -109,8 +109,9 @@ export function card(date: string, progress: Progress) {
       locality: "Sector 65",
       city: "Gurgaon",
       pincode: "122018",
-      lat: 28.39,
-      lng: 77.07,
+      // An address the client typed rather than chose carries no coordinate (ADR 0054).
+      lat: pin ? 28.39 : null,
+      lng: pin ? 77.07 : null,
     },
     access_notes: "Gate code 4417 · visitor bay B",
     client: { name: "Rohit M.", mobile: "+919810000000", note: null },
@@ -153,6 +154,8 @@ export interface Fake {
   checkIn: { passed: boolean; distance_m: number | null };
   /** How long the no-show wait runs from the check-in, in minutes. */
   waitMinutes: number;
+  /** False for an address saved by typing, which has no coordinate for Navigate to take. */
+  pin: boolean;
   /** Every write that reached the API, in the order it arrived. */
   readonly writes: Write[];
   /** Every photograph PUT to an upload link, by its angle. */
@@ -185,6 +188,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     tooEarly: false,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
+    pin: true,
     writes: [],
     photos: [],
     progress: { checked_in_at: null, started_at: null, steps_done: [], outcome: null },
@@ -299,7 +303,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         },
       });
     }
-    if (path === `/api/tech/jobs/${JOB_ID}`) return route.fulfill({ json: card(today, fake.progress) });
+    if (path === `/api/tech/jobs/${JOB_ID}`) return route.fulfill({ json: card(today, fake.progress, fake.pin) });
     if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return route.fulfill({ json: lockedCard(today) });
     return route.fulfill({ status: 404, json: { error: { code: "not_found", request_id: "test" } } });
   });

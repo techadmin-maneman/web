@@ -17,6 +17,28 @@ const capture = async (page: Page) => {
   await page.getByRole("button", { name: "Done" }).click();
 };
 
+test("sends Navigate to a route any phone opens, by the pin when the address has one", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  const navigate = page.getByRole("link", { name: "Navigate" });
+  // ADR 0054: a Maps URL, which needs no key and — unlike `geo:` — opens on an iPhone.
+  await expect(navigate).toHaveAttribute("href", "https://www.google.com/maps/dir/?api=1&destination=28.39%2C77.07");
+  // A new tab, so the technician still has the app open behind the map.
+  await expect(navigate).toHaveAttribute("target", "_blank");
+});
+
+test("sends Navigate to the typed address when it was saved without a pin", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.pin = false;
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(page.getByRole("link", { name: "Navigate" })).toHaveAttribute(
+    "href",
+    "https://www.google.com/maps/dir/?api=1&destination=Tower%20C%2C%2014th%20floor%2C%20Sector%2065%2C%20Gurgaon%20122018",
+  );
+});
+
 test("checks in at the door, and records the time and the distance (board B5)", async ({ page }) => {
   const fake = await fakeTech(page);
   await atTheDoor(page);

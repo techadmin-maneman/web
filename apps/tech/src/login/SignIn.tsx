@@ -9,11 +9,19 @@
 //
 // A wrong code is not an error: the API answers 200 with the tries left, and
 // only a closed challenge is refused. The screen follows that.
+//
+// It also says why it is showing. A phone whose session ended simply signs in
+// again; a revoked one is told to ask ops; and a store that has never held a
+// session, in an app opened from the home screen, is the iPhone case — the
+// installed app has its own cookie jar, so this is a second sign-in on a phone
+// already signed in, and saying nothing would read as a lost account.
 
 import { useState } from "react";
 import { api, type Challenge } from "../api.ts";
 import { Mark } from "../components/Mark.tsx";
 import { session, signIn as copy } from "../content.ts";
+import { installed } from "../lib/installed.ts";
+import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
 import styles from "./login.module.css";
 
@@ -48,7 +56,7 @@ function CodeBoxes({ value, disabled, onChange }: { value: string; disabled: boo
   );
 }
 
-export function SignIn({ revoked, onSignedIn }: { revoked: boolean; onSignedIn: () => void }) {
+export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }) {
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
   const [challenge, setChallenge] = useState<Challenge | null>(null);
@@ -91,6 +99,10 @@ export function SignIn({ revoked, onSignedIn }: { revoked: boolean; onSignedIn: 
   }
 
   const ready = challenge === null ? tenDigits : code.length === 6;
+  // Only worth saying before the code has been asked for, and only in the app
+  // that caused it: a first sign-in in a browser needs no explanation.
+  const quiet = challenge === null && error === null;
+  const note = why === "revoked" ? session.revoked : why === "fresh" && installed() ? copy.installed : null;
 
   return (
     <main className={styles.screen}>
@@ -120,7 +132,7 @@ export function SignIn({ revoked, onSignedIn }: { revoked: boolean; onSignedIn: 
       </div>
 
       {challenge !== null && error === null && <p className={styles.note}>{copy.codeSent}</p>}
-      {revoked && challenge === null && error === null && <p className={styles.note}>{session.revoked}</p>}
+      {quiet && note !== null && <p className={styles.note}>{note}</p>}
       {error !== null && (
         <p className={styles.error} role="alert">
           {error}
