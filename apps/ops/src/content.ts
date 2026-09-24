@@ -14,10 +14,10 @@ export const shell = {
   title: "Operations",
   /**
    * The sections the backend has routes for, in the design's order; the design
-   * draws eight. Its third is "Payments", which this cannot be: no route totals
-   * the day's money or lists a refund, so the section holds the no-show queue
-   * alone (docs/open-points.md, item 57). Settings is the one it draws that is
-   * not built; nothing here is settable.
+   * draws eight. Its third is drawn as "Payments" and built as "No-shows": the
+   * day's money is there, over the queue, but the dispute the board rules on
+   * has no record behind it (docs/open-points.md, item 57). Settings is the one
+   * it draws that is not built; nothing here is settable.
    *
    * The last three are drawn on no board at all. They are what a client asks of
    * us about their own data, and every one was API-only until the P2-M6 proof
@@ -379,6 +379,59 @@ export const waitlist = {
  */
 export const noShows = {
   title: "No-shows",
+  /**
+   * Board D1's first card: the day's money, over the charges it was kept on.
+   * The card carries no heading on the board and names no day, so both are
+   * placeholders. Two of its three figures are read from the payments
+   * themselves; the third has no source at all (docs/open-points.md, item 57).
+   */
+  money: {
+    /** PLACEHOLDER: the board's card has no heading, and a panel needs a name to be read by. */
+    title: "Today",
+    /** The board's own three, in its order and its words. */
+    figures: { collected: "Collected today", processing: "Refunds processing", charged: "Charges and no-shows" },
+    /** Under "Refunds processing", which counts what has not gone back yet. */
+    refunded: (amount: string) => `${amount} went back today`,
+    /**
+     * Under "Charges and no-shows". Ops rule a no-show on the evidence and the
+     * charge itself is applied at P2-M5, so nothing records what one was
+     * charged: the figure above holds what was kept and says what it leaves out
+     * rather than pricing a no-show the system never priced.
+     */
+    uncharged: (count: number) => `${String(count)} ${count === 1 ? "no-show" : "no-shows"} not charged yet`,
+    /** PLACEHOLDER: the board draws the dispute as a card of its own, with Refund and Uphold. */
+    noDispute:
+      "No client can raise a dispute yet, so none is shown. Refund and Uphold rule on a record that is still to be built.",
+    charges: {
+      /** The board's own heading over the list. */
+      title: "No-shows and late cancellations",
+      /** The board's line: the client, then what it was. */
+      noShow: (name: string) => `${name} · no-show`,
+      cancelled: (name: string) => `${name} · cancelled late`,
+      moved: (name: string) => `${name} · moved late`,
+      /** The board's evidence beneath a late cancellation: "Cancelled 9:14 am · visit was 10 am". */
+      changed: (at: string, was: string) => `Cancelled ${at} · visit was ${was}`,
+      /**
+       * A charged no-show's evidence. The board writes the three facts here; they
+       * stand on the queue beneath, which is where a case is ruled on
+       * (docs/fidelity-method.md).
+       */
+      attended: (technician: string, was: string) => `${technician} attended · visit was ${was}`,
+      /** PLACEHOLDER: a no-show whose case has lost the technician who attended. */
+      unattended: (was: string) => `Nobody was home · visit was ${was}`,
+      /** PLACEHOLDER: a charge on a visit that carries no start time. */
+      undated: "time unknown",
+      /** PLACEHOLDER: a charge on a visit FSM never matched to one of our people. */
+      unknown: "Client unknown",
+      /**
+       * Words where the amount stands, so a no-show's line cannot be read as
+       * money that was taken (ADR 0036, PR #89).
+       */
+      noAmount: "Not charged yet",
+      /** PLACEHOLDER: the board draws two charges and no empty day. */
+      empty: "Nothing was charged today.",
+    },
+  },
   queue: {
     /**
      * PLACEHOLDER: the board heads the list "No-shows and late cancellations".
@@ -473,18 +526,42 @@ export const tasks = {
 } as const;
 
 /**
- * Board D3's roster. The board draws five columns; the route answers the
- * technician and the zone, and carries the phones the board does not draw
- * (docs/open-points.md, item 59).
+ * Board D3's roster. The board draws five columns; four are answered, and the
+ * fifth, Skill, is recorded nowhere (docs/open-points.md, item 59). The phones
+ * the board does not draw sit beneath each name.
  */
 export const technicians = {
   title: "Technicians",
-  /** The two of board D3's five columns the route answers. */
-  columns: ["Technician", "Zone"],
+  /** Four of board D3's five columns; nothing records a skill, so the fifth is not drawn. */
+  columns: ["Technician", "Zone", "Jobs", "Avg service"],
   /** A zone the FSM mirror has nothing for, written as the design's tables write a gap. */
   unknown: "—",
   // PLACEHOLDER: the board draws no console without technicians.
   empty: "No technician is active.",
+  /** The two columns counted from the jobs themselves (src/domain/technician-work.ts). */
+  work: {
+    /** The average itself, as the board writes it: "1 h 24 m", and "48 m" under the hour. */
+    average: (hours: number, minutes: number) =>
+      hours === 0
+        ? `${String(minutes)} m`
+        : minutes === 0
+          ? `${String(hours)} h`
+          : `${String(hours)} h ${String(minutes)} m`,
+    /**
+     * PLACEHOLDER: how far over the planned length reads as running over. The
+     * board letters 1 h 48 m in brass, 18 minutes past the 90 a service visit is
+     * planned for, and leaves 1 h 31 m quiet. It writes no rule, and this is
+     * where we have drawn it, as the dispatch board's peak is drawn.
+     */
+    overBy: 15,
+    /** When the phone timed fewer jobs than were finished, the average says what it is of. */
+    base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)}`,
+    /** Beneath the table, where the board writes its own note: what the two columns count. */
+    period: (from: string, to: string) =>
+      `Jobs finished from ${from} to ${to}. Average service is against the length each visit was planned for, over the jobs the phone timed from Start to the outcome.`,
+    /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
+    skill: "Nothing records what a technician is trained for, so the board's Skill column is not drawn.",
+  },
   phones: {
     /** PLACEHOLDER: a phone whose browser gave no label at login. */
     unlabelled: "A phone",
