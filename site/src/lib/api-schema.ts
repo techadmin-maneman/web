@@ -243,7 +243,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Booked */
+                /** @description Booked, or asked for */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -270,7 +270,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: that window has gone; ops_assisted: booking goes through WhatsApp for now */
+                /** @description taken: that window has gone */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -598,7 +598,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Booked */
+                /** @description Booked, or asked for */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -625,7 +625,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: that window has gone; ops_assisted: booking goes through WhatsApp for now */
+                /** @description taken: that window has gone */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1630,8 +1630,11 @@ export interface components {
             landing_path?: string;
         };
         Consultation: {
-            /** @enum {string} */
-            state: "booked";
+            /**
+             * @description A slot is held for a "booked" one; a "requested" one waits for ops, self-serve booking being off.
+             * @enum {string}
+             */
+            state: "booked" | "requested";
             /** Format: date */
             date: string;
             /** @enum {string} */
@@ -1661,8 +1664,11 @@ export interface components {
             city: string | null;
         };
         ReferralConsultation: {
-            /** @enum {string} */
-            state: "booked";
+            /**
+             * @description A slot is held for a "booked" one; a "requested" one waits for ops, self-serve booking being off.
+             * @enum {string}
+             */
+            state: "booked" | "requested";
             /** Format: date */
             date: string;
             /** @enum {string} */

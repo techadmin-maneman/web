@@ -2003,7 +2003,7 @@ export interface components {
             overdue: number;
             groups: {
                 /** @enum {string} */
-                group: "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request";
+                group: "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request";
                 count: number;
                 /** @description The longest wait first. */
                 tasks: components["schemas"]["Task"][];

@@ -215,7 +215,7 @@ describe("POST /api/r/:code/consultation", () => {
       "SELECT h.id FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE p.mobile_e164 = '+919810000002'",
     ).first<{ id: string }>();
     const fsm = createStubFsm({ ...EMPTY_FSM, items: [{ id: "item-consult", name: "Consultation", type: "Service" }] });
-    // The friend has no lead, because the landing never asks where the hair loss is, and no saved address yet.
+    // The friend has no saved address yet, so the city comes from the invite's pincode.
     expect(await confirmBooking(env.DB, fsm, createStubPayments(), hold?.id ?? "", NOW, { labelAsTest: true })).toBe(
       "booked",
     );
@@ -231,7 +231,7 @@ describe("POST /api/r/:code/consultation", () => {
     expect(attributed).toEqual({ type: "consultation" });
   });
 
-  it("refuses an unserved pincode or a day out of range, and waits for ops while self-serve is off", async () => {
+  it("refuses an unserved pincode or a day out of range", async () => {
     await pincode("400050", "Bandra", false);
     const code = await codeOf();
     const body = { ...FRIEND, pincode: "400050", date: "2026-09-23", window: "morning", consent: true };
@@ -239,9 +239,72 @@ describe("POST /api/r/:code/consultation", () => {
     await pincode("122018", "Gurgaon South City II", true);
     const late = { ...body, pincode: "122018", date: "2026-10-30" };
     expect((await request(site(), `/api/r/${code}/consultation`, post(late))).status).toBe(422);
-    const off = site({ selfServeBooking: false });
-    const answer = await request(off, `/api/r/${code}/consultation`, post({ ...body, pincode: "122018" }));
-    expect(answer.status).toBe(409);
+  });
+
+  it("leaves the lead the CRM syncs, which names no loss extent because the landing does not ask", async () => {
+    await pincode("122018", "Gurgaon South City II", true);
+    const code = await codeOf();
+    const crm = fakeQueue();
+    const answer = await request(
+      site(),
+      `/api/r/${code}/consultation`,
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: crm },
+    );
+
+    expect(answer.status).toBe(201);
+    expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
+    const lead = await env.DB.prepare(
+      `SELECT l.source, l.city, l.loss_extent, l.proposed_visit_date FROM leads l JOIN people p ON p.id = l.person_id
+       WHERE p.mobile_e164 = '+919810000002'`,
+    ).first();
+    expect(lead).toEqual({
+      source: "form",
+      city: "Gurgaon",
+      loss_extent: null,
+      proposed_visit_date: "2026-09-23",
+    });
+  });
+
+  // With self-serve booking off, ops fix the hour on WhatsApp. The friend is not
+  // sent away empty-handed, and ops have the day they asked for.
+  it("records a request for ops while self-serve booking is off, holding no slot", async () => {
+    await pincode("122018", "Gurgaon South City II", true);
+    const code = await codeOf();
+    const fsm = fakeQueue();
+    const crm = fakeQueue();
+    const answer = await request(
+      site({ selfServeBooking: false }),
+      `/api/r/${code}/consultation`,
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      { FSM_QUEUE: fsm, CRM_QUEUE: crm },
+    );
+
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual({
+      state: "requested",
+      date: "2026-09-23",
+      window: "morning",
+      area: "Gurgaon South City II",
+      credits: true,
+    });
+    // Nothing is held and FSM is not told; the lead and the invite still stand.
+    expect(fsm.sent).toEqual([]);
+    expect(crm.sent).toHaveLength(1);
+    const held = await env.DB.prepare(
+      "SELECT COUNT(*) AS held FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE p.mobile_e164 = '+919810000002'",
+    ).first<{ held: number }>();
+    expect(held?.held).toBe(0);
+    const asked = await env.DB.prepare(
+      `SELECT r.pincode, r.requested_date, r.requested_window, r.referral_code
+       FROM consultation_requests r JOIN people p ON p.id = r.person_id WHERE p.mobile_e164 = '+919810000002'`,
+    ).first();
+    expect(asked).toEqual({
+      pincode: "122018",
+      requested_date: "2026-09-23",
+      requested_window: "morning",
+      referral_code: code,
+    });
   });
 });
 

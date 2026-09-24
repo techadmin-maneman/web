@@ -3188,6 +3188,7 @@ Per technician: jobs finished over a period, and how they ran against the planne
           "group": {
             "type": "string",
             "enum": [
+              "consultation_request",
               "replacement_order",
               "referral_review",
               "no_show_decision",

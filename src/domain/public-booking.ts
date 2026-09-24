@@ -11,6 +11,11 @@
 //
 // The slot is what the client sees; the lead is what ops sees. A waitlist entry
 // leaves the lead and the entry, and no slot.
+//
+// While self-serve booking is off, booking goes through WhatsApp. The slot is
+// then a request instead: the day and window the person asked for, waiting for
+// ops in the console's task queue
+// (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
 
 import type { Context } from "hono";
 import type { AppEnv } from "../app.ts";
@@ -45,12 +50,12 @@ export function pincodeOf(db: D1Database, pin: string): Promise<Pincode | null> 
 /**
  * Why a submission was refused, in the codes the routes answer with. Each route
  * declares which statuses it can answer, so the type says which ones its caller
- * may see: only a booking can be too late for a window, or ask ops to take over.
+ * may see: only a booking can be too late for a window.
  */
 export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 503> {
   readonly ok: false;
   readonly status: Status;
-  readonly code: "invalid_request" | "turnstile_failed" | "rate_limited" | "unavailable" | "taken" | "ops_assisted";
+  readonly code: "invalid_request" | "turnstile_failed" | "rate_limited" | "unavailable" | "taken";
 }
 
 type Checked = { readonly ok: true; readonly mobile: string; readonly ipHash: string } | Refusal<400 | 403 | 429 | 503>;
@@ -135,11 +140,7 @@ async function recordLead(
     served: boolean;
     now: Date;
   },
-): Promise<string | null> {
-  // A lead records where the hair loss is, and only the site's own form asks. An
-  // invited friend is never asked, so their booking leaves the referral records
-  // and no lead (docs/open-points.md, item 50).
-  if (input.lossExtent === null) return null;
+): Promise<string> {
   const { log, requestId } = c.var;
   const db = c.env.DB;
   const leadId = crypto.randomUUID();
@@ -169,6 +170,41 @@ async function recordLead(
   return leadId;
 }
 
+/**
+ * What ops have to act on while self-serve booking is off: the day and window the
+ * person asked for, which no slot is held for. It leaves the console's task queue
+ * when their consultation is in FSM (src/domain/tasks.ts).
+ */
+async function recordRequest(
+  db: D1Database,
+  input: {
+    personId: string;
+    pincode: string;
+    date: string;
+    window: BookingWindow;
+    invite: Invite | null;
+    now: Date;
+  },
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, referral_code,
+         created_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+       ON CONFLICT (person_id, requested_date, requested_window) DO NOTHING`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      input.personId,
+      input.pincode,
+      input.date,
+      input.window,
+      input.invite?.code ?? null,
+      input.now.toISOString(),
+    )
+    .run();
+}
+
 export interface ConsultationRequest {
   readonly name: string;
   readonly mobile: string;
@@ -184,6 +220,12 @@ export interface ConsultationRequest {
 
 export interface Booked {
   readonly ok: true;
+  /**
+   * "booked" holds the slot and tells FSM. "requested" is the day and window the
+   * person asked for while self-serve booking is off, which ops confirm on
+   * WhatsApp (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+   */
+  readonly state: "booked" | "requested";
   readonly date: string;
   readonly window: BookingWindow;
   readonly area: string;
@@ -196,7 +238,7 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
   const { deps, log, requestId } = c.var;
   const db = c.env.DB;
   const now = deps.now();
-  if (!c.var.config.settings.selfServeBooking) return { ok: false, status: 409, code: "ops_assisted" };
+  const selfServe = c.var.config.settings.selfServeBooking;
 
   const first = addDays(indiaDate(now), 1);
   const pincode = await pincodeOf(db, request.pincode);
@@ -224,15 +266,30 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
       now,
     }));
 
-  const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
-  const hold = await holdSlot(
-    db,
-    { personId, type: "consultation", date: request.date, window: request.window, price: free },
-    now,
-    HOLD_SECONDS,
-  );
-  if (hold === null) return { ok: false, status: 409, code: "taken" };
-  await c.env.FSM_QUEUE.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
+  // While self-serve booking is off, booking goes through WhatsApp: nothing is
+  // held and FSM is not told, and what the person asked for waits for ops.
+  let holdId: string | null = null;
+  if (selfServe) {
+    const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
+    const hold = await holdSlot(
+      db,
+      { personId, type: "consultation", date: request.date, window: request.window, price: free },
+      now,
+      HOLD_SECONDS,
+    );
+    if (hold === null) return { ok: false, status: 409, code: "taken" };
+    holdId = hold.id;
+    await c.env.FSM_QUEUE.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
+  } else {
+    await recordRequest(db, {
+      personId,
+      pincode: request.pincode,
+      date: request.date,
+      window: request.window,
+      invite: request.invite,
+      now,
+    });
+  }
 
   const leadId = await recordLead(c, {
     personId,
@@ -246,8 +303,15 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
     served: true,
     now,
   });
-  log.info("consultation_booked", { hold_id: hold.id, lead_id: leadId, invited: request.invite !== null, credits });
-  return { ok: true, date: request.date, window: request.window, area: pincode.area, credits };
+  const state = selfServe ? ("booked" as const) : ("requested" as const);
+  log.info("consultation_booked", {
+    state,
+    hold_id: holdId,
+    lead_id: leadId,
+    invited: request.invite !== null,
+    credits,
+  });
+  return { ok: true, state, date: request.date, window: request.window, area: pincode.area, credits };
 }
 
 export interface WaitlistRequest {
