@@ -71,6 +71,59 @@ test("says so when the payment fails, with the hold still counting", async ({ pa
   await expect(failed.getByRole("button", { name: "Another method" })).toBeVisible();
 });
 
+test("starts one payment, and one order, when the failed step is tapped twice", async ({ page }) => {
+  await fakeCheckout(page, "failed");
+  await toPayment(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  const failed = page.getByRole("dialog").getByRole("alert");
+  await expect(failed.getByText("The payment did not go through.")).toBeVisible();
+
+  // Every order the API hands back, so two of them would be two ways to pay for one hold.
+  const orders: string[] = [];
+  page.on("response", (response) => {
+    if (response.request().method() !== "POST" || !response.url().endsWith("/api/bookings")) return;
+    void response.json().then((body: { checkout: { order_id: string } | null }) => {
+      if (body.checkout !== null) orders.push(body.checkout.order_id);
+    });
+  });
+  /*
+   * The round trip is held open, so the second tap lands inside it, where an anxious client's
+   * lands; and a second request, if one comes, is let go together with the first. Against the
+   * local API the order is made in microseconds, while in production it is a call to Razorpay
+   * and the two taps arrive inside it. Letting them go together is that, made certain.
+   */
+  let asked = 0;
+  const waiting: (() => void)[] = [];
+  const letGo = () => {
+    for (const release of waiting.splice(0)) release();
+  };
+  await page.route("**/api/bookings", async (route) => {
+    asked += 1;
+    await new Promise<void>((resolve) => {
+      waiting.push(resolve);
+      if (waiting.length >= 2) letGo();
+      else setTimeout(letGo, 2_000);
+    });
+    await route.continue();
+  });
+
+  await failed.getByRole("button", { name: "Try again" }).click();
+  // Forced, because the tap this guards against is one the client makes whether the button takes it or not.
+  await failed.getByRole("button", { name: "Another method" }).click({ force: true });
+  const liveWhileBusy = await Promise.all([
+    failed.getByRole("button", { name: "Try again" }).isEnabled(),
+    failed.getByRole("button", { name: "Another method" }).isEnabled(),
+  ]);
+
+  await expect.poll(() => orders.length, { timeout: 15_000 }).toBeGreaterThan(0);
+  await page.waitForTimeout(1_500); // a second order, held the same second, would have landed by now
+  expect({ asked, distinctOrders: new Set(orders).size, liveWhileBusy }).toEqual({
+    asked: 1,
+    distinctOrders: 1,
+    liveWhileBusy: [false, false],
+  });
+});
+
 test("picks another window when one has just gone, and pays for that one", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
