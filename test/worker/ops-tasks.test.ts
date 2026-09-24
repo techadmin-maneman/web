@@ -20,6 +20,8 @@ const CASE = "33333333-3333-4333-8333-333333333333";
 const CHANGE = "33333333-3333-4333-8333-333333333334";
 const ERASURE = "33333333-3333-4333-8333-333333333335";
 const CHECK_IN = "44444444-4444-4444-8444-444444444441";
+const REQUEST = "33333333-3333-4333-8333-333333333336";
+const CONSULTATION = "22222222-2222-4222-8222-222222222223";
 
 let ops: App;
 
@@ -110,6 +112,27 @@ async function numberChange(state: string) {
     .run();
 }
 
+/** A consultation asked for while self-serve booking was off, which no slot was held for. */
+async function consultationRequest() {
+  await env.DB.prepare(
+    `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+     VALUES (?1, ?2, '122018', '2026-09-23', 'morning', '2026-09-20T06:00:00.000Z')`,
+  )
+    .bind(REQUEST, PERSON)
+    .run();
+}
+
+/** The consultation ops booked for them, which takes the request off the board. */
+async function consultationFor(personId: string, status: string) {
+  await env.DB.prepare(
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, status, fsm_status, fsm_modified_at,
+       synced_at)
+     VALUES (?1, 'fsm-appt-consult', ?2, 'consultation', '2026-09-23T03:30:00.000Z', ?3, 'Scheduled', ?4, ?4)`,
+  )
+    .bind(CONSULTATION, personId, status, NOW.toISOString())
+    .run();
+}
+
 async function erasureRequest(state: string) {
   await env.DB.prepare("INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES (?1, ?2, ?3, ?4)")
     .bind(ERASURE, PERSON, "2026-09-20T06:00:00.000Z", state)
@@ -126,6 +149,7 @@ beforeEach(async () => {
 
 describe("GET /api/tasks", () => {
   it("reads every group from the queue behind it, in the policy's order", async () => {
+    await consultationRequest();
     await pieceDue("2026-09-01");
     await heldGrant('["shared_address"]');
     await noShowCase("undecided");
@@ -134,18 +158,47 @@ describe("GET /api/tasks", () => {
 
     const body = await tasks();
     expect(groupNames(body)).toEqual([
+      "consultation_request",
       "replacement_order",
       "referral_review",
       "no_show_decision",
       "number_change",
       "erasure_request",
     ]);
-    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1]);
+    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1]);
   });
 
   it("leaves out a group with nothing waiting, as the board draws none", async () => {
     await heldGrant('["shared_upi"]');
     expect(groupNames(await tasks())).toEqual(["referral_review"]);
+  });
+
+  it("names the client and the day and window they asked for", async () => {
+    await consultationRequest();
+    expect(tasksIn(await tasks(), "consultation_request")).toEqual([
+      {
+        id: REQUEST,
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        detail: "2026-09-23 morning",
+        since: "2026-09-20T06:00:00.000Z",
+        due: "2026-09-22T06:00:00.000Z",
+      },
+    ]);
+  });
+
+  // Nothing closes a request: it goes when ops have booked the visit, which is
+  // the whole of what they had to do (docs/decisions/0060-….md).
+  it("drops a consultation request once that client has a consultation, unless it was cancelled", async () => {
+    await consultationRequest();
+    await consultationFor(PERSON, "scheduled");
+    expect(groupNames(await tasks())).toEqual([]);
+
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled'").run();
+    expect(groupNames(await tasks())).toEqual(["consultation_request"]);
+
+    // Somebody else's consultation is not theirs.
+    await env.DB.prepare("UPDATE appointments SET status = 'scheduled', person_id = ?1").bind(REFERRED).run();
+    expect(groupNames(await tasks())).toEqual(["consultation_request"]);
   });
 
   it("names the client, the piece and when the replacement fell due", async () => {

@@ -142,6 +142,33 @@ test("a code we do not know still books, without the invite's visits", async ({ 
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
+// With self-serve booking off, the API records the day asked for and answers
+// "requested" (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+// The friend sees the same frame, saying ops fix the hour, rather than an error
+// that sends them away to type it all again.
+test("a consultation nobody can book outright is confirmed as a request", async ({ page }) => {
+  await mockApi(page, {
+    consultation: {
+      status: 201,
+      body: { state: "requested", date: "2026-09-25", window: "morning", area: SERVED.area, credits: true },
+    },
+  });
+  await visit(page, `/r/${CODE}`);
+
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillPerson(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByText("Consultation requested")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^You asked for /);
+  await expect(page.getByText("We message you on WhatsApp to fix the hour.")).toBeVisible();
+  // The invite still stands, and nothing says the visit is booked.
+  await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
+  await expect(page.getByText("Consultation booked")).toBeHidden();
+});
+
 test("a pincode that is not six digits is refused before the API is asked", async ({ page }) => {
   let asked = false;
   await mockApi(page);

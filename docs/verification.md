@@ -501,7 +501,7 @@ Four test people were made for this proof, each named "Staging test" with a rand
 - **The message on a handset.** Only allowlisted numbers receive anything, delivery receipts are not set up on the shared Evolution instance (open point 18), and the texts are placeholder (open point 19).
 - **The house card is a placeholder:** two tones and the gold rule, no photograph (open point 43).
 - **Every pincode is served** on staging (open point 21), so "not served" had to be arranged by hand and the real service area is not proven.
-- **With self-serve booking off**, the landing would answer `409 ops_assisted`. That is production's setting and it is still open (open point 41).
+- **With self-serve booking off**, the landing now records a request for ops instead of refusing (ADR 0059); staging runs with the flag on, so the requested path is covered by tests and not by this proof.
 - **The other three fraud rules** are covered by tests only. `shared_upi` could be shown on staging by paying both visits from the same test UPI handle.
 - **A first fit closed in FSM.** The grant was settled from appointments written into D1, so the leg from FSM's Completed through the mirror to `visits.outcome = 'done'` is P2-M2's to prove, not this one's.
 

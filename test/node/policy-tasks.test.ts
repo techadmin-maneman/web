@@ -27,6 +27,13 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("erasure_request");
   });
 
+  // Not one of the prompt's rules: the queue is new, and it is here because a
+  // consultation asked for while self-serve booking is off is work for ops
+  // (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+  it("queues a consultation asked for while self-serve booking is off", () => {
+    expect(TASK_GROUPS).toContain("consultation_request");
+  });
+
   it("gives every group an allowance, all of them the placeholder two days", () => {
     for (const group of TASK_GROUPS) expect(TASK_SLA_HOURS[group], group).toBe(48);
     expect(Object.keys(TASK_SLA_HOURS).sort()).toEqual([...TASK_GROUPS].sort());

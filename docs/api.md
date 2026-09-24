@@ -238,7 +238,7 @@ Request body:
 }
 ```
 
-**201**: Booked
+**201**: Booked, or asked for
 
 ```json
 {
@@ -262,7 +262,7 @@ Request body:
 }
 ```
 
-**409**: taken: that window has gone; ops_assisted: booking goes through WhatsApp for now
+**409**: taken: that window has gone
 
 ```json
 {
@@ -545,7 +545,7 @@ Request body:
 }
 ```
 
-**201**: Booked
+**201**: Booked, or asked for
 
 ```json
 {
@@ -569,7 +569,7 @@ Request body:
 }
 ```
 
-**409**: taken: that window has gone; ops_assisted: booking goes through WhatsApp for now
+**409**: taken: that window has gone
 
 ```json
 {
@@ -1445,8 +1445,10 @@ Razorpay's webhook: payments and refunds
     "state": {
       "type": "string",
       "enum": [
-        "booked"
-      ]
+        "booked",
+        "requested"
+      ],
+      "description": "A slot is held for a \"booked\" one; a \"requested\" one waits for ops, self-serve booking being off."
     },
     "date": {
       "type": "string",
@@ -1606,8 +1608,10 @@ Razorpay's webhook: payments and refunds
     "state": {
       "type": "string",
       "enum": [
-        "booked"
-      ]
+        "booked",
+        "requested"
+      ],
+      "description": "A slot is held for a \"booked\" one; a \"requested\" one waits for ops, self-serve booking being off."
     },
     "date": {
       "type": "string",

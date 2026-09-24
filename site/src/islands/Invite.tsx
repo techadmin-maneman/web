@@ -8,8 +8,8 @@
 // Where it is missing — local dev, or a page served straight from the assets —
 // the island fetches it, and an unknown code still books.
 //
-// Outside production, ?state=<arrival|served|unserved|booked|listed> opens a
-// state directly, for the fidelity screenshots and the browser tests.
+// Outside production, ?state=<arrival|served|unserved|booked|requested|listed>
+// opens a state directly, for the fidelity screenshots and the browser tests.
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
@@ -51,7 +51,7 @@ interface Props {
 
 type BookingWindow = ReferralConsultation["window"];
 type State = "arrival" | "booked" | "listed";
-const PREVIEW_STATES = ["arrival", "served", "unserved", "booked", "listed"] as const;
+const PREVIEW_STATES = ["arrival", "served", "unserved", "booked", "requested", "listed"] as const;
 type PreviewState = (typeof PREVIEW_STATES)[number];
 
 /** How far ahead the date strip reaches, from tomorrow: src/config/scheduling.ts, BOOKING_DAYS. */
@@ -103,7 +103,6 @@ function refusal(code: ErrorCode | "network"): string {
   if (code === "rate_limited") return errors.rateLimited;
   if (code === "turnstile_failed") return errors.turnstile;
   if (code === "taken") return errors.taken;
-  if (code === "ops_assisted") return errors.opsAssisted;
   if (code === "not_bookable") return errors.notBookable;
   return errors.other;
 }
@@ -145,8 +144,8 @@ export default function Invite(props: Props) {
     if (found === undefined || found === "arrival") return;
     if (found === "served") setAnswer(SAMPLE.served);
     if (found === "unserved") setAnswer(SAMPLE.unserved);
-    if (found === "booked") {
-      setBooked({ state: "booked", date: indiaTomorrow(), window: "morning", area: SAMPLE.served.area, credits: true });
+    if (found === "booked" || found === "requested") {
+      setBooked({ state: found, date: indiaTomorrow(), window: "morning", area: SAMPLE.served.area, credits: true });
       setState("booked");
     }
     if (found === "listed") {
@@ -754,21 +753,27 @@ function Waitlist(props: FormProps & { onListed: (result: { area: string | null;
   );
 }
 
-/** Board C4: the consultation is booked. */
+/**
+ * Board C4: the consultation is booked. The same frame answers a request, which
+ * is what the page can offer while self-serve booking is off: the day is the one
+ * asked for rather than one held, and ops fix the hour on WhatsApp.
+ */
 function Booked(props: { result: ReferralConsultation; heading: { current: HTMLHeadingElement | null } }) {
   const { result } = props;
+  const asked = result.state === "requested";
   const hours = referral.consultation.windows.find((option) => option.id === result.window)?.hours ?? "";
+  const headline = bookedHeadline(result.date, hours);
   return (
     <section class={styles.done}>
       <div class={styles.inner}>
         <span class={styles.tick}>
           <Icon path={ICONS.tick} size={30} stroke={1.7} />
         </span>
-        <div class={`caps ${styles.doneLabel}`}>{referral.booked.label}</div>
+        <div class={`caps ${styles.doneLabel}`}>{asked ? referral.requested.label : referral.booked.label}</div>
         <h1 ref={props.heading} tabIndex={-1} class={styles.doneTitle}>
-          {bookedHeadline(result.date, hours)}
+          {asked ? `${referral.requested.asked} ${headline}` : headline}
         </h1>
-        <p class={styles.doneBody}>{referral.booked.body}</p>
+        <p class={styles.doneBody}>{asked ? referral.requested.body : referral.booked.body}</p>
         <p class={styles.doneWhere}>{`${result.area} · ${referral.booked.free}`}</p>
         {result.credits && <p class={styles.doneNote}>{referral.booked.credits}</p>}
         <a class="btn btn--lg btn--line-on-paper" href="/">

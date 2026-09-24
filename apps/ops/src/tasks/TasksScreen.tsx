@@ -1,8 +1,9 @@
 // Tasks (Ops Console, board D2): what ops still have to do, in groups, with how
 // long each has left. Nothing is decided here. A task is a row in a queue the
-// database already keeps — a held grant, an undecided no-show, a number change,
-// an erasure, a piece past its replacement date — so it leaves the list when
-// that row is decided, on the section that decides it (src/policy/tasks.ts).
+// database already keeps — a consultation asked for, a held grant, an undecided
+// no-show, a number change, an erasure, a piece past its replacement date — so
+// it leaves the list when that row is decided, on the section that decides it
+// (src/policy/tasks.ts).
 //
 // The board writes an owner in ops against every task. Nothing records one, so
 // the column is not drawn (docs/open-points.md, item 58).
@@ -10,7 +11,7 @@
 import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Task, type TaskGroup } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
-import { referrals, tasks } from "../content.ts";
+import { dispatch, referrals, tasks } from "../content.ts";
 import { daysUntil } from "../lib/due.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -24,6 +25,11 @@ const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
 /** The second line: the one fact the group turns on. */
 function subOf(group: Group, task: Task): string {
   const copy = tasks.subs;
+  if (group === "consultation_request") {
+    // The day and the window, as the request recorded them: both are always there.
+    const [day = "", when = ""] = task.detail?.split(" ") ?? [];
+    return copy.consultation_request(fullDate(indiaDate(day)), dispatch.windows[when] ?? when);
+  }
   if (group === "replacement_order") {
     return copy.replacement_order(task.detail ?? tasks.unknown, fullDate(indiaDate(task.since)));
   }

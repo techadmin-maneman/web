@@ -520,7 +520,7 @@ export const noShows = {
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
- * groups, of which two have something behind them; the other three here are
+ * groups, of which two have something behind them; the other four here are
  * queues it does not draw (docs/open-points.md, item 58).
  */
 export const tasks = {
@@ -529,6 +529,7 @@ export const tasks = {
   overdue: (count: number) => `${String(count)} overdue`,
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
+    consultation_request: "Consultation request",
     replacement_order: "Replacement order",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
@@ -543,6 +544,8 @@ export const tasks = {
   open: (name: string) => `Open ${name}`,
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
+    /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
+    consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
     replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
     no_show_decision: (technician: string) => `${technician} attended`,

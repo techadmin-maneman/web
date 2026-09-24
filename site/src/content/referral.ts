@@ -113,6 +113,16 @@ export const referral = {
     credits: "The 3 service visits land when you are fitted.",
     back: "See the site",
   },
+  /**
+   * C4's frame again, for a consultation nobody could book outright: self-serve
+   * booking is off, so ops fix the hour on WhatsApp
+   * (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+   */
+  requested: {
+    label: "Consultation requested",
+    body: "We message you on WhatsApp to fix the hour.",
+    asked: "You asked for",
+  },
   listed: {
     label: "On the list",
     title: "You are on the {area} list",
@@ -127,7 +137,6 @@ export const referral = {
     rateLimited: "That is a few too many tries. Please try again tomorrow.",
     turnstile: "We could not confirm you are a person. Please try again.",
     taken: "That window has just gone. Please pick another.",
-    opsAssisted: "Booking goes through WhatsApp for now. Message us and we will fix a time.",
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
   },

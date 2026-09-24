@@ -59,6 +59,32 @@ test("names the one fact each group turns on", async ({ page }) => {
   await expect(row(page, "Ashish Gill")).toContainText("Asked for in the client's own app");
 });
 
+// The board draws no consultation request, so it is left out of the fixture the
+// fidelity run reads and given its own answer here
+// (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+test("names the day and window a consultation was asked for", async ({ page }) => {
+  await open(page, {
+    overdue: 0,
+    groups: [
+      {
+        group: "consultation_request",
+        count: 1,
+        tasks: [
+          {
+            id: "96000000-0000-4000-8000-000000000001",
+            person: { id: "22000000-0000-4000-8000-000000000007", name: "Neha Kapoor" },
+            detail: "2027-09-24 afternoon",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-23T06:00:00.000Z",
+          },
+        ],
+      },
+    ],
+  });
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Consultation request"]);
+  await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon");
+});
+
 test("heads a no-show with its visit and its technician, and never a client", async ({ page }) => {
   await open(page);
   const noShow = row(page, "Imran Qureshi attended");

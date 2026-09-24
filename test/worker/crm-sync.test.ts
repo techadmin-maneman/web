@@ -111,6 +111,20 @@ describe("crm-sync: syncing a lead", () => {
     expect(person).toEqual({ zoho_lead_id: "zoho-1" });
   });
 
+  // An invited friend is never asked where the hair loss is, so their lead carries
+  // none and the CRM record simply leaves the field empty
+  // (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+  it("syncs a lead that names no loss extent", async () => {
+    const leadId = await bookLead();
+    await env.DB.prepare("UPDATE leads SET loss_extent = NULL WHERE id = ?1").bind(leadId).run();
+    const crm = recordingCrm();
+
+    expect(await syncLead(env.DB, fakeDependencies({ crm }), log, leadId)).toEqual({ retrySoon: false });
+
+    expect(crm.calls[0]?.lead).toMatchObject({ leadId, lossExtent: null });
+    expect(await leadRow(leadId)).toMatchObject({ sync_state: "synced", last_sync_error: null });
+  });
+
   it("posts a new-lead notice once the lead is in the CRM, with no personal data, and never twice", async () => {
     const leadId = await bookLead();
     const deps = fakeDependencies({ crm: recordingCrm() });

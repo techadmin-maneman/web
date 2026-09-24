@@ -291,8 +291,10 @@
           "state": {
             "type": "string",
             "enum": [
-              "booked"
-            ]
+              "booked",
+              "requested"
+            ],
+            "description": "A slot is held for a \"booked\" one; a \"requested\" one waits for ops, self-serve booking being off."
           },
           "date": {
             "type": "string",
@@ -432,8 +434,10 @@
           "state": {
             "type": "string",
             "enum": [
-              "booked"
-            ]
+              "booked",
+              "requested"
+            ],
+            "description": "A slot is held for a \"booked\" one; a \"requested\" one waits for ops, self-serve booking being off."
           },
           "date": {
             "type": "string",
@@ -1116,7 +1120,7 @@
         },
         "responses": {
           "201": {
-            "description": "Booked",
+            "description": "Booked, or asked for",
             "content": {
               "application/json": {
                 "schema": {
@@ -1146,7 +1150,7 @@
             }
           },
           "409": {
-            "description": "taken: that window has gone; ops_assisted: booking goes through WhatsApp for now",
+            "description": "taken: that window has gone",
             "content": {
               "application/json": {
                 "schema": {
@@ -1527,7 +1531,7 @@
         },
         "responses": {
           "201": {
-            "description": "Booked",
+            "description": "Booked, or asked for",
             "content": {
               "application/json": {
                 "schema": {
@@ -1557,7 +1561,7 @@
             }
           },
           "409": {
-            "description": "taken: that window has gone; ops_assisted: booking goes through WhatsApp for now",
+            "description": "taken: that window has gone",
             "content": {
               "application/json": {
                 "schema": {

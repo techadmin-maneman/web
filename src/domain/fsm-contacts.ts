@@ -15,9 +15,9 @@ const STATES: Readonly<Record<string, { state: string; code: string }>> = {
 
 /**
  * The person's FSM contact ID, adding the contact if they have none. Its city is `city` if given, else their
- * saved address's, else their latest booking's, else the city of the pincode they were invited at. A friend who
- * books through a referral invite is never asked where the hair loss is, so their booking leaves no lead
- * (docs/open-points.md, item 50) and, until they save an address, the invite's pincode is the only city we hold.
+ * saved address's, else their latest booking's, else the city of the pincode they were invited at. An invited
+ * friend's lead names the city of the pincode they gave; where even that is not one of ours, the invite's pincode
+ * is the only city we hold until they save an address.
  * The ID is kept at once, so a retry does not add it twice.
  */
 export async function fsmContactOf(db: D1Database, fsm: FsmProvider, personId: string, city?: string): Promise<string> {
