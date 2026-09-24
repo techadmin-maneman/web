@@ -410,6 +410,12 @@
   color: var(--text);
 }
 
+.secondary:disabled {
+  border-color: var(--paper-line);
+  color: var(--text-quiet);
+  cursor: default;
+}
+
 /* Boards C7 and C8: the change, and what it costs. */
 .changeTitle {
   font-family: var(--font-serif);

@@ -59,6 +59,9 @@ export function BookingSheet({
   const booked = useRef(false);
   // True while Razorpay Checkout is open, and this sheet has stepped out of its way.
   const paying = useRef(false);
+  // True from the tap until Checkout has answered. `busy` disables the buttons, but only on
+  // the next render, and a tap in that gap would pay for the hold a second time (ADR 0057).
+  const starting = useRef(false);
 
   const load = useCallback(async () => {
     setStep({ kind: "loading" });
@@ -150,20 +153,26 @@ export function BookingSheet({
   };
 
   const payFor = async (hold: Hold, how: PayMethod) => {
+    if (starting.current) return;
+    starting.current = true;
     setBusy(true);
     setProblem(null);
-    const started = movingId === undefined ? await api.book(hold.id) : await api.startMove(movingId, hold.id);
-    if (!started.ok) {
+    try {
+      const started = movingId === undefined ? await api.book(hold.id) : await api.startMove(movingId, hold.id);
+      if (!started.ok) {
+        setBusy(false);
+        if (started.code === "hold_expired") setStep({ kind: "expired" });
+        else setProblem(booking.failedToStart);
+        return;
+      }
+      const checkout = started.body.checkout;
+      const outcome = checkout === null ? "paid" : await throughCheckout(checkout, how);
       setBusy(false);
-      if (started.code === "hold_expired") setStep({ kind: "expired" });
-      else setProblem(booking.failedToStart);
-      return;
+      if (outcome === "paid") setStep({ kind: "confirming", hold });
+      else if (outcome === "failed") setStep({ kind: "failed", hold });
+    } finally {
+      starting.current = false;
     }
-    const checkout = started.body.checkout;
-    const outcome = checkout === null ? "paid" : await throughCheckout(checkout, how);
-    setBusy(false);
-    if (outcome === "paid") setStep({ kind: "confirming", hold });
-    else if (outcome === "failed") setStep({ kind: "failed", hold });
   };
 
   const day = availability?.days.find((each) => each.date === date);
@@ -223,6 +232,7 @@ export function BookingSheet({
       {step.kind === "failed" && (
         <FailedStep
           hold={step.hold}
+          busy={busy}
           onRetry={() => void payFor(step.hold, method)}
           onAnother={() => {
             const other = method === "upi" ? "card" : "upi";

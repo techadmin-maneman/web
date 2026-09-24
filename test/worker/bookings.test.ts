@@ -106,6 +106,28 @@ describe("POST /api/bookings", () => {
     expect(payments.made.orders).toHaveLength(1);
   });
 
+  it("makes one order for two bookings of the same hold at the same moment", async () => {
+    const payments = createStubPayments();
+    const app = appFor("local", fakeDependencies({ payments }), {}, "client");
+    const holdId = await heldService(app);
+    // Both taps are in flight together, as they are when a client taps Retry twice on board C6.
+    const both = await Promise.all([
+      post(app, "/api/bookings", { hold_id: holdId }),
+      post(app, "/api/bookings", { hold_id: holdId }),
+    ]);
+    expect(both.map((answer) => answer.status)).toEqual([201, 201]);
+    const orders = await Promise.all(
+      both.map(async (answer) => (await answer.json<{ checkout: { order_id: string } }>()).checkout.order_id),
+    );
+    // Both taps are answered with the one order the hold names. The other, which the race made and
+    // no client is ever told about, is the only one Checkout cannot be opened on (ADR 0057).
+    expect(orders[0]).toBe(orders[1]);
+    expect(await env.DB.prepare("SELECT razorpay_order_id FROM slot_holds WHERE id = ?1").bind(holdId).first()).toEqual(
+      { razorpay_order_id: orders[0] },
+    );
+    expect(payments.made.orders.map((order) => order.receipt)).toEqual([holdId, holdId]);
+  });
+
   it("books a free consultation straight away, and refuses a hold that has lapsed", async () => {
     await env.DB.prepare("DELETE FROM appointments").run(); // a lead: a consultation is what they may book
     const app = appFor("local", fakeDependencies(), {}, "client");
