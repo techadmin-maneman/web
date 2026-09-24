@@ -15,8 +15,11 @@
 //   /grievances             the concerns clients have raised, answered here
 //   /deletion-requests      the accounts clients have asked us to erase
 //   /number-changes         the numbers clients are moving to, confirmed here
+//   /settings               the rules ops set (the design's eighth section)
+//   /settings/prices        the price book, each price from the date it applies
+//   /settings/area          the pincodes we go to, and from when
 //
-// The last three are drawn on no board (docs/fidelity-method.md). Anything
+// The three before Settings are drawn on no board (docs/fidelity-method.md). Anything
 // else, "/" included, is the dispatch board, which is what the design opens on.
 
 import { useEffect, useState } from "react";
@@ -29,6 +32,10 @@ import { useEffect, useState } from "react";
 export const CLIENT_TABS = ["pieces", "consents", "photos", "history"] as const;
 export type ClientTab = (typeof CLIENT_TABS)[number];
 
+/** What Settings holds, in the order the section lists it. */
+export const SETTINGS_TABS = ["rules", "prices", "area"] as const;
+export type SettingsTab = (typeof SETTINGS_TABS)[number];
+
 export type Route =
   | { readonly page: "dispatch" }
   | { readonly page: "referrals" }
@@ -39,10 +46,12 @@ export type Route =
   | { readonly page: "grievances" }
   | { readonly page: "deletion-requests" }
   | { readonly page: "number-changes" }
+  | { readonly page: "settings"; readonly tab: SettingsTab }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
 const DISPATCH: Route = { page: "dispatch" };
 const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(pieces|photos|consents|history))?$/;
+const SETTINGS_PATH = /^\/settings(?:\/(prices|area))?$/;
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
 const tabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? CLIENT_TABS[0];
@@ -56,6 +65,8 @@ export function routeOf(path: string): Route {
   if (path === "/grievances") return { page: "grievances" };
   if (path === "/deletion-requests") return { page: "deletion-requests" };
   if (path === "/number-changes") return { page: "number-changes" };
+  const settings = SETTINGS_PATH.exec(path);
+  if (settings !== null) return { page: "settings", tab: SETTINGS_TABS.find((tab) => tab === settings[1]) ?? "rules" };
   if (path === "/clients") return { page: "clients", clientId: null, tab: tabOf(undefined) };
   const client = CLIENT_PATH.exec(path);
   if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: tabOf(client[2]) };

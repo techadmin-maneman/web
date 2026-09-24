@@ -13,6 +13,7 @@ import { GrievancesScreen } from "./grievances/GrievancesScreen.tsx";
 import { NumberChangesScreen } from "./number-changes/NumberChangesScreen.tsx";
 import { ReferralsScreen } from "./referrals/ReferralsScreen.tsx";
 import { keyOf, routeOf, usePath, type Route } from "./route.ts";
+import { SettingsScreen } from "./settings/SettingsScreen.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 import { WaitlistScreen } from "./waitlist/WaitlistScreen.tsx";
@@ -27,6 +28,7 @@ function Page({ route }: { route: Route }) {
   if (route.page === "grievances") return <GrievancesScreen />;
   if (route.page === "deletion-requests") return <DeletionsScreen />;
   if (route.page === "number-changes") return <NumberChangesScreen />;
+  if (route.page === "settings") return <SettingsScreen tab={route.tab} />;
   if (route.clientId === null) return <FindClientScreen />;
   return <ClientScreen clientId={route.clientId} tab={route.tab} />;
 }

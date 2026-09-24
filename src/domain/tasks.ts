@@ -8,7 +8,7 @@
 // group's allowance, and nothing is written anywhere.
 
 import { indiaDate, indiaInstant } from "../lib/india-time.ts";
-import { dueAt, type TaskGroup } from "../policy/tasks.ts";
+import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
 
 export interface Task {
   readonly id: string;
@@ -95,7 +95,7 @@ function firstSignal(signals: string | null): string | null {
 const instantOf = (since: string) => (since.length === 10 ? indiaInstant(since, "00:00").toISOString() : since);
 
 /** What ops still have to do, the longest wait first. */
-export async function outstandingTasks(db: D1Database, now: Date, limit: number): Promise<Task[]> {
+export async function outstandingTasks(db: D1Database, now: Date, limit: number, sla: Slas): Promise<Task[]> {
   const answers = await db.batch<Row>([
     db.prepare(OUTSTANDING[0]).bind(indiaDate(now), limit),
     db.prepare(OUTSTANDING[1]).bind(limit),
@@ -114,7 +114,7 @@ export async function outstandingTasks(db: D1Database, now: Date, limit: number)
       person: row.person_id === null || row.person_name === null ? null : { id: row.person_id, name: row.person_name },
       detail: row.group === "referral_review" ? firstSignal(row.detail) : row.detail,
       since,
-      due: dueAt(new Date(since), row.group).toISOString(),
+      due: dueAt(new Date(since), row.group, sla).toISOString(),
     };
   });
 }

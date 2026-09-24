@@ -1,4 +1,4 @@
--- Migration number: 0033
+-- Migration number: 0034
 -- Two gaps on the dispatch board: leave, and what the client asked for
 -- (docs/open-points.md, "Leave on the dispatch board" and "The asked and the
 -- offered window"; ADRs 0062 and 0063).

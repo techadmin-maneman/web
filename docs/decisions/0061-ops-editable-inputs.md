@@ -1,0 +1,148 @@
+# 0061. The business inputs ops change without a developer
+
+- Status: accepted
+- Date: 2026-09-24
+- Follows [0031](0031-access-and-audit.md) for who may change one and how it is recorded, and [0009](0009-stay-inside-cloudflare-free-tier.md) for what reading one may cost
+
+## Context
+
+The owner asked for this on 24 September 2026, in these words:
+
+> Ensure that all of the non-tech inputs that are needed for the product to work (e.g., pricing, service pincodes, SKU types, etc.) are not tech-dependent. Include them in the dashboard where an ops/admin person can change them and the app picks up those changes automatically. This was scoped and built for price, but include all non-tech inputs in it now.
+
+The principle behind it: **a business fact should not need a developer and a deploy.** Today a price change, a new served pincode or a different no-show wait all mean editing TypeScript, opening a pull request and waiting for CI. Open point 44 already said so for prices — "changing one price means a release, in three places that can disagree" — and recorded that the three had already disagreed on staging.
+
+`docs/open-points.md` is close to a list of exactly these inputs, because every row in it was a question for the owner. Going through it, and `src/config/`, `src/policy/`, `packages/brand` and `data/pincodes/`, gives the inventory below.
+
+## The inventory
+
+### 1. Clearly ops-editable
+
+A business person owns the figure. Nothing about its shape is a code decision; only its value.
+
+| Input                                                              | Where it was                                                     | Open point                                | In this PR                                                     |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------- |
+| **Prices**, and the GST rate on each                               | `price_book` rows, seeded by migrations 0016 and 0018            | "The price book", "Prices ops can change" | **Yes** — Settings · Prices                                    |
+| **Served pincodes and their launch dates**                         | `serviceable_pincodes`, loaded from a CSV by a script            | "The service area"                        | **Yes** — Settings · Service area                              |
+| **Price tiers** (the owner's "SKU types")                          | `price_book.tier`, only ever `'standard'`                        | "The price book"                          | **Yes** — a price for a new tier creates it                    |
+| **The replacement cycle per base** (the other half of "SKU types") | `PIECE_CYCLE_DAYS`, `src/config/pieces.ts`                       | "The per-base replacement cycle"          | **Yes** — Settings · Rules                                     |
+| **The check-in radius**                                            | `CHECKIN_RADIUS_M`, `src/policy/check-in.ts`                     | "The check-in radius"                     | **Yes** — Settings · Rules                                     |
+| **The no-show wait**, per visit type                               | `NO_SHOW_WAIT_MIN`, `src/policy/no-show.ts`                      | "The no-show wait"                        | **Yes** — Settings · Rules                                     |
+| **When a job's address unlocks**                                   | `UNLOCK_TIME`, `src/policy/job-visibility.ts`                    | "When a job's address unlocks"            | **Yes** — Settings · Rules                                     |
+| **Task SLAs**, per queue                                           | `TASK_SLA_HOURS`, `src/policy/tasks.ts`                          | "Board D2's owner, its SLAs…"             | **Yes** — Settings · Rules                                     |
+| **Visit lengths**                                                  | `VISIT_BLOCKS[type].minutes`, `src/config/scheduling.ts`         | "Visit lengths" (settled)                 | No — see _What is left_                                        |
+| **Blackout dates**                                                 | `visit_blackouts`, edited by the runbook's own SQL               | —                                         | No — see _What is left_                                        |
+| **The booking horizon and the payment hold**                       | `BOOKING_DAYS`, `HOLD_SECONDS`, `src/config/scheduling.ts`       | —                                         | No — see _What is left_                                        |
+| **The window times**                                               | `WINDOW_TIMES`, `src/config/scheduling.ts`                       | "The window-to-slot map"                  | No — the owner has not ruled them yet                          |
+| **The dispatch board's peak, and the over-by minutes**             | `dispatch.peak`, `technicians.overBy`, `apps/ops/src/content.ts` | "Board D3's jobs…", "Board D1's money…"   | No — console thresholds, not backend inputs                    |
+| **The referral reward**                                            | `src/policy/referral-reward.ts`                                  | "The six referral rules" (settled)        | No — settled, and its terms are in a notice a client agreed to |
+| **The GST split shown on an unpriced payment**                     | `GST_PERCENT`, `src/config/gst.ts`                               | "GST rates and codes"                     | No — see _What is left_                                        |
+
+### 2. Borderline: message texts and app copy
+
+**Every WhatsApp template** (`src/config/message-templates.ts`), **every line of the client app, the ops console, the technician app and the public site** (`apps/*/src/content.ts`, `site/src/content/site.ts`), and **the consent notices** (`src/config/notices.ts`) are business inputs by the owner's definition: nobody needs a developer's judgement to decide what a message says. Open points "Message texts", "Messages about visits" and "App copy" are all waiting on the owner's wording.
+
+**Making them editable is building a CMS, and this PR does not build one.** The recommendation is in _Message texts and app copy_ below.
+
+### 3. Genuinely structural
+
+The shape is code, not the value, and moving it would move a decision rather than a number.
+
+- **`WINDOW_SLOT_MAP` and `UNITS_PER_DAY`** (`src/config/scheduling.ts`). The map is arithmetic: the day is counted in half-slots _so that_ a replacement's slot and a half is a whole number (ADR 0035). Changing which half-slots a window may start in changes how `src/domain/scheduling.ts` packs a day, and the dispatch board, the clash check and FSM all answer to it. `WINDOW_TIMES` — what a window means on a clock — is a business input and is in group 1; the map from window to slot is not.
+- **`VISIT_BLOCKS[type].units`.** The same arithmetic in another place: the board draws a block that many half-slots wide. It is why visit _lengths_ are not in this tranche.
+- **`VISIT_TYPES`, `TASK_GROUPS`, `MOVE_REASONS`, `PARTIAL_REASONS`, `PRESETS`, `PIECE_CODE_PATTERN`.** Each is a closed set with a code path per member: a new visit type needs an FSM catalogue item, a price, a block size and a screen. Ops can price a member and time it; they cannot invent one.
+- **`ENABLED_SURFACES`, `PROVIDER_VARS`, every ceiling in `wrangler.jsonc`.** These are what ADR 0009 holds the account to. `GEOCODE_DAILY_CEILING` is the clearest case and it is now live, not dormant: since #106 the staging geocoder is Google and the owner's card is behind the key, so the ceiling refuses rather than spends and `GEOCODE_CEILING_MAX` caps what it may be set to at all. A ceiling that protects the card is not an ops input.
+- **The consent notices** (`src/config/notices.ts`). A published version is never edited; a change is a new version (`test/worker/notices.test.ts` locks the published text by hash). Which words a person agreed to is a legal record.
+- **The migration contract.** Forward-only, expand-then-contract, checked by `scripts/lib/migration-check.ts`.
+- **`packages/brand`.** The tokens are the design; a house-rule test refuses a raw colour or size anywhere else.
+
+## Decision
+
+### Two stores, because the two kinds of input hold their history differently
+
+**Effective-dated, history kept: prices, their GST, and a pincode's launch date.** A document already issued depends on what was true when it was issued, so the figure then has to stay readable. Both already have a dated table, and this PR gives ops the console rather than a second idiom:
+
+- **`price_book`** keeps `(item, tier, valid_from)` as it always has. `POST /api/prices` adds a row from a date; `priceOf` still reads the row in force on the visit's own day. **A price may not be back-dated** — a date before today is refused, because a visit invoiced last week was invoiced under last week's row. A second write for the same day corrects that day rather than adding a row beside it.
+- **`serviceable_pincodes.launched_at`** is a date because it is a promise: a referral invite held for an area lapses twelve months from it, and the waitlist alert goes out against it (ADR 0048). `served` beside it is **not** dated — it decides whether the app offers a booking at all, and that is a fact about now.
+
+**In force from the moment it is set: everything else in group 1.** `ops_settings` (migration 0031) holds one row per input: `name`, `value` as JSON, `set_by`, `set_at`. No effective date, on purpose — **what was true when it mattered is already recorded where it mattered.** `checkins` keeps the distance measured _and the radius in force_; `no_show_cases` keeps the wait's own end; `pieces` keeps the replacement date it was given; `audit_log` keeps every change with its before and after. A second history in this table would be a second source of truth for a question the rows already answer.
+
+An empty table is a working system: a row that is not there means the committed default.
+
+### Typed, bounded, and refused in the words ops read
+
+`src/config/ops-settings.ts` is the register. Each entry names the input's unit, its bounds, whether it is one number or one per key, and the committed figure it falls back to — **and where that figure lives in the code**, so a reader can find the number behind the screen. `checkValue` is the only way in, and it returns either the value or every reason it was refused, each naming its own field and what that field will take: _"Check-in radius must be 50 to 1000 metres, a whole number. 10 is outside that."_ Ops cannot set a radius of 0, a visit length of 4 minutes, a cycle due the day a piece is fitted, or a keyed input missing one of its keys.
+
+**The bounds live beside the definition, and the console reads them from the API** — the same numbers reach the `min`/`max` on the input, the line under it, and the refusal.
+
+**The committed figure does not move out of the code.** `CHECKIN_RADIUS_M` stays in `src/policy/check-in.ts` beside the rule that quotes the prompt; the policy functions gained a parameter and kept it as their default. So `test/node/policy-quotes.test.ts` still holds every rule to the prompt word for word, the rules still read as rules, and the fallback is the figure a developer can see. The consequence to know: **the prompt's own wording says "within config CHECKIN_RADIUS_M (200 m)", and that quote is fixed.** What is in force is in the console, and on every check-in's own row.
+
+### Audited, to the standard of the console that can delete a client
+
+Every change is a `db.batch` of the audit entry and the change itself: a change that is not recorded does not happen (ADR 0031). Three new actions — `setting.change`, `price.set`, `pincode.set` — each naming the Access identity, the subject and the before and after. The service-area screen sends only the pincodes that actually moved, so the log never records a change that was not one. A refused figure writes nothing.
+
+### Picked up automatically, for a bounded number of rows
+
+The whole store is **one query reading at most one row per name in the register**, held per isolate for **60 seconds** — the same shape as the Access key cache and the database-identity check (ADR 0031, ADR 0003), which already run on the request path.
+
+**The staleness window is 60 seconds.** A change made in the console is in force everywhere within a minute, and no deploy is involved. That is the whole point of it, and the console says so above the form.
+
+**What it costs.** The bound is not a guess at how many isolates are alive: the free plan stops the day at 100,000 requests, and a request reads the register at most once, so the ceiling is 100,000 × the register's length however the cache behaves. At five inputs that is 500,000 rows a day — **a tenth of D1's 5,000,000**, and ADR 0009's other uses are far smaller. This ADR claims **a fifth** of that allowance for the register, which leaves room for ten inputs; `test/node/ops-settings.test.ts` fails on the eleventh. In practice the cache takes it to a query a minute per isolate.
+
+**CPU.** ADR 0009 caps an invocation at 10 ms and 50 subrequests. A D1 query is not a subrequest, so the subrequest budget is untouched. On the CPU side, a cache hit is a map lookup and a clock comparison; a miss adds one query whose result is five rows of JSON — the same order as the identity check every `/api/*` request already makes, and well inside a budget the try-on's render path lives in.
+
+### A safe default, because this project has been bitten twice
+
+PRs #89 and #100 were both a fabricated nought. Three things here refuse to make a third:
+
+1. **A store that cannot be read at all** returns the last good read if the isolate has one, and the committed defaults if it does not. It never returns nothing, and never a zero.
+2. **A row the register would no longer accept** — a name since dropped, malformed JSON, a figure now outside its bounds — is ignored in favour of the committed default. The store is edited by people, and a row left behind by an earlier register must not decide anything.
+3. **The console holds every draft as text, not as a number.** An empty box is not nought; it disables Save.
+
+### 198 pincodes: the file, not the form
+
+`data/pincodes/ncr-pincodes.csv` has 198 rows, and **the owner has said they will mark the served ones and their launch dates themselves, in that file** ("The service area"; `data/pincodes/README.md` is written for them). Asking them to redo that in a web form would be worse than what they already do. So the console is built for the two things that actually happen:
+
+- **Launching one area** is one row and a date. The table shows **one city at a time** — Delhi is 103 of the 198 — with a per-pincode toggle and a date box, and a pair of bulk actions that fill or clear the city shown.
+- **Handing over the whole file** is an upload. The browser reads the CSV, takes **only the three columns that are ops' own** — `pincode`, `served`, `launch_on` — and ignores every other one, so the file they already have works and nothing in it can overwrite the area names or the coordinates. It then shows **how many pincodes the file would change** before anything is sent, as the waitlist's launch does, and only the second press sends them. A pincode the file names that we do not hold is refused: the CSV is reference data, not a way to add one. There is a **Download the current list** beside it, in the same shape, so the file can be round-tripped.
+- A launch date is only taken as `2026-10-01`. Excel likes to save `01-10-2026`, and the import already refuses to guess which is the month (`data/pincodes/README.md`); the console refuses the same way and names the pincode.
+- **A change that would leave no pincode served is refused** (`no_service_area`). It would put every client on the waitlist, and no single form press should be able to do that.
+
+`scripts/import-pincodes.ts` is unchanged and still the way the file is loaded wholesale; the console is the way it is edited afterwards.
+
+### Message texts and app copy
+
+**Recommendation: do not build a CMS now. Ask the owner for the wording, ship it, and revisit only if it churns.**
+
+The work is not a text box. It is versioning, a draft-and-approve step, a preview per surface, a rollback, and a way to tell a change that is cosmetic from one that is not — because three of these texts are legal records, not copy:
+
+- **The consent notices are locked by hash** in `test/worker/notices.test.ts`, precisely so a published version cannot be edited. Which words a person agreed to is the record that answers a DPDP complaint, and `consents` stores the version they saw. Making these editable would mean versioning inside the store, counsel re-reading each version, and a screen that cannot show an old client the new words.
+- **The referral terms** are quoted in an invite a client acted on.
+- **A WhatsApp template's text is not ours to change freely.** Evolution has no approved templates today, but an official BSP holds its own copy and Meta approves it; ops editing our side would put the two out of step.
+
+The honest costing: a CMS worth having for the ~20 message templates and four surfaces' copy is **a table, a versioned publish, a preview, an approval and its own audit trail — a milestone, not a screen**, plus a permanent second place where a string might live. Against that, every one of these texts is waiting on **one round of wording from the owner** (open points "Message texts", "Messages about visits", "App copy"). The cheap and reversible order is: get the wording, commit it, and watch. If a text changes more than twice in a quarter for business reasons, that is the signal to build the CMS — and by then we will know which texts they are.
+
+**In the meantime, a smaller thing is worth doing and is not in this PR:** the placeholder copy is already marked `PLACEHOLDER` in the source, and a test could hold the console's Settings screen to listing which texts are still placeholders, so the owner can see what is owed without reading TypeScript.
+
+## Consequences
+
+- **The console gains its eighth section.** The design draws Settings and letters nothing inside it; `apps/ops/src/content.ts` no longer says "nothing here is settable". Three panels: Rules, Prices, Service area. Every field shows its unit and its bounds, and a refusal says what is allowed — `e2e/ops/settings.e2e.ts` runs axe at WCAG 2.2 AA over all three.
+- **Ops can put a figure back.** Sending a null value deletes the row, and the committed default is in force again. It is the escape hatch for a change that turns out to be wrong, and it is audited like any other.
+- **The contract** gains `/api/settings`, `/api/settings/{name}`, `/api/prices`, `/api/service-area` on the ops surface, and the `no_service_area` error code. `docs/openapi-ops.json` and `docs/api-ops.md` are regenerated.
+- **Adding an input** is one entry in `OPS_SETTINGS`, one field in `OpsInputs`, and passing it where the default already sits. No migration, no console change, no new screen.
+- **The register cannot grow without the budget being re-examined.** Past ten inputs the node test fails and this ADR has to say where the rows come from.
+- **`FREE_TIER`** gains the two allowances ADR 0009 always stated in prose — 100,000 Workers requests and 5,000,000 D1 rows read a day — so the arithmetic above is checked rather than asserted.
+- **Open points move but do not close.** "Prices ops can change" and "The service area" now have their console; what is still owed is the owner's own figures. "The check-in radius", "The no-show wait", "When a job's address unlocks" and "The per-base replacement cycle" no longer need a release to answer.
+
+## What is left, and why
+
+This PR ships the ADR, the mechanism and the owner's own three examples with the four rules that were cheapest to prove it on. The rest is named here rather than half-done:
+
+| Left                                         | Why it is not in this tranche                                                                                                                                                                                                                                                                         |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Visit lengths**                            | `VISIT_BLOCKS` carries two numbers per type: `minutes`, which is a business input, and `units`, which is the board's arithmetic. They have to move together or the board, the clash check and FSM disagree; that is an ADR of its own, with ADR 0035 in hand.                                         |
+| **Blackout dates**                           | `visit_blackouts` is a Phase 1 table edited by the runbook's SQL. It is a straight lift into the same console section and wants only a screen; it is left out to keep this PR one shape.                                                                                                              |
+| **The booking horizon and the payment hold** | `BOOKING_DAYS` and `HOLD_SECONDS` are read on the booking path, which is the one path where a wrong number takes a client's money. They belong with P2-M5's refund work, not beside a radius.                                                                                                         |
+| **The GST split on an unpriced payment**     | `GST_PERCENT` is only the split shown on a receipt for a payment the price book did not price. Doing it properly means recording the rate on the payment itself, so an old receipt reads as it did — a schema change, not a setting. GST on everything priced is already ops-editable, per price row. |
+| **Window times**                             | Waiting on the owner ("The window-to-slot map"). The console's own hours are held to `WINDOW_TIMES` by `test/node/ops-content.test.ts`, so they will move together.                                                                                                                                   |
+| **Message texts and app copy**               | The recommendation above. Not built, and deliberately not built quietly.                                                                                                                                                                                                                              |

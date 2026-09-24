@@ -101,7 +101,13 @@ const SELECT_JOB = `
   WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
 
 /** The jobs on one India date, in time order. Statuses the technician can still act on, and what he closed today. */
-export async function jobsOn(db: D1Database, technicianId: string, date: string, now: Date): Promise<JobSummary[]> {
+export async function jobsOn(
+  db: D1Database,
+  technicianId: string,
+  date: string,
+  now: Date,
+  unlockHour: number,
+): Promise<JobSummary[]> {
   const { results } = await db
     .prepare(`${SELECT_JOB} AND a.window_start >= ?2 AND a.window_start < ?3 ORDER BY a.window_start`)
     .bind(
@@ -110,7 +116,7 @@ export async function jobsOn(db: D1Database, technicianId: string, date: string,
       indiaInstant(addDays(date, 1), "00:00").toISOString(),
     )
     .all<JobRow>();
-  return results.filter(worthShowing).map((row) => summaryOf(row, now));
+  return results.filter(worthShowing).map((row) => summaryOf(row, now, unlockHour));
 }
 
 /** One job of this technician's, with everything the day-before unlock allows. */
@@ -119,10 +125,11 @@ export async function jobDetail(
   technicianId: string,
   jobId: string,
   now: Date,
+  unlockHour: number,
 ): Promise<JobDetail | null> {
   const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(technicianId, jobId).first<JobRow>();
   if (row === null) return null;
-  const summary = summaryOf(row, now);
+  const summary = summaryOf(row, now, unlockHour);
   const progress = await progressOf(db, jobId);
   if (!summary.unlocked) {
     return { ...summary, address: null, access_notes: null, client: null, progress };
@@ -195,9 +202,9 @@ function worthShowing(row: JobRow): boolean {
   return (LIVE as readonly string[]).includes(row.status) || row.status === "completed" || row.status === "terminated";
 }
 
-function summaryOf(row: JobRow, now: Date): JobSummary {
+function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
   const starts = new Date(row.window_start);
-  const open = unlocked(starts, now);
+  const open = unlocked(starts, now, unlockHour);
   return {
     id: row.id,
     day: jobDay(starts, now),
@@ -211,7 +218,7 @@ function summaryOf(row: JobRow, now: Date): JobSummary {
     status: row.status,
     badge: row.on_credit === 1 ? "credit" : "prepaid",
     unlocked: open,
-    unlocks_at: unlocksAt(starts).toISOString(),
+    unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
   };
 }
 

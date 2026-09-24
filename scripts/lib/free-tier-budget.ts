@@ -20,6 +20,10 @@ import { MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../sr
 /** The Workers Free plan, per Cloudflare's pricing pages (read 21 September 2026). */
 export const FREE_TIER = {
   queueOperationsPerDay: 10_000,
+  /** Past this the requests fail, so it is also the most work one day can ask of anything else. */
+  workersRequestsPerDay: 100_000,
+  /** Past this D1 refuses every query until midnight UTC (docs/decisions/0009). */
+  d1RowsReadPerDay: 5_000_000,
   /** 10 GB-month, counted in decimal gigabytes, which is the smaller reading. */
   r2StorageBytes: 10 * 1e9,
   r2ClassAPerMonth: 1_000_000,

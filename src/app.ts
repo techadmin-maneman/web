@@ -7,6 +7,7 @@ import type { Surface } from "./config/environments.ts";
 import { productionDependencies, type Dependencies, type DependencyFactory } from "./dependencies.ts";
 import { auditCall } from "./domain/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
+import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops-settings.ts";
 import type { Session } from "./domain/sessions.ts";
 import { requireAccess, type AccessIdentity } from "./http/access.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
@@ -29,6 +30,7 @@ import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsTasks } from "./routes/ops-tasks.ts";
 import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
+import { registerOpsSettings } from "./routes/ops-settings.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
@@ -58,6 +60,8 @@ export type AppEnv = {
     config: StaticConfig;
     deps: Dependencies;
     checkIdentity: IdentityCheck;
+    /** The business inputs ops set, cached per isolate (ADR 0061). */
+    readOpsInputs: ReadOpsInputs;
     surface: Surface;
     /** Set on the ops surface by requireAccess. */
     accessIdentity?: AccessIdentity;
@@ -120,6 +124,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsTasks,
     registerOpsPayments,
     registerOpsTechnicians,
+    registerOpsSettings,
   ],
   tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],
 };
@@ -139,7 +144,7 @@ export function createApp(
   });
 
   const dependencies = makeDependencies ?? productionDependencies(config);
-  app.use("*", requestContext(config, dependencies, createCachedIdentityCheck(), surface));
+  app.use("*", requestContext(config, dependencies, createCachedIdentityCheck(), createCachedOpsInputs(), surface));
   app.use("/api/*", requireOwnDatabase);
   // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031).
   if (surface === "ops") app.use("/api/*", requireAccess, auditCall);
@@ -167,6 +172,7 @@ function requestContext(
   config: StaticConfig,
   makeDependencies: DependencyFactory,
   checkIdentity: IdentityCheck,
+  readOpsInputs: ReadOpsInputs,
   surface: Surface,
 ): MiddlewareHandler<AppEnv> {
   const baseLog = createLogger({ worker: "mm-api", environment: config.environment, surface });
@@ -180,6 +186,7 @@ function requestContext(
     c.set("config", config);
     c.set("deps", makeDependencies(c.env, log));
     c.set("checkIdentity", checkIdentity);
+    c.set("readOpsInputs", readOpsInputs);
     c.set("surface", surface);
 
     await next();

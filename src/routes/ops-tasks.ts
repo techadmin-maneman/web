@@ -11,6 +11,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { outstandingTasks, overdueCount } from "../domain/tasks.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
 import { errorResponse } from "../http/errors.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 
@@ -30,7 +31,7 @@ const TaskSchema = z
       .openapi({ description: "The one fact the group turns on: a piece's label, a fraud rule, a technician." }),
     since: z.iso.datetime().openapi({ description: "When it started waiting." }),
     due: z.iso.datetime().openapi({
-      description: `since plus the group's allowance, ${String(TASK_SLA_HOURS.referral_review)} hours for every group so far.`,
+      description: `since plus the group's allowance, which ops set; ${String(TASK_SLA_HOURS.referral_review)} hours until they do.`,
     }),
   })
   .strict()
@@ -65,7 +66,7 @@ const tasksRoute = createRoute({
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
-    const tasks = await outstandingTasks(c.env.DB, now, LIMIT);
+    const tasks = await outstandingTasks(c.env.DB, now, LIMIT, (await opsInputs(c)).taskSlaHours);
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
     const groups = TASK_GROUPS.map((group) => {
       const waiting = tasks.filter((task) => task.group === group);

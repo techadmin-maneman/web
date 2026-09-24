@@ -1700,6 +1700,300 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every business rule ops may change, with its unit, its bounds and who last set it */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The rules */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            settings: components["schemas"]["OpsSetting"][];
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set one rule, or send a null value to put the committed default back */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days";
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SettingChange"];
+                };
+            };
+            responses: {
+                /** @description What it is now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsSetting"];
+                    };
+                };
+                /** @description invalid_request: the figure is outside what the rule allows, and fields names it */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The price book: every price, past, present and scheduled */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Prices */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            prices: components["schemas"]["Price"][];
+                            /** Format: date */
+                            today: string;
+                            max_amount_ex_gst: number;
+                            max_gst_percent: number;
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** A price from the date it applies. A change is a new row, so nothing already invoiced moves */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PriceChange"];
+                };
+            };
+            responses: {
+                /** @description The book as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            prices: components["schemas"]["Price"][];
+                        };
+                    };
+                };
+                /** @description invalid_request: fields names what was refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/service-area": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every pincode we hold, its city, and whether a technician goes there */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Pincodes */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            pincodes: components["schemas"]["ServedPincode"][];
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Which pincodes we go to, and from when. Only the pincodes named change */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServiceAreaChange"];
+                };
+            };
+            responses: {
+                /** @description What changed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            changed: number;
+                            served: number;
+                        };
+                    };
+                };
+                /** @description invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1707,7 +2001,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -2205,7 +2499,7 @@ export interface components {
             since: string;
             /**
              * Format: date-time
-             * @description since plus the group's allowance, 48 hours for every group so far.
+             * @description since plus the group's allowance, which ops set; 48 hours until they do.
              */
             due: string;
         };
@@ -2284,6 +2578,67 @@ export interface components {
             average_planned_minutes: number | null;
             /** @description The board's "First fit" or "Service". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59). */
             skill: null;
+        };
+        OpsSetting: {
+            name: string;
+            title: string;
+            note: string;
+            unit: string;
+            min: number;
+            max: number;
+            /** @description null for one number, a list where the keys are fixed, "open" where ops name them. */
+            keys: string[] | "open" | null;
+            value: number | {
+                [key: string]: number;
+            };
+            /** @description The committed figure, in force until somebody sets one. */
+            default: number | {
+                [key: string]: number;
+            };
+            /** @description The module the default lives in. */
+            source: string;
+            set_by: string | null;
+            set_at: string | null;
+        };
+        SettingChange: {
+            value: number | {
+                [key: string]: number;
+            } | null;
+        };
+        Price: {
+            item: string;
+            tier: string;
+            /** @description In paise, before GST. */
+            amount_ex_gst: number;
+            gst_percent: number;
+            /**
+             * Format: date
+             * @description India's date it applies from.
+             */
+            valid_from: string;
+            in_force: boolean;
+        };
+        PriceChange: {
+            item: string;
+            tier: string;
+            amount_ex_gst: number;
+            gst_percent: number;
+            /** Format: date */
+            valid_from: string;
+        };
+        ServedPincode: {
+            pincode: string;
+            area: string;
+            city: string;
+            served: boolean;
+            launch_on: string | null;
+        };
+        ServiceAreaChange: {
+            changes: {
+                pincode: string;
+                served: boolean;
+                launch_on: string | null;
+            }[];
         };
     };
     responses: never;

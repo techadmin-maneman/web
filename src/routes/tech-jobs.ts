@@ -36,9 +36,9 @@ import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { CHECKIN_RADIUS_M } from "../policy/check-in.ts";
 import { JOB_EVENT_KINDS, type JobEventKind } from "../policy/in-job-steps.ts";
 import { waitEndsAt } from "../policy/no-show.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
@@ -379,13 +379,15 @@ export function registerTechJobs(app: App): void {
     const { technicianId } = technicianOf(c);
     const now = c.var.deps.now();
     const date = c.req.valid("query").date ?? indiaDate(now);
-    return c.json({ date, jobs: await jobsOn(c.env.DB, technicianId, date, now) }, 200);
+    const { addressUnlockHour } = await opsInputs(c);
+    return c.json({ date, jobs: await jobsOn(c.env.DB, technicianId, date, now, addressUnlockHour) }, 200);
   });
 
   app.openapi(jobRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const now = c.var.deps.now();
-    const job = await jobDetail(c.env.DB, technicianId, c.req.valid("param").id, now);
+    const unlockHour = (await opsInputs(c)).addressUnlockHour;
+    const job = await jobDetail(c.env.DB, technicianId, c.req.valid("param").id, now, unlockHour);
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const type: VisitType = job.type ?? "service";
     return c.json(
@@ -403,6 +405,7 @@ export function registerTechJobs(app: App): void {
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
 
     const at = body.at === undefined ? now : new Date(body.at);
+    const inputs = await opsInputs(c);
     const arrival = await recordArrival(c.env.DB, {
       appointmentId: job.id,
       technicianId,
@@ -411,7 +414,7 @@ export function registerTechJobs(app: App): void {
       accuracyM: body.accuracy_m ?? null,
       at,
       now,
-      radiusM: CHECKIN_RADIUS_M,
+      radiusM: inputs.checkinRadiusM,
     });
     c.var.log.info("technician_checked_in", {
       appointment_id: job.id,
@@ -441,7 +444,7 @@ export function registerTechJobs(app: App): void {
         distance_m: arrival.distanceM,
         radius_m: arrival.radiusM,
         checked_in_at: arrival.at,
-        wait_ends_at: waitEndsAt(at, job.type).toISOString(),
+        wait_ends_at: waitEndsAt(at, job.type, inputs.noShowWaitMin).toISOString(),
         accepted: landing.accepted,
       },
       200,
@@ -454,7 +457,7 @@ export function registerTechJobs(app: App): void {
     const { technicianId } = technicianOf(c);
     const now = c.var.deps.now();
     const id = c.req.valid("param").id;
-    const job = await jobDetail(c.env.DB, technicianId, id, now);
+    const job = await jobDetail(c.env.DB, technicianId, id, now, (await opsInputs(c)).addressUnlockHour);
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const { phase, angle } = c.req.valid("json");
     const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
@@ -537,6 +540,7 @@ export function registerTechJobs(app: App): void {
       type: job.type,
       checkIn: arrival,
       now,
+      wait: (await opsInputs(c)).noShowWaitMin,
     });
     if (closing.kind === "no_check_in") return c.json(errorBody("out_of_order", requestId), 409);
     if (closing.kind === "too_early") return c.json(errorBody("too_early_to_close", requestId), 425);

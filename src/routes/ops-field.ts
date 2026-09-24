@@ -19,6 +19,7 @@ import { actorOf, recordAudit } from "../domain/audit.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
 import { decideNoShow, listNoShowCases } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
 import { devicesOf, revokeDevice } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -236,6 +237,7 @@ export function registerOpsField(app: App): void {
         c.var.deps.fsm,
         { personId: id, fsmContactId: client.fsm_contact_id },
         c.var.deps.now(),
+        (await opsInputs(c)).pieceCycleDays,
       ).catch((error: unknown) => {
         c.var.log.warn("pieces_sync_failed", { person_id: id, error });
         return 0;

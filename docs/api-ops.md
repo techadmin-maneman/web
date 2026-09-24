@@ -1288,6 +1288,248 @@ Per technician: jobs finished over a period, and how they ran against the planne
 }
 ```
 
+### GET /api/settings
+
+Every business rule ops may change, with its unit, its bounds and who last set it
+
+**200**: The rules
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "settings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OpsSetting"
+      }
+    }
+  },
+  "required": [
+    "settings"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/settings/{name}
+
+Set one rule, or send a null value to put the committed default back
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SettingChange"
+}
+```
+
+**200**: What it is now
+
+```json
+{
+  "$ref": "#/components/schemas/OpsSetting"
+}
+```
+
+**400**: invalid_request: the figure is outside what the rule allows, and fields names it
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/prices
+
+The price book: every price, past, present and scheduled
+
+**200**: Prices
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Price"
+      }
+    },
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "max_amount_ex_gst": {
+      "type": "integer"
+    },
+    "max_gst_percent": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "prices",
+    "today",
+    "max_amount_ex_gst",
+    "max_gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/prices
+
+A price from the date it applies. A change is a new row, so nothing already invoiced moves
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PriceChange"
+}
+```
+
+**200**: The book as it now stands
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Price"
+      }
+    }
+  },
+  "required": [
+    "prices"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names what was refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/service-area
+
+Every pincode we hold, its city, and whether a technician goes there
+
+**200**: Pincodes
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ServedPincode"
+      }
+    }
+  },
+  "required": [
+    "pincodes"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/service-area
+
+Which pincodes we go to, and from when. Only the pincodes named change
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceAreaChange"
+}
+```
+
+**200**: What changed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "changed": {
+      "type": "integer"
+    },
+    "served": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "changed",
+    "served"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -1338,7 +1580,8 @@ Per technician: jobs finished over a period, and how they ran against the planne
             "clash",
             "on_leave",
             "fsm_refused",
-            "too_early_to_close"
+            "too_early_to_close",
+            "no_service_area"
           ]
         },
         "request_id": {
@@ -3552,7 +3795,7 @@ Per technician: jobs finished over a period, and how they ran against the planne
     "due": {
       "type": "string",
       "format": "date-time",
-      "description": "since plus the group's allowance, 48 hours for every group so far."
+      "description": "since plus the group's allowance, which ops set; 48 hours until they do."
     }
   },
   "required": [
@@ -3822,6 +4065,321 @@ Per technician: jobs finished over a period, and how they ran against the planne
     "average_minutes",
     "average_planned_minutes",
     "skill"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsSetting
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "min": {
+      "type": "integer"
+    },
+    "max": {
+      "type": "integer"
+    },
+    "keys": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string",
+          "enum": [
+            "open"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "null for one number, a list where the keys are fixed, \"open\" where ops name them."
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "default": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      ],
+      "description": "The committed figure, in force until somebody sets one."
+    },
+    "source": {
+      "type": "string",
+      "description": "The module the default lives in."
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "title",
+    "note",
+    "unit",
+    "min",
+    "max",
+    "keys",
+    "value",
+    "default",
+    "source",
+    "set_by",
+    "set_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SettingChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Price
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "item": {
+      "type": "string"
+    },
+    "tier": {
+      "type": "string"
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST."
+    },
+    "gst_percent": {
+      "type": "integer"
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date it applies from."
+    },
+    "in_force": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "item",
+    "tier",
+    "amount_ex_gst",
+    "gst_percent",
+    "valid_from",
+    "in_force"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PriceChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "item": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000000
+    },
+    "gst_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 28
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "item",
+    "tier",
+    "amount_ex_gst",
+    "gst_percent",
+    "valid_from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServedPincode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincode": {
+      "type": "string"
+    },
+    "area": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "served": {
+      "type": "boolean"
+    },
+    "launch_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "pincode",
+    "area",
+    "city",
+    "served",
+    "launch_on"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceAreaChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string",
+            "pattern": "^[1-8]\\d{5}$"
+          },
+          "served": {
+            "type": "boolean"
+          },
+          "launch_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "pincode",
+          "served",
+          "launch_on"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "changes"
   ],
   "additionalProperties": false
 }
