@@ -33,11 +33,15 @@ test("serves the manifest that makes a home-screen copy a standalone app", async
 
   // `display: standalone` is what separates an installed app from a bookmark
   // that opens in Safari, and only the installed one keeps its store.
-  const manifest = await page.evaluate(async () => {
+  // The body is read as text and parsed here, not by the browser: an app served
+  // without a manifest answers 404 with a page, and asking the engine to parse
+  // that reports the parse it could not do and never the file that is missing.
+  const served = await page.evaluate(async () => {
     const answer = await fetch("/manifest.webmanifest");
-    return (await answer.json()) as { display?: string; start_url?: string; scope?: string };
+    return { status: answer.status, body: await answer.text() };
   });
-  expect(manifest).toMatchObject({ display: "standalone", start_url: "/", scope: "/" });
+  expect(served.status, "no manifest is served").toBe(200);
+  expect(JSON.parse(served.body)).toMatchObject({ display: "standalone", start_url: "/", scope: "/" });
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
 });
 
@@ -82,6 +86,10 @@ test("wipes everything the phone holds when the technician signs out", async ({ 
   await fakeTech(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+
+  // What the engine held before, or the wipe below is a check on nothing.
+  const before = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
+  expect(before).toContain("mm-tech");
 
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
