@@ -76,6 +76,26 @@ describe("suggestions", () => {
     expect(answer.reason).toBe("refused");
   });
 
+  it("carries Google's own words, because a bare 403 names none of its causes", async () => {
+    // A 403 is a disabled API, an unbilled project, a key restricted elsewhere
+    // and a spent quota alike. Staging answered "autocomplete 403" and the
+    // owner's console looked correct, so the status alone settled nothing.
+    const fetch: typeof globalThis.fetch = () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            error: { code: 403, status: "PERMISSION_DENIED", message: "Places API (New) has not been used before" },
+          }),
+          { status: 403, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+    const answer = await createGooglePlaces(STUB_API_KEY, { fetch }).suggest("Vatika City", SESSION);
+    expect(answer.ok).toBe(false);
+    if (answer.ok) return;
+    expect(answer.reason).toBe("refused");
+    expect(answer.detail).toBe("autocomplete 403: PERMISSION_DENIED, Places API (New) has not been used before");
+  });
+
   it("an empty result is an answer, not a failure", async () => {
     const { provider } = watched();
     const answer = await provider.suggest("mm-stub:none", SESSION);

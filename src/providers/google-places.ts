@@ -45,6 +45,21 @@ interface GeocodeAnswer {
 
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 
+/**
+ * Google says why it refused, in the body; a status on its own does not. A 403
+ * is a disabled API, an unbilled project, a key restricted to another API and a
+ * spent quota alike, and telling them apart from "autocomplete 403" alone cost
+ * an afternoon. The message is scrubbed of the key by the caller, as everything
+ * leaving this module is.
+ */
+function why(body: unknown): string {
+  const error = (body as { error?: { message?: unknown; status?: unknown } } | null)?.error;
+  const message = text(error?.message) || text((body as { error_message?: unknown } | null)?.error_message);
+  const status = text(error?.status);
+  if (message === "") return status === "" ? "" : `: ${status}`;
+  return status === "" ? `: ${message}` : `: ${status}, ${message}`;
+}
+
 /** A refused key or a spent quota needs ops; anything else is worth trying again. */
 function classify(status: number): LookupFailure {
   if (status === 400 || status === 401 || status === 403 || status === 429) return "refused";
@@ -77,7 +92,11 @@ export function createGooglePlaces(apiKey: string, deps: { fetch: typeof fetch }
       });
       if (answer === null) return { ok: false, reason: "unavailable", detail: "autocomplete did not answer" };
       if (answer.status !== 200) {
-        return { ok: false, reason: classify(answer.status), detail: scrub(`autocomplete ${String(answer.status)}`) };
+        return {
+          ok: false,
+          reason: classify(answer.status),
+          detail: scrub(`autocomplete ${String(answer.status)}${why(answer.body)}`),
+        };
       }
       const suggestions = ((answer.body as AutocompleteAnswer | null)?.suggestions ?? []).flatMap((entry) => {
         const prediction = entry.placePrediction;
@@ -108,7 +127,11 @@ export function createGooglePlaces(apiKey: string, deps: { fetch: typeof fetch }
       const answer = await get(`${GEOCODE_URL}?${query.toString()}`, { method: "GET" });
       if (answer === null) return { ok: false, reason: "unavailable", detail: "geocoding did not answer" };
       if (answer.status !== 200) {
-        return { ok: false, reason: classify(answer.status), detail: scrub(`geocoding ${String(answer.status)}`) };
+        return {
+          ok: false,
+          reason: classify(answer.status),
+          detail: scrub(`geocoding ${String(answer.status)}${why(answer.body)}`),
+        };
       }
       const body = answer.body as GeocodeAnswer | null;
       const status = text(body?.status);

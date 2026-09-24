@@ -35,7 +35,7 @@ export const AUDIT_ACTIONS = [
   // and to the dispatch board alike (ADR 0062).
   "technician.leave",
   "technician.leave_cancelled",
-  // The business inputs ops set for themselves (docs/decisions/0059-ops-editable-inputs.md):
+  // The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md):
   // one of the rules, a price from a date, and whether we go to a pincode.
   "setting.change",
   "price.set",
