@@ -1,0 +1,192 @@
+/*
+ * The grievance queue, on the panel and at the width the boards' own queues use
+ * (C1 and D1). The design draws no board for it, so nothing here is new: the
+ * head with its count, a row for each, the client's words quoted between
+ * hairlines, and the field the answer is written in, as board C1's reason is.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-panel);
+}
+
+.panel {
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--sp-14) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.panelTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-22);
+}
+
+.count {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* ---- One grievance --------------------------------------------------------- */
+
+.grievances {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grievance {
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-16);
+}
+
+/* The client's name, which reaches their record; opening it is audited. */
+.name {
+  font-size: var(--fs-15);
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.name:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.left {
+  flex-shrink: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Past the day the app promised an answer by, in oxblood, as board D2 marks one. */
+.late {
+  color: var(--error-on-paper);
+}
+
+.who {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The client's own words. They are quoted, not restated: an answer written
+ * against a paraphrase is an answer to the wrong thing.
+ */
+.words {
+  margin: var(--sp-12) 0 0;
+  padding: var(--sp-12) 0;
+  border-top: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-family: var(--font-serif);
+  font-size: var(--fs-16);
+  line-height: 1.5;
+}
+
+/* ---- The answer ------------------------------------------------------------ */
+
+.answer {
+  margin-top: var(--sp-14);
+}
+
+.answerLabel {
+  display: block;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.answerField {
+  display: block;
+  width: 100%;
+  min-height: var(--sp-64);
+  margin-top: var(--sp-6);
+  padding: var(--sp-8) var(--sp-10);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper-light);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+  resize: vertical;
+}
+
+.answerField:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.answerHint {
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+  margin-top: var(--sp-12);
+}
+
+/* Ink carries the one primary action, as on boards C1 and D1. */
+.send {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.send:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.send:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+.error {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.note {
+  margin: 0;
+  padding: var(--sp-14) var(--sp-20);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
