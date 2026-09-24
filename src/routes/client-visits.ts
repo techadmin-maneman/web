@@ -1,7 +1,7 @@
 // The client app's visits and photographs (docs/prompts/phase2-backend.md,
 // "Read endpoints"), read from the FSM mirror (docs/decisions/0032-fsm-mirror.md).
 //
-//   GET /api/visits                 upcoming and past
+//   GET /api/visits                 upcoming and past, with what they add up to
 //   GET /api/visits/:id             one visit, with its photographs
 //   GET /api/photos                 the timeline: each visit's photographs, newest first
 //   GET /api/photos/compare         one angle from two visits, side by side
@@ -13,6 +13,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
+import { clientHistory } from "../domain/client-history.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { requireClientSession } from "../http/client-session.ts";
@@ -74,8 +75,43 @@ const VisitDetailSchema = VisitSummarySchema.extend({
   }),
 }).openapi("VisitDetail");
 
+/**
+ * The figures src/domain/client-history.ts derives, which the client and ops
+ * read from the one derivation. Each surface names its own replacement date
+ * beside them: ops act on the day, the client is told only the month.
+ */
+export const HISTORY_FIGURES = {
+  visits: z.number().int().openapi({ description: "Every visit done: a completed visit with a window." }),
+  services: z.number().int(),
+  replacements: z.number().int(),
+  first_fit_on: z
+    .union([z.iso.date(), z.null()])
+    .openapi({ description: "India's date. Null when no first fit is on record, which is not the same as none." }),
+  last_visit_on: z.union([z.iso.date(), z.null()]).openapi({ description: "India's date of the latest visit done." }),
+  spend: z
+    .number()
+    .int()
+    .openapi({ description: "In paise: every payment captured, less what has gone back. A credit adds nothing." }),
+};
+
+const ClientHistorySchema = z
+  .object({
+    ...HISTORY_FIGURES,
+    replacement_due: z.union([z.object({ month: z.string().regex(/^\d{4}-\d{2}$/) }).strict(), z.null()]).openapi({
+      description:
+        "The month the piece now in wear falls due, and null when no piece is in wear. " +
+        "A month, not a day: FSM's install date is read again on every sync, so the day can move (ADR 0059).",
+    }),
+  })
+  .strict()
+  .openapi("ClientHistory");
+
 const VisitsSchema = z
-  .object({ upcoming: z.array(VisitSummarySchema), past: z.array(VisitSummarySchema) })
+  .object({
+    upcoming: z.array(VisitSummarySchema),
+    past: z.array(VisitSummarySchema),
+    history: ClientHistorySchema.openapi({ description: "What the client's record adds up to, derived at read time." }),
+  })
   .strict()
   .openapi("Visits");
 
@@ -183,7 +219,14 @@ export function registerClientVisits(app: App): void {
   app.openapi(visitsRoute, async (c) => {
     const session = c.var.clientSession;
     if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
-    return c.json(await listVisits(c.env.DB, session.subjectId, c.var.deps.now()), 200);
+    const [visits, history] = await Promise.all([
+      listVisits(c.env.DB, session.subjectId, c.var.deps.now()),
+      clientHistory(c.env.DB, session.subjectId),
+    ]);
+    // The client is told the month and never the day: see ClientHistorySchema.
+    const { replacement_due: due, ...figures } = history;
+    const replacementDue = due === null ? null : { month: due.month };
+    return c.json({ ...visits, history: { ...figures, replacement_due: replacementDue } }, 200);
   });
 
   app.openapi(visitRoute, async (c) => {

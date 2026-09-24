@@ -5,7 +5,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { fullDate, shortDate } from "../../packages/web-kit/dates.ts";
+import { fullDate, listMonth, shortDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
@@ -54,6 +54,36 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect.poll(() => front.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
   await page.getByRole("link", { name: "Back to visits" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
+});
+
+// The client's own record, above their visits: the owner's ruling of 24
+// September 2026 that a client's history belongs in the app as well as the
+// console. The replacement is a month and never a day, because the day is
+// worked out afresh from FSM on every sync (ADR 0059).
+test("Visits heads the client's own record with the month their replacement falls due", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await tab(page, "Visits").click();
+
+  const record = page.getByRole("region", { name: "Your record" });
+  const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
+  await expect(record.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
+  await expect(
+    record.getByText("We give the month rather than a day, because the date can still change."),
+  ).toBeVisible();
+  // Never the day, however the month is written.
+  await expect(record).not.toContainText(fullDate(client.piece.due));
+
+  const fact = (label: string) =>
+    record
+      .getByRole("term")
+      .filter({ hasText: new RegExp(`^${label}$`) })
+      .locator("+ dd");
+  await expect(fact("First fit")).toHaveText(fullDate(client.firstFit.date));
+  await expect(fact("Service visits")).toHaveText("1");
+  // A true nought, written as one: this client has bought no replacement.
+  await expect(fact("Replacements")).toHaveText("0");
+  await expect(fact("Total paid")).toContainText("Rs. 32,000");
 });
 
 // The owner's ruling of 23 September 2026: the invoice appears beside the visit, and a free visit says so

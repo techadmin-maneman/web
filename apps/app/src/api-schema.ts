@@ -2254,6 +2254,24 @@ export interface components {
         Visits: {
             upcoming: components["schemas"]["VisitSummary"][];
             past: components["schemas"]["VisitSummary"][];
+            history: components["schemas"]["ClientHistory"];
+        };
+        /** @description What the client's record adds up to, derived at read time. */
+        ClientHistory: {
+            /** @description Every visit done: a completed visit with a window. */
+            visits: number;
+            services: number;
+            replacements: number;
+            /** @description India's date. Null when no first fit is on record, which is not the same as none. */
+            first_fit_on: string | null;
+            /** @description India's date of the latest visit done. */
+            last_visit_on: string | null;
+            /** @description In paise: every payment captured, less what has gone back. A credit adds nothing. */
+            spend: number;
+            /** @description The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day: FSM's install date is read again on every sync, so the day can move (ADR 0059). */
+            replacement_due: {
+                month: string;
+            } | null;
         };
         VisitDetail: components["schemas"]["VisitSummary"] & {
             /** @description From start to finish, once done. */

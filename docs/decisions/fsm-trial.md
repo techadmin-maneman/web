@@ -1,6 +1,6 @@
 # Zoho FSM trial findings
 
-- Status: **answered on 22 September 2026**, from the documentation and a trial run against the real org (below). Webhooks are confirmed in P2-M2.
+- Status: **answered on 22 September 2026**, from the documentation and a trial run against the real org (below). Webhooks are confirmed in P2-M2; question 4's coordinate was corrected on 23 September and question 8's CRM half answered on 24 September, both at the end.
 - Referenced by: `docs/prompts/phase2-backend.md` ("Before you start", point 2)
 
 The Phase 2 backend reads field operations from Zoho FSM and writes them back to it. Where the trial finds a capability missing, the build stops and an ADR records the fallback. The roadmap's fallbacks are our own availability logic and our own photo-capture PWA.
@@ -111,3 +111,13 @@ Tried against the real FSM org with one synthetic contact per case — "Mane Man
 **FSM did not geocode anything.** A second contact created the same way but with **no** coordinate read back with `Latitude` null, `Longitude` null and `Google_Geocodedtime` null, after a wait. The field exists, so FSM can geocode somewhere — in its own interface, or under a setting this org does not have on — but it does not do so when a contact is created through the API. There is a `Google_Geocodedtime` on the address record, and it was null in both cases, so nothing re-geocoded over the coordinate we supplied either.
 
 This retires the premise of ADR 0036, which had the coordinates coming from FSM's own geocoding of the service address: there is nothing there to read. It also settles what a client-placed pin is worth — it reaches the field, on the record the technician's own navigation uses. Our D1 stays the record the geofence measures against regardless (`docs/decisions/0054-address-capture.md`).
+
+## Question 8, the link to Zoho CRM: answered 24 September 2026
+
+The Books half was answered on 22 September: an FSM contact carries `ZBilling_Id`, and invoices raised in FSM appear in Books. The CRM half was left open. It is answered by reading the real org, read-only, with one cached access token; nothing was created, changed or deleted, and only field names and record IDs were read.
+
+**FSM links a contact to CRM itself, through `ZCRM_Id`.** `GET /fsm/v1/Contacts` returns the field on every contact, and every one of the first twenty had it populated — including contacts our own `POST /fsm/v1/Contacts` created. Its values are in the same org's ID namespace as the CRM's own field IDs (`1431113…`), so FSM and CRM are one org and FSM's contact sync has already made the CRM-side record.
+
+**The CRM side could not be opened from here.** The Worker's CRM refresh token is scoped `ZohoCRM.modules.leads.ALL`, notes, search and the settings reads; `GET /crm/v8/Contacts`, `/Accounts`, `/Deals` and `/settings/modules` each answer 401 `OAUTH_SCOPE_MISMATCH`. So `ZCRM_Id` is a link we can follow from our own side (`people.fsm_contact_id` → FSM's contact → `ZCRM_Id`) but not one we can yet read or write at the far end. What that means for a client's history is ADR 0059; the scope itself is open point 73.
+
+**The CRM's Contacts module is stock.** `GET /crm/v8/settings/fields?module=Contacts` lists 60 fields, every one of Zoho's own: no `D1_Person_ID` and no FSM field. Whatever the integration syncs, it syncs into the standard fields.

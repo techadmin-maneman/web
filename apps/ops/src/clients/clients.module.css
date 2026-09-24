@@ -87,6 +87,11 @@
   font-size: var(--fs-15);
 }
 
+/* The board letters the replacement due in brass, as it does the live piece's date. */
+.metaBrass {
+  color: var(--brass-text);
+}
+
 .tabs {
   display: flex;
   gap: var(--sp-24);
@@ -314,6 +319,40 @@
   font-size: var(--fs-14);
   line-height: 1.6;
   color: var(--text-muted);
+}
+
+/* ---- History: the record in figures, which the board draws no tab for ----- */
+
+.history {
+  max-width: var(--ops-panel);
+  border: var(--hairline) solid var(--paper-line);
+  padding: var(--sp-22);
+}
+
+.historyList {
+  margin: 0;
+  border-top: var(--hairline) solid var(--text);
+}
+
+.historyRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  min-height: var(--ops-row);
+  padding: var(--sp-9) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-14);
+}
+
+.historyKey {
+  color: var(--text-muted);
+}
+
+.historyValue {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* ---- Shared ------------------------------------------------------------- */

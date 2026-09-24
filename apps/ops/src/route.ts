@@ -8,6 +8,7 @@
 //   /clients/:id/pieces     the pieces they have been fitted with (B1)
 //   /clients/:id/photos     that client's photographs (B2), locked until the view is logged
 //   /clients/:id/consents   what they have agreed to (B3)
+//   /clients/:id/history    how often they have been served, and what they have bought
 //   /no-shows               the no-show cases and their evidence (D1's queue)
 //   /tasks                  what ops still have to do, by group (D2)
 //   /technicians            who works, and the phones they work from (D3)
@@ -20,8 +21,12 @@
 
 import { useEffect, useState } from "react";
 
-/** The tabs of the design's eight that a client's page carries, in its order. */
-export const CLIENT_TABS = ["pieces", "consents", "photos"] as const;
+/**
+ * The tabs of the design's eight that a client's page carries, in its order,
+ * and History last: the board draws no such tab, so it stands after the three
+ * it does draw (docs/fidelity-method.md).
+ */
+export const CLIENT_TABS = ["pieces", "consents", "photos", "history"] as const;
 export type ClientTab = (typeof CLIENT_TABS)[number];
 
 export type Route =
@@ -37,7 +42,7 @@ export type Route =
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
 const DISPATCH: Route = { page: "dispatch" };
-const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(pieces|photos|consents))?$/;
+const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(pieces|photos|consents|history))?$/;
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
 const tabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? CLIENT_TABS[0];

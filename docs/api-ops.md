@@ -93,7 +93,7 @@ Request body:
 
 ### GET /api/clients/{id}
 
-The client's record: who they are, their address, their visits and their payments
+The client's record: who they are, their address, their visits, their payments and their history
 
 **200**: The record
 
@@ -1458,6 +1458,9 @@ Per technician: jobs finished over a period, and how they ran against the planne
         }
       },
       "description": "Payments and refunds as one list, newest first."
+    },
+    "history": {
+      "$ref": "#/components/schemas/ClientRecordHistory"
     }
   },
   "required": [
@@ -1469,7 +1472,8 @@ Per technician: jobs finished over a period, and how they ran against the planne
     "address",
     "credits",
     "visits",
-    "payments"
+    "payments",
+    "history"
   ],
   "additionalProperties": false
 }
@@ -1981,6 +1985,93 @@ Per technician: jobs finished over a period, and how they ran against the planne
     "status",
     "destination",
     "speed"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientRecordHistory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer",
+      "description": "Every visit done: a completed visit with a window."
+    },
+    "services": {
+      "type": "integer"
+    },
+    "replacements": {
+      "type": "integer"
+    },
+    "first_fit_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date. Null when no first fit is on record, which is not the same as none."
+    },
+    "last_visit_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date of the latest visit done."
+    },
+    "spend": {
+      "type": "integer",
+      "description": "In paise: every payment captured, less what has gone back. A credit adds nothing."
+    },
+    "replacement_due": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "format": "date"
+            },
+            "month": {
+              "type": "string"
+            },
+            "piece_code": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "on",
+            "month",
+            "piece_code"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the piece now in wear falls due; null when the client is wearing none."
+    }
+  },
+  "required": [
+    "visits",
+    "services",
+    "replacements",
+    "first_fit_on",
+    "last_visit_on",
+    "spend",
+    "replacement_due"
   ],
   "additionalProperties": false
 }
