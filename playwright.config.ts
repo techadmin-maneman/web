@@ -148,11 +148,9 @@ export default defineConfig({
        * engine over every screen would double the run for little, and the
        * camera's fake device is Chromium's alone.
        *
-       * It is not in `npm run test:e2e`, which names its projects: CI installs
-       * Chromium alone, and nobody has yet watched WebKit run on the shared
-       * runner. `npm run test:tech-ios` runs it, after `npx playwright install
-       * webkit`. Putting it in CI is two lines — webkit on the install step in
-       * .github/workflows/ci.yml, and this project on `test:e2e`.
+       * It runs in CI with the rest: `npm run test:e2e` names it, and the
+       * browser job installs webkit beside chromium. Run it alone with
+       * `npm run test:tech-ios`, after `npx playwright install webkit`.
        */
       name: "tech-ios",
       testMatch: "tech/ios.e2e.ts",
