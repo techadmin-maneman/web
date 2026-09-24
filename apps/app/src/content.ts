@@ -160,6 +160,29 @@ export const visits = {
   // PLACEHOLDER
   none: "No visits booked.",
   book: "Book your next visit",
+  /*
+   * PLACEHOLDER: the client's own record, derived from their visits and
+   * payments (src/domain/client-history.ts). No board draws it. Board B1 writes
+   * one sentence about a replacement, "Your replacement piece is due in
+   * March.", and that sentence is kept word for word.
+   *
+   * A month and never a day: `syncPieces` works the date out afresh from FSM's
+   * install date on every sync, so a day shown here could move under the client
+   * who read it (ADR 0059). Nothing here is shown at all until there is
+   * something true to say.
+   */
+  record: {
+    label: "Your record",
+    due: (month: string) => `Your replacement piece is due in ${month}.`,
+    /** Past its month, the same fact in the tense it is now true in. */
+    overdue: (month: string) => `Your replacement piece was due in ${month}.`,
+    approximate: "We give the month rather than a day, because the date can still change.",
+    rows: { firstFit: "First fit", services: "Service visits", replacements: "Replacements", spend: "Total paid" },
+    /** A client fitted before FSM held their visits has no first fit to name, which is not the same as none. */
+    noFirstFit: "Not on record",
+    /** Beside the total, so a figure that includes tax is not read as one that does not. */
+    gst: "GST included",
+  },
   detail: {
     back: "Back to visits",
     photographs: "Photographs from this visit",

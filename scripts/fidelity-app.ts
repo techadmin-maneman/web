@@ -77,6 +77,21 @@ const PAST = [
 ] as const;
 const [AUGUST, JULY, , NOVEMBER] = PAST;
 
+/**
+ * What those visits and board E1's ledger add up to (src/domain/client-history.ts).
+ * The spend is every entry the ledger draws as paid or charged, GST included;
+ * the credited visit cost nothing and the refund has not gone back yet.
+ */
+const HISTORY = {
+  visits: 4,
+  services: 2,
+  replacements: 1,
+  first_fit_on: "2026-11-14",
+  last_visit_on: "2027-08-22",
+  spend: 6_018_000,
+  replacement_due: { month: "2028-03" },
+};
+
 const ME_FITTED = {
   ...ME,
   state: "fitted",
@@ -446,7 +461,10 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await home.close();
 
   // C1 marks the upcoming visit Prepaid, which arrives with prepayment (P2-M5).
-  const visits = await openApp(browser, "/visits", { ...me, "/api/visits": json({ upcoming: [NEXT], past: PAST }) });
+  const visits = await openApp(browser, "/visits", {
+    ...me,
+    "/api/visits": json({ upcoming: [NEXT], past: PAST, history: HISTORY }),
+  });
   await visits.getByRole("heading", { name: "Past" }).waitFor();
   await pair(OUT, WIDTH, "c1-visits", await frame(design, "Visits · list"), await shot(visits));
   await visits.close();
@@ -533,7 +551,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
 async function bookingPairs(browser: Browser, design: Page): Promise<void> {
   const api = (holdAnswer: object, polled: object = holdAnswer): Api => ({
     "/api/me": json(ME_BOOKING),
-    "/api/visits": json({ upcoming: [], past: PAST }),
+    "/api/visits": json({ upcoming: [], past: PAST, history: HISTORY }),
     "/api/availability": json(AVAILABILITY),
     "/api/holds": json(holdAnswer),
     "/api/bookings": json(BOOKING),

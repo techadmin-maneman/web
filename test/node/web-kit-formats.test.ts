@@ -4,8 +4,10 @@ import {
   indiaClock,
   indiaDate,
   listDate,
+  listMonth,
   longDate,
   shortDate,
+  shortMonth,
   weekdayDate,
 } from "../../packages/web-kit/dates.ts";
 import { rupees } from "../../packages/web-kit/money.ts";
@@ -26,6 +28,15 @@ describe("web-kit dates", () => {
     ["2026-12-31T19:00:00Z", "1 Jan 2027"],
   ])("writes the instant %s as India's date: %s", (instant, written) => {
     expect(longDate(instant)).toBe(written);
+  });
+
+  // A replacement is given as a month, never a day: the day is worked out again
+  // on every sync and can move under whoever read it (ADR 0059).
+  it("writes a month as the ops board heads one, and as the app speaks one", () => {
+    expect(shortMonth("2028-03")).toBe("Mar 2028");
+    expect(shortMonth("2027-11")).toBe("Nov 2027");
+    expect(listMonth("2028-03", 2028)).toBe("March");
+    expect(listMonth("2028-03", 2027)).toBe("March 2028");
   });
 
   it("writes a calendar date in full, and without this year's year in a list", () => {

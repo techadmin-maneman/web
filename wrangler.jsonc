@@ -210,8 +210,8 @@
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000000038161",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
-        // "google" once the owner's key is in place (docs/runbook.md, section 13).
-        "GEOCODE_PROVIDER": "none",
+        // The owner's key is in place (docs/runbook.md, section 13); production waits for the release.
+        "GEOCODE_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "true",
         "REFERRER_NAME_ON_INVITE": "true",
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",

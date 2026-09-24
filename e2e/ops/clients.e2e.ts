@@ -16,6 +16,7 @@ import {
   inkPhoto,
   jpeg,
   json,
+  NEW_RECORD,
   PHOTOS,
   PIECES,
   RECORD,
@@ -79,7 +80,13 @@ test("heads the page with the client's standing, from the record", async ({ page
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
-  await expect(page.getByRole("definition")).toHaveText(["Fitted", "2 · expire 3 Jan 2028"]);
+  // The replacement is the month the board's head writes, never the day the pieces table carries.
+  await expect(page.getByRole("definition")).toHaveText(["Fitted", "2 · expire 3 Jan 2028", "Mar 2028"]);
+});
+
+test("says in words that a client wearing no piece falls due on no date", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`, { [RECORD_PATH]: json(NEW_RECORD) });
+  await expect(page.getByRole("definition")).toHaveText(["Booked", "2 · expire 3 Jan 2028", "No piece fitted"]);
 });
 
 test("opens on the pieces, as the board draws the page, and lists them in the board's columns", async ({ page }) => {
@@ -173,6 +180,41 @@ test("says when the client has asked to be erased", async ({ page }) => {
   await expect(page.getByText("Erasure requested 18 Sep 2027. It is not decided here.")).toBeVisible();
 });
 
+// The owner's ruling of 24 September 2026: what a client has bought and how
+// often they have been served belongs on the ops console as well as in the app.
+test("counts the client's visits and replacements, and the day their piece falls due", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/history`);
+  const history = page.getByRole("region", { name: "History" });
+  const fact = (label: string) =>
+    history
+      .getByRole("term")
+      .filter({ hasText: new RegExp(`^${label}$`) })
+      .locator("+ dd");
+  await expect(fact("First fit")).toHaveText("14 Nov 2026");
+  await expect(fact("Visits")).toHaveText("6");
+  await expect(fact("Service visits")).toHaveText("4");
+  await expect(fact("Replacements")).toHaveText("1");
+  await expect(fact("Last visit")).toHaveText("22 Aug 2027");
+  // Ops order a piece against a day, so this tab carries one; only the client is told the month alone.
+  await expect(fact("Replacement due")).toHaveText("1 Mar 2028 · MM-STD-4417-C");
+  await expect(fact("Paid")).toHaveText("Rs. 49,560");
+});
+
+test("writes a client with no record in words, and their true noughts as noughts", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/history`, { [RECORD_PATH]: json(NEW_RECORD) });
+  const history = page.getByRole("region", { name: "History" });
+  const fact = (label: string) =>
+    history
+      .getByRole("term")
+      .filter({ hasText: new RegExp(`^${label}$`) })
+      .locator("+ dd");
+  await expect(fact("First fit")).toHaveText("No first fit on record");
+  await expect(fact("Last visit")).toHaveText("No visit done yet");
+  await expect(fact("Replacement due")).toHaveText("No piece fitted, so no date");
+  await expect(fact("Service visits")).toHaveText("0");
+  await expect(fact("Paid")).toHaveText("Rs. 0");
+});
+
 test("moves between the tabs without reading the record again", async ({ page }) => {
   let records = 0;
   await openClient(page, `/clients/${CLIENT.id}/photos`, {
@@ -186,6 +228,9 @@ test("moves between the tabs without reading the record again", async ({ page })
   await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
   await page.getByRole("link", { name: "Pieces" }).click();
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
+  // History is drawn from the record already loaded, so it asks the API for nothing at all.
+  await page.getByRole("link", { name: "History" }).click();
+  await expect(page.getByRole("region", { name: "History" })).toBeVisible();
   await page.getByRole("link", { name: "Photos" }).click();
   // Coming back locks them again: a second look is a second entry in the log.
   await expect(page.getByText("Locked")).toBeVisible();
@@ -230,4 +275,8 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await page.getByRole("link", { name: "Consents" }).click();
   await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
   await clean("consents");
+
+  await page.getByRole("link", { name: "History" }).click();
+  await expect(page.getByRole("region", { name: "History" })).toBeVisible();
+  await clean("history");
 });

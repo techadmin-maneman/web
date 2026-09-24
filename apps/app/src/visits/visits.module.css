@@ -117,6 +117,46 @@
   color: var(--text-quiet);
 }
 
+/* The client's own record, beneath board C1's lists; the board draws none. */
+.record {
+  padding-bottom: var(--sp-22);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.recordLabel {
+  padding-top: var(--sp-26);
+  padding-bottom: var(--sp-14);
+}
+
+.due {
+  margin: 0 var(--sp-20) var(--sp-18);
+}
+
+.dueLine {
+  margin: 0;
+  font-size: var(--fs-17);
+  line-height: 1.5;
+}
+
+.dueNote {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.record .facts {
+  margin: 0 var(--sp-20);
+}
+
+.factNote {
+  display: block;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-14);
+  font-variant-numeric: normal;
+  color: var(--text-muted);
+}
+
 /* Board C9, and the visit's tax invoice beneath its facts (ADR 0056). */
 .detail {
   display: flex;

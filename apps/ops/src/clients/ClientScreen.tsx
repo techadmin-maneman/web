@@ -1,7 +1,10 @@
 // One client's page (Ops Console, boards B1 to B3): who they are, then their
-// pieces, their consents or their photographs. The board draws eight tabs;
-// these are the three the ops routes answer, and what it heads the page with is
-// narrowed the same way (docs/fidelity-method.md).
+// pieces, their consents, their photographs or their history. The board draws
+// eight tabs; three of them are the ops routes', History is ours, and what it
+// heads the page with is narrowed the same way (docs/fidelity-method.md).
+//
+// The record is read once for the page. History is drawn from it, so the tabs
+// still cost one read between them.
 
 import { longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
@@ -13,6 +16,7 @@ import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";
+import { History, replacementDueOf } from "./History.tsx";
 import { Photos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
 
@@ -33,6 +37,10 @@ function Head({ record }: { record: ClientRecord }) {
         <div className={styles.metaItem}>
           <dt className={styles.metaKey}>{clients.meta.credits}</dt>
           <dd className={styles.metaValue}>{creditsOf(record.credits)}</dd>
+        </div>
+        <div className={styles.metaItem}>
+          <dt className={styles.metaKey}>{clients.meta.replacement}</dt>
+          <dd className={`${styles.metaValue ?? ""} ${styles.metaBrass ?? ""}`}>{replacementDueOf(record.history)}</dd>
         </div>
       </dl>
     </div>
@@ -73,6 +81,8 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
               <Pieces clientId={clientId} />
             ) : tab === "consents" ? (
               <Consents clientId={clientId} />
+            ) : tab === "history" ? (
+              <History history={loaded.value.history} />
             ) : (
               <Photos clientId={clientId} name={loaded.value.name} />
             )}

@@ -119,7 +119,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's record: who they are, their address, their visits and their payments */
+        /** The client's record: who they are, their address, their visits, their payments and their history */
         get: {
             parameters: {
                 query?: never;
@@ -1628,6 +1628,7 @@ export interface components {
             };
             /** @description Payments and refunds as one list, newest first. */
             payments: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+            history: components["schemas"]["ClientRecordHistory"];
         };
         ClientAddress: {
             line1: string;
@@ -1762,6 +1763,25 @@ export interface components {
             destination: string | null;
             /** @description normal (5 to 7 working days) or instant. */
             speed: string | null;
+        };
+        ClientRecordHistory: {
+            /** @description Every visit done: a completed visit with a window. */
+            visits: number;
+            services: number;
+            replacements: number;
+            /** @description India's date. Null when no first fit is on record, which is not the same as none. */
+            first_fit_on: string | null;
+            /** @description India's date of the latest visit done. */
+            last_visit_on: string | null;
+            /** @description In paise: every payment captured, less what has gone back. A credit adds nothing. */
+            spend: number;
+            /** @description When the piece now in wear falls due; null when the client is wearing none. */
+            replacement_due: {
+                /** Format: date */
+                on: string;
+                month: string;
+                piece_code: string;
+            } | null;
         };
         ClientPhotos: {
             visits: {

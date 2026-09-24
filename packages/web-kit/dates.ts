@@ -5,6 +5,20 @@
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
 
 /** "2026-09-24" → "Thu 24 Sep". */
 export function shortDate(isoDate: string): string {
@@ -29,6 +43,19 @@ export function fullDate(isoDate: string): string {
 export function listDate(isoDate: string, thisYear: number): string {
   const full = fullDate(isoDate);
   return isoDate.startsWith(String(thisYear)) ? full.slice(0, full.lastIndexOf(" ")) : full;
+}
+
+/** "2028-03" → "Mar 2028", as the ops board heads a client's replacement. */
+export function shortMonth(isoMonth: string): string {
+  const [year = "", month] = isoMonth.split("-");
+  return `${MONTHS[Number(month) - 1] ?? ""} ${year}`;
+}
+
+/** "2028-03" → "March" in 2028, and "March 2028" in any other year: as listDate dates an entry. */
+export function listMonth(isoMonth: string, thisYear: number): string {
+  const [year = "", month] = isoMonth.split("-");
+  const name = MONTH_NAMES[Number(month) - 1] ?? "";
+  return year === String(thisYear) ? name : `${name} ${year}`;
 }
 
 /** An instant as India's calendar date, YYYY-MM-DD: "2026-09-21T20:00:00Z" → "2026-09-22". */
