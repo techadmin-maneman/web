@@ -61,7 +61,8 @@ jobs:
             echo "code=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Only documentation changed: the build, the browser tests, Lighthouse and the local smoke have nothing to do."
           fi
-          if grep -q '^migrations/' changed.txt; then
+          # A change to the check itself runs it too.
+          if grep -qE '^(migrations/|scripts/old-code-on-new-schema\.ts$)' changed.txt; then
             echo "migrations=true" >> "$GITHUB_OUTPUT"
           else
             echo "migrations=false" >> "$GITHUB_OUTPUT"
