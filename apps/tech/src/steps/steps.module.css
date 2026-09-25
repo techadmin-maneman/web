@@ -1,14 +1,32 @@
 /*
  * Board B: the six in-job steps and the close-out. One primary action per
- * screen, bottom, same place; 88 px rows and 56 px steppers, for gloved use.
+ * screen, fixed at the foot in the same place; 88 px rows and 56 px steppers,
+ * for gloved use. The screen is the phone's height and its body scrolls.
  */
 
-.screen {
+.screen,
+.sliding {
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
   background: var(--ink-deep);
+}
+
+/*
+ * Steps slide in 300 ms on the house curve (the board's motion note). Only the
+ * way in is drawn, so nothing is left transformed once the step has landed;
+ * under prefers-reduced-motion nothing moves (../styles/global.css).
+ */
+.sliding {
+  animation: var(--ease) backwards step-in;
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--sp-24));
+  }
 }
 
 .head {
@@ -23,10 +41,11 @@
 
 .back {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: var(--tap);
-  height: var(--tap);
+  width: var(--tech-min);
+  height: var(--tech-min);
   margin-left: calc(-1 * var(--sp-12));
   border: 0;
   background: transparent;
@@ -35,8 +54,15 @@
 }
 
 .title {
+  margin: 0;
   font-size: var(--fs-17);
+  font-weight: 400;
   color: var(--paper);
+}
+
+.title:focus,
+.closeWho:focus {
+  outline: none;
 }
 
 .progress {
@@ -47,14 +73,37 @@
 }
 
 .body {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   overflow-y: auto;
+}
+
+/* The API refused what this step sent, and the technician is putting it right. */
+.notice {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-top: var(--rule-strong) solid var(--error-on-ink);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+  font-size: var(--fs-17);
+  line-height: 1.5;
+  color: var(--paper);
 }
 
 .list {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Said to a screen reader and not drawn: a count as it changes. */
+.hidden {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ---- Board B2: the checklist ---------------------------------------------- */
@@ -168,7 +217,20 @@
 /* ---- Board B3: the piece --------------------------------------------------- */
 
 .field {
+  display: flex;
+  flex-direction: column;
   padding: var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.fieldTitle {
+  margin: 0 0 var(--sp-14);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-15);
+  font-weight: 400;
+  color: var(--ink-muted);
 }
 
 .fieldLabel {
@@ -178,10 +240,17 @@
   color: var(--ink-muted);
 }
 
+.box64 + .fieldLabel,
+.second + .fieldLabel,
+.picks + .fieldLabel {
+  margin-top: var(--sp-16);
+}
+
+/* The label's field, drawn where the board draws "Scan the piece": gold-edged, 64 px, the whole of it the input. */
 .scan {
   display: flex;
   gap: var(--sp-12);
-  align-items: center;
+  align-items: stretch;
   min-height: var(--tech-primary);
   padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--gilt);
@@ -189,11 +258,12 @@
 
 .scanIcon {
   flex-shrink: 0;
+  align-self: center;
   color: var(--gilt);
 }
 
-.input {
-  flex: 1;
+.input,
+.box64 {
   min-width: 0;
   border: 0;
   background: transparent;
@@ -203,8 +273,26 @@
   color: var(--paper);
 }
 
-.input::placeholder {
+.input {
+  flex: 1;
+}
+
+.box64 {
+  min-height: var(--tech-stepper);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink-line);
+}
+
+.input::placeholder,
+.box64::placeholder {
   color: var(--ink-muted);
+}
+
+.hint {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-17);
+  line-height: 1.5;
+  color: var(--error-on-ink);
 }
 
 .second {
@@ -220,8 +308,34 @@
 }
 
 .second:disabled {
-  color: var(--ink-muted);
+  border-color: var(--ink-disabled);
+  background: var(--ink-disabled);
+  color: var(--ink-tag);
   cursor: default;
+}
+
+/* The client's pieces, one 56 px row each, from the card. */
+.picks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-10);
+  margin: var(--sp-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pick {
+  width: 100%;
+  min-height: var(--tech-stepper);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-17);
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  color: var(--paper);
+  cursor: pointer;
 }
 
 .rows {
@@ -274,11 +388,11 @@
   cursor: pointer;
 }
 
+/* Chosen: the gold edge the board gives a chosen reason, on the raised ink. The gold fill stays Next's. */
 .choiceOn {
-  border-color: var(--gilt);
-  background: var(--gilt);
+  border: var(--rule-strong) solid var(--gilt);
+  background: var(--ink-raised);
   font-weight: 500;
-  color: var(--ink-deep);
 }
 
 .reasons {
@@ -317,6 +431,7 @@
 .close {
   flex: 1;
   padding: var(--sp-24) var(--sp-20);
+  overflow-y: auto;
 }
 
 .closeLabel {
@@ -346,6 +461,13 @@
   border-top: var(--hairline) solid var(--ink-rule);
 }
 
+.closeNote {
+  margin: var(--sp-18) 0 0;
+  font-size: var(--fs-17);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
 /* ---- The one action, bottom of every screen -------------------------------- */
 
 .foot {
@@ -368,20 +490,31 @@
 
 .action:disabled {
   background: var(--ink-disabled);
-  color: var(--ink-soft);
+  color: var(--ink-tag);
   cursor: default;
 }
 
 .action:focus-visible,
 .back:focus-visible,
-.check:focus-visible,
 .step:focus-visible,
 .second:focus-visible,
+.pick:focus-visible,
 .choice:focus-visible,
 .choiceOn:focus-visible,
 .reason:focus-visible,
 .reasonOn:focus-visible,
-.input:focus-visible {
+.box64:focus-visible {
   outline: var(--rule-strong) solid var(--paper);
   outline-offset: var(--focus-offset);
+}
+
+/* A full-width row inside the scrolling body draws its ring inside itself, so the body's edge never cuts it. */
+.check:focus-visible,
+.scan:focus-within {
+  outline: var(--rule-strong) solid var(--paper);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+.input:focus-visible {
+  outline: none;
 }

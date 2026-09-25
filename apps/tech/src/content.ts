@@ -113,43 +113,122 @@ export const queue = {
     waiting: "Waiting",
     failed: "Failed",
   },
-  count: (done: number, total: number) => `${String(done)} of ${String(total)}`,
+  // PLACEHOLDER: the board writes "7 of 10"; each set is counted on its own, by the photographs the API confirmed.
+  phases: { before: "Before photos", after: "After photos" },
+  sent: (phase: string, done: number, total: number) => `${phase} · ${String(done)} of ${String(total)} sent`,
+  taking: (phase: string, taken: number, total: number) => `${phase} · ${String(taken)} of ${String(total)} taken`,
   // PLACEHOLDER: the board draws the photo sets; these name the writes beside them.
   title: "Waiting to reach us",
   nothing: "Everything has reached us.",
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
   read: "Got it",
+  // PLACEHOLDER: the board draws no step the API refused, and no way to put one right.
+  correct: "Correct it",
   back: "Back",
   // PLACEHOLDER: the board draws the sets, not how long they have been waiting.
   since: (time: string) => `Waiting since ${time}`,
+  // PLACEHOLDER: the board draws no deletion. "Got it" lets go of work, so it asks first.
+  forget: {
+    title: "Delete what this job holds?",
+    what: (photos: number, actions: number) => {
+      const held: string[] = [];
+      if (photos > 0) held.push(counted(photos, "photograph", "photographs"));
+      if (actions > 0) held.push(counted(actions, "action", "actions"));
+      return `This deletes ${held.join(" and ")} from this phone.`;
+    },
+    body: "They never reach us. Tell ops if the client should hear about it.",
+    keep: "Keep them",
+    delete: "Delete them",
+  },
 } as const;
 
 /**
- * What a job's queue stopped for. The API answers a stable code and, on a 409,
- * the fields that moved under the phone — never a sentence — so these are the
- * app's words for each code it can meet (docs/api-tech.md).
+ * What a job's queue stopped for. The API answers a stable code and, on a 409
+ * or a 400, the fields that moved under the phone or that it refused — never a
+ * sentence — so these are the app's words for each it can meet
+ * (docs/api-tech.md). A field is named in preference to the code.
  */
 export const stopped: Readonly<Record<string, string>> = {
-  // PLACEHOLDER: the design writes "Ops moved this job to Sandeep at 10:40", which needs a name and a time nothing gives.
+  // PLACEHOLDER: the design writes "Ops moved this job to Sandeep at 10:40". The 409 names the fields that moved and
+  // never their values; a card fetched afterwards gives the new time (apps/tech/src/job/JobScreen.tsx).
   superseded: "This job changed while the phone was offline.",
   technician: "This job is someone else's now.",
+  time: "Ops moved this job to another time.",
   status: "This job was cancelled while the phone was offline.",
   out_of_order: "A step reached us before the one ahead of it.",
+  not_today: "This job is on another day. Arrive and start it on the day.",
+  already_started: "This job was started, so it cannot close as a no-show.",
   photo_rejected: "The photographs would not upload.",
-  not_found: "We no longer have this job.",
+  not_found: "This job is no longer on your list, so what it holds cannot reach us.",
+  piece_code: "The piece's label was not accepted.",
+  old_piece: "The label of the piece that came off was not accepted.",
+  done: "A checklist item was not recognised.",
+  reason: "That reason was not accepted.",
   invalid_request: "We could not record this.",
   unknown: "We could not record this.",
 } as const;
 
+/** What stopped a job's queue, in the app's words: the fields named if the API named any, else the code. */
+export function whatStopped(why: { readonly note: string | null; readonly fields: readonly string[] }): string {
+  const named = why.fields.map((field) => stopped[field]).find((line) => line !== undefined);
+  return named ?? stopped[why.note ?? ""] ?? stopped.unknown ?? "";
+}
+
+/** The banner above every screen while a job's queue is stopped. */
+export const changed = {
+  // PLACEHOLDER: the board draws what changed on the queue alone.
+  line: (who: string, what: string) => `${who} · ${what}`,
+  open: "See what is waiting",
+} as const;
+
+/** Each screen's name in the browser's title, after which the app's own. */
+export const titles = {
+  app: "Mane Man technician",
+  today: "Today",
+  closeOut: "Closed out",
+  of: (screen: string) => `${screen} · Mane Man technician`,
+} as const;
+
 export const job = {
   back: "Back",
-  when: (time: string, type: string) => `${time} · ${type}`,
+  /** "9:30 am · service · 1 slot", and "Tomorrow · …" for a job on another day (board A3). */
+  when: (parts: readonly string[]) => parts.join(" · "),
+  tomorrow: "Tomorrow",
+  slots: (count: number) => `${String(count)} ${count === 1 ? "slot" : "slots"}`,
   navigate: "Navigate",
+  // PLACEHOLDER: the design draws no landmark line; the client app's words (ADR 0054).
+  near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: the board draws no way to reach the client from the card.
+  call: (who: string) => `Call ${who}`,
+  whatsApp: (who: string) => `WhatsApp ${who}`,
   start: "Start job",
   continueJob: "Continue",
+  // PLACEHOLDER: the board draws no job's state on its card or its row.
+  states: { inProgress: "In progress", closed: "Closed out" },
+  closedAs: (outcome: string) => `Closed out · ${outcome}`,
+  seeCloseOut: "See the close-out",
+  notToday: {
+    tomorrow: "This job is tomorrow. Arrive and start it on the day.",
+    other: "This job is not today's. Arrive and start it on its day.",
+  },
+  // PLACEHOLDER: the board draws what changed on the queue alone (board A2).
+  changed: {
+    title: "This job changed",
+    movedTo: (time: string) => `Ops moved this job to ${time}.`,
+    body: "Nothing more of it can be sent from this phone. Waiting to reach us says what it still holds.",
+  },
   locked: {
     title: "Not yet",
     body: "The address and the client's card open the day before.",
+  },
+  piece: {
+    title: "The piece",
+    // PLACEHOLDER: the board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
+    rows: { piece: "Piece", base: "Base", lot: "Supplier lot", fitted: "Fitted", due: "Replacement due" },
+    none: "No piece recorded for this client yet.",
+    lastVisit: (date: string, who: string | null) =>
+      who === null ? `Last visit, after. ${date}.` : `Last visit, after. ${date}, ${who}.`,
+    lastVisitImage: "Last visit, after",
   },
   // PLACEHOLDER: the board draws no failure for a job's card.
   failed: "This job's card did not load.",
@@ -164,8 +243,6 @@ export const notHome = {
     action: "I have arrived",
     // PLACEHOLDER: the board draws no screen for a phone that will not give its position.
     noPosition: "This phone will not give its position. Check its permissions, then tap again.",
-    // PLACEHOLDER: the board draws the check running, not one waiting for signal.
-    queued: "No signal. The time is on the phone and the check runs when signal returns.",
   },
   failed: {
     title: "Check-in failed",
@@ -178,9 +255,25 @@ export const notHome = {
   waiting: {
     step: "2 · Waiting",
     left: (minutes: number) => `left of ${String(minutes)} minutes`,
+    // PLACEHOLDER: the board draws the wait running, not the moment it ends.
+    over: "The wait is over.",
+    // PLACEHOLDER: the board draws the check running, not one waiting for signal. The API counts the wait from when
+    // the check-in reaches it as well as from the tap (ADR 0065), so a no-show cannot close before it has.
+    fromTap: "No signal. The wait counts from your tap, and closing as a no-show needs signal, since we count it too.",
+    // PLACEHOLDER: the board draws no no-show refused.
+    early: "Our clock says the wait has not run out yet. Try again in a minute.",
     close: "Close as no-show",
-    // PLACEHOLDER: the board shows the day-before WhatsApp's delivery receipt, which no route gives a technician.
+    delivered: (who: string, time: string) => `${who} messaged on WhatsApp, delivered ${time}.`,
+    // PLACEHOLDER: the board draws the receipt delivered; these are the day-before WhatsApp not delivered, and none.
+    notDelivered: (who: string) => `${who} messaged on WhatsApp, not delivered.`,
     evidence: "Ops get the check-in time and the distance.",
+  },
+  // PLACEHOLDER: the board draws no confirmation. Closing as a no-show can bring the client a charge.
+  confirm: {
+    title: "Close as a no-show?",
+    body: "Ops may charge the client. Close only if nobody has come to the door.",
+    yes: "Close as no-show",
+    no: "Not yet",
   },
   appears: {
     title: "He appears",
@@ -219,8 +312,20 @@ export const steps = {
     after_photos: "After photos",
     outcome: "Outcome",
   },
+  // PLACEHOLDER: the board titles a service visit's list; the other types' are named the same way.
+  checklistTitles: {
+    service: "Service checklist",
+    replacement: "Replacement checklist",
+    first_fit: "First fit checklist",
+    consultation: "Consultation checklist",
+  },
   // PLACEHOLDER: the board names no step but the one it draws.
   next: "Next",
+  // PLACEHOLDER: the board draws no step the API refused.
+  corrected: {
+    piece: "We could not record the label you gave. Correct it and tap Next.",
+    other: "We could not record this step as it was. Correct it and tap Next.",
+  },
   checklist: {
     // The board's dim bar while the list is unfinished.
     unfinished: "Finish the list to continue",
@@ -228,22 +333,45 @@ export const steps = {
   consumables: {
     less: (name: string) => `One fewer ${name.toLowerCase()}`,
     more: (name: string) => `One more ${name.toLowerCase()}`,
+    count: (name: string, count: number) => `${name}: ${String(count)}`,
     // PLACEHOLDER: FSM holds no consumables catalogue, so the board's four stand in (open point 13).
     items: ["Tape strips", "Bonding glue", "Solvent", "Shampoo sachet"],
     none: "None used",
   },
   piece: {
     // The owner ruled out a barcode and a QR code on 24 September 2026, so the code is typed, never scanned.
-    label: "The label code",
+    label: "The new piece's label",
     placeholder: "MM-STD-4417-B",
+    // PLACEHOLDER: the board draws no label typed wrong.
+    malformed: "A label reads MM, the base, the number and a letter: MM-STD-4417-B.",
+    checkFirst: "Check the label to continue",
     look: "Check the label",
     unknown: "We do not know that label. It goes on the job as you typed it.",
+    // PLACEHOLDER: the board draws no lookup with no signal.
+    offline: "No signal, so the label is not checked. It goes on the job as you typed it.",
     notThisClient: "That piece is not this client's.",
+    notThisClientAction: "That piece is not this client's",
     rows: { piece: "Piece", base: "Base", lot: "Supplier lot" },
+    // PLACEHOLDER: the board draws the base as read, not typed; the pieces tab needs it and the lot (item 13).
+    base: "Base",
+    lot: "Supplier lot",
+    pick: "Pick from the list",
+    // "Mono · fitted 2 Jul" beside a piece in the client's list.
+    listed: (code: string, fitted: string | null) => (fitted === null ? code : `${code} · fitted ${fitted}`),
+    // PLACEHOLDER: the board draws no piece coming off. The pieces tab keeps why it failed.
+    old: {
+      title: "The piece that came off",
+      label: "The label of the piece that came off",
+      reason: "Why it failed",
+      needsReason: "Say why it failed to continue",
+    },
     // PLACEHOLDER: the board draws no empty base; the piece may not be in the mirror yet.
     unnamed: "Not recorded",
   },
   outcome: {
+    // PLACEHOLDER: the board draws Done chosen already; nothing is chosen for the technician here.
+    choose: "Choose Done or Partial",
+    pickReason: "Pick a reason to continue",
     done: "Done",
     partial: "Partial · pick a reason",
     // PLACEHOLDER: the design lists four other reasons; these are the four the API takes (src/config/job-sheet.ts).
@@ -271,6 +399,21 @@ export const closeOut = {
   nextJob: (time: string, who: string) => `Next job · ${time}, ${who}`,
   // PLACEHOLDER: the board draws the next job; the day ends without one.
   lastJob: "Back to today",
+  // Board B5's close: the evidence summary, and what happens to it.
+  noShow: {
+    ops: "This goes to ops with the charge.",
+    checkedIn: "Checked in",
+    distance: "Distance",
+    whatsApp: "WhatsApp",
+    delivered: (time: string) => `Delivered ${time}`,
+    // PLACEHOLDER: the board draws the receipt delivered.
+    notDelivered: "Not delivered",
+    noneSent: "None sent",
+    unmeasured: "Not measured",
+  },
+  // PLACEHOLDER: the board draws no close-out opened before the job closed.
+  notClosed: "This job is not closed yet.",
+  backToJob: "Back to the job",
 } as const;
 
 /** The badge, and nothing else about money, anywhere in this app. */

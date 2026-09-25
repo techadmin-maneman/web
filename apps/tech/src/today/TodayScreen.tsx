@@ -7,23 +7,68 @@
 // nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
 import { useEffect, useState } from "react";
+import type { JobSummary } from "../api.ts";
+import { Offline } from "../components/Banners.tsx";
 import { Icon } from "../components/Icon.tsx";
 import { Mark } from "../components/Mark.tsx";
-import { atRisk as atRiskCopy, leaving as leavingCopy, queue as queueCopy, today as copy } from "../content.ts";
+import {
+  atRisk as atRiskCopy,
+  job as jobCopy,
+  leaving as leavingCopy,
+  queue as queueCopy,
+  titles,
+  today as copy,
+} from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { CHEVRON_DOWN } from "../icons.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
+import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { replay } from "../store/outbox.ts";
+import { keptClosedJobs } from "../store/jobs.ts";
+import { replay, type Queued } from "../store/outbox.ts";
+import { photoSets } from "../waiting/sets.ts";
 import { JobRow } from "./JobRow.tsx";
 import styles from "./today.module.css";
 
 /** Where a sign-out has got to: asking about unsent work, waiting on the API, or refused for want of signal. */
 type Leaving = "asking" | "going" | "stayed" | null;
+
+/**
+ * Where a row's job stands: closed out on this phone or in FSM, or begun. The
+ * phone's own word comes first, since FSM hears of a close-out only once it
+ * has gone up.
+ */
+function stateOf(job: JobSummary, queued: readonly Queued[], closedHere: ReadonlySet<string>): string | null {
+  if (closedHere.has(job.id) || job.status === "completed" || job.status === "terminated") {
+    return jobCopy.states.closed;
+  }
+  const startedHere = queued.some((event) => event.job_id === job.id && event.kind === "start");
+  return startedHere || job.status === "in_progress" ? jobCopy.states.inProgress : null;
+}
+
+/** The jobs closed out on this phone, read again whenever the outbox changes. */
+function useClosedHere(watch: unknown): ReadonlySet<string> {
+  const [closed, setClosed] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    let current = true;
+    void keptClosedJobs().then(
+      (found) => {
+        if (current) setClosed(found);
+      },
+      () => {
+        // A store that will not open says nothing of what closed; the rows go without.
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [watch]);
+  return closed;
+}
 
 export function TodayScreen() {
   const { me, offline, atRisk, signOut } = useSession();
@@ -34,8 +79,12 @@ export function TodayScreen() {
   const waiting = useOutbox();
   const [leaving, setLeaving] = useState<Leaving>(null);
 
-  const unsentSets = new Set(waiting.frames.map((frame) => frame.job_id)).size;
+  const unsentSets = photoSets(waiting.frames, waiting.events).length;
   const unsentActions = waiting.events.length;
+  // What is still on its way: a job whose queue stopped says so in the banner above every screen.
+  const sending = waiting.events.filter((event) => event.state === "waiting").length;
+  const closedHere = useClosedHere(waiting);
+  const heading = useScreen(titles.today);
 
   async function leave(): Promise<void> {
     setLeaving("going");
@@ -85,7 +134,9 @@ export function TodayScreen() {
         </div>
         {day.state === "loaded" && jobs.length > 0 && (
           <>
-            <h1 className={styles.count}>{copy.jobs(jobs.length)}</h1>
+            <h1 className={styles.count} ref={heading} tabIndex={-1}>
+              {copy.jobs(jobs.length)}
+            </h1>
             {first !== undefined && (
               <p className={styles.first}>{copy.first(clock(first.starts_at), where(first.sector))}</p>
             )}
@@ -120,17 +171,9 @@ export function TodayScreen() {
         </p>
       )}
 
-      {offline && (
-        <div className={styles.offline} role="status">
-          <p className={styles.offlineTitle}>
-            <Icon d={ICONS_P2.offline} size={20} />
-            {copy.offline.title}
-          </p>
-          <p className={styles.offlineBody}>{copy.offline.body}</p>
-        </div>
-      )}
+      {offline && <Offline />}
 
-      {(waiting.events.length > 0 || waiting.frames.length > 0) && (
+      {(sending > 0 || unsentSets > 0) && (
         <a
           className={styles.waiting}
           href="/waiting"
@@ -141,9 +184,7 @@ export function TodayScreen() {
         >
           <Icon d={ICONS_P2.uploadQueue} size={20} className={styles.waitingIcon} />
           <span className={styles.waitingLine}>
-            {waiting.frames.length > 0
-              ? queueCopy.waiting(new Set(waiting.frames.map((frame) => frame.job_id)).size)
-              : queueCopy.events(waiting.events.length)}
+            {unsentSets > 0 ? queueCopy.waiting(unsentSets) : queueCopy.events(sending)}
           </span>
         </a>
       )}
@@ -179,7 +220,7 @@ export function TodayScreen() {
         <ul className={styles.list}>
           {jobs.map((job) => (
             <li key={job.id}>
-              <JobRow job={job} client={names.get(job.id)} />
+              <JobRow job={job} client={names.get(job.id)} state={stateOf(job, waiting.events, closedHere)} />
             </li>
           ))}
         </ul>
@@ -202,7 +243,7 @@ export function TodayScreen() {
             <ul className={styles.list}>
               {tomorrowJobs.map((job) => (
                 <li key={job.id}>
-                  <JobRow job={job} client={names.get(job.id)} />
+                  <JobRow job={job} client={names.get(job.id)} state={stateOf(job, waiting.events, closedHere)} />
                 </li>
               ))}
             </ul>

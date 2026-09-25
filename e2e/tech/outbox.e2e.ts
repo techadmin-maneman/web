@@ -124,16 +124,120 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   fake.online = true;
   await context.setOffline(false);
 
-  await expect(page.getByText("This job is someone else's now.")).toBeVisible();
+  await expect(page.getByText("This job is someone else's now.").first()).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
+  // Not only here: every screen says so, and the card offers nothing to press on with.
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Rohit M. · This job is someone else's now." })).toBeVisible();
+  await page.getByRole("listitem").filter({ hasText: "Rohit M." }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "This job changed" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);
+  await page.goto(`/jobs/${JOB_ID}/before-photos`);
+  await expect(page.getByRole("alert").filter({ hasText: "This job is someone else's now." })).toBeVisible();
+
   // Read and dealt with: the job's queue goes, and nothing is left waiting.
+  await page.goto("/waiting");
   await page.getByRole("button", { name: "Got it" }).click();
+  await page.getByRole("button", { name: "Delete them" }).click();
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 0 });
+  await expect(page.getByRole("alert").filter({ hasText: "This job is someone else's now." })).toHaveCount(0);
+});
+
+test("says a job moved to another time was moved, from the start the phone held", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("button", { name: "I have arrived" }).click();
+  await expect(page.getByRole("button", { name: "Start job" })).toBeVisible();
+  await expect.poll(() => fake.writes.length).toBe(1);
+
+  // Ops move the visit an hour on, and the phone still holds the old time.
+  fake.movedTo = new Date(Date.parse(fake.writes[0]?.startsAt ?? "") + 3_600_000).toISOString();
+  await page.getByRole("button", { name: "Start job" }).click();
+
+  await expect(page.getByRole("alert").filter({ hasText: "Ops moved this job to another time." })).toBeVisible();
+});
+
+test("a job ops gave away while its photographs waited says it moved, and asks before deleting them", async ({
+  page,
+  context,
+}) => {
+  const fake = await fakeTech(page);
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("button", { name: "I have arrived" }).click();
+  await page.getByRole("button", { name: "Start job" }).click();
+  const capture = page.getByRole("button", { name: "Capture" });
+  await expect(capture).toBeEnabled();
+  await expect.poll(() => fake.writes.length).toBe(2);
+
+  // Underground for the before set.
+  fake.online = false;
+  await context.setOffline(true);
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Done" }).click();
+
+  // Nothing has gone up, and the queue says so: no bar full of frames that are only waiting.
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("link", { name: /photo set waiting/ }).click();
+  await expect(page.getByText("No signal · working offline")).toBeVisible();
+  await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry" })).toHaveCount(0);
+
+  // Ops gave the job to someone else while the phone was underground.
+  fake.moved = true;
+  fake.online = true;
+  await context.setOffline(false);
+
+  await expect(page.getByText("This job is no longer on your list, so what it holds cannot reach us.")).toBeVisible();
+  await expect(page.getByText(/would not upload/)).toHaveCount(0);
+
+  // "Got it" never throws away photographs on one tap.
+  await page.getByRole("button", { name: "Got it" }).click();
+  await expect(page.getByText("This deletes 5 photographs and 1 action from this phone.")).toBeVisible();
+  await page.getByRole("button", { name: "Keep them" }).click();
+  expect(await heldOnPhone(page)).toMatchObject({ frames: 5 });
+
+  await page.getByRole("button", { name: "Got it" }).click();
+  await page.getByRole("button", { name: "Delete them" }).click();
+  await expect(page.getByText("Everything has reached us.")).toBeVisible();
+  expect(await heldOnPhone(page)).toMatchObject({ frames: 0, outbox: 0 });
+});
+
+test("counts a set as sent only as its photographs go up", async ({ page, context }) => {
+  const fake = await fakeTech(page);
+  await intoTheBasement(page, context, fake);
+  await page.getByRole("button", { name: "Start job" }).click();
+  const capture = page.getByRole("button", { name: "Capture" });
+  await expect(capture).toBeEnabled();
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Done" }).click();
+  // Every move here is a link inside the app: with no signal there is no navigation.
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("link", { name: /photo set waiting/ }).click();
+
+  await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
+  const width = await page.locator("[data-bar] > div").evaluate((bar) => bar.getBoundingClientRect().width);
+  expect(width).toBe(0);
+
+  fake.online = true;
+  await context.setOffline(false);
+  await expect(page.getByText("Everything has reached us.")).toBeVisible({ timeout: 15_000 });
+  expect(fake.photos).toHaveLength(5);
 });
 
 test("asks before a sign-out would lose unsent work, sends it first if asked, and signs nobody out without signal", async ({

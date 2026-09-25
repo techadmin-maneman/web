@@ -1,6 +1,7 @@
 // The glyphs the technician app draws that the shared set lacks, in the same
-// 24 px box with a 1.6 stroke and round caps. The offline, upload-queue and
-// piece-ID glyphs are Phase 2's own (packages/brand/icons.ts, ICONS_P2).
+// 24 px box with round caps, at the strokes the board draws them
+// (./components/Icon.tsx). The offline, upload-queue and piece-ID glyphs are
+// Phase 2's own (packages/brand/icons.ts, ICONS_P2).
 
 /** A job row opens its card, and a spec row its detail (board A1). */
 export const CHEVRON = "M9 5 L16 12 L9 19";
@@ -17,6 +18,13 @@ export const PIN =
 
 /** Beside a delivered message, and on the closed-out summary (boards B4 and B5). */
 export const TICK = "M4 12.5 L9.5 18 L20 6";
+
+/** Inside a ticked checklist box, a shorter tick than the summary's, drawn at 2.6 (board B2). */
+export const BOX_TICK = "M5 13 L10 18 L19 6";
+
+/** A stepper's signs are drawn at 2 (board B3), and a ticked box's at 2.6 (board B2). */
+export const STEPPER_STROKE = 2;
+export const BOX_TICK_STROKE = 2.6;
 
 /** The consumables' steppers, one fewer and one more (board B3). */
 export const MINUS = "M6 12 H18";

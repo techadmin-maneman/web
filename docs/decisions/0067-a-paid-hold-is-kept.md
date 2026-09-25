@@ -71,5 +71,5 @@ A failed read is logged and the record made as before, so none of the reads can 
 - A client who pays inside the countdown is booked, however late the webhook, unless FSM refuses for half an hour; then the client is refunded and ops know exactly what happened to the money and to FSM.
 - An unpaid hold's time is free to others two minutes after its countdown, not at once.
 - The app: a paid hold never reads `expired`; `DELETE /api/holds/{id}` leaves a paid hold alone; each day of `GET /api/availability` carries its own price.
-- The site: `409 already_booked` carries `booked: { date, window }`; the landing's answers carry `invite`. `GET /api/r/{code}` still answers valid or unknown: whether an invite has expired is a fact about the friend who was held under it, known only once they give their number (ADR 0025, item 38).
+- The site: `409 already_booked` carries `booked: { date, window }`; the landing's answers carry `invite`. `GET /api/r/{code}` still answers valid or unknown: whether an invite has expired is a fact about the friend who was held under it, known only once they give their number (ADR 0025, item 39).
 - The same-mobile fraud rule can only match a number one of the two has changed to since: a number change does not keep the number it replaced, so a referrer's first number is not compared.

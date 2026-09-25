@@ -28,6 +28,8 @@ export interface Queued {
   readonly path: string;
   readonly body: unknown;
   readonly queued_at: number;
+  /** The job's start as the phone held it, sent as `X-Job-Starts-At`. Absent on what an older build queued. */
+  readonly starts_at?: string | null;
   readonly state: EventState;
   /** The API's code for what stopped this job: `superseded`, `out_of_order`, or why it was refused. */
   readonly note: string | null;
@@ -57,8 +59,9 @@ export interface JobAccount {
   readonly job_id: string;
   /** How many of this job's writes have not reached us. */
   readonly waiting: number;
-  /** Set when the job's queue stopped: the API's code, and the fields behind it. */
+  /** Set when the job's queue stopped: the write it stopped at, the API's code, and the fields behind it. */
   readonly stopped: {
+    readonly kind: EventKind;
     readonly state: Exclude<EventState, "waiting">;
     readonly note: string | null;
     readonly fields: readonly string[];
@@ -74,7 +77,7 @@ export function account(queue: readonly Queued[]): JobAccount[] {
   for (const event of inOrder(queue)) {
     const held = accounts.get(event.job_id) ?? { waiting: 0, stopped: null };
     if (event.state === "waiting") held.waiting += 1;
-    else held.stopped ??= { state: event.state, note: event.note, fields: event.fields };
+    else held.stopped ??= { kind: event.kind, state: event.state, note: event.note, fields: event.fields };
     accounts.set(event.job_id, held);
   }
   return [...accounts].map(([job_id, held]) => ({ job_id, ...held }));

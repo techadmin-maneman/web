@@ -43,6 +43,9 @@ const ME = {
 const DAY = "2030-09-19";
 const TOMORROW_DATE = "2030-09-20";
 
+/** The slots each type takes (src/config/scheduling.ts): board A1 writes them beneath the time. */
+const SLOTS: Readonly<Record<string, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
+
 const job = (id: number, date: string, time: string, minutes: number, type: string, badge: string, sector: string) => ({
   id: `a0000000-0000-4000-8000-00000000000${String(id)}`,
   day: date === DAY ? "today" : "tomorrow",
@@ -55,6 +58,7 @@ const job = (id: number, date: string, time: string, minutes: number, type: stri
   sector,
   status: "scheduled",
   badge,
+  slots: SLOTS[type] ?? 1,
   unlocked: true,
   unlocks_at: `${date}T00:00:00.000Z`,
 });
@@ -63,7 +67,7 @@ const JOBS = [
   job(1, DAY, "04:00", 90, "service", "prepaid", "Sector 65"),
   job(2, DAY, "06:00", 90, "service", "credit", "DLF Phase 4"),
   job(3, DAY, "08:30", 180, "first_fit", "prepaid", "Sector 43"),
-  job(4, DAY, "12:00", 60, "consultation", "prepaid", "Sector 57"),
+  job(4, DAY, "12:00", 60, "consultation", "free", "Sector 57"),
 ];
 
 /** The board's collapsed line reads "Tomorrow · 3 jobs". */
@@ -93,12 +97,38 @@ const PARTIAL_REASONS = ["client_stopped_it", "piece_not_ready", "client_unwell"
 
 interface Progress {
   checked_in_at: string | null;
+  wait_ends_at: string | null;
+  distance_m: number | null;
   started_at: string | null;
   steps_done: string[];
   outcome: string | null;
 }
 
-const NOTHING_DONE: Progress = { checked_in_at: null, started_at: null, steps_done: [], outcome: null };
+const NOTHING_DONE: Progress = {
+  checked_in_at: null,
+  wait_ends_at: null,
+  distance_m: null,
+  started_at: null,
+  steps_done: [],
+  outcome: null,
+};
+
+/** Board A3's piece, as the card carries the client's pieces. */
+const PIECE = {
+  piece_code: "MM-STD-4417-B",
+  base: "Mono",
+  supplier_lot: "LOT-4417",
+  fitted_at: "2030-07-02",
+  replacement_due_at: "2030-12-29",
+  failed_at: null,
+  failure_reason: null,
+};
+
+/** A 1×1 grey PNG for board A3's last visit: no photograph of anyone is used. */
+const LAST_VISIT_PHOTO = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==",
+  "base64",
+);
 
 const cardFor = (id: string, progress: Progress = NOTHING_DONE) => {
   const summary = [...JOBS, ...TOMORROW].find((one) => one.id === id) ?? JOBS[0];
@@ -108,6 +138,11 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE) => {
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
+      building: null,
+      tower: null,
+      floor: null,
+      flat: null,
+      landmark: null,
       locality: "Sector 65",
       city: "Gurgaon",
       pincode: "122018",
@@ -117,6 +152,11 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE) => {
     access_notes: "Gate code 4417 · visitor bay B",
     client: { name: CLIENTS[id] ?? "", mobile: "+919810000000", note: null },
     progress,
+    no_show_wait_min: 15,
+    pieces: [PIECE],
+    // Board A3's "Last visit, after. 22 Aug, Imran.", and board B5's "delivered 9:33 am".
+    last_visit: { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${id}/last-visit-photo` },
+    reminder: { delivered_at: `${DAY}T04:03:00.000Z` },
     steps: takesPiece
       ? ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"]
       : ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
@@ -201,6 +241,8 @@ const dayApi = (jobs: unknown[], tomorrow: unknown[]): Api => ({
 const jobApi = (id: string, progress: Progress = NOTHING_DONE): Api => ({
   "/api/tech/me": json(ME),
   [`/api/tech/jobs/${id}`]: json(cardFor(id, progress)),
+  [`/api/tech/jobs/${id}/last-visit-photo`]: (route) =>
+    route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO }),
   "/api/tech/jobs": json({ date: DAY, jobs: JOBS }),
 });
 
@@ -345,9 +387,10 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     },
     FRAME_HEIGHT,
   );
-  await piece.getByRole("textbox").fill("MM-STD-4417-B");
-  await piece.getByRole("button", { name: "Check the label" }).click();
-  await piece.getByText("Mono").waitFor();
+  await piece.getByRole("textbox", { name: "The new piece's label" }).fill("MM-STD-4417-B");
+  await piece.getByRole("button", { name: "Check the label", exact: true }).click();
+  // The lookup fills the base in, as the board's "Base · Mono" reads it.
+  await piece.waitForFunction(() => document.querySelector<HTMLInputElement>("#piece-base")?.value === "Mono");
   await settle(piece);
   await pair(OUT, WIDTH, "b3-piece", await frame(design, "Job · consumables", false), await shot(piece));
   await piece.close();
@@ -371,8 +414,18 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     steps_done: [...started.steps_done, "checklist", "consumables", "after_photos", "outcome"],
     outcome: "done",
   };
-  const done = await openApp(browser, `/jobs/${first.id}/outcome`, jobApi(first.id, closedOut), FRAME_HEIGHT);
+  // The outcome lands, so the close-out is the one the board draws and not the sign-in an unanswered write would end in.
+  const landed = json({ event_id: "fidelity", replayed: false, fsm_write_state: "pending", progress: closedOut });
+  const done = await openApp(
+    browser,
+    `/jobs/${first.id}/outcome`,
+    { ...jobApi(first.id, closedOut), [`/api/tech/jobs/${first.id}/outcome`]: landed },
+    FRAME_HEIGHT,
+  );
   await done.getByText("Outcome").first().waitFor();
+  // Nothing is chosen for the technician: Done first, then Next, once the step has slid in and takes a tap.
+  await done.getByRole("button", { name: "Done", exact: true }).click();
+  await done.clock.runFor(400);
   await done.getByRole("button", { name: "Next" }).click();
   await done.getByText("Closed out").waitFor();
   await settle(done);

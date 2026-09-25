@@ -1,43 +1,63 @@
 // Board A2's upload queue, and the plain account the prompt asks for of
 // everything else that has not yet reached us.
 //
-// A job whose queue met a `409 superseded` says what changed — the API answers
-// a code and the fields that moved, never a sentence, so the words are the
-// app's (apps/tech/src/content.ts). "Got it" clears that job, so the rest of the
-// queue can go on.
+// Each photograph set counts what the API has confirmed, never what is only
+// held on the phone (./sets.ts). A job whose queue stopped says what stopped it
+// in the app's words — the API answers a code and the fields behind it, never a
+// sentence (apps/tech/src/content.ts). A step the API refused can be put right
+// where it stands; "Got it" lets go of the job's work only once the technician
+// has said so a second time, since what it deletes never reaches us.
 
-import { Icon } from "../components/Icon.tsx";
-import { atRisk as atRiskCopy, queue as copy, stopped as stoppedCopy } from "../content.ts";
+import { useState } from "react";
 import { ICONS_P2 } from "@maneman/brand/icons";
+import { Offline } from "../components/Banners.tsx";
+import { Confirm } from "../components/Confirm.tsx";
+import { Icon } from "../components/Icon.tsx";
+import { atRisk as atRiskCopy, queue as copy, whatStopped } from "../content.ts";
 import { BACK } from "../icons.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
+import { useScreen } from "../lib/useScreen.ts";
 import { clock } from "../lib/when.ts";
-import { go } from "../route.ts";
+import { go, STEP_PATHS, stepPath, type InJobStep } from "../route.ts";
 import { useSession } from "../session.ts";
-import { account, forget, replay, type JobAccount } from "../store/outbox.ts";
+import { account, forget, replay, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
+import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "./sets.ts";
 import styles from "./waiting.module.css";
 
-/** The five angles of a before or after set (board B1), before and after: ten in all. */
-const IN_A_VISIT = 10;
+/** The steps a refused write can be put right on: the ones with a screen of their own to put it right in. */
+const CORRECTABLE: ReadonlySet<EventKind> = new Set(["checklist", "consumables", "piece", "outcome"]);
 
-/** What stopped this job, in the app's words: the fields that moved if the API named any, else the code. */
-function why(stopped: NonNullable<JobAccount["stopped"]>): string {
-  const named = stopped.fields.map((field) => stoppedCopy[field]).filter((line) => line !== undefined);
-  return named[0] ?? stoppedCopy[stopped.note ?? ""] ?? stoppedCopy.unknown ?? "";
+const isInJobStep = (kind: EventKind): kind is InJobStep => kind in STEP_PATHS;
+
+/** A refused step the technician can open again and correct; null for any other stop. */
+function correctable(stopped: JobAccount["stopped"]): InJobStep | null {
+  if (stopped?.state !== "refused" || !CORRECTABLE.has(stopped.kind)) return null;
+  return isInJobStep(stopped.kind) ? stopped.kind : null;
+}
+
+function SetLine({ set }: { set: PhotoSet }) {
+  const phase = copy.phases[set.phase];
+  const line = set.queued ? copy.sent(phase, sentOf(set), IN_A_SET) : copy.taking(phase, set.held, IN_A_SET);
+  return (
+    <>
+      <Progress done={sentOf(set)} total={IN_A_SET} />
+      <p className={styles.count}>{line}</p>
+    </>
+  );
 }
 
 export function WaitingScreen() {
   const { offline, atRisk } = useSession();
   const waiting = useOutbox();
   const names = useNames(waiting);
+  const heading = useScreen(copy.title);
+  const [forgetting, setForgetting] = useState<string | null>(null);
 
   const held = account(waiting.events);
-  const sets = new Map<string, number>();
-  for (const frame of waiting.frames) sets.set(frame.job_id, (sets.get(frame.job_id) ?? 0) + 1);
-
-  const jobs = [...new Set([...sets.keys(), ...held.map((line) => line.job_id)])];
+  const sets = photoSets(waiting.frames, waiting.events);
+  const jobs = [...new Set([...sets.map((set) => set.job), ...held.map((line) => line.job_id)])];
   const name = (id: string) => names.get(id) ?? id.slice(0, 8);
 
   /** When this job's oldest unsent thing was taken: a half-captured set has frames and no event yet. */
@@ -48,6 +68,9 @@ export function WaitingScreen() {
     ];
     return times.length === 0 ? null : Math.min(...times);
   };
+
+  const photosOf = (id: string) => waiting.frames.filter((frame) => frame.job_id === id).length;
+  const actionsOf = (id: string) => waiting.events.filter((event) => event.job_id === id).length;
 
   return (
     <main className={styles.screen}>
@@ -62,8 +85,12 @@ export function WaitingScreen() {
         >
           <Icon d={BACK} size={24} />
         </button>
-        <h1 className={styles.title}>{copy.title}</h1>
+        <h1 className={styles.title} ref={heading} tabIndex={-1}>
+          {copy.title}
+        </h1>
       </header>
+
+      {offline && <Offline />}
 
       {jobs.length === 0 ? (
         <p className={styles.nothing}>{copy.nothing}</p>
@@ -77,14 +104,14 @@ export function WaitingScreen() {
           )}
           <div className={styles.sets}>
             <Icon className={styles.setsIcon} d={ICONS_P2.uploadQueue} size={20} />
-            <span className={styles.setsLine}>{copy.waiting(sets.size)}</span>
+            <span className={styles.setsLine}>{copy.waiting(sets.length)}</span>
           </div>
           <ul className={styles.list}>
             {jobs.map((id) => {
-              const frames = sets.get(id) ?? 0;
               const line = held.find((entry) => entry.job_id === id);
               const stopped = line?.stopped ?? null;
               const taken = since(id);
+              const toCorrect = correctable(stopped);
               return (
                 <li className={styles.job} key={id}>
                   <div className={styles.jobTop}>
@@ -93,12 +120,11 @@ export function WaitingScreen() {
                       {stopped === null ? (offline ? copy.states.waiting : copy.states.uploading) : copy.states.failed}
                     </span>
                   </div>
-                  {frames > 0 && (
-                    <>
-                      <Progress done={frames} total={IN_A_VISIT} />
-                      <p className={styles.count}>{copy.count(frames, IN_A_VISIT)}</p>
-                    </>
-                  )}
+                  {sets
+                    .filter((set) => set.job === id)
+                    .map((set) => (
+                      <SetLine set={set} key={set.phase} />
+                    ))}
                   {line !== undefined && line.waiting > 0 && (
                     <p className={styles.count}>{copy.events(line.waiting)}</p>
                   )}
@@ -106,19 +132,32 @@ export function WaitingScreen() {
                   {taken !== null && <p className={styles.count}>{copy.since(clock(new Date(taken).toISOString()))}</p>}
                   {stopped !== null && (
                     <div className={styles.stopped} role="alert">
-                      <p className={styles.stoppedLine}>{why(stopped)}</p>
-                      <button
-                        className={styles.button}
-                        type="button"
-                        onClick={() => {
-                          void forget(id);
-                        }}
-                      >
-                        {copy.read}
-                      </button>
+                      <p className={styles.stoppedLine}>{whatStopped(stopped)}</p>
+                      <div className={styles.buttons}>
+                        {toCorrect !== null && (
+                          <button
+                            className={styles.button}
+                            type="button"
+                            onClick={() => {
+                              go(stepPath(id, toCorrect));
+                            }}
+                          >
+                            {copy.correct}
+                          </button>
+                        )}
+                        <button
+                          className={styles.button}
+                          type="button"
+                          onClick={() => {
+                            setForgetting(id);
+                          }}
+                        >
+                          {copy.read}
+                        </button>
+                      </div>
                     </div>
                   )}
-                  {stopped === null && (
+                  {stopped === null && !offline && (
                     <button
                       className={styles.button}
                       type="button"
@@ -137,6 +176,22 @@ export function WaitingScreen() {
       )}
 
       <p className={styles.never}>{copy.never}</p>
+
+      {forgetting !== null && (
+        <Confirm
+          title={copy.forget.title}
+          body={`${copy.forget.what(photosOf(forgetting), actionsOf(forgetting))} ${copy.forget.body}`}
+          yes={copy.forget.delete}
+          no={copy.forget.keep}
+          onYes={() => {
+            void forget(forgetting);
+            setForgetting(null);
+          }}
+          onNo={() => {
+            setForgetting(null);
+          }}
+        />
+      )}
     </main>
   );
 }

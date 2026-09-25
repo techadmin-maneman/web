@@ -1,0 +1,58 @@
+/* Board A2's offline banner, and the line above every screen when a job's work stopped reaching us. */
+
+.offline {
+  flex-shrink: 0;
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.offlineTitle {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  margin: 0;
+  padding: var(--sp-14) var(--sp-20);
+  background: var(--gilt);
+  font-size: var(--fs-17);
+  font-weight: 500;
+  color: var(--ink-deep);
+}
+
+.offlineBody {
+  margin: 0;
+  padding: var(--sp-20);
+  font-size: var(--fs-16);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* A failure, as board B5 draws one: the error's rule, words in paper. */
+.stopped {
+  flex-shrink: 0;
+  padding: var(--sp-14) var(--sp-20) var(--sp-16);
+  border-top: var(--rule-strong) solid var(--error-on-ink);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+  background: var(--ink-deep);
+}
+
+.stoppedLine {
+  margin: 0 0 var(--sp-8);
+  font-size: var(--fs-17);
+  line-height: 1.5;
+  color: var(--paper);
+}
+
+.open {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tech-min);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink-line);
+  font-size: var(--fs-17);
+  color: var(--paper);
+  text-decoration: none;
+}
+
+.open:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
+}

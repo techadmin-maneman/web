@@ -4,7 +4,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { card, fakeTech, JOB_ID, keptOnPhone, leftOnPhone, todayInIndia } from "./fixtures.ts";
+import {
+  card,
+  fakeTech,
+  JOB_ID,
+  keptOnPhone,
+  leftOnPhone,
+  NOTHING_DONE,
+  ROHITS_PIECE,
+  todayInIndia,
+} from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -97,10 +106,9 @@ test("keeps today's and tomorrow's jobs and lets go of every older day and card 
 
   // What a week-old day left behind: its list, a client's card and what the check-in measured.
   const old = "a0000000-0000-4000-8000-00000000000f";
-  const progress = { checked_in_at: null, started_at: null, steps_done: [], outcome: null };
   await leftOnPhone(page, [
     { id: "day:2020-01-01", kind: "day", date: "2020-01-01", jobs: [] },
-    { id: old, kind: "job", job: { ...card("2020-01-01", progress), id: old } },
+    { id: old, kind: "job", job: { ...card("2020-01-01", NOTHING_DONE), id: old } },
     { id: `arrival:${old}`, kind: "arrival", job_id: old, arrival: { passed: true } },
   ]);
 
@@ -145,8 +153,10 @@ test("a job further out shows time, type and sector only, and cannot be started"
   await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);
 });
 
-test("every target is at least the design's 48 px, and the primary action is 64", async ({ page }) => {
-  await fakeTech(page);
+test("every target on every screen is at least the design's 48 px, and the primary action is 64", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "replacement";
+  fake.pieces = [ROHITS_PIECE];
   await page.goto(`/jobs/${JOB_ID}`);
   const arrive = page.getByRole("button", { name: "I have arrived" });
   await expect(arrive).toBeVisible();
@@ -155,8 +165,22 @@ test("every target is at least the design's 48 px, and the primary action is 64"
   expect(box?.height).toBe(64);
   expect(Math.round(box?.width ?? 0)).toBe(390 - 40);
 
-  for (const target of await page.getByRole("button").all()) {
-    const each = await target.boundingBox();
-    expect(each?.height ?? 0, "nothing under 48 px").toBeGreaterThanOrEqual(44);
+  // "Nothing under 48 px", on Today, the card, the queue and each of the steps.
+  fake.progress = {
+    ...fake.progress,
+    checked_in_at: "2030-01-01T04:00:00.000Z",
+    started_at: "2030-01-01T04:10:00.000Z",
+  };
+  const screens = ["/", `/jobs/${JOB_ID}`, "/waiting", "before-photos", "checklist", "consumables", "piece", "outcome"];
+  for (const screen of screens) {
+    await page.goto(screen.startsWith("/") ? screen : `/jobs/${JOB_ID}/${screen}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    for (const target of await page.locator("button, a[href], input").all()) {
+      if (!(await target.isVisible())) continue;
+      const each = await target.boundingBox();
+      const name = `${screen}: ${(await target.textContent()) ?? ""}${(await target.getAttribute("aria-label")) ?? ""}`;
+      expect(each?.height ?? 0, name).toBeGreaterThanOrEqual(48);
+      expect(each?.width ?? 0, name).toBeGreaterThanOrEqual(48);
+    }
   }
 });

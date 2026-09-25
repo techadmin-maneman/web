@@ -1,7 +1,8 @@
 /*
- * Boards A1 and A2: the day's jobs, the offline banner, the empty state, and
- * the line to what has not yet reached us. Ink ground, off-white text, gold on
- * the banner alone — this screen has no primary action.
+ * Boards A1 and A2: the day's jobs, the empty state, and the line to what has
+ * not yet reached us; the offline banner is the one every screen shares
+ * (../components/banner.module.css). Ink ground, off-white text, gold on the
+ * banner alone — this screen has no primary action.
  */
 
 .screen {
@@ -49,7 +50,7 @@
 }
 
 .signOut {
-  font-size: var(--fs-16);
+  font-size: var(--fs-17);
   color: var(--ink-soft);
 }
 
@@ -70,35 +71,13 @@
   color: var(--paper);
 }
 
+.count:focus {
+  outline: none;
+}
+
 .first {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-17);
-  color: var(--ink-soft);
-}
-
-/* Board A2's banner: a gold strip with the line, and the explanation beneath it on ink. */
-.offline {
-  flex-shrink: 0;
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.offlineTitle {
-  display: flex;
-  gap: var(--sp-12);
-  align-items: center;
-  margin: 0;
-  padding: var(--sp-14) var(--sp-20);
-  background: var(--gilt);
-  font-size: var(--fs-17);
-  font-weight: 500;
-  color: var(--ink-deep);
-}
-
-.offlineBody {
-  margin: 0;
-  padding: var(--sp-20);
-  font-size: var(--fs-16);
-  line-height: 1.6;
   color: var(--ink-soft);
 }
 
@@ -280,6 +259,14 @@
   margin-top: var(--sp-3);
   font-size: var(--fs-15);
   color: var(--ink-soft);
+}
+
+/* Where the job stands, once it has begun. */
+.state {
+  display: block;
+  margin-top: var(--sp-3);
+  font-size: var(--fs-15);
+  color: var(--paper);
 }
 
 .chevron {

@@ -1,37 +1,39 @@
-// Board B2, step 2: the service checklist. One 88 px row per item, a 36 px box
+// Board B2, step 2: the visit's checklist. One 88 px row per item, a 36 px box
 // each, and the action dim until the list is finished.
 //
 // The items are the API's, per visit type (src/config/job-sheet.ts); the app
-// invents none and sends back the IDs it was given.
+// invents none and sends back the IDs it was given. The title names the visit
+// the list is for: the board titles a service visit's.
 
 import { useState } from "react";
 import { Icon } from "../components/Icon.tsx";
-import { steps as copy } from "../content.ts";
-import { TICK } from "../icons.ts";
+import { job as jobCopy, steps as copy } from "../content.ts";
+import { BOX_TICK, BOX_TICK_STROKE } from "../icons.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { job as jobCopy } from "../content.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
 
 export function Checklist({ id }: { id: string }) {
-  const { loaded, retry, finish, back } = useStep(id, "checklist");
+  const { loaded, retry, refused, finish, back } = useStep(id, "checklist");
   const [done, setDone] = useState<readonly string[]>([]);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
 
-  const items = loaded.value.checklist;
+  const job = loaded.value;
+  const items = job.checklist;
   const all = items.length > 0 && done.length === items.length;
 
   return (
     <StepFrame
-      title={copy.titles.checklist}
+      title={job.type === null ? copy.titles.checklist : copy.checklistTitles[job.type]}
       at={done.length}
       of={items.length}
       action={copy.next}
       ready={all}
       unfinished={copy.checklist.unfinished}
+      notice={refused === null ? null : copy.corrected.other}
       onBack={back}
       onAction={() => void finish({ done: [...done] })}
     >
@@ -50,7 +52,9 @@ export function Checklist({ id }: { id: string }) {
                   );
                 }}
               >
-                <span className={ticked ? styles.boxDone : styles.box}>{ticked && <Icon d={TICK} size={22} />}</span>
+                <span className={ticked ? styles.boxDone : styles.box}>
+                  {ticked && <Icon d={BOX_TICK} size={22} stroke={BOX_TICK_STROKE} />}
+                </span>
                 <span className={ticked ? styles.checkDone : styles.checkLabel}>{item.label}</span>
               </button>
             </li>

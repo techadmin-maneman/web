@@ -8,7 +8,7 @@
 // the outbox replays it (docs/decisions/0038-offline-writes.md).
 
 import type { components } from "./api-schema.ts";
-import { EVENT_ID_HEADER, SUPERSEDED } from "./routes.ts";
+import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, SUPERSEDED } from "./routes.ts";
 
 export {
   DEVICE_REVOKED,
@@ -63,6 +63,8 @@ export type Answer<T> =
 export interface Write {
   /** The UUIDv7 that makes this write idempotent, whatever it takes to arrive. */
   readonly eventId: string;
+  /** The job's start as the phone held it when the write was queued; null for a write an older build queued. */
+  readonly startsAt: string | null;
 }
 
 /** A call that never reached the API: no signal, a signal that never answered, or something else answering. */
@@ -156,7 +158,10 @@ async function ask<T>(url: string, init: RequestInit, patience: number): Promise
 function call<T>(method: string, path: string, patience: number, body?: unknown, write?: Write): Promise<Answer<T>> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (write !== undefined) headers[EVENT_ID_HEADER] = write.eventId;
+  if (write !== undefined) {
+    headers[EVENT_ID_HEADER] = write.eventId;
+    if (write.startsAt !== null) headers[JOB_STARTS_AT_HEADER] = write.startsAt;
+  }
   return ask<T>(
     `/api${path}`,
     { method, headers, ...(body === undefined ? {} : { body: JSON.stringify(body) }) },

@@ -356,6 +356,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/jobs/{id}/last-visit-photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's last visit, after: one photograph, under the card's own unlock, never cached */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description session_required; device_revoked */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/jobs/{id}/checkin": {
         parameters: {
             query?: never;
@@ -1307,6 +1364,8 @@ export interface components {
              * @enum {string}
              */
             badge: "prepaid" | "credit" | "free";
+            /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
+            slots: number | null;
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
@@ -1335,6 +1394,23 @@ export interface components {
                 note: string | null;
             } | null;
             progress: components["schemas"]["TechnicianJobProgress"];
+            /** @description How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it. */
+            no_show_wait_min: number;
+            /** @description The client's pieces, newest fit first. Null until the day before the visit. */
+            pieces: components["schemas"]["Piece"][] | null;
+            /** @description The client's latest earlier visit with after photographs; null for a first visit. */
+            last_visit: {
+                /** Format: date */
+                date: string;
+                /** @description The first name of who did it. */
+                technician: string | null;
+                /** @description Its after photograph, never to be kept on the phone. */
+                photo_url: string;
+            } | null;
+            /** @description The day-before or arrival WhatsApp to the client, and when it was delivered. */
+            reminder: {
+                delivered_at: string | null;
+            } | null;
             /** @description The steps this visit type runs, in order. */
             steps: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome")[];
             checklist: {
@@ -1352,6 +1428,15 @@ export interface components {
             started_at: string | null;
             steps_done: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome")[];
             outcome: string | null;
+        };
+        Piece: {
+            piece_code: string;
+            base: string | null;
+            supplier_lot: string | null;
+            fitted_at: string | null;
+            replacement_due_at: string | null;
+            failed_at: string | null;
+            failure_reason: string | null;
         };
         CheckIn: {
             passed: boolean;
@@ -1439,15 +1524,6 @@ export interface components {
         PieceLookup: {
             piece: components["schemas"]["Piece"];
             belongs_to_this_job: boolean;
-        };
-        Piece: {
-            piece_code: string;
-            base: string | null;
-            supplier_lot: string | null;
-            fitted_at: string | null;
-            replacement_due_at: string | null;
-            failed_at: string | null;
-            failure_reason: string | null;
         };
     };
     responses: never;

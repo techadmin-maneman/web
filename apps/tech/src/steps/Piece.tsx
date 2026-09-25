@@ -4,50 +4,146 @@
 //
 // The board draws "Scan the piece". The owner ruled on 24 September 2026 that
 // labels carry neither a barcode nor a QR code (docs/open-points.md, "Piece
-// labels"), so the code is typed and then checked against the mirror, which
-// works with no signal only once it has been looked up: a code we do not know
-// still goes on the job as the technician entered it.
+// labels"), so the label is typed, or picked from the client's pieces the card
+// carries, and checked against the API's format before Next will take it. A
+// check against the mirror needs signal; a label the mirror does not know, or
+// one checked with none, still goes on the job as the technician entered it.
+//
+// The pieces tab keeps each piece's base and supplier lot, and on a
+// replacement the piece that came off and why it failed, so the step asks for
+// them: a lookup fills the base and lot in when it knows them.
 
 import { useState } from "react";
-import { api, type PieceLookup } from "../api.ts";
+import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
+import { useOneAtATime } from "../lib/useOneAtATime.ts";
+import { dayMonth } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import { asLabel, isLabel } from "./label.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
 
+type ClientPiece = NonNullable<Job["pieces"]>[number];
+
 type Looked =
-  { readonly state: "none" } | { readonly state: "unknown" } | { readonly state: "found"; readonly found: PieceLookup };
+  | { readonly state: "none" }
+  | { readonly state: "unknown" }
+  | { readonly state: "offline" }
+  | { readonly state: "found"; readonly found: PieceLookup };
+
+const NOT_LOOKED: Looked = { state: "none" };
+
+const given = (text: string): boolean => text.trim() !== "";
+
+/** A piece still to be fitted, which is the new one on a first fit or a replacement. */
+const toFit = (piece: ClientPiece): boolean => piece.fitted_at === null && piece.failed_at === null;
+/** A piece on the client's head now, which is the one a replacement takes off. */
+const onTheHead = (piece: ClientPiece): boolean => piece.fitted_at !== null && piece.failed_at === null;
+
+/** Why the step is open again: the label the API refused, or the step as a whole. */
+function noticeFor(refusedFields: readonly string[]): string {
+  const aLabel = refusedFields.some((field) => field === "piece_code" || field === "old_piece");
+  return aLabel ? copy.corrected.piece : copy.corrected.other;
+}
+
+function PieceList({ pieces, onPick }: { pieces: readonly ClientPiece[]; onPick: (piece: ClientPiece) => void }) {
+  return (
+    <ul className={styles.picks}>
+      {pieces.map((piece) => (
+        <li key={piece.piece_code}>
+          <button
+            className={styles.pick}
+            type="button"
+            onClick={() => {
+              onPick(piece);
+            }}
+          >
+            {copy.piece.listed(piece.piece_code, piece.fitted_at === null ? null : dayMonth(piece.fitted_at))}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function Piece({ id }: { id: string }) {
-  const { loaded, retry, finish, back } = useStep(id, "piece");
+  const { loaded, retry, refused, finish, back } = useStep(id, "piece");
   const [code, setCode] = useState("");
-  const [looked, setLooked] = useState<Looked>({ state: "none" });
-  const [looking, setLooking] = useState(false);
+  const [base, setBase] = useState("");
+  const [lot, setLot] = useState("");
+  const [looked, setLooked] = useState<Looked>(NOT_LOOKED);
+  const [looking, once] = useOneAtATime();
+  const [oldCode, setOldCode] = useState("");
+  const [oldReason, setOldReason] = useState("");
+  const [picking, setPicking] = useState<"new" | "old" | null>(null);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
 
-  const typed = code.trim().toUpperCase();
+  const job = loaded.value;
+  const pieces = job.pieces ?? [];
+  const takesOneOff = job.type === "replacement";
 
-  const look = async () => {
-    setLooking(true);
-    const answer = await api.piece(typed, id);
-    setLooking(false);
-    setLooked(answer.ok ? { state: "found", found: answer.body } : { state: "unknown" });
+  const look = () =>
+    once(async () => {
+      const answer = await api.piece(code, id);
+      if (answer.ok) {
+        setLooked({ state: "found", found: answer.body });
+        if (!given(base)) setBase(answer.body.piece.base ?? "");
+        if (!given(lot)) setLot(answer.body.piece.supplier_lot ?? "");
+        return;
+      }
+      setLooked(unreachable(answer) ? { state: "offline" } : { state: "unknown" });
+    });
+
+  const pickNew = (piece: ClientPiece) => {
+    setCode(piece.piece_code);
+    setBase(piece.base ?? "");
+    setLot(piece.supplier_lot ?? "");
+    setLooked({ state: "found", found: { piece, belongs_to_this_job: true } });
+    setPicking(null);
   };
 
-  const piece = looked.state === "found" ? looked.found.piece : null;
+  const pickOld = (piece: ClientPiece) => {
+    setOldCode(piece.piece_code);
+    setPicking(null);
+  };
+
+  const notThisClients = looked.state === "found" && !looked.found.belongs_to_this_job;
+
+  /** What still keeps Next dim, in the words it says instead; null once the step can go. */
+  function missing(): string | null {
+    if (!isLabel(code)) return copy.piece.checkFirst;
+    if (notThisClients) return copy.piece.notThisClientAction;
+    if (!given(oldCode)) return null;
+    if (!isLabel(oldCode)) return copy.piece.checkFirst;
+    return given(oldReason) ? null : copy.piece.old.needsReason;
+  }
+
+  function body(): Record<string, unknown> {
+    const sent: Record<string, unknown> = { piece_code: code };
+    if (given(base)) sent.base = base.trim();
+    if (given(lot)) sent.supplier_lot = lot.trim();
+    if (given(oldCode)) sent.old_piece = { piece_code: oldCode, failure_reason: oldReason.trim() };
+    return sent;
+  }
+
+  const stillMissing = missing();
+  const newToPick = pieces.filter(toFit);
+  const oldToPick = pieces.filter(onTheHead);
 
   return (
     <StepFrame
       title={copy.titles.piece}
       action={copy.next}
-      ready={typed.length >= 3}
+      ready={stillMissing === null}
+      unfinished={stillMissing ?? undefined}
+      notice={refused === null ? null : noticeFor(refused.fields)}
       onBack={back}
-      onAction={() => void finish({ piece_code: typed, base: piece?.base ?? null })}
+      onAction={() => void finish(body())}
     >
       <div className={styles.field}>
         <label className={styles.fieldLabel} htmlFor="piece-code">
@@ -63,20 +159,39 @@ export function Piece({ id }: { id: string }) {
             autoCapitalize="characters"
             autoComplete="off"
             spellCheck={false}
+            aria-describedby={given(code) && !isLabel(code) ? "piece-code-format" : undefined}
             onChange={(event) => {
-              setCode(event.target.value);
-              setLooked({ state: "none" });
+              setCode(asLabel(event.target.value));
+              setLooked(NOT_LOOKED);
             }}
           />
         </div>
+        {given(code) && !isLabel(code) && (
+          <p className={styles.hint} id="piece-code-format">
+            {copy.piece.malformed}
+          </p>
+        )}
         <button
           className={styles.second}
           type="button"
-          disabled={typed.length < 3 || looking}
+          disabled={!isLabel(code) || looking}
           onClick={() => void look()}
         >
           {copy.piece.look}
         </button>
+        {newToPick.length > 0 && (
+          <button
+            className={styles.second}
+            type="button"
+            aria-expanded={picking === "new"}
+            onClick={() => {
+              setPicking(picking === "new" ? null : "new");
+            }}
+          >
+            {copy.piece.pick}
+          </button>
+        )}
+        {picking === "new" && <PieceList pieces={newToPick} onPick={pickNew} />}
       </div>
 
       {looked.state === "unknown" && (
@@ -84,29 +199,93 @@ export function Piece({ id }: { id: string }) {
           {copy.piece.unknown}
         </p>
       )}
+      {looked.state === "offline" && (
+        <p className={styles.note} role="status">
+          {copy.piece.offline}
+        </p>
+      )}
+      {notThisClients && (
+        <p className={styles.warn} role="alert">
+          {copy.piece.notThisClient}
+        </p>
+      )}
 
-      {looked.state === "found" && (
-        <>
-          {!looked.found.belongs_to_this_job && (
-            <p className={styles.warn} role="alert">
-              {copy.piece.notThisClient}
-            </p>
+      <div className={styles.field}>
+        <label className={styles.fieldLabel} htmlFor="piece-base">
+          {copy.piece.base}
+        </label>
+        <input
+          className={styles.box64}
+          id="piece-base"
+          value={base}
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(event) => {
+            setBase(event.target.value);
+          }}
+        />
+        <label className={styles.fieldLabel} htmlFor="piece-lot">
+          {copy.piece.lot}
+        </label>
+        <input
+          className={styles.box64}
+          id="piece-lot"
+          value={lot}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(event) => {
+            setLot(event.target.value);
+          }}
+        />
+      </div>
+
+      {takesOneOff && (
+        <section className={styles.field} aria-labelledby="old-piece-title">
+          <h2 className={styles.fieldTitle} id="old-piece-title">
+            {copy.piece.old.title}
+          </h2>
+          <label className={styles.fieldLabel} htmlFor="old-piece-code">
+            {copy.piece.old.label}
+          </label>
+          <input
+            className={styles.box64}
+            id="old-piece-code"
+            value={oldCode}
+            placeholder={copy.piece.placeholder}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => {
+              setOldCode(asLabel(event.target.value));
+            }}
+          />
+          {oldToPick.length > 0 && (
+            <button
+              className={styles.second}
+              type="button"
+              aria-expanded={picking === "old"}
+              onClick={() => {
+                setPicking(picking === "old" ? null : "old");
+              }}
+            >
+              {copy.piece.pick}
+            </button>
           )}
-          <dl className={styles.rows}>
-            <div className={styles.row}>
-              <dt className={styles.rowKey}>{copy.piece.rows.piece}</dt>
-              <dd className={styles.rowValue}>{looked.found.piece.piece_code}</dd>
-            </div>
-            <div className={styles.row}>
-              <dt className={styles.rowKey}>{copy.piece.rows.base}</dt>
-              <dd className={styles.rowValue}>{looked.found.piece.base ?? copy.piece.unnamed}</dd>
-            </div>
-            <div className={styles.row}>
-              <dt className={styles.rowKey}>{copy.piece.rows.lot}</dt>
-              <dd className={styles.rowValue}>{looked.found.piece.supplier_lot ?? copy.piece.unnamed}</dd>
-            </div>
-          </dl>
-        </>
+          {picking === "old" && <PieceList pieces={oldToPick} onPick={pickOld} />}
+          <label className={styles.fieldLabel} htmlFor="old-piece-reason">
+            {copy.piece.old.reason}
+          </label>
+          <input
+            className={styles.box64}
+            id="old-piece-reason"
+            value={oldReason}
+            autoComplete="off"
+            onChange={(event) => {
+              setOldReason(event.target.value);
+            }}
+          />
+        </section>
       )}
     </StepFrame>
   );

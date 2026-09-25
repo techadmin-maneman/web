@@ -8,7 +8,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { onSessionEnded } from "../../apps/tech/src/api.ts";
 import { wipe } from "../../apps/tech/src/store/db.ts";
 import { keptArrival } from "../../apps/tech/src/store/jobs.ts";
-import { events, frames, keepFrame, queue, replay, unsentJobs } from "../../apps/tech/src/store/outbox.ts";
+import {
+  correct,
+  events,
+  frames,
+  keepFrame,
+  queue,
+  refusedAsEarly,
+  replay,
+  unsentJobs,
+} from "../../apps/tech/src/store/outbox.ts";
 
 afterEach(async () => {
   vi.unstubAllGlobals();
@@ -19,6 +28,7 @@ interface Sent {
   readonly method: string;
   readonly url: string;
   readonly eventId: string | null;
+  readonly startsAt: string | null;
 }
 
 /**
@@ -31,7 +41,12 @@ function api(answer: (method: string, url: string) => { status: number; json?: u
   vi.stubGlobal("fetch", (url: string, init: RequestInit = {}) => {
     const method = init.method ?? "GET";
     const headers = new Headers(init.headers);
-    sent.push({ method, url, eventId: headers.get("X-Client-Event-Id") });
+    sent.push({
+      method,
+      url,
+      eventId: headers.get("X-Client-Event-Id"),
+      startsAt: headers.get("X-Job-Starts-At"),
+    });
     const given = answer(method, url);
     if (given === "offline") return Promise.reject(new TypeError("Failed to fetch"));
     const body = given.json === undefined ? null : JSON.stringify(given.json);
@@ -129,6 +144,88 @@ describe("sending what the phone holds", () => {
     expect(await replay()).toMatchObject({ sent: 0, stopped: "signed-out" });
     expect(heard).toEqual(["device_revoked"]);
     stop();
+  });
+});
+
+describe("a write the job has moved under", () => {
+  it("carries the job's start as the phone held it when it was queued", async () => {
+    await queue("start", "a", null, "2030-09-19T04:00:00.000Z");
+    const sent = api(() => accepted);
+    await replay();
+    expect(sent.map((call) => call.startsAt)).toEqual(["2030-09-19T04:00:00.000Z"]);
+  });
+
+  it("stops a job whose photographs' links are refused as no longer this technician's, as moved", async () => {
+    await keepFrame("a", "front", "before", new Blob(["front"]));
+    await queue("before_photos", "a", { phase: "before" });
+    api(() => ({ status: 404, json: { error: { code: "not_found", request_id: "t" } } }));
+
+    expect(await replay()).toMatchObject({ superseded: 1, refused: 0 });
+    expect(await events()).toMatchObject([{ state: "superseded", note: "not_found" }]);
+    // The photograph stays until the technician has read what changed and said to delete it.
+    expect(await frames()).toHaveLength(1);
+  });
+
+  it("stops a write the API answers 404 the same way", async () => {
+    await queue("checklist", "a", { done: [] });
+    api(() => ({ status: 404, json: { error: { code: "not_found", request_id: "t" } } }));
+    await replay();
+    expect(await events()).toMatchObject([{ state: "superseded", note: "not_found" }]);
+  });
+});
+
+describe("one tap, one write", () => {
+  it("queues a step once, however many times it is tapped", async () => {
+    const first = await queue("start", "a", null);
+    const second = await queue("start", "a", null);
+    expect(second.id).toBe(first.id);
+    expect(await events()).toHaveLength(1);
+  });
+
+  it("keeps one frame for each angle: a second of the same angle replaces the first", async () => {
+    await keepFrame("a", "front", "before", new Blob(["one"]));
+    await keepFrame("a", "front", "before", new Blob(["two"]));
+    await keepFrame("a", "front", "after", new Blob(["after"]));
+    expect((await frames()).map((frame) => `${frame.phase}-${frame.angle}`).sort()).toEqual([
+      "after-front",
+      "before-front",
+    ]);
+  });
+});
+
+describe("a step the API refused", () => {
+  it("goes again with what was corrected, in its place, and what waited behind it follows", async () => {
+    await queue("piece", "a", { piece_code: "MM-STD-7193 C" });
+    await queue("outcome", "a", { outcome: "done" });
+    api((_method, url) =>
+      url.endsWith("/piece")
+        ? { status: 400, json: { error: { code: "invalid_request", request_id: "t", fields: ["piece_code"] } } }
+        : accepted,
+    );
+    await replay();
+    const [refused] = await events();
+    expect(refused).toMatchObject({ kind: "piece", state: "refused", fields: ["piece_code"] });
+
+    await correct(refused?.seq ?? 0, { piece_code: "MM-STD-7193-C" });
+    const sent = api(() => accepted);
+    await replay();
+    expect(sent.map((call) => call.url)).toEqual(["/api/tech/jobs/a/piece", "/api/tech/jobs/a/outcome"]);
+    expect(await events()).toEqual([]);
+  });
+});
+
+describe("a no-show the API says is early", () => {
+  it("is dropped, and the card can tell it was refused rather than sent, until one lands", async () => {
+    await queue("no_show", "a", null);
+    api(() => ({ status: 425, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
+    await replay();
+    expect(await events()).toEqual([]);
+    expect(refusedAsEarly("a")).toBe(true);
+
+    await queue("no_show", "a", null);
+    api(() => ({ status: 200, json: { closed: true, wait_ends_at: "t", case_id: null, accepted: null } }));
+    await replay();
+    expect(refusedAsEarly("a")).toBe(false);
   });
 });
 
