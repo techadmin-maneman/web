@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
+import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmAppointment } from "../../src/providers/fsm.ts";
 import { PAGE_SIZE, reconcileFsm } from "../../src/scheduled/reconcile-fsm.ts";
@@ -36,10 +37,10 @@ async function copy(fsmId: string, modifiedAt: string) {
     .run();
 }
 
-function run(appointments: FsmAppointment[], now: Date) {
+function run(appointments: FsmAppointment[], now: Date, budget: CallBudget = createCallBudget(Infinity)) {
   const queue = fakeQueue();
   const deps = fakeDependencies({ fsm: createStubFsm({ ...EMPTY_FSM, appointments }), now: () => now });
-  return { summary: reconcileFsm({ DB: env.DB, FSM_QUEUE: queue }, deps, createLogger()), queue, deps };
+  return { summary: reconcileFsm({ DB: env.DB, FSM_QUEUE: queue }, deps, createLogger(), budget), queue, deps };
 }
 
 const queuedIds = (queue: ReturnType<typeof fakeQueue>) =>
@@ -115,6 +116,26 @@ describe("the reconciliation, overnight", () => {
     expect(await run(appointments, nextNight).summary).toEqual({ queued: 0, nightPage: 1 });
     const cursor = await env.DB.prepare("SELECT pass_date, next_page FROM sync_cursors").first();
     expect(cursor).toEqual({ pass_date: "2026-09-24", next_page: 0 });
+  });
+});
+
+describe("the reconciliation's outside calls", () => {
+  it("reads nothing from FSM when the cron run has no call left", async () => {
+    const { summary, queue } = run([fsmAppointment("ap-new", "2026-09-22T09:45:00+05:30")], DAY, createCallBudget(0));
+    expect(await summary).toEqual({ queued: 0 });
+    expect(queue.sent).toEqual([]);
+  });
+
+  it("leaves the night's next page for the next run when the run can pay for the first page only", async () => {
+    const listed = Array.from({ length: PAGE_SIZE + 1 }, (_, index) =>
+      fsmAppointment(`ap-${String(index).padStart(3, "0")}`, "2026-09-22T09:00:00+05:30"),
+    );
+    for (const appointment of listed) await copy(appointment.id, appointment.modifiedAt);
+    await run(listed, NIGHT).summary;
+
+    const held = run(listed, new Date(NIGHT.getTime() + 5 * 60_000), createCallBudget(1));
+    expect(await held.summary).toEqual({ queued: 0 });
+    expect(await env.DB.prepare("SELECT next_page FROM sync_cursors").first()).toEqual({ next_page: 2 });
   });
 });
 

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
@@ -33,7 +34,7 @@ function sweepEnv() {
   return { bindings, queues };
 }
 
-const OPTIONS = { creditFloor: 200 };
+const OPTIONS = { creditFloor: 200, budget: createCallBudget(Infinity) };
 
 beforeEach(async () => {
   await markDatabase();
@@ -208,6 +209,29 @@ describe("sweeper: a technician's steps", () => {
 
     expect(again.queues.fsm.sent).toEqual([]);
   });
+
+  it("tells ops once of a job's step still not in FSM an hour after it landed, with IDs only", async () => {
+    await step("stuck-start", "visit-fresh", "check_in", 61).run();
+    const deps = fakeDependencies();
+
+    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
+    expect(deps.alerts).toEqual([
+      "A technician's check_in (job event stuck-start) on visit visit-fresh has waited over an hour to reach FSM. " +
+        "The sweeper keeps sending it; if it has not landed soon, enter it in FSM by hand. " +
+        "http://ops.localhost:4323/dispatch",
+    ]);
+
+    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
+    expect(deps.alerts).toHaveLength(1);
+  });
+
+  it("says nothing of a step under an hour old, and names only a job's earliest step", async () => {
+    await step("done-photos", "visit-done", "before_photos", 70).run();
+    await step("done-checklist", "visit-done", "checklist", 65).run();
+    const deps = fakeDependencies();
+    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
+    expect(deps.alerts).toEqual([expect.stringContaining("(job event done-photos)") as string]);
+  });
 });
 
 describe("sweeper: try-on", () => {
@@ -341,14 +365,65 @@ describe("sweeper: try-on", () => {
   });
 });
 
+describe("sweeper: bookings on their way to FSM", () => {
+  const WITH_FSM = { ...OPTIONS, fsmConnected: true };
+
+  it("queues a booking whose fsm-sync message never went, once, two minutes after it was made", async () => {
+    await insertLead("unqueued", "synced", 1, minutesAgo(3));
+    await insertLead("just-made", "synced", 1, minutesAgo(1));
+    const { bindings, queues } = sweepEnv();
+
+    await sweep(bindings, fakeDependencies(), createLogger(), WITH_FSM);
+    expect(queues.fsm.sent).toEqual([{ lead_id: "unqueued", request_id: "sweeper" }]);
+
+    const again = sweepEnv();
+    await sweep(again.bindings, fakeDependencies(), createLogger(), WITH_FSM);
+    expect(again.queues.fsm.sent).toEqual([]);
+  });
+
+  it("leaves a booking already queued or sent, a waitlist entry, and one over a day old", async () => {
+    await insertLead("queued", "synced", 1, minutesAgo(3));
+    await insertLead("sent", "synced", 1, minutesAgo(3));
+    await insertLead("waitlist", "synced", 1, minutesAgo(3));
+    await insertLead("old", "synced", 1, minutesAgo(25 * 60));
+    await env.DB.batch([
+      env.DB.prepare("UPDATE leads SET fsm_queued_at = ?1 WHERE id = 'queued'").bind(minutesAgo(3)),
+      env.DB.prepare("UPDATE leads SET fsm_request_id = 'fsm-req-1' WHERE id = 'sent'"),
+      env.DB.prepare("UPDATE leads SET source = 'waitlist' WHERE id = 'waitlist'"),
+    ]);
+    const { bindings, queues } = sweepEnv();
+    await sweep(bindings, fakeDependencies(), createLogger(), WITH_FSM);
+    expect(queues.fsm.sent).toEqual([]);
+  });
+
+  it("sends nothing where FSM is not connected", async () => {
+    await insertLead("unqueued", "synced", 1, minutesAgo(3));
+    const { bindings, queues } = sweepEnv();
+    await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);
+    expect(queues.fsm.sent).toEqual([]);
+  });
+});
+
 describe("sweeper: AILabTools credits", () => {
   const onTheHour = new Date("2026-09-21T07:00:00Z");
 
   it("reads the balance once an hour and alerts below the floor", async () => {
     const deps = fakeDependencies({ now: () => onTheHour });
-    const summary = await sweep(sweepEnv().bindings, deps, createLogger(), { creditFloor: 5000 });
+    const summary = await sweep(sweepEnv().bindings, deps, createLogger(), { ...OPTIONS, creditFloor: 5000 });
     expect(summary.credits).toBe(1000); // the stub's two pools, summed
     expect(deps.alerts).toEqual([expect.stringContaining("credits are down to 1000") as string]);
+  });
+
+  it("tells ops once, not every hour, until a top-up lifts the balance over the floor", async () => {
+    const deps = fakeDependencies({ now: () => onTheHour });
+    const low = { ...OPTIONS, creditFloor: 5000 };
+    await sweep(sweepEnv().bindings, deps, createLogger(), low);
+    await sweep(sweepEnv().bindings, deps, createLogger(), low);
+    expect(deps.alerts).toHaveLength(1);
+
+    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
+    await sweep(sweepEnv().bindings, deps, createLogger(), low);
+    expect(deps.alerts).toHaveLength(2);
   });
 
   it("stays quiet above the floor, and skips the check between hours", async () => {
@@ -356,6 +431,12 @@ describe("sweeper: AILabTools credits", () => {
     expect((await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS)).credits).toBe(1000);
     expect(deps.alerts).toEqual([]);
     expect((await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS)).credits).toBeUndefined();
+  });
+
+  it("leaves the balance to the next hour when the cron run has no call left for it", async () => {
+    const deps = fakeDependencies({ now: () => onTheHour });
+    const spent = { ...OPTIONS, budget: createCallBudget(0) };
+    expect((await sweep(sweepEnv().bindings, deps, createLogger(), spent)).credits).toBeUndefined();
   });
 
   it("logs, and does not alert, when the balance cannot be read", async () => {

@@ -96,7 +96,10 @@ export function createStubGeocodeFetch(): typeof fetch {
     }
 
     if (url.hostname === "maps.googleapis.com") {
-      if (url.searchParams.get("key") !== STUB_API_KEY) return json({ status: "REQUEST_DENIED" }, 403);
+      // The Geocoding API refuses under a 200, and says why in `error_message`.
+      if (url.searchParams.get("key") !== STUB_API_KEY) {
+        return json({ status: "REQUEST_DENIED", error_message: "stub: The provided API key is invalid.", results: [] });
+      }
       const placeId = url.searchParams.get("place_id") ?? "";
       const known = PLACES.find((place) => place.placeId === placeId);
       if (known === undefined) return json({ status: "ZERO_RESULTS", results: [] });

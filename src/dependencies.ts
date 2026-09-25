@@ -2,6 +2,7 @@
 // the providers and alerts. Built once per invocation from the validated
 // config; tests pass their own.
 
+import { createAlertOnce, createResolveAlert, type AlertOnce, type ResolveAlert } from "./domain/alerts.ts";
 import type { StaticConfig } from "./guard.ts";
 import { createAccessVerifier, type AccessVerifier } from "./http/access.ts";
 import type { Logger } from "./log.ts";
@@ -22,6 +23,10 @@ export interface Dependencies {
   readonly image: ImageProvider;
   readonly messaging: MessagingProvider;
   readonly alert: Alert;
+  /** An alert kept in D1 and told once, with its IDs and console link (src/domain/alerts.ts). */
+  readonly alertOnce: AlertOnce;
+  /** Closes a kept alert, once what it was about is put right. */
+  readonly resolveAlert: ResolveAlert;
   /** Posts a new lead to the chat space. */
   readonly notifyLead: LeadNotice;
   /** Checks the Cloudflare Access token on the ops surface. */
@@ -49,18 +54,21 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
   const access = createAccessVerifier(settings.access, { fetch: httpFetch, now });
   return (env, log) => {
     const messaging = createMessagingProvider(settings.messaging.evolution, { fetch: httpFetch, log });
+    const alert = createAlert({
+      webhookUrl: settings.alertWebhookUrl,
+      environment: config.environment,
+      fetch: httpFetch,
+      log,
+    });
     return {
       fetch: httpFetch,
       now,
       crm: createCrmProvider(settings.zoho, { db: env.DB, fetch: httpFetch, now, log }),
       image: createImageProvider(settings.tryon.ailabApiKey, { fetch: httpFetch, now }),
       messaging,
-      alert: createAlert({
-        webhookUrl: settings.alertWebhookUrl,
-        environment: config.environment,
-        fetch: httpFetch,
-        log,
-      }),
+      alert,
+      alertOnce: createAlertOnce({ db: env.DB, alert, now, environment: config.environment, log }),
+      resolveAlert: createResolveAlert({ db: env.DB, now }),
       notifyLead: createLeadNotice({
         webhookUrl: settings.leadWebhookUrl,
         environment: config.environment,

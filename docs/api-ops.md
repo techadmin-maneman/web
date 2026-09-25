@@ -3907,7 +3907,9 @@ Request body:
               "referral_review",
               "no_show_decision",
               "number_change",
-              "erasure_request"
+              "erasure_request",
+              "draft_invoice",
+              "erasure_unfinished"
             ]
           },
           "count": {
@@ -3973,7 +3975,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Null for a no-show, whose case names the technician and never the client."
+      "description": "Null for a no-show, whose case names the technician and never the client, and for an erased client."
     },
     "detail": {
       "anyOf": [
@@ -3984,7 +3986,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact."
     },
     "since": {
       "type": "string",

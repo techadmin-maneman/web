@@ -155,6 +155,24 @@ describe("POST /api/address/suggestions", () => {
     expect((await res.json<{ error: { code: string } }>()).error.code).toBe("unavailable");
   });
 
+  it("tells ops once a day that Google refuses the search, in Google's words", async () => {
+    const res = await send(client, "GET", "/api/address/suggestions?q=mm-stub:refused&session=s-1");
+    expect(res.status).toBe(503);
+    await send(client, "GET", "/api/address/suggestions?q=mm-stub:refused&session=s-2");
+    const told =
+      "Google refused the address search (autocomplete 403: stub: quota). Clients can still type an address, " +
+      "but none gets a pin. Check the key, its APIs and its quotas (runbook, section 13).";
+    expect(deps.alerts).toEqual([told]);
+
+    const tomorrow = fakeDependencies({ now: () => new Date(NOW.getTime() + 24 * 60 * 60 * 1000) });
+    await send(
+      appFor("local", tomorrow, {}, "client"),
+      "GET",
+      "/api/address/suggestions?q=mm-stub:refused&session=s-3",
+    );
+    expect(tomorrow.alerts).toEqual([told]);
+  });
+
   it("needs a signed-in client: suggestions cost money", async () => {
     const res = await request(client, "/api/address/suggestions", {
       method: "POST",
@@ -224,6 +242,21 @@ describe("the address pin", () => {
     const res = await send(client, "PATCH", "/api/profile/address", { ...chosen, place_id: "stub-place-gone" });
     expect(res.status).toBe(200);
     expect(await pinOf()).toMatchObject({ lat: null, geocode_source: null, place_id: "stub-place-gone" });
+  });
+
+  it("tells ops when Google refuses the geocode, and saves the address without a pin", async () => {
+    const refusing = fakeDependencies({
+      geocode: {
+        ...deps.geocode,
+        resolve: () =>
+          Promise.resolve({ ok: false, reason: "refused", detail: "geocoding said REQUEST_DENIED: key invalid" }),
+      },
+    });
+    const res = await send(appFor("local", refusing, {}, "client"), "PATCH", "/api/profile/address", chosen);
+    expect(res.status).toBe(200);
+    expect(refusing.alerts).toEqual([
+      expect.stringContaining("(geocoding said REQUEST_DENIED: key invalid)") as string,
+    ]);
   });
 
   it("never takes a coordinate from the client", async () => {

@@ -4,7 +4,7 @@ import type { Settings } from "../../src/config/settings.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { verifyToken } from "../../src/lib/signed-token.ts";
 import { createLogger } from "../../src/log.ts";
-import { createEvolutionMessaging } from "../../src/providers/evolution.ts";
+import { createEvolutionMessaging, SEND_TIMEOUT_MS } from "../../src/providers/evolution.ts";
 import type { MessagingProvider, SendResult } from "../../src/providers/messaging.ts";
 import { MAX_SEND_ATTEMPTS } from "../../src/config/pipeline.ts";
 import { handleMessagingBatch, sendMessage } from "../../src/queues/messaging.ts";
@@ -34,6 +34,7 @@ function recordingProvider(answer: SendResult = { ok: true, providerMessageId: "
       sent.push({ to, template, params, mediaUrl });
       return Promise.resolve(answer);
     },
+    connection: () => Promise.resolve({ open: true }),
   };
   return { provider, sent };
 }
@@ -307,6 +308,47 @@ describe("Evolution API", () => {
       ok: false,
       transient: false,
       detail: "no reply within 60 s: delivery unconfirmed",
+    });
+  });
+
+  it("gives a text 20 s, so a login code sent after the response is answered inside its 30 s", async () => {
+    expect(SEND_TIMEOUT_MS.sendText).toBeLessThanOrEqual(20_000);
+    const http = fakeFetch({
+      [SEND_TEXT]: () => {
+        throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+      },
+    });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    expect(await evolution.send({ to: "+919810000001", template: "login_code_v1", params: ["123456"] })).toEqual({
+      ok: false,
+      transient: false,
+      detail: "no reply within 20 s: delivery unconfirmed",
+    });
+  });
+
+  describe("the bridge's connection to WhatsApp", () => {
+    const STATE = "https://bridge.example/instance/connectionState/mane%20man";
+
+    it.each([
+      [json({ instance: { instanceName: "mane man", state: "open" } }), { open: true }],
+      [json({ instance: { instanceName: "mane man", state: "close" } }), { open: false, detail: "state close" }],
+      [json({ state: "connecting" }), { open: false, detail: "state connecting" }],
+      [json({ error: "Unauthorized" }, 401), { open: false, detail: "HTTP 401" }],
+    ])("is read, never written, from its connection state", async (answer, connection) => {
+      const http = fakeFetch({ [STATE]: () => answer });
+      const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+      expect(await evolution.connection()).toEqual(connection);
+      expect(http.calls.map((call) => [call.method, call.headers.get("apikey")])).toEqual([["GET", "evo-key"]]);
+    });
+
+    it("is not open when the bridge cannot be reached", async () => {
+      const http = fakeFetch({
+        [STATE]: () => {
+          throw new TypeError("fetch failed");
+        },
+      });
+      const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+      expect(await evolution.connection()).toEqual({ open: false, detail: "unreachable: TypeError" });
     });
   });
 });

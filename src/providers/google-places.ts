@@ -67,6 +67,18 @@ function classify(status: number): LookupFailure {
   return "unavailable";
 }
 
+/**
+ * The Geocoding API answers a refusal with HTTP 200 and says so in `status`,
+ * so its status is read as the HTTP code is elsewhere. Anything not here,
+ * UNKNOWN_ERROR included, is worth trying again.
+ */
+const GEOCODING_STATUS: Readonly<Record<string, LookupFailure>> = {
+  ZERO_RESULTS: "not_found",
+  REQUEST_DENIED: "refused",
+  OVER_DAILY_LIMIT: "refused",
+  OVER_QUERY_LIMIT: "refused",
+};
+
 export function createGooglePlaces(apiKey: string, deps: { fetch: typeof fetch }): GeocodeProvider {
   // The Geocoding API takes the key in the query string, so it can reach a log
   // through an error message. Nothing leaves this module without this.
@@ -139,10 +151,10 @@ export function createGooglePlaces(apiKey: string, deps: { fetch: typeof fetch }
       const lat = first?.geometry?.location?.lat;
       const lng = first?.geometry?.location?.lng;
       if (status !== "OK" || typeof lat !== "number" || typeof lng !== "number") {
-        // ZERO_RESULTS and INVALID_REQUEST both mean this Place ID resolved to
-        // nothing; a Place ID over a year old can go stale (Google's own advice).
-        const reason: LookupFailure = status === "OK" || status === "ZERO_RESULTS" ? "not_found" : "unavailable";
-        return { ok: false, reason, detail: scrub(`geocoding said ${status === "" ? "nothing" : status}`) };
+        // OK with no coordinate, or ZERO_RESULTS: this Place ID resolved to nothing,
+        // as one over a year old can (Google's own advice).
+        const reason: LookupFailure = status === "OK" ? "not_found" : (GEOCODING_STATUS[status] ?? "unavailable");
+        return { ok: false, reason, detail: scrub(`geocoding said ${status === "" ? "nothing" : status}${why(body)}`) };
       }
       return {
         ok: true,

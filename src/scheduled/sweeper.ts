@@ -2,9 +2,11 @@
 // moved on and has not is put back on its queue from here.
 //
 //   leads       pending over 2 minutes, or failed under 10 attempts   -> crm-sync
+//   bookings    a booked lead never put on its queue, after 2 minutes  -> fsm-sync
 //   erasures    a person erased whose CRM record is not yet blanked     -> crm-sync
 //               or whose FSM contact is not yet anonymised              -> fsm-sync
 //   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
+//               and after an hour, an alert naming it
 //   messages    queued but unsent for over 5 minutes                  -> messaging
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
@@ -15,6 +17,7 @@ import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { failJob } from "../domain/tryon.ts";
+import type { CallBudget } from "../lib/call-budget.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
@@ -25,9 +28,13 @@ import type { RenderMessage } from "../queues/render.ts";
 const MINUTE_MS = 60 * 1000;
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
+/** A booking not sent to FSM within a day is left to ops. */
+const BOOKING_TO_FSM_WITHIN_MS = 24 * 60 * MINUTE_MS;
 const MESSAGE_GRACE_MS = 5 * MINUTE_MS;
 /** Past the fsm-sync consumer's whole retry chain: 30 s, 1, 2 and 4 minutes. */
 const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
+/** A step still not in FSM after this has outlived several sends, and ops are told. */
+const JOB_EVENT_ALERT_AFTER_MS = 60 * MINUTE_MS;
 /** A submit that started this long ago and never recorded a task died part-way. */
 const SUBMIT_ABANDONED_MS = 10 * MINUTE_MS;
 /** Downloads are retried every sweep at first, then hourly until the URL expires. */
@@ -66,8 +73,10 @@ export async function sweep(
   log: Logger,
   options: {
     readonly creditFloor: number;
-    /** Whether FSM is connected, so an erased person's contact there can be anonymised. */
-    readonly fsmErasure?: boolean;
+    /** Whether FSM is connected, so bookings are sent there and an erased person's contact is anonymised. */
+    readonly fsmConnected?: boolean;
+    /** The cron run's outside calls; the hourly balance check takes one. */
+    readonly budget: CallBudget;
   },
 ): Promise<SweepSummary> {
   const now = deps.now();
@@ -104,8 +113,29 @@ export async function sweep(
     erasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
   );
 
-  // Erased people whose FSM contact is still to be anonymised (docs/decisions/0049-dpdp.md).
-  if (options.fsmErasure === true) {
+  if (options.fsmConnected === true) {
+    // Bookings whose message to the fsm-sync queue never went (src/routes/lead.ts), sent now, once.
+    // One over a day old is left: past that, sending it would surprise ops, who have it from the CRM.
+    const bookings = await ids(
+      db
+        .prepare(
+          `UPDATE leads SET fsm_queued_at = ?1
+           WHERE id IN (
+             SELECT id FROM leads
+             WHERE fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form'
+               AND first_choice_window IS NOT NULL AND created_at > ?2 AND created_at < ?3
+             ORDER BY created_at LIMIT ?4)
+           RETURNING id`,
+        )
+        .bind(now.toISOString(), before(BOOKING_TO_FSM_WITHIN_MS), before(PENDING_GRACE_MS), BATCH_LIMIT),
+    );
+    await sendAll(
+      env.FSM_QUEUE,
+      bookings.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
+    );
+    if (bookings.length > 0) log.warn("bookings_sent_to_fsm_late", { lead_ids: bookings });
+
+    // Erased people whose FSM contact is still to be anonymised (docs/decisions/0049-dpdp.md).
     const fsmErasures = await ids(
       db
         .prepare(
@@ -144,6 +174,7 @@ export async function sweep(
     env.FSM_QUEUE,
     jobEvents.map((id) => ({ job_event_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
   );
+  await alertStuckJobEvents(db, deps, before(JOB_EVENT_ALERT_AFTER_MS));
 
   // Result messages that were queued and never sent.
   const messages = await ids(
@@ -241,13 +272,17 @@ export async function sweep(
 
   // Once an hour: an exhausted balance would otherwise fail every try-on quietly.
   let credits: number | null | undefined;
-  if (now.getUTCMinutes() < 5) {
+  if (now.getUTCMinutes() < 5 && options.budget.spend(1)) {
     credits = await deps.image.credits();
     if (credits === null) log.warn("credits_unreadable");
     else if (credits < options.creditFloor) {
-      await deps.alert(
-        `AILabTools credits are down to ${String(credits)}, below the floor of ${String(options.creditFloor)}.`,
-      );
+      // Told once, not every hour, until a top-up lifts the balance over the floor.
+      await deps.alertOnce({
+        key: "ailab_credits_low",
+        message: `AILabTools credits are down to ${String(credits)}, below the floor of ${String(options.creditFloor)}.`,
+      });
+    } else {
+      await deps.resolveAlert("ailab_credits_low");
     }
   }
 
@@ -275,6 +310,36 @@ export async function sweep(
     credits: credits ?? null,
   });
   return summary;
+}
+
+/**
+ * A job's earliest step still waiting for FSM an hour after it landed, told to
+ * ops once each, with IDs only. The steps behind it wait for it, so it is the
+ * one to name. The alert closes when the step is written (src/queues/fsm-sync.ts).
+ */
+async function alertStuckJobEvents(db: D1Database, deps: Dependencies, landedBefore: string): Promise<void> {
+  const { results } = await db
+    .prepare(
+      `SELECT e.id, e.kind, e.appointment_id, a.person_id FROM job_events e
+       JOIN appointments a ON a.id = e.appointment_id
+       WHERE e.fsm_write_state = 'pending' AND e.superseded = 0 AND e.received_at < ?1
+         AND NOT EXISTS (
+           SELECT 1 FROM job_events b
+           WHERE b.appointment_id = e.appointment_id AND b.fsm_write_state = 'pending' AND b.superseded = 0
+             AND (b.received_at, b.rowid) < (e.received_at, e.rowid))
+       ORDER BY e.received_at LIMIT ?2`,
+    )
+    .bind(landedBefore, BATCH_LIMIT)
+    .all<{ id: string; kind: string; appointment_id: string; person_id: string | null }>();
+  for (const step of results) {
+    await deps.alertOnce({
+      key: `job_event_pending:${step.id}`,
+      message:
+        `A technician's ${step.kind} (job event ${step.id}) on visit ${step.appointment_id} has waited over an hour ` +
+        "to reach FSM. The sweeper keeps sending it; if it has not landed soon, enter it in FSM by hand.",
+      link: step.person_id === null ? "/dispatch" : `/clients/${step.person_id}`,
+    });
+  }
 }
 
 /** Uploads nobody finished within an hour, and results past their 30 days, become `expired`. */
