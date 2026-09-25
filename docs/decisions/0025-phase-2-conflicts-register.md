@@ -125,6 +125,16 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 
     Every word the boards do not draw is a placeholder in `apps/ops/src/content.ts`, approved with the rest of the console's copy (`docs/open-points.md`, item 20).
 
+46. **The console's clients and queues, where the boards draw less than a day's work needs.** **Taken 26 September 2026, for the owner to confirm** (ADR 0071):
+    - **Every ruling carries its reason**, on the server as well as the screen: both referral decisions (board C1's "Both require a reason"), charging and waiving a no-show ("Charge or waive, with a reason"), and rejecting a number change or an erasure. The reason is kept with the decision, under who made it, and not in the audit log, which can never be blanked when the client is erased. A charge is asked about once more before it is sent.
+    - **One deadline per queue**: each queue counts down to the Tasks board's own due day, from the allowance ops set; an erasure waits the seven days the client was promised and a grievance the thirty, where every group but Call about a move waited two. Grievances are a Tasks group, drawn on no board.
+    - **Board B1's head and tabs**: the WhatsApp button beside the name, as drawn, and the mobile added to the head as a number to call; Visits and Payments built as tabs from the record, in the board's order, with the credit form under Payments. The page still opens on Pieces, as drawn.
+    - **Board B2's "AK · 19 Sep"** is a list of the earlier openings beneath the photographs, each by the member of staff's Access e-mail, since nothing records their initials; the time lettered is the one the API logged.
+    - **Board C1's "3 days held"** is built, and each name in the pair is a way to that client's page, which the board draws as plain text.
+    - **Board D1's case** names the client and carries two rows the board does not letter, the booked window and when the check-in reached us, and a third where the phone's own time was not taken; "Waited" is counted from the check-in to the close, so the board's 11:31 to 11:47 reads 16 minutes where it writes 15. Its note field is the board's own "Your note · required", from the dispute card.
+    - **Board D3** is one row a technician; the phones and the leave open in a panel over the roster, and Leave stands in the column the board gives Skill, which nothing records (item 59 of `docs/open-points.md`).
+    - **Board D2's tasks** each lead to the client's page and to the row they are decided on.
+
 ## Inputs still owed
 
 The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`. The FSM trial and licensing are in `docs/decisions/fsm-trial.md` and `docs/decisions/fsm-licensing.md`, both pending.

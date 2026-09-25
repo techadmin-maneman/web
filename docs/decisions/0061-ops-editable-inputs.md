@@ -1,6 +1,6 @@
 # 0061. The business inputs ops change without a developer
 
-- Status: accepted
+- Status: accepted. Amended 26 September 2026: a task group's allowance may run to 720 hours, so a grievance's thirty days can stand, and each queue counts down to it (ADR 0071).
 - Date: 2026-09-24
 - Follows [0031](0031-access-and-audit.md) for who may change one and how it is recorded, and [0009](0009-stay-inside-cloudflare-free-tier.md) for what reading one may cost
 
