@@ -27,7 +27,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 - Its ID, secret and refresh token are the Worker secrets `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and `ZOHO_FSM_REFRESH_TOKEN`.
 - Its hosts and the Books organisation are vars (runbook, step 11b).
 
-**The access token is kept in D1,** in `zoho_tokens` (migration 0010), one row per client. Every invocation uses the same token until a minute before it expires. The code that refreshes it is shared with the CRM (`src/providers/zoho-http.ts`); the CRM keeps its own one-row `zoho_token`, unchanged.
+**The access token is kept in D1,** in `zoho_tokens` (migration 0010), one row per client. Every invocation uses the same token until a minute before it expires. The code that refreshes it is shared with the CRM (`src/providers/zoho-http.ts`); the CRM keeps its own one-row `zoho_token`, unchanged. **Since 25 September 2026** one requester serves the CRM, FSM and Books, with both clients' tokens in `zoho_access_tokens` (migration 0041), a lease so one caller refreshes at a time, and a ten-minute cool-down after Zoho refuses a token ([ADR 0070](0070-vendor-correctness.md)).
 
 **Two providers, each with a stub.**
 

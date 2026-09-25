@@ -633,8 +633,12 @@ Symptoms: every sync fails with `invalid_code` or `INVALID_TOKEN`.
 
 1. Make a new refresh token (Zoho, step 5 of "Provisioning an environment").
 2. `W secret put ZOHO_REFRESH_TOKEN --env <env>`
-3. Drop the cached access token: `DELETE FROM zoho_token;`
+3. Drop the cached access token: `DELETE FROM zoho_access_tokens WHERE client = 'crm';` (`'fsm'` for FSM and Books).
 4. The sweeper delivers the waiting leads within five minutes. Replay any that already gave up.
+
+### Zoho refused a new token ("Access Denied")
+
+Symptoms: calls fail with `Zoho 400 Access Denied: could not refresh the access token`, then with `TOKEN_COOLING_DOWN`. One refresh token mints at most 10 access tokens in 10 minutes, and staging and production share the CRM's (ADR 0050). After Zoho refuses one, nothing asks for another for ten minutes (`zoho_access_tokens.cool_down_until`), and every Zoho call fails at once meanwhile; the queues and the passes try again afterwards on their own. Find what minted the tokens, usually a script run by hand against the same client, and stop it. Do not clear `cool_down_until` to hurry it: asking again inside the ten minutes extends Zoho's refusal.
 
 ### Replaying failed leads
 
