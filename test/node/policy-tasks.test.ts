@@ -34,8 +34,11 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("consultation_request");
   });
 
-  it("gives every group an allowance, all of them the placeholder two days", () => {
-    for (const group of TASK_GROUPS) expect(TASK_SLA_HOURS[group], group).toBe(48);
+  it("gives every group an allowance, the placeholder two days but a call about a move the same day", () => {
+    for (const group of TASK_GROUPS) {
+      // A client who does not know his visit moved will not be home for it (ADR 0069).
+      expect(TASK_SLA_HOURS[group], group).toBe(group === "untold_move" ? 4 : 48);
+    }
     expect(Object.keys(TASK_SLA_HOURS).sort()).toEqual([...TASK_GROUPS].sort());
   });
 

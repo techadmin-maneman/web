@@ -2,14 +2,15 @@
 // long each has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an undecided
 // no-show, a number change, an erasure, a piece past its replacement date, an
-// invoice still a draft, an erasure FSM would not finish — so
+// invoice still a draft, an erasure FSM would not finish, a moved visit whose
+// client has not heard of it — so
 // it leaves the list when that row is decided, on the section that decides it
 // (src/policy/tasks.ts).
 //
 // The board writes an owner in ops against every task. Nothing records one, so
 // the column is not drawn (docs/open-points.md, item 58).
 
-import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Task, type TaskGroup } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { dispatch, referrals, tasks } from "../content.ts";
@@ -26,6 +27,12 @@ const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
 /** The second line: the one fact the group turns on. */
 function subOf(group: Group, task: Task): string {
   const copy = tasks.subs;
+  if (group === "untold_move") {
+    // The start the visit moved to.
+    return task.detail === null
+      ? tasks.unknown
+      : copy.untold_move(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
+  }
   if (group === "consultation_request") {
     // The day and the window, as the request recorded them: both are always there.
     const [day = "", when = ""] = task.detail?.split(" ") ?? [];

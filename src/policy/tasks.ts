@@ -19,6 +19,11 @@
 // a finished visit whose invoice is still a draft in Books, which the client
 // cannot open until somebody sends it; and an erased client whose FSM contact
 // the sweeper could not anonymise, which somebody must do by hand.
+//
+// So is the first (docs/decisions/0069-dispatch-under-concurrency.md): a visit
+// ops moved to another day or window whose client has not heard of it, having
+// not agreed to WhatsApp about his visits, or the message having never gone.
+// Ops call him, and say so on the dispatch board.
 
 export const RULES = [
   "The replacement due date follows the per-base cycle config already defined in this prompt.",
@@ -29,6 +34,7 @@ export const RULES = [
 
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [
+  "untold_move",
   "consultation_request",
   "replacement_order",
   "referral_review",
@@ -43,12 +49,15 @@ export type TaskGroup = (typeof TASK_GROUPS)[number];
 /**
  * How long a task may wait before it is overdue. The board writes "2 days",
  * "1 day", "Today" and "Overdue 3" and names no group's own allowance, and the
- * prompt states none, so every group waits the same two days: a placeholder
- * until the owner rules each one (docs/open-points.md, item 58).
+ * prompt states none, so every group waits the same two days, but a client
+ * not told of a move, who waits four hours: placeholders until the owner rules
+ * each one (docs/open-points.md, item 58).
  */
 export type Slas = Readonly<Record<TaskGroup, number>>;
 
 export const TASK_SLA_HOURS: Slas = {
+  // A client who does not know his visit moved will not be home for it: a call the same day.
+  untold_move: 4,
   consultation_request: 48,
   replacement_order: 48,
   referral_review: 48,

@@ -198,6 +198,8 @@ const postAt = (at: Date, path: string, body: unknown, eventId: string, headers:
 
 /** Today's job starts at 13:00 in India. */
 const TODAY_START = new Date("2026-09-21T07:30:00.000Z");
+/** Today's job as a dispatch board loaded now shows it, which every move sends (FEO-05). */
+const AS_THE_BOARD_SHOWS_IT = { expected_technician_id: IMRAN, expected_starts_at: TODAY_START.toISOString() };
 const minutesAfterStart = (minutes: number) => new Date(TODAY_START.getTime() + minutes * 60_000);
 /** The event ID the app makes for a write queued that many minutes after the start. */
 const uuidv7At = (minutes: number) => uuidv7(minutesAfterStart(minutes).getTime());
@@ -924,6 +926,7 @@ describe("dispatch, when FSM keeps its own technician", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       reason: "zone_rebalance",
     });
@@ -952,6 +955,7 @@ describe("dispatch", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       date: "2026-09-21",
       window: "afternoon",
@@ -970,8 +974,16 @@ describe("dispatch", () => {
   });
 
   it("moves the job in FSM, records who moved it and why, and messages the client", async () => {
+    // The message goes only to a client who agreed to WhatsApp about his visits (ADR 0069).
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+       VALUES ('consent-visits', ?1, 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",
@@ -979,7 +991,7 @@ describe("dispatch", () => {
     });
 
     expect(answer.status).toBe(200);
-    expect(await answer.json()).toMatchObject({ messaged: true });
+    expect(await answer.json()).toMatchObject({ client_notice: "messaged" });
     expect(fsm.made.assigned).toEqual([{ appointmentId: "ap-today", technicianId: "resource-2" }]);
     expect(fsm.made.rescheduled).toEqual([
       { appointmentId: "ap-today", start: "2026-09-22T09:00:00+05:30", end: "2026-09-22T10:30:00+05:30" },
@@ -1027,6 +1039,7 @@ describe("dispatch", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       date: "2026-09-22",
       window: "morning",
       reason: "running_over",
@@ -1060,6 +1073,7 @@ describe("leave", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",
@@ -1097,6 +1111,7 @@ describe("leave", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",

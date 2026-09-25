@@ -1389,6 +1389,7 @@ Request body:
             "already_started",
             "clash",
             "on_leave",
+            "does_not_fit",
             "fsm_refused",
             "too_early_to_close",
             "no_service_area"
@@ -1402,7 +1403,7 @@ Request body:
           "items": {
             "type": "string"
           },
-          "description": "invalid_request only: the fields that failed validation, never their values."
+          "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
         }
       },
       "required": [

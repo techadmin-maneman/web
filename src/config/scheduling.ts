@@ -55,3 +55,11 @@ export const HOLD_SECONDS = 600;
  * its time before anyone else may take it (docs/decisions/0068-a-paid-hold-is-kept.md).
  */
 export const PAYMENT_GRACE_SECONDS = 120;
+
+/**
+ * How long a move on the dispatch board holds the time it is moving a job to
+ * while FSM is written. A move still open after this never finished, and the
+ * next move or the sweeper lets its time go
+ * (docs/decisions/0069-dispatch-under-concurrency.md).
+ */
+export const MOVE_CLAIM_SECONDS = 300;

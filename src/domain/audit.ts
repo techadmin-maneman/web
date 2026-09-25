@@ -45,6 +45,8 @@ export const AUDIT_ACTIONS = [
   "pincode.set",
   // Ops putting a client's service-visit credits right by hand (docs/decisions/0068-a-paid-hold-is-kept.md).
   "credit.adjust",
+  // Ops calling a client about a move he had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).
+  "dispatch.client_told",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

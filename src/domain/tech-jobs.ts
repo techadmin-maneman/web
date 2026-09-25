@@ -21,7 +21,7 @@ import { VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import type { JobEventKind } from "../policy/in-job-steps.ts";
-import { jobDay, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
+import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
 import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
@@ -389,9 +389,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
 }
 
 function badgeOf(row: JobRow): PaymentBadge {
-  if (row.on_credit === 1) return "credit";
-  if (row.free === 1) return "free";
-  return "prepaid";
+  return paymentBadge({ onCredit: row.on_credit === 1, free: row.free === 1 });
 }
 
 /** What the phone has already sent for this job, from the events it landed. */

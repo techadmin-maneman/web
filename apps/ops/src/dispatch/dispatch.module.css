@@ -6,12 +6,20 @@
  *
  * A first fit is a block on ink, a replacement a shaded one, and a consultation
  * or a service visit sits on light paper, each sized by the slots it takes.
+ *
+ * The grid scrolls under its header row and its technicians' column, which stay
+ * put (OPS-10), and a day never narrows past --ops-day: on a narrow window, or
+ * at 200% zoom, the grid scrolls sideways and the tray goes beneath it (VIS-22).
  */
 
 .area {
   display: flex;
   flex: 1;
   min-width: 0;
+}
+
+.area:focus {
+  outline: none;
 }
 
 .main {
@@ -21,21 +29,89 @@
   min-width: 0;
 }
 
-.main:focus {
-  outline: none;
-}
-
 .scroll {
   flex: 1;
   min-height: 0;
   overflow: auto;
 }
 
+/* ---- The week, the city and the search above the grid -------------------- */
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-10) var(--sp-16);
+  padding: var(--sp-10) var(--sp-14);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.weeks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+
+/* The console's table row height, which keeps the row as dense as the grid beneath it. */
+.tool {
+  min-height: var(--ops-row);
+  padding: 0 var(--sp-12);
+  border: var(--hairline) solid var(--paper-control);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-13);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tool:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.find {
+  flex: 1;
+  min-width: var(--ops-tray);
+}
+
+.fieldLabel {
+  line-height: 1.25;
+}
+
+.select,
+.input {
+  min-height: var(--ops-row);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--paper-light);
+  font: inherit;
+  font-size: var(--fs-13);
+  color: var(--text);
+}
+
+.tool:focus-visible,
+.select:focus-visible,
+.input:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
 /* ---- Board A1: technicians down, seven days across ----------------------- */
 
 .grid {
   width: 100%;
-  border-collapse: collapse;
+  min-width: calc(var(--ops-tech) + 7 * var(--ops-day));
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: fixed;
   font-size: var(--fs-13);
 }
@@ -49,12 +125,27 @@
   vertical-align: top;
 }
 
-.grid thead tr {
+/* The header row stays at the top of the scroll, and the technicians' column at its left edge. */
+.corner,
+.day {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   border-bottom: var(--hairline) solid var(--text);
+  background: var(--paper);
 }
 
-.grid tbody tr {
+.tech {
+  position: sticky;
+  left: 0;
+  z-index: 1;
   border-bottom: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+}
+
+.corner {
+  left: 0;
+  z-index: 3;
 }
 
 .day {
@@ -95,6 +186,7 @@
 .cell {
   height: var(--ops-cell);
   padding: var(--sp-3);
+  border-bottom: var(--hairline) solid var(--paper-line);
   border-left: var(--hairline) solid var(--paper-line);
   vertical-align: top;
 }
@@ -134,6 +226,11 @@
   cursor: grab;
 }
 
+/* A visit already done stays where it was worked, and opens its drawer rather than being dragged. */
+.finished {
+  cursor: pointer;
+}
+
 .slots1 {
   min-height: var(--ops-block-1);
 }
@@ -168,6 +265,7 @@
 .what {
   display: block;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .svc .what,
@@ -220,30 +318,66 @@
   outline-offset: calc(-1 * var(--rule-strong));
 }
 
+/* A day the job in hand has no room on: nothing to drop on, and it says so. */
+.noRoom {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
 /* ---- The bar while a job is in hand -------------------------------------- */
 
 .bar {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: var(--sp-16);
+  gap: var(--sp-10) var(--sp-16);
   padding: var(--sp-10) var(--sp-14);
   border-bottom: var(--hairline) solid var(--paper-line);
   background: var(--paper-light);
 }
 
+.bar:focus {
+  outline: none;
+}
+
 .barText {
+  flex-basis: 100%;
   margin: 0;
   font-size: var(--fs-14);
 }
 
-.refusal,
-.done {
+.barNote {
   margin: 0;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* The keyboard's way to a destination: a list, and a button to take the one chosen. */
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-10);
+}
+
+.done,
+.refusal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-10) var(--sp-16);
   padding: var(--sp-10) var(--sp-14);
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-14);
   line-height: 1.5;
+}
+
+.noticeText {
+  margin: 0;
 }
 
 .refusal {
@@ -341,10 +475,16 @@
   white-space: nowrap;
 }
 
-.trayLine {
+.trayLine,
+.trayOffered {
   display: block;
   line-height: 1.4;
   color: var(--text-muted);
+}
+
+/* An offered window the client did not ask for, lettered in oxblood as the board draws it. */
+.trayOffered {
+  color: var(--error-on-paper);
 }
 
 .trayTop + .trayLine {
@@ -360,18 +500,25 @@
   outline-offset: calc(-1 * var(--rule-strong));
 }
 
-/* ---- Boards A2 and A3: the panels a job opens ----------------------------- */
+/* ---- Boards A2 and A3: the panels a job opens, each a modal dialog -------- */
 
 .panel {
   position: fixed;
-  top: var(--header-h);
-  right: 0;
-  z-index: 1;
+  inset: var(--header-h) 0 auto auto;
   width: var(--ops-panel);
+  max-width: 100%;
   max-height: calc(100dvh - var(--header-h));
+  margin: 0;
+  padding: 0;
   overflow-y: auto;
   border: var(--hairline) solid var(--paper-line);
   background: var(--paper);
+  color: var(--text);
+}
+
+/* The board stays in view behind a panel, as the boards draw them, and takes no clicks while it is open. */
+.panel::backdrop {
+  background: transparent;
 }
 
 .panel:focus {
@@ -464,11 +611,13 @@
 .quiet {
   display: flex;
   align-items: center;
+  gap: var(--sp-10);
   min-height: var(--tap);
   padding: 0 var(--sp-18);
   font: inherit;
   font-size: var(--fs-15);
   font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -499,6 +648,10 @@
 /* ---- Board A3: the drawer ------------------------------------------------ */
 
 .drawerHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-14);
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--text);
 }
@@ -514,6 +667,16 @@
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
+}
+
+/* "Prepaid", in brass small capitals at the drawer's head. */
+.badge {
+  flex-shrink: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-14);
+  color: var(--brass-text);
 }
 
 .drawerBody {
@@ -542,9 +705,62 @@
   text-align: right;
 }
 
+/* A move the client has not heard of, behind the oxblood rule the no-show queue gives what needs doing. */
+.untold {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-10);
+  margin-top: var(--sp-18);
+  padding-left: var(--sp-14);
+  border-left: var(--rule-strong) solid var(--error-on-paper);
+}
+
+.untoldLine {
+  margin: 0;
+  font-size: var(--fs-15);
+  line-height: 1.6;
+}
+
 .drawerActions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-10);
   margin-top: var(--sp-18);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: var(--sp-16);
+  height: var(--sp-16);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- A narrow window, or 200% zoom: the tray goes beneath the grid (VIS-22) --- */
+
+@media (max-width: 1000px) {
+  .area {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .main {
+    flex: none;
+  }
+
+  .scroll {
+    flex: none;
+    max-height: 70dvh;
+  }
+
+  .tray {
+    width: auto;
+    overflow-y: visible;
+    border-top: var(--hairline) solid var(--text);
+    border-left: 0;
+  }
 }

@@ -59,7 +59,10 @@ export type BoardRow = Board["technicians"][number];
 export type BoardDay = BoardRow["days"][number];
 export type Block = BoardDay["blocks"][number];
 export type Unassigned = Board["unassigned"][number];
+export type BoardClient = NonNullable<Block["person"]>;
 export type Moved = Body<paths["/api/dispatch/move"]["post"]>;
+export type ClientNotice = Moved["client_notice"];
+export type Room = Body<paths["/api/dispatch/room"]["get"]>["rooms"][number];
 
 type MoveRequest = Sent<paths["/api/dispatch/move"]["post"]>;
 export type MoveReason = MoveRequest["reason"];
@@ -110,30 +113,59 @@ export interface Landing {
   readonly reason: MoveReason;
 }
 
+/**
+ * The job as the board showed it when ops took it: its technician, none in the
+ * tray, and its start. The server refuses a move made from a board that has
+ * gone stale, and names what changed (docs/decisions/0069-dispatch-under-concurrency.md).
+ */
+export interface Shown {
+  readonly technicianId: string | null;
+  readonly startsAt: string;
+}
+
+/** The week and the city the board is asked for; nulls leave them to the route: this week, every city. */
+export interface BoardQuery {
+  readonly from: string | null;
+  readonly city: string | null;
+}
+
+const queryOf = (fields: Readonly<Record<string, string | null>>): string => {
+  const query = new URLSearchParams();
+  for (const [name, value] of Object.entries(fields)) if (value !== null) query.set(name, value);
+  const text = query.toString();
+  return text === "" ? "" : `?${text}`;
+};
+
+const moveBody = (appointmentId: string, to: Landing, shown: Shown) => ({
+  appointment_id: appointmentId,
+  technician_id: to.technicianId,
+  date: to.date,
+  window: to.window,
+  reason: to.reason,
+  expected_technician_id: shown.technicianId,
+  expected_starts_at: shown.startsAt,
+});
+
 export const api = {
-  /** Seven days from today, or from `from`. No name or number is in the query. */
-  board: () => call<Board>("GET", "/api/dispatch"),
+  /** Seven days from `from`, or from today, in one city or every one. No name or number is in the query. */
+  board: (asked: BoardQuery) => call<Board>("GET", `/api/dispatch${queryOf({ from: asked.from, city: asked.city })}`),
+  /** Where a job in hand would land in the week from `from`, by the check a move runs. Writes nothing. */
+  room: (appointmentId: string, from: string) =>
+    call<{ appointment_id: string; rooms: Room[] }>(
+      "GET",
+      `/api/dispatch/room${queryOf({ appointment_id: appointmentId, from })}`,
+    ),
   /**
    * A job the tray holds, put on a technician. The server runs the clash check
    * before it writes anything, here and on a move alike (ADR 0034).
    */
-  assign: (appointmentId: string, to: Landing) =>
-    call<Moved>("POST", "/api/dispatch/assign", {
-      appointment_id: appointmentId,
-      technician_id: to.technicianId,
-      date: to.date,
-      window: to.window,
-      reason: to.reason,
-    }),
-  /** A job already on the board, moved. The client is messaged, and never charged for it. */
-  move: (appointmentId: string, to: Landing) =>
-    call<Moved>("POST", "/api/dispatch/move", {
-      appointment_id: appointmentId,
-      technician_id: to.technicianId,
-      date: to.date,
-      window: to.window,
-      reason: to.reason,
-    }),
+  assign: (appointmentId: string, to: Landing, shown: Shown) =>
+    call<Moved>("POST", "/api/dispatch/assign", moveBody(appointmentId, to, shown)),
+  /** A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. */
+  move: (appointmentId: string, to: Landing, shown: Shown) =>
+    call<Moved>("POST", "/api/dispatch/move", moveBody(appointmentId, to, shown)),
+  /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
+  toldByPhone: (moveId: string) => call<{ told: true }>("POST", `/api/dispatch/moves/${moveId}/told`),
   held: () => call<{ held: Held[] }>("GET", "/api/referrals/held"),
   decideReferral: (id: string, decision: "approve" | "reject", reason: string | null) =>
     call<Decision>("POST", `/api/referrals/${id}/decision`, { decision, reason }),
