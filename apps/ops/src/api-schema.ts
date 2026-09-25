@@ -2010,7 +2010,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -2429,9 +2429,21 @@ export interface components {
             technician: string | null;
             /**
              * Format: date-time
-             * @description Fact one: when the technician arrived.
+             * @description Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here.
              */
             checked_in_at: string;
+            /** @description What the phone itself said, before the bounds; null when it said nothing. */
+            phone_checked_in_at: string | null;
+            /**
+             * Format: date-time
+             * @description When the check-in reached us: long after the phone's time means no signal, or a clock set back.
+             */
+            received_at: string;
+            /** @description The visit's booked window. */
+            window_start: string | null;
+            window_end: string | null;
+            /** @description Minutes from the booked start to the check-in; negative when he was early. */
+            minutes_late: number | null;
             /** @description Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured. */
             distance_m: number | null;
             /** @description Fact three: when WhatsApp reported the visit message delivered; null if never. */

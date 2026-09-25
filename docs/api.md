@@ -1193,6 +1193,8 @@ Razorpay's webhook: payments and refunds
             "device_revoked",
             "superseded",
             "out_of_order",
+            "not_today",
+            "already_started",
             "clash",
             "on_leave",
             "fsm_refused",

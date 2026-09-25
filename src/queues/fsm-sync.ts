@@ -19,7 +19,7 @@ import type { Dependencies } from "../dependencies.ts";
 import { confirmBooking, giveBack, type ConfirmOptions } from "../domain/bookings.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
-import { eventById, markFsmWrite } from "../domain/job-events.ts";
+import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
@@ -46,7 +46,7 @@ export const FsmSyncMessageSchema = z.union([
 ]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
-export type FsmSyncEnv = Pick<Env, "DB" | "CLIENT_PHOTOS" | "MESSAGE_QUEUE">;
+export type FsmSyncEnv = Pick<Env, "DB" | "CLIENT_PHOTOS" | "MESSAGE_QUEUE" | "FSM_QUEUE">;
 
 export async function handleFsmSyncBatch(
   batch: MessageBatch,
@@ -89,7 +89,7 @@ export async function handleFsmSyncBatch(
         env,
         deps,
         log.child({ request_id: parsed.data.request_id }),
-        { labelAsTest },
+        { labelAsTest, requestId: parsed.data.request_id },
       );
       continue;
     }
@@ -165,7 +165,13 @@ async function bookHold(
  * Passes one write from a technician's outbox to FSM. A failure is retried on
  * the same schedule as everything else here, so the technician's work is never
  * lost to a refusal FSM will take a minute later; the fifth attempt alerts, and
- * the event stays "pending" for ops to settle by hand.
+ * the event is marked rejected for ops to enter by hand.
+ *
+ * A job's writes reach FSM in the order they landed, as ADR 0053 has it. Each
+ * is its own message and a failed one is retried minutes later, so a write
+ * whose job has an earlier one still pending waits for it, and every write that
+ * lands sends the job's next one on. One given up on takes the writes behind it
+ * with it: FSM never records a job closed without the steps before the close.
  */
 async function writeJobEvent(
   message: Message,
@@ -173,17 +179,36 @@ async function writeJobEvent(
   env: FsmSyncEnv,
   deps: Dependencies,
   log: Logger,
-  options: { labelAsTest: boolean },
+  options: { labelAsTest: boolean; requestId: string },
 ): Promise<void> {
   const db = env.DB;
   const event = await eventById(db, jobEventId);
-  if (event === null || event.superseded || event.fsmWriteState === "written") {
+  if (event === null || event.superseded || event.fsmWriteState !== "pending") {
     message.ack();
     return;
   }
   const job = await jobForFsm(db, event.appointmentId);
   if (job === null) {
-    await markFsmWrite(db, event.id, "rejected", deps.now(), "the job is no longer in the mirror");
+    const reason = "the job is no longer in the mirror";
+    await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
+    await rejectPendingAfter(db, event, deps.now(), reason);
+    message.ack();
+    return;
+  }
+
+  const before = await unwrittenBefore(db, event);
+  if (before?.fsmWriteState === "pending") {
+    // Sent on again when the one before it lands.
+    log.info("job_event_waiting", { appointment_id: job.id, kind: event.kind, waits_for: before.kind });
+    message.ack();
+    return;
+  }
+  if (before?.fsmWriteState === "rejected") {
+    await markFsmWrite(db, event.id, "rejected", deps.now(), `the ${before.kind} before it did not reach FSM`);
+    await deps.alert(
+      `A technician's ${event.kind} was not sent to FSM, because the ${before.kind} before it did not reach FSM. ` +
+        "Enter both in FSM by hand.",
+    );
     message.ack();
     return;
   }
@@ -212,11 +237,20 @@ async function writeJobEvent(
       return;
     }
     await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
+    const behind = await rejectPendingAfter(db, event, deps.now(), `the ${event.kind} before it did not reach FSM`);
     await deps.alert(
       `A technician's ${event.kind} did not reach FSM after ${String(message.attempts)} attempts: ${reason}. ` +
-        "Enter it in FSM by hand.",
+        (behind.length === 0
+          ? "Enter it in FSM by hand."
+          : `Enter it in FSM by hand, with what came after it and was held back: ${behind.join(", ")}.`),
     );
     message.ack();
+    return;
+  }
+
+  const next = await nextPending(db, event);
+  if (next !== null) {
+    await env.FSM_QUEUE.send({ job_event_id: next.id, request_id: options.requestId } satisfies FsmSyncMessage);
   }
 }
 

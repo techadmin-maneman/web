@@ -8,8 +8,17 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
+import { syncTechnicians } from "../../src/domain/fsm-mirror.ts";
 import { createStubFsm, EMPTY_FSM, type FsmTechnician } from "../../src/providers/fsm.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
+import {
+  appFor,
+  fakeDependencies,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+  type TestDependencies,
+} from "./helpers.ts";
 
 const IMRAN = "33333333-3333-4333-8333-333333333331";
 const RETIRED = "33333333-3333-4333-8333-333333333333";
@@ -138,6 +147,111 @@ describe("POST /api/tech/auth/verify", () => {
     expect(rows?.n).toBe(1);
     const devices = await env.DB.prepare("SELECT COUNT(*) AS n FROM technician_devices").first<{ n: number }>();
     expect(devices?.n).toBe(1);
+  });
+});
+
+describe("POST /api/tech/auth/otp, its limits", () => {
+  it("refuses a sixth code to one number in a day", async () => {
+    for (let sent = 0; sent < 5; sent += 1) {
+      expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
+    }
+    const refused = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
+    expect(deps.sentCodes).toHaveLength(5);
+  });
+
+  it("answers busy, and sends nothing, once the day's ceiling on codes is reached", async () => {
+    tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } }, "tech");
+    await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+
+    const refused = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+
+    expect(refused.status).toBe(503);
+    expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
+    expect(deps.sentCodes).toHaveLength(1);
+  });
+});
+
+describe("a signed-in phone", () => {
+  /** Signs Imran in on the phone and answers the cookie the verify set. */
+  async function signIn(): Promise<string> {
+    const { id, code } = await challengeFor("98100 00009");
+    const answer = await post("/api/tech/auth/verify", { challenge_id: id, code, device_id: DEVICE });
+    return (answer.headers.get("Set-Cookie") ?? "").split(";")[0] ?? "";
+  }
+
+  const withCookie = (cookie: string, path: string, method = "GET") =>
+    request(tech, path, { method, headers: { Cookie: cookie, Origin: "https://maneman.test" } });
+
+  it("names who is signed in, and the phone the session is bound to", async () => {
+    const cookie = await signIn();
+
+    const answer = await withCookie(cookie, "/api/tech/me");
+
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toEqual({
+      name: "Imran Qureshi",
+      first_name: "Imran",
+      initials: "IQ",
+      device: { device_id: DEVICE, label: null, enrolled_at: NOW.toISOString() },
+    });
+  });
+
+  it("ends the session on logout, and the cookie with it", async () => {
+    const cookie = await signIn();
+
+    const out = await withCookie(cookie, "/api/tech/auth/logout", "POST");
+
+    expect(out.status).toBe(204);
+    expect(out.headers.get("Set-Cookie")).toMatch(/^mm_tech=;/);
+    const after = await withCookie(cookie, "/api/tech/me");
+    expect(after.status).toBe(401);
+    expect(await after.json()).toMatchObject({ error: { code: "session_required" } });
+  });
+
+  // A technician who has left keeps his phone, and on it the cards of the day:
+  // clients' addresses and mobiles. Being inactive in FSM ends his session at once.
+  it("is signed out on its next call once FSM no longer lists him as active", async () => {
+    const cookie = await signIn();
+    await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
+
+    for (const path of ["/api/tech/me", "/api/tech/jobs"]) {
+      const answer = await withCookie(cookie, path);
+      expect(answer.status).toBe(401);
+      expect(await answer.json()).toMatchObject({ error: { code: "session_required" } });
+    }
+    const session = await env.DB.prepare("SELECT revoked_at FROM sessions WHERE subject_id = ?1")
+      .bind(IMRAN)
+      .first<{ revoked_at: string | null }>();
+    expect(session?.revoked_at).toBe(NOW.toISOString());
+  });
+});
+
+describe("the technician list", () => {
+  // ADR 0052: "A technician is recognised only if FSM lists him as an active field
+  // technician." FSM's list leaves out a user whose service resource was removed.
+  it("stops a technician FSM no longer lists at all, once the list is read again", async () => {
+    await syncTechnicians(env.DB, deps.fsm, NOW.toISOString());
+
+    const rows = await env.DB.prepare("SELECT fsm_id, active FROM technicians ORDER BY fsm_id").all();
+    expect(rows.results).toEqual([
+      { fsm_id: "resource-1", active: 0 },
+      { fsm_id: "resource-3", active: 0 },
+      { fsm_id: "resource-9", active: 1 },
+    ]);
+    await challengeFor("98100 00009");
+    expect(deps.sentCodes).toEqual([]);
+  });
+
+  it("stops no one when FSM lists no one, which is a failed read rather than an empty org", async () => {
+    await syncTechnicians(env.DB, createStubFsm(EMPTY_FSM), NOW.toISOString());
+
+    const active = await env.DB.prepare("SELECT COUNT(*) AS n FROM technicians WHERE active = 1").first<{
+      n: number;
+    }>();
+    expect(active?.n).toBe(1);
   });
 });
 

@@ -51,10 +51,13 @@ export const ERROR_CODES = [
   "consent_required",
   // The technician app (docs/decisions/0052-technician-sessions.md, 0038-offline-writes.md):
   // ops revoked this phone, so it drops its cached jobs; the job moved under it while it
-  // was offline; the step before this one has not been sent.
+  // was offline; the step before this one has not been sent; a check-in or start on a day
+  // that is not the job's; a no-show on a job already started (ADR 0065).
   "device_revoked",
   "superseded",
   "out_of_order",
+  "not_today",
+  "already_started",
   // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
   // window, is away that day (ADR 0062), or FSM would not take the move.
   "clash",

@@ -84,6 +84,17 @@ describe("the mirror of FSM's assets", () => {
     });
   });
 
+  it("reads a piece FSM holds as Inactive back as failed, which is how our own failure writes it", async () => {
+    const inactive = createStubFsm({
+      ...EMPTY_FSM,
+      assets: { "contact-1": [asset({ status: "Inactive" })] },
+    });
+    await syncPieces(env.DB, inactive, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
+
+    const [piece] = await piecesOf(env.DB, PERSON);
+    expect(piece?.failed_at).toBe(NOW.toISOString());
+  });
+
   it("writes FSM's answer over the copy, and never doubles a piece", async () => {
     await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
     await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);

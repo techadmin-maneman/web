@@ -30,6 +30,15 @@ export const NO_SHOW_WAIT_MIN: Waits = {
 };
 
 /**
+ * Ours, not the prompt's (docs/decisions/0065-a-technicians-writes-reach-fsm.md):
+ * a check-in's time is the phone's, and the phone's clock is the technician's
+ * to set, so a back-dated check-in once closed a no-show a fifth of a second
+ * after it arrived.
+ */
+export const SERVER_CLOCK_RULE =
+  "The wait runs on the server's clock as well as the phone's: a check-in the server has held for less than the wait cannot be closed, whatever time the phone gave it.";
+
+/**
  * When the wait that started at check-in ends. The waits ops have set, or the
  * ones above: they are ops-editable inputs (docs/decisions/0061-ops-editable-inputs.md),
  * so every caller passes what is in force and the rule still stands on its own.
@@ -37,13 +46,26 @@ export const NO_SHOW_WAIT_MIN: Waits = {
 export const waitEndsAt = (checkedInAt: Date, type: VisitType, wait: Waits = NO_SHOW_WAIT_MIN): Date =>
   new Date(checkedInAt.getTime() + wait[type] * 60_000);
 
+/** A check-in's two times: the phone's, held within bounds (src/policy/phone-clock.ts), and the server's. */
+export interface CheckInTimes {
+  readonly at: Date;
+  readonly receivedAt: Date;
+}
+
+/** When the wait ends: on the phone's time and on the server's, whichever is later. */
+export function noShowWaitEnds(checkIn: CheckInTimes, type: VisitType, wait: Waits = NO_SHOW_WAIT_MIN): Date {
+  const byPhone = waitEndsAt(checkIn.at, type, wait);
+  const byServer = waitEndsAt(checkIn.receivedAt, type, wait);
+  return byServer.getTime() > byPhone.getTime() ? byServer : byPhone;
+}
+
 /** Whether the technician may close the job as a no-show yet. */
 export const canCloseAsNoShow = (
-  checkedInAt: Date,
+  checkIn: CheckInTimes,
   type: VisitType,
   now: Date,
   wait: Waits = NO_SHOW_WAIT_MIN,
-): boolean => now.getTime() >= waitEndsAt(checkedInAt, type, wait).getTime();
+): boolean => now.getTime() >= noShowWaitEnds(checkIn, type, wait).getTime();
 
 /** The three facts ops rule on, and nothing else. */
 export interface Evidence {

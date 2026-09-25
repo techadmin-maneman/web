@@ -170,14 +170,18 @@ Run steps 1 to 8 at **each** of the three buildings.
 
 ### Getting the numbers out
 
-Every check-in is recorded whether it passed or not, with the distance it measured and the radius in force. At the end of the day, ops run this one line and keep what it prints with this sheet:
+Every check-in is recorded whether it passed or not, with the distance it measured and the radius in force. At the end of the day, ops run these two lines and keep what they print with this sheet:
 
 ```sh
 node node_modules/wrangler/bin/wrangler.js d1 execute maneman-staging --env staging --remote \
-  --command "SELECT at, distance_m, radius_m, accuracy_m, passed FROM checkins ORDER BY at DESC LIMIT 20;"
+  --command "SELECT at, distance_m, radius_m, accuracy_m, passed FROM checkins WHERE distance_m IS NOT NULL ORDER BY at DESC LIMIT 20;"
+node node_modules/wrangler/bin/wrangler.js d1 execute maneman-staging --env staging --remote \
+  --command "SELECT COUNT(*) AS unmeasured FROM checkins WHERE distance_m IS NULL;"
 ```
 
 `distance_m` is how far the phone said it was from the address; `accuracy_m` is how sure the phone was of its own position. Both matter. The owner rules the radius from these numbers.
+
+The first line leaves out every check-in that measured nothing. An address the client typed rather than chose has no coordinate, so its check-in passes with no distance at all, and it says nothing about GPS error. Before migration 0035 such a row held a filler 0 and read as "0 m, passed"; the migration cleared those, and the second line counts them. If it is most of the day's check-ins, the addresses need their pins before the numbers mean anything (open point 46).
 
 > **Known gap.** The app shows the distance only when the check-in **fails**. When it passes, the technician never sees the number, so the line above is the only way to collect it. Whether the app should show the distance on a passing check-in too is a change to board B5, and is the owner's and the designer's to rule.
 

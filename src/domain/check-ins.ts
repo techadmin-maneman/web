@@ -5,10 +5,14 @@
 // real data" (docs/open-points.md, item 46). Only a check-in that passed starts
 // the job: the technician who is too far away moves closer and tries again.
 //
-// The address's coordinates come from FSM, which geocodes its service addresses
-// itself (docs/decisions/0036-geocoding.md). An address without them cannot be
-// measured against, so the check-in is accepted with no distance and the row
-// says so by naming no address.
+// The address's coordinates come from the client's chosen building
+// (docs/decisions/0054-address-capture.md). An address without them cannot be
+// measured against, so the check-in is accepted with no distance: the row
+// names no address and holds no distance.
+//
+// A check-in keeps three times (docs/decisions/0065-a-technicians-writes-reach-fsm.md):
+// `at`, the phone's time held within bounds, which the no-show wait runs from;
+// `claimed_at`, what the phone said; and `created_at`, when we received it.
 
 import { checkIn, type Point } from "../policy/check-in.ts";
 
@@ -27,7 +31,10 @@ export interface ArrivalInput {
   readonly personId: string | null;
   readonly device: Point;
   readonly accuracyM: number | null;
+  /** The phone's time, within bounds (src/policy/phone-clock.ts). */
   readonly at: Date;
+  /** What the phone said, before the bounds; null when it said nothing. */
+  readonly claimedAt: Date | null;
   readonly now: Date;
   readonly radiusM: number;
 }
@@ -57,9 +64,9 @@ export async function recordArrival(db: D1Database, input: ArrivalInput): Promis
   const id = crypto.randomUUID();
   await db
     .prepare(
-      `INSERT INTO checkins (id, appointment_id, technician_id, address_id, at, lat, lng, accuracy_m, distance_m,
-         radius_m, passed, created_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+      `INSERT INTO checkins (id, appointment_id, technician_id, address_id, at, claimed_at, lat, lng, accuracy_m,
+         distance_m, radius_m, passed, created_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
     )
     .bind(
       id,
@@ -67,14 +74,11 @@ export async function recordArrival(db: D1Database, input: ArrivalInput): Promis
       input.technicianId,
       measured === null ? null : (address?.id ?? null),
       input.at.toISOString(),
+      input.claimedAt?.toISOString() ?? null,
       input.device.lat,
       input.device.lng,
       input.accuracyM,
-      // The column is NOT NULL, so an unmeasured arrival has to store something.
-      // The 0 is a filler, not a distance: address_id above is left null, and that
-      // is what every reader must go by. Reading this column alone would tell ops
-      // the technician stood at the door.
-      measured?.distanceM ?? 0,
+      measured?.distanceM ?? null,
       input.radiusM,
       measured === null || measured.passed ? 1 : 0,
       input.now.toISOString(),
@@ -89,18 +93,24 @@ export async function recordArrival(db: D1Database, input: ArrivalInput): Promis
   };
 }
 
-/**
- * The check-in the wait ran from: the latest one of this job that passed. The
- * case is keyed on it and ops read its distance from the row itself, so the
- * distance is deliberately not carried here, where a 0 filler could be read as
- * a measurement (docs/decisions/0036-geocoding.md).
- */
-export async function latestArrival(db: D1Database, appointmentId: string): Promise<{ id: string; at: string } | null> {
-  return await db
+/** The check-in a no-show's wait runs from, with both its times and what it measured. */
+export interface LatestArrival {
+  readonly id: string;
+  readonly at: Date;
+  readonly receivedAt: Date;
+  /** Null when nothing was measured. */
+  readonly distanceM: number | null;
+}
+
+/** The check-in the wait ran from: the latest one of this job that passed. */
+export async function latestArrival(db: D1Database, appointmentId: string): Promise<LatestArrival | null> {
+  const row = await db
     .prepare(
-      `SELECT id, at FROM checkins WHERE appointment_id = ?1 AND passed = 1
-       ORDER BY at DESC LIMIT 1`,
+      `SELECT id, at, created_at, distance_m FROM checkins WHERE appointment_id = ?1 AND passed = 1
+       ORDER BY at DESC, created_at DESC LIMIT 1`,
     )
     .bind(appointmentId)
-    .first<{ id: string; at: string }>();
+    .first<{ id: string; at: string; created_at: string; distance_m: number | null }>();
+  if (row === null) return null;
+  return { id: row.id, at: new Date(row.at), receivedAt: new Date(row.created_at), distanceM: row.distance_m };
 }

@@ -34,7 +34,20 @@ const NoShowCaseSchema = z
     appointment_id: z.uuid(),
     visit_date: z.union([z.string(), z.null()]),
     technician: z.union([z.string(), z.null()]),
-    checked_in_at: z.iso.datetime().openapi({ description: "Fact one: when the technician arrived." }),
+    checked_in_at: z.iso.datetime().openapi({
+      description: "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here.",
+    }),
+    phone_checked_in_at: z.union([z.iso.datetime(), z.null()]).openapi({
+      description: "What the phone itself said, before the bounds; null when it said nothing.",
+    }),
+    received_at: z.iso.datetime().openapi({
+      description: "When the check-in reached us: long after the phone's time means no signal, or a clock set back.",
+    }),
+    window_start: z.union([z.iso.datetime(), z.null()]).openapi({ description: "The visit's booked window." }),
+    window_end: z.union([z.iso.datetime(), z.null()]),
+    minutes_late: z.union([z.number().int(), z.null()]).openapi({
+      description: "Minutes from the booked start to the check-in; negative when he was early.",
+    }),
     distance_m: z.union([z.number().int(), z.null()]).openapi({
       description:
         "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured.",

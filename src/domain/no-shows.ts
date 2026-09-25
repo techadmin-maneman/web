@@ -2,7 +2,8 @@
 //
 // "The wait timer starts at check-in and runs config NO_SHOW_WAIT_MIN (15)
 // minutes. Close as no-show is disabled until the timer ends." The server
-// enforces the wait, not the screen.
+// enforces the wait, not the screen, and on its own clock as well as the
+// phone's (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
 //
 // "Ops then receive three facts: check-in time, distance, and the delivery
 // receipt of the day-before or arrival WhatsApp to the client." Nothing here
@@ -10,21 +11,29 @@
 // automatically", so a case opens undecided and waits for a person.
 
 import type { VisitType } from "../config/visit-types.ts";
-import { canCloseAsNoShow, waitEndsAt, type NoShowDecision, type Waits } from "../policy/no-show.ts";
+import { indiaDate } from "../lib/india-time.ts";
+import { canCloseAsNoShow, noShowWaitEnds, type NoShowDecision, type Waits } from "../policy/no-show.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
+import type { LatestArrival } from "./check-ins.ts";
 
-/** The three facts, and nothing else. */
+/** The three facts, with what ops need to read the first one by. */
 export interface NoShowCase {
   readonly id: string;
   readonly appointment_id: string;
   readonly visit_date: string | null;
   readonly technician: string | null;
+  /** The phone's time for the arrival, held within bounds (src/policy/phone-clock.ts): what the wait ran from. */
   readonly checked_in_at: string;
-  /**
-   * Null when there was nothing to measure against. `checkins.distance_m` is NOT
-   * NULL, so an unmeasured arrival stores 0 and names no address instead; the
-   * missing address, not the 0, is the fact (docs/decisions/0036-geocoding.md).
-   */
+  /** What the phone itself said, before the bounds; null when it said nothing. */
+  readonly phone_checked_in_at: string | null;
+  /** When the check-in reached us. Far after the phone's time means a phone with no signal, or a clock set back. */
+  readonly received_at: string;
+  /** The visit's booked window. */
+  readonly window_start: string | null;
+  readonly window_end: string | null;
+  /** How long after the booked start he checked in, in minutes; negative when he was early. */
+  readonly minutes_late: number | null;
+  /** Null when there was nothing to measure against. */
   readonly distance_m: number | null;
   readonly message_delivered_at: string | null;
   readonly wait_ends_at: string;
@@ -49,35 +58,33 @@ async function evidenceMessage(
   return row;
 }
 
-export type Closing =
-  | { readonly kind: "closed"; readonly caseId: string; readonly waitEndsAt: string }
-  | { readonly kind: "too_early"; readonly waitEndsAt: string }
+export type Readiness =
+  | { readonly kind: "ready"; readonly checkIn: LatestArrival; readonly waitEndsAt: Date }
+  | { readonly kind: "too_early"; readonly waitEndsAt: Date }
   | { readonly kind: "no_check_in" };
 
-/**
- * Opens the case and closes the job as a no-show, once the wait has run. The
- * case is keyed on the check-in, so a replay of the same close lands once.
- */
-export async function closeAsNoShow(
-  db: D1Database,
-  input: {
-    appointmentId: string;
-    type: VisitType;
-    checkIn: { id: string; at: string } | null;
-    now: Date;
-    /** The waits in force, which ops set (ADR 0061). */
-    wait: Waits;
-  },
-): Promise<Closing> {
-  const { checkIn } = input;
+/** Whether the job may close as a no-show now: a check-in, and its wait run out on both clocks. */
+export function noShowReadiness(
+  checkIn: LatestArrival | null,
+  type: VisitType,
+  now: Date,
+  /** The waits in force, which ops set (ADR 0061). */
+  wait: Waits,
+): Readiness {
   if (checkIn === null) return { kind: "no_check_in" };
+  const waitEndsAt = noShowWaitEnds(checkIn, type, wait);
+  if (!canCloseAsNoShow(checkIn, type, now, wait)) return { kind: "too_early", waitEndsAt };
+  return { kind: "ready", checkIn, waitEndsAt };
+}
 
-  const checkedInAt = new Date(checkIn.at);
-  const ends = waitEndsAt(checkedInAt, input.type, input.wait);
-  if (!canCloseAsNoShow(checkedInAt, input.type, input.now, input.wait)) {
-    return { kind: "too_early", waitEndsAt: ends.toISOString() };
-  }
-
+/**
+ * Opens the case ops rule on, once the close has landed. The case is keyed on
+ * the check-in, so a replay of the same close lands once. Returns its ID.
+ */
+export async function openNoShowCase(
+  db: D1Database,
+  input: { appointmentId: string; checkIn: LatestArrival; waitEndsAt: Date; now: Date },
+): Promise<string> {
   const message = await evidenceMessage(db, input.appointmentId);
   const at = input.now.toISOString();
   await db
@@ -92,10 +99,10 @@ export async function closeAsNoShow(
     )
     .bind(
       crypto.randomUUID(),
-      checkIn.id,
+      input.checkIn.id,
       input.appointmentId,
-      checkIn.at,
-      ends.toISOString(),
+      input.checkIn.at.toISOString(),
+      input.waitEndsAt.toISOString(),
       at,
       message?.id ?? null,
       message?.delivered_at ?? null,
@@ -103,10 +110,10 @@ export async function closeAsNoShow(
     .run();
   const stored = await db
     .prepare("SELECT id FROM no_show_cases WHERE checkin_id = ?1")
-    .bind(checkIn.id)
+    .bind(input.checkIn.id)
     .first<{ id: string }>();
   if (stored === null) throw new Error("the no-show case was not written");
-  return { kind: "closed", caseId: stored.id, waitEndsAt: ends.toISOString() };
+  return stored.id;
 }
 
 /** The cases ops have still to rule on, oldest first, then the decided ones. */
@@ -117,9 +124,9 @@ export async function listNoShowCases(
 ): Promise<NoShowCase[]> {
   const { results } = await db
     .prepare(
-      `SELECT n.id, n.appointment_id, n.wait_started_at AS checked_in_at, c.address_id, c.distance_m,
-         n.message_delivered_at,
-         n.wait_ends_at, n.closed_at, n.decision, n.decided_at, a.window_start, t.name AS technician
+      `SELECT n.id, n.appointment_id, n.wait_started_at AS checked_in_at, c.claimed_at, c.created_at AS received_at,
+         c.distance_m, n.message_delivered_at, n.wait_ends_at, n.closed_at, n.decision, n.decided_at,
+         a.window_start, a.window_end, t.name AS technician
        FROM no_show_cases n
        JOIN checkins c ON c.id = n.checkin_id
        JOIN appointments a ON a.id = n.appointment_id
@@ -133,23 +140,33 @@ export async function listNoShowCases(
       id: string;
       appointment_id: string;
       checked_in_at: string;
-      address_id: string | null;
-      distance_m: number;
+      claimed_at: string | null;
+      received_at: string;
+      distance_m: number | null;
       message_delivered_at: string | null;
       wait_ends_at: string;
       closed_at: string | null;
       decision: NoShowDecision;
       decided_at: string | null;
       window_start: string | null;
+      window_end: string | null;
       technician: string | null;
     }>();
   return results.map((row) => ({
     id: row.id,
     appointment_id: row.appointment_id,
-    visit_date: row.window_start === null ? null : row.window_start.slice(0, 10),
+    visit_date: row.window_start === null ? null : indiaDate(new Date(row.window_start)),
     technician: row.technician,
     checked_in_at: row.checked_in_at,
-    distance_m: row.address_id === null ? null : row.distance_m,
+    phone_checked_in_at: row.claimed_at,
+    received_at: row.received_at,
+    window_start: row.window_start,
+    window_end: row.window_end,
+    minutes_late:
+      row.window_start === null
+        ? null
+        : Math.round((Date.parse(row.checked_in_at) - Date.parse(row.window_start)) / 60_000),
+    distance_m: row.distance_m,
     message_delivered_at: row.message_delivered_at,
     wait_ends_at: row.wait_ends_at,
     closed_at: row.closed_at,
