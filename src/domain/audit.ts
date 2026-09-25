@@ -39,10 +39,13 @@ export const AUDIT_ACTIONS = [
   "technician.leave",
   "technician.leave_cancelled",
   // The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md):
-  // one of the rules, a price from a date, and whether we go to a pincode.
+  // one of the rules, a price from a date, and whether we go to a pincode. A price still to
+  // come taken back, and an area's name (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
   "setting.change",
   "price.set",
+  "price.withdraw",
   "pincode.set",
+  "pincode.rename",
   // Ops putting a client's service-visit credits right by hand (docs/decisions/0068-a-paid-hold-is-kept.md).
   "credit.adjust",
   // Ops calling a client about a move he had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).

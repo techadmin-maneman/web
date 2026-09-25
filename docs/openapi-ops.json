@@ -3095,6 +3095,36 @@
         ],
         "additionalProperties": false
       },
+      "PriceWithdrawal": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement",
+              "late_fee_first_fit",
+              "late_fee_replacement"
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "item",
+          "tier",
+          "valid_from"
+        ],
+        "additionalProperties": false
+      },
       "ServedPincode": {
         "type": "object",
         "properties": {
@@ -3120,6 +3150,14 @@
                 "type": "null"
               }
             ]
+          },
+          "waiting": {
+            "type": "integer",
+            "description": "How many are on its waitlist."
+          },
+          "to_alert": {
+            "type": "integer",
+            "description": "How many of them serving it would tell now: those who asked, and have not been told yet."
           }
         },
         "required": [
@@ -3127,7 +3165,9 @@
           "area",
           "city",
           "served",
-          "launch_on"
+          "launch_on",
+          "waiting",
+          "to_alert"
         ],
         "additionalProperties": false
       },
@@ -3156,6 +3196,11 @@
                       "type": "null"
                     }
                   ]
+                },
+                "area": {
+                  "type": "string",
+                  "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&-]{1,39}$/u",
+                  "description": "A better name for the area than its post office's. Left out, the name stays."
                 }
               },
               "required": [
@@ -3171,6 +3216,31 @@
         },
         "required": [
           "changes"
+        ],
+        "additionalProperties": false
+      },
+      "Whoami": {
+        "type": "object",
+        "properties": {
+          "signed_in_as": {
+            "type": "string",
+            "description": "A member of staff's e-mail, or a service token's ID."
+          },
+          "sign_out": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Access's logout path; null where no Access stands in front, as locally."
+          }
+        },
+        "required": [
+          "signed_in_as",
+          "sign_out"
         ],
         "additionalProperties": false
       }
@@ -5388,6 +5458,75 @@
         }
       }
     },
+    "/api/prices/withdraw": {
+      "post": {
+        "summary": "Take back a price still to come. The one in force and the spent ones stay: an invoice may stand on them",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceWithdrawal"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The book as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Price"
+                      }
+                    }
+                  },
+                  "required": [
+                    "prices"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names valid_from when the row applies today or applied before",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: the book holds no such row",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/service-area": {
       "get": {
         "summary": "Every pincode we hold, its city, and whether a technician goes there",
@@ -5451,11 +5590,16 @@
                     },
                     "served": {
                       "type": "integer"
+                    },
+                    "alerted": {
+                      "type": "integer",
+                      "description": "Launch alerts queued for the pincodes it began serving."
                     }
                   },
                   "required": [
                     "changed",
-                    "served"
+                    "served",
+                    "alerted"
                   ],
                   "additionalProperties": false
                 }
@@ -5478,6 +5622,23 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/whoami": {
+      "get": {
+        "summary": "Who Access let through, and where signing out goes",
+        "responses": {
+          "200": {
+            "description": "The signed-in identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Whoami"
                 }
               }
             }
