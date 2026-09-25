@@ -1,6 +1,6 @@
 # 0063. The asked window and the offered one
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0069: the tray writes the asked window alone, "Asked · morning", since no day is recorded with it.
 - Date: 2026-09-24
 
 ## Context
@@ -69,8 +69,8 @@ from our own lead rather than parsed back out of FSM.**
   five of them blocked the pass for good. One FSM fails on in any other way is
   asked about again an hour later (`asked_failed_at`, migration 0041), and the
   pass goes on to the next either way (amended 25 September 2026).
-- The tray shows `Asked · Sat, morning` beside `Offered · Sat, evening` where the
-  two differ, and **`Asked · not recorded`** where `asked_window` is null. The
+- The tray shows `Asked · morning` beside `Offered · Sat, evening` where the
+  two differ, the offered one in oxblood as the board draws it, and **`Asked · not recorded`** where `asked_window` is null. The
   offered window is never repeated as though it were the asked one.
 
 The note FSM holds — "Morning, 9 am to 12 pm" — is words we sent. Reading a
@@ -84,7 +84,9 @@ has twice shown a figure it could not know. The lead is the fact.
 - A visit ops create in FSM from a Request typed there, with no lead of ours
   behind it, resolves to `not recorded`. That is true: we have no record of what
   that client asked for.
-- The asked **date** is not shown. The tray has one date column, and the window
+- The asked **date** is not shown, nor any date beside the asked window: the
+  tray once wrote "Asked · Sat, morning", which paired the offered day with a
+  window the client never asked it with (FEO-08, 25 September 2026). The window
   is what the open point and the tray's two lines are about. `Preferred_Date_1`
   is read and could be stored the same way if the board ever wants it.
 - Nothing writes `Preference` to a work order, although FSM would take it. There

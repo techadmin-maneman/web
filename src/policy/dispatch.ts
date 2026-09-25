@@ -49,18 +49,51 @@ export const MOVE_REASONS = [
 ] as const;
 export type MoveReason = (typeof MOVE_REASONS)[number];
 
-export const isMoveReason = (reason: string): reason is MoveReason =>
-  (MOVE_REASONS as readonly string[]).includes(reason);
+/**
+ * Why a job cannot go to this window of this technician's day; null when it
+ * can. The check runs on the server before any write to FSM, so a refusal
+ * means nothing was written anywhere. (A move's reason is one of the list
+ * above before it gets here: the API and the table accept no other.)
+ *
+ * Leave is answered first, so ops are told the technician is away rather than
+ * merely busy, and the clash before the room, so a held window is named as
+ * held. `does_not_fit`: nobody holds the window, but the visit's block has no
+ * room in it, because a half-slot it needs is taken or it would run past the
+ * day's last one (docs/decisions/0035-window-slot-map.md). Whether it fits is
+ * src/domain/scheduling.ts's answer, given here.
+ */
+export type MoveRefusal = "clash" | "on_leave" | "does_not_fit";
+
+export function moveRefusal(
+  day: TechnicianDay,
+  window: BookingWindow,
+  room: { readonly fits: boolean },
+): MoveRefusal | null {
+  if (day.onLeave) return "on_leave";
+  if (clashes(day, window)) return "clash";
+  return room.fits ? null : "does_not_fit";
+}
 
 /**
- * Why ops' move cannot be made; null when it can. The check runs on the server
- * before any write to FSM, so a refusal means nothing was written anywhere.
+ * How the client hears of a move ops made. The rule above ends "messages the
+ * client with the new window"; a WhatsApp message about a visit goes only to a
+ * client who agreed to them (the whatsapp_visits consent), so any other is
+ * called by ops, and the call waits on the Tasks board until ops say it was
+ * made (docs/decisions/0069-dispatch-under-concurrency.md).
+ *
+ *   messaged    the new window was queued to go on WhatsApp
+ *   call        the client has not agreed to WhatsApp about his visits: ops call him
+ *   unchanged   only the technician changed: the client's day and window are as they were
+ *   no_client   the visit has no client on our records to tell
  */
-export type MoveRefusal = "unknown_reason" | "clash" | "on_leave";
+export const CLIENT_NOTICES = ["messaged", "call", "unchanged", "no_client"] as const;
+export type ClientNotice = (typeof CLIENT_NOTICES)[number];
 
-/** Leave is answered before the clash, so ops are told the technician is away rather than merely busy. */
-export function moveRefusal(day: TechnicianDay, window: BookingWindow, reason: string): MoveRefusal | null {
-  if (!isMoveReason(reason)) return "unknown_reason";
-  if (day.onLeave) return "on_leave";
-  return clashes(day, window) ? "clash" : null;
+export function clientNotice(move: {
+  readonly timeChanged: boolean;
+  readonly client: { readonly agreedToWhatsApp: boolean } | null;
+}): ClientNotice {
+  if (!move.timeChanged) return "unchanged";
+  if (move.client === null) return "no_client";
+  return move.client.agreedToWhatsApp ? "messaged" : "call";
 }

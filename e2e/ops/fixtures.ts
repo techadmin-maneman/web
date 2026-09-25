@@ -107,16 +107,45 @@ const SLOTS: Readonly<Record<string, number>> = { consultation: 1, service: 1, r
 /** Each window's first half-slot in India's time, as UTC (docs/decisions/0035-window-slot-map.md). */
 const STARTS: Readonly<Record<string, string>> = { morning: "03:30", afternoon: "06:30", evening: "10:30" };
 
+/** Rohit Malhotra, board A3's client: agreed to WhatsApp about his visits, and invited by nobody. */
+export const ROHIT = {
+  id: "11000000-0000-4000-8000-000000000001",
+  name: "Rohit Malhotra",
+  mobile: "+919810000001",
+  whatsapp_visits: true,
+  referred_by: null,
+};
+
+/** Vikram Sethi: never agreed to WhatsApp about his visits, so a move of his is told by phone (ADR 0069). */
+export const VIKRAM = {
+  id: "11000000-0000-4000-8000-000000000002",
+  name: "Vikram Sethi",
+  mobile: "+919810000002",
+  whatsapp_visits: false,
+  referred_by: "Rohit Malhotra",
+};
+
 let jobs = 0;
-const job = (type: string, client: string | null, sector: string, day: number, window: string) => ({
+const job = (
+  type: string,
+  client: string | null,
+  sector: string,
+  day: number,
+  window: string,
+  person: typeof ROHIT | typeof VIKRAM | null = null,
+) => ({
   appointment_id: `77000000-0000-4000-8000-${String(++jobs).padStart(12, "0")}`,
   type,
-  starts_at: `${DATES[day] ?? ""}T${STARTS[window] ?? ""}:00.000Z`,
-  window,
-  slots: SLOTS[type] ?? 1,
-  status: "scheduled",
   client,
   sector,
+  pincode: "122018",
+  person,
+  badge: "prepaid",
+  slots: SLOTS[type] ?? 1,
+  starts_at: `${DATES[day] ?? ""}T${STARTS[window] ?? ""}:00.000Z`,
+  window,
+  status: "scheduled",
+  untold: null as { move_id: string; starts_at: string } | null,
 });
 
 /** One technician's seven days, from the blocks given against the day they fall on. */
@@ -125,6 +154,30 @@ const daysOf = (blocks: readonly { day: number; block: ReturnType<typeof job> }[
 
 const on = (day: number, block: ReturnType<typeof job>) => ({ day, block });
 
+const tray = (
+  id: number,
+  type: string,
+  asked: string | null,
+  offered: string,
+  day: number,
+  sector: string,
+  person: typeof ROHIT | typeof VIKRAM | null,
+) => ({
+  appointment_id: `78000000-0000-4000-8000-${String(id).padStart(12, "0")}`,
+  type,
+  client:
+    person === null ? null : `${person.name.split(" ")[0] ?? ""} ${(person.name.split(" ")[1] ?? "").slice(0, 1)}.`,
+  sector,
+  pincode: "122018",
+  person,
+  badge: "prepaid",
+  slots: SLOTS[type] ?? 1,
+  starts_at: `${DATES[day] ?? ""}T${STARTS[offered] ?? ""}:00.000Z`,
+  asked_window: asked,
+  offered_window: offered,
+  date: DATES[day],
+});
+
 /**
  * The board's own week: the design's rows, with two jobs in a cell put in
  * different windows, because a technician cannot hold two in one (ADR 0034).
@@ -132,6 +185,8 @@ const on = (day: number, block: ReturnType<typeof job>) => ({ day, block });
 export const BOARD = {
   from: DATES[0],
   dates: DATES,
+  city: null,
+  cities: ["Gurgaon", "Delhi", "Noida"],
   technicians: [
     {
       technician_id: BOARD_TECHNICIANS[0]?.id,
@@ -139,14 +194,14 @@ export const BOARD = {
       initials: BOARD_TECHNICIANS[0]?.initials,
       zone: BOARD_TECHNICIANS[0]?.zone,
       days: daysOf([
-        on(0, job("service", "Rohit M.", "Sec 65", 0, "morning")),
-        on(0, job("service", "Vikram S.", "DLF 4", 0, "afternoon")),
+        on(0, job("service", "Rohit M.", "Sec 65", 0, "morning", ROHIT)),
+        on(0, job("service", "Vikram S.", "DLF 4", 0, "afternoon", VIKRAM)),
         on(1, job("first_fit", "Sanjay B.", "Sec 43", 1, "morning")),
         on(2, job("consultation", "Nikhil A.", "Sec 57", 2, "morning")),
         on(2, job("service", "Aman T.", "Sec 49", 2, "afternoon")),
         on(3, job("service", "Deepak R.", "Sec 54", 3, "afternoon")),
         on(4, job("replacement", "Kunal M.", "Sec 62", 4, "afternoon")),
-        on(6, job("service", "Rohit M.", "Sec 65", 6, "morning")),
+        on(6, job("service", "Rohit M.", "Sec 65", 6, "morning", ROHIT)),
       ]),
     },
     {
@@ -193,44 +248,15 @@ export const BOARD = {
     },
   ],
   /**
-   * No client comes with an unassigned job: the route answers with the visit,
-   * not the person. The first two are the tray's whole point — a client asked
-   * for one window and is being offered another — and the last has no Request
-   * behind it, so nothing recorded what was asked (ADR 0063).
+   * The tray's first two are its whole point — a client asked for one window
+   * and is being offered another — and the last has no Request behind it, so
+   * nothing recorded what was asked (ADR 0063). The first was invited by Rohit.
    */
   unassigned: [
-    {
-      appointment_id: "78000000-0000-4000-8000-000000000001",
-      type: "first_fit",
-      asked_window: "morning",
-      offered_window: "evening",
-      date: DATES[1],
-      sector: "Sec 43",
-    },
-    {
-      appointment_id: "78000000-0000-4000-8000-000000000002",
-      type: "service",
-      asked_window: "evening",
-      offered_window: "morning",
-      date: DATES[1],
-      sector: "Sec 12",
-    },
-    {
-      appointment_id: "78000000-0000-4000-8000-000000000003",
-      type: "consultation",
-      asked_window: "morning",
-      offered_window: "morning",
-      date: DATES[2],
-      sector: "DLF 3",
-    },
-    {
-      appointment_id: "78000000-0000-4000-8000-000000000004",
-      type: "replacement",
-      asked_window: null,
-      offered_window: "afternoon",
-      date: DATES[2],
-      sector: "Sohna",
-    },
+    tray(1, "first_fit", "morning", "evening", 1, "Sec 43", VIKRAM),
+    tray(2, "service", "evening", "morning", 1, "Sec 12", null),
+    tray(3, "consultation", "morning", "morning", 2, "DLF 3", null),
+    tray(4, "replacement", null, "afternoon", 2, "Sohna", null),
   ],
   utilisation: DATES.map((date, day) => ({ date, percent: UTILISATION[day] ?? 0 })),
   /** Leave ops recorded, clipped to this week: Faizan is away on the Sunday and Monday (ADR 0062). */
@@ -244,7 +270,31 @@ export const BOARD = {
   ],
 };
 
-export const MOVED = { move_id: "79000000-0000-4000-8000-000000000001", messaged: true };
+/**
+ * Where a job in hand would land, as the room route answers: every window of
+ * every day but Faizan's two days away, Sandeep's full Saturday afternoon, and
+ * Arjun's Tuesday, which has no room at all.
+ */
+export const ROOM = {
+  appointment_id: "77000000-0000-4000-8000-000000000001",
+  rooms: BOARD_TECHNICIANS.flatMap((technician) =>
+    DATES.map((date) => ({
+      technician_id: technician.id,
+      date,
+      windows:
+        technician.name === "Sandeep Yadav" && date === DATES[1]
+          ? ["morning", "evening"]
+          : ["morning", "afternoon", "evening"],
+    })),
+  ).filter((room) => {
+    const faizanAway =
+      room.technician_id === BOARD_TECHNICIANS[3]?.id && (room.date === DATES[2] || room.date === DATES[3]);
+    const arjunFull = room.technician_id === BOARD_TECHNICIANS[2]?.id && room.date === DATES[4];
+    return !faizanAway && !arjunFull;
+  }),
+};
+
+export const MOVED = { move_id: "79000000-0000-4000-8000-000000000001", client_notice: "messaged" };
 
 // ---- Boards B2 and B3: one client's page ------------------------------------
 

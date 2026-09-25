@@ -6,13 +6,19 @@
 // "The client's payment carries over and he is never charged for a move ops
 // make, including inside 24 hours" (src/policy/dispatch.ts), so no amount is
 // shown here, and within 24 hours the panel says so in the board's own words.
+//
+// The board's line promises a WhatsApp message. One goes only to a client who
+// agreed to WhatsApp about his visits, so for any other the panel says to call
+// him, with his number; and a change of technician alone, which leaves his
+// window as it was, tells him nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
 import { shortDate } from "@maneman/web-kit/dates";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { MoveReason } from "../api.ts";
 import { dispatch } from "../content.ts";
+import { Dialog } from "./Dialog.tsx";
 import styles from "./dispatch.module.css";
-import { clientOf, nameOf, whenOf, type Job, type Target } from "./job.ts";
+import { changesTime, nameOf, personOf, phoneWords, whenOf, type Job, type Target } from "./job.ts";
 
 const A_DAY = 24 * 60 * 60 * 1000;
 
@@ -21,6 +27,22 @@ function isSoon(job: Job, now: Date): boolean {
   if (job.kind !== "block") return false;
   const starts = new Date(job.block.starts_at).getTime() - now.getTime();
   return starts < A_DAY;
+}
+
+/** What the client hears of this move, in the panel's words, and whether the button may promise a message. */
+function noticeOf(job: Job, to: Target): { readonly line: string; readonly messaged: boolean } {
+  const copy = dispatch.move;
+  const person = personOf(job);
+  if (!changesTime(job, to)) return { line: copy.sameTime(nameOf(job)), messaged: false };
+  if (person === null) return { line: copy.noClient, messaged: false };
+  if (person.whatsapp_visits) return { line: copy.note(nameOf(job)), messaged: true };
+  return { line: copy.call(person.name, phoneWords(person.mobile)), messaged: false };
+}
+
+/** "Move and notify" only where a message will go. */
+function sendLabel(sending: boolean, messaged: boolean): string {
+  if (sending) return dispatch.move.sending;
+  return messaged ? dispatch.move.send : dispatch.move.sendQuietly;
 }
 
 interface Props {
@@ -33,12 +55,7 @@ interface Props {
 
 export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
   const [reason, setReason] = useState<MoveReason | null>(null);
-  const panel = useRef<HTMLDivElement>(null);
   const copy = dispatch.move;
-
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
 
   const was = whenOf(job);
   const lands = `${shortDate(to.date)}, ${dispatch.windows[to.window] ?? to.window}`;
@@ -46,21 +63,20 @@ export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
     was.date === null || was.window === null
       ? null
       : `${shortDate(was.date)}, ${dispatch.windows[was.window] ?? was.window}`;
+  const notice = noticeOf(job, to);
 
   return (
-    <div
+    <Dialog
       className={`${styles.panel} ${styles.picker}`}
-      ref={panel}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="move-title"
-      tabIndex={-1}
+      labelledBy="move-title"
+      canClose={!sending}
+      onDismiss={onCancel}
     >
       <h2 className={styles.pickerTitle} id="move-title">
         {copy.title(nameOf(job), to.technician.name)}
       </h2>
       <p className={styles.pickerWhen}>{stood === null ? copy.to(lands) : copy.fromTo(stood, lands)}</p>
-      <fieldset className={styles.reasons}>
+      <fieldset className={styles.reasons} disabled={sending}>
         <legend className={styles.hidden}>{copy.legend}</legend>
         {copy.reasons.map((each) => (
           <label className={styles.reason} key={each.reason}>
@@ -78,7 +94,7 @@ export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
           </label>
         ))}
       </fieldset>
-      <p className={styles.consequence}>{copy.note(clientOf(job))}</p>
+      <p className={styles.consequence}>{notice.line}</p>
       {isSoon(job, new Date()) && <p className={styles.consequence}>{copy.soon}</p>}
       <div className={styles.actions}>
         <button
@@ -89,12 +105,12 @@ export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
             if (reason !== null) onSend(reason);
           }}
         >
-          {sending ? copy.sending : copy.send}
+          {sendLabel(sending, notice.messaged)}
         </button>
         <button className={styles.quiet} type="button" disabled={sending} onClick={onCancel}>
           {copy.cancel}
         </button>
       </div>
-    </div>
+    </Dialog>
   );
 }

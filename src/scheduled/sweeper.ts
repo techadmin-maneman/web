@@ -10,12 +10,14 @@
 //   messages    queued but unsent for over 5 minutes                  -> messaging
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
+//   moves       a dispatch move still open after five minutes: its claimed time let go, the move closed
 //   hourly      the AILabTools balance, against AILAB_CREDIT_FLOOR
 //   expiry      abandoned uploads after an hour, results after 30 days, photos once their jobs are done
 
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
+import { unfinishedMovesLetGo } from "../domain/dispatch.ts";
 import { failJob } from "../domain/tryon.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
@@ -268,6 +270,8 @@ export async function sweep(
       .bind(sessionsEnded),
     db.prepare("DELETE FROM sessions WHERE expires_at < ?1").bind(sessionsEnded),
     db.prepare("DELETE FROM sessions WHERE revoked_at < ?1").bind(sessionsEnded),
+    // A client's hold can take a technician's time again once a move that never finished lets it go.
+    ...unfinishedMovesLetGo(db, now),
   ]);
 
   // Once an hour: an exhausted balance would otherwise fail every try-on quietly.

@@ -894,6 +894,34 @@ The dispatch board: seven days of every active technician, with the unassigned t
 }
 ```
 
+### GET /api/dispatch/room
+
+Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing
+
+**200**: Where it would land
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchRoom"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such live job
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/dispatch/assign
 
 Put a job on a technician, with a reason. The clash check runs before any write to FSM
@@ -938,7 +966,7 @@ Request body:
 }
 ```
 
-**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day
+**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)
 
 ```json
 {
@@ -974,7 +1002,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request, including a move to the technician, day and window the job already has
 
 ```json
 {
@@ -998,7 +1026,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave
+**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields
 
 ```json
 {
@@ -1007,6 +1035,46 @@ Request body:
 ```
 
 **502**: fsm_refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/dispatch/moves/{id}/told
+
+Ops called the client about a move he had not heard of; its task leaves the board
+
+**200**: Recorded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "told"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no move of a live visit whose client is still to be told
 
 ```json
 {
@@ -1636,6 +1704,7 @@ Request body:
             "already_started",
             "clash",
             "on_leave",
+            "does_not_fit",
             "fsm_refused",
             "too_early_to_close",
             "no_service_area"
@@ -1649,7 +1718,7 @@ Request body:
           "items": {
             "type": "string"
           },
-          "description": "invalid_request only: the fields that failed validation, never their values."
+          "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
         }
       },
       "required": [
@@ -3074,6 +3143,24 @@ Request body:
       },
       "description": "7 days, the board's columns."
     },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The city the jobs are narrowed to; null for all."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The cities the board can be narrowed to."
+    },
     "technicians": {
       "type": "array",
       "items": {
@@ -3158,6 +3245,66 @@ Request body:
               }
             ]
           },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First name and last initial."
+          },
+          "sector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The area the visit's pincode is in, from the service area; else the address's locality, or the city."
+          },
+          "pincode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "person": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DispatchClient"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null for a visit with no client on our records, and for a client who has been erased."
+          },
+          "badge": {
+            "type": "string",
+            "enum": [
+              "prepaid",
+              "credit",
+              "free"
+            ],
+            "description": "Never an amount: prepaid, credit, or free."
+          },
+          "slots": {
+            "type": "number",
+            "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
           "asked_window": {
             "anyOf": [
               {
@@ -3199,25 +3346,21 @@ Request body:
                 "type": "null"
               }
             ]
-          },
-          "sector": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         },
         "required": [
           "appointment_id",
           "type",
+          "client",
+          "sector",
+          "pincode",
+          "person",
+          "badge",
+          "slots",
+          "starts_at",
           "asked_window",
           "offered_window",
-          "date",
-          "sector"
+          "date"
         ],
         "additionalProperties": false
       }
@@ -3241,7 +3384,7 @@ Request body:
         ],
         "additionalProperties": false
       },
-      "description": "Each column's utilisation, in per cent. Written to events daily as well."
+      "description": "Each column's utilisation, in per cent: the slots the day's jobs take, done or still to do, out of the slots of the technicians not on leave. Written to events daily as well."
     },
     "leave": {
       "type": "array",
@@ -3285,6 +3428,8 @@ Request body:
   "required": [
     "from",
     "dates",
+    "city",
+    "cities",
     "technicians",
     "unassigned",
     "utilisation",
@@ -3320,34 +3465,6 @@ Request body:
         }
       ]
     },
-    "starts_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "window": {
-      "type": "string",
-      "enum": [
-        "morning",
-        "afternoon",
-        "evening"
-      ]
-    },
-    "slots": {
-      "type": "number",
-      "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "scheduled",
-        "dispatched",
-        "in_progress",
-        "completed",
-        "cancelled",
-        "terminated",
-        "other"
-      ]
-    },
     "client": {
       "anyOf": [
         {
@@ -3367,20 +3484,208 @@ Request body:
         {
           "type": "null"
         }
+      ],
+      "description": "The area the visit's pincode is in, from the service area; else the address's locality, or the city."
+    },
+    "pincode": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
+    },
+    "person": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/DispatchClient"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for a visit with no client on our records, and for a client who has been erased."
+    },
+    "badge": {
+      "type": "string",
+      "enum": [
+        "prepaid",
+        "credit",
+        "free"
+      ],
+      "description": "Never an amount: prepaid, credit, or free."
+    },
+    "slots": {
+      "type": "number",
+      "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "dispatched",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "terminated",
+        "other"
+      ]
+    },
+    "untold": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "move_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "starts_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "move_id",
+            "starts_at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told."
     }
   },
   "required": [
     "appointment_id",
     "type",
+    "client",
+    "sector",
+    "pincode",
+    "person",
+    "badge",
+    "slots",
     "starts_at",
     "window",
-    "slots",
     "status",
-    "client",
-    "sector"
+    "untold"
   ],
   "additionalProperties": false
+}
+```
+
+### DispatchClient
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string",
+      "description": "In full, as the drawer heads it."
+    },
+    "mobile": {
+      "type": "string",
+      "description": "E.164, for WhatsApp and for a call."
+    },
+    "whatsapp_visits": {
+      "type": "boolean",
+      "description": "His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there."
+    },
+    "referred_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Who invited him, by name; null when he came on his own."
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "mobile",
+    "whatsapp_visits",
+    "referred_by"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchRoom
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "rooms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "windows": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "morning",
+                "afternoon",
+                "evening"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "technician_id",
+          "date",
+          "windows"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "appointment_id",
+    "rooms"
+  ],
+  "additionalProperties": false,
+  "description": "Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is."
 }
 ```
 
@@ -3394,14 +3699,20 @@ Request body:
       "type": "string",
       "format": "uuid"
     },
-    "messaged": {
-      "type": "boolean",
-      "description": "The client was told his new window."
+    "client_notice": {
+      "type": "string",
+      "enum": [
+        "messaged",
+        "call",
+        "unchanged",
+        "no_client"
+      ],
+      "description": "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records."
     }
   },
   "required": [
     "move_id",
-    "messaged"
+    "client_notice"
   ],
   "additionalProperties": false
 }
@@ -3442,12 +3753,31 @@ Request body:
         "skill_needed",
         "running_over"
       ]
+    },
+    "expected_technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician the board showed the job with; null for a job in the tray."
+    },
+    "expected_starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start the board showed the job with."
     }
   },
   "required": [
     "appointment_id",
     "technician_id",
-    "reason"
+    "reason",
+    "expected_technician_id",
+    "expected_starts_at"
   ],
   "additionalProperties": false
 }
@@ -3489,11 +3819,30 @@ Request body:
         "skill_needed",
         "running_over"
       ]
+    },
+    "expected_technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician the board showed the job with; null for a job in the tray."
+    },
+    "expected_starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start the board showed the job with."
     }
   },
   "required": [
     "appointment_id",
-    "reason"
+    "reason",
+    "expected_technician_id",
+    "expected_starts_at"
   ],
   "additionalProperties": false
 }
@@ -4005,6 +4354,7 @@ Request body:
           "group": {
             "type": "string",
             "enum": [
+              "untold_move",
               "consultation_request",
               "replacement_order",
               "referral_review",

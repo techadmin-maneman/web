@@ -28,6 +28,7 @@ const CRON_PATH = [
   "src/domain/referral-grants.ts",
   "src/domain/credits.ts",
   "src/domain/visit-messages.ts",
+  "src/domain/dispatch.ts",
 ];
 
 /** A payment and what it pays for: the hold page polls these while the client pays. */

@@ -7,6 +7,7 @@ import {
   jobDay,
   OUTLINE_FIELDS,
   PAYMENT_BADGES,
+  paymentBadge,
   RULES,
   unlocked,
   unlocksAt,
@@ -76,5 +77,13 @@ describe("job visibility", () => {
     for (const field of visibleFields(noon("2026-09-21"), NOW)) {
       expect(field).not.toMatch(/amount|price|paise|fee/);
     }
+  });
+
+  it("badges a visit a credit paid for as Credit, one that costs nothing as Free, and any other as Prepaid", () => {
+    expect(paymentBadge({ onCredit: true, free: false })).toBe("credit");
+    // A credit is named even on a day the visit would have been free.
+    expect(paymentBadge({ onCredit: true, free: true })).toBe("credit");
+    expect(paymentBadge({ onCredit: false, free: true })).toBe("free");
+    expect(paymentBadge({ onCredit: false, free: false })).toBe("prepaid");
   });
 });

@@ -116,6 +116,15 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
     - **The share sheet** is one dialog, as ADR 0043 has it, drawn as each board is: F2 and F4 fill the screen, F3 rises over the dark ground. F2's back arrow closes it, and F4 has Close in its top corner, where the board draws none (item 36). F2 draws the client's own card from their two front photographs before it is made; F4's bubble has no time.
     - **Documents over time.** An invoice still missing a day after its visit says it is late and offers a message, where E3 says "usually ready within the hour" for ever; a charge and a late fee offer the receipt alone, since the visit's invoice is neither's and nothing invoices them (`docs/open-points.md`, item 79); a refund still processing past ten days says it is late.
 
+45. **The dispatch board, where the boards and the prompt leave a move open.** **Taken 25 September 2026, for the owner to confirm** (ADR 0069):
+    - **Who is told of a move.** The prompt's move "messages the client with the new window", and board A2 promises it. A WhatsApp message about a visit goes only to a client who agreed to them, so the move sheet names any other and gives his number to call; the done line claims a message only where one was queued; and the move waits on the Tasks board as **Call about a move**, four hours, until ops record the call. A change of technician alone keeps the visit's time and messages nobody, since the client's window is as it was.
+    - **A row above the grid** for the week, the city and a search over technicians, zones and clients. The brief asks for "a city and week picker" (A1); the board letters the city in its header and draws no control.
+    - **What a day offers a job in hand.** Only the windows it would land in, by the server's own check, with "No room" on a day that has none, and a list of the same windows above the grid for the keyboard; the board draws the drag alone.
+    - **A day as it was worked.** A finished visit stays on the board where it was worked, and cannot be moved; the utilisation counts it, over the technicians not on leave that day, and, with a city chosen, that city's jobs against the whole team, since no technician carries a city.
+    - **The drawer's WhatsApp** opens a chat with any client on the board, as A3 draws it, whatever he said about WhatsApp messages from us.
+
+    Every word the boards do not draw is a placeholder in `apps/ops/src/content.ts`, approved with the rest of the console's copy (`docs/open-points.md`, item 20).
+
 ## Inputs still owed
 
 The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`. The FSM trial and licensing are in `docs/decisions/fsm-trial.md` and `docs/decisions/fsm-licensing.md`, both pending.

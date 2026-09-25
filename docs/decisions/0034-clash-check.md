@@ -1,6 +1,6 @@
 # 0034. The clash check
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0069: a move on the dispatch board claims its new time in `slot_claims` while FSM is written, a change of technician alone is checked at the visit's own half-slots, and a free window with no room is refused as `does_not_fit`.
 - Date: 2026-09-22
 
 ## Context

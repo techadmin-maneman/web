@@ -14,6 +14,8 @@
   flex-direction: column;
   flex-shrink: 0;
   width: var(--ops-nav);
+  /* Eleven sections outgrow a short window, or one at 200% zoom: they scroll rather than run off the page. */
+  overflow-y: auto;
   background: var(--ink);
 }
 

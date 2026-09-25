@@ -58,6 +58,17 @@ export const UNLOCKED_FIELDS = ["address", "access_notes", "client_card"] as con
 export const PAYMENT_BADGES = ["prepaid", "credit", "free"] as const;
 export type PaymentBadge = (typeof PAYMENT_BADGES)[number];
 
+/**
+ * A visit a service-visit credit paid for is Credit; one the price book
+ * charges nothing for on its day is Free; any other was paid for ahead. The
+ * technician's card and the dispatch board read the same badge.
+ */
+export function paymentBadge(visit: { readonly onCredit: boolean; readonly free: boolean }): PaymentBadge {
+  if (visit.onCredit) return "credit";
+  if (visit.free) return "free";
+  return "prepaid";
+}
+
 /** The fields a job may carry at this moment, so a route can build its answer from one list. */
 export const visibleFields = (windowStart: Date, now: Date, hour: number = UNLOCK_HOUR): readonly string[] =>
   unlocked(windowStart, now, hour) ? [...OUTLINE_FIELDS, ...UNLOCKED_FIELDS] : OUTLINE_FIELDS;

@@ -1037,6 +1037,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dispatch/room": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing */
+        get: {
+            parameters: {
+                query: {
+                    appointment_id: string;
+                    from?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Where it would land */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchRoom"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such live job */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dispatch/assign": {
         parameters: {
             query?: never;
@@ -1096,7 +1153,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash: the technician already holds a job in that window on that date; on_leave: they are away that day */
+                /** @description clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written) */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1154,7 +1211,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchMoved"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request, including a move to the technician, day and window the job already has */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1181,7 +1238,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash; on_leave */
+                /** @description clash; on_leave; does_not_fit; superseded, with what changed in fields */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1192,6 +1249,65 @@ export interface paths {
                 };
                 /** @description fsm_refused */
                 502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dispatch/moves/{id}/told": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ops called the client about a move he had not heard of; its task leaves the board */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Recorded */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            told: true;
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no move of a live visit whose client is still to be told */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2079,9 +2195,9 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
-                /** @description invalid_request only: the fields that failed validation, never their values. */
+                /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
             };
         };
@@ -2414,6 +2530,10 @@ export interface components {
             from: string;
             /** @description 7 days, the board's columns. */
             dates: string[];
+            /** @description The city the jobs are narrowed to; null for all. */
+            city: string | null;
+            /** @description The cities the board can be narrowed to. */
+            cities: string[];
             technicians: {
                 /** Format: uuid */
                 technician_id: string;
@@ -2430,13 +2550,28 @@ export interface components {
                 /** Format: uuid */
                 appointment_id: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                /** @description First name and last initial. */
+                client: string | null;
+                /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
+                sector: string | null;
+                pincode: string | null;
+                /** @description Null for a visit with no client on our records, and for a client who has been erased. */
+                person: components["schemas"]["DispatchClient"] | null;
+                /**
+                 * @description Never an amount: prepaid, credit, or free.
+                 * @enum {string}
+                 */
+                badge: "prepaid" | "credit" | "free";
+                /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
+                slots: number;
+                /** Format: date-time */
+                starts_at: string;
                 /** @description The window the client asked for, from the Request behind the visit; null where nothing recorded one. */
                 asked_window: ("morning" | "afternoon" | "evening") | null;
                 offered_window: ("morning" | "afternoon" | "evening") | null;
                 date: string | null;
-                sector: string | null;
             }[];
-            /** @description Each column's utilisation, in per cent. Written to events daily as well. */
+            /** @description Each column's utilisation, in per cent: the slots the day's jobs take, done or still to do, out of the slots of the technicians not on leave. Written to events daily as well. */
             utilisation: {
                 /** Format: date */
                 date: string;
@@ -2457,23 +2592,66 @@ export interface components {
             /** Format: uuid */
             appointment_id: string;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description First name and last initial. */
+            client: string | null;
+            /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
+            sector: string | null;
+            pincode: string | null;
+            /** @description Null for a visit with no client on our records, and for a client who has been erased. */
+            person: components["schemas"]["DispatchClient"] | null;
+            /**
+             * @description Never an amount: prepaid, credit, or free.
+             * @enum {string}
+             */
+            badge: "prepaid" | "credit" | "free";
+            /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
+            slots: number;
             /** Format: date-time */
             starts_at: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
-            /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
-            slots: number;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
-            /** @description First name and last initial. */
-            client: string | null;
-            sector: string | null;
+            /** @description The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told. */
+            untold: {
+                /** Format: uuid */
+                move_id: string;
+                /** Format: date-time */
+                starts_at: string;
+            } | null;
+        };
+        DispatchClient: {
+            /** Format: uuid */
+            id: string;
+            /** @description In full, as the drawer heads it. */
+            name: string;
+            /** @description E.164, for WhatsApp and for a call. */
+            mobile: string;
+            /** @description His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there. */
+            whatsapp_visits: boolean;
+            /** @description Who invited him, by name; null when he came on his own. */
+            referred_by: string | null;
+        };
+        /** @description Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
+        DispatchRoom: {
+            /** Format: uuid */
+            appointment_id: string;
+            rooms: {
+                /** Format: uuid */
+                technician_id: string;
+                /** Format: date */
+                date: string;
+                windows: ("morning" | "afternoon" | "evening")[];
+            }[];
         };
         DispatchMoved: {
             /** Format: uuid */
             move_id: string;
-            /** @description The client was told his new window. */
-            messaged: boolean;
+            /**
+             * @description messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.
+             * @enum {string}
+             */
+            client_notice: "messaged" | "call" | "unchanged" | "no_client";
         };
         DispatchAssignRequest: {
             /** Format: uuid */
@@ -2486,6 +2664,13 @@ export interface components {
             window?: "morning" | "afternoon" | "evening";
             /** @enum {string} */
             reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
+            /** @description The technician the board showed the job with; null for a job in the tray. */
+            expected_technician_id: string | null;
+            /**
+             * Format: date-time
+             * @description The start the board showed the job with.
+             */
+            expected_starts_at: string;
         };
         DispatchMoveRequest: {
             /** Format: uuid */
@@ -2501,6 +2686,13 @@ export interface components {
             window?: "morning" | "afternoon" | "evening";
             /** @enum {string} */
             reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
+            /** @description The technician the board showed the job with; null for a job in the tray. */
+            expected_technician_id: string | null;
+            /**
+             * Format: date-time
+             * @description The start the board showed the job with.
+             */
+            expected_starts_at: string;
         };
         NoShowCases: {
             cases: components["schemas"]["NoShowCase"][];
@@ -2601,7 +2793,7 @@ export interface components {
             overdue: number;
             groups: {
                 /** @enum {string} */
-                group: "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "draft_invoice" | "erasure_unfinished";
                 count: number;
                 /** @description The longest wait first. */
                 tasks: components["schemas"]["Task"][];

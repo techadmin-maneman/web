@@ -1,8 +1,10 @@
 // The dispatch board on the ops console, behind Access (Ops Console, board A;
 // src/policy/dispatch.ts):
 //   GET  /api/dispatch?from=&city=   the grid, blocks, unassigned tray, leave and utilisation
+//   GET  /api/dispatch/room?appointment_id=&from=   where a job in hand would land this week
 //   POST /api/dispatch/assign        put an unassigned job on a technician
 //   POST /api/dispatch/move          move a job, with a reason from the design's list
+//   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
 //
 // Both writes run the clash check before anything reaches FSM, write to FSM,
 // then the mirror, then message the client with his new window. "The client's
@@ -15,24 +17,56 @@ import type { App, AppEnv } from "../app.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { actorOf } from "../domain/audit.ts";
-import { BOARD_DAYS, dispatchBoard, moveJob, type MoveInput } from "../domain/dispatch.ts";
+import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { MOVE_REASONS } from "../policy/dispatch.ts";
+import { CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
+import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
+const ClientSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string().openapi({ description: "In full, as the drawer heads it." }),
+    mobile: z.string().openapi({ description: "E.164, for WhatsApp and for a call." }),
+    whatsapp_visits: z.boolean().openapi({
+      description: "His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there.",
+    }),
+    referred_by: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "Who invited him, by name; null when he came on his own." }),
+  })
+  .strict()
+  .openapi("DispatchClient");
+
+/** What every job carries, on a technician's day or in the tray. */
+const VISIT = {
+  appointment_id: z.uuid(),
+  type: z.union([z.enum(VISIT_TYPES), z.null()]),
+  client: z.union([z.string(), z.null()]).openapi({ description: "First name and last initial." }),
+  sector: z.union([z.string(), z.null()]).openapi({
+    description: "The area the visit's pincode is in, from the service area; else the address's locality, or the city.",
+  }),
+  pincode: z.union([z.string(), z.null()]),
+  person: z.union([ClientSchema, z.null()]).openapi({
+    description: "Null for a visit with no client on our records, and for a client who has been erased.",
+  }),
+  badge: z.enum(PAYMENT_BADGES).openapi({ description: "Never an amount: prepaid, credit, or free." }),
+  slots: z.number().openapi({ description: "Consultation 1, service 1, replacement 1.5, first fit 2." }),
+  starts_at: z.iso.datetime(),
+};
+
 const BlockSchema = z
   .object({
-    appointment_id: z.uuid(),
-    type: z.union([z.enum(VISIT_TYPES), z.null()]),
-    starts_at: z.iso.datetime(),
+    ...VISIT,
     window: z.enum(BOOKING_WINDOWS),
-    slots: z.number().openapi({ description: "Consultation 1, service 1, replacement 1.5, first fit 2." }),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
-    client: z.union([z.string(), z.null()]).openapi({ description: "First name and last initial." }),
-    sector: z.union([z.string(), z.null()]),
+    untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
+      description:
+        "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told.",
+    }),
   })
   .strict()
   .openapi("DispatchBlock");
@@ -41,6 +75,8 @@ const BoardSchema = z
   .object({
     from: z.iso.date(),
     dates: z.array(z.iso.date()).openapi({ description: `${String(BOARD_DAYS)} days, the board's columns.` }),
+    city: z.union([z.string(), z.null()]).openapi({ description: "The city the jobs are narrowed to; null for all." }),
+    cities: z.array(z.string()).openapi({ description: "The cities the board can be narrowed to." }),
     technicians: z.array(
       z
         .object({
@@ -55,21 +91,20 @@ const BoardSchema = z
     unassigned: z.array(
       z
         .object({
-          appointment_id: z.uuid(),
-          type: z.union([z.enum(VISIT_TYPES), z.null()]),
+          ...VISIT,
           asked_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]).openapi({
             description:
               "The window the client asked for, from the Request behind the visit; null where nothing recorded one.",
           }),
           offered_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
           date: z.union([z.iso.date(), z.null()]),
-          sector: z.union([z.string(), z.null()]),
         })
         .strict(),
     ),
-    utilisation: z
-      .array(z.object({ date: z.iso.date(), percent: z.number().int() }).strict())
-      .openapi({ description: "Each column's utilisation, in per cent. Written to events daily as well." }),
+    utilisation: z.array(z.object({ date: z.iso.date(), percent: z.number().int() }).strict()).openapi({
+      description:
+        "Each column's utilisation, in per cent: the slots the day's jobs take, done or still to do, out of the slots of the technicians not on leave. Written to events daily as well.",
+    }),
     leave: z
       .array(
         z
@@ -89,6 +124,17 @@ const BoardSchema = z
   .strict()
   .openapi("DispatchBoard");
 
+/**
+ * The job as the board the move was made from showed it. If either differs from the job now, another ops user
+ * has moved it since, and nothing is written (FEO-05).
+ */
+const EXPECTED = {
+  expected_technician_id: z
+    .union([z.uuid(), z.null()])
+    .openapi({ description: "The technician the board showed the job with; null for a job in the tray." }),
+  expected_starts_at: z.iso.datetime().openapi({ description: "The start the board showed the job with." }),
+};
+
 const AssignRequestSchema = z
   .object({
     appointment_id: z.uuid(),
@@ -96,6 +142,7 @@ const AssignRequestSchema = z
     date: z.iso.date().optional(),
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
+    ...EXPECTED,
   })
   .strict()
   .openapi("DispatchAssignRequest");
@@ -107,6 +154,7 @@ const MoveRequestSchema = z
     date: z.iso.date().optional(),
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
+    ...EXPECTED,
   })
   .strict()
   .openapi("DispatchMoveRequest");
@@ -114,7 +162,10 @@ const MoveRequestSchema = z
 const MovedSchema = z
   .object({
     move_id: z.uuid(),
-    messaged: z.boolean().openapi({ description: "The client was told his new window." }),
+    client_notice: z.enum(CLIENT_NOTICES).openapi({
+      description:
+        "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.",
+    }),
   })
   .strict()
   .openapi("DispatchMoved");
@@ -141,7 +192,7 @@ const assignRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
     409: errorResponse(
-      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day",
+      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)",
     ),
     502: errorResponse("fsm_refused: FSM would not take it; nothing moved"),
   },
@@ -154,11 +205,54 @@ const moveRoute = createRoute({
   request: { body: { required: true, ...json(MoveRequestSchema) } },
   responses: {
     200: { description: "Moved, and the client told", ...json(MovedSchema) },
-    400: errorResponse("invalid_request"),
+    400: errorResponse("invalid_request, including a move to the technician, day and window the job already has"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
-    409: errorResponse("clash; on_leave"),
+    409: errorResponse("clash; on_leave; does_not_fit; superseded, with what changed in fields"),
     502: errorResponse("fsm_refused"),
+  },
+});
+
+const RoomSchema = z
+  .object({
+    appointment_id: z.uuid(),
+    rooms: z.array(
+      z
+        .object({
+          technician_id: z.uuid(),
+          date: z.iso.date(),
+          windows: z.array(z.enum(BOOKING_WINDOWS)).min(1),
+        })
+        .strict(),
+    ),
+  })
+  .strict()
+  .openapi("DispatchRoom", {
+    description:
+      "Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is.",
+  });
+
+const roomRoute = createRoute({
+  method: "get",
+  path: "/api/dispatch/room",
+  summary: "Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing",
+  request: { query: z.object({ appointment_id: z.uuid(), from: z.iso.date().optional() }) },
+  responses: {
+    200: { description: "Where it would land", ...json(RoomSchema) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such live job"),
+  },
+});
+
+const toldRoute = createRoute({
+  method: "post",
+  path: "/api/dispatch/moves/{id}/told",
+  summary: "Ops called the client about a move he had not heard of; its task leaves the board",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "Recorded", ...json(z.object({ told: z.literal(true) }).strict()) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no move of a live visit whose client is still to be told"),
   },
 });
 
@@ -169,8 +263,38 @@ export function registerOpsDispatch(app: App): void {
     return c.json(await dispatchBoard(c.env.DB, { from: from ?? indiaDate(now), city: city ?? null }), 200);
   });
 
+  app.openapi(roomRoute, async (c) => {
+    const now = c.var.deps.now();
+    const { appointment_id: appointmentId, from } = c.req.valid("query");
+    const rooms = await roomFor(c.env.DB, { appointmentId, from: from ?? indiaDate(now) }, now);
+    if (rooms === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    return c.json({ appointment_id: appointmentId, rooms }, 200);
+  });
+
   app.openapi(assignRoute, (c) => write(c, c.req.valid("json")));
   app.openapi(moveRoute, (c) => write(c, c.req.valid("json")));
+
+  app.openapi(toldRoute, async (c) => {
+    const { requestId, deps } = c.var;
+    const identity = c.var.accessIdentity;
+    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const { id } = c.req.valid("param");
+    const actor = actorOf(identity);
+    const recorded = await recordToldByPhone(c.env.DB, {
+      moveId: id,
+      actor: actor.id,
+      audit: {
+        surface: "ops",
+        actor,
+        action: "dispatch.client_told",
+        subject: { kind: "dispatch_move", id },
+        requestId,
+      },
+      now: deps.now(),
+    });
+    if (!recorded) return c.json(errorBody("not_found", requestId), 404);
+    return c.json({ told: true as const }, 200);
+  });
 }
 
 type MoveRequest = z.infer<typeof MoveRequestSchema>;
@@ -188,6 +312,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     window: request.window ?? null,
     reason: request.reason,
     actor: actorOf(identity).id,
+    expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
   };
   const outcome = await moveJob(
     c.env.DB,
@@ -202,18 +327,16 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   );
 
   if (outcome.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
-  if (outcome.kind === "refused") {
-    // "unknown_reason" here means the job has no technician and none was named:
-    // the reason itself is already one of the design's list, by the schema.
-    if (outcome.reason === "unknown_reason") {
-      return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
-    }
-    return c.json(errorBody(outcome.reason, requestId), 409);
+  if (outcome.kind === "superseded") return c.json(errorBody("superseded", requestId, outcome.changed), 409);
+  if (outcome.kind === "nothing_to_move") {
+    return c.json(errorBody("invalid_request", requestId, ["technician_id", "date", "window"]), 400);
   }
+  if (outcome.kind === "no_technician") return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
+  if (outcome.kind === "refused") return c.json(errorBody(outcome.reason, requestId), 409);
   if (outcome.kind === "fsm_refused") {
     log.warn("dispatch_move_refused_by_fsm", { appointment_id: input.appointmentId, move_id: outcome.moveId });
     return c.json(errorBody("fsm_refused", requestId), 502);
   }
   log.info("dispatch_moved", { appointment_id: input.appointmentId, move_id: outcome.moveId, reason: input.reason });
-  return c.json({ move_id: outcome.moveId, messaged: outcome.messageId !== null }, 200);
+  return c.json({ move_id: outcome.moveId, client_notice: outcome.clientNotice }, 200);
 }
