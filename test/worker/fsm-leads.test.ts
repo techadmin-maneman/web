@@ -46,6 +46,7 @@ describe("sendLeadToFsm", () => {
         mobile: "+919810000001",
         email: null,
         city: "Gurgaon",
+        pincode: null,
         state: "Haryana",
         stateCode: "HR",
       },
@@ -64,6 +65,7 @@ describe("sendLeadToFsm", () => {
         serviceId: "item-consult",
         preferredDate: "2026-09-24",
         preferenceNote: "Evening, 4 to 8 pm",
+        reference: LEAD,
       },
     ]);
     expect(await sendLeadToFsm(env.DB, fsm, LEAD, { labelAsTest: true })).toBe("already_sent");
@@ -80,6 +82,28 @@ describe("sendLeadToFsm", () => {
       summary: "Consultation for Rohit Malhotra",
       preferenceNote: "Morning, 9 am to 12 pm",
     });
+  });
+
+  // INT-11 of the audit, 24 September 2026.
+  it("finds the Request and the contact FSM made on a try whose answers never came, and makes neither twice", async () => {
+    await lead();
+    const fsm = createStubFsm(world());
+    fsm.loseAnswer("createContact");
+    await expect(sendLeadToFsm(env.DB, fsm, LEAD, { labelAsTest: true })).rejects.toThrow();
+    fsm.loseAnswer("createRequest");
+    await expect(sendLeadToFsm(env.DB, fsm, LEAD, { labelAsTest: true })).rejects.toThrow();
+    expect(await sendLeadToFsm(env.DB, fsm, LEAD, { labelAsTest: true })).toBe("sent");
+    expect(fsm.made.contacts).toHaveLength(1);
+    expect(fsm.made.requests).toHaveLength(1);
+  });
+
+  it("uses the contact FSM already holds for the number, as one ops added by hand", async () => {
+    await lead();
+    const held = { id: "fsm-contact-by-hand", name: "Rohit Malhotra", mobile: "+919810000001", email: null };
+    const fsm = createStubFsm({ ...world(), contacts: [held] });
+    await sendLeadToFsm(env.DB, fsm, LEAD, { labelAsTest: true });
+    expect(fsm.made.contacts).toEqual([]);
+    expect(fsm.made.requests[0]).toMatchObject({ contactId: "fsm-contact-by-hand" });
   });
 
   it("sends only a booking: not a waitlist entry", async () => {

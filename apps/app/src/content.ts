@@ -343,6 +343,8 @@ export const booking = {
     close: "Done",
   },
   confirming: "Confirming your visit.",
+  // PLACEHOLDER: the hold's time ran out on the phone after Razorpay had taken the payment, which keeps it.
+  paidIn: "Your payment is in. We are booking your visit.",
   slow: "This is taking longer than usual. We will message you on WhatsApp when the visit is booked.",
   refunded: "We could not book that visit, so your payment is being refunded in full.",
   failedToStart: "That did not go through. Please try again.",

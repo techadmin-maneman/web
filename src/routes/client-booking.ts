@@ -12,15 +12,20 @@
 // With `moving`, availability and a hold are for moving one of the client's
 // visits (docs/decisions/0046-moving-and-cancelling.md): with its technician,
 // priced at what the move costs now.
+//
+// Once paid for, a hold keeps its time until it is booked or refunded, and the
+// client can no longer let it go (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../app.ts";
+import { withGst } from "../config/gst.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS, WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { startBooking } from "../domain/bookings.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { priceOf, type Price } from "../domain/price-book.ts";
+import { currentAddress } from "../domain/profile.ts";
 import {
   activeTechnicians,
   availability,
@@ -51,12 +56,13 @@ const TechnicianSchema = z.object({ name: z.string(), initials: z.string() }).st
 const AvailabilitySchema = z
   .object({
     type: z.enum(VISIT_TYPES),
-    price: PriceSchema,
+    price: PriceSchema.openapi({ description: "The first day's price." }),
     regular: z.union([TechnicianSchema, z.null()]).openapi({ description: "Whoever did the client's latest visit." }),
     days: z.array(
       z
         .object({
           date: z.iso.date(),
+          price: PriceSchema.openapi({ description: "What a visit on this day costs: a price changes from its date." }),
           windows: z.array(
             z
               .object({
@@ -225,6 +231,9 @@ interface HoldRow {
   gst_percent: number;
   state: "held" | "booked" | "released";
   expires_at: string;
+  confirmed_at: string | null;
+  late_fee_ex_gst: number | null;
+  late_fee_gst_percent: number | null;
   technician_name: string;
   technician_initials: string;
   appointment_id: string | null;
@@ -234,10 +243,25 @@ interface HoldRow {
   paid: number;
 }
 
+/** The late fee the hold was made under; for a hold made before it kept one, the price book's for its day. */
+async function lateFeeOf(db: D1Database, row: HoldRow): Promise<Price | null> {
+  const item = LATE_FEES[row.type];
+  if (item === undefined) return null;
+  if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) return priceOf(db, item, row.date);
+  return {
+    amount_ex_gst: row.late_fee_ex_gst,
+    amount: withGst(row.late_fee_ex_gst, row.late_fee_gst_percent),
+    gst_percent: row.late_fee_gst_percent,
+  };
+}
+
+/** A hold not paid for and past its ten minutes: the client may no longer pay for it. */
+const hasLapsed = (row: HoldRow, now: Date) =>
+  row.state === "held" && row.confirmed_at === null && row.expires_at <= now.toISOString();
+
 async function holdOf(db: D1Database, row: HoldRow, now: Date) {
   const { start, end } = visitTimes(row.date, row.start_unit, row.type);
   const windowStarts = indiaInstant(row.date, WINDOW_TIMES[row.window_label].start);
-  const lateFee = LATE_FEES[row.type];
   return {
     id: row.id,
     type: row.type,
@@ -247,10 +271,10 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     ends_at: end.toISOString(),
     technician: { name: row.technician_name, initials: row.technician_initials },
     price: { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent },
-    late_fee: lateFee === undefined ? null : await priceOf(db, lateFee, row.date),
+    late_fee: await lateFeeOf(db, row),
     free_until: new Date(windowStarts.getTime() - FREE_CHANGE_NOTICE_HOURS * 3_600_000).toISOString(),
     expires_at: row.expires_at,
-    state: row.state === "held" && row.expires_at <= now.toISOString() ? ("expired" as const) : row.state,
+    state: hasLapsed(row, now) ? ("expired" as const) : row.state,
     paid: row.paid === 1,
     visit_id: row.appointment_id,
     moves_visit_id: row.moves_appointment_id,
@@ -267,13 +291,28 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
 }
 
 const HOLD_QUERY = `SELECT h.id, h.type, h.date, h.window_label, h.start_unit, h.amount, h.amount_ex_gst, h.gst_percent,
-    h.state, h.expires_at, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
+    h.state, h.expires_at, h.confirmed_at, h.late_fee_ex_gst, h.late_fee_gst_percent,
+    t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
     h.moves_appointment_id, h.use_credit, h.person_id,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
   FROM slot_holds h JOIN technicians t ON t.id = h.technician_id WHERE h.id = ?1 AND h.person_id = ?2`;
 
 /** The first day a client may book: tomorrow, in India. */
 const firstBookableDay = (now: Date) => addDays(indiaDate(now), 1);
+
+/** Where the client's visit would be: their saved address's pincode, else the one their last booking gave. */
+async function bookingPincode(db: D1Database, personId: string): Promise<string | null> {
+  const address = await currentAddress(db, personId);
+  if (address !== null) return address.pincode;
+  const lastBooked = await db
+    .prepare(
+      `SELECT pincode FROM slot_holds WHERE person_id = ?1 AND pincode IS NOT NULL
+       ORDER BY created_at DESC LIMIT 1`,
+    )
+    .bind(personId)
+    .first<{ pincode: string }>();
+  return lastBooked?.pincode ?? null;
+}
 
 /** Whether a client may book this kind of visit, and its price on that day. */
 async function bookable(c: Context<AppEnv>, personId: string, type: VisitType, on: string): Promise<Price | null> {
@@ -370,13 +409,18 @@ export function registerClientBooking(app: App): void {
       moving === null ? regularTechnician(db, session.subjectId) : moving.technicianId,
       activeTechnicians(db),
     ]);
+    // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price.
+    const priceOn = async (date: string): Promise<Price> => {
+      if (move !== null && move.terms.move.cost !== "charged") return price;
+      return (await priceOf(db, type, date)) ?? price;
+    };
     const regular = technicians.find((technician) => technician.id === regularId);
     return c.json(
       {
         type,
         price,
         regular: regular === undefined ? null : { name: regular.name, initials: regular.initials },
-        days,
+        days: await Promise.all(days.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),
       },
       200,
     );
@@ -403,9 +447,21 @@ export function registerClientBooking(app: App): void {
       type === "service" &&
       moves?.kind !== "move" &&
       (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
+    const lateFeeItem = LATE_FEES[type];
     const hold = await holdSlot(
       c.env.DB,
-      { personId: session.subjectId, type, date, window, price, useCredit, ...(moves === undefined ? {} : { moves }) },
+      {
+        personId: session.subjectId,
+        type,
+        date,
+        window,
+        price,
+        lateFee: lateFeeItem === undefined ? null : await priceOf(c.env.DB, lateFeeItem, date),
+        pincode: await bookingPincode(c.env.DB, session.subjectId),
+        useCredit,
+        from: "app",
+        ...(moves === undefined ? {} : { moves }),
+      },
       now,
       HOLD_SECONDS,
     );
@@ -438,7 +494,9 @@ export function registerClientBooking(app: App): void {
     const db = c.env.DB;
     const id = c.req.valid("param").id;
     const at = c.var.deps.now().toISOString();
-    const mine = "SELECT id FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND state = 'held'";
+    // Once paid for (or booked free) it is on its way to FSM, and only a booking or a refund ends it.
+    const mine =
+      "SELECT id FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND state = 'held' AND confirmed_at IS NULL";
     await db.batch([
       db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${mine})`).bind(id, session.subjectId),
       db

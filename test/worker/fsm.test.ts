@@ -258,6 +258,120 @@ describe("FSM: clients, technicians, items and files", () => {
   });
 });
 
+// Booking a visit in two writes, each findable by our reference (docs/decisions/0068-a-paid-hold-is-kept.md).
+describe("FSM: booking a visit, once", () => {
+  const addresses = () =>
+    json({ data: [fsmContactRecord({ Service_Address: { id: "sa-1" }, Billing_Address: { id: "ba-1" } })] });
+  const territories = () => json({ data: [{ id: "territory-1", Name: "Mane Man" }] });
+
+  it("makes the work order with our reference at the end of its summary", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Contacts/contact-1`]: addresses,
+      [`${FSM_API}/Territories`]: territories,
+      [`${FSM_API}/Work_Orders`]: () =>
+        json({ data: { Work_Orders: [{ id: "wo-9" }], Service_Line_Items: [{ id: "line-9" }] } }, 201),
+    });
+    const id = await provider.createWorkOrder({
+      contactId: "contact-1",
+      summary: "Service visit for Rohit Malhotra",
+      serviceId: "item-service",
+      reference: "hold-1",
+    });
+    expect(id).toBe("wo-9");
+    const posted = calls.find((call) => call.method === "POST" && call.url.endsWith("/Work_Orders"));
+    expect(JSON.parse(posted?.body ?? "null")).toMatchObject({
+      data: [{ Summary: "Service visit for Rohit Malhotra (booking hold-1)", Contact: "contact-1" }],
+    });
+  });
+
+  it("puts the work order's own service line on the appointment, with the technician", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders/wo-9`]: () => json({ data: [fsmWorkOrderRecord({ id: "wo-9" })] }),
+      [`${FSM_API}/Territories`]: territories,
+      [`${FSM_API}/Service_Appointments`]: () => json({ data: [{ id: "ap-9" }] }, 201),
+    });
+    const id = await provider.createAppointment("wo-9", {
+      summary: "Service visit for Rohit Malhotra",
+      technicianId: "sr-1",
+      start: "2026-09-24T12:00:00+05:30",
+      end: "2026-09-24T13:30:00+05:30",
+    });
+    expect(id).toBe("ap-9");
+    const posted = calls.find((call) => call.method === "POST" && call.url.startsWith(FSM_API));
+    expect(JSON.parse(posted?.body ?? "null")).toMatchObject({
+      data: [{ $Service_Line_Items: ["line-1"], $Service_Resources: ["sr-1"] }],
+    });
+  });
+
+  it("finds a work order and its appointment an earlier try made, among the latest", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Work_Orders?`]: () =>
+        json({
+          data: [
+            { id: "wo-8", Summary: "Service visit for Karan Bhatia (booking hold-2)" },
+            { id: "wo-9", Summary: "Service visit for Rohit Malhotra (booking hold-1)" },
+          ],
+        }),
+      [`${FSM_API}/Service_Appointments?`]: () =>
+        json({ data: [fsmAppointmentRecord({ id: "ap-9", Work_Order: { name: "WO9", id: "wo-9" } })] }),
+    });
+    expect(await provider.findWorkOrder("hold-1")).toBe("wo-9");
+    expect(await provider.findWorkOrder("hold-3")).toBeNull();
+    expect(await provider.workOrderAppointment("wo-9")).toBe("ap-9");
+    expect(await provider.workOrderAppointment("wo-8")).toBeNull();
+    expect(calls[1]?.url).toBe(`${FSM_API}/Work_Orders?page=1&per_page=50&sort_by=Modified_Time&sort_order=desc`);
+  });
+
+  it("looks for a contact by mobile number, and answers none for FSM's empty 204", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Contacts/search`]: (call) =>
+        call.url.includes("919810000001") ? json({ data: [fsmContactRecord({ id: "contact-7" })] }) : empty(),
+    });
+    expect(await provider.findContact("+919810000001")).toBe("contact-7");
+    expect(await provider.findContact("+919810000002")).toBeNull();
+    expect(calls[1]?.url).toBe(
+      `${FSM_API}/Contacts/search?criteria=${encodeURIComponent("(Mobile:equals:+919810000001)")}`,
+    );
+  });
+
+  it("gives a new contact's service address the pincode the booking gave, and stamps a Request with the lead", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Territories`]: territories,
+      [`${FSM_API}/Contacts/contact-1`]: addresses,
+      [`${FSM_API}/Contacts`]: () => json({ data: { Contacts: [{ id: "contact-9" }] } }, 201),
+      [`${FSM_API}/Requests`]: () => json({ data: { Requests: [{ id: "req-9" }] } }, 201),
+    });
+    await provider.createContact({
+      firstName: "Rohit",
+      lastName: "Malhotra",
+      mobile: "+919810000001",
+      email: null,
+      city: "Gurgaon",
+      pincode: "122018",
+      state: "Haryana",
+      stateCode: "HR",
+    });
+    await provider.createRequest({
+      contactId: "contact-1",
+      summary: "Consultation for Rohit Malhotra",
+      serviceId: "item-consult",
+      preferredDate: null,
+      preferenceNote: "",
+      reference: "lead-1",
+    });
+    const posts = calls
+      .filter((call) => call.method === "POST" && call.url.startsWith(FSM_API))
+      .map((call) => JSON.parse(call.body) as unknown);
+    expect(posts[0]).toMatchObject({ data: [{ Service_Address: { City: "Gurgaon", Zip_Code: "122018" } }] });
+    expect(posts[1]).toMatchObject({ data: [{ Summary: "Consultation for Rohit Malhotra (lead lead-1)" }] });
+  });
+});
+
 describe("FSM: moving and cancelling a visit", () => {
   it("reschedules an appointment through its action, with the new times", async () => {
     const { fsm: provider, calls } = fsm({

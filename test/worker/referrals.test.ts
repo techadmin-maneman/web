@@ -175,6 +175,7 @@ describe("POST /api/r/:code/consultation", () => {
       window: "morning",
       area: "Gurgaon South City II",
       credits: true,
+      invite: "valid",
     });
     expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     const friend = await env.DB.prepare(
@@ -217,7 +218,38 @@ describe("POST /api/r/:code/consultation", () => {
       post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "afternoon", consent: true }),
       { FSM_QUEUE: fakeQueue() },
     );
-    expect(await unknown.json()).toMatchObject({ state: "booked", credits: false });
+    expect(await unknown.json()).toMatchObject({ state: "booked", credits: false, invite: "unknown" });
+  });
+
+  // W8 of the audit, 24 September 2026 (BIZ-12, REQ-06).
+  it("says an invite held on a waitlist has expired once its area launched over 12 months ago, and grants nothing", async () => {
+    const FRIEND_ID = "66666666-6666-4666-8666-666666666666";
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2025-08-16T18:30:00.000Z')",
+    ).run();
+    const code = await codeOf();
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, '2025-07-01T00:00:00.000Z', '+919810000002', 'Karan Bhatia')",
+    )
+      .bind(FRIEND_ID)
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, pincode, created_at, updated_at)
+       VALUES ('attr-w8', ?1, ?2, '2025-07-01T00:00:00.000Z', 'waitlist', '122018', '2025-07-01T00:00:00.000Z',
+         '2025-07-01T00:00:00.000Z')`,
+    )
+      .bind(code, FRIEND_ID)
+      .run();
+    const answer = await request(
+      site(),
+      `/api/r/${code}/consultation`,
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+    );
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: false, invite: "expired" });
+    const kept = await env.DB.prepare("SELECT grant_state FROM referral_attributions WHERE id = 'attr-w8'").first();
+    expect(kept).toEqual({ grant_state: "expired" });
   });
 
   it("reaches FSM, using the invite's pincode for the city the friend's booking never asks for", async () => {
@@ -306,6 +338,7 @@ describe("POST /api/r/:code/consultation", () => {
       window: "morning",
       area: "Gurgaon South City II",
       credits: true,
+      invite: "valid",
     });
     // Nothing is held and FSM is not told; the lead and the invite still stand.
     expect(fsm.sent).toEqual([]);
@@ -334,7 +367,7 @@ describe("POST /api/r/:code/waitlist", () => {
     const body = { ...FRIEND, pincode: "400050", contact_consent: true, launch_alert: true };
     const answer = await request(site(), `/api/r/${code}/waitlist`, post(body));
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toEqual({ area: "Bandra", credits: true });
+    expect(await answer.json()).toEqual({ area: "Bandra", credits: true, invite: "valid" });
     await request(site(), `/api/r/${code}/waitlist`, post({ ...body, launch_alert: false }));
     const entries = await env.DB.prepare("SELECT pincode, referral_code, launch_alert FROM waitlist_entries").all();
     expect(entries.results).toEqual([{ pincode: "400050", referral_code: code, launch_alert: 1 }]);
@@ -395,6 +428,7 @@ describe("the credit ledger", () => {
         .credits;
     expect(await me()).toBeNull();
     await grantCredits(env.DB, { personId: REFERRER, visits: 3, source: "ops", sourceId: "o1", now: NOW }).run();
-    expect(await me()).toEqual({ visits: 3, earliest_expiry: new Date(NOW.getTime() + 365 * DAY).toISOString() });
+    // To the end of 21 September 2027 in India, a year on (BIZ-14).
+    expect(await me()).toEqual({ visits: 3, earliest_expiry: "2027-09-21T18:29:59.999Z" });
   });
 });

@@ -91,6 +91,12 @@ describe("ops, when the audit entry cannot be written", () => {
     });
   });
 
+  it("adds no credits to a client", async () => {
+    const answer = await send(ops, "POST", `/api/clients/${PERSON}/credits`, { visits: 2, reason: "goodwill" });
+    expect(answer.status).toBe(500);
+    expect(await one("SELECT COUNT(*) AS entries FROM credit_ledger")).toEqual({ entries: 0 });
+  });
+
   it("records no leave", async () => {
     const answer = await send(ops, "POST", `/api/technicians/${TECHNICIAN}/leave`, {
       from: "2026-09-23",

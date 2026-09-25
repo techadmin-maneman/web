@@ -173,6 +173,50 @@ The client's consents and any deletion request. Ops read them and never grant on
 }
 ```
 
+### POST /api/clients/{id}/credits
+
+Add service-visit credits to a client, or take them away, with the reason
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CreditAdjustment"
+}
+```
+
+**200**: The client's balance now
+
+```json
+{
+  "$ref": "#/components/schemas/CreditBalance"
+}
+```
+
+**400**: invalid_request: visits takes away more than the client has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or one who has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/number-changes
 
 Number changes waiting for ops: both numbers proven by code
@@ -1581,6 +1625,7 @@ Request body:
             "taken",
             "not_bookable",
             "hold_expired",
+            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -2708,6 +2753,64 @@ Request body:
   "required": [
     "consents",
     "deletion"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CreditBalance
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer"
+    },
+    "earliest_expiry": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "visits",
+    "earliest_expiry"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CreditAdjustment
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer",
+      "minimum": -12,
+      "maximum": 12,
+      "description": "Visits to add, or, below nought, to take away."
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "correction",
+        "goodwill"
+      ],
+      "description": "correction: given or taken in error; goodwill: given to make up for something."
+    }
+  },
+  "required": [
+    "visits",
+    "reason"
   ],
   "additionalProperties": false
 }
@@ -4423,7 +4526,15 @@ Request body:
   "type": "object",
   "properties": {
     "item": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement",
+        "late_fee_first_fit",
+        "late_fee_replacement"
+      ]
     },
     "tier": {
       "type": "string"
@@ -4464,8 +4575,15 @@ Request body:
   "properties": {
     "item": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 40
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement",
+        "late_fee_first_fit",
+        "late_fee_replacement"
+      ],
+      "description": "A kind of visit, or one of the two late fees."
     },
     "tier": {
       "type": "string",

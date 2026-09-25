@@ -426,6 +426,26 @@ test("lets a lapsed hold go the moment the phone sees it lapse, and picks again"
   await expect(page.getByRole("dialog", { name: "Pick a date" })).toBeVisible();
 });
 
+// A payment Razorpay took in time keeps the hold (ADR 0068): when the phone sees the time end, it asks, and says
+// the payment is in rather than that the slot has gone, and lets nothing go.
+test("says the payment is in, and lets nothing go, when the time ends on a paid hold", async ({ page }) => {
+  await page.clock.install();
+  await toPayment(page);
+  const deletes: string[] = [];
+  page.on("request", (sent) => {
+    if (sent.method() === "DELETE") deletes.push(sent.url());
+  });
+  await page.route(/\/api\/holds\/[0-9a-f-]{36}$/, async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const response = await route.fetch();
+    const hold = (await response.json()) as Record<string, unknown>;
+    return route.fulfill({ response, json: { ...hold, state: "held", paid: true } });
+  });
+  await page.clock.fastForward("11:00");
+  await expect(page.getByRole("dialog", { name: "Your payment is in. We are booking your visit." })).toBeVisible();
+  expect(deletes).toEqual([]);
+});
+
 test("counts the hold on the API's clock, however far out the phone's is", async ({ page }) => {
   await fakeCheckout(page, "paid");
   // Eleven minutes fast: on the phone's own clock, the ten-minute hold would have lapsed before it began.

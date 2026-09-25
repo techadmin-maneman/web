@@ -156,20 +156,16 @@ describe("POST /api/address/suggestions", () => {
   });
 
   it("tells ops once a day that Google refuses the search, in Google's words", async () => {
-    const res = await send(client, "GET", "/api/address/suggestions?q=mm-stub:refused&session=s-1");
+    const res = await suggest(client, "mm-stub:refused", "s-1");
     expect(res.status).toBe(503);
-    await send(client, "GET", "/api/address/suggestions?q=mm-stub:refused&session=s-2");
+    await suggest(client, "mm-stub:refused", "s-2");
     const told =
       "Google refused the address search (autocomplete 403: stub: quota). Clients can still type an address, " +
       "but none gets a pin. Check the key, its APIs and its quotas (runbook, section 13).";
     expect(deps.alerts).toEqual([told]);
 
     const tomorrow = fakeDependencies({ now: () => new Date(NOW.getTime() + 24 * 60 * 60 * 1000) });
-    await send(
-      appFor("local", tomorrow, {}, "client"),
-      "GET",
-      "/api/address/suggestions?q=mm-stub:refused&session=s-3",
-    );
+    await suggest(appFor("local", tomorrow, {}, "client"), "mm-stub:refused", "s-3");
     expect(tomorrow.alerts).toEqual([told]);
   });
 

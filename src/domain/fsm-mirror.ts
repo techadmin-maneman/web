@@ -63,7 +63,8 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
     db
       .prepare(
         // fsm_invoice_id is not written here: FSM leaves the appointment's own Invoice_Id
-        // null, and the invoice pass fills the column with Books' ID (ADR 0055).
+        // null, and the invoice pass fills the column with Books' ID (ADR 0055). Where FSM
+        // holds no place for it yet, the visit keeps the one our booking gave it (ADR 0068).
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
            technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
@@ -71,7 +72,8 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
            fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id, type = excluded.type,
            window_start = excluded.window_start, window_end = excluded.window_end,
            technician_id = excluded.technician_id, status = excluded.status, fsm_status = excluded.fsm_status,
-           service_city = excluded.service_city, service_pincode = excluded.service_pincode,
+           service_city = COALESCE(excluded.service_city, appointments.service_city),
+           service_pincode = COALESCE(excluded.service_pincode, appointments.service_pincode),
            fsm_modified_at = excluded.fsm_modified_at, synced_at = excluded.synced_at, deleted_at = NULL`,
       )
       .bind(
