@@ -209,6 +209,29 @@ describe("sweeper: a technician's steps", () => {
 
     expect(again.queues.fsm.sent).toEqual([]);
   });
+
+  it("tells ops once of a job's step still not in FSM an hour after it landed, with IDs only", async () => {
+    await step("stuck-start", "visit-fresh", "check_in", 61).run();
+    const deps = fakeDependencies();
+
+    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
+    expect(deps.alerts).toEqual([
+      "A technician's check_in (job event stuck-start) on visit visit-fresh has waited over an hour to reach FSM. " +
+        "The sweeper keeps sending it; if it has not landed soon, enter it in FSM by hand. " +
+        "http://ops.localhost:4323/dispatch",
+    ]);
+
+    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
+    expect(deps.alerts).toHaveLength(1);
+  });
+
+  it("says nothing of a step under an hour old, and names only a job's earliest step", async () => {
+    await step("done-photos", "visit-done", "before_photos", 70).run();
+    await step("done-checklist", "visit-done", "checklist", 65).run();
+    const deps = fakeDependencies();
+    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
+    expect(deps.alerts).toEqual([expect.stringContaining("(job event done-photos)") as string]);
+  });
 });
 
 describe("sweeper: try-on", () => {

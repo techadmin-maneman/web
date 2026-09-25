@@ -6,6 +6,7 @@
 //   erasures    a person erased whose CRM record is not yet blanked     -> crm-sync
 //               or whose FSM contact is not yet anonymised              -> fsm-sync
 //   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
+//               and after an hour, an alert naming it
 //   messages    queued but unsent for over 5 minutes                  -> messaging
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
@@ -32,6 +33,8 @@ const BOOKING_TO_FSM_WITHIN_MS = 24 * 60 * MINUTE_MS;
 const MESSAGE_GRACE_MS = 5 * MINUTE_MS;
 /** Past the fsm-sync consumer's whole retry chain: 30 s, 1, 2 and 4 minutes. */
 const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
+/** A step still not in FSM after this has outlived several sends, and ops are told. */
+const JOB_EVENT_ALERT_AFTER_MS = 60 * MINUTE_MS;
 /** A submit that started this long ago and never recorded a task died part-way. */
 const SUBMIT_ABANDONED_MS = 10 * MINUTE_MS;
 /** Downloads are retried every sweep at first, then hourly until the URL expires. */
@@ -171,6 +174,7 @@ export async function sweep(
     env.FSM_QUEUE,
     jobEvents.map((id) => ({ job_event_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
   );
+  await alertStuckJobEvents(db, deps, before(JOB_EVENT_ALERT_AFTER_MS));
 
   // Result messages that were queued and never sent.
   const messages = await ids(
@@ -302,6 +306,36 @@ export async function sweep(
     credits: credits ?? null,
   });
   return summary;
+}
+
+/**
+ * A job's earliest step still waiting for FSM an hour after it landed, told to
+ * ops once each, with IDs only. The steps behind it wait for it, so it is the
+ * one to name. The alert closes when the step is written (src/queues/fsm-sync.ts).
+ */
+async function alertStuckJobEvents(db: D1Database, deps: Dependencies, landedBefore: string): Promise<void> {
+  const { results } = await db
+    .prepare(
+      `SELECT e.id, e.kind, e.appointment_id, a.person_id FROM job_events e
+       JOIN appointments a ON a.id = e.appointment_id
+       WHERE e.fsm_write_state = 'pending' AND e.superseded = 0 AND e.received_at < ?1
+         AND NOT EXISTS (
+           SELECT 1 FROM job_events b
+           WHERE b.appointment_id = e.appointment_id AND b.fsm_write_state = 'pending' AND b.superseded = 0
+             AND (b.received_at, b.rowid) < (e.received_at, e.rowid))
+       ORDER BY e.received_at LIMIT ?2`,
+    )
+    .bind(landedBefore, BATCH_LIMIT)
+    .all<{ id: string; kind: string; appointment_id: string; person_id: string | null }>();
+  for (const step of results) {
+    await deps.alertOnce({
+      key: `job_event_pending:${step.id}`,
+      message:
+        `A technician's ${step.kind} (job event ${step.id}) on visit ${step.appointment_id} has waited over an hour ` +
+        "to reach FSM. The sweeper keeps sending it; if it has not landed soon, enter it in FSM by hand.",
+      link: step.person_id === null ? "/dispatch" : `/clients/${step.person_id}`,
+    });
+  }
 }
 
 /** Uploads nobody finished within an hour, and results past their 30 days, become `expired`. */

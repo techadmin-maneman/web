@@ -228,6 +228,7 @@ async function writeJobEvent(
       deps.now(),
     );
     await markFsmWrite(db, event.id, "written", deps.now());
+    await deps.resolveAlert(`job_event_pending:${event.id}`);
     log.info("job_event_written", { appointment_id: job.id, kind: event.kind, outcome });
     message.ack();
   } catch (error) {
@@ -239,8 +240,10 @@ async function writeJobEvent(
     }
     await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
     const behind = await rejectPendingAfter(db, event, deps.now(), `the ${event.kind} before it did not reach FSM`);
+    await deps.resolveAlert(`job_event_pending:${event.id}`);
     await deps.alert(
-      `A technician's ${event.kind} did not reach FSM after ${String(message.attempts)} attempts: ${reason}. ` +
+      `A technician's ${event.kind} did not reach FSM after ${String(message.attempts)} attempts ` +
+        `on visit ${job.id}: ${reason}. ` +
         (behind.length === 0
           ? "Enter it in FSM by hand."
           : `Enter it in FSM by hand, with what came after it and was held back: ${behind.join(", ")}.`),
