@@ -6,6 +6,10 @@
 // The env file holds ERASURE_SECRET, and for staging also CF_ACCESS_CLIENT_ID
 // and CF_ACCESS_CLIENT_SECRET. The number is asked for, not passed as an
 // argument, so it stays out of shell history.
+//
+// The API refuses while the person has a visit booked or a payment held with no
+// visit behind it (docs/decisions/0065-erasure-all-or-nothing.md), and this
+// prints what to settle first. --override-open-bookings erases anyway.
 
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline";
@@ -13,10 +17,16 @@ import { parseArgs } from "node:util";
 
 const BASES = { staging: "https://staging.maneman.in", production: "https://maneman.in" } as const;
 
-const { values } = parseArgs({ options: { environment: { type: "string" }, base: { type: "string" } } });
+const { values } = parseArgs({
+  options: {
+    environment: { type: "string" },
+    base: { type: "string" },
+    "override-open-bookings": { type: "boolean" },
+  },
+});
 const environment = values.environment;
 if (environment !== "staging" && environment !== "production") {
-  console.error("usage: erase-person --environment <staging|production> [--base <url>]");
+  console.error("usage: erase-person --environment <staging|production> [--base <url>] [--override-open-bookings]");
   process.exit(2);
 }
 // wrangler's generated types say ERASURE_SECRET is always set; here it comes from the env file, if at all.
@@ -55,7 +65,9 @@ if (accessId !== "" && accessSecret !== "") {
 const response = await fetch(`${values.base ?? BASES[environment]}/api/erasure`, {
   method: "POST",
   headers,
-  body: JSON.stringify({ mobile }),
+  body: JSON.stringify(
+    values["override-open-bookings"] === true ? { mobile, override_open_bookings: true } : { mobile },
+  ),
 });
 const body: unknown = await response.json().catch(() => null);
 
@@ -78,6 +90,24 @@ if (response.status === 200) {
   process.exit(1);
 } else if (response.status === 401) {
   console.log("The secret was refused: ERASURE_SECRET in the env file does not match the Worker's.");
+  process.exit(1);
+} else if (response.status === 409) {
+  const refused = body as {
+    visits: { id: string; type: string | null; status: string; window_start: string | null }[];
+    payments: { id: string; reference: string | null; amount: number }[];
+  };
+  console.log("Nothing erased. Cancel these visits and refund these payments, then run this again:");
+  for (const visit of refused.visits) {
+    console.log(`  visit ${visit.id}: ${visit.type ?? "visit"}, ${visit.status}, ${visit.window_start ?? "no time"}`);
+  }
+  for (const payment of refused.payments) {
+    console.log(
+      `  payment ${payment.reference ?? payment.id}: Rs. ${String(payment.amount / 100)}, held with no visit`,
+    );
+  }
+  console.log(
+    'If that cannot be done today, --override-open-bookings erases anyway (runbook, "Erasure within the day").',
+  );
   process.exit(1);
 } else {
   // Error bodies carry a code and a request ID, never personal data.

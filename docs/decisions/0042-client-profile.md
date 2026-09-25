@@ -47,7 +47,7 @@ Counsel's sign-off is still owed, so the notices are not yet pinned as published
 
 - a consent switch, in the same batch as the switch;
 - a number change and a deletion request, as each is made;
-- ops' decisions under the member of staff's Access identity, a deletion's before the erasure runs, since an erasure cannot be undone.
+- ops' decisions under the member of staff's Access identity, each in the same batch as the decision it records (ADR 0065), so a deletion is recorded only if the erasure happened.
 
 ## Consequences
 

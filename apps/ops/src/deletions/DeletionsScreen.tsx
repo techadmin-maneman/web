@@ -13,7 +13,9 @@
 //     eye before anything is sent.
 //
 // The decision is written to the audit log as `deletion.decide`, under whoever
-// Access says is signed in, and before the erasure runs (ADR 0031).
+// Access says is signed in, in the same batch as the erasure (ADRs 0031, 0065).
+// The API refuses while the client has a visit booked or a payment held, and
+// the refusal's copy says which.
 
 import { longDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState } from "react";

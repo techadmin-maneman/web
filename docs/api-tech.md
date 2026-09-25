@@ -732,6 +732,8 @@ The piece a label names
             "job_not_claimable",
             "look_limit_reached",
             "unauthorized",
+            "visit_booked",
+            "payment_held",
             "forbidden_origin",
             "access_required",
             "code_expired",

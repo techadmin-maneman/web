@@ -7,13 +7,13 @@ import {
   handleCrmSyncBatch,
   syncLead,
 } from "../../src/queues/crm-sync.ts";
-import { erasePerson } from "../../src/domain/erasure.ts";
 import { createLogger } from "../../src/log.ts";
 import type { CrmLead, CrmProvider } from "../../src/providers/crm.ts";
 import {
   NOW,
   appFor,
   captureLogs,
+  eraseByMobile,
   fakeDependencies,
   fakeQueue,
   markDatabase,
@@ -255,7 +255,7 @@ describe("crm-sync: the queue batch", () => {
 
   it("acknowledges an erasure once the CRM record is blanked", async () => {
     await bookLead();
-    const summary = await erasePerson(env, "+919810000001", NOW);
+    const summary = await eraseByMobile("+919810000001", NOW);
     const personId = summary?.personId ?? "";
     const crm = recordingCrm();
     const batch = batchOf([{ erase_person_id: personId, request_id: "r1" }]);
@@ -278,7 +278,7 @@ describe("crm-sync: erasing a person", () => {
   async function erasedPerson(): Promise<string> {
     const leadId = await bookLead();
     await syncLead(env.DB, fakeDependencies({ crm: recordingCrm() }), log, leadId);
-    return (await erasePerson(env, "+919810000001", NOW))?.personId ?? "";
+    return (await eraseByMobile("+919810000001", NOW))?.personId ?? "";
   }
 
   function erasure(personId: string) {
@@ -338,7 +338,7 @@ describe("crm-sync: erasing a person", () => {
 
   it("never sends an erased person's lead to the CRM, and gives it up at once", async () => {
     const leadId = await bookLead();
-    await erasePerson(env, "+919810000001", NOW);
+    await eraseByMobile("+919810000001", NOW);
     const crm = recordingCrm();
 
     expect(await syncLead(env.DB, fakeDependencies({ crm }), log, leadId)).toEqual({ retrySoon: false });
@@ -357,7 +357,7 @@ describe("crm-sync: erasing a person", () => {
     return {
       ...crm,
       syncLead: async (lead: CrmLead, knownId: string | null) => {
-        await erasePerson(env, "+919810000001", NOW);
+        await eraseByMobile("+919810000001", NOW);
         return crm.syncLead(lead, knownId);
       },
       erasePerson: erase,

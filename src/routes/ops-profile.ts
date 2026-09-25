@@ -10,12 +10,13 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../app.ts";
-import { actorOf, recordAudit, type AuditAction } from "../domain/audit.ts";
+import { actorOf, auditStatement, recordAudit, type AuditAction } from "../domain/audit.ts";
 import { decideDeletion, deletionsWaiting } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import { ErasureRefusedSchema, erasureRefused } from "./erasure.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const Reason = z
@@ -126,6 +127,10 @@ export const deletionDecisionRoute = createRoute({
     200: { description: "Decided", ...json(z.object({ state: z.enum(["done", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a rejection needs a reason"),
     404: errorResponse("not_found: no request waiting for ops by that ID"),
+    409: {
+      description: "visit_booked or payment_held: cancel the visits and refund the payments it names first",
+      ...json(ErasureRefusedSchema),
+    },
   },
 });
 
@@ -134,6 +139,21 @@ function staffOf(c: Context<AppEnv>) {
   const identity = c.var.accessIdentity;
   if (identity === undefined) throw new Error("ops routes run after requireAccess");
   return actorOf(identity);
+}
+
+/** A decision's audit entry, to run in one batch with the decision itself. */
+function decisionAudit(
+  c: Context<AppEnv>,
+  action: AuditAction,
+  subject: { kind: string; id: string },
+  decision: string,
+  now: Date,
+): D1PreparedStatement {
+  return auditStatement(
+    c.env.DB,
+    { surface: "ops", actor: staffOf(c), action, subject, requestId: c.var.requestId, detail: { decision } },
+    now,
+  );
 }
 
 async function auditDecision(
@@ -207,17 +227,22 @@ export function registerOpsProfile(app: App): void {
     if (decision === "reject" && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
-    const waiting = await c.env.DB.prepare(
-      "SELECT person_id FROM deletion_requests WHERE id = ?1 AND state = 'requested'",
-    )
-      .bind(id)
-      .first<{ person_id: string }>();
-    if (waiting === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    // Audited before it runs: an erasure cannot be undone.
-    await auditDecision(c, "deletion.decide", { kind: "deletion", id }, decision);
-    const outcome = await decideDeletion(c.env, { id, decision, staff: staffOf(c).id, reason, now: c.var.deps.now() });
-    if (outcome === "not_waiting") return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (decision === "delete") await queueOutsideErasure(c, waiting.person_id);
+    const now = c.var.deps.now();
+    // Recorded in the same batch as the erasure: an erasure cannot be undone, and one that failed did not happen.
+    const outcome = await decideDeletion(c.env, {
+      id,
+      decision,
+      staff: staffOf(c).id,
+      reason,
+      audit: decisionAudit(c, "deletion.decide", { kind: "deletion", id }, decision, now),
+      now,
+      log: c.var.log,
+    });
+    if (outcome.kind === "not_waiting") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (outcome.kind === "refused") {
+      return c.json(erasureRefused(outcome.refusal, outcome.blockers, c.var.requestId), 409);
+    }
+    if (decision === "delete") await queueOutsideErasure(c, outcome.personId);
     return c.json({ state: decision === "delete" ? ("done" as const) : ("rejected" as const) }, 200);
   });
 }

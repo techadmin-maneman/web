@@ -667,7 +667,7 @@ The sweeper re-enqueues renders whose queue message was lost, and fails a submit
 
 ## Erasure within the day
 
-The photo notice promises that a person's data is deleted the same day they ask. Whoever takes the request erases it before the end of that day. What is erased, and what is not, is in `docs/decisions/0019-erasure.md`.
+The photo notice promises that a person's data is deleted the same day they ask. Whoever takes the request erases it before the end of that day. What is erased, and what is not, is in `docs/decisions/0019-erasure.md`, `0049-dpdp.md` and `0065-erasure-all-or-nothing.md`. A request a client makes from their app is decided in the ops console's Deletion requests, which refuses for the same reasons as step 2 below and says which.
 
 1. **Check the request comes from the number's owner.** Reply to that number on WhatsApp, or call it.
 2. **Erase.** With the environment's secret in a git-ignored file, `.env.erasure-production`, holding `ERASURE_SECRET="…"` (for staging, also `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`):
@@ -677,6 +677,10 @@ The photo notice promises that a person's data is deleted the same day they ask.
    ```
 
    The script asks for the number and for a confirmation, then prints the person's ID and what it deleted: photos, results, and messages not yet sent. It keeps the number out of shell history. Without the script, the call is `POST /api/erasure` with `Authorization: Bearer <ERASURE_SECRET>` and the body `{ "mobile": "98100 00000" }`.
+
+   **A visit booked, or a payment held.** The erasure is refused (`409`, `visit_booked` or `payment_held`) while the person has a visit still to happen, or a payment we captured with no visit behind it, and nothing is erased (`docs/decisions/0065-erasure-all-or-nothing.md`). The script lists each visit and payment. Cancel the visits in FSM and refund the payments in Razorpay, wait for the mirror to show them (a few minutes), then run it again. If they cannot be settled today, run it with `--override-open-bookings` (in the body, `"override_open_bookings": true`): the person is erased anyway, the Worker logs `erasure_override` with the counts, and the visits and payments must still be cancelled and refunded by hand the same day. A refund needs none of the person's details.
+
+   The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone.
 
 3. **Check Zoho within a few minutes.** The crm-sync queue blanks the record: the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked.
 

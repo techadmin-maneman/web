@@ -5,12 +5,12 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
 import type { Settings } from "../../src/config/settings.ts";
-import { erasePerson } from "../../src/domain/erasure.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
 import { RULES } from "../../src/policy/one-time-code.ts";
 import {
   appFor,
   captureLogs,
+  eraseByMobile,
   fakeDependencies,
   LOCAL_SETTINGS,
   markDatabase,
@@ -351,7 +351,7 @@ describe("the session", () => {
   it("ends, with every open code, when the person is erased", async () => {
     const cookie = await loggedIn();
     const { body } = await start("98100 00001");
-    await erasePerson(env, BOOKED, clock);
+    await eraseByMobile(BOOKED, clock);
 
     expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).status).toBe(401);
     expect((await verify(body.challenge_id, lastCode())).status).toBe(410);

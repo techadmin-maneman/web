@@ -757,6 +757,11 @@ export const deletions = {
       "Ops are alerted once when one has waited five.",
     errors: {
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
+      /** The API refuses while something is still owed (docs/decisions/0065-erasure-all-or-nothing.md). */
+      visit_booked:
+        "They still have a visit booked, so nothing was erased. Cancel it in FSM, and refund what they paid, then delete.",
+      payment_held:
+        "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it, then delete.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. The client has not been erased.",
     } as Readonly<Record<string, string>>,

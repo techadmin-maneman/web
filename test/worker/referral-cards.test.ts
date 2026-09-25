@@ -5,10 +5,18 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../src/config/message-templates.ts";
-import { erasePerson } from "../../src/domain/erasure.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  eraseByMobile,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  request,
+} from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -113,7 +121,7 @@ describe("the referral card", () => {
     await consent("photos_referral_cards", true);
     await put(jpegOf(1200, 630));
     expect((await card())?.card_state).toBe("personal");
-    await erasePerson(env, "+919810000001", NOW);
+    await eraseByMobile("+919810000001", NOW);
     expect(await card()).toMatchObject({ card_state: "house", card_key: null });
   });
 });

@@ -21,8 +21,11 @@ export const ERROR_CODES = [
   "session_required",
   "job_not_claimable",
   "look_limit_reached",
-  // Erasure (docs/decisions/0019-erasure.md).
+  // Erasure (docs/decisions/0019-erasure.md), and what it waits for: a visit still booked, or a payment
+  // held with no visit behind it (docs/decisions/0065-erasure-all-or-nothing.md).
   "unauthorized",
+  "visit_booked",
+  "payment_held",
   // Phase 2 surfaces: a write from another page's origin (docs/decisions/0026-hosts-and-surfaces.md).
   "forbidden_origin",
   // The ops surface: no valid Cloudflare Access token (docs/decisions/0031-access-and-audit.md).

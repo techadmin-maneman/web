@@ -126,6 +126,15 @@ test("says so when someone has decided it already, and the client is not erased"
   await expect(row(page, "Rohit Malhotra")).toBeVisible();
 });
 
+test("says what to settle first when the client still has a visit booked, and erases nothing", async ({ page }) => {
+  await open(page, fails(409, "visit_booked"));
+  await ask(page);
+  await page.getByRole("checkbox", { name: CHECKED }).check();
+  await page.getByRole("button", { name: "Delete this account" }).click();
+  await expect(page.getByRole("alert")).toContainText("They still have a visit booked, so nothing was erased.");
+  await expect(row(page, "Rohit Malhotra")).toBeVisible();
+});
+
 test("says so when nothing is waiting", async ({ page }) => {
   await answer(page, { "/api/deletion-requests": json({ requests: [] }) });
   await page.goto("/deletion-requests");
