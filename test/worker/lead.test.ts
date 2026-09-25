@@ -221,13 +221,32 @@ describe("POST /api/lead: Turnstile", () => {
     expect(await errorCode(res)).toBe("turnstile_failed");
   });
 
-  it("refuses the lead when Turnstile cannot be reached", async () => {
+  it("refuses the lead when Turnstile cannot be reached, and logs why", async () => {
     const deps = fakeDependencies({
       fetch: fakeFetch({ [TURNSTILE_URL]: () => new Response("", { status: 502 }) }).fetch,
     });
+    const logs = captureLogs();
     const res = await request(appFor("local", deps), "/api/lead", post(BOOKING));
     expect(res.status).toBe(503);
     expect(await errorCode(res)).toBe("unavailable");
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "turnstile_unavailable", detail: "siteverify 502" }),
+    );
+  });
+
+  it("tells ops once a day when Turnstile has turned five visitors away in an hour", async () => {
+    const deps = fakeDependencies({
+      fetch: fakeFetch({ [TURNSTILE_URL]: () => new Response("", { status: 502 }) }).fetch,
+    });
+    const app = appFor("local", deps);
+    for (let visitor = 0; visitor < 4; visitor += 1) await request(app, "/api/lead", post(BOOKING));
+    expect(deps.alerts).toEqual([]);
+
+    for (let visitor = 0; visitor < 3; visitor += 1) await request(app, "/api/lead", post(BOOKING));
+    expect(deps.alerts).toEqual([
+      "Turnstile could not check 5 visitors in the last hour (siteverify 502), so their leads and try-ons were " +
+        "turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
+    ]);
   });
 
   it("sends Cloudflare the secret, the token and the visitor's IP", async () => {
