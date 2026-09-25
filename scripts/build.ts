@@ -15,11 +15,13 @@ for (const environment of ["local", "staging"]) {
   execFileSync(process.execPath, ["scripts/build-site.ts", "--env", environment], { stdio: "inherit" });
 }
 // The apps are built for all three: each is deployed to production without a route until its surface is
-// switched on there (docs/decisions/0026-hosts-and-surfaces.md).
+// switched on there (docs/decisions/0026-hosts-and-surfaces.md). This proves production bundles, and ships
+// nothing, so it lets through the copy a release's production build refuses (scripts/lib/content-gate.ts).
 for (const environment of ["local", "staging", "production"]) {
-  execFileSync(process.execPath, ["scripts/build-app.ts", "--env", environment], { stdio: "inherit" });
-  execFileSync(process.execPath, ["scripts/build-ops.ts", "--env", environment], { stdio: "inherit" });
-  execFileSync(process.execPath, ["scripts/build-tech.ts", "--env", environment], { stdio: "inherit" });
+  const gate = environment === "production" ? ["--allow-placeholders"] : [];
+  for (const app of ["app", "ops", "tech"]) {
+    execFileSync(process.execPath, [`scripts/build-${app}.ts`, "--env", environment, ...gate], { stdio: "inherit" });
+  }
 }
 
 for (const worker of WORKERS) {

@@ -5,10 +5,13 @@
 //   npm run check:site            (astro check: the templates' types)
 //
 // Production is refused by the publish gate until the content is ready
-// (docs/frontend.md); production keeps serving its placeholder until then.
+// (docs/frontend.md); production keeps serving its placeholder until then. The
+// referral landing's copy is Phase 2's, marked PLACEHOLDER where it waits for
+// the owner, so production is refused on that too (scripts/lib/content-gate.ts).
 
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
+import { assertPublishableContent } from "./lib/content-gate.ts";
 
 const { values } = parseArgs({
   options: {
@@ -23,6 +26,8 @@ const [verb, command] = values.check
   : values.dev
     ? ["serve", ["dev", "--port", "4321"]]
     : ["build", ["build", "--silent"]];
+
+if (environment === "production" && verb === "build") assertPublishableContent("site");
 
 console.log(`${verb} site (${environment})`);
 const astro = spawnSync(process.execPath, ["node_modules/astro/bin/astro.mjs", ...command, "--root", "site"], {
