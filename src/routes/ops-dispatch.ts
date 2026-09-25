@@ -3,6 +3,7 @@
 //   GET  /api/dispatch?from=&city=   the grid, blocks, unassigned tray, leave and utilisation
 //   POST /api/dispatch/assign        put an unassigned job on a technician
 //   POST /api/dispatch/move          move a job, with a reason from the design's list
+//   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
 //
 // Both writes run the clash check before anything reaches FSM, write to FSM,
 // then the mirror, then message the client with his new window. "The client's
@@ -15,24 +16,56 @@ import type { App, AppEnv } from "../app.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { actorOf } from "../domain/audit.ts";
-import { BOARD_DAYS, dispatchBoard, moveJob, type MoveInput } from "../domain/dispatch.ts";
+import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, type MoveInput } from "../domain/dispatch.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { MOVE_REASONS } from "../policy/dispatch.ts";
+import { CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
+import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
+const ClientSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string().openapi({ description: "In full, as the drawer heads it." }),
+    mobile: z.string().openapi({ description: "E.164, for WhatsApp and for a call." }),
+    whatsapp_visits: z.boolean().openapi({
+      description: "His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there.",
+    }),
+    referred_by: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "Who invited him, by name; null when he came on his own." }),
+  })
+  .strict()
+  .openapi("DispatchClient");
+
+/** What every job carries, on a technician's day or in the tray. */
+const VISIT = {
+  appointment_id: z.uuid(),
+  type: z.union([z.enum(VISIT_TYPES), z.null()]),
+  client: z.union([z.string(), z.null()]).openapi({ description: "First name and last initial." }),
+  sector: z.union([z.string(), z.null()]).openapi({
+    description: "The area the visit's pincode is in, from the service area; else the address's locality, or the city.",
+  }),
+  pincode: z.union([z.string(), z.null()]),
+  person: z.union([ClientSchema, z.null()]).openapi({
+    description: "Null for a visit with no client on our records, and for a client who has been erased.",
+  }),
+  badge: z.enum(PAYMENT_BADGES).openapi({ description: "Never an amount: prepaid, credit, or free." }),
+  starts_at: z.iso.datetime(),
+};
+
 const BlockSchema = z
   .object({
-    appointment_id: z.uuid(),
-    type: z.union([z.enum(VISIT_TYPES), z.null()]),
-    starts_at: z.iso.datetime(),
+    ...VISIT,
     window: z.enum(BOOKING_WINDOWS),
     slots: z.number().openapi({ description: "Consultation 1, service 1, replacement 1.5, first fit 2." }),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
-    client: z.union([z.string(), z.null()]).openapi({ description: "First name and last initial." }),
-    sector: z.union([z.string(), z.null()]),
+    untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
+      description:
+        "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told.",
+    }),
   })
   .strict()
   .openapi("DispatchBlock");
@@ -41,6 +74,8 @@ const BoardSchema = z
   .object({
     from: z.iso.date(),
     dates: z.array(z.iso.date()).openapi({ description: `${String(BOARD_DAYS)} days, the board's columns.` }),
+    city: z.union([z.string(), z.null()]).openapi({ description: "The city the jobs are narrowed to; null for all." }),
+    cities: z.array(z.string()).openapi({ description: "The cities the board can be narrowed to." }),
     technicians: z.array(
       z
         .object({
@@ -55,21 +90,20 @@ const BoardSchema = z
     unassigned: z.array(
       z
         .object({
-          appointment_id: z.uuid(),
-          type: z.union([z.enum(VISIT_TYPES), z.null()]),
+          ...VISIT,
           asked_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]).openapi({
             description:
               "The window the client asked for, from the Request behind the visit; null where nothing recorded one.",
           }),
           offered_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
           date: z.union([z.iso.date(), z.null()]),
-          sector: z.union([z.string(), z.null()]),
         })
         .strict(),
     ),
-    utilisation: z
-      .array(z.object({ date: z.iso.date(), percent: z.number().int() }).strict())
-      .openapi({ description: "Each column's utilisation, in per cent. Written to events daily as well." }),
+    utilisation: z.array(z.object({ date: z.iso.date(), percent: z.number().int() }).strict()).openapi({
+      description:
+        "Each column's utilisation, in per cent: the slots the day's jobs take, done or still to do, out of the slots of the technicians not on leave. Written to events daily as well.",
+    }),
     leave: z
       .array(
         z
@@ -127,9 +161,9 @@ const MoveRequestSchema = z
 const MovedSchema = z
   .object({
     move_id: z.uuid(),
-    client_notice: z.enum(["messaged", "unchanged", "no_client"]).openapi({
+    client_notice: z.enum(CLIENT_NOTICES).openapi({
       description:
-        "messaged: the new window was queued to go on WhatsApp; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.",
+        "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.",
     }),
   })
   .strict()
@@ -178,6 +212,18 @@ const moveRoute = createRoute({
   },
 });
 
+const toldRoute = createRoute({
+  method: "post",
+  path: "/api/dispatch/moves/{id}/told",
+  summary: "Ops called the client about a move he had not heard of; its task leaves the board",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "Recorded", ...json(z.object({ told: z.literal(true) }).strict()) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no move of a live visit whose client is still to be told"),
+  },
+});
+
 export function registerOpsDispatch(app: App): void {
   app.openapi(boardRoute, async (c) => {
     const now = c.var.deps.now();
@@ -187,6 +233,28 @@ export function registerOpsDispatch(app: App): void {
 
   app.openapi(assignRoute, (c) => write(c, c.req.valid("json")));
   app.openapi(moveRoute, (c) => write(c, c.req.valid("json")));
+
+  app.openapi(toldRoute, async (c) => {
+    const { requestId, deps } = c.var;
+    const identity = c.var.accessIdentity;
+    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const { id } = c.req.valid("param");
+    const actor = actorOf(identity);
+    const recorded = await recordToldByPhone(c.env.DB, {
+      moveId: id,
+      actor: actor.id,
+      audit: {
+        surface: "ops",
+        actor,
+        action: "dispatch.client_told",
+        subject: { kind: "dispatch_move", id },
+        requestId,
+      },
+      now: deps.now(),
+    });
+    if (!recorded) return c.json(errorBody("not_found", requestId), 404);
+    return c.json({ told: true as const }, 200);
+  });
 }
 
 type MoveRequest = z.infer<typeof MoveRequestSchema>;

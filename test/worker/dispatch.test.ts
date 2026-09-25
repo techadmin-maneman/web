@@ -588,3 +588,191 @@ describe("the utilisation at each column's head", () => {
     expect(JSON.parse(event?.payload_json ?? "{}")).toMatchObject({ percent: 13, technicians: 2 });
   });
 });
+
+/** Rohit's word on WhatsApp about his visits, as the app's switch records it. */
+const agreeToVisitMessages = (granted: boolean) =>
+  env.DB.prepare(
+    `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+     VALUES (?1, ?2, 'whatsapp_visits', 'whatsapp-visits-v1', ?3, ?4)`,
+  )
+    .bind(crypto.randomUUID(), ROHIT, granted ? 1 : 0, NOW.toISOString())
+    .run();
+
+interface TaskGroupBody {
+  group: string;
+  tasks: { id: string; person: { id: string; name: string } | null; detail: string | null }[];
+}
+
+const untoldTasks = async () => {
+  const body = await (await request(ops, "/api/tasks", {}, bindings())).json<{ groups: TaskGroupBody[] }>();
+  return body.groups.find((group) => group.group === "untold_move")?.tasks ?? [];
+};
+
+// OPS-01: "The client has been messaged" was shown after every move, while the
+// message went only to a client who had agreed to WhatsApp about his visits.
+describe("telling the client of a move", () => {
+  beforeEach(async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+  });
+
+  it("messages a client who agreed to WhatsApp about his visits, and says so", async () => {
+    await agreeToVisitMessages(true);
+
+    const answer = await move(toSameerWednesdayMorning(A));
+
+    expect(await answer.json()).toMatchObject({ client_notice: "messaged" });
+    expect(messageQueue.sent).toHaveLength(1);
+    expect(await untoldTasks()).toEqual([]);
+  });
+
+  it("messages nobody who has not agreed, says ops must call, and keeps a task until they have", async () => {
+    await agreeToVisitMessages(true);
+    await agreeToVisitMessages(false);
+
+    const answer = await move(toSameerWednesdayMorning(A));
+    const { move_id: moveId, client_notice: notice } = await answer.json<{ move_id: string; client_notice: string }>();
+
+    expect(notice).toBe("call");
+    expect(messageQueue.sent).toEqual([]);
+    const messages = await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first<{ n: number }>();
+    expect(messages?.n).toBe(0);
+    expect(await untoldTasks()).toEqual([
+      expect.objectContaining({
+        id: moveId,
+        person: { id: ROHIT, name: "Rohit Malhotra" },
+        detail: "2026-09-23T03:30:00.000Z",
+      }),
+    ]);
+
+    const told = await opsPost(`/api/dispatch/moves/${moveId}/told`, {});
+    expect(told.status).toBe(200);
+    expect(await untoldTasks()).toEqual([]);
+    const audit = await env.DB.prepare(
+      "SELECT action, subject_id FROM audit_log WHERE action = 'dispatch.client_told'",
+    ).first<{ action: string; subject_id: string }>();
+    expect(audit?.subject_id).toBe(moveId);
+  });
+
+  it("treats a client who never answered the question as one who has not agreed", async () => {
+    const answer = await move(toSameerWednesdayMorning(A));
+    expect(await answer.json()).toMatchObject({ client_notice: "call" });
+  });
+
+  it("counts a message that was never sent as the client not told", async () => {
+    await agreeToVisitMessages(true);
+    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+
+    // The consumer found the consent withdrawn by the time it sent.
+    await env.DB.prepare("UPDATE outbound_messages SET state = 'skipped'").run();
+
+    expect((await untoldTasks()).map((task) => task.id)).toEqual([moveId]);
+  });
+
+  it("drops the task when a later move tells the client, or the visit has gone", async () => {
+    const { move_id: first } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+    expect((await untoldTasks()).map((task) => task.id)).toEqual([first]);
+
+    await agreeToVisitMessages(true);
+    await move({ ...toSameerWednesdayMorning(A), date: "2026-09-24" });
+    expect(await untoldTasks()).toEqual([]);
+
+    await agreeToVisitMessages(false);
+    await move({ ...toSameerWednesdayMorning(A), date: "2026-09-25" });
+    expect(await untoldTasks()).toHaveLength(1);
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(A).run();
+    expect(await untoldTasks()).toEqual([]);
+  });
+
+  it("refuses to record a call for a move nobody needed to call about", async () => {
+    await agreeToVisitMessages(true);
+    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+
+    expect((await opsPost(`/api/dispatch/moves/${moveId}/told`, {})).status).toBe(404);
+    expect((await opsPost(`/api/dispatch/moves/${crypto.randomUUID()}/told`, {})).status).toBe(404);
+  });
+});
+
+// OPS-05, OPS-12 and ADR 0068: nothing on the board led to the client, the
+// drawer had no badge, and the area came from the address, not the visit.
+describe("what the board carries of each visit", () => {
+  beforeEach(async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65', 'Gurgaon', 1)",
+      ),
+      env.DB.prepare(
+        `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('referrer-1', ?1, '+919810000002', 'Vikram Sethi')`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES ('VIKRAM1', 'referrer-1', ?1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, created_at, updated_at)
+         VALUES ('attr-1', 'VIKRAM1', ?1, ?2, 'consultation', ?2, ?2)`,
+      ).bind(ROHIT, NOW.toISOString()),
+    ]);
+  });
+
+  it("names the client in full, with his number, his word on WhatsApp, who referred him, and the badge", async () => {
+    await agreeToVisitMessages(true);
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    await insertJob(B, { type: "service", start: TUESDAY["12:00"], technician: null });
+
+    const week = await board("from=2026-09-22");
+    const person = {
+      id: ROHIT,
+      name: "Rohit Malhotra",
+      mobile: "+919810000001",
+      whatsapp_visits: true,
+      referred_by: "Vikram Sethi",
+    };
+    expect(week.technicians[0]?.days[0]?.blocks[0]).toMatchObject({
+      appointment_id: A,
+      client: "Rohit M.",
+      sector: "Sector 65",
+      pincode: "122018",
+      badge: "prepaid",
+      person,
+      untold: null,
+    });
+    expect(week.unassigned[0]).toMatchObject({ appointment_id: B, client: "Rohit M.", badge: "prepaid", person });
+  });
+
+  it("marks a visit spent from a credit, and one the price book charges nothing for", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    await insertJob(B, { type: "consultation", start: TUESDAY["12:00"], technician: IMRAN });
+    await env.DB.prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, created_at)
+       VALUES ('redeem-1', ?1, 'redeem', -1, 'appointment', ?2, ?3)`,
+    )
+      .bind(ROHIT, A, NOW.toISOString())
+      .run();
+
+    const blocks = (await board("from=2026-09-22")).technicians[0]?.days[0]?.blocks;
+    expect(blocks?.map((block) => block.badge)).toEqual(["credit", "free"]);
+  });
+
+  it("names the move the client was not told of on the visit it moved", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+
+    const block = (await board("from=2026-09-22")).technicians[1]?.days[1]?.blocks[0];
+    expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z" });
+  });
+
+  it("carries no client for one who has been erased", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), ROHIT).run();
+
+    const block = (await board("from=2026-09-22")).technicians[0]?.days[0]?.blocks[0];
+    expect(block?.person).toBeNull();
+  });
+
+  // FEO-09: the brief's "city and week picker"; the route took both, and the board sent neither.
+  it("names the city it is narrowed to, and the cities it can be", async () => {
+    const week = await board("from=2026-09-22&city=Gurgaon");
+    expect(week.city).toBe("Gurgaon");
+    expect(week.cities).toEqual(expect.arrayContaining(["Gurgaon", "Delhi"]));
+    expect((await board("from=2026-09-22")).city).toBeNull();
+  });
+});

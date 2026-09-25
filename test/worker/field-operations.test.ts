@@ -974,6 +974,13 @@ describe("dispatch", () => {
   });
 
   it("moves the job in FSM, records who moved it and why, and messages the client", async () => {
+    // The message goes only to a client who agreed to WhatsApp about his visits (ADR 0069).
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+       VALUES ('consent-visits', ?1, 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
       ...AS_THE_BOARD_SHOWS_IT,

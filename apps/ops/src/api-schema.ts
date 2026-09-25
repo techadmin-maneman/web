@@ -1207,6 +1207,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dispatch/moves/{id}/told": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ops called the client about a move he had not heard of; its task leaves the board */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Recorded */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            told: true;
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no move of a live visit whose client is still to be told */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/no-shows": {
         parameters: {
             query?: never;
@@ -2410,6 +2469,10 @@ export interface components {
             from: string;
             /** @description 7 days, the board's columns. */
             dates: string[];
+            /** @description The city the jobs are narrowed to; null for all. */
+            city: string | null;
+            /** @description The cities the board can be narrowed to. */
+            cities: string[];
             technicians: {
                 /** Format: uuid */
                 technician_id: string;
@@ -2426,13 +2489,26 @@ export interface components {
                 /** Format: uuid */
                 appointment_id: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                /** @description First name and last initial. */
+                client: string | null;
+                /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
+                sector: string | null;
+                pincode: string | null;
+                /** @description Null for a visit with no client on our records, and for a client who has been erased. */
+                person: components["schemas"]["DispatchClient"] | null;
+                /**
+                 * @description Never an amount: prepaid, credit, or free.
+                 * @enum {string}
+                 */
+                badge: "prepaid" | "credit" | "free";
+                /** Format: date-time */
+                starts_at: string;
                 /** @description The window the client asked for, from the Request behind the visit; null where nothing recorded one. */
                 asked_window: ("morning" | "afternoon" | "evening") | null;
                 offered_window: ("morning" | "afternoon" | "evening") | null;
                 date: string | null;
-                sector: string | null;
             }[];
-            /** @description Each column's utilisation, in per cent. Written to events daily as well. */
+            /** @description Each column's utilisation, in per cent: the slots the day's jobs take, done or still to do, out of the slots of the technicians not on leave. Written to events daily as well. */
             utilisation: {
                 /** Format: date */
                 date: string;
@@ -2453,6 +2529,18 @@ export interface components {
             /** Format: uuid */
             appointment_id: string;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description First name and last initial. */
+            client: string | null;
+            /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
+            sector: string | null;
+            pincode: string | null;
+            /** @description Null for a visit with no client on our records, and for a client who has been erased. */
+            person: components["schemas"]["DispatchClient"] | null;
+            /**
+             * @description Never an amount: prepaid, credit, or free.
+             * @enum {string}
+             */
+            badge: "prepaid" | "credit" | "free";
             /** Format: date-time */
             starts_at: string;
             /** @enum {string} */
@@ -2461,18 +2549,34 @@ export interface components {
             slots: number;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
-            /** @description First name and last initial. */
-            client: string | null;
-            sector: string | null;
+            /** @description The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told. */
+            untold: {
+                /** Format: uuid */
+                move_id: string;
+                /** Format: date-time */
+                starts_at: string;
+            } | null;
+        };
+        DispatchClient: {
+            /** Format: uuid */
+            id: string;
+            /** @description In full, as the drawer heads it. */
+            name: string;
+            /** @description E.164, for WhatsApp and for a call. */
+            mobile: string;
+            /** @description His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there. */
+            whatsapp_visits: boolean;
+            /** @description Who invited him, by name; null when he came on his own. */
+            referred_by: string | null;
         };
         DispatchMoved: {
             /** Format: uuid */
             move_id: string;
             /**
-             * @description messaged: the new window was queued to go on WhatsApp; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.
+             * @description messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.
              * @enum {string}
              */
-            client_notice: "messaged" | "unchanged" | "no_client";
+            client_notice: "messaged" | "call" | "unchanged" | "no_client";
         };
         DispatchAssignRequest: {
             /** Format: uuid */
@@ -2614,7 +2718,7 @@ export interface components {
             overdue: number;
             groups: {
                 /** @enum {string} */
-                group: "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "draft_invoice" | "erasure_unfinished";
                 count: number;
                 /** @description The longest wait first. */
                 tasks: components["schemas"]["Task"][];

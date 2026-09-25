@@ -8,6 +8,7 @@
 // group's allowance, and nothing is written anywhere.
 
 import { indiaDate, indiaInstant } from "../lib/india-time.ts";
+import { UNTOLD_MOVE } from "./dispatch.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
 import { MAX_SYNC_ATTEMPTS } from "../queues/crm-sync.ts";
 
@@ -20,9 +21,9 @@ export interface Task {
    */
   readonly person: { readonly id: string; readonly name: string } | null;
   /**
-   * The one fact the group turns on: the day and window asked for, the piece's
-   * label, the fraud rule met, the technician who attended, the invoice in
-   * Books, the contact in FSM.
+   * The one fact the group turns on: the start a visit moved to, the day and
+   * window asked for, the piece's label, the fraud rule met, the technician who
+   * attended, the invoice in Books, the contact in FSM.
    */
   readonly detail: string | null;
   readonly since: string;
@@ -36,14 +37,21 @@ export interface Task {
  * record is gone, and a task about them could not be done. The one exception is
  * an erasure FSM would not finish, which names FSM's contact and not the person.
  *
- * The first statement is the one that needs today's date, as `?1`; the second
+ * The first statement is the one that needs today's date, as `?1`: a move is
+ * still to be told of while its visit is today or later. The second
  * needs the attempts after which the sweeper stops asking FSM, as `?1`. Both take
  * the limit last, so neither can answer with more than the board holds.
  */
 const OUTSTANDING = [
   `SELECT * FROM (
-  SELECT 'consultation_request' AS "group", r.id AS id, r.person_id AS person_id, pe.name AS person_name,
-         r.requested_date || ' ' || r.requested_window AS detail, r.created_at AS since
+  SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         m.now_start AS detail, m.created_at AS since
+    FROM appointments a JOIN dispatch_moves m ON m.appointment_id = a.id JOIN people pe ON pe.id = a.person_id
+   WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
+     AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}
+  UNION ALL
+  SELECT 'consultation_request', r.id, r.person_id, pe.name, r.requested_date || ' ' || r.requested_window,
+         r.created_at
     FROM consultation_requests r JOIN people pe ON pe.id = r.person_id
    WHERE pe.erased_at IS NULL
      AND NOT EXISTS (

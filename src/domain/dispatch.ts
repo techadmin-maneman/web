@@ -1,5 +1,6 @@
 // The dispatch board, and the two writes ops make on it
-// (src/policy/dispatch.ts, docs/decisions/0034-clash-check.md).
+// (src/policy/dispatch.ts, docs/decisions/0034-clash-check.md,
+// docs/decisions/0069-dispatch-under-concurrency.md).
 //
 // "Rows are technicians; columns are seven days; each day has config
 // SLOTS_PER_DAY (4) slots." The blocks come from the FSM mirror, the holds from
@@ -9,15 +10,27 @@
 // "A technician cannot hold two live jobs in one window on one date. This check
 // runs on the server before any write to FSM": the refusal below happens before
 // anything is written anywhere. A technician on leave is refused the same way,
-// and named as away rather than busy (ADR 0062). Then FSM, then the mirror,
-// then the client's message. "The client's payment carries over and he is never
-// charged for a move ops make", so no amount is read or written here at all.
+// and named as away rather than busy (ADR 0062); a free window with no room for
+// the visit is named as that. Then the new time is claimed, then FSM, then the
+// mirror, then the client's message. "The client's payment carries over and he
+// is never charged for a move ops make", so no amount is read or written here
+// at all: a visit carries a badge, never a figure.
 
 import { SLOTS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaIso, indiaTime } from "../lib/india-time.ts";
-import { moveRefusal, slotsFor, type MoveReason, type MoveRefusal } from "../policy/dispatch.ts";
+import {
+  clientNotice,
+  moveRefusal,
+  slotsFor,
+  type ClientNotice,
+  type MoveReason,
+  type MoveRefusal,
+} from "../policy/dispatch.ts";
+import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
+import { listCities } from "./cities.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { leaveBetween } from "./leave.ts";
 import {
@@ -37,16 +50,41 @@ import { visitMessage } from "./visit-messages.ts";
 /** Seven days, as the board shows them. */
 export const BOARD_DAYS = 7;
 
-export interface Block {
+/**
+ * The client of a visit, as ops need him to reach him (board A3's WhatsApp and
+ * Open client). None for a visit with no client on our records, or one erased.
+ */
+export interface BoardClient {
+  readonly id: string;
+  readonly name: string;
+  readonly mobile: string;
+  /** His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there. */
+  readonly whatsapp_visits: boolean;
+  /** Who invited him, by name; null when he came on his own. */
+  readonly referred_by: string | null;
+}
+
+/** What every job on the board carries, on a technician's day or in the tray. */
+interface Visit {
   readonly appointment_id: string;
   readonly type: VisitType | null;
+  /** "Rohit M.", as the board writes a client on a block. */
+  readonly client: string | null;
+  /** The area the visit's pincode is in, where the service area names it; else the address's locality or the city. */
+  readonly sector: string | null;
+  readonly pincode: string | null;
+  readonly person: BoardClient | null;
+  readonly badge: PaymentBadge;
+}
+
+export interface Block extends Visit {
   readonly starts_at: string;
   readonly window: BookingWindow;
   /** The block's size on the board: 1, 1, 1.5 or 2. */
   readonly slots: number;
   readonly status: AppointmentStatus;
-  readonly client: string | null;
-  readonly sector: string | null;
+  /** The latest move of this visit that its client has not heard of: ops call him (src/policy/dispatch.ts). */
+  readonly untold: { readonly move_id: string; readonly starts_at: string } | null;
 }
 
 export interface BoardDay {
@@ -62,21 +100,23 @@ export interface BoardRow {
   readonly days: BoardDay[];
 }
 
-export interface UnassignedJob {
-  readonly appointment_id: string;
-  readonly type: VisitType | null;
+export interface UnassignedJob extends Visit {
+  readonly starts_at: string;
   readonly asked_window: BookingWindow | null;
   readonly offered_window: BookingWindow | null;
   readonly date: string | null;
-  readonly sector: string | null;
 }
 
 export interface Board {
   readonly from: string;
   readonly dates: string[];
+  /** The city the jobs are narrowed to; null for every city. */
+  readonly city: string | null;
+  /** The cities the board can be narrowed to. */
+  readonly cities: string[];
   readonly technicians: BoardRow[];
   readonly unassigned: UnassignedJob[];
-  /** Per day: the share of the day's slots taken, across every technician on the board. */
+  /** Per day: the share of the working technicians' slots the day's jobs take. */
   readonly utilisation: { date: string; percent: number }[];
   /**
    * Leave ops recorded, clipped to the board's own week, so a column is drawn
@@ -86,10 +126,59 @@ export interface Board {
   readonly leave: { technician_id: string; from: string; to: string; note: string | null }[];
 }
 
+/**
+ * The latest word on WhatsApp about his visits from the client of appointment `a`: 1, 0, or NULL where he never
+ * gave one. The messaging consumer reads it the same way before it sends (src/domain/visit-messages.ts).
+ */
+const LATEST_VISITS_CONSENT = `SELECT c.granted FROM consents c WHERE c.person_id = a.person_id
+  AND c.purpose = 'whatsapp_visits' ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1`;
+
+/**
+ * A move `m` of appointment `a` whose client has not heard of it: its day or window changed, no message was
+ * queued or the one queued was never sent, ops have not said they called, and it still stands, since no later
+ * move changed the time and the visit is still at the time it moved to. The Tasks board reads the same
+ * (src/domain/tasks.ts).
+ */
+export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.now_start AND m.told_at IS NULL
+  AND m.now_start = a.window_start
+  AND (m.message_id IS NULL OR EXISTS (
+    SELECT 1 FROM outbound_messages o WHERE o.id = m.message_id AND o.state IN ('skipped', 'failed')))
+  AND NOT EXISTS (
+    SELECT 1 FROM dispatch_moves later
+    WHERE later.appointment_id = m.appointment_id AND later.fsm_write_state = 'written'
+      AND later.was_start <> later.now_start AND later.created_at > m.created_at)`;
+
 /** The statuses a job can still be moved in. */
 const LIVE = "('scheduled', 'dispatched', 'in_progress')";
 /** What a day on the board holds: its live jobs, and the ones already done, so a past day reads as it was worked. */
 const ON_THE_BOARD = "('scheduled', 'dispatched', 'in_progress', 'completed')";
+
+/**
+ * Each job on the board, with its client, the area its pincode is in, and its
+ * badge: Credit where a service-visit credit paid for it, Free where the price
+ * book charges nothing for it on its day, as the technician's card reads them
+ * (src/domain/tech-jobs.ts). No amount leaves the database.
+ */
+const BOARD_JOBS = `
+  SELECT a.id, a.type, a.status, a.window_start, a.technician_id, a.service_city, a.service_pincode, a.asked_window,
+    a.person_id, d.locality, sp.area,
+    p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
+    (${LATEST_VISITS_CONSENT}) AS whatsapp_visits,
+    (SELECT referrer.name FROM referral_attributions r
+       JOIN referral_codes code ON code.code = r.code
+       JOIN people referrer ON referrer.id = code.person_id
+     WHERE r.referred_person_id = a.person_id AND referrer.erased_at IS NULL) AS referred_by,
+    EXISTS (SELECT 1 FROM credit_ledger l WHERE l.kind = 'redeem' AND l.source_id = a.id) AS on_credit,
+    COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
+              WHERE b.item = a.type AND b.tier = 'standard' AND b.valid_from <= date(a.window_start, '+330 minutes')
+              ORDER BY b.valid_from DESC LIMIT 1), 0) AS free
+  FROM appointments a
+  LEFT JOIN people p ON p.id = a.person_id
+  LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
+  LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
+  WHERE a.deleted_at IS NULL AND a.status IN ${ON_THE_BOARD} AND a.window_start >= ?1 AND a.window_start < ?2
+    AND (?3 IS NULL OR a.service_city = ?3)
+  ORDER BY a.window_start`;
 
 /** The board for seven days from `from`, optionally narrowed to one city. */
 export async function dispatchBoard(db: D1Database, options: { from: string; city: string | null }): Promise<Board> {
@@ -98,30 +187,33 @@ export async function dispatchBoard(db: D1Database, options: { from: string; cit
   const fromAt = indiaInstant(options.from, "00:00").toISOString();
   const toAt = indiaInstant(addDays(last, 1), "00:00").toISOString();
 
-  const technicians = await db
-    .prepare("SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name")
-    .all<{ id: string; name: string; initials: string; zone: string | null }>();
-
-  const scheduled = await db
-    .prepare(
-      `SELECT a.id, a.type, a.status, a.window_start, a.technician_id, a.service_city, a.asked_window, d.locality,
-         p.name AS client_name
-       FROM appointments a
-       LEFT JOIN people p ON p.id = a.person_id
-       LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
-       WHERE a.deleted_at IS NULL AND a.status IN ${ON_THE_BOARD} AND a.window_start >= ?1 AND a.window_start < ?2
-         AND (?3 IS NULL OR a.service_city = ?3)
-       ORDER BY a.window_start`,
-    )
-    .bind(fromAt, toAt, options.city)
-    .all<BoardJobRow>();
+  const [technicians, scheduled, untold, cities] = await Promise.all([
+    db
+      .prepare("SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name")
+      .all<{ id: string; name: string; initials: string; zone: string | null }>(),
+    db.prepare(BOARD_JOBS).bind(fromAt, toAt, options.city).all<BoardJobRow>(),
+    db
+      .prepare(
+        `SELECT m.id, m.appointment_id, m.now_start FROM appointments a
+         JOIN dispatch_moves m ON m.appointment_id = a.id
+         WHERE a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.window_start >= ?1 AND a.window_start < ?2
+           AND ${UNTOLD_MOVE}`,
+      )
+      .bind(fromAt, toAt)
+      .all<{ id: string; appointment_id: string; now_start: string }>(),
+    listCities(db),
+  ]);
+  const untoldOf = (appointmentId: string) => {
+    const move = untold.results.find((each) => each.appointment_id === appointmentId);
+    return move === undefined ? null : { move_id: move.id, starts_at: move.now_start };
+  };
 
   const rows = technicians.results.map((technician): BoardRow => {
     const days = dates.map((date) => ({
       date,
       blocks: scheduled.results
         .filter((job) => job.technician_id === technician.id && indiaDate(new Date(job.window_start)) === date)
-        .map(blockOf),
+        .map((job) => blockOf(job, untoldOf(job.id))),
     }));
     return {
       technician_id: technician.id,
@@ -145,6 +237,8 @@ export async function dispatchBoard(db: D1Database, options: { from: string; cit
   return {
     from: options.from,
     dates,
+    city: options.city,
+    cities: cities.map((city) => city.name),
     technicians: rows,
     unassigned,
     utilisation: utilisationOf(rows, dates, leave),
@@ -159,37 +253,68 @@ interface BoardJobRow {
   window_start: string;
   technician_id: string | null;
   service_city: string | null;
-  locality: string | null;
-  client_name: string | null;
+  service_pincode: string | null;
   asked_window: BookingWindow | null;
+  person_id: string | null;
+  locality: string | null;
+  area: string | null;
+  client_name: string | null;
+  client_mobile: string | null;
+  client_erased_at: string | null;
+  whatsapp_visits: number | null;
+  referred_by: string | null;
+  on_credit: number;
+  free: number;
 }
 
-function blockOf(job: BoardJobRow): Block {
-  const start = new Date(job.window_start);
+function visitOf(job: BoardJobRow): Visit {
   return {
     appointment_id: job.id,
     type: job.type,
+    client: shortName(job.client_name),
+    sector: job.area ?? job.locality ?? job.service_city,
+    pincode: job.service_pincode,
+    person: clientOf(job),
+    badge: paymentBadge({ onCredit: job.on_credit === 1, free: job.free === 1 }),
+  };
+}
+
+/** The client, unless there is none on our records or he has been erased: nothing is left to reach him by. */
+function clientOf(job: BoardJobRow): BoardClient | null {
+  if (job.person_id === null || job.client_name === null || job.client_mobile === null) return null;
+  if (job.client_erased_at !== null) return null;
+  return {
+    id: job.person_id,
+    name: job.client_name,
+    mobile: job.client_mobile,
+    whatsapp_visits: job.whatsapp_visits === 1,
+    referred_by: job.referred_by,
+  };
+}
+
+function blockOf(job: BoardJobRow, untold: Block["untold"]): Block {
+  const start = new Date(job.window_start);
+  return {
+    ...visitOf(job),
     starts_at: start.toISOString(),
     window: windowAt(indiaTime(start)),
     slots: slotsFor(job.type ?? "service"),
     status: job.status,
-    client: shortName(job.client_name),
-    sector: job.locality ?? job.service_city,
+    untold,
   };
 }
 
 function unassignedOf(job: BoardJobRow): UnassignedJob {
   const start = new Date(job.window_start);
   return {
-    appointment_id: job.id,
-    type: job.type,
+    ...visitOf(job),
+    starts_at: start.toISOString(),
     // What the client asked for, resolved from the Request behind the visit (ADR
     // 0060). Null where nothing recorded one, and the tray says so in words: the
     // offered window is never repeated as though it were the asked one.
     asked_window: job.asked_window,
     offered_window: windowAt(indiaTime(start)),
     date: indiaDate(start),
-    sector: job.locality ?? job.service_city,
   };
 }
 
@@ -241,18 +366,6 @@ export interface MoveInput {
   /** The job as the board the move was made from showed it: its technician, none in the tray, and its start. */
   readonly expected: { readonly technicianId: string | null; readonly startsAt: string };
 }
-
-/**
- * What the client was told of a move. Only a new day or window is worth a
- * message: a change of technician alone leaves the client's window as it was.
- */
-export type ClientNotice =
-  /** The new window was queued to go on WhatsApp. */
-  | "messaged"
-  /** The day and window did not change, so there was nothing to tell. */
-  | "unchanged"
-  /** The visit has no client on our records to tell. */
-  | "no_client";
 
 /**
  * What changed under a board since it was loaded: the job's technician, its
@@ -389,9 +502,12 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
 
   // FSM took it: the mirror follows, and the client is told his new window, if he has one.
   const at = now.toISOString();
-  const clientNotice = noticeFor(job.person_id, target);
+  const notice = clientNotice({
+    timeChanged: !target.keepsTime,
+    client: job.person_id === null ? null : { agreedToWhatsApp: await agreedToVisitMessages(db, job.id) },
+  });
   const message =
-    clientNotice === "messaged" && job.person_id !== null
+    notice === "messaged" && job.person_id !== null
       ? visitMessage(db, { personId: job.person_id, appointmentId: job.id, kind: "visit_moved", now })
       : null;
   await db.batch([
@@ -416,7 +532,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
       .bind(moveId, message?.id ?? null, at),
   ]);
   if (message !== null) await deps.notify?.(message.id);
-  return { kind: "moved", moveId, clientNotice };
+  return { kind: "moved", moveId, clientNotice: notice };
 }
 
 /** What differs between the job now and the board the move was made from. */
@@ -427,9 +543,13 @@ function changedSince(job: LiveJob, expected: MoveInput["expected"]): Change[] {
   return changed;
 }
 
-function noticeFor(personId: string | null, target: Target): ClientNotice {
-  if (target.keepsTime) return "unchanged";
-  return personId === null ? "no_client" : "messaged";
+/** Whether the latest word on WhatsApp about his visits from the client of this job is yes. */
+async function agreedToVisitMessages(db: D1Database, appointmentId: string): Promise<boolean> {
+  const latest = await db
+    .prepare(`SELECT (${LATEST_VISITS_CONSENT}) AS granted FROM appointments a WHERE a.id = ?1`)
+    .bind(appointmentId)
+    .first<{ granted: number | null }>();
+  return latest?.granted === 1;
 }
 
 interface OpenMove {
@@ -517,6 +637,34 @@ export function unfinishedMovesLetGo(db: D1Database, now: Date): D1PreparedState
       )
       .bind(since, "never finished: FSM may hold it, and its own record says", now.toISOString()),
   ];
+}
+
+/**
+ * Ops called the client about a move he had not heard of, which closes its
+ * task. Recorded once, and only for a move still untold: false for any other.
+ * The audit entry goes in the same batch (src/domain/audit.ts).
+ */
+export async function recordToldByPhone(
+  db: D1Database,
+  input: { readonly moveId: string; readonly actor: string; readonly audit: AuditEntry; readonly now: Date },
+): Promise<boolean> {
+  const untold = await db
+    .prepare(
+      `SELECT 1 FROM dispatch_moves m JOIN appointments a ON a.id = m.appointment_id WHERE m.id = ?1 AND ${UNTOLD_MOVE}`,
+    )
+    .bind(input.moveId)
+    .first();
+  if (untold === null) return false;
+  const at = input.now.toISOString();
+  await db.batch([
+    db
+      .prepare(
+        "UPDATE dispatch_moves SET told_at = ?2, told_by = ?3, updated_at = ?2 WHERE id = ?1 AND told_at IS NULL",
+      )
+      .bind(input.moveId, at, input.actor),
+    auditStatement(db, input.audit, input.now),
+  ]);
+  return true;
 }
 
 /**

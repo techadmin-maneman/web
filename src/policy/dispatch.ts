@@ -80,6 +80,30 @@ export function landingRefusal(
   return room.fits ? null : "does_not_fit";
 }
 
+/**
+ * How the client hears of a move ops made. The rule above ends "messages the
+ * client with the new window"; a WhatsApp message about a visit goes only to a
+ * client who agreed to them (the whatsapp_visits consent), so any other is
+ * called by ops, and the call waits on the Tasks board until ops say it was
+ * made (docs/decisions/0069-dispatch-under-concurrency.md).
+ *
+ *   messaged    the new window was queued to go on WhatsApp
+ *   call        the client has not agreed to WhatsApp about his visits: ops call him
+ *   unchanged   only the technician changed: the client's day and window are as they were
+ *   no_client   the visit has no client on our records to tell
+ */
+export const CLIENT_NOTICES = ["messaged", "call", "unchanged", "no_client"] as const;
+export type ClientNotice = (typeof CLIENT_NOTICES)[number];
+
+export function clientNotice(move: {
+  readonly timeChanged: boolean;
+  readonly client: { readonly agreedToWhatsApp: boolean } | null;
+}): ClientNotice {
+  if (!move.timeChanged) return "unchanged";
+  if (move.client === null) return "no_client";
+  return move.client.agreedToWhatsApp ? "messaged" : "call";
+}
+
 /** A move nobody can explain is refused before anything else is looked at. */
 export function moveRefusal(
   day: TechnicianDay,

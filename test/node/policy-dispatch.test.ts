@@ -3,7 +3,15 @@
 
 import { describe, expect, it } from "vitest";
 import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../../src/config/scheduling.ts";
-import { clashes, isMoveReason, MOVE_REASONS, moveRefusal, RULES, slotsFor } from "../../src/policy/dispatch.ts";
+import {
+  clashes,
+  clientNotice,
+  isMoveReason,
+  MOVE_REASONS,
+  moveRefusal,
+  RULES,
+  slotsFor,
+} from "../../src/policy/dispatch.ts";
 
 /** A technician whose day already holds a job starting in each of these windows. */
 const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLeave: false });
@@ -38,6 +46,18 @@ describe("dispatch", () => {
     expect(clashes(day(), "afternoon")).toBe(false);
     // Two jobs on one date is fine, as long as they are in different windows.
     expect(clashes(day("morning", "evening"), "afternoon")).toBe(false);
+  });
+
+  // RULES[3] ends "messages the client with the new window". A WhatsApp message
+  // about a visit goes only to a client who agreed to them (whatsapp_visits), so
+  // any other is told by a call from ops, and a change of technician alone
+  // leaves the window, and the client, as they were (ADR 0069).
+  it("tells the client of a new day or window: on WhatsApp if he agreed to it, by a call from ops if not", () => {
+    expect(clientNotice({ timeChanged: true, client: { agreedToWhatsApp: true } })).toBe("messaged");
+    expect(clientNotice({ timeChanged: true, client: { agreedToWhatsApp: false } })).toBe("call");
+    expect(clientNotice({ timeChanged: false, client: { agreedToWhatsApp: false } })).toBe("unchanged");
+    expect(clientNotice({ timeChanged: false, client: { agreedToWhatsApp: true } })).toBe("unchanged");
+    expect(clientNotice({ timeChanged: true, client: null })).toBe("no_client");
   });
 
   it(RULES[3], () => {
