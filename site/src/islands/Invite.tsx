@@ -16,6 +16,7 @@ import { ICONS } from "@maneman/brand/icons";
 import type { LossExtent } from "../../../src/config/booking.ts";
 import { referral } from "../content/referral.ts";
 import { booking, stageOptions } from "../content/site.ts";
+import { track } from "../lib/analytics.ts";
 import {
   bookConsultation,
   bookPublicConsultation,
@@ -550,7 +551,12 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
       setFailure(refusal(result.code));
       return;
     }
-    props.onBooked({ credits: false, ...result.body });
+    const booked = result.body;
+    const page = props.invited ? "invite" : "book";
+    const loss_extent = props.invited ? null : extent;
+    track({ name: "lead_submitted", page, served: true, area: props.answer.area, window, loss_extent });
+    track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
+    props.onBooked({ credits: false, ...booked });
   }
 
   const { consultation } = referral;
@@ -682,6 +688,10 @@ function Waitlist(props: FormProps & { onListed: (result: { area: string | null;
       setFailure(refusal(result.code));
       return;
     }
+    const page = props.invited ? "invite" : "book";
+    const loss_extent = props.invited ? null : extent;
+    track({ name: "lead_submitted", page, served: false, area: props.answer.area, window: null, loss_extent });
+    track({ name: "waitlist_submitted", page, area: result.body.area });
     props.onListed({ credits: false, ...result.body });
   }
 

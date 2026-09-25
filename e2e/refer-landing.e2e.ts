@@ -7,7 +7,7 @@
 // mm-api.
 
 import type { Page, Request } from "@playwright/test";
-import { expect, fakeTurnstile, test, visit } from "./support.ts";
+import { analyticsCommands, analyticsEvents, expect, fakeTurnstile, test, visit } from "./support.ts";
 
 const CODE = "RM4K7P";
 
@@ -82,6 +82,32 @@ test("the invite names the referrer, and a served pincode opens the consultation
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "afternoon", consent: true, mobile: "9810000000" });
   expect(sent.turnstile_token).toBeTruthy();
+});
+
+// FEO-17: the booking is the conversion paid campaigns are bought for. FEO-24: the invite's code is a person's, so no
+// tag reads it, in the address or anywhere else.
+test("a booking through the invite is counted, with nothing personal and no code", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillPerson(page);
+  await page.getByText("Afternoon", { exact: true }).click();
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+
+  expect(await analyticsEvents(page)).toEqual([
+    ["lead_submitted", { page: "invite", served: true, area: "Sector 65", window: "afternoon", loss_extent: null }],
+    ["booking_confirmed", { page: "invite", area: "Sector 65", window: "morning", state: "booked" }],
+  ]);
+  const commands = await analyticsCommands(page);
+  expect(commands).toContainEqual(["set", { page_location: `${new URL(page.url()).origin}/r/` }]);
+  const sent = JSON.stringify(commands);
+  for (const personal of [CODE, "Rohit", "Test Friend", "9810000000", "98100 00000"])
+    expect(sent).not.toContain(personal);
+  // The next page is told only where the visitor came from, not which invite.
+  await expect(page.locator('meta[name="referrer"]')).toHaveAttribute("content", "strict-origin");
 });
 
 test("the invited page does say who is told, and what lands when", async ({ page }) => {
