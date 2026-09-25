@@ -10,6 +10,13 @@
 import type { Invite } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
+import { notices, type Notice } from "./site.ts";
+
+/** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
+function lineOf(notice: Notice): string {
+  const [line = ""] = notice.lines;
+  return line;
+}
 
 export const referral = {
   /** The navy block at the top, before the pincode is known (C1). The design's "in Gurgaon" is the site's area. */
@@ -74,12 +81,16 @@ export const referral = {
     checking: "Checking",
     invalid: "That is not a six-digit Indian pincode.",
     failed: "We could not check that just now. Try again.",
+    // Not drawn: a pincode typed wrong could only be put right by reloading the page. Placeholder words.
+    change: "Change",
+    changeLabel: "Change the pincode",
   },
   /** The consultation form, shown when the pincode is served (C2). */
   consultation: {
     served: "We come to {area}",
     title: "Book a free consultation",
     body: `${capitalised(visitLength.consultation)}. Nothing fitted, nothing to pay.`,
+    forPincode: "For {pincode}",
     date: "Pick a date",
     window: "Window",
     windows: [
@@ -87,8 +98,7 @@ export const referral = {
       { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
       { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
-    /** Recorded as the consultation's notice, word for word (src/config/notices.ts, referral-consultation-v1). */
-    consent: "You may contact me on WhatsApp about this consultation.",
+    consent: lineOf(notices.consultation),
     submit: "Book the consultation",
     sending: "Booking",
     told: "{name} is told when you are fitted. That is when the 3 visits land.",
@@ -100,10 +110,10 @@ export const referral = {
     titleUnknown: "We are not there yet",
     body: `${serviceArea} only, for now.`,
     leave: "Leave us your number",
-    forPincode: "For {pincode}{area}.",
-    contactConsent: "You may contact me about this request.",
+    forPincode: "For {pincode}{area}",
+    contactConsent: lineOf(notices.waitlist),
     required: "Required",
-    launchAlert: "Tell me when you launch in my area.",
+    launchAlert: lineOf(notices.launchAlert),
     optional: "Optional",
     submit: "Add me to the list",
     sending: "Adding",
@@ -127,6 +137,21 @@ export const referral = {
     free: "free",
     credits: "The 3 service visits land when you are fitted.",
     back: "See the site",
+    // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). Placeholder words.
+    number: "On WhatsApp to +91 {mobile}",
+    calendar: "Add to calendar",
+    calendarFile: "mane-man-consultation.ics",
+    calendarTitle: "Mane Man consultation",
+    app: "See it in the app",
+  },
+  /**
+   * C4's "Code expired" frame. The invite has lapsed for this friend only, which the API can tell once they have
+   * given their number, so the frame shows with the booking's answer rather than before it (ADR 0025, item 40).
+   */
+  expired: {
+    label: "Code expired",
+    title: "This invite has expired",
+    body: "More than 12 months old. The consultation is still free; the 3 visits do not apply.",
   },
   /**
    * C4's frame again, for a consultation nobody could book outright: self-serve
@@ -154,6 +179,8 @@ export const referral = {
     taken: "That window has just gone. Please pick another.",
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
+    // Not drawn: the number already has a consultation to come (ADR 0025, item 41). Placeholder words.
+    alreadyBooked: "This number already has a consultation, {when}. To change it, message us on WhatsApp.",
   },
   /**
    * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a

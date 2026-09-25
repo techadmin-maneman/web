@@ -179,9 +179,9 @@ describe("site helpers", () => {
     expect(isCompleteMobile("98100 0000")).toBe(false);
   });
 
-  it("writes the booked headline from the proposed date and the window", () => {
-    expect(bookedHeadline("2026-09-24", "before noon")).toBe("Thursday, 24 September, before noon.");
-    expect(bookedHeadline("2027-01-02", "after four")).toBe("Saturday, 2 January, after four.");
+  it("writes the booked headline as board C4 does, from the date and the window's hours", () => {
+    expect(bookedHeadline("2026-09-21", "9 am to 12 pm")).toBe("Monday 21 Sep, 9 am to 12 pm");
+    expect(bookedHeadline("2027-01-02", "4 to 8 pm")).toBe("Saturday 2 Jan, 4 to 8 pm");
   });
 
   it("fills content holes and leaves unknown ones", () => {

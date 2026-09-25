@@ -129,3 +129,11 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 ## Phase 2's rulings (22 September 2026)
 
 36. **"Consultation", and an evening of 4 to 8.** v2 names the first visit a "measurement" and offers evenings "after six". Phase 2 names it a consultation and offers evenings from 4 to 8 pm, and the owner ruled that Phase 2 wins. Every place the site names the visit, the booked page's headline and the calendar file follow (ADR 0040). The verb "measures" stays where the copy says what happens at the visit.
+
+## WCAG 2.2 where the designs fall short (25 September 2026)
+
+37. **Where the site departs from v2 and the Referral and Waitlist boards for WCAG 2.2 AA.** Taken 25 September 2026, for the owner to see, as the client app's are (ADR 0025, item 36):
+    - **A field's and a checkbox's edge.** The boards edge them in `--paper-line` (#CEC6B4), 1.7:1 against white, and on ink in `--ink-line` (#3A4A64), 1.75:1 against the pincode block and 2.0:1 against the try-on: under the 3:1 that WCAG 1.4.11 asks of the boundary that shows where to type or what is ticked. They are drawn in the client app's `--paper-control` (#8A8173, 3.8:1 on white) and `--ink-line-strong` (#6B7B95, 3.7:1 on the ink, 4.2:1 on the try-on's). The date and window cells, which carry their own words and turn ink when chosen, keep the design's lines, as the app's date strip does. The required agreement's box is edged in ink, as C2 and C3 draw it.
+    - **Placeholders** are `--paper-hint` (#756D60, 5.1:1 on white), where v2's `--paper-placeholder` (#9A9284) is 3.1:1, under the 4.5:1 WCAG 1.4.3 asks of text.
+    - **Keyboard focus on the drawn controls.** The booking form's dates, windows, extents and checkboxes are hidden inputs drawn as cells and boxes, so the ring is drawn on the cell or the box, as the try-on's choices already were (WCAG 2.4.7). A heading the page focuses to say where a step has moved to draws no ring: it is not a control.
+    - **Nothing the keyboard reaches sits under a fixed bar.** The page scrolls a focused control clear of the header, and on the home page clear of the sticky bar (WCAG 2.4.11).

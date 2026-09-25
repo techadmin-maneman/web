@@ -1,9 +1,11 @@
 /*
- * The referral landing (design/phase2/Referral and Waitlist, C1 to C5): the
- * navy arrival block, the prices, how it works, the pincode check, and the form
- * the pincode decides on. At 1440 the design puts the card and how-it-works on
- * the right and the prices and pincode on the left; below that it is one
- * column, in the order the boards show.
+ * The referral landing (design/phase2/Referral and Waitlist, C1 to C5), and /book, which is the same page without
+ * the invite. On a phone it is one column, in the order the boards draw: who sent it, the card, the headline and
+ * offer, the prices, how it works, the pincode block, then the form. From 1024 px it is board C5: the prices, the
+ * pincode block and the form on the left, the card and how it works on the right.
+ *
+ * Fields and checkboxes are edged in --paper-control and the pincode field in --ink-line-strong, 3:1 against their
+ * ground (WCAG 1.4.11), where the boards draw 1.3:1 and 1.75:1 (ADR 0022, item 37).
  */
 
 .inner {
@@ -12,41 +14,65 @@
   padding-inline: var(--gutter);
 }
 
-/* ---- The arrival block (C1) ---------------------------------------------- */
+/* ---- The page, one column on a phone (C1 to C3) ---------------------------- */
 
 .arrival {
-  padding-block: var(--sp-28) var(--sp-24);
+  padding-block: var(--landing-pad-top) var(--sp-28);
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+}
+
+/* On a phone the two columns' pieces interleave, in the boards' order. */
+.lead,
+.aside {
+  display: contents;
 }
 
 .from {
-  font-size: var(--fs-13);
+  order: 1;
+  font-size: var(--fs-15);
   color: var(--text-muted);
 }
 
 /* The referrer's card, as WhatsApp showed it in the chat: the same 1200 by 630. */
 .inviteCard {
+  order: 2;
   display: block;
   width: 100%;
   height: auto;
-  margin-top: var(--sp-16);
+  margin-top: var(--sp-14);
   background: var(--ink);
 }
 
 .title {
-  margin: var(--sp-20) 0 0;
+  order: 3;
+  margin: var(--sp-26) 0 0;
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: var(--fs-h2);
-  line-height: 1.05;
+  font-size: var(--landing-title);
+  line-height: 1.08;
   letter-spacing: var(--tracking-heading);
 }
 
+/* /book has no invite above its headline. */
+.lead > .title:first-child {
+  margin-top: 0;
+}
+
 .offer {
-  margin: var(--sp-16) 0 0;
+  order: 4;
+  margin-top: var(--sp-16);
+  max-width: var(--measure-form);
   font-size: var(--fs-lead);
-  line-height: 1.55;
-  color: var(--text-soft);
-  max-width: var(--measure-lead);
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.offer p {
+  margin: 0;
 }
 
 .unknownTitle,
@@ -54,27 +80,18 @@
   display: block;
 }
 
-.unknownTitle {
-  color: var(--text);
-}
-
 .unknownBody {
   margin-top: var(--sp-4);
   font-size: var(--fs-16);
+  color: var(--text-soft);
 }
 
 /* ---- Prices (C1, C5) ------------------------------------------------------ */
 
 .prices {
-  padding-block: var(--sp-8) var(--sp-24);
-  border-top: var(--hairline) solid var(--paper-line);
-  margin-top: var(--sp-24);
-}
-
-.priceRows {
-  margin: 0;
-  display: grid;
-  gap: var(--sp-20);
+  order: 5;
+  margin: var(--sp-26) 0 0;
+  border-top: var(--hairline) solid var(--text);
 }
 
 .priceRow {
@@ -82,137 +99,134 @@
   justify-content: space-between;
   gap: var(--sp-16);
   align-items: baseline;
-  padding-bottom: var(--sp-20);
+  padding-block: var(--sp-16);
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
 .priceRow dt,
 .priceRow dd {
   margin: 0;
-  display: grid;
-  gap: var(--sp-4);
+  min-width: 0;
 }
 
 .priceRow dd {
   text-align: right;
 }
 
+.priceWhat,
+.priceNote,
+.priceAmount,
+.priceIncl {
+  display: block;
+}
+
 .priceWhat {
-  font-size: var(--fs-17);
+  font-size: var(--fs-16);
+}
+
+.priceNote {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
 }
 
 .priceAmount {
   font-family: var(--font-serif);
-  font-size: var(--fs-24);
-  font-variant-numeric: tabular-nums;
+  font-size: var(--landing-price);
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
-.priceNote {
-  font-size: var(--fs-14);
+.priceIncl {
+  margin-top: var(--sp-5);
+  font-size: var(--fs-13);
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- How it works (C1, C5) ----------------------------------------------- */
 
 .steps {
-  padding-block: var(--sp-32);
-}
-
-.pincodeTitle,
-.formTitle {
-  font-size: var(--fs-24);
+  order: 6;
+  margin-top: var(--sp-32);
 }
 
 .stepsTitle {
   margin: 0;
-  font-size: var(--fs-13);
+  font-size: var(--fs-15);
   font-weight: 400;
   color: var(--text-muted);
 }
 
 .stepList {
-  margin: var(--sp-16) 0 0;
+  margin: var(--sp-14) 0 0;
   padding: 0;
   list-style: none;
   display: grid;
+  gap: var(--sp-14);
 }
 
-/* A rule between the steps, as the board draws them. */
+/* A rule above each step, as the board draws them. */
 .step {
   display: flex;
   gap: var(--sp-16);
   align-items: flex-start;
-  padding-block: var(--sp-16);
+  padding-top: var(--sp-14);
   border-top: var(--hairline) solid var(--paper-line);
 }
 
 .stepNumber {
   flex: none;
   font-family: var(--font-serif);
-  font-size: var(--fs-18);
+  font-size: var(--landing-step-number);
+  line-height: 1;
   color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: oldstyle-nums;
 }
 
 .stepTitle {
   margin: 0;
-  font-size: var(--fs-17);
-  font-weight: 500;
+  font-size: var(--fs-16);
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 .stepBody {
-  margin: var(--sp-4) 0 0;
+  margin: var(--sp-5) 0 0;
   font-size: var(--fs-15);
   line-height: 1.55;
   color: var(--text-muted);
 }
 
-/* ---- The pincode check (C1) ---------------------------------------------- */
+/* ---- The pincode block (C1, C5), and its answer (C2, C3) ------------------ */
 
-.pincode {
+.panel {
+  order: 7;
+  margin-top: var(--sp-32);
+  padding: var(--sp-22) var(--sp-20);
   background: var(--ink);
   color: var(--paper);
-  padding-block: var(--sp-28);
 }
 
-.pincode .pincodeTitle,
-.pincode .label {
-  color: var(--paper);
+/* On a phone the answer is a band across the page, as C2 and C3 draw it. */
+.answered {
+  margin-inline: calc(-1 * var(--gutter));
+  padding: var(--sp-18) var(--gutter) var(--sp-24);
 }
 
-.answerBody {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
-}
-
-.answer {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-12);
+.panelTitle {
+  margin: 0;
   font-family: var(--font-serif);
-  font-size: var(--fs-24);
+  font-weight: 400;
+  font-size: var(--landing-panel-title);
   line-height: 1.2;
-  color: var(--paper);
 }
 
 .pincodeForm {
-  margin-top: var(--sp-20);
+  margin-top: var(--sp-16);
   display: flex;
-  gap: var(--sp-12);
+  gap: var(--sp-10);
   align-items: flex-end;
-}
-
-/* The field on the navy block: the design's dark input, not the paper one. */
-.pincode .input {
-  background: transparent;
-  border-color: var(--ink-line);
-  color: var(--paper);
-}
-
-/* An error on ink needs the ink palette's red; the paper one is unreadable there. */
-.pincode .error {
-  color: var(--error-on-ink);
 }
 
 /* The field takes the row, with the button beside it, as the board draws them. */
@@ -221,127 +235,163 @@
   min-width: 0;
 }
 
-/* ---- The two forms (C2, C3) ---------------------------------------------- */
-
-.formSection {
-  padding-block: var(--sp-32) var(--sp-36);
+.panel .label {
+  color: var(--paper);
 }
 
-.served {
-  font-size: var(--fs-13);
-  color: var(--text-muted);
+.panel .input {
+  background: transparent;
+  border-color: var(--ink-line-strong);
+  color: var(--paper);
+  font-size: var(--fs-17);
+  font-variant-numeric: tabular-nums;
+}
+
+.check {
+  flex: none;
+  width: var(--landing-check-w);
+  padding: 0;
+}
+
+/* An error on ink needs the ink palette's red; the paper one is unreadable there. */
+.panel .error {
+  color: var(--error-on-ink);
+}
+
+.answer {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--landing-answer);
+  line-height: 1.15;
+}
+
+.answer svg {
+  flex: none;
+  color: var(--gilt);
+}
+
+.answerBody {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-16);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* ---- The two forms (C2, C3) ------------------------------------------------ */
+
+.form {
+  order: 8;
+  margin-top: var(--sp-28);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.form > * {
+  margin: 0;
+}
+
+.form > * + * {
+  margin-top: var(--sp-22);
+}
+
+/* An empty live region or Turnstile box keeps its place in the page and takes no space. */
+.form > :empty {
+  margin-top: 0;
+}
+
+.formTitle,
+.waitlistTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
 }
 
 .formTitle {
-  margin-top: var(--sp-8);
+  font-size: var(--landing-form-title);
+  line-height: 1.12;
 }
 
-.formBody {
-  margin: var(--sp-8) 0 0;
+.waitlistTitle {
+  font-size: var(--landing-waitlist-title);
+  line-height: 1.14;
+}
+
+.formBody,
+.forPincode {
+  margin: var(--sp-14) 0 0;
   font-size: var(--fs-16);
-  color: var(--text-muted);
+  line-height: 1.6;
+  color: var(--text-soft);
 }
 
-.card {
-  min-width: 0;
-  margin-top: var(--sp-24);
-  background: var(--paper-light);
-  border: var(--hairline) solid var(--paper-line);
-  padding: var(--sp-24);
-  display: grid;
-  gap: var(--sp-20);
-}
-
-.fields {
-  display: grid;
-  gap: var(--sp-20);
-  min-width: 0;
+.formBody + .forPincode {
+  margin-top: 0;
 }
 
 .forPincode {
-  margin: var(--sp-4) 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Change": a way back to the pincode, in the sentence it belongs to. */
+.change {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-3);
+  cursor: pointer;
+}
+
+/* A fieldset's margin is the form's spacing (.form > * + *). */
+.group {
+  padding: 0;
+  border: 0;
+  /* A fieldset does not shrink below its content unless told to. */
+  min-width: 0;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: var(--sp-12);
   font-size: var(--fs-15);
   color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .label {
   display: block;
   margin-bottom: var(--sp-8);
   font-size: var(--fs-14);
-  color: var(--text-soft);
-}
-
-.group {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  /* A fieldset does not shrink below its content unless told to, and the date strip is wide. */
-  min-width: 0;
-}
-
-.input {
-  width: 100%;
-  height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  background: var(--white);
-  border: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-16);
-}
-
-.bad {
-  border-color: var(--error-on-paper);
-}
-
-.mobile {
-  display: flex;
-  align-items: center;
-  height: var(--btn-lg);
-  background: var(--white);
-  border: var(--hairline) solid var(--paper-line);
-}
-
-.prefix {
-  padding-inline: var(--sp-16);
-  border-right: var(--hairline) solid var(--paper-line);
-  line-height: var(--btn-lg);
   color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
 }
 
-.mobileInput {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 100%;
-  padding: 0 var(--sp-16);
-  border: 0;
-  background: transparent;
-  font-size: var(--fs-16);
-  font-variant-numeric: tabular-nums;
-}
-
-/* The date strip scrolls sideways; a day is a tap target of its own (C2). */
+/* The dates: two weeks from tomorrow, a week to a row (C2). */
 .dates {
-  display: flex;
-  gap: var(--sp-8);
-  max-width: 100%;
-  overflow-x: auto;
-  padding-bottom: var(--sp-8);
-  scrollbar-width: thin;
-  /* The strip scrolls; the page does not. */
-  overscroll-behavior-x: contain;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--sp-5);
+}
+
+/* Each hidden radio sits inside its own label, positioned against it rather than against the page. */
+.day,
+.window,
+.extent,
+.consent {
+  position: relative;
 }
 
 .day {
-  /* The hidden radio inside is absolutely positioned: without this it is placed against the
-     document, and a strip scrolled sideways would widen the whole page. */
-  position: relative;
-  flex: none;
-  width: var(--btn-lg);
-  padding-block: var(--sp-8);
-  display: grid;
-  gap: var(--sp-4);
-  justify-items: center;
+  aspect-ratio: 1 / 1.2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
   background: var(--white);
   border: var(--hairline) solid var(--paper-line);
   cursor: pointer;
@@ -350,7 +400,6 @@
 .dayOn {
   background: var(--ink);
   border-color: var(--ink);
-  color: var(--paper);
 }
 
 .dayName {
@@ -363,13 +412,18 @@
 }
 
 .dayNumber {
-  font-size: var(--fs-17);
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-serif);
+  font-size: var(--fs-18);
+  font-variant-numeric: lining-nums;
+}
+
+.dayOn .dayNumber {
+  color: var(--paper);
 }
 
 .windows {
   display: grid;
-  gap: var(--sp-8);
+  gap: var(--sp-9);
 }
 
 .window {
@@ -385,8 +439,9 @@
 }
 
 .windowOn {
+  background: var(--ink);
   border-color: var(--ink);
-  box-shadow: inset 0 0 0 var(--hairline) var(--ink);
+  color: var(--paper);
 }
 
 .windowLabel {
@@ -394,14 +449,18 @@
 }
 
 .windowHours {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
+  font-size: var(--fs-15);
+  color: var(--text-soft);
 }
 
-/* Where the hair loss is, as the site's booking form has always asked (board is v2's). */
+.windowOn .windowHours {
+  color: var(--ink-soft);
+}
+
+/* Where the hair loss is, on /book only (v2's booking board). */
 .extents {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-10);
 }
 
@@ -429,10 +488,67 @@
   line-height: 1.3;
 }
 
+/* The radios are hidden and drawn, so is their keyboard focus (as the try-on's are). */
+.day:has(input:focus-visible),
+.window:has(input:focus-visible),
+.extent:has(input:focus-visible),
+.consent:has(input:focus-visible) .box {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+.fields {
+  display: grid;
+  gap: var(--sp-16);
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  height: var(--btn-lg);
+  padding: 0 var(--sp-15);
+  background: var(--white);
+  border: var(--hairline) solid var(--paper-control);
+  font-size: var(--fs-16);
+}
+
+.bad {
+  border-color: var(--error-on-paper);
+}
+
+.mobile {
+  display: flex;
+  align-items: stretch;
+  height: var(--btn-lg);
+  background: var(--white);
+  border: var(--hairline) solid var(--paper-control);
+}
+
+.prefix {
+  display: flex;
+  align-items: center;
+  padding-inline: var(--sp-14);
+  border-right: var(--hairline) solid var(--paper-line);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobileInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 var(--sp-14);
+  border: 0;
+  background: transparent;
+  font-size: var(--fs-16);
+  font-variant-numeric: tabular-nums;
+}
+
 .consent {
   display: flex;
   gap: var(--sp-12);
   align-items: flex-start;
+  min-height: var(--tap);
+  padding-top: var(--sp-4);
   cursor: pointer;
 }
 
@@ -440,22 +556,31 @@
   flex: none;
   width: var(--sp-20);
   height: var(--sp-20);
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-2);
   display: grid;
   place-items: center;
   background: var(--white);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   color: var(--ink);
+}
+
+/* The waitlist's optional launch alert sits closer beneath the agreement (C3). */
+.form > .consent ~ .consent {
+  margin-top: var(--sp-14);
+}
+
+/* The agreement the form needs is edged in ink, as C2 and C3 draw it. */
+.boxRequired {
+  border-color: var(--ink);
 }
 
 .consentText {
   font-size: var(--fs-15);
-  line-height: 1.5;
+  line-height: 1.55;
+  color: var(--text-soft);
 }
 
 .consentNote {
-  display: block;
-  font-size: var(--fs-13);
   color: var(--text-muted);
 }
 
@@ -470,63 +595,105 @@
   color: var(--error-on-paper);
 }
 
+.submit {
+  width: 100%;
+}
+
 .told {
-  margin: 0;
-  font-size: var(--fs-14);
-  line-height: 1.5;
+  font-size: var(--fs-15);
+  line-height: 1.6;
   color: var(--text-muted);
 }
 
-/* ---- The confirmations (C4) ---------------------------------------------- */
+/* ---- The confirmations (C4) ------------------------------------------------ */
 
 .done {
-  padding-block: var(--sp-48) var(--sp-36);
+  max-width: calc(var(--measure-column) + 2 * var(--gutter));
+  padding: var(--landing-pad-top) var(--gutter) var(--sp-48);
 }
 
-.tick {
-  display: grid;
-  place-items: center;
-  width: var(--btn-lg);
-  height: var(--btn-lg);
+/* Booked: the ink block. */
+.doneBlock {
+  padding: var(--sp-26) var(--sp-20);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.doneBlockLabel {
+  margin-bottom: var(--sp-16);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.doneBlock svg {
+  display: block;
+  color: var(--gilt);
+}
+
+.doneBlockTitle {
+  margin: var(--sp-18) 0 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--landing-done-title);
+  line-height: 1.12;
+}
+
+.doneBlockBody {
+  margin: var(--sp-14) 0 0;
+  font-size: var(--fs-16);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.doneBlockWhere {
+  margin: var(--sp-20) 0 0;
+  padding-top: var(--sp-18);
+  border-top: var(--hairline) solid var(--ink-rule);
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+}
+
+/* On the list, and the invite that has expired: the paper frames. */
+.doneFrame {
+  padding: var(--sp-22) var(--sp-20);
   border: var(--hairline) solid var(--paper-line);
-  border-radius: 50%;
-  color: var(--text-soft);
 }
 
 .doneLabel {
-  margin-top: var(--sp-20);
-  font-size: var(--fs-13);
+  margin-bottom: var(--sp-14);
+  font-size: var(--fs-14);
   color: var(--text-muted);
 }
 
-.doneTitle {
-  margin: var(--sp-8) 0 0;
+.frameTitle {
+  margin: 0;
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: var(--fs-h2);
-  line-height: 1.05;
-  letter-spacing: var(--tracking-heading);
+  font-size: var(--landing-answer);
+  line-height: 1.16;
 }
 
-.doneBody {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-lead);
-  line-height: 1.55;
-  color: var(--text-soft);
-  max-width: var(--measure-lead);
+.frameBody {
+  margin: var(--sp-14) 0 0;
+  font-size: var(--fs-16);
+  line-height: 1.6;
 }
 
-.doneWhere {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-15);
-  color: var(--text-muted);
+.doneAfter {
+  margin-top: var(--sp-20);
+  display: grid;
+  gap: var(--sp-20);
 }
 
+.doneNumber,
 .doneNote {
-  margin: var(--sp-16) 0 var(--sp-28);
+  margin: 0;
   font-size: var(--fs-15);
   color: var(--text-muted);
-  max-width: var(--measure-lead);
+}
+
+.doneNumber {
+  font-variant-numeric: tabular-nums;
 }
 
 .doneActions {
@@ -535,34 +702,105 @@
   gap: var(--sp-12);
 }
 
-/* ---- Desktop (C5): prices and pincode left, how it works right ------------ */
+/* ---- Desktop (C5): prices, pincode and form left; card and how it works right ---- */
 
 @media (min-width: 1024px) {
   .arrival {
-    padding-block: var(--sp-48) var(--sp-48);
+    padding-bottom: var(--landing-pad-top);
   }
 
-  .priceRows {
-    max-width: var(--measure-lead);
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--landing-column-gap);
+    align-items: start;
+  }
+
+  .lead,
+  .aside {
+    display: block;
+    min-width: 0;
+  }
+
+  .from {
+    font-size: var(--fs-16);
+  }
+
+  .inviteCard {
+    margin-top: 0;
+  }
+
+  .title {
+    margin-top: var(--sp-22);
+    line-height: 1.02;
+    letter-spacing: var(--tracking-title);
+  }
+
+  .offer {
+    margin-top: var(--sp-24);
+    line-height: 1.6;
+  }
+
+  .prices {
+    margin-top: var(--sp-36);
+  }
+
+  .priceRow {
+    gap: var(--sp-20);
+    padding-block: var(--sp-18);
+  }
+
+  .priceWhat {
+    font-size: var(--fs-17);
+  }
+
+  .priceNote {
+    font-size: var(--fs-15);
+  }
+
+  .priceIncl {
+    font-size: var(--fs-14);
+  }
+
+  .steps {
+    margin-top: var(--sp-36);
+  }
+
+  .stepsTitle {
+    font-size: var(--fs-16);
   }
 
   .stepList {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--sp-28);
+    margin-top: var(--sp-18);
+    gap: var(--sp-18);
   }
 
   .step {
-    flex-direction: column;
+    gap: var(--sp-18);
+    padding-top: var(--sp-16);
   }
 
-  .windows {
-    grid-template-columns: repeat(3, 1fr);
+  .stepTitle {
+    font-size: var(--fs-18);
   }
 
-  .window {
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    padding-block: var(--sp-12);
+  .stepBody {
+    font-size: var(--fs-16);
+    line-height: 1.5;
+  }
+
+  .panel,
+  .answered {
+    margin: var(--sp-36) 0 0;
+    padding: var(--sp-26);
+  }
+
+  .pincodeForm {
+    margin-top: var(--sp-18);
+    gap: var(--sp-12);
+  }
+
+  .form {
+    margin-top: var(--sp-36);
   }
 }

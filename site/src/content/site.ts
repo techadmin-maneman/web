@@ -10,13 +10,14 @@
 // - Notices carry the version recorded with a consent, and `approved`. The
 //   wording itself is the backend's (src/config/notices.ts), so the page and
 //   the consent record can never disagree. The production build stops while
-//   any notice is unapproved.
+//   any notice is unapproved, and a new version is unapproved until it is
+//   added to APPROVED_NOTICES.
 //
 // Images are file names in design/assets; src/lib/images.ts resolves them.
 // `{city}` and similar are filled in by the page.
 
 import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
-import { CURRENT_NOTICE, findNotice } from "../../../src/config/notices.ts";
+import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
 import { PRESETS } from "../../../src/config/presets.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
 
@@ -32,10 +33,22 @@ export interface Notice {
   readonly lines: readonly string[];
 }
 
-function notice(version: string, approved: boolean): Notice {
+/**
+ * The versions approved word for word: the try-on's three by the owner on 22 September 2026, and the consents,
+ * the landing's among them, by counsel the same day (ADR 0025, item 25).
+ */
+const APPROVED_NOTICES: readonly string[] = [
+  "photo-v1",
+  "gate-v1",
+  "referral-consultation-v1",
+  "waitlist-v1",
+  "whatsapp-launches-v1",
+];
+
+function notice(version: string): Notice {
   const found = findNotice(version);
   if (found === undefined) throw new Error(`no notice ${version} in src/config/notices.ts`);
-  return { version, approved, lines: found.text };
+  return { version, approved: APPROVED_NOTICES.includes(version), lines: found.text };
 }
 
 // ---------------------------------------------------------------------------
@@ -43,12 +56,16 @@ function notice(version: string, approved: boolean): Notice {
 // ---------------------------------------------------------------------------
 
 export const notices = {
-  /** The booking form's consent checkbox. */
-  booking: notice(CURRENT_NOTICE.contact, true),
-  /** The try-on consent screen. The owner approved it on 22 September 2026. */
-  photo: notice(CURRENT_NOTICE.tryon_photo, true),
+  /** The try-on consent screen. */
+  photo: notice(CURRENT_NOTICE.tryon_photo),
   /** The try-on gate. */
-  gate: notice(CURRENT_NOTICE.result_delivery, true),
+  gate: notice(CURRENT_NOTICE.result_delivery),
+  /** The booking form's agreement, on /book and /r/:code. */
+  consultation: notice(LANDING_NOTICES.consultation),
+  /** The waitlist's required agreement. */
+  waitlist: notice(LANDING_NOTICES.waitlist),
+  /** The waitlist's optional launch alert. */
+  launchAlert: notice(CURRENT_NOTICE.whatsapp_launches),
 } as const;
 
 // ---------------------------------------------------------------------------

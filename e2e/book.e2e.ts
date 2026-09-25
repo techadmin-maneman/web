@@ -106,6 +106,25 @@ test("a pincode we do not serve takes the number, with the launch alert offered"
   expect(requests[0]?.postDataJSON()).toMatchObject({ contact_consent: true, launch_alert: true });
 });
 
+// CLI-02: the same number booking again is not a second consultation; the page says which day it already has.
+test("a number that already has a consultation is told its day, and counted as no new lead", async ({ page }) => {
+  await mockApi(page, {
+    consultation: {
+      status: 409,
+      body: { error: { code: "already_booked", request_id: "r" }, booked: { date: "2026-09-26", window: "morning" } },
+    },
+  });
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText(/already has a consultation, Saturday 26 Sep, 9 am to 12 pm\./)).toBeVisible();
+  expect(await analyticsEvents(page)).toEqual([]);
+});
+
 // FEO-17: the lead is the conversion paid campaigns are bought for, whichever answer the pincode gave.
 test("a booking and a waitlist are both counted, with nothing personal", async ({ page }) => {
   await mockApi(page);
