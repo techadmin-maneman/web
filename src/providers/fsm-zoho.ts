@@ -338,8 +338,17 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
   }
 
   return {
+    // FSM answers a deleted appointment with a 204, and an ID it cannot parse, such as a
+    // staging seed's, with 404 INVALID_URL_PATTERN. Neither is there, and neither is a failure.
     async appointment(id) {
-      const [record] = records(await json("appointment", `/Service_Appointments/${id}`), "data", Appointment);
+      let answer: unknown;
+      try {
+        answer = await json("appointment", `/Service_Appointments/${id}`);
+      } catch (error) {
+        if (error instanceof ZohoError && error.status === 404 && error.code === "INVALID_URL_PATTERN") return null;
+        throw error;
+      }
+      const [record] = records(answer, "data", Appointment);
       return record === undefined ? null : appointmentFrom(record);
     },
 
