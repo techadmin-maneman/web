@@ -20,6 +20,7 @@ export const ROUTES: readonly TechRoute[] = [
   { method: "GET", path: "/tech/me" },
   { method: "GET", path: "/tech/jobs" },
   { method: "GET", path: "/tech/jobs/{id}" },
+  { method: "GET", path: "/tech/jobs/{id}/last-visit-photo" },
   { method: "POST", path: "/tech/jobs/{id}/checkin" },
   { method: "POST", path: "/tech/jobs/{id}/start" },
   { method: "POST", path: "/tech/jobs/{id}/photos/upload-url" },
@@ -42,6 +43,9 @@ export const ROUTES_ASSUMED: readonly TechRoute[] = [];
 
 /** The header every write carries, which makes it idempotent however often it is replayed. */
 export const EVENT_ID_HEADER = "X-Client-Event-Id";
+
+/** The job's start as the phone held it: a job ops moved to another time answers `409 superseded`, field `time`. */
+export const JOB_STARTS_AT_HEADER = "X-Job-Starts-At";
 
 /** FSM changed the job underneath the phone. The job stops and the technician is told what changed. */
 export const SUPERSEDED = "superseded";

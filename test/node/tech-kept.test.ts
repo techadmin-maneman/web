@@ -49,6 +49,7 @@ const summary = (id: string, date: string) =>
     sector: "Sector 65",
     status: "scheduled",
     badge: "prepaid",
+    slots: 1,
     unlocked: true,
     unlocks_at: `${date}T00:00:00.000Z`,
   }) as JobSummary;
@@ -80,6 +81,10 @@ const card = (id: string, date: string) =>
       steps_done: [],
       outcome: null,
     },
+    no_show_wait_min: 15,
+    pieces: [],
+    last_visit: null,
+    reminder: null,
     steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
     checklist: [],
     partial_reasons: [],

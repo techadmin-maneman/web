@@ -3,6 +3,7 @@
 //
 //   GET  /api/tech/jobs?date=                    the day's jobs; today and tomorrow in full
 //   GET  /api/tech/jobs/:id                      one job, under the day-before unlock
+//   GET  /api/tech/jobs/:id/last-visit-photo     the client's last visit, after (board A3)
 //   POST /api/tech/jobs/:id/checkin              I have arrived, with the geofence
 //   POST /api/tech/jobs/:id/start                start the job
 //   POST /api/tech/jobs/:id/photos/upload-url    a link to PUT one photograph to
@@ -34,7 +35,7 @@ import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { latestArrival, recordArrival } from "../domain/check-ins.ts";
 import { landJobEvent, stepsFor, type Landing } from "../domain/job-events.ts";
 import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
-import { jobDetail, jobsOn, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
+import { jobDetail, jobsOn, lastVisitPhoto, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
 import { anglesHeld, MAX_PHOTO_BYTES, slotOfLink, storeTechnicianPhoto, uploadLink } from "../domain/tech-photos.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -47,6 +48,7 @@ import { noShowWaitEnds } from "../policy/no-show.ts";
 import { boundedPhoneTime } from "../policy/phone-clock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import { PieceSchema } from "./tech-pieces.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const jobId = z.object({ id: z.uuid() });
@@ -86,6 +88,9 @@ const JobSummarySchema = z
       description:
         "Free for a visit the price book charges nothing for. No response to a technician carries an amount.",
     }),
+    slots: z
+      .union([z.number(), z.null()])
+      .openapi({ description: "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type." }),
     unlocked: z.boolean(),
     unlocks_at: z.iso.datetime(),
   })
@@ -143,6 +148,28 @@ const JobDetailSchema = JobSummarySchema.extend({
     ])
     .openapi({ description: "Null until the day before the visit." }),
   progress: ProgressSchema,
+  no_show_wait_min: z.number().int().openapi({
+    description:
+      "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it.",
+  }),
+  pieces: z
+    .union([z.array(PieceSchema), z.null()])
+    .openapi({ description: "The client's pieces, newest fit first. Null until the day before the visit." }),
+  last_visit: z
+    .union([
+      z
+        .object({
+          date: z.iso.date(),
+          technician: z.union([z.string(), z.null()]).openapi({ description: "The first name of who did it." }),
+          photo_url: z.string().openapi({ description: "Its after photograph, never to be kept on the phone." }),
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({ description: "The client's latest earlier visit with after photographs; null for a first visit." }),
+  reminder: z
+    .union([z.object({ delivered_at: z.union([z.iso.datetime(), z.null()]) }).strict(), z.null()])
+    .openapi({ description: "The day-before or arrival WhatsApp to the client, and when it was delivered." }),
   steps: z.array(z.enum(JOB_EVENT_KINDS)).openapi({ description: "The steps this visit type runs, in order." }),
   checklist: z.array(z.object({ id: z.string(), label: z.string() }).strict()),
   partial_reasons: z.array(z.enum(PARTIAL_REASONS)),
@@ -275,6 +302,23 @@ const jobRoute = createRoute({
     200: { description: "The job", ...json(JobDetailSchema) },
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: no such job of this technician's"),
+  },
+});
+
+const lastVisitPhotoRoute = createRoute({
+  method: "get",
+  path: "/api/tech/jobs/{id}/last-visit-photo",
+  summary: "The client's last visit, after: one photograph, under the card's own unlock, never cached",
+  request: { params: jobId },
+  responses: {
+    200: {
+      description: "The image",
+      content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
+    },
+    401: errorResponse("session_required; device_revoked"),
+    404: errorResponse(
+      "not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph",
+    ),
   },
 });
 
@@ -452,6 +496,21 @@ export function registerTechJobs(app: App): void {
       { ...job, steps: stepsFor(type), checklist: [...CHECKLIST[type]], partial_reasons: [...PARTIAL_REASONS] },
       200,
     );
+  });
+
+  app.openapi(lastVisitPhotoRoute, async (c) => {
+    const photo = await lastVisitPhoto(c.env.DB, {
+      technicianId: technicianOf(c).technicianId,
+      jobId: c.req.valid("param").id,
+      now: c.var.deps.now(),
+      unlockHour: (await opsInputs(c)).addressUnlockHour,
+    });
+    const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
+    if (photo === null || object === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    // A client's photograph stays off a technician's phone: neither the browser nor the service worker keeps it.
+    return new Response(object.body, {
+      headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
+    });
   });
 
   app.openapi(checkinRoute, async (c) => {
