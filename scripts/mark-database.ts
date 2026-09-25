@@ -2,9 +2,13 @@
 // names a different database. Safe to run repeatedly: the row is written once
 // and can never change. Run after migrations.
 //
+// With --check it only reads the row. The deploy workflows run that before
+// migrating, so a config naming the wrong database stops before any migration
+// reaches it.
+//
 //   node scripts/mark-database.ts local
 //   node scripts/mark-database.ts staging       (remote; uses your wrangler login or CLOUDFLARE_API_TOKEN)
-//   node scripts/mark-database.ts production
+//   node scripts/mark-database.ts production --check
 //
 // See docs/decisions/0003-environment-identity-guard.md.
 
@@ -14,8 +18,9 @@ import { EXPECTED_DATABASE_NAME, isEnvironmentName } from "../src/config/environ
 import { retryingLostReplies } from "./lib/cloudflare-api.ts";
 
 const environment = process.argv[2];
+const checkOnly = process.argv[3] === "--check";
 if (!isEnvironmentName(environment)) {
-  console.error("usage: node scripts/mark-database.ts <local|staging|production>");
+  console.error("usage: node scripts/mark-database.ts <local|staging|production> [--check]");
   process.exit(2);
 }
 
@@ -40,7 +45,11 @@ function runSql(sql: string): unknown {
 }
 
 // databaseName comes from EXPECTED_DATABASE_NAME, never from input, so building the SQL string is safe.
-runSql(`INSERT INTO deployment_identity (id, database_name) VALUES (1, '${databaseName}') ON CONFLICT(id) DO NOTHING`);
+if (!checkOnly) {
+  runSql(
+    `INSERT INTO deployment_identity (id, database_name) VALUES (1, '${databaseName}') ON CONFLICT(id) DO NOTHING`,
+  );
+}
 
 const [query] = QueryOutput.parse(runSql("SELECT database_name FROM deployment_identity WHERE id = 1"));
 const markedAs = query?.results[0]?.database_name ?? null;

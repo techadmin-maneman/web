@@ -1,5 +1,9 @@
-# On every merge to main: run the PR checks again, then migrate the staging
-# database, deploy both Workers to staging and smoke-test staging.maneman.in.
+# On every merge to main: run the PR checks again, unless the merged tree is one
+# whose pull request passed them, then migrate the staging database, deploy every
+# Worker to staging and smoke-test each staging host.
+#
+# The steps call scripts that decide; the shell only runs them in order
+# (docs/decisions/0006-deployment-pipeline.md, "Deploys that prove what they shipped").
 #
 # Secrets, on the GitHub Environment "staging":
 #   CLOUDFLARE_API_TOKEN                            staging's deploy token (docs/runbook.md)
@@ -19,14 +23,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # A squash merge of a pull request that was up to date with main has the same
+  # tree as the pull request's head, which ci.yml has already passed. Checking it
+  # again only costs time; anything else runs every check.
+  already-checked:
+    name: merged tree already passed CI
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    outputs:
+      checked: ${{ steps.check.outputs.checked }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Is this tree a pull request head that passed CI?
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/already-checked.ts --repository "${{ github.repository }}" --commit "${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
   checks:
+    needs: already-checked
+    if: ${{ !cancelled() && needs.already-checked.outputs.checked != 'true' }}
     uses: ./.github/workflows/ci.yml
 
   deploy:
     name: deploy staging
-    needs: checks
+    needs: [already-checked, checks]
+    if: >-
+      ${{ !cancelled() && (needs.checks.result == 'success' ||
+      (needs.checks.result == 'skipped' && needs.already-checked.outputs.checked == 'true')) }}
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment:
       name: staging
       url: https://staging.maneman.in
@@ -36,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0 # the triggers check compares with the previous commit
+          persist-credentials: false
       - uses: ./.github/actions/setup
 
       - name: Staging is set up
@@ -47,6 +82,17 @@ jobs:
           fi
           npm run check:config -- --require-provisioned
 
+      - name: Check the database is staging's, before anything touches it
+        run: node scripts/mark-database.ts staging --check
+
+      # An upload sends no traffic, and fails on a binding whose bucket, queue or database is missing:
+      # so a missing resource stops the deploy here, before any migration runs.
+      - name: Upload mm-api (no traffic yet)
+        id: api
+        run: |
+          version=$(node scripts/release.ts upload --worker mm-api --env staging --tag "$SHA")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Migrate the staging database
         run: |
           for attempt in 1 2 3; do
@@ -56,53 +102,33 @@ jobs:
           done
           exit 1
 
-      - name: Check the database is staging's
+      - name: Mark the database as staging's
         run: node scripts/mark-database.ts staging
 
       - name: Deploy mm-api
-        run: |
-          version=$(node scripts/release.ts upload --worker mm-api --env staging --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-api --env staging --split "$version@100" --message "staging $SHA"
+        env:
+          VERSION: ${{ steps.api.outputs.version }}
+        run: node scripts/release.ts deploy --worker mm-api --env staging --split "$VERSION@100" --message "staging $SHA"
 
       - name: Build the site (staging)
         run: npm run build:site -- --env staging
       - name: Deploy mm-site
-        run: |
-          version=$(node scripts/release.ts upload --worker mm-site --env staging --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-site --env staging --split "$version@100" --message "staging $SHA"
+        run: node scripts/release.ts ship --worker mm-site --env staging --tag "$SHA" --message "staging $SHA"
 
       - name: Build the client app (staging)
         run: npm run build:app -- --env staging
       - name: Deploy mm-app
-        run: |
-          version=$(node scripts/release.ts upload --worker mm-app --env staging --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-app --env staging --split "$version@100" --message "staging $SHA"
+        run: node scripts/release.ts ship --worker mm-app --env staging --tag "$SHA" --message "staging $SHA"
 
-      # mm-ops-staging's first deploy is a bootstrap by the owner, which also attaches its route and puts it
-      # on the CI token (docs/runbook.md, step 11); until then this step does nothing.
       - name: Build the ops console (staging)
         run: npm run build:ops -- --env staging
       - name: Deploy mm-ops
-        run: |
-          if [ -z "$(node scripts/release.ts current --worker mm-ops --env staging || true)" ]; then
-            echo "::notice::mm-ops-staging is not bootstrapped yet, so it is not deployed."
-            exit 0
-          fi
-          version=$(node scripts/release.ts upload --worker mm-ops --env staging --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-ops --env staging --split "$version@100" --message "staging $SHA"
+        run: node scripts/release.ts ship --worker mm-ops --env staging --tag "$SHA" --message "staging $SHA"
 
-      # mm-tech-staging's first deploy is a bootstrap by the owner, which also attaches its route and puts it
-      # on the CI token (docs/runbook.md, step 11); until then this step does nothing.
       - name: Build the technician app (staging)
         run: npm run build:tech -- --env staging
       - name: Deploy mm-tech
-        run: |
-          if [ -z "$(node scripts/release.ts current --worker mm-tech --env staging || true)" ]; then
-            echo "::notice::mm-tech-staging is not bootstrapped yet, so it is not deployed."
-            exit 0
-          fi
-          version=$(node scripts/release.ts upload --worker mm-tech --env staging --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-tech --env staging --split "$version@100" --message "staging $SHA"
+        run: node scripts/release.ts ship --worker mm-tech --env staging --tag "$SHA" --message "staging $SHA"
 
       - name: Smoke-test staging
         env:
@@ -110,17 +136,19 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run smoke -- --base https://staging.maneman.in --environment staging --version-tag "$SHA"
 
-      # app-staging, ops-staging and tech-staging: every Phase 2 surface switched on (docs/decisions/0026).
+      # app-staging, ops-staging and tech-staging: mm-api on each host, and the app each host serves at /,
+      # built from this commit (docs/decisions/0026).
       - name: Smoke-test the Phase 2 surfaces
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run smoke -- --environment staging --surfaces --version-tag "$SHA"
 
-      - name: Remind if triggers changed (CI cannot apply them)
-        env:
-          BEFORE: ${{ github.event.before }}
-        run: |
-          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-            node scripts/triggers-changed.ts --base "$BEFORE" --env staging
-          fi
+      # Read-only, and a warning at most: CI cannot apply triggers (docs/decisions/0010-applying-triggers.md),
+      # and a check that cannot read something says so rather than failing a deploy that worked.
+      - name: The cron schedules and queue consumers live match every Worker's config
+        continue-on-error: true
+        run: node scripts/check-triggers.ts staging
+      - name: The try-on buckets expire their objects, and no other bucket does
+        continue-on-error: true
+        run: node scripts/check-buckets.ts staging
