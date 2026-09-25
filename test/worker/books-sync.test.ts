@@ -137,6 +137,18 @@ describe("recording payments", () => {
     expect(books.made.payments).toHaveLength(1);
   });
 
+  it("finds by our reference a payment Books recorded whose answer never came, rather than recording it twice", async () => {
+    await payment();
+    const books = createStubBooks();
+    books.loseAnswer("recordPayment");
+    await pass(books, "books-customer-9");
+    expect((await paymentRow())?.books_payment_id).toBeNull();
+
+    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
+    expect(books.made.payments).toHaveLength(1);
+    expect((await paymentRow())?.books_payment_id).toBe(await books.findPayment("books-customer-9", "MM-2026-0841"));
+  });
+
   it("gives production's no label", async () => {
     await payment();
     const books = createStubBooks();
@@ -442,6 +454,20 @@ describe("recording refunds", () => {
 
     await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
     expect(books.made.refunds).toHaveLength(1);
+  });
+
+  it("finds by Razorpay's refund ID a refund Books recorded whose answer never came, rather than recording it twice", async () => {
+    await payment();
+    await refund("processed");
+    const books = createStubBooks();
+    books.loseAnswer("recordRefund");
+    await pass(books, "books-customer-9");
+    expect((await refundId())?.books_refund_id).toBeNull();
+
+    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
+    expect(books.made.refunds).toHaveLength(1);
+    const recorded = books.made.refunds[0];
+    expect((await refundId())?.books_refund_id).toBe(await books.findRefund(recorded?.paymentId ?? "", "rfnd_test7"));
   });
 
   it("records none until Razorpay has processed it, or while no refund account is set", async () => {

@@ -12,6 +12,9 @@
 //   - records each processed refund of a recorded payment, from the account
 //     Razorpay settles into, when that account is set.
 //
+// A payment or a refund is looked for in Books by our reference before it is
+// recorded, so a try whose answer never came is not recorded a second time.
+//
 // Each record is handled on its own (docs/decisions/0067-alerts-and-silent-failures.md).
 // One found not ready, or that fails, waits an hour before Books is asked again,
 // as Books allows a few thousand calls a day, and the pass carries on with the
@@ -30,8 +33,8 @@ import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 /** How many of each a pass handles at most. */
 export const PER_PASS = 5;
 export const RECHECK_AFTER_MS = 60 * 60 * 1000;
-/** Outside calls one record may cost: FSM or Books, then Books, then the alert it may send. */
-export const CALLS_PER_RECORD = 3;
+/** Outside calls one record may cost: FSM or Books, Books' look for it, Books' record, and the alert it may send. */
+export const CALLS_PER_RECORD = 4;
 /** A failure other than a refusal is told once it has happened this many times, an hour apart. */
 const FAILURES_BEFORE_ALERT = 3;
 
@@ -142,13 +145,17 @@ async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<bool
       await checkPaymentLater(pass, payment.id);
       return false;
     }
-    const booksPaymentId = await deps.books.recordPayment({
-      customerId,
-      amount: payment.amount,
-      date: indiaDate(new Date(payment.captured_at)),
-      reference: payment.reference ?? payment.razorpay_payment_id,
-      description: `${pass.label}Razorpay payment ${payment.razorpay_payment_id}`,
-    });
+    const reference = payment.reference ?? payment.razorpay_payment_id;
+    // An earlier try whose answer never came may have recorded it already.
+    const booksPaymentId =
+      (await deps.books.findPayment(customerId, reference)) ??
+      (await deps.books.recordPayment({
+        customerId,
+        amount: payment.amount,
+        date: indiaDate(new Date(payment.captured_at)),
+        reference,
+        description: `${pass.label}Razorpay payment ${payment.razorpay_payment_id}`,
+      }));
     await db
       .prepare("UPDATE payments SET books_payment_id = ?1, books_checked_at = NULL WHERE id = ?2")
       .bind(booksPaymentId, payment.id)
@@ -322,13 +329,15 @@ async function recordRefund(pass: Pass, refund: RefundToRecord, fromAccountId: s
     then: "It is asked again every hour.",
   } as const;
   try {
-    const booksRefundId = await deps.books.recordRefund(refund.books_payment_id, {
-      amount: refund.amount,
-      date: indiaDate(new Date(refund.processed_at ?? refund.created_at)),
-      reference: refund.razorpay_refund_id,
-      description: `${pass.label}Razorpay refund ${refund.razorpay_refund_id}`,
-      fromAccountId,
-    });
+    const booksRefundId =
+      (await deps.books.findRefund(refund.books_payment_id, refund.razorpay_refund_id)) ??
+      (await deps.books.recordRefund(refund.books_payment_id, {
+        amount: refund.amount,
+        date: indiaDate(new Date(refund.processed_at ?? refund.created_at)),
+        reference: refund.razorpay_refund_id,
+        description: `${pass.label}Razorpay refund ${refund.razorpay_refund_id}`,
+        fromAccountId,
+      }));
     await db.prepare("UPDATE refunds SET books_refund_id = ?1 WHERE id = ?2").bind(booksRefundId, refund.id).run();
   } catch (error) {
     await db.prepare("UPDATE refunds SET books_checked_at = ?1 WHERE id = ?2").bind(pass.at, refund.id).run();

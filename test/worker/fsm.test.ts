@@ -787,6 +787,38 @@ describe("Books: payments, receipts and refunds", () => {
     });
   });
 
+  // Books' documented list shapes (ADR 0069); neither search has been tried on the org yet.
+  it("finds a payment by our reference for the customer, matching the reference exactly", async () => {
+    const { books, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/customerpayments`]: () =>
+        json({
+          code: 0,
+          customerpayments: [
+            { payment_id: "bp-2", reference_number: "MM-2026-08410" },
+            { payment_id: "bp-1", reference_number: "MM-2026-0841" },
+          ],
+        }),
+    });
+    expect(await books.findPayment("books-customer-9", "MM-2026-0841")).toBe("bp-1");
+    const searched = new URL(calls[1]?.url ?? "");
+    expect(calls[1]?.method).toBe("GET");
+    expect(searched.searchParams.get("customer_id")).toBe("books-customer-9");
+    expect(searched.searchParams.get("reference_number")).toBe("MM-2026-0841");
+    expect(await books.findPayment("books-customer-9", "MM-2026-0999")).toBeNull();
+  });
+
+  it("finds a refund of a payment by Razorpay's refund ID, and answers null when there is none", async () => {
+    const { books } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/customerpayments/bp-1/refunds`]: () =>
+        json({ code: 0, payment_refunds: [{ payment_refund_id: "br-1", reference_number: "rfnd_test7" }] }),
+      [`${BOOKS_API}/customerpayments/bp-2/refunds`]: () => json({ code: 0, payment_refunds: [] }),
+    });
+    expect(await books.findRefund("bp-1", "rfnd_test7")).toBe("br-1");
+    expect(await books.findRefund("bp-2", "rfnd_test7")).toBeNull();
+  });
+
   it("fails loudly when Books refuses a payment", async () => {
     const { books } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),

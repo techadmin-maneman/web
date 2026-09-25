@@ -11,6 +11,14 @@
 //   GET  /books/v3/customerpayments/{id}?organization_id=&accept=pdf  the receipt
 //   POST /books/v3/invoices/{id}/credits?organization_id=             a payment applied to an invoice
 //   POST /books/v3/customerpayments/{id}/refunds?organization_id=     { payment_refund: { payment_refund_id } }
+//
+// Two reads look for a record by our reference before it is made, so a try
+// whose answer was lost is not recorded twice (docs/decisions/0069-vendor-correctness.md).
+// They follow Books' API documentation and have not yet been tried on the org:
+//
+//   GET  /books/v3/customerpayments?organization_id=&customer_id=&reference_number=
+//                                                                     { customerpayments: [{ payment_id, reference_number }] }
+//   GET  /books/v3/customerpayments/{id}/refunds?organization_id=     { payment_refunds: [{ payment_refund_id, reference_number }] }
 
 import { z } from "zod";
 import type { ZohoFsmSettings } from "../config/settings.ts";
@@ -68,12 +76,16 @@ export interface BooksProvider {
   issueInvoice(id: string): Promise<void>;
   /** Null while Books has no such invoice, which the app shows as "Document unavailable". */
   invoicePdf(id: string): Promise<BooksPdf | null>;
+  /** The payment Books holds for this customer under our reference; null if it holds none. */
+  findPayment(customerId: string, reference: string): Promise<string | null>;
   /** Records a payment; returns Books' ID for it. */
   recordPayment(payment: NewBooksPayment): Promise<string>;
   /** A recorded payment's receipt; null if Books has no such payment. */
   receiptPdf(paymentId: string): Promise<BooksPdf | null>;
   /** Applies a recorded payment, taken in advance, to the visit's invoice. */
   applyToInvoice(paymentId: string, invoiceId: string, amount: number): Promise<void>;
+  /** The refund of a recorded payment Books holds under this reference, Razorpay's refund ID; null if none. */
+  findRefund(paymentId: string, reference: string): Promise<string | null>;
   /** Records money given back from a payment; returns Books' ID for the refund. */
   recordRefund(paymentId: string, refund: NewBooksRefund): Promise<string>;
 }
@@ -99,9 +111,11 @@ export function createBooksProvider(
     invoice: off,
     issueInvoice: off,
     invoicePdf: off,
+    findPayment: off,
     recordPayment: off,
     receiptPdf: off,
     applyToInvoice: off,
+    findRefund: off,
     recordRefund: off,
   };
 }
@@ -117,6 +131,16 @@ const Invoice = z.object({
 
 const Recorded = z.object({ payment: z.object({ payment_id: z.string() }) });
 const Refunded = z.object({ payment_refund: z.object({ payment_refund_id: z.string() }) });
+
+/** The payments a search found. Books may match a reference loosely, so each is compared again here. */
+const PaymentsFound = z.object({
+  customerpayments: z.array(z.object({ payment_id: z.string(), reference_number: z.string().nullish() })).default([]),
+});
+const RefundsFound = z.object({
+  payment_refunds: z
+    .array(z.object({ payment_refund_id: z.string(), reference_number: z.string().nullish() }))
+    .default([]),
+});
 
 /** Paise as Books takes an amount: rupees. */
 const rupees = (paise: number) => paise / 100;
@@ -167,6 +191,13 @@ function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: Depende
         return { body: response.body, contentType: "application/pdf" as const };
       }),
 
+    async findPayment(customerId, reference) {
+      const query = `&customer_id=${encodeURIComponent(customerId)}&reference_number=${encodeURIComponent(reference)}`;
+      const response = await request("find_payment", `${payments()}${query}`);
+      const found = PaymentsFound.parse(await response.json()).customerpayments;
+      return found.find((each) => each.reference_number === reference)?.payment_id ?? null;
+    },
+
     async recordPayment(payment) {
       const response = await request("record_payment", payments(), {
         method: "POST",
@@ -194,6 +225,12 @@ function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: Depende
         method: "POST",
         body: { invoice_payments: [{ payment_id: paymentId, amount_applied: rupees(amount) }] },
       });
+    },
+
+    async findRefund(paymentId, reference) {
+      const response = await request("find_refund", payments(paymentId, "/refunds"));
+      const found = RefundsFound.parse(await response.json()).payment_refunds;
+      return found.find((each) => each.reference_number === reference)?.payment_refund_id ?? null;
     },
 
     async recordRefund(paymentId, refund) {
@@ -227,6 +264,8 @@ export interface StubBooks extends BooksProvider {
     /** The invoices marked sent, in the order they were. */
     readonly issued: string[];
   };
+  /** Makes the next record of this kind take effect and then fail, as a call does whose answer never came. */
+  loseAnswer(step: "recordPayment" | "recordRefund"): void;
 }
 
 const blankPdf = () => ({
@@ -246,20 +285,39 @@ export function createStubBooks(): StubBooks {
     refunds: [] as (NewBooksRefund & { paymentId: string })[],
     issued: [] as string[],
   };
+  // What the stub recorded, by the keys a retry looks it up by.
+  const paymentIds = new Map<string, string>();
+  const refundIds = new Map<string, string>();
+  const lostAnswers = new Set<"recordPayment" | "recordRefund">();
+  /** A record that took effect answers with its ID, unless the test asked for its answer to be lost. */
+  const answer = (step: "recordPayment" | "recordRefund", id: string): Promise<string> =>
+    lostAnswers.delete(step)
+      ? Promise.reject(new Error(`the stub Books recorded ${id}, and its answer never came`))
+      : Promise.resolve(id);
+
   return {
     made,
+    loseAnswer: (step) => {
+      lostAnswers.add(step);
+    },
+    findPayment: (customerId, reference) => Promise.resolve(paymentIds.get(`${customerId}:${reference}`) ?? null),
     recordPayment: (payment) => {
       made.payments.push(payment);
-      return Promise.resolve(`stub-payment-${crypto.randomUUID()}`);
+      const id = `stub-payment-${crypto.randomUUID()}`;
+      paymentIds.set(`${payment.customerId}:${payment.reference}`, id);
+      return answer("recordPayment", id);
     },
     receiptPdf: (paymentId) => Promise.resolve(paymentId.startsWith("stub-") ? blankPdf() : null),
     applyToInvoice: (paymentId, invoiceId, amount) => {
       made.applied.push({ paymentId, invoiceId, amount });
       return Promise.resolve();
     },
+    findRefund: (paymentId, reference) => Promise.resolve(refundIds.get(`${paymentId}:${reference}`) ?? null),
     recordRefund: (paymentId, refund) => {
       made.refunds.push({ ...refund, paymentId });
-      return Promise.resolve(`stub-refund-${crypto.randomUUID()}`);
+      const id = `stub-refund-${crypto.randomUUID()}`;
+      refundIds.set(`${paymentId}:${refund.reference}`, id);
+      return answer("recordRefund", id);
     },
     issueInvoice: (id) => {
       made.issued.push(id);
