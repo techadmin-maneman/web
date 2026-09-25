@@ -162,6 +162,7 @@ describe("CRON_JOBS", () => {
       "erased_files",
       "fsm_reconcile",
       "deletion_alerts",
+      "whatsapp_bridge",
       "dispatch_utilisation",
       "referrals",
       "visit_reminders",

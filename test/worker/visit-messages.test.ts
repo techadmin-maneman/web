@@ -46,6 +46,7 @@ function recordingProvider() {
       sent.push({ to, template, params, mediaUrl });
       return Promise.resolve({ ok: true, providerMessageId: "wa-1" });
     },
+    connection: () => Promise.resolve({ open: true }),
   };
   return { provider, sent };
 }

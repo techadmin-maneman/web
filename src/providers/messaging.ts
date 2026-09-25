@@ -25,8 +25,13 @@ export interface OutboundMessage {
   readonly mediaUrl?: string;
 }
 
+/** Whether the provider can reach WhatsApp now; if not, what it said. */
+export type Connection = { readonly open: true } | { readonly open: false; readonly detail: string };
+
 export interface MessagingProvider {
   send(message: OutboundMessage): Promise<SendResult>;
+  /** Read only: nothing is sent. Every login code goes this way, so the cron asks (src/scheduled/whatsapp-bridge.ts). */
+  connection(): Promise<Connection>;
 }
 
 export function createMessagingProvider(
@@ -43,5 +48,6 @@ export function createStubMessaging(log: Logger): MessagingProvider {
       log.info("messaging_stub_send", { template, params: params.length, media: mediaUrl !== undefined });
       return Promise.resolve({ ok: true, providerMessageId: `stub-${crypto.randomUUID()}` });
     },
+    connection: () => Promise.resolve({ open: true }),
   };
 }

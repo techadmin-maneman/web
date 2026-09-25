@@ -22,6 +22,7 @@ import type { MessagingMessage } from "../queues/messaging.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import { sweep } from "./sweeper.ts";
+import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -100,6 +101,10 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
 }
 
+async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
+  await checkWhatsAppBridge(deps, log, budget);
+}
+
 async function utilisationJob({ env, deps, log }: CronContext): Promise<void> {
   const date = await recordUtilisation(env.DB, deps.now());
   if (date !== null) log.info("dispatch_utilisation_recorded", { date });
@@ -142,6 +147,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
   { name: "fsm_reconcile", needs: "fsm", run: reconcileJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
+  // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
+  { name: "whatsapp_bridge", needs: "nothing", run: whatsAppBridgeJob },
   // Once a day: the operating figure behind the weekend-share assumption (src/policy/dispatch.ts).
   { name: "dispatch_utilisation", needs: "nothing", run: utilisationJob },
   { name: "referrals", needs: "nothing", run: referralsJob },
