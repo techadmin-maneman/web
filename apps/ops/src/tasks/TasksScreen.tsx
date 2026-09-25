@@ -2,7 +2,7 @@
 // long each has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an undecided
 // no-show, a number change, an erasure, a piece past its replacement date, an
-// invoice still a draft — so
+// invoice still a draft, an erasure FSM would not finish — so
 // it leaves the list when that row is decided, on the section that decides it
 // (src/policy/tasks.ts).
 //
@@ -37,7 +37,18 @@ function subOf(group: Group, task: Task): string {
   if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);
   if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
+  if (group === "erasure_unfinished") return copy.erasure_unfinished(task.detail ?? tasks.unknown);
   return group === "number_change" ? copy.number_change : copy.erasure_request;
+}
+
+/**
+ * The first line of a task with no client to name: a no-show case names the
+ * technician and never the client, so its own visit heads it; an erased client
+ * has no name left, so the day they were erased does.
+ */
+function unnamedSubject(group: Group, task: Task): string {
+  const day = shortDate(indiaDate(task.since));
+  return group === "erasure_unfinished" ? tasks.erased(day) : tasks.visit(day);
 }
 
 function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
@@ -49,8 +60,7 @@ function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
     <li className={styles.task}>
       <div className={styles.what}>
         {task.person === null ? (
-          // A no-show case names the technician and never the client, so its own visit heads it.
-          <span className={styles.subject}>{tasks.visit(shortDate(indiaDate(task.since)))}</span>
+          <span className={styles.subject}>{unnamedSubject(group, task)}</span>
         ) : (
           <OpsLink className={styles.subject} to={`/clients/${task.person.id}`}>
             {task.person.name}

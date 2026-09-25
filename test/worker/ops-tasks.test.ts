@@ -9,6 +9,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
+import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -175,6 +176,12 @@ describe("GET /api/tasks", () => {
     )
       .bind(PERSON, NOW.toISOString())
       .run();
+    await env.DB.prepare(
+      `UPDATE people SET erased_at = '2026-09-20T06:00:00.000Z', fsm_contact_id = 'fsm-contact-4',
+         fsm_erasure_attempts = ?1 WHERE id = ?2`,
+    )
+      .bind(MAX_SYNC_ATTEMPTS, REFERRED)
+      .run();
 
     const body = await tasks();
     expect(groupNames(body)).toEqual([
@@ -185,8 +192,9 @@ describe("GET /api/tasks", () => {
       "number_change",
       "erasure_request",
       "draft_invoice",
+      "erasure_unfinished",
     ]);
-    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1]);
+    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("leaves out a group with nothing waiting, as the board draws none", async () => {
@@ -316,6 +324,35 @@ describe("GET /api/tasks", () => {
     ]);
 
     await env.DB.prepare("UPDATE appointments SET invoice_issued_at = ?1").bind(NOW.toISOString()).run();
+    expect(groupNames(await tasks())).toEqual([]);
+  });
+
+  it("lists an erased client whose FSM contact the sweeper gave up on, until it is anonymised", async () => {
+    const erased = (attempts: number) =>
+      env.DB.prepare(
+        `UPDATE people SET erased_at = '2026-09-20T06:00:00.000Z', fsm_contact_id = 'fsm-contact-4',
+           fsm_erasure_attempts = ?1 WHERE id = ?2`,
+      )
+        .bind(attempts, PERSON)
+        .run();
+
+    // Still being asked: nothing for ops yet.
+    await erased(MAX_SYNC_ATTEMPTS - 1);
+    expect(groupNames(await tasks())).toEqual([]);
+
+    await erased(MAX_SYNC_ATTEMPTS);
+    expect(tasksIn(await tasks(), "erasure_unfinished")).toEqual([
+      {
+        id: PERSON,
+        // Erased: the record is gone, and only FSM's contact is left to name.
+        person: null,
+        detail: "fsm-contact-4",
+        since: "2026-09-20T06:00:00.000Z",
+        due: "2026-09-22T06:00:00.000Z",
+      },
+    ]);
+
+    await env.DB.prepare("UPDATE people SET fsm_erased_at = ?1").bind(NOW.toISOString()).run();
     expect(groupNames(await tasks())).toEqual([]);
   });
 

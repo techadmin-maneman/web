@@ -24,6 +24,7 @@ import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { scrubString, type Logger } from "../log.ts";
+import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
 import type { MessagingMessage } from "./messaging.ts";
 
 export const MAX_FSM_SYNC_ATTEMPTS = 5;
@@ -281,7 +282,11 @@ async function jobForFsm(db: D1Database, appointmentId: string): Promise<JobForF
       };
 }
 
-/** Anonymises an erased person's FSM contact, once; a failure is counted, and the sweeper sends it again. */
+/**
+ * Anonymises an erased person's FSM contact, once. A failure is counted, and the
+ * sweeper sends it again until MAX_SYNC_ATTEMPTS; the last failure tells ops,
+ * and the Tasks board lists the contact until it is anonymised by hand.
+ */
 async function eraseContact(
   message: Message,
   personId: string,
@@ -307,11 +312,24 @@ async function eraseContact(
     log.info("fsm_contact_erased", { person_id: personId });
   } catch (error) {
     const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
-    await db
-      .prepare("UPDATE people SET fsm_erasure_attempts = fsm_erasure_attempts + 1 WHERE id = ?1")
+    const counted = await db
+      .prepare(
+        "UPDATE people SET fsm_erasure_attempts = fsm_erasure_attempts + 1 WHERE id = ?1 RETURNING fsm_erasure_attempts",
+      )
       .bind(personId)
-      .run();
-    log.warn("fsm_erasure_failed", { person_id: personId, reason });
+      .first<{ fsm_erasure_attempts: number }>();
+    const attempts = counted?.fsm_erasure_attempts ?? 1;
+    log.warn("fsm_erasure_failed", { person_id: personId, attempts, reason });
+    if (attempts >= MAX_SYNC_ATTEMPTS) {
+      await deps.alertOnce({
+        key: `fsm_erasure:${personId}`,
+        message:
+          `FSM would not anonymise contact ${contactId} of erased person ${personId} after ${String(attempts)} ` +
+          `attempts (${reason}), and nothing will ask again. Anonymise it in FSM by hand, then record it ` +
+          '(runbook, "Erasure within the day").',
+        link: "/tasks",
+      });
+    }
   }
   message.ack();
 }

@@ -9,15 +9,20 @@
 
 import { indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
+import { MAX_SYNC_ATTEMPTS } from "../queues/crm-sync.ts";
 
 export interface Task {
   readonly id: string;
   readonly group: TaskGroup;
-  /** Whose it is; null for a no-show, whose case names the technician and never the client. */
+  /**
+   * Whose it is; null for a no-show, whose case names the technician and never
+   * the client, and for an erased client, whose record is gone.
+   */
   readonly person: { readonly id: string; readonly name: string } | null;
   /**
    * The one fact the group turns on: the day and window asked for, the piece's
-   * label, the fraud rule met, the technician who attended.
+   * label, the fraud rule met, the technician who attended, the invoice in
+   * Books, the contact in FSM.
    */
   readonly detail: string | null;
   readonly since: string;
@@ -28,10 +33,12 @@ export interface Task {
  * Every queue, in two statements sent together. D1 takes at most five arms in one
  * compound SELECT, so the queues are split between two statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
- * record is gone, and a task about them could not be done.
+ * record is gone, and a task about them could not be done. The one exception is
+ * an erasure FSM would not finish, which names FSM's contact and not the person.
  *
- * The first statement is the one that needs today's date, as `?1`; both take the
- * limit last, so neither can answer with more than the board holds.
+ * The first statement is the one that needs today's date, as `?1`; the second
+ * needs the attempts after which the sweeper stops asking FSM, as `?1`. Both take
+ * the limit last, so neither can answer with more than the board holds.
  */
 const OUTSTANDING = [
   `SELECT * FROM (
@@ -77,7 +84,12 @@ const OUTSTANDING = [
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.fsm_work_order_id IS NOT NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL
-) ORDER BY since LIMIT ?1`,
+  UNION ALL
+  SELECT 'erasure_unfinished', p.id, NULL, NULL, p.fsm_contact_id, p.erased_at
+    FROM people p
+   WHERE p.erased_at IS NOT NULL AND p.fsm_contact_id IS NOT NULL AND p.fsm_erased_at IS NULL
+     AND p.fsm_erasure_attempts >= ?1
+) ORDER BY since LIMIT ?2`,
 ] as const;
 
 interface Row {
@@ -103,7 +115,7 @@ const instantOf = (since: string) => (since.length === 10 ? indiaInstant(since, 
 export async function outstandingTasks(db: D1Database, now: Date, limit: number, sla: Slas): Promise<Task[]> {
   const answers = await db.batch<Row>([
     db.prepare(OUTSTANDING[0]).bind(indiaDate(now), limit),
-    db.prepare(OUTSTANDING[1]).bind(limit),
+    db.prepare(OUTSTANDING[1]).bind(MAX_SYNC_ATTEMPTS, limit),
   ]);
   // Each statement sorted its own rows; the board wants one list, so they are
   // merged on the same column and cut to the same limit.
