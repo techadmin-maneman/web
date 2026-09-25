@@ -112,7 +112,8 @@ describe("POST /api/lead: a served city", () => {
     expect(lead).toEqual(attribution);
   });
 
-  it("recognises a returning number: one person, their new name, two leads", async () => {
+  // A form anyone can fill in with a number never renames the person it belongs to (ADR 0067).
+  it("recognises a returning number: one person, the name they first gave, two leads", async () => {
     const app = appFor();
     await request(app, "/api/lead", post(BOOKING), { CRM_QUEUE: fakeQueue() });
     await request(app, "/api/lead", post({ ...BOOKING, name: "Arjun M.", mobile: "+91 98100-00001" }), {
@@ -120,7 +121,7 @@ describe("POST /api/lead: a served city", () => {
     });
 
     const people = await env.DB.prepare("SELECT name FROM people").all();
-    expect(people.results).toEqual([{ name: "Arjun M." }]);
+    expect(people.results).toEqual([{ name: "Arjun Mehta" }]);
     const leads = await env.DB.prepare("SELECT COUNT(*) AS n FROM leads").first<{ n: number }>();
     expect(leads?.n).toBe(2);
   });

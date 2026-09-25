@@ -145,7 +145,14 @@ export default function Invite(props: Props) {
     if (found === "served") setAnswer(SAMPLE.served);
     if (found === "unserved") setAnswer(SAMPLE.unserved);
     if (found === "booked" || found === "requested") {
-      setBooked({ state: found, date: indiaTomorrow(), window: "morning", area: SAMPLE.served.area, credits: true });
+      setBooked({
+        state: found,
+        date: indiaTomorrow(),
+        window: "morning",
+        area: SAMPLE.served.area,
+        credits: true,
+        invite: "valid",
+      });
       setState("booked");
     }
     if (found === "listed") {
@@ -555,7 +562,7 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
       setFailure(refusal(result.code));
       return;
     }
-    props.onBooked({ credits: false, ...result.body });
+    props.onBooked({ credits: false, invite: "unknown", ...result.body });
   }
 
   const { consultation } = referral;

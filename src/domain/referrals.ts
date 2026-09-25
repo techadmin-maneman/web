@@ -1,9 +1,11 @@
 // Referral codes and who came through them (docs/decisions/0048-referrals.md). A code is the client's
 // initials and four random characters, never from their mobile number, with no characters that look alike.
 // A person is attributed once, to the first invite they used, and only while they are new: not the
-// referrer, and not already fitted.
+// referrer, and not already fitted. An invite held for them on a waitlist lapses 12 months after their area
+// launched; from then it carries no credits, and says so when they book.
 
 import { CURRENT_NOTICE } from "../config/notices.ts";
+import { inviteLapsed } from "../policy/invites.ts";
 
 /** No 0, O, 1 or I: a code is read aloud and typed. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -89,14 +91,22 @@ export async function inviteOf(db: D1Database, code: string, nameOnInvite: boole
 }
 
 /**
+ * An invite as it stands for the person who used it: valid; expired, when the one they were held under on a
+ * waitlist lapsed (src/policy/invites.ts); or unknown, a code we do not have.
+ */
+export type InviteState = "valid" | "expired" | "unknown";
+
+/**
  * Attributes a person to an invite, if they are new to referrals: not the referrer, not already attributed,
- * and not already fitted. Returns whether they now carry the invite's credits.
+ * and not already fitted. Says whether they now carry the invite's credits, and whether the invite they were
+ * held under has lapsed, which it is marked as, so it promises nothing more.
  */
 export async function attribute(
   db: D1Database,
   input: { invite: Invite; personId: string; via: "consultation" | "waitlist"; pincode: string | null; now: Date },
-): Promise<boolean> {
-  if (input.personId === input.invite.referrerId) return false;
+): Promise<{ readonly credits: boolean; readonly lapsed: boolean }> {
+  const none = { credits: false, lapsed: false };
+  if (input.personId === input.invite.referrerId) return none;
   const fitted = await db
     .prepare(
       `SELECT 1 FROM appointments WHERE person_id = ?1 AND type = 'first_fit' AND status = 'completed'
@@ -104,7 +114,7 @@ export async function attribute(
     )
     .bind(input.personId)
     .first();
-  if (fitted !== null) return false;
+  if (fitted !== null) return none;
   const at = input.now.toISOString();
   await db
     .prepare(
@@ -116,8 +126,27 @@ export async function attribute(
     .bind(crypto.randomUUID(), input.invite.code, input.personId, at, input.via, input.pincode)
     .run();
   const kept = await db
-    .prepare("SELECT code, grant_state FROM referral_attributions WHERE referred_person_id = ?1")
+    .prepare(
+      `SELECT r.id, r.code, r.grant_state, r.via, pin.launched_at FROM referral_attributions r
+       LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode
+       WHERE r.referred_person_id = ?1`,
+    )
     .bind(input.personId)
-    .first<{ code: string; grant_state: string }>();
-  return kept?.code === input.invite.code && kept.grant_state === "pending";
+    .first<{ id: string; code: string; grant_state: string; via: string; launched_at: string | null }>();
+  if (kept?.code !== input.invite.code) return none;
+  if (kept.grant_state === "expired") return { credits: false, lapsed: true };
+  // An invite held on a waitlist lasts until 12 months after the area launched.
+  const lapsedOnWaitlist =
+    kept.grant_state === "pending" &&
+    kept.via === "waitlist" &&
+    kept.launched_at !== null &&
+    inviteLapsed(new Date(kept.launched_at), input.now);
+  if (lapsedOnWaitlist) {
+    await db
+      .prepare("UPDATE referral_attributions SET grant_state = 'expired', updated_at = ?2 WHERE id = ?1")
+      .bind(kept.id, at)
+      .run();
+    return { credits: false, lapsed: true };
+  }
+  return { credits: kept.grant_state === "pending", lapsed: false };
 }
