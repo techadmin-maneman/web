@@ -84,6 +84,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
+        # ESLint type-checks through ten TypeScript projects at once, which outgrew
+        # Node's default heap on the runner (about 2 GB) on 25 September 2026.
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: npm run lint
       - name: Workflows
         run: |
