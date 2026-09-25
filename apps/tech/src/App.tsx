@@ -4,29 +4,32 @@
 // a basement with no signal, and the API is asked again as soon as there is any.
 //
 // The session is bound to this device (docs/decisions/0052-technician-sessions.md).
-// A 401 means it has ended, whether it ran out or ops revoked the device:
-// either way everything the phone holds is wiped before the sign-in is shown
-// again, and a `device_revoked` code only changes what it says.
+// A 401 from any call means it has ended, whether it ran out or ops revoked the
+// device: whatever screen is showing, everything the phone holds is wiped
+// before the sign-in is shown again, and a `device_revoked` code only changes
+// what it says.
 //
 // A store that has never held a session is a third case, and the one an iPhone
 // makes: an app installed to the home screen has its own cookie jar, so the
 // technician arrives signed out on a phone he signed in on an hour ago. The
 // sign-in is told which of the three it is, so it can say so (ADR 0053).
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { api, DEVICE_REVOKED, type Me } from "./api.ts";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api, DEVICE_REVOKED, onSessionEnded, type Me } from "./api.ts";
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
+import { storage } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { SignIn } from "./login/SignIn.tsx";
 import { go, routeOf, usePath, type Route } from "./route.ts";
-import { SessionContext, useOnline, type Out } from "./session.ts";
+import { SessionContext, useOnline, type Out, type SignOut } from "./session.ts";
+import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import { Checklist } from "./steps/Checklist.tsx";
 import { CloseOut } from "./steps/CloseOut.tsx";
 import { Consumables } from "./steps/Consumables.tsx";
 import { Outcome } from "./steps/Outcome.tsx";
 import { Piece } from "./steps/Piece.tsx";
 import { enrolled, enrolledAt, keepMe, keptMe } from "./store/device.ts";
-import { wipe } from "./store/db.ts";
+import { onStorageFull, wipe } from "./store/db.ts";
 import { replay } from "./store/outbox.ts";
 import { askToKeep, type Keeping } from "./store/persist.ts";
 import { TodayScreen } from "./today/TodayScreen.tsx";
@@ -66,37 +69,67 @@ function pageFor(route: Route) {
   }
 }
 
+/** Whether the phone has just refused a write for want of room (./store/db.ts). */
+function useStorageFull(): boolean {
+  const [full, setFull] = useState(false);
+  useEffect(() => onStorageFull(setFull), []);
+  return full;
+}
+
 export function App() {
   const [state, setState] = useState<State>({ kind: "checking" });
   const [keeping, setKeeping] = useState<Keeping>("asking");
   const path = usePath();
   const online = useOnline();
+  const full = useStorageFull();
+
+  /*
+   * The session has ended: nothing of ours stays on this phone. The screens go
+   * first, so nothing of a client's shows while the wipe runs. Several calls
+   * can meet the same 401 at once, and they share the one ending.
+   */
+  const ending = useRef<Promise<void> | null>(null);
+  const end = useCallback((code: string | null): Promise<void> => {
+    ending.current ??= (async () => {
+      setState({ kind: "checking" });
+      // Read before the wipe, since the wipe takes the answer with it.
+      const had = (await enrolledAt().catch(() => null)) !== null;
+      await wipe();
+      setKeeping("asking");
+      go("/");
+      setState({ kind: "out", why: code === DEVICE_REVOKED ? "revoked" : had ? "ended" : "fresh" });
+    })().finally(() => {
+      ending.current = null;
+    });
+    return ending.current;
+  }, []);
+
+  const signedOut = state.kind === "out";
+  useEffect(() => {
+    if (signedOut) return;
+    return onSessionEnded((code) => void end(code));
+  }, [signedOut, end]);
 
   const check = useCallback(async () => {
     const answer = await api.me();
     if (answer.ok) {
-      await keepMe(answer.body);
-      await enrolled();
-      void askToKeep().then(setKeeping);
+      // Kept so the next basement opens signed in; a phone with no room to keep it opens all the same.
+      await keepMe(answer.body).catch(() => undefined);
+      await enrolled().catch(() => undefined);
+      void askToKeep().then(setKeeping, () => undefined);
       setState({ kind: "in", me: answer.body, offline: false });
       void replay();
       return;
     }
-    // The session has ended, or the device was revoked: nothing of ours stays on this phone.
-    if (answer.status === 401) {
-      // Read before the wipe, since the wipe takes the answer with it.
-      const had = (await enrolledAt()) !== null;
-      await wipe();
-      setState({ kind: "out", why: answer.code === DEVICE_REVOKED ? "revoked" : had ? "ended" : "fresh" });
-      return;
-    }
+    // The 401 has already ended the session (`end` above).
+    if (answer.status === 401) return;
     // No signal, or the API is having a bad minute: the phone works from what it holds.
-    const kept = await keptMe();
+    const kept = await keptMe().catch(() => null);
     if (kept === null) {
       setState({ kind: "out", why: "fresh" });
       return;
     }
-    void askToKeep().then(setKeeping);
+    void askToKeep().then(setKeeping, () => undefined);
     setState({ kind: "in", me: kept, offline: true });
   }, []);
 
@@ -134,13 +167,17 @@ export function App() {
     };
   }, []);
 
-  const signOut = useCallback(async () => {
-    await api.logout();
-    await wipe();
-    setKeeping("asking");
-    go("/");
-    setState({ kind: "out", why: "ended" });
-  }, []);
+  /**
+   * Only the API can end the session. With no answer from it the session is
+   * still open, and wiping the phone would only lose what it has not sent.
+   * A 401 means it had already ended, and `end` has begun.
+   */
+  const signOut = useCallback(async (): Promise<SignOut> => {
+    const answer = await api.logout();
+    if (!answer.ok && answer.status !== 401) return "still-signed-in";
+    await end(null);
+    return "signed-out";
+  }, [end]);
 
   switch (state.kind) {
     case "checking":
@@ -155,11 +192,17 @@ export function App() {
             offline: state.offline || !online,
             // The phone answered, and the answer was not a promise to keep the outbox.
             atRisk: keeping === "refused" || keeping === "unknown",
-            signOut: () => void signOut(),
+            signOut,
           }}
         >
-          {/* Keyed by the path, so each screen opens at its top with its own data. */}
-          <Fragment key={path}>{pageFor(routeOf(path))}</Fragment>
+          {full && (
+            <div className={styles.full} role="alert">
+              <p className={styles.fullTitle}>{storage.title}</p>
+              <p className={styles.fullBody}>{storage.body}</p>
+            </div>
+          )}
+          {/* Keyed by the path, so each screen opens at its top with its own data, and one that failed stays behind. */}
+          <ErrorBoundary key={path}>{pageFor(routeOf(path))}</ErrorBoundary>
         </SessionContext>
       );
   }

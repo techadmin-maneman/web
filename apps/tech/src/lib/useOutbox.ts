@@ -28,9 +28,14 @@ export function useOutbox(): Waiting {
   useEffect(() => {
     let current = true;
     const read = () => {
-      void Promise.all([events(), frames()]).then(([queued, kept]) => {
-        if (current) setWaiting({ events: queued, frames: kept });
-      });
+      void Promise.all([events(), frames()]).then(
+        ([queued, kept]) => {
+          if (current) setWaiting({ events: queued, frames: kept });
+        },
+        () => {
+          // A store that would not open this time keeps the last account; the next change reads again.
+        },
+      );
     };
     read();
     const stop = onChange(read);

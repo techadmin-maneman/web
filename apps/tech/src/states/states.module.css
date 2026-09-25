@@ -62,3 +62,9 @@
   outline: var(--rule-strong) solid var(--gilt);
   outline-offset: var(--focus-offset);
 }
+
+/* A screen that failed to draw: the ink ground, filling the column as every screen does. */
+.broken {
+  flex: 1;
+  background: var(--ink-deep);
+}

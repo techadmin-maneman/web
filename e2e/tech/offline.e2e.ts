@@ -46,6 +46,8 @@ test("opens with no connection at all, from the shell and today's jobs it cached
   const shell = Object.entries(held).find(([name]) => name.startsWith("mm-tech-shell-"));
   expect(shell?.[1]).toContain("/");
   expect(shell?.[1]?.some((path) => path.startsWith("/assets/"))).toBe(true);
+  // Fonts the app never draws with are not the phone's to keep (apps/tech/sw-build.ts).
+  expect(shell?.[1]?.filter((path) => /latin-ext|rupee/.test(path))).toEqual([]);
   expect(held["mm-tech-day"]).toEqual([`/api/tech/jobs?date=${todayInIndia()}`]);
 
   // The basement: no signal, and the app closed and reopened.
@@ -60,6 +62,44 @@ test("opens with no connection at all, from the shell and today's jobs it cached
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("opens on a signal that never answers, from the shell and what the phone holds, without waiting on it", async ({
+  page,
+  context,
+}) => {
+  await fakeTech(page, false, context);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await installed(page);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+
+  // "Lie-fi": the phone has a network, and nothing on it ever answers.
+  await context.route("**/*", () => new Promise<void>(() => undefined));
+  await page.goto("/", { timeout: 5_000 });
+
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("No signal · working offline")).toBeVisible();
+});
+
+test("keeps only today's list in its day cache, and lets an earlier day's go", async ({ page, context }) => {
+  await fakeTech(page, false, context);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await installed(page);
+
+  // Yesterday's list, as yesterday's worker would have left it.
+  await page.evaluate(async () => {
+    const cache = await window.caches.open("mm-tech-day");
+    await cache.put("/api/tech/jobs?date=2020-01-01", new Response('{"date":"2020-01-01","jobs":[]}'));
+  });
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await expect
+    .poll(async () => (await cachedPaths(page))["mm-tech-day"])
+    .toEqual([`/api/tech/jobs?date=${todayInIndia()}`]);
 });
 
 test("caches no client's card, nobody signed in, and no photograph", async ({ page, context }) => {
