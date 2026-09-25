@@ -2515,7 +2515,7 @@ export interface components {
             overdue: number;
             groups: {
                 /** @enum {string} */
-                group: "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request";
+                group: "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "draft_invoice";
                 count: number;
                 /** @description The longest wait first. */
                 tasks: components["schemas"]["Task"][];

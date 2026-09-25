@@ -82,8 +82,18 @@ function storedValue(row: Row): { name: OpsSettingName; value: SettingValue } | 
   } catch {
     return null;
   }
-  const checked = checkValue(setting, parsed);
+  const checked = checkValue(setting, withKeysAddedSince(setting, parsed));
   return checked.ok ? { name: setting.name as OpsSettingName, value: checked.value } : null;
+}
+
+/**
+ * A key the register has added to a closed set since the row was saved, such
+ * as a new task group, takes its committed figure; the keys ops set keep theirs.
+ */
+function withKeysAddedSince(setting: OpsSetting, stored: unknown): unknown {
+  if (setting.keys === null || setting.keys === "open") return stored;
+  if (typeof stored !== "object" || stored === null || Array.isArray(stored)) return stored;
+  return { ...(setting.fallback as Readonly<Record<string, number>>), ...stored };
 }
 
 function resolve(rows: readonly Row[]): OpsInputs {

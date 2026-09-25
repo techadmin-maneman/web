@@ -5,7 +5,7 @@
 // There is no `tasks` table and there is not going to be one. Every group below
 // is a queue the database already keeps: a consultation asked for, a held grant,
 // an undecided no-show, a number change waiting for ops, an erasure asked for, a
-// piece past its replacement date. A task is those rows read at the moment ops
+// piece past its replacement date, an invoice still a draft. A task is those rows read at the moment ops
 // look, so it cannot go stale, be closed twice or be left open by mistake.
 // Closing a task means doing the thing: the row leaves the queue on its own.
 //
@@ -13,6 +13,10 @@
 // review, Photo QA). Two of them have no record behind them, and four queues
 // the board does not draw do; what is built and what is not is item 58 of
 // docs/open-points.md.
+//
+// The last group is ours, not the prompt's (docs/decisions/0067-alerts-and-silent-failures.md):
+// a finished visit whose invoice is still a draft in Books, which the client
+// cannot open until somebody sends it.
 
 export const RULES = [
   "The replacement due date follows the per-base cycle config already defined in this prompt.",
@@ -29,6 +33,7 @@ export const TASK_GROUPS = [
   "no_show_decision",
   "number_change",
   "erasure_request",
+  "draft_invoice",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 
@@ -47,6 +52,7 @@ export const TASK_SLA_HOURS: Slas = {
   no_show_decision: 48,
   number_change: 48,
   erasure_request: 48,
+  draft_invoice: 48,
 };
 
 /**

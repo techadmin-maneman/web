@@ -181,6 +181,27 @@ describe("what the routes that read them do", () => {
     expect(reported).toBeInstanceOf(Error);
   });
 
+  it("keeps what ops set for each task group when a group is added later, which takes its committed figure", async () => {
+    const setBeforeTheGroupsWereAdded = {
+      consultation_request: 24,
+      replacement_order: 24,
+      referral_review: 24,
+      no_show_decision: 24,
+      number_change: 24,
+      erasure_request: 24,
+    };
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('task_sla_hours', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify(setBeforeTheGroupsWereAdded), NOW.toISOString())
+      .run();
+    expect((await createCachedOpsInputs()(env.DB, NOW)).taskSlaHours).toEqual({
+      ...COMMITTED.taskSlaHours,
+      ...setBeforeTheGroupsWereAdded,
+    });
+    expect((await named("task_sla_hours")).set_by).toBe("ops");
+  });
+
   it("ignores a stored row the register would no longer accept", async () => {
     await env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, 'ops', ?3)")
       .bind("checkin_radius_m", "0", NOW.toISOString())

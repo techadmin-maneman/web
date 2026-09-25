@@ -5,8 +5,8 @@
 // A task is not a record. It is a row in a queue the database already keeps,
 // read at the moment ops look: a held grant, an undecided no-show, a number
 // change waiting for ops, an erasure asked for, a piece past its replacement
-// date. Nothing here writes, and there is nothing to close: each task leaves
-// when the thing itself is done, on the route that does it.
+// date, an invoice still a draft. Nothing here writes, and there is nothing to
+// close: each task leaves when the thing itself is done, wherever it is done.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";

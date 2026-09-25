@@ -3885,7 +3885,8 @@ Request body:
               "referral_review",
               "no_show_decision",
               "number_change",
-              "erasure_request"
+              "erasure_request",
+              "draft_invoice"
             ]
           },
           "count": {

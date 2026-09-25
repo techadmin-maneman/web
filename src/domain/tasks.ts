@@ -1,7 +1,7 @@
 // What ops still have to do (src/policy/tasks.ts), read from the queues the
 // database already keeps rather than from a table of its own.
 //
-// All six groups are read in one batch, so the board costs one round trip
+// Every group is read in one batch, so the board costs one round trip
 // however many tasks it holds. Each arm gives the same six columns: the group,
 // the row's own id, the client it concerns, the one fact behind it, and the
 // moment it started waiting. The due date follows from that moment and the
@@ -26,7 +26,7 @@ export interface Task {
 
 /**
  * Every queue, in two statements sent together. D1 takes at most five arms in one
- * compound SELECT, so the sixth queue starts a second statement; a batch is still
+ * compound SELECT, so the queues are split between two statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
  * record is gone, and a task about them could not be done.
  *
@@ -72,6 +72,11 @@ const OUTSTANDING = [
   SELECT 'erasure_request', d.id, d.person_id, pe.name, NULL, d.created_at
     FROM deletion_requests d JOIN people pe ON pe.id = d.person_id
    WHERE d.state = 'requested' AND pe.erased_at IS NULL
+  UNION ALL
+  SELECT 'draft_invoice', a.id, a.person_id, pe.name, a.fsm_invoice_id, COALESCE(a.window_end, a.synced_at)
+    FROM appointments a JOIN people pe ON pe.id = a.person_id
+   WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.fsm_work_order_id IS NOT NULL
+     AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL
 ) ORDER BY since LIMIT ?1`,
 ] as const;
 

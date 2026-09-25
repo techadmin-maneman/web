@@ -1,7 +1,8 @@
 // Tasks (Ops Console, board D2): what ops still have to do, in groups, with how
 // long each has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an undecided
-// no-show, a number change, an erasure, a piece past its replacement date — so
+// no-show, a number change, an erasure, a piece past its replacement date, an
+// invoice still a draft — so
 // it leaves the list when that row is decided, on the section that decides it
 // (src/policy/tasks.ts).
 //
@@ -35,6 +36,7 @@ function subOf(group: Group, task: Task): string {
   }
   if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);
+  if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
   return group === "number_change" ? copy.number_change : copy.erasure_request;
 }
 

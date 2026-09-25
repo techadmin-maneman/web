@@ -116,8 +116,8 @@ async function remindersJob({ env, deps, log }: CronContext): Promise<void> {
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
 
-async function invoicesJob({ env, deps, log }: CronContext): Promise<void> {
-  const done = await raiseInvoices(env.DB, deps.fsm, deps.books, deps.now(), log, deps.alert);
+async function invoicesJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const done = await raiseInvoices(env.DB, deps, deps.now(), log, budget);
   if (done.raised + done.issued > 0) log.info("invoices_raised", done);
 }
 
