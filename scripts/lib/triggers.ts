@@ -106,6 +106,27 @@ function queuesConsumedBy(script: string, queues: ApiAnswer): readonly string[] 
     .map((queue) => queue.queue_name);
 }
 
+/** A Worker the account does not have: expected only of an app not yet deployed, which attaches nothing. */
+function notOnTheAccount(script: string, wanted: Triggers): Finding {
+  if (wanted.crons.length === 0 && wanted.consumers.length === 0) {
+    return { subject: script, outcome: "not deployed", detail: "not on the account, and attaches nothing" };
+  }
+  return { subject: script, outcome: "differs", detail: "not on the account, but its config attaches triggers" };
+}
+
+function cronFinding(script: string, wanted: Triggers, schedules: ApiAnswer, environment: RemoteEnvironmentName) {
+  const subject = `${script} cron schedules`;
+  if (!schedules.ok) return notRead(subject, schedules, environment);
+  const live = Schedules.parse(schedules.body).result.schedules.map((schedule) => schedule.cron);
+  return compare(subject, wanted.crons, live, environment);
+}
+
+function consumerFinding(script: string, wanted: Triggers, queues: ApiAnswer, environment: RemoteEnvironmentName) {
+  const subject = `${script} queue consumers`;
+  if (!queues.ok) return notRead(subject, queues, environment);
+  return compare(subject, wanted.consumers, queuesConsumedBy(script, queues), environment);
+}
+
 export async function checkTriggers(check: TriggerCheck): Promise<Finding[]> {
   const { environment } = check;
   const call = (path: string) => callCloudflare(check.token, `/accounts/${check.accountId}${path}`, {}, check.fetch);
@@ -116,35 +137,12 @@ export async function checkTriggers(check: TriggerCheck): Promise<Finding[]> {
     const script = `${worker.name}-${environment}`;
     const wanted = configuredTriggers(worker.config, environment);
     const schedules = await call(`/workers/scripts/${script}/schedules`);
-
     if (isMissingWorker(schedules)) {
-      const attachesNothing = wanted.crons.length === 0 && wanted.consumers.length === 0;
-      findings.push(
-        attachesNothing
-          ? { subject: script, outcome: "not deployed", detail: "not on the account, and attaches nothing" }
-          : { subject: script, outcome: "differs", detail: "not on the account, but its config attaches triggers" },
-      );
+      findings.push(notOnTheAccount(script, wanted));
       continue;
     }
-
-    const cronSubject = `${script} cron schedules`;
-    findings.push(
-      schedules.ok
-        ? compare(
-            cronSubject,
-            wanted.crons,
-            Schedules.parse(schedules.body).result.schedules.map((schedule) => schedule.cron),
-            environment,
-          )
-        : notRead(cronSubject, schedules, environment),
-    );
-
-    const consumerSubject = `${script} queue consumers`;
-    findings.push(
-      queues.ok
-        ? compare(consumerSubject, wanted.consumers, queuesConsumedBy(script, queues), environment)
-        : notRead(consumerSubject, queues, environment),
-    );
+    findings.push(cronFinding(script, wanted, schedules, environment));
+    findings.push(consumerFinding(script, wanted, queues, environment));
   }
   return findings;
 }

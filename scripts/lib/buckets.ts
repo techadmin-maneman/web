@@ -11,7 +11,7 @@
 import { z } from "zod";
 import type { RemoteEnvironmentName } from "../../src/config/environments.ts";
 import { callCloudflare, describeAnswer, isRefused, type ApiAnswer } from "./cloudflare-api.ts";
-import type { Finding } from "./findings.ts";
+import type { Finding, Outcome } from "./findings.ts";
 import type { JsonObject } from "./wrangler-config-check.ts";
 
 export type Retention = "expires within 30 days" | "never expires";
@@ -74,22 +74,14 @@ function expiresEverythingWithin30Days(rule: Rule): boolean {
 }
 
 function judge(bucket: string, retention: Retention, rules: readonly Rule[]): Finding {
+  const finding = (outcome: Outcome, detail: string): Finding => ({ subject: bucket, outcome, detail });
   if (retention === "expires within 30 days") {
-    return rules.some(expiresEverythingWithin30Days)
-      ? { subject: bucket, outcome: "matches", detail: "expires every object within 30 days" }
-      : {
-          subject: bucket,
-          outcome: "differs",
-          detail: "has no enabled rule expiring every object within 30 days (docs/runbook.md, step 1)",
-        };
+    if (rules.some(expiresEverythingWithin30Days)) return finding("matches", "expires every object within 30 days");
+    return finding("differs", "has no enabled rule expiring every object within 30 days (docs/runbook.md, step 1)");
   }
-  return rules.some(deletes)
-    ? {
-        subject: bucket,
-        outcome: "differs",
-        detail: "has a rule that deletes objects, but its objects must never expire",
-      }
-    : { subject: bucket, outcome: "matches", detail: "expires nothing" };
+  if (rules.some(deletes))
+    return finding("differs", "has a rule that deletes objects, but its objects must never expire");
+  return finding("matches", "expires nothing");
 }
 
 export interface BucketCheck {
