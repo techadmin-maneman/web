@@ -45,7 +45,7 @@ function fsm(routes: Parameters<typeof fakeFetch>[0]) {
 let logs: ReturnType<typeof captureLogs>;
 beforeEach(async () => {
   logs = captureLogs();
-  await env.DB.prepare("DELETE FROM zoho_tokens").run();
+  await env.DB.prepare("DELETE FROM zoho_access_tokens").run();
 });
 
 describe("FSM: appointments", () => {
@@ -506,7 +506,7 @@ describe("FSM: billing a finished job", () => {
     });
 
     // `created` is what lets the pass send only an invoice it has just raised (ADR 0056), and `total`,
-    // the work order's Rs. 2,000 in paise, what it checks against the sale first (ADR 0069).
+    // the work order's Rs. 2,000 in paise, what it checks against the sale first (ADR 0070).
     expect(await provider.invoiceWorkOrder("wo-1")).toEqual({
       id: "fsm-invoice-1",
       booksInvoiceId: "books-invoice-1",
@@ -634,7 +634,7 @@ describe("FSM: the access token", () => {
     await provider.contact("contact-1");
     await provider.contact("contact-1");
     expect(calls.filter((call) => call.url.startsWith(ZOHO_TOKEN_URL))).toHaveLength(1);
-    const row = await env.DB.prepare("SELECT client, expires_at FROM zoho_tokens").first();
+    const row = await env.DB.prepare("SELECT client, expires_at FROM zoho_access_tokens").first();
     expect(row).toEqual({ client: "fsm", expires_at: new Date(NOW.getTime() + 3600_000).toISOString() });
   });
 
@@ -787,7 +787,7 @@ describe("Books: payments, receipts and refunds", () => {
     });
   });
 
-  // Books' documented list shapes (ADR 0069); neither search has been tried on the org yet.
+  // Books' documented list shapes (ADR 0070); neither search has been tried on the org yet.
   it("finds a payment by our reference for the customer, matching the reference exactly", async () => {
     const { books, calls } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),

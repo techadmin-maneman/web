@@ -3,7 +3,7 @@
 // A visit is paid for before it happens, so its tax invoice records a sale
 // already settled: it must total what the client was sold the visit for. An
 // invoice FSM raises is issued only then. Otherwise it stays a draft, which can
-// still be corrected or deleted, and ops are told (docs/decisions/0069-vendor-correctness.md).
+// still be corrected or deleted, and ops are told (docs/decisions/0070-vendor-correctness.md).
 
 export const RULES = [
   "Every visit is prepaid at booking. Technicians never handle money, and no amount to collect is ever sent to FSM.",
