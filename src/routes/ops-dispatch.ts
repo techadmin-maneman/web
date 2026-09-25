@@ -89,6 +89,17 @@ const BoardSchema = z
   .strict()
   .openapi("DispatchBoard");
 
+/**
+ * The job as the board the move was made from showed it. If either differs from the job now, another ops user
+ * has moved it since, and nothing is written (FEO-05).
+ */
+const EXPECTED = {
+  expected_technician_id: z
+    .union([z.uuid(), z.null()])
+    .openapi({ description: "The technician the board showed the job with; null for a job in the tray." }),
+  expected_starts_at: z.iso.datetime().openapi({ description: "The start the board showed the job with." }),
+};
+
 const AssignRequestSchema = z
   .object({
     appointment_id: z.uuid(),
@@ -96,6 +107,7 @@ const AssignRequestSchema = z
     date: z.iso.date().optional(),
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
+    ...EXPECTED,
   })
   .strict()
   .openapi("DispatchAssignRequest");
@@ -107,6 +119,7 @@ const MoveRequestSchema = z
     date: z.iso.date().optional(),
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
+    ...EXPECTED,
   })
   .strict()
   .openapi("DispatchMoveRequest");
@@ -144,7 +157,7 @@ const assignRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
     409: errorResponse(
-      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it",
+      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)",
     ),
     502: errorResponse("fsm_refused: FSM would not take it; nothing moved"),
   },
@@ -160,7 +173,7 @@ const moveRoute = createRoute({
     400: errorResponse("invalid_request, including a move to the technician, day and window the job already has"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
-    409: errorResponse("clash; on_leave; does_not_fit"),
+    409: errorResponse("clash; on_leave; does_not_fit; superseded, with what changed in fields"),
     502: errorResponse("fsm_refused"),
   },
 });
@@ -191,6 +204,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     window: request.window ?? null,
     reason: request.reason,
     actor: actorOf(identity).id,
+    expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
   };
   const outcome = await moveJob(
     c.env.DB,
@@ -205,6 +219,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   );
 
   if (outcome.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
+  if (outcome.kind === "superseded") return c.json(errorBody("superseded", requestId, outcome.changed), 409);
   if (outcome.kind === "nothing_to_move") {
     return c.json(errorBody("invalid_request", requestId, ["technician_id", "date", "window"]), 400);
   }

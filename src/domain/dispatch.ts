@@ -20,7 +20,18 @@ import { moveRefusal, slotsFor, type MoveReason, type MoveRefusal } from "../pol
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { leaveBetween } from "./leave.ts";
-import { fitsAt, occupancy, placement, unitAt, visitTimes, windowAt, type Day } from "./scheduling.ts";
+import {
+  claimsOf,
+  fitsAt,
+  lettingGo,
+  movesOpenSince,
+  occupancy,
+  placement,
+  unitAt,
+  visitTimes,
+  windowAt,
+  type Day,
+} from "./scheduling.ts";
 import { visitMessage } from "./visit-messages.ts";
 
 /** Seven days, as the board shows them. */
@@ -214,6 +225,8 @@ export interface MoveInput {
   readonly reason: string;
   /** The Access identity that made the move (ADR 0031). */
   readonly actor: string;
+  /** The job as the board the move was made from showed it: its technician, none in the tray, and its start. */
+  readonly expected: { readonly technicianId: string | null; readonly startsAt: string };
 }
 
 /**
@@ -228,10 +241,18 @@ export type ClientNotice =
   /** The visit has no client on our records to tell. */
   | "no_client";
 
+/**
+ * What changed under a board since it was loaded: the job's technician, its
+ * time, or another move of it still being written.
+ */
+export type Change = "technician" | "time" | "moving";
+
 export type MoveOutcome =
   | { readonly kind: "moved"; readonly moveId: string; readonly clientNotice: ClientNotice }
   | { readonly kind: "refused"; readonly reason: MoveRefusal }
   | { readonly kind: "not_found" }
+  /** The board the move was made from no longer shows the job as it is; nothing was written. */
+  | { readonly kind: "superseded"; readonly changed: readonly Change[] }
   /** The move names the technician, day and window the job already has. */
   | { readonly kind: "nothing_to_move" }
   /** FSM would not take it: nothing moved, and the refusal is on the record. */
@@ -271,10 +292,21 @@ export interface MoveDeps {
   readonly notify?: (messageId: string) => Promise<unknown>;
 }
 
+interface LiveJob {
+  id: string;
+  fsm_id: string;
+  person_id: string | null;
+  type: VisitType;
+  status: AppointmentStatus;
+  window_start: string;
+  technician_id: string | null;
+}
+
 /**
- * Assigns or moves one job: the clash check, then FSM, then the mirror, then
- * the client's message. Assigning and moving are the same write; only what the
- * caller changes differs.
+ * Assigns or moves one job: the checks, then the new time claimed, then FSM,
+ * then the mirror and the client's message, with the claim let go in the same
+ * batch. Assigning and moving are the same write; only what the caller changes
+ * differs.
  */
 export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, now: Date): Promise<MoveOutcome> {
   const job = await db
@@ -283,16 +315,10 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
        WHERE id = ?1 AND deleted_at IS NULL AND status IN ${LIVE} AND type IS NOT NULL AND window_start IS NOT NULL`,
     )
     .bind(input.appointmentId)
-    .first<{
-      id: string;
-      fsm_id: string;
-      person_id: string | null;
-      type: VisitType;
-      status: AppointmentStatus;
-      window_start: string;
-      technician_id: string | null;
-    }>();
+    .first<LiveJob>();
   if (job === null) return { kind: "not_found" };
+  const changed = changedSince(job, input.expected);
+  if (changed.length > 0) return { kind: "superseded", changed };
 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
@@ -312,27 +338,22 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
 
   const times = target.keepsTime ? null : visitTimes(date, landing.start, job.type);
   const nowStart = times?.start ?? wasStart;
-
-  const at = now.toISOString();
   const moveId = crypto.randomUUID();
-  await db
-    .prepare(
-      `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-         reason, actor, fsm_write_state, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'pending', ?9, ?9)`,
-    )
-    .bind(
-      moveId,
-      job.id,
-      job.technician_id,
+  const opened = await openMove(
+    db,
+    {
+      id: moveId,
+      job,
       technicianId,
-      job.window_start,
-      nowStart.toISOString(),
-      input.reason as MoveReason,
-      input.actor,
-      at,
-    )
-    .run();
+      nowStart: nowStart.toISOString(),
+      reason: input.reason as MoveReason,
+      actor: input.actor,
+    },
+    { date, claims: claimsOf(landing.start, job.type, window) },
+    now,
+  );
+  if (opened === "moving") return { kind: "superseded", changed: ["moving"] };
+  if (opened === "taken") return { kind: "refused", reason: "clash" };
 
   try {
     if (technicianId !== job.technician_id)
@@ -342,14 +363,19 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
     }
   } catch (error) {
     const reason = (error instanceof Error ? error.message : "unknown error").slice(0, 300);
-    await db
-      .prepare("UPDATE dispatch_moves SET fsm_write_state = 'rejected', fsm_error = ?2, updated_at = ?3 WHERE id = ?1")
-      .bind(moveId, reason, now.toISOString())
-      .run();
+    await db.batch([
+      releasingClaims(db, moveId),
+      db
+        .prepare(
+          "UPDATE dispatch_moves SET fsm_write_state = 'rejected', fsm_error = ?2, updated_at = ?3 WHERE id = ?1",
+        )
+        .bind(moveId, reason, now.toISOString()),
+    ]);
     return { kind: "fsm_refused", moveId };
   }
 
   // FSM took it: the mirror follows, and the client is told his new window, if he has one.
+  const at = now.toISOString();
   const clientNotice = noticeFor(job.person_id, target);
   const message =
     clientNotice === "messaged" && job.person_id !== null
@@ -368,6 +394,8 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
         (times?.end ?? new Date(nowStart.getTime() + VISIT_BLOCKS[job.type].minutes * 60_000)).toISOString(),
         at,
       ),
+    // The mirror now holds the new time, so the claim on it goes in the same batch.
+    releasingClaims(db, moveId),
     // The message row is written before the move points at it.
     ...(message === null ? [] : [message.statement]),
     db
@@ -378,9 +406,104 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   return { kind: "moved", moveId, clientNotice };
 }
 
+/** What differs between the job now and the board the move was made from. */
+function changedSince(job: LiveJob, expected: MoveInput["expected"]): Change[] {
+  const changed: Change[] = [];
+  if (job.technician_id !== expected.technicianId) changed.push("technician");
+  if (new Date(job.window_start).getTime() !== new Date(expected.startsAt).getTime()) changed.push("time");
+  return changed;
+}
+
 function noticeFor(personId: string | null, target: Target): ClientNotice {
   if (target.keepsTime) return "unchanged";
   return personId === null ? "no_client" : "messaged";
+}
+
+interface OpenMove {
+  readonly id: string;
+  readonly job: LiveJob;
+  readonly technicianId: string;
+  readonly nowStart: string;
+  readonly reason: MoveReason;
+  readonly actor: string;
+}
+
+/**
+ * Opens the move and claims its new time on the technician's day, in one
+ * batch, before FSM is written. The claims' key is the one holds use, so a
+ * hold or another move cannot take the time until the move lets it go. What
+ * stands in the way: another move of the same job still open ("moving"), or a
+ * hold or move that took the time since it was checked ("taken"). A paid hold's
+ * claims are never let go here; only a hold nobody is paying for, or a move
+ * that never finished.
+ */
+async function openMove(
+  db: D1Database,
+  move: OpenMove,
+  time: { readonly date: string; readonly claims: readonly string[] },
+  now: Date,
+): Promise<"open" | "moving" | "taken"> {
+  const at = now.toISOString();
+  try {
+    await db.batch([
+      ...unfinishedMovesLetGo(db, now),
+      ...lettingGo(db, now),
+      db
+        .prepare(
+          `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
+             reason, actor, fsm_write_state, created_at, updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'pending', ?9, ?9)`,
+        )
+        .bind(
+          move.id,
+          move.job.id,
+          move.job.technician_id,
+          move.technicianId,
+          move.job.window_start,
+          move.nowStart,
+          move.reason,
+          move.actor,
+          at,
+        ),
+      ...time.claims.map((claim) =>
+        db
+          .prepare("INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, ?3, ?4)")
+          .bind(move.technicianId, time.date, claim, move.id),
+      ),
+    ]);
+    return "open";
+  } catch (error) {
+    if (failedUniqueOn(error, "dispatch_moves")) return "moving";
+    if (failedUniqueOn(error, "slot_claims")) return "taken";
+    throw error;
+  }
+}
+
+/** Whether a write failed on one of this table's unique keys, as SQLite words it: "UNIQUE constraint failed: t.c". */
+const failedUniqueOn = (error: unknown, table: string): boolean =>
+  error instanceof Error && error.message.includes(`UNIQUE constraint failed: ${table}.`);
+
+const releasingClaims = (db: D1Database, moveId: string): D1PreparedStatement =>
+  db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId);
+
+/** Moves opened too long ago to finish now. */
+const UNFINISHED = "SELECT id FROM dispatch_moves WHERE fsm_write_state = 'pending' AND created_at <= ?1";
+
+/**
+ * Lets go of the time claimed by moves that never finished, and closes them.
+ * Whether FSM took such a move is FSM's to say: the mirror follows FSM's own
+ * record of it, as it follows every change FSM makes.
+ */
+export function unfinishedMovesLetGo(db: D1Database, now: Date): D1PreparedStatement[] {
+  const since = movesOpenSince(now);
+  return [
+    db.prepare(`DELETE FROM slot_claims WHERE move_id IN (${UNFINISHED})`).bind(since),
+    db
+      .prepare(
+        `UPDATE dispatch_moves SET fsm_write_state = 'rejected', fsm_error = ?2, updated_at = ?3 WHERE id IN (${UNFINISHED})`,
+      )
+      .bind(since, "never finished: FSM may hold it, and its own record says", now.toISOString()),
+  ];
 }
 
 /**

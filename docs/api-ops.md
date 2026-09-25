@@ -938,7 +938,7 @@ Request body:
 }
 ```
 
-**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it
+**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)
 
 ```json
 {
@@ -998,7 +998,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave; does_not_fit
+**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields
 
 ```json
 {
@@ -1650,7 +1650,7 @@ Request body:
           "items": {
             "type": "string"
           },
-          "description": "invalid_request only: the fields that failed validation, never their values."
+          "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
         }
       },
       "required": [
@@ -3426,12 +3426,31 @@ Request body:
         "skill_needed",
         "running_over"
       ]
+    },
+    "expected_technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician the board showed the job with; null for a job in the tray."
+    },
+    "expected_starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start the board showed the job with."
     }
   },
   "required": [
     "appointment_id",
     "technician_id",
-    "reason"
+    "reason",
+    "expected_technician_id",
+    "expected_starts_at"
   ],
   "additionalProperties": false
 }
@@ -3473,11 +3492,30 @@ Request body:
         "skill_needed",
         "running_over"
       ]
+    },
+    "expected_technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician the board showed the job with; null for a job in the tray."
+    },
+    "expected_starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start the board showed the job with."
     }
   },
   "required": [
     "appointment_id",
-    "reason"
+    "reason",
+    "expected_technician_id",
+    "expected_starts_at"
   ],
   "additionalProperties": false
 }

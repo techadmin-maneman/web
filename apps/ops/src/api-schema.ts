@@ -1096,7 +1096,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it */
+                /** @description clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written) */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1181,7 +1181,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash; on_leave; does_not_fit */
+                /** @description clash; on_leave; does_not_fit; superseded, with what changed in fields */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -2081,7 +2081,7 @@ export interface components {
                 /** @enum {string} */
                 code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
-                /** @description invalid_request only: the fields that failed validation, never their values. */
+                /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
             };
         };
@@ -2485,6 +2485,13 @@ export interface components {
             window?: "morning" | "afternoon" | "evening";
             /** @enum {string} */
             reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
+            /** @description The technician the board showed the job with; null for a job in the tray. */
+            expected_technician_id: string | null;
+            /**
+             * Format: date-time
+             * @description The start the board showed the job with.
+             */
+            expected_starts_at: string;
         };
         DispatchMoveRequest: {
             /** Format: uuid */
@@ -2500,6 +2507,13 @@ export interface components {
             window?: "morning" | "afternoon" | "evening";
             /** @enum {string} */
             reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
+            /** @description The technician the board showed the job with; null for a job in the tray. */
+            expected_technician_id: string | null;
+            /**
+             * Format: date-time
+             * @description The start the board showed the job with.
+             */
+            expected_starts_at: string;
         };
         NoShowCases: {
             cases: components["schemas"]["NoShowCase"][];

@@ -1381,7 +1381,7 @@ Request body:
           "items": {
             "type": "string"
           },
-          "description": "invalid_request only: the fields that failed validation, never their values."
+          "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
         }
       },
       "required": [

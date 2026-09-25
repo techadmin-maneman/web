@@ -198,6 +198,8 @@ const postAt = (at: Date, path: string, body: unknown, eventId: string, headers:
 
 /** Today's job starts at 13:00 in India. */
 const TODAY_START = new Date("2026-09-21T07:30:00.000Z");
+/** Today's job as a dispatch board loaded now shows it, which every move sends (FEO-05). */
+const AS_THE_BOARD_SHOWS_IT = { expected_technician_id: IMRAN, expected_starts_at: TODAY_START.toISOString() };
 const minutesAfterStart = (minutes: number) => new Date(TODAY_START.getTime() + minutes * 60_000);
 /** The event ID the app makes for a write queued that many minutes after the start. */
 const uuidv7At = (minutes: number) => uuidv7(minutesAfterStart(minutes).getTime());
@@ -924,6 +926,7 @@ describe("dispatch, when FSM keeps its own technician", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       reason: "zone_rebalance",
     });
@@ -952,6 +955,7 @@ describe("dispatch", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       date: "2026-09-21",
       window: "afternoon",
@@ -972,6 +976,7 @@ describe("dispatch", () => {
   it("moves the job in FSM, records who moved it and why, and messages the client", async () => {
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",
@@ -1027,6 +1032,7 @@ describe("dispatch", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       date: "2026-09-22",
       window: "morning",
       reason: "running_over",
@@ -1060,6 +1066,7 @@ describe("leave", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",
@@ -1097,6 +1104,7 @@ describe("leave", () => {
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",

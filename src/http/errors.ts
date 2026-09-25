@@ -81,10 +81,10 @@ export const ErrorResponseSchema = z
       .object({
         code: z.enum(ERROR_CODES),
         request_id: z.string(),
-        fields: z
-          .array(z.string())
-          .optional()
-          .openapi({ description: "invalid_request only: the fields that failed validation, never their values." }),
+        fields: z.array(z.string()).optional().openapi({
+          description:
+            "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller.",
+        }),
       })
       .strict(),
   })

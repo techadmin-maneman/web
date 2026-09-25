@@ -15,9 +15,14 @@
 // until it is booked or refunded, however long that takes
 // (docs/decisions/0068-a-paid-hold-is-kept.md). Nobody's hold lets a paid one
 // go. The days ops black out (visit_blackouts) are not offered at all.
+//
+// A move on the dispatch board claims its new time the same way while FSM is
+// written, and the claims count here for as long as the move can still finish
+// (docs/decisions/0069-dispatch-under-concurrency.md).
 
 import {
   BOOKING_WINDOWS,
+  MOVE_CLAIM_SECONDS,
   PAYMENT_GRACE_SECONDS,
   UNIT_STARTS,
   UNITS_PER_DAY,
@@ -118,6 +123,9 @@ export interface Moving {
 /** Until when an unpaid hold made before `now` keeps its time: its ten minutes, then the grace. */
 const graceStart = (now: Date): string => new Date(now.getTime() - PAYMENT_GRACE_SECONDS * 1000).toISOString();
 
+/** A dispatch move opened before this, and still open, never finished. */
+export const movesOpenSince = (now: Date): string => new Date(now.getTime() - MOVE_CLAIM_SECONDS * 1000).toISOString();
+
 /** What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. */
 export async function occupancy(
   db: D1Database,
@@ -134,12 +142,16 @@ export async function occupancy(
     return day;
   };
 
+  // A hold's claims, and a dispatch move's while it can still finish.
   const claims = await db
     .prepare(
       `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
-       WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR h.expires_at > ?3)`,
+       WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR h.expires_at > ?3)
+       UNION ALL
+       SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN dispatch_moves m ON m.id = c.move_id
+       WHERE c.date BETWEEN ?1 AND ?2 AND m.fsm_write_state = 'pending' AND m.created_at > ?4`,
     )
-    .bind(from, to, graceStart(now))
+    .bind(from, to, graceStart(now), movesOpenSince(now))
     .all<{ technician_id: string; date: string; claim: string }>();
   for (const { technician_id: technicianId, date, claim } of claims.results) {
     const [kind, value = ""] = claim.split(":");
@@ -305,6 +317,20 @@ const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at 
   AND (expires_at <= ?1 OR (?3 = 1 AND person_id = ?2))`;
 
 /**
+ * Lets go of the holds nobody is paying for, and, given a client, that client's own other unpaid holds too. For
+ * the batch that writes new claims, so a dead hold's claims never stand in their way.
+ */
+export function lettingGo(db: D1Database, now: Date, clientToo: string | null = null): D1PreparedStatement[] {
+  const ownToo = clientToo === null ? 0 : 1;
+  return [
+    db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${LET_GO})`).bind(graceStart(now), clientToo, ownToo),
+    db
+      .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?4 WHERE id IN (${LET_GO})`)
+      .bind(graceStart(now), clientToo, ownToo, now.toISOString()),
+  ];
+}
+
+/**
  * Holds a window for the client: their regular technician if free, else whoever has the least that day.
  * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out.
  */
@@ -355,16 +381,12 @@ export async function holdSlot(
   const at = now.toISOString();
   const expiresAt = new Date(now.getTime() + holdSeconds * 1000).toISOString();
   const confirmedAt = from === "site" ? at : null;
-  const ownToo = from === "app" ? 1 : 0;
   for (const { technician, start } of candidates) {
     const id = crypto.randomUUID();
     try {
       await db.batch([
         ...(input.alongside ?? []),
-        db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${LET_GO})`).bind(graceStart(now), personId, ownToo),
-        db
-          .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?4 WHERE id IN (${LET_GO})`)
-          .bind(graceStart(now), personId, ownToo, at),
+        ...lettingGo(db, now, from === "app" ? personId : null),
         db
           .prepare(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
