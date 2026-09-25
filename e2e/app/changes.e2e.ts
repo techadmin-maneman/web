@@ -6,12 +6,16 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { changingClients } from "./changing.ts";
-import { confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
+import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
 // Each client's visit is moved, then cancelled, so these run one after another.
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ page }) => {
+  await noRealCheckout(page);
+});
 
 async function scan(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page })

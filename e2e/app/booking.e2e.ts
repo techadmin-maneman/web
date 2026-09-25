@@ -5,13 +5,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { checkoutOnTop, confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
+import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another.
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ page }) => {
+  await noRealCheckout(page);
+});
 
 const CHECKOUT = "https://checkout.razorpay.com/v1/checkout.js";
 const REMIND = "Remind me on WhatsApp the day before";
