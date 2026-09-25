@@ -4,19 +4,72 @@
 // A code that does not go leaves nobody able to sign in, so failures are counted
 // by the hour, and the third in an hour tells ops; the next code that does go
 // closes the alert (docs/decisions/0067-alerts-and-silent-failures.md).
+//
+// Only a code that is sent counts against the day's ceiling, which clients,
+// technicians and number changes share. A number nobody here knows costs its
+// address instead, so asking for random numbers cannot lock everyone out.
 
 import type { Context } from "hono";
 import type { AppEnv } from "../app.ts";
 import { onAllowlist } from "../config/settings.ts";
-import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
-import { countOne } from "../domain/rate-limit.ts";
-import { indiaHour } from "../lib/india-time.ts";
+import { alertCeilingReached, ceilingReached, takeFromCeiling } from "../domain/ceilings.ts";
+import { countOne, isSpent } from "../domain/rate-limit.ts";
+import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { scrubString } from "../log.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 import { afterResponse } from "./after-response.ts";
 
 /** Failed sends in one hour before ops are told: one is a mistyped number, three is the bridge. */
 const FAILURES_PER_HOUR_TO_ALERT = 3;
+
+/**
+ * Numbers nobody here knows that one address may ask a code for in a day. Past
+ * them the address is refused every number until midnight in India, so the
+ * refusal never says whether the number asked for is a real one.
+ */
+export const UNKNOWN_NUMBERS_PER_ADDRESS_DAILY = 20;
+
+const unknownNumbers = (ipHash: string, now: Date) => ({
+  scope: "login:unknown:ip",
+  key: ipHash,
+  window: indiaDate(now),
+  limit: UNKNOWN_NUMBERS_PER_ADDRESS_DAILY,
+});
+
+/** How a request for a code is answered before anyone is looked up. */
+export type CodeGate = "open" | "rate_limited" | "busy";
+
+/**
+ * Asked before the number is looked up, so every number gets the same answer:
+ * refused while the address has spent its day of unknown numbers, and busy
+ * while the day's ceiling is reached.
+ */
+export async function codeGate(c: Context<AppEnv>, ipHash: string, now: Date): Promise<CodeGate> {
+  if (await isSpent(c.env.DB, unknownNumbers(ipHash, now))) return "rate_limited";
+  const { codeDailyCeiling } = c.var.config.settings.login;
+  if (!(await ceilingReached(c.env.DB, "login_code", codeDailyCeiling, now))) return "open";
+  await alertCeilingReached(c.env.DB, c.var.deps.alert, "login_code", codeDailyCeiling, now);
+  return "busy";
+}
+
+/**
+ * Counts what this request's code costs: one from the day's ceiling if it will
+ * be sent, false once the ceiling is reached; one from its address's day if the
+ * number is nobody's. A code the staging allowlist holds back costs nothing.
+ */
+export async function countCode(
+  c: Context<AppEnv>,
+  sendsTo: string | null,
+  ipHash: string,
+  now: Date,
+): Promise<boolean> {
+  if (sendsTo === null) {
+    await countOne(c.env.DB, unknownNumbers(ipHash, now));
+    return true;
+  }
+  if (!onAllowlist(c.var.config.settings.messaging, sendsTo)) return true;
+  return withinCodeCeiling(c, now);
+}
 
 /** Nothing is sent without a number, nor, on staging, to a number off the allowlist. The code is never logged. */
 export async function sendCodeAfterResponse(

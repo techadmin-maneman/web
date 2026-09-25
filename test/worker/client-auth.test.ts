@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { UNKNOWN_NUMBERS_PER_ADDRESS_DAILY } from "../../src/http/send-code.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
 import { RULES } from "../../src/policy/one-time-code.ts";
 import {
@@ -182,13 +183,43 @@ describe("POST /api/auth/otp", () => {
     expect((await start("98100 00013")).res.status).toBe(429);
   });
 
-  it("stops every code at the daily ceiling, and alerts once", async () => {
+  it("stops every code at the daily ceiling, for every number alike, and alerts once", async () => {
     build({ login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 2 } });
     await start("98100 00001");
-    await start("98100 00009");
-    expect((await start("98100 00001")).res.status).toBe(503);
-    expect((await start("98100 00002")).res.status).toBe(503);
+    await start("98100 00001");
+    expect(deps.sentCodes).toHaveLength(2);
+    for (const mobile of ["98100 00001", "98100 00002", "98100 00009"]) {
+      expect((await start(mobile)).res.status).toBe(503);
+    }
     expect(deps.alerts).toEqual([expect.stringContaining("client app login codes") as string]);
+  });
+
+  it("counts only codes that are sent against the ceiling, so numbers nobody knows cannot use it up", async () => {
+    build({ login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } });
+    for (const mobile of ["98100 00009", "98100 00011", "98100 00002"]) {
+      expect((await start(mobile)).res.status).toBe(202);
+    }
+    expect((await start("98100 00001")).res.status).toBe(202);
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual([BOOKED]);
+  });
+
+  it("refuses an address every number for the day once it has asked for twenty that nobody knows", async () => {
+    const address = { "CF-Connecting-IP": "203.0.113.50" };
+    for (let unknown = 0; unknown < UNKNOWN_NUMBERS_PER_ADDRESS_DAILY; unknown += 1) {
+      if (unknown % 10 === 0) later(3600); // past the address's ten an hour
+      const mobile = `98200 ${String(unknown).padStart(5, "0")}`;
+      expect((await post("/api/auth/otp", { mobile }, address)).status).toBe(202);
+    }
+    later(3600);
+    expect((await post("/api/auth/otp", { mobile: "98200 99999" }, address)).status).toBe(429);
+    expect((await post("/api/auth/otp", { mobile: "98100 00001" }, address)).status).toBe(429);
+
+    // Another address, and the next day, are untouched.
+    expect(
+      (await post("/api/auth/otp", { mobile: "98100 00001" }, { "CF-Connecting-IP": "203.0.113.51" })).status,
+    ).toBe(202);
+    later(24 * 3600);
+    expect((await post("/api/auth/otp", { mobile: "98100 00001" }, address)).status).toBe(202);
   });
 
   it("refuses a write from another origin, like every client-surface write", async () => {
