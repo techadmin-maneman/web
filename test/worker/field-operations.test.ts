@@ -403,6 +403,21 @@ describe("closing the job", () => {
     expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
   });
 
+  it("moves the mirror as FSM takes each step, without waiting for FSM's webhook", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    await runFsmQueue();
+    expect(await mirrorStatusOf(TODAY_JOB)).toEqual({ status: "dispatched", fsm_status: "Dispatched" });
+
+    await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+    await beforePhotos();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: [] }, "event-checklist-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    await runFsmQueue();
+    expect(await mirrorStatusOf(TODAY_JOB)).toEqual({ status: "completed", fsm_status: "Completed" });
+  });
+
   it("does not count a step as written when FSM refuses its transition, and alerts after the last attempt", async () => {
     // Ops cancelled the job in FSM's own screen; the mirror has not heard yet.
     await fsm.transitionAppointment("ap-today", "Cancel", "Cancelled by ops.");
@@ -822,6 +837,12 @@ async function writeStateOf(id: string): Promise<string> {
     .bind(id)
     .first<{ fsm_write_state: string }>();
   return row?.fsm_write_state ?? "";
+}
+
+async function mirrorStatusOf(appointmentId: string) {
+  return env.DB.prepare("SELECT status, fsm_status FROM appointments WHERE id = ?1")
+    .bind(appointmentId)
+    .first<{ status: string; fsm_status: string }>();
 }
 
 /** The distinct write states of a job's events. */

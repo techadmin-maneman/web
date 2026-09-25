@@ -19,7 +19,8 @@ import { CHECKLIST } from "../config/job-sheet.ts";
 import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaIso } from "../lib/india-time.ts";
-import type { AppointmentTransition, FsmProvider } from "../providers/fsm.ts";
+import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../providers/fsm.ts";
+import { statusOf } from "./fsm-mirror.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
 import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";
 import { attachPhotosToFsm } from "./tech-photos.ts";
@@ -71,11 +72,11 @@ export async function writeEventToFsm(
     case "check_in": {
       // The technician is on site: FSM's own Dispatch transition says so.
       const note = `${prefix(deps)}Technician checked in at ${indiaIsoOf(event.occurredAt)}.`;
-      return moveAppointment(fsm, job, "Dispatch", note);
+      return moveAppointment(deps, job, "Dispatch", note);
     }
     case "start": {
       await fsm.updateAppointment(job.fsmId, { Actual_Start_Date_Time: indiaIsoOf(event.occurredAt) });
-      await moveAppointment(fsm, job, "Start Work", `${prefix(deps)}Job started.`);
+      await moveAppointment(deps, job, "Start Work", `${prefix(deps)}Job started.`);
       return "written";
     }
     case "before_photos":
@@ -102,7 +103,7 @@ export async function writeEventToFsm(
       const outcome = asText(event.body.outcome) ?? "";
       const transition = outcome === "done" ? "Complete Work" : "Terminate";
       const note = `${prefix(deps)}${await closingNote(db, job, event)}`;
-      await moveAppointment(fsm, job, transition, note);
+      await moveAppointment(deps, job, transition, note);
       return "written";
     }
   }
@@ -114,18 +115,35 @@ export async function writeEventToFsm(
  * either behind it already or refused, and the appointment's status says
  * which. A refusal throws: the queue tries again, and alerts after its last
  * attempt, rather than counting a step FSM never took as written.
+ *
+ * Once FSM has taken the step, the mirror takes its status at once, so the
+ * board and the client's app follow the job without waiting for FSM's webhook.
  */
 async function moveAppointment(
-  fsm: FsmProvider,
+  deps: FsmWriteDeps,
   job: JobForFsm,
   transition: JobTransition,
   note: string,
 ): Promise<FsmWriteOutcome> {
-  if (await fsm.transitionAppointment(job.fsmId, transition, note)) return "written";
+  if (await deps.fsm.transitionAppointment(job.fsmId, transition, note)) {
+    await mirrorStatus(deps.db, job.id, STATUS_AFTER[transition]);
+    return "written";
+  }
 
-  const status = (await fsm.appointment(job.fsmId))?.status;
-  if (status !== undefined && ALREADY_PAST[transition].includes(status)) return "nothing_to_write";
-  throw new Error(`FSM does not offer ${transition} on this appointment, which is ${status ?? "not in FSM"}`);
+  const status = (await deps.fsm.appointment(job.fsmId))?.status;
+  if (status === undefined || !ALREADY_PAST[transition].includes(status)) {
+    throw new Error(`FSM does not offer ${transition} on this appointment, which is ${status ?? "not in FSM"}`);
+  }
+  await mirrorStatus(deps.db, job.id, status);
+  return "nothing_to_write";
+}
+
+/** FSM's status word over the mirror's copy; the webhook's full read follows and agrees. */
+async function mirrorStatus(db: D1Database, appointmentId: string, fsmStatus: string): Promise<void> {
+  await db
+    .prepare("UPDATE appointments SET status = ?2, fsm_status = ?3 WHERE id = ?1")
+    .bind(appointmentId, statusOf(fsmStatus), fsmStatus)
+    .run();
 }
 
 /** The piece step: a fitted piece becomes an FSM asset, a failed one is marked there. */
