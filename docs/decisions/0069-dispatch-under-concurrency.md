@@ -24,6 +24,8 @@ The audit of 24 September 2026 moved jobs on the board the way two ops users on 
 
 **A window with no room is named as such.** A move is refused, in this order, as `on_leave` (ADR 0062), as `clash` where another job starts in the window, and as `does_not_fit` where the window is free but the visit's block is not: a half-slot it needs is taken, or it would run past the day's last one. `src/policy/dispatch.ts` gives the order; `src/domain/scheduling.ts` answers whether the block fits.
 
+**The board asks before it offers.** `GET /api/dispatch/room` answers, for a job in hand, each technician's day in the board's week with the windows the job would land in, by the same check a move runs, and never where the job already is. The board offers only those, so a window that would be refused is refused before a reason is picked (brief A2: "A cell that would clash is refused before the sheet opens"). The move still runs the check itself: the answer is a moment old by the time ops choose.
+
 **A move claims its new time before FSM is written.** In one batch, before any call to FSM, the move is opened in `dispatch_moves` and its new time claimed in `slot_claims`, the table whose key already stops two holds taking one technician's time (ADR 0034): a row per half-slot and one for the window. A claim now belongs to a hold or to a move (migration 0040). Then:
 
 - a client's hold, or another move, that reaches for that time while FSM is written fails on the key, and the booking's availability counts the claim as taken;

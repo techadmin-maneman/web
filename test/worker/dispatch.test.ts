@@ -776,3 +776,44 @@ describe("what the board carries of each visit", () => {
     expect((await board("from=2026-09-22")).city).toBeNull();
   });
 });
+
+interface RoomBody {
+  appointment_id: string;
+  rooms: { technician_id: string; date: string; windows: string[] }[];
+}
+
+const roomFor = (id: string, from: string) =>
+  request(ops, `/api/dispatch/room?appointment_id=${id}&from=${from}`, {}, bindings());
+
+// FEO-10 and REQ-S9-02: "Drop it on a cell with room", and "a cell that would
+// clash is refused before the sheet opens". The board offered every window of
+// every day and learnt of a clash only after a reason had been picked.
+describe("where a job in hand can go", () => {
+  it("offers each window the job would land in, and none it would be refused", async () => {
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    await insertJob(REPLACEMENT, { type: "replacement", start: TUESDAY["10:30"], technician: SAMEER });
+    expect((await opsPost(`/api/technicians/${SAMEER}/leave`, { from: "2026-09-24", to: "2026-09-24" })).status).toBe(
+      200,
+    );
+
+    const answer = await roomFor(FIT, "2026-09-22");
+    expect(answer.status).toBe(200);
+    const { rooms } = await answer.json<RoomBody>();
+    const windowsOf = (technician: string, date: string) =>
+      rooms.find((room) => room.technician_id === technician && room.date === date)?.windows ?? [];
+
+    // Imran's afternoon is where it already is; his morning has room, and no evening has room for a first fit.
+    expect(windowsOf(IMRAN, "2026-09-22")).toEqual(["morning"]);
+    // Sameer's replacement holds his morning and runs into the first fit's own 12:00.
+    expect(windowsOf(SAMEER, "2026-09-22")).toEqual([]);
+    expect(windowsOf(SAMEER, "2026-09-23")).toEqual(["morning", "afternoon"]);
+    // Away on Thursday.
+    expect(windowsOf(SAMEER, "2026-09-24")).toEqual([]);
+    expect(rooms.every((room) => room.windows.length > 0)).toBe(true);
+  });
+
+  it("answers not found for a job no longer live", async () => {
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN, status: "completed" });
+    expect((await roomFor(FIT, "2026-09-22")).status).toBe(404);
+  });
+});

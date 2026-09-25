@@ -894,6 +894,34 @@ The dispatch board: seven days of every active technician, with the unassigned t
 }
 ```
 
+### GET /api/dispatch/room
+
+Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing
+
+**200**: Where it would land
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchRoom"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such live job
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/dispatch/assign
 
 Put a job on a technician, with a reason. The clash check runs before any write to FSM
@@ -3577,6 +3605,60 @@ Request body:
     "referred_by"
   ],
   "additionalProperties": false
+}
+```
+
+### DispatchRoom
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "rooms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "windows": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "morning",
+                "afternoon",
+                "evening"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "technician_id",
+          "date",
+          "windows"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "appointment_id",
+    "rooms"
+  ],
+  "additionalProperties": false,
+  "description": "Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is."
 }
 ```
 

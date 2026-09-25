@@ -3,20 +3,15 @@
 
 import { describe, expect, it } from "vitest";
 import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../../src/config/scheduling.ts";
-import {
-  clashes,
-  clientNotice,
-  isMoveReason,
-  MOVE_REASONS,
-  moveRefusal,
-  RULES,
-  slotsFor,
-} from "../../src/policy/dispatch.ts";
+import { clashes, clientNotice, MOVE_REASONS, moveRefusal, RULES, slotsFor } from "../../src/policy/dispatch.ts";
 
 /** A technician whose day already holds a job starting in each of these windows. */
 const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLeave: false });
 /** The same technician, away that day (ADR 0062). */
 const away = (...windows: BookingWindow[]) => ({ ...day(...windows), onLeave: true });
+/** Whether the visit's block has room in the window, as src/domain/scheduling.ts answers it. */
+const FITS = { fits: true };
+const NO_ROOM = { fits: false };
 
 describe("dispatch", () => {
   it(RULES[0], () => {
@@ -68,26 +63,21 @@ describe("dispatch", () => {
       "skill_needed",
       "running_over",
     ]);
-    expect(isMoveReason("zone_rebalance")).toBe(true);
-    expect(isMoveReason("because")).toBe(false);
   });
 
-  it("refuses a move with no reason from the list, and one that clashes", () => {
-    expect(moveRefusal(day(), "morning", "client_asked")).toBeNull();
-    expect(moveRefusal(day(), "morning", "because")).toBe("unknown_reason");
-    expect(moveRefusal(day("morning"), "morning", "client_asked")).toBe("clash");
-    // The reason is checked first: a move nobody can explain is refused either way.
-    expect(moveRefusal(day("morning"), "morning", "")).toBe("unknown_reason");
+  it("refuses a move that clashes, and lets one through that does not", () => {
+    expect(moveRefusal(day(), "morning", FITS)).toBeNull();
+    expect(moveRefusal(day("morning"), "morning", FITS)).toBe("clash");
   });
 
   // The rule the prompt's last line asks for, kept our way (ADR 0062): the day
   // is refused outright, and named as leave so ops are not told it is merely full.
   it("refuses every window of a day the technician is away, and says it is leave", () => {
-    expect(moveRefusal(away(), "morning", "client_asked")).toBe("on_leave");
-    expect(moveRefusal(away(), "afternoon", "zone_rebalance")).toBe("on_leave");
-    expect(moveRefusal(away(), "evening", "running_over")).toBe("on_leave");
+    expect(moveRefusal(away(), "morning", FITS)).toBe("on_leave");
+    expect(moveRefusal(away(), "afternoon", FITS)).toBe("on_leave");
+    expect(moveRefusal(away(), "evening", FITS)).toBe("on_leave");
     // An empty window on a day off is still leave, not a clash.
-    expect(moveRefusal(away("evening"), "morning", "client_asked")).toBe("on_leave");
+    expect(moveRefusal(away("evening"), "morning", FITS)).toBe("on_leave");
   });
 
   // "A visit fits where every half-slot of its block is free" (ADR 0034), and "a
@@ -95,10 +85,10 @@ describe("dispatch", () => {
   // half-slot, so a first fit cannot start in the evening" (ADR 0035). A window
   // nobody holds can still have no room, and ops are told that, not that it clashes.
   it("refuses a job with no room in a free window as not fitting, not as a clash", () => {
-    expect(moveRefusal(day(), "evening", "client_asked", { fits: false })).toBe("does_not_fit");
-    expect(moveRefusal(day(), "evening", "client_asked", { fits: true })).toBeNull();
+    expect(moveRefusal(day(), "evening", NO_ROOM)).toBe("does_not_fit");
+    expect(moveRefusal(day(), "evening", FITS)).toBeNull();
     // A window someone holds is still a clash, and a day off still leave, whatever the room.
-    expect(moveRefusal(day("evening"), "evening", "client_asked", { fits: false })).toBe("clash");
-    expect(moveRefusal(away(), "evening", "client_asked", { fits: false })).toBe("on_leave");
+    expect(moveRefusal(day("evening"), "evening", NO_ROOM)).toBe("clash");
+    expect(moveRefusal(away(), "evening", NO_ROOM)).toBe("on_leave");
   });
 });

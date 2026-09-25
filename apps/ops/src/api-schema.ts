@@ -1037,6 +1037,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dispatch/room": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing */
+        get: {
+            parameters: {
+                query: {
+                    appointment_id: string;
+                    from?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Where it would land */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchRoom"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such live job */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dispatch/assign": {
         parameters: {
             query?: never;
@@ -2568,6 +2625,18 @@ export interface components {
             whatsapp_visits: boolean;
             /** @description Who invited him, by name; null when he came on his own. */
             referred_by: string | null;
+        };
+        /** @description Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
+        DispatchRoom: {
+            /** Format: uuid */
+            appointment_id: string;
+            rooms: {
+                /** Format: uuid */
+                technician_id: string;
+                /** Format: date */
+                date: string;
+                windows: ("morning" | "afternoon" | "evening")[];
+            }[];
         };
         DispatchMoved: {
             /** Format: uuid */

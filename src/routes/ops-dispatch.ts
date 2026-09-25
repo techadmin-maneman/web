@@ -1,6 +1,7 @@
 // The dispatch board on the ops console, behind Access (Ops Console, board A;
 // src/policy/dispatch.ts):
 //   GET  /api/dispatch?from=&city=   the grid, blocks, unassigned tray, leave and utilisation
+//   GET  /api/dispatch/room?appointment_id=&from=   where a job in hand would land this week
 //   POST /api/dispatch/assign        put an unassigned job on a technician
 //   POST /api/dispatch/move          move a job, with a reason from the design's list
 //   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
@@ -16,7 +17,7 @@ import type { App, AppEnv } from "../app.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { actorOf } from "../domain/audit.ts";
-import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, type MoveInput } from "../domain/dispatch.ts";
+import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
@@ -212,6 +213,37 @@ const moveRoute = createRoute({
   },
 });
 
+const RoomSchema = z
+  .object({
+    appointment_id: z.uuid(),
+    rooms: z.array(
+      z
+        .object({
+          technician_id: z.uuid(),
+          date: z.iso.date(),
+          windows: z.array(z.enum(BOOKING_WINDOWS)).min(1),
+        })
+        .strict(),
+    ),
+  })
+  .strict()
+  .openapi("DispatchRoom", {
+    description:
+      "Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is.",
+  });
+
+const roomRoute = createRoute({
+  method: "get",
+  path: "/api/dispatch/room",
+  summary: "Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing",
+  request: { query: z.object({ appointment_id: z.uuid(), from: z.iso.date().optional() }) },
+  responses: {
+    200: { description: "Where it would land", ...json(RoomSchema) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such live job"),
+  },
+});
+
 const toldRoute = createRoute({
   method: "post",
   path: "/api/dispatch/moves/{id}/told",
@@ -229,6 +261,14 @@ export function registerOpsDispatch(app: App): void {
     const now = c.var.deps.now();
     const { from, city } = c.req.valid("query");
     return c.json(await dispatchBoard(c.env.DB, { from: from ?? indiaDate(now), city: city ?? null }), 200);
+  });
+
+  app.openapi(roomRoute, async (c) => {
+    const now = c.var.deps.now();
+    const { appointment_id: appointmentId, from } = c.req.valid("query");
+    const rooms = await roomFor(c.env.DB, { appointmentId, from: from ?? indiaDate(now) }, now);
+    if (rooms === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    return c.json({ appointment_id: appointmentId, rooms }, 200);
   });
 
   app.openapi(assignRoute, (c) => write(c, c.req.valid("json")));
@@ -291,14 +331,8 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   if (outcome.kind === "nothing_to_move") {
     return c.json(errorBody("invalid_request", requestId, ["technician_id", "date", "window"]), 400);
   }
-  if (outcome.kind === "refused") {
-    // "unknown_reason" here means the job has no technician and none was named:
-    // the reason itself is already one of the design's list, by the schema.
-    if (outcome.reason === "unknown_reason") {
-      return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
-    }
-    return c.json(errorBody(outcome.reason, requestId), 409);
-  }
+  if (outcome.kind === "no_technician") return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
+  if (outcome.kind === "refused") return c.json(errorBody(outcome.reason, requestId), 409);
   if (outcome.kind === "fsm_refused") {
     log.warn("dispatch_move_refused_by_fsm", { appointment_id: input.appointmentId, move_id: outcome.moveId });
     return c.json(errorBody("fsm_refused", requestId), 502);

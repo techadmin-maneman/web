@@ -16,7 +16,7 @@
 // is never charged for a move ops make", so no amount is read or written here
 // at all: a visit carries a badge, never a figure.
 
-import { SLOTS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
+import { BOOKING_WINDOWS, SLOTS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaIso, indiaTime } from "../lib/india-time.ts";
 import {
@@ -34,6 +34,7 @@ import { listCities } from "./cities.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { leaveBetween } from "./leave.ts";
 import {
+  activeTechnicians,
   claimsOf,
   fitsAt,
   lettingGo,
@@ -180,9 +181,12 @@ const BOARD_JOBS = `
     AND (?3 IS NULL OR a.service_city = ?3)
   ORDER BY a.window_start`;
 
+/** The board's seven days from `from`. */
+const weekFrom = (from: string): string[] => Array.from({ length: BOARD_DAYS }, (_, index) => addDays(from, index));
+
 /** The board for seven days from `from`, optionally narrowed to one city. */
 export async function dispatchBoard(db: D1Database, options: { from: string; city: string | null }): Promise<Board> {
-  const dates = Array.from({ length: BOARD_DAYS }, (_, index) => addDays(options.from, index));
+  const dates = weekFrom(options.from);
   const last = dates[dates.length - 1] ?? options.from;
   const fromAt = indiaInstant(options.from, "00:00").toISOString();
   const toAt = indiaInstant(addDays(last, 1), "00:00").toISOString();
@@ -360,7 +364,7 @@ export interface MoveInput {
   /** The India date and window it goes to; absent keeps the time it has. */
   readonly date?: string | null;
   readonly window?: BookingWindow | null;
-  readonly reason: string;
+  readonly reason: MoveReason;
   /** The Access identity that made the move (ADR 0031). */
   readonly actor: string;
   /** The job as the board the move was made from showed it: its technician, none in the tray, and its start. */
@@ -377,6 +381,8 @@ export type MoveOutcome =
   | { readonly kind: "moved"; readonly moveId: string; readonly clientNotice: ClientNotice }
   | { readonly kind: "refused"; readonly reason: MoveRefusal }
   | { readonly kind: "not_found" }
+  /** A job in the tray, sent with no technician to put it on. */
+  | { readonly kind: "no_technician" }
   /** The board the move was made from no longer shows the job as it is; nothing was written. */
   | { readonly kind: "superseded"; readonly changed: readonly Change[] }
   /** The move names the technician, day and window the job already has. */
@@ -403,10 +409,10 @@ function startOn(day: Day, job: { type: VisitType; start: Date }, target: Target
   return fitsAt(day, start, job.type) ? start : null;
 }
 
-/** Where the job lands on the target's day, or why it cannot; `reason` is the move's own. */
-function landingOf(day: Day, job: { type: VisitType; start: Date }, target: Target, reason: string): Landing {
+/** Where the job lands on the target's day, or why it cannot. */
+function landingOf(day: Day, job: { type: VisitType; start: Date }, target: Target): Landing {
   const start = startOn(day, job, target);
-  const refusal = moveRefusal(day, target.window, reason, { fits: start !== null });
+  const refusal = moveRefusal(day, target.window, { fits: start !== null });
   if (refusal !== null) return { kind: "refused", reason: refusal };
   return start === null ? { kind: "refused", reason: "does_not_fit" } : { kind: "lands", start };
 }
@@ -428,6 +434,28 @@ interface LiveJob {
   technician_id: string | null;
 }
 
+/** A job that can still be moved; null for one done, cancelled, gone from FSM, or with no type or time. */
+function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
+  return db
+    .prepare(
+      `SELECT id, fsm_id, person_id, type, status, window_start, technician_id FROM appointments
+       WHERE id = ?1 AND deleted_at IS NULL AND status IN ${LIVE} AND type IS NOT NULL AND window_start IS NOT NULL`,
+    )
+    .bind(appointmentId)
+    .first<LiveJob>();
+}
+
+/** Where a move puts the job. A day and window that are the job's own keep its start: only the technician changes. */
+function targetOf(job: LiveJob, technicianId: string, date: string, window: BookingWindow): Target {
+  const start = new Date(job.window_start);
+  const keepsTime = date === indiaDate(start) && window === windowAt(indiaTime(start));
+  return { technicianId, date, window, keepsTime };
+}
+
+/** Where the job already is: no move at all. */
+const isWhereItIs = (job: LiveJob, target: Target): boolean =>
+  target.keepsTime && target.technicianId === job.technician_id;
+
 /**
  * Assigns or moves one job: the checks, then the new time claimed, then FSM,
  * then the mirror and the client's message, with the claim let go in the same
@@ -435,31 +463,24 @@ interface LiveJob {
  * differs.
  */
 export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, now: Date): Promise<MoveOutcome> {
-  const job = await db
-    .prepare(
-      `SELECT id, fsm_id, person_id, type, status, window_start, technician_id FROM appointments
-       WHERE id = ?1 AND deleted_at IS NULL AND status IN ${LIVE} AND type IS NOT NULL AND window_start IS NOT NULL`,
-    )
-    .bind(input.appointmentId)
-    .first<LiveJob>();
+  const job = await liveJob(db, input.appointmentId);
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, input.expected);
   if (changed.length > 0) return { kind: "superseded", changed };
 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
-  if (technicianId === null) return { kind: "refused", reason: "unknown_reason" };
-  // What ops asked to change; what they left out, or sent as it already is, keeps the time the job has.
-  const was = { date: indiaDate(wasStart), window: windowAt(indiaTime(wasStart)) };
-  const date = input.date ?? was.date;
-  const window = input.window ?? was.window;
-  const target: Target = { technicianId, date, window, keepsTime: date === was.date && window === was.window };
-  if (target.keepsTime && technicianId === job.technician_id) return { kind: "nothing_to_move" };
+  if (technicianId === null) return { kind: "no_technician" };
+  // What ops left out keeps what the job has.
+  const date = input.date ?? indiaDate(wasStart);
+  const window = input.window ?? windowAt(indiaTime(wasStart));
+  const target = targetOf(job, technicianId, date, window);
+  if (isWhereItIs(job, target)) return { kind: "nothing_to_move" };
 
   // The check runs on the server before any write to FSM. The job's own time
   // does not count against its own move.
   const held = await occupancy(db, date, date, now, job.id);
-  const landing = landingOf(held(technicianId, date), { type: job.type, start: wasStart }, target, input.reason);
+  const landing = landingOf(held(technicianId, date), { type: job.type, start: wasStart }, target);
   if (landing.kind === "refused") return landing;
 
   const times = target.keepsTime ? null : visitTimes(date, landing.start, job.type);
@@ -472,7 +493,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
       job,
       technicianId,
       nowStart: nowStart.toISOString(),
-      reason: input.reason as MoveReason,
+      reason: input.reason,
       actor: input.actor,
     },
     { date, claims: claimsOf(landing.start, job.type, window) },
@@ -637,6 +658,44 @@ export function unfinishedMovesLetGo(db: D1Database, now: Date): D1PreparedState
       )
       .bind(since, "never finished: FSM may hold it, and its own record says", now.toISOString()),
   ];
+}
+
+export interface Room {
+  readonly technician_id: string;
+  readonly date: string;
+  /** The windows the job would land in, by the check a move runs. */
+  readonly windows: BookingWindow[];
+}
+
+/**
+ * Where a job in hand can go in the week from `from`: each technician's day
+ * with a window the job would land in, by the same check a move runs, so the
+ * board offers no window the move would be refused. Not where it already is.
+ * Null for a job no longer live.
+ */
+export async function roomFor(
+  db: D1Database,
+  input: { readonly appointmentId: string; readonly from: string },
+  now: Date,
+): Promise<Room[] | null> {
+  const job = await liveJob(db, input.appointmentId);
+  if (job === null) return null;
+  const dates = weekFrom(input.from);
+  const [technicians, held] = await Promise.all([
+    activeTechnicians(db),
+    occupancy(db, input.from, dates[dates.length - 1] ?? input.from, now, job.id),
+  ]);
+  const visit = { type: job.type, start: new Date(job.window_start) };
+  const windowsFor = (technicianId: string, date: string) =>
+    BOOKING_WINDOWS.filter((window) => {
+      const target = targetOf(job, technicianId, date, window);
+      return !isWhereItIs(job, target) && landingOf(held(technicianId, date), visit, target).kind === "lands";
+    });
+  return technicians
+    .flatMap((technician) =>
+      dates.map((date) => ({ technician_id: technician.id, date, windows: windowsFor(technician.id, date) })),
+    )
+    .filter((room) => room.windows.length > 0);
 }
 
 /**

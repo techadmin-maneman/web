@@ -49,32 +49,26 @@ export const MOVE_REASONS = [
 ] as const;
 export type MoveReason = (typeof MOVE_REASONS)[number];
 
-export const isMoveReason = (reason: string): reason is MoveReason =>
-  (MOVE_REASONS as readonly string[]).includes(reason);
-
 /**
- * Why ops' move cannot be made; null when it can. The check runs on the server
- * before any write to FSM, so a refusal means nothing was written anywhere.
+ * Why a job cannot go to this window of this technician's day; null when it
+ * can. The check runs on the server before any write to FSM, so a refusal
+ * means nothing was written anywhere. (A move's reason is one of the list
+ * above before it gets here: the API and the table accept no other.)
  *
- * `does_not_fit`: nobody holds the window, but the visit's block has no room
- * in it, because a half-slot it needs is taken or it would run past the day's
- * last one (docs/decisions/0035-window-slot-map.md). Whether it fits is
+ * Leave is answered first, so ops are told the technician is away rather than
+ * merely busy, and the clash before the room, so a held window is named as
+ * held. `does_not_fit`: nobody holds the window, but the visit's block has no
+ * room in it, because a half-slot it needs is taken or it would run past the
+ * day's last one (docs/decisions/0035-window-slot-map.md). Whether it fits is
  * src/domain/scheduling.ts's answer, given here.
  */
-export type MoveRefusal = "unknown_reason" | LandingRefusal;
-export type LandingRefusal = "clash" | "on_leave" | "does_not_fit";
+export type MoveRefusal = "clash" | "on_leave" | "does_not_fit";
 
-/**
- * Why a job cannot land in this window of this technician's day; null when it
- * can. Leave is answered before the clash, so ops are told the technician is
- * away rather than merely busy, and the clash before the room, so a held window
- * is named as held.
- */
-export function landingRefusal(
+export function moveRefusal(
   day: TechnicianDay,
   window: BookingWindow,
   room: { readonly fits: boolean },
-): LandingRefusal | null {
+): MoveRefusal | null {
   if (day.onLeave) return "on_leave";
   if (clashes(day, window)) return "clash";
   return room.fits ? null : "does_not_fit";
@@ -102,15 +96,4 @@ export function clientNotice(move: {
   if (!move.timeChanged) return "unchanged";
   if (move.client === null) return "no_client";
   return move.client.agreedToWhatsApp ? "messaged" : "call";
-}
-
-/** A move nobody can explain is refused before anything else is looked at. */
-export function moveRefusal(
-  day: TechnicianDay,
-  window: BookingWindow,
-  reason: string,
-  room: { readonly fits: boolean } = { fits: true },
-): MoveRefusal | null {
-  if (!isMoveReason(reason)) return "unknown_reason";
-  return landingRefusal(day, window, room);
 }
