@@ -14,7 +14,7 @@
 // priced at what the move costs now.
 //
 // Once paid for, a hold keeps its time until it is booked or refunded, and the
-// client can no longer let it go (docs/decisions/0067-a-paid-hold-is-kept.md).
+// client can no longer let it go (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

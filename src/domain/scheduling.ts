@@ -13,7 +13,7 @@
 // A hold keeps its time while it is waiting for payment, for its ten minutes
 // and the grace after them, and from the moment it is paid for (or booked free)
 // until it is booked or refunded, however long that takes
-// (docs/decisions/0067-a-paid-hold-is-kept.md). Nobody's hold lets a paid one
+// (docs/decisions/0068-a-paid-hold-is-kept.md). Nobody's hold lets a paid one
 // go. The days ops black out (visit_blackouts) are not offered at all.
 
 import {

@@ -195,11 +195,12 @@ async function createLead(c: Context<AppEnv>, request: LeadRequest): Promise<Out
   if (!city.served) return { ok: true, body: { lead_id: leadId, served: false } };
 
   // A booking goes to FSM too, as a Request for ops to schedule (src/domain/fsm-leads.ts).
+  // It is stamped once it is on the queue; the sweeper sends one left unstamped.
   if (c.var.config.providers.FSM_PROVIDER !== "none") {
     try {
       await c.env.FSM_QUEUE.send({ lead_id: leadId, request_id: requestId } satisfies FsmSyncMessage);
+      await db.prepare("UPDATE leads SET fsm_queued_at = ?1 WHERE id = ?2").bind(now.toISOString(), leadId).run();
     } catch (error) {
-      // The lead is in D1 and the CRM; ops can enter it in FSM by hand.
       log.warn("fsm_enqueue_failed", { lead_id: leadId, error });
     }
   }

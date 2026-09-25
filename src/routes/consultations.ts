@@ -12,7 +12,7 @@
 //
 // A number that already has a consultation still to happen is answered
 // already_booked, with its day and window, rather than booked twice; one past
-// consultations books in the app (docs/decisions/0067-a-paid-hold-is-kept.md).
+// consultations books in the app (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";

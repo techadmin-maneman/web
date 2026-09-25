@@ -63,7 +63,7 @@ export async function saveBookingLead(db: D1Database, lead: BookingLead): Promis
 
   await db.batch([
     // A returning person keeps their ID and their name, and becomes contactable. A form anyone can fill in with
-    // a number never renames the person it belongs to (docs/decisions/0067-a-paid-hold-is-kept.md).
+    // a number never renames the person it belongs to (docs/decisions/0068-a-paid-hold-is-kept.md).
     db
       .prepare(
         `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?, ?, ?, ?, 1)

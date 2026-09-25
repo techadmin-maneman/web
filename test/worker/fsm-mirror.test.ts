@@ -291,6 +291,11 @@ describe("the fsm-sync queue", () => {
     expect(deps.alerts).toEqual([
       "FSM sync gave up on appointment ap-1 after 5 attempts: Zoho 503 UNAVAILABLE: busy. The reconciliation will try it again.",
     ]);
+
+    // The next night's reconciliation queues it again, and it fails again: counted, not told again.
+    const nextNight = batchOf([{ fsm_id: "ap-1", request_id: "reconcile" }], 5);
+    await handleFsmSyncBatch(nextNight as unknown as MessageBatch, env, deps, createLogger());
+    expect(deps.alerts).toHaveLength(1);
   });
 
   it("drops a message it cannot read", async () => {

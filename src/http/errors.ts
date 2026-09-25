@@ -43,7 +43,7 @@ export const ERROR_CODES = [
   "taken",
   "not_bookable",
   "hold_expired",
-  // A public form for a number that already has a consultation still to happen (docs/decisions/0067-a-paid-hold-is-kept.md).
+  // A public form for a number that already has a consultation still to happen (docs/decisions/0068-a-paid-hold-is-kept.md).
   "already_booked",
   // Moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md): it has started, passed or gone;
   // or the 24 hours ran out between showing the terms and confirming them.

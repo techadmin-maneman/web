@@ -6,7 +6,7 @@
 //
 // The Request carries the lead's ID, so a retry after a Request whose answer
 // never reached us finds that one rather than making a second
-// (docs/decisions/0067-a-paid-hold-is-kept.md).
+// (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { windowLabel, type VisitWindow } from "../config/booking.ts";
 import { FSM_SERVICE_NAMES } from "../config/visit-types.ts";

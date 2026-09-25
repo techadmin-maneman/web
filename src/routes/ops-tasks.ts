@@ -5,8 +5,8 @@
 // A task is not a record. It is a row in a queue the database already keeps,
 // read at the moment ops look: a held grant, an undecided no-show, a number
 // change waiting for ops, an erasure asked for, a piece past its replacement
-// date. Nothing here writes, and there is nothing to close: each task leaves
-// when the thing itself is done, on the route that does it.
+// date, an invoice still a draft, an erasure FSM would not finish. Nothing here writes, and there is nothing to
+// close: each task leaves when the thing itself is done, wherever it is done.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
@@ -23,12 +23,14 @@ const LIMIT = 200;
 const TaskSchema = z
   .object({
     id: z.uuid().openapi({ description: "The queued row's own id, so the task can be reached where it is decided." }),
-    person: z
-      .union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()])
-      .openapi({ description: "Null for a no-show, whose case names the technician and never the client." }),
-    detail: z
-      .union([z.string(), z.null()])
-      .openapi({ description: "The one fact the group turns on: a piece's label, a fraud rule, a technician." }),
+    person: z.union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()]).openapi({
+      description:
+        "Null for a no-show, whose case names the technician and never the client, and for an erased client.",
+    }),
+    detail: z.union([z.string(), z.null()]).openapi({
+      description:
+        "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact.",
+    }),
     since: z.iso.datetime().openapi({ description: "When it started waiting." }),
     due: z.iso.datetime().openapi({
       description: `since plus the group's allowance, which ops set; ${String(TASK_SLA_HOURS.referral_review)} hours until they do.`,

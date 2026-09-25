@@ -3,7 +3,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
+import { CALLS_PER_VISIT, resolveAskedWindows } from "../../src/domain/asked-windows.ts";
+import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type StubFsm, type StubFsmWorld } from "../../src/providers/fsm.ts";
 import { ZohoError } from "../../src/providers/zoho-http.ts";
@@ -15,7 +16,8 @@ const LEAD = "33333333-3333-4333-8333-333333333333";
 
 const world = (overrides: Partial<StubFsmWorld>): StubFsmWorld => ({ ...EMPTY_FSM, ...overrides });
 
-const pass = (fsm: StubFsm) => resolveAskedWindows(env.DB, fsm, NOW, createLogger());
+const pass = (fsm: StubFsm, budget: CallBudget = createCallBudget(Infinity)) =>
+  resolveAskedWindows(env.DB, fsm, NOW, createLogger(), budget);
 
 /** A stub whose one call FSM turns down, with the status it turned it down under. */
 const refuses = (error: ZohoError): StubFsm => ({
@@ -59,6 +61,19 @@ beforeEach(async () => {
   )
     .bind(PERSON, NOW.toISOString())
     .run();
+});
+
+describe("the pass's outside calls", () => {
+  it("looks up only the visits the cron run can pay for, and leaves the rest unstamped", async () => {
+    const second = "44444444-4444-4444-8444-444444444444";
+    await visit();
+    await visit(second, "fsm-wo-2");
+
+    await pass(createStubFsm(EMPTY_FSM), createCallBudget(CALLS_PER_VISIT));
+
+    const stamped = [await asked(), await asked(second)].filter((row) => row?.asked_checked_at !== null);
+    expect(stamped).toHaveLength(1);
+  });
 });
 
 describe("the window the client asked for", () => {

@@ -72,6 +72,13 @@ export const HOSTNAME: Readonly<Record<RemoteEnvironmentName, string>> = {
   production: SURFACE_HOSTS.production.public,
 };
 
+/** Where the ops console answers, for the links in alerts. Locally, where the browser tests serve it. */
+export const OPS_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
+  local: "http://ops.localhost:4323",
+  staging: `https://${SURFACE_HOSTS.staging.ops}`,
+  production: `https://${SURFACE_HOSTS.production.ops}`,
+};
+
 /** Where links in messages point, e.g. a WhatsApp copy's result link. */
 export const PUBLIC_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
   local: "http://localhost:8787",

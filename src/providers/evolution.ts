@@ -1,16 +1,17 @@
 // WhatsApp through an Evolution API bridge (docs/decisions/0016-whatsapp-through-evolution.md).
 // Only src/providers/messaging.ts imports this module.
 //
-//   send  POST {base}/message/sendMedia/{instance}   { number, mediatype, mimetype, caption, media, fileName }
-//         POST {base}/message/sendText/{instance}    { number, text }
-//   auth  header `apikey`
+//   send   POST {base}/message/sendMedia/{instance}   { number, mediatype, mimetype, caption, media, fileName }
+//          POST {base}/message/sendText/{instance}    { number, text }
+//   state  GET  {base}/instance/connectionState/{instance}   { instance: { state: "open" | "connecting" | "close" } }
+//   auth   header `apikey`
 //
 // Evolution drives a WhatsApp account directly, so there are no Meta-approved
 // templates: a "template" here is one of the texts in src/config/message-templates.ts.
 // The bridge downloads the image itself, so mediaUrl must be publicly reachable.
 
 import { renderMessage } from "../config/message-templates.ts";
-import type { MessagingProvider, SendResult } from "./messaging.ts";
+import type { Connection, MessagingProvider, SendResult } from "./messaging.ts";
 
 export interface EvolutionSettings {
   /** https://…, no trailing slash. */
@@ -24,9 +25,12 @@ export interface EvolutionSettings {
 /**
  * The bridge answers a media send only after it has fetched the image and
  * uploaded it to WhatsApp. On staging a send that outlived a 20 s limit had
- * already fetched the image, so the limit is generous.
+ * already fetched the image, so that limit is generous. A text has nothing to
+ * fetch, and a login code is sent after the response, where the runtime allows
+ * 30 s: its 20 s ends with a line in the log rather than being cut off.
  */
-const TIMEOUT_MS = 60_000;
+export const SEND_TIMEOUT_MS = { sendText: 20_000, sendMedia: 60_000 } as const;
+const STATE_TIMEOUT_MS = 10_000;
 
 export function createEvolutionMessaging(
   settings: EvolutionSettings,
@@ -40,8 +44,8 @@ export function createEvolutionMessaging(
       const number = to.replace(/\D/g, ""); // "+919810000000" -> "919810000000"
       const [path, body] =
         mediaUrl === undefined
-          ? ["sendText", { number, text }]
-          : [
+          ? (["sendText", { number, text }] as const)
+          : ([
               "sendMedia",
               {
                 number,
@@ -51,7 +55,8 @@ export function createEvolutionMessaging(
                 media: mediaUrl,
                 fileName: "mane-man.png",
               },
-            ];
+            ] as const);
+      const timeoutMs = SEND_TIMEOUT_MS[path];
 
       let response: Response;
       try {
@@ -59,7 +64,7 @@ export function createEvolutionMessaging(
           method: "POST",
           headers: { apikey: settings.apiKey, "Content-Type": "application/json" },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(TIMEOUT_MS),
+          signal: AbortSignal.timeout(timeoutMs),
         });
       } catch (error) {
         const name = error instanceof Error ? error.name : "error";
@@ -69,7 +74,7 @@ export function createEvolutionMessaging(
           return {
             ok: false,
             transient: false,
-            detail: `no reply within ${String(TIMEOUT_MS / 1000)} s: delivery unconfirmed`,
+            detail: `no reply within ${String(timeoutMs / 1000)} s: delivery unconfirmed`,
           };
         }
         return { ok: false, transient: true, detail: `unreachable: ${name}` };
@@ -84,7 +89,34 @@ export function createEvolutionMessaging(
       const transient = response.status === 429 || response.status >= 500 || reply.includes("Connection Closed");
       return { ok: false, transient, detail: `HTTP ${String(response.status)} ${errorCodeOf(reply)}` };
     },
+
+    // The runbook's first check when WhatsApp is down, made by the cron instead.
+    async connection(): Promise<Connection> {
+      let response: Response;
+      try {
+        response = await deps.fetch(
+          `${settings.baseUrl}/instance/connectionState/${encodeURIComponent(settings.instance)}`,
+          { method: "GET", headers: { apikey: settings.apiKey }, signal: AbortSignal.timeout(STATE_TIMEOUT_MS) },
+        );
+      } catch (error) {
+        return { open: false, detail: `unreachable: ${error instanceof Error ? error.name : "error"}` };
+      }
+      if (!response.ok) return { open: false, detail: `HTTP ${String(response.status)}` };
+      const state = stateOf(await response.text());
+      return state === "open" ? { open: true } : { open: false, detail: `state ${state}` };
+    },
   };
+}
+
+/** Evolution 2 answers `{ instance: { state } }`; earlier versions answered `{ state }`. */
+function stateOf(reply: string): string {
+  try {
+    const answer = JSON.parse(reply) as { instance?: { state?: unknown }; state?: unknown };
+    const state = answer.instance?.state ?? answer.state;
+    return typeof state === "string" ? state : "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
 function messageIdOf(reply: string): string | null {

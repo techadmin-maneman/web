@@ -1,5 +1,5 @@
 // Ops putting a client's service-visit credits right by hand, behind Access
-// (docs/decisions/0033-credit-ledger.md, 0067-a-paid-hold-is-kept.md):
+// (docs/decisions/0033-credit-ledger.md, 0068-a-paid-hold-is-kept.md):
 //
 //   POST /api/clients/:id/credits   { visits, reason }: add visits, or take them away
 //

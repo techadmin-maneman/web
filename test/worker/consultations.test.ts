@@ -176,7 +176,7 @@ describe("POST /api/waitlist", () => {
   });
 });
 
-// A form anyone can fill in with a number (docs/decisions/0067-a-paid-hold-is-kept.md).
+// A form anyone can fill in with a number (docs/decisions/0068-a-paid-hold-is-kept.md).
 describe("a number the site already knows", () => {
   const book = (body: object, queue = fakeQueue()) =>
     request(site(), "/api/consultation", post({ ...VISITOR, pincode: "122018", consent: true, ...body }), {

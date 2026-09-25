@@ -6,7 +6,7 @@
 // new row; a second change for the same date corrects that date's row. What a
 // client was sold never moves with either: a hold keeps its price and its late
 // fee, and a payment the split before GST it was taken at
-// (docs/decisions/0067-a-paid-hold-is-kept.md).
+// (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { withGst } from "../config/gst.ts";
 import { PRICE_BOUNDS } from "../config/ops-settings.ts";

@@ -27,3 +27,16 @@ export async function takeOne(db: D1Database, { scope, key, window, limit }: Lim
     .first<{ count: number }>();
   return row !== null;
 }
+
+/** Counts one more in the window, with no limit, and says how many there are now. */
+export async function countOne(db: D1Database, { scope, key, window }: Omit<Limit, "limit">): Promise<number> {
+  const row = await db
+    .prepare(
+      `INSERT INTO counters (scope, key, window_start, count) VALUES (?1, ?2, ?3, 1)
+       ON CONFLICT (scope, key, window_start) DO UPDATE SET count = count + 1
+       RETURNING count`,
+    )
+    .bind(scope, key, window)
+    .first<{ count: number }>();
+  return row?.count ?? 1;
+}

@@ -35,7 +35,7 @@
 //   GET  /fsm/v1/Invoices/{id}                                   { data: [invoice with ZBilling_InvoiceId] }
 //
 // Three reads have not yet been tried on the org, and nothing waits on them
-// (docs/decisions/0067-a-paid-hold-is-kept.md): a contact looked for by mobile
+// (docs/decisions/0068-a-paid-hold-is-kept.md): a contact looked for by mobile
 // number before one is added, and the latest Requests and work orders, read as
 // the latest appointments are, when a retry looks for one whose answer was
 // lost. A look that fails is logged, and the record is made as before.
@@ -381,8 +381,17 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
   }
 
   return {
+    // FSM answers a deleted appointment with a 204, and an ID it cannot parse, such as a
+    // staging seed's, with 404 INVALID_URL_PATTERN. Neither is there, and neither is a failure.
     async appointment(id) {
-      const [record] = records(await json("appointment", `/Service_Appointments/${id}`), "data", Appointment);
+      let answer: unknown;
+      try {
+        answer = await json("appointment", `/Service_Appointments/${id}`);
+      } catch (error) {
+        if (error instanceof ZohoError && error.status === 404 && error.code === "INVALID_URL_PATTERN") return null;
+        throw error;
+      }
+      const [record] = records(answer, "data", Appointment);
       return record === undefined ? null : appointmentFrom(record);
     },
 
@@ -451,7 +460,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
 
     // Search by criteria is how Zoho's own CRM finds a record (ADR 0012); on
     // FSM's Contacts it has not yet been tried against the org
-    // (docs/decisions/0067-a-paid-hold-is-kept.md, "Not yet tried on the org").
+    // (docs/decisions/0068-a-paid-hold-is-kept.md, "Not yet tried on the org").
     async findContact(mobile) {
       const criteria = encodeURIComponent(`(Mobile:equals:${mobile})`);
       const [found] = records(await json("find_contact", `/Contacts/search?criteria=${criteria}`), "data", Contact);

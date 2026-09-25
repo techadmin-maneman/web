@@ -1,6 +1,6 @@
 # 0044. The payments mirror
 
-- Status: accepted; a capture confirms its hold, and a payment keeps its GST, in ADR 0067
+- Status: accepted. Amended by ADR 0068: a refusal from Books is told to ops, once, as well as logged. Amended by ADR 0068: a capture confirms its hold, and a payment keeps its GST.
 - Date: 2026-09-22
 
 ## Context
@@ -30,8 +30,8 @@ Checkout, orders and refunds from our side arrive with self-serve booking (P2-M5
   - A refund for a payment not yet recorded is answered 409 and not marked seen, so Razorpay's retry is applied once the payment has arrived.
 - **A captured payment gets our reference,** "MM-2026-0841": the next number of its India year. It is given in one statement, so two captures at once cannot share a number.
 - **The person** is the one named in our order's notes (from P2-M5), or else the one whose mobile number paid. The mirror never creates a person from a payment. The appointment is the one named in the notes.
-- **A capture confirms the hold its order was for** (ADR 0067): the hold keeps its time from then until it is booked or refunded. Whether the payment was in time is judged on Razorpay's own time for it (`created_at`), not on `captured_at`, which is when its webhook reached us.
-- **A payment keeps what it was sold at:** the figure before GST and the rate, from the hold whose order it paid (`amount_ex_gst`, `gst_percent`, migration 0038). The Payments tab shows those; a payment no hold priced is split at `GST_PERCENT`.
+- **A capture confirms the hold its order was for** (ADR 0068): the hold keeps its time from then until it is booked or refunded. Whether the payment was in time is judged on Razorpay's own time for it (`created_at`), not on `captured_at`, which is when its webhook reached us.
+- **A payment keeps what it was sold at:** the figure before GST and the rate, from the hold whose order it paid (`amount_ex_gst`, `gst_percent`, migration 0039). The Payments tab shows those; a payment no hold priced is split at `GST_PERCENT`.
 - **Only `payment.captured` queues a booking.** `order.paid` says the same of the same payment, and is recorded only.
 
 **What is kept.** Amounts are kept in paise, with the method (UPI, card and so on) and the card network.

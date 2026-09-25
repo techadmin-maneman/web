@@ -23,7 +23,7 @@
 // the number belongs to, never let go of a hold made in the app, and book no
 // second consultation beside one still to happen. The person, their consent and
 // the slot are written in one batch: a slot that has gone leaves nothing behind
-// (docs/decisions/0067-a-paid-hold-is-kept.md).
+// (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import type { Context } from "hono";
 import type { AppEnv } from "../app.ts";

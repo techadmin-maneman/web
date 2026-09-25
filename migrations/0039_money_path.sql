@@ -1,5 +1,5 @@
--- Migration number: 0038
--- The money path (docs/decisions/0067-a-paid-hold-is-kept.md): a hold the
+-- Migration number: 0039
+-- The money path (docs/decisions/0068-a-paid-hold-is-kept.md): a hold the
 -- client has paid for is kept until it is booked or refunded, FSM is written
 -- once however often a booking is tried, and a payment keeps the GST it was
 -- sold at. Only new columns and indexes, so the code already deployed is

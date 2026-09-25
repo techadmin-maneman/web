@@ -1,4 +1,4 @@
-// A held window, booked (docs/decisions/0045-self-serve-booking.md, 0067-a-paid-hold-is-kept.md).
+// A held window, booked (docs/decisions/0045-self-serve-booking.md, 0068-a-paid-hold-is-kept.md).
 //
 // A paid visit starts as a Razorpay order for the hold. Razorpay's webhook
 // confirms the capture, and the fsm-sync queue then writes the visit to FSM
@@ -23,10 +23,12 @@
 import { PAYMENT_GRACE_SECONDS } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaIso } from "../lib/india-time.ts";
+import type { CallBudget } from "../lib/call-budget.ts";
 import { createLogger, type Logger } from "../log.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/razorpay.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import type { AlertOnce } from "./alerts.ts";
 import { redeemCredit } from "./credits.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { liveVisitOf, visitTimes } from "./scheduling.ts";
@@ -37,8 +39,8 @@ export interface ConfirmOptions {
   readonly labelAsTest: boolean;
   /** Queues a message about the visit once its row is written (src/domain/visit-messages.ts). */
   readonly notify?: (messageId: string) => Promise<unknown>;
-  /** Tells ops of something in FSM they must put right by hand. */
-  readonly alert?: (message: string) => Promise<void>;
+  /** Tells ops, once, of something in FSM they must put right by hand (src/domain/alerts.ts). */
+  readonly alertOnce?: AlertOnce;
   readonly log?: Logger;
 }
 
@@ -346,10 +348,13 @@ async function workOrderMadeBefore(fsm: FsmProvider, hold: HoldRow, options: Con
     return await fsm.findWorkOrder(hold.id);
   } catch (error) {
     (options.log ?? createLogger()).warn("fsm_work_order_lookup_failed", { hold_id: hold.id, error });
-    await options.alert?.(
-      `Booking ${hold.id}: an earlier try may have made its work order in FSM, and FSM could not be asked, ` +
+    await options.alertOnce?.({
+      key: `work_order_lookup_failed:${hold.id}`,
+      message:
+        `Booking ${hold.id}: an earlier try may have made its work order in FSM, and FSM could not be asked, ` +
         `so another is being made. Look in FSM for work orders ending "(booking ${hold.id})" and cancel all but one.`,
-    );
+      link: `/clients/${hold.person_id}`,
+    });
     return null;
   }
 }
@@ -517,10 +522,13 @@ async function retireReplaced(
   if (old.fsm_work_order_id !== null) {
     const note = `${options.labelAsTest ? "Staging test: " : ""}Moved by the client inside 24 hours, to a new visit; charged.`;
     if (!(await fsm.cancelVisit(old.fsm_work_order_id, note))) {
-      await options.alert?.(
-        `The client moved visit ${old.id} to a new one (booking ${hold.id}), and FSM would not cancel its work ` +
+      await options.alertOnce?.({
+        key: `replaced_not_cancelled:${old.id}`,
+        message:
+          `The client moved visit ${old.id} to a new one (booking ${hold.id}), and FSM would not cancel its work ` +
           `order ${old.fsm_work_order_id}. Cancel it in FSM by hand; its payment is kept as the charge.`,
-      );
+        link: `/clients/${hold.person_id}`,
+      });
       return;
     }
   }
@@ -627,6 +635,8 @@ export type LeftInFsm =
   | { readonly kind: "unknown" };
 
 export interface GaveUp {
+  /** Whose booking it was, for the console's link. */
+  readonly personId: string;
   readonly money: GivenBack | { readonly kind: "refund_refused"; readonly paymentId: string; readonly amount: number };
   readonly fsm: LeftInFsm;
 }
@@ -644,15 +654,14 @@ export async function giveUpOnBooking(
   labelAsTest: boolean,
 ): Promise<GaveUp> {
   const hold = await holdOf(db, holdId);
-  const left =
-    hold === null || hold.state === "booked"
-      ? { kind: "nothing" as const }
-      : await cancelOrphan(fsm, hold, labelAsTest);
+  if (hold === null) throw new Error("no such hold to give up on");
+  const left = hold.state === "booked" ? { kind: "nothing" as const } : await cancelOrphan(fsm, hold, labelAsTest);
+  const personId = hold.person_id;
   try {
-    return { money: await giveBack(db, payments, holdId, now, "FSM would not take the booking"), fsm: left };
+    return { personId, money: await giveBack(db, payments, holdId, now, "FSM would not take the booking"), fsm: left };
   } catch (error) {
     if (!(error instanceof RefundRefused)) throw error;
-    return { money: { kind: "refund_refused", paymentId: error.paymentId, amount: error.amount }, fsm: left };
+    return { personId, money: { kind: "refund_refused", paymentId: error.paymentId, amount: error.amount }, fsm: left };
   }
 }
 
@@ -689,33 +698,44 @@ async function cancelOrphan(fsm: FsmProvider, hold: HoldRow, labelAsTest: boolea
 const UNBOOKED_AFTER_MS = 30 * 60 * 1000;
 const REQUEUE_PER_PASS = 20;
 
+/** The alert a hold raises while it waits unbooked; closed once it is booked or given back. */
+export const unbookedAlertKey = (holdId: string) => `unbooked_hold:${holdId}`;
+
 /**
  * Holds paid for, or booked free, that are neither booked nor refunded half an hour after they were queued: the
- * queue lost the message, or a refund failed. Each goes back on the queue, and ops are told. Returns how many.
+ * queue lost the message, or a refund failed. Each goes back on the queue, one call from the run's budget, and
+ * ops are told once. A hold the queue refuses is left for the next run. Returns how many went back.
  */
 export async function requeueUnbookedHolds(
   db: D1Database,
-  queue: Queue,
+  input: { queue: Queue; alertOnce: AlertOnce; budget: CallBudget; log: Logger },
   now: Date,
-  alert: (message: string) => Promise<void>,
 ): Promise<number> {
   const { results } = await db
     .prepare(
-      `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NOT NULL AND queued_at <= ?1
+      `SELECT id, person_id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NOT NULL AND queued_at <= ?1
        ORDER BY queued_at LIMIT ?2`,
     )
     .bind(new Date(now.getTime() - UNBOOKED_AFTER_MS).toISOString(), REQUEUE_PER_PASS)
-    .all<{ id: string }>();
-  for (const { id } of results) {
-    await queue.send({ hold_id: id, request_id: "unbooked-holds" } satisfies FsmSyncMessage);
-    await db.prepare("UPDATE slot_holds SET queued_at = ?2 WHERE id = ?1").bind(id, now.toISOString()).run();
+    .all<{ id: string; person_id: string }>();
+  let requeued = 0;
+  for (const hold of results) {
+    if (!input.budget.spend(1)) break;
+    try {
+      await input.queue.send({ hold_id: hold.id, request_id: "unbooked-holds" } satisfies FsmSyncMessage);
+    } catch (error) {
+      input.log.warn("unbooked_hold_requeue_failed", { hold_id: hold.id, error });
+      continue;
+    }
+    await db.prepare("UPDATE slot_holds SET queued_at = ?2 WHERE id = ?1").bind(hold.id, now.toISOString()).run();
+    await input.alertOnce({
+      key: unbookedAlertKey(hold.id),
+      message:
+        `Booking ${hold.id} was paid for, or booked free, and is neither booked in FSM nor refunded half an hour ` +
+        "on. It is back on the queue; if FSM still refuses it, it is refunded and you are told.",
+      link: `/clients/${hold.person_id}`,
+    });
+    requeued += 1;
   }
-  if (results.length > 0) {
-    await alert(
-      `${String(results.length)} paid or free bookings are neither booked in FSM nor refunded half an hour on: ` +
-        `${results.map((hold) => hold.id).join(", ")}. Each is back on the queue; if FSM still refuses, it is ` +
-        "refunded and you are told.",
-    );
-  }
-  return results.length;
+  return requeued;
 }

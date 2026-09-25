@@ -91,7 +91,7 @@ export function registerRazorpayHook(app: App): void {
       if (status !== null) await recordPayment(db, payment, status, config.settings.ipHashSalt, now);
       // Paid for a hold in the app: the booking is written to FSM from the queue (src/domain/bookings.ts).
       // Only the capture queues it: order.paid says the same of the same payment, and the cron puts back a
-      // paid hold whose message never came (docs/decisions/0067-a-paid-hold-is-kept.md).
+      // paid hold whose message never came (docs/decisions/0068-a-paid-hold-is-kept.md).
       const holdId = holdOfNotes(payment.notes);
       if (event === "payment.captured" && holdId !== null) {
         await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);

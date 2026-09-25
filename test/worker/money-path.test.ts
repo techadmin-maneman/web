@@ -1,5 +1,5 @@
 // A client who pays inside the hold gets the visit, or an automatic refund ops
-// are told about; nothing is booked twice (docs/decisions/0067-a-paid-hold-is-kept.md).
+// are told about; nothing is booked twice (docs/decisions/0068-a-paid-hold-is-kept.md).
 // The scenarios are the audit's (24 September 2026, W1 to W10), each at the
 // moment it went wrong. NOW is Monday 21 September 2026, 12 noon in India, and a
 // hold lasts ten minutes. Every name and number here is made up.
@@ -14,6 +14,7 @@ import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/razorpay.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
+import { createCallBudget } from "../../src/lib/call-budget.ts";
 import {
   appFor,
   captureLogs,
@@ -321,11 +322,7 @@ describe("a credit-covered move inside 24 hours whose old work order FSM fails t
     await lateServiceVisit();
     const holdId = await replacementHold();
     const refusing: FsmProvider = { ...createStubFsm(world()), cancelVisit: () => Promise.resolve(false) };
-    const alerts: string[] = [];
-    const alert = (message: string) => {
-      alerts.push(message);
-      return Promise.resolve();
-    };
+    const deps = fakeDependencies();
     const ordered = await env.DB.prepare("SELECT razorpay_order_id AS id FROM slot_holds WHERE id = ?1")
       .bind(holdId)
       .first<{ id: string }>();
@@ -337,11 +334,11 @@ describe("a credit-covered move inside 24 hours whose old work order FSM fails t
     );
     const outcome = await confirmBooking(env.DB, refusing, createStubPayments(), holdId, at(30), {
       labelAsTest: true,
-      alert,
+      alertOnce: deps.alertOnce,
     });
     expect(outcome).toBe("booked");
     expect(await oldVisitStatus()).toEqual({ status: "scheduled" });
-    expect(alerts).toEqual([expect.stringMatching(/would not cancel its work order wo-v1/)]);
+    expect(deps.alerts).toEqual([expect.stringMatching(/would not cancel its work order wo-v1.*\/clients\//)]);
     const replaced = await env.DB.prepare("SELECT COUNT(*) AS n FROM visit_changes WHERE kind = 'replaced'").first();
     expect(replaced).toEqual({ n: 0 });
   });
@@ -524,22 +521,21 @@ describe("giving up on a booking FSM would not finish (BIZ-06, INT-02)", () => {
 });
 
 describe("the half-hour pass over paid holds (BIZ-06)", () => {
-  const alerts: string[] = [];
-  const alert = (message: string) => {
-    alerts.push(message);
-    return Promise.resolve();
-  };
+  const pass = (queue: Queue, seconds: number, deps = fakeDependencies(), budget = createCallBudget(40)) =>
+    requeueUnbookedHolds(env.DB, { queue, alertOnce: deps.alertOnce, budget, log: createLogger() }, at(seconds));
 
-  it("puts back on the queue, and tells ops of, a paid hold neither booked nor refunded half an hour on", async () => {
-    alerts.length = 0;
+  it("puts back on the queue, and tells ops once of, a paid hold neither booked nor refunded half an hour on", async () => {
     const { holdId } = await paidHold("pay_s1");
     const queue = fakeQueue();
-    expect(await requeueUnbookedHolds(env.DB, queue, at(29 * 60), alert)).toBe(0);
-    expect(await requeueUnbookedHolds(env.DB, queue, at(32 * 60), alert)).toBe(1);
+    const deps = fakeDependencies();
+    expect(await pass(queue, 29 * 60, deps)).toBe(0);
+    expect(await pass(queue, 32 * 60, deps)).toBe(1);
     expect(queue.sent).toEqual([{ hold_id: holdId, request_id: "unbooked-holds" }]);
-    expect(alerts).toEqual([expect.stringContaining(holdId)]);
-    // Put back once, it waits another half hour before it is put back again.
-    expect(await requeueUnbookedHolds(env.DB, queue, at(40 * 60), alert)).toBe(0);
+    expect(deps.alerts).toEqual([expect.stringMatching(new RegExp(`${holdId}.*/clients/${PERSON}`))]);
+    // Put back once, it waits another half hour; put back again, ops are not told twice.
+    expect(await pass(queue, 40 * 60, deps)).toBe(0);
+    expect(await pass(queue, 63 * 60, deps)).toBe(1);
+    expect(deps.alerts).toHaveLength(1);
   });
 
   it("leaves alone a hold that is booked, or was never paid for", async () => {
@@ -547,7 +543,17 @@ describe("the half-hour pass over paid holds (BIZ-06)", () => {
     await booking(createStubFsm(world()), paid.holdId, 40);
     await fittedPerson(OTHER, "+919810000005", "Karan Bhatia");
     await heldAndOrdered(OTHER, NOW, "2026-09-25");
-    expect(await requeueUnbookedHolds(env.DB, fakeQueue(), at(60 * 60), alert)).toBe(0);
+    expect(await pass(fakeQueue(), 60 * 60)).toBe(0);
+  });
+
+  it("stops when the run's calls are spent, and leaves the rest for the next run", async () => {
+    const { holdId } = await paidHold("pay_s3");
+    const spent = createCallBudget(0);
+    expect(await pass(fakeQueue(), 32 * 60, fakeDependencies(), spent)).toBe(0);
+    expect(spent.ranOut()).toBe(true);
+    const queue = fakeQueue();
+    expect(await pass(queue, 37 * 60)).toBe(1);
+    expect(queue.sent).toEqual([{ hold_id: holdId, request_id: "unbooked-holds" }]);
   });
 });
 

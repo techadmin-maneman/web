@@ -12,7 +12,7 @@
 // A failure is retried after 30 s, 1, 2 and 4 minutes. The fifth alerts and
 // gives up; the reconciliation picks an appointment up again, ops can enter a
 // lead in FSM by hand, and a booking FSM would not take is refunded, with ops
-// told what happened to the money (docs/decisions/0067-a-paid-hold-is-kept.md).
+// told what happened to the money (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { rupees } from "@maneman/web-kit/money";
 import { z } from "zod";
@@ -21,6 +21,7 @@ import type { Dependencies } from "../dependencies.ts";
 import {
   confirmBooking,
   giveUpOnBooking,
+  unbookedAlertKey,
   type ConfirmOptions,
   type GaveUp,
   type LeftInFsm,
@@ -32,6 +33,7 @@ import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { scrubString, type Logger } from "../log.ts";
+import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
 import type { MessagingMessage } from "./messaging.ts";
 
 export const MAX_FSM_SYNC_ATTEMPTS = 5;
@@ -78,7 +80,7 @@ export async function handleFsmSyncBatch(
         labelAsTest,
         notify: (messageId) =>
           env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
-        alert: deps.alert,
+        alertOnce: deps.alertOnce,
         log: bookingLog,
       });
       continue;
@@ -120,6 +122,7 @@ export async function handleFsmSyncBatch(
           ? await exportVisitPhotos(db, env.CLIENT_PHOTOS, deps.fsm, { id: result.appointmentId, fsmId }, deps.now())
           : null;
       if (inboxId !== undefined) await recordAttempt(db, inboxId, deps.now().toISOString(), null);
+      await deps.resolveAlert(`fsm_sync:${fsmId}`);
       messageLog.info("fsm_synced", {
         outcome: result.outcome,
         appointment_id: result.appointmentId,
@@ -132,10 +135,13 @@ export async function handleFsmSyncBatch(
       if (inboxId !== undefined) await recordAttempt(db, inboxId, null, reason);
       messageLog.warn("fsm_sync_failed", { attempt: message.attempts, reason });
       if (message.attempts >= MAX_FSM_SYNC_ATTEMPTS) {
-        await deps.alert(
-          `FSM sync gave up on appointment ${fsmId} after ${String(message.attempts)} attempts: ${reason}. ` +
+        // The reconciliation queues it again each night, so a failure that lasts is counted, not told nightly.
+        await deps.alertOnce({
+          key: `fsm_sync:${fsmId}`,
+          message:
+            `FSM sync gave up on appointment ${fsmId} after ${String(message.attempts)} attempts: ${reason}. ` +
             "The reconciliation will try it again.",
-        );
+        });
         message.ack();
       } else {
         message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
@@ -168,6 +174,9 @@ async function bookHold(
       retryLater();
       return;
     }
+    // Booked, or given back: whatever ops were told of this hold before is over.
+    await deps.resolveAlert(unbookedAlertKey(holdId));
+    await deps.resolveAlert(givenUpAlertKey(holdId));
     message.ack();
   } catch (error) {
     const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
@@ -179,17 +188,26 @@ async function bookHold(
     try {
       const gaveUp = await giveUpOnBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options.labelAsTest);
       log.warn("booking_given_up", { hold_id: holdId, money: gaveUp.money.kind, fsm: gaveUp.fsm.kind });
-      await deps.alert(givenUpAlert(holdId, message.attempts, reason, gaveUp));
+      await deps.alertOnce({
+        key: givenUpAlertKey(holdId),
+        message: givenUpAlert(holdId, message.attempts, reason, gaveUp),
+        link: `/clients/${gaveUp.personId}`,
+      });
     } catch (giveUpError) {
       log.error("booking_give_up_failed", { hold_id: holdId, error: giveUpError });
-      await deps.alert(
-        `Booking ${holdId} could not be written to FSM after ${String(message.attempts)} attempts: ${reason}. ` +
+      await deps.alertOnce({
+        key: givenUpAlertKey(holdId),
+        message:
+          `Booking ${holdId} could not be written to FSM after ${String(message.attempts)} attempts: ${reason}. ` +
           "Giving it up failed too, so nothing has been refunded yet; it is tried again in half an hour.",
-      );
+      });
     }
     message.ack();
   }
 }
+
+/** The alert a booking given up on raises; closed once a later try books it or gives it back. */
+const givenUpAlertKey = (holdId: string) => `booking_given_up:${holdId}`;
 
 /** What ops are told when a booking is given up on: why, what happened to the money, and what is left in FSM. */
 function givenUpAlert(holdId: string, attempts: number, reason: string, gaveUp: GaveUp): string {
@@ -210,8 +228,8 @@ function moneyLine(money: GaveUp["money"]): string {
     case "refund_refused":
       return (
         `Razorpay refused to refund payment ${money.paymentId} (${rupees(money.amount)}), so nothing has gone back ` +
-        "to the client. It is tried again in half an hour; if this alert comes again, refund it by hand in " +
-        "Razorpay's dashboard."
+        "to the client. Refund it by hand in Razorpay's dashboard; until it is refunded, the booking is tried " +
+        "again every half hour."
       );
   }
 }
@@ -295,6 +313,7 @@ async function writeJobEvent(
       deps.now(),
     );
     await markFsmWrite(db, event.id, "written", deps.now());
+    await deps.resolveAlert(`job_event_pending:${event.id}`);
     log.info("job_event_written", { appointment_id: job.id, kind: event.kind, outcome });
     message.ack();
   } catch (error) {
@@ -306,8 +325,10 @@ async function writeJobEvent(
     }
     await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
     const behind = await rejectPendingAfter(db, event, deps.now(), `the ${event.kind} before it did not reach FSM`);
+    await deps.resolveAlert(`job_event_pending:${event.id}`);
     await deps.alert(
-      `A technician's ${event.kind} did not reach FSM after ${String(message.attempts)} attempts: ${reason}. ` +
+      `A technician's ${event.kind} did not reach FSM after ${String(message.attempts)} attempts ` +
+        `on visit ${job.id}: ${reason}. ` +
         (behind.length === 0
           ? "Enter it in FSM by hand."
           : `Enter it in FSM by hand, with what came after it and was held back: ${behind.join(", ")}.`),
@@ -349,7 +370,11 @@ async function jobForFsm(db: D1Database, appointmentId: string): Promise<JobForF
       };
 }
 
-/** Anonymises an erased person's FSM contact, once; a failure is counted, and the sweeper sends it again. */
+/**
+ * Anonymises an erased person's FSM contact, once. A failure is counted, and the
+ * sweeper sends it again until MAX_SYNC_ATTEMPTS; the last failure tells ops,
+ * and the Tasks board lists the contact until it is anonymised by hand.
+ */
 async function eraseContact(
   message: Message,
   personId: string,
@@ -375,11 +400,24 @@ async function eraseContact(
     log.info("fsm_contact_erased", { person_id: personId });
   } catch (error) {
     const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
-    await db
-      .prepare("UPDATE people SET fsm_erasure_attempts = fsm_erasure_attempts + 1 WHERE id = ?1")
+    const counted = await db
+      .prepare(
+        "UPDATE people SET fsm_erasure_attempts = fsm_erasure_attempts + 1 WHERE id = ?1 RETURNING fsm_erasure_attempts",
+      )
       .bind(personId)
-      .run();
-    log.warn("fsm_erasure_failed", { person_id: personId, reason });
+      .first<{ fsm_erasure_attempts: number }>();
+    const attempts = counted?.fsm_erasure_attempts ?? 1;
+    log.warn("fsm_erasure_failed", { person_id: personId, attempts, reason });
+    if (attempts >= MAX_SYNC_ATTEMPTS) {
+      await deps.alertOnce({
+        key: `fsm_erasure:${personId}`,
+        message:
+          `FSM would not anonymise contact ${contactId} of erased person ${personId} after ${String(attempts)} ` +
+          `attempts (${reason}), and nothing will ask again. Anonymise it in FSM by hand, then record it ` +
+          '(runbook, "Erasure within the day").',
+        link: "/tasks",
+      });
+    }
   }
   message.ack();
 }

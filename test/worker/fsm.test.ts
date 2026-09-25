@@ -82,6 +82,31 @@ describe("FSM: appointments", () => {
     expect(await provider.appointment("gone")).toBeNull();
   });
 
+  it("answers null for an ID FSM cannot even parse, such as a staging seed's, rather than failing", async () => {
+    const { fsm: provider } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/`]: () =>
+        json(
+          {
+            code: "INVALID_URL_PATTERN",
+            details: {},
+            message: "Please check if the URL trying to access is a correct one",
+            status: "error",
+          },
+          404,
+        ),
+    });
+    expect(await provider.appointment("seed-appointment-1")).toBeNull();
+  });
+
+  it("still fails on any other 404, which is not FSM saying the record is gone", async () => {
+    const { fsm: provider } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/`]: () => json({ code: "SOMETHING_ELSE", message: "no" }, 404),
+    });
+    await expect(provider.appointment("8229000000302107")).rejects.toThrow();
+  });
+
   it("pages appointments most recently changed first, and says when there are more", async () => {
     const { fsm: provider, calls } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
@@ -233,7 +258,7 @@ describe("FSM: clients, technicians, items and files", () => {
   });
 });
 
-// Booking a visit in two writes, each findable by our reference (docs/decisions/0067-a-paid-hold-is-kept.md).
+// Booking a visit in two writes, each findable by our reference (docs/decisions/0068-a-paid-hold-is-kept.md).
 describe("FSM: booking a visit, once", () => {
   const addresses = () =>
     json({ data: [fsmContactRecord({ Service_Address: { id: "sa-1" }, Billing_Address: { id: "ba-1" } })] });

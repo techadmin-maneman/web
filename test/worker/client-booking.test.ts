@@ -214,7 +214,7 @@ describe("POST /api/holds", () => {
   });
 });
 
-describe("what a client may book, and when (docs/decisions/0067-a-paid-hold-is-kept.md)", () => {
+describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-kept.md)", () => {
   const availability = async (who: { cookie: string }, type = "service") =>
     (await request(app, `/api/availability?type=${type}`, { headers: { Cookie: who.cookie } })).json<{
       days: { date: string; price: { amount: number }; windows: { with: string | null }[] }[];

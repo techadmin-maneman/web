@@ -64,7 +64,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
       .prepare(
         // fsm_invoice_id is not written here: FSM leaves the appointment's own Invoice_Id
         // null, and the invoice pass fills the column with Books' ID (ADR 0055). Where FSM
-        // holds no place for it yet, the visit keeps the one our booking gave it (ADR 0067).
+        // holds no place for it yet, the visit keeps the one our booking gave it (ADR 0068).
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
            technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)

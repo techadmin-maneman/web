@@ -189,7 +189,7 @@ export const STATUS_AFTER: Readonly<Record<Exclude<AppointmentTransition, "Resch
 /**
  * A visit is booked in FSM in two writes: a work order for the service, then
  * its appointment with the technician. Each ID is kept as soon as FSM answers,
- * so a retry never makes either twice (docs/decisions/0067-a-paid-hold-is-kept.md).
+ * so a retry never makes either twice (docs/decisions/0068-a-paid-hold-is-kept.md).
  */
 export interface NewFsmWorkOrder {
   readonly contactId: string;

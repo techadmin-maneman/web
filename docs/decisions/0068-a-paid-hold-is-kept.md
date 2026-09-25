@@ -1,4 +1,4 @@
-# 0067. A paid hold is kept
+# 0068. A paid hold is kept
 
 - Status: accepted
 - Date: 2026-09-25
@@ -21,7 +21,7 @@ And, around it: a timeout after FSM took a work order made a second one on the r
 
 ## Decision
 
-**A hold the client has paid for is confirmed, and kept.** `slot_holds.confirmed_at` (migration 0038) is set by the capture webhook, from Razorpay's own time for the payment, or when a free visit is booked. A confirmed hold keeps its time until it is booked or refunded, however long FSM takes: no other hold lets it go, the client can no longer let it go, and the clash check that booking and dispatch share counts it. It is a column rather than a new `state`: the state's CHECK cannot change without rebuilding `slot_holds`, which other tables reference (migration 0025 was withdrawn for that).
+**A hold the client has paid for is confirmed, and kept.** `slot_holds.confirmed_at` (migration 0039) is set by the capture webhook, from Razorpay's own time for the payment, or when a free visit is booked. A confirmed hold keeps its time until it is booked or refunded, however long FSM takes: no other hold lets it go, the client can no longer let it go, and the clash check that booking and dispatch share counts it. It is a column rather than a new `state`: the state's CHECK cannot change without rebuilding `slot_holds`, which other tables reference (migration 0025 was withdrawn for that).
 
 **A payment is in time by Razorpay's clock.** It counts if Razorpay made it no later than `PAYMENT_GRACE_SECONDS` (120) after the hold's ten minutes, whenever its webhook reaches us. An unpaid hold keeps its time for the same two minutes after its countdown, so a payment begun at 9:59 still finds its slot. A later payment is refunded, as before.
 
@@ -36,9 +36,9 @@ And, around it: a timeout after FSM took a work order made a second one on the r
 
 **What follows a booking happens once, and always.** The credit spent, the confirmation queued, the replaced visit cancelled: each runs after the booking and again for every later message about it, and each that already happened changes nothing (the ledger's one-use index, one confirmation per visit and kind, and `visit_changes`' one end per visit). A cancel FSM refuses leaves the replaced visit as FSM has it, and ops are told to cancel it by hand.
 
-**Giving up tells the truth.** On the fifth failure the work order FSM holds for the booking is cancelled first, so no technician goes to a visit whose money went back; then the payment is refunded; then ops are told the Razorpay payment, the amount and what is left in FSM, from what actually happened. Razorpay refusing the refund never escapes the queue handler: the message is acknowledged, the hold stays confirmed and keeps its time, and ops are told to refund it by hand if the alert comes again.
+**Giving up tells the truth.** On the fifth failure the work order FSM holds for the booking is cancelled first, so no technician goes to a visit whose money went back; then the payment is refunded; then ops are told the Razorpay payment, the amount and what is left in FSM, from what actually happened. Razorpay refusing the refund never escapes the queue handler: the message is acknowledged, the hold stays confirmed and keeps its time, and ops are told to refund it by hand. Every alert here is raised once under a key naming the hold or the visit, with IDs only and a link to the client in the console (`alertOnce`, ADR 0067), and a later try that books the hold or gives it back closes it.
 
-**A cron pass puts back what went quiet.** The `unbooked_holds` job puts a confirmed hold still neither booked nor refunded half an hour after it was queued back on the queue, and tells ops. That covers a queue message lost and a refund refused. There is no dead-letter queue: the hold row is already the durable record, a second copy of it would be a second thing to reconcile, and a dead-letter queue is a new queue the account would have to create before any deploy.
+**A cron pass puts back what went quiet.** The `unbooked_holds` job puts a confirmed hold still neither booked nor refunded half an hour after it was queued back on the queue, and tells ops once. Each hold costs one call from the run's shared budget (ADR 0067); when the budget is spent the pass stops, and a hold the queue refuses is left, both for the next run. That covers a queue message lost and a refund refused. There is no dead-letter queue: the hold row is already the durable record, a second copy of it would be a second thing to reconcile, and a dead-letter queue is a new queue the account would have to create before any deploy.
 
 **The site's forms need only a number, so they are held to it.** `/api/consultation` and `/api/r/:code/*`:
 
@@ -71,5 +71,5 @@ A failed read is logged and the record made as before, so none of the reads can 
 - A client who pays inside the countdown is booked, however late the webhook, unless FSM refuses for half an hour; then the client is refunded and ops know exactly what happened to the money and to FSM.
 - An unpaid hold's time is free to others two minutes after its countdown, not at once.
 - The app: a paid hold never reads `expired`; `DELETE /api/holds/{id}` leaves a paid hold alone; each day of `GET /api/availability` carries its own price.
-- The site: `409 already_booked` carries `booked: { date, window }`; the landing's answers carry `invite`. `GET /api/r/{code}` still answers valid or unknown: whether an invite has expired is a fact about the friend who was held under it, known only once they give their number (ADR 0025, item 39).
+- The site: `409 already_booked` carries `booked: { date, window }`; the landing's answers carry `invite`. `GET /api/r/{code}` still answers valid or unknown: whether an invite has expired is a fact about the friend who was held under it, known only once they give their number (ADR 0025, item 40).
 - The same-mobile fraud rule can only match a number one of the two has changed to since: a number change does not keep the number it replaced, so a referrer's first number is not compared.

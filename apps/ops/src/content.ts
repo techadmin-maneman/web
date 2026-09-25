@@ -522,8 +522,8 @@ export const noShows = {
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
- * groups, of which two have something behind them; the other four here are
- * queues it does not draw (docs/open-points.md, item 58).
+ * groups, of which two have something behind them; the others here are queues
+ * it does not draw (docs/open-points.md, item 58).
  */
 export const tasks = {
   title: "Tasks",
@@ -537,9 +537,14 @@ export const tasks = {
     no_show_decision: "No-show decision",
     number_change: "Number change",
     erasure_request: "Erasure request",
+    // PLACEHOLDER: two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
+    draft_invoice: "Draft invoice",
+    erasure_unfinished: "Erasure left in FSM",
   } as Readonly<Record<string, string>>,
   /** The first line: whose task it is. A no-show names no client, so it names the visit. */
   visit: (date: string) => `Visit of ${date}`,
+  /** PLACEHOLDER: an erased client has no name left to show, so the line says when they were erased. */
+  erased: (date: string) => `Client erased ${date}`,
   /** PLACEHOLDER: a queue whose row has lost the client it was about. */
   unknown: "Client unknown",
   /** The client's page, which the board draws no way to. */
@@ -553,6 +558,10 @@ export const tasks = {
     no_show_decision: (technician: string) => `${technician} attended`,
     number_change: "Both numbers proven by code",
     erasure_request: "Asked for in the client's own app",
+    // PLACEHOLDER: the client cannot open the invoice until somebody sends it in Books.
+    draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
+    // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
+    erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
   },
