@@ -1,8 +1,8 @@
 // The worst case the try-on can cost Cloudflare, from the ceilings in each
-// environment's config, plus the share set aside for Phase 2.
-// test/node/free-tier-budget.test.ts holds the two together under 80% of the
-// free allowances, so no ceiling can be raised past the free tier, or into
-// Phase 2's share, without the build failing
+// environment's config, plus the share set aside for Phase 2, and what the
+// cron reads from D1. test/node/free-tier-budget.test.ts holds them under 80%
+// of the free allowances, so no ceiling can be raised past the free tier, or
+// into Phase 2's share, without the build failing
 // (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, 0039-phase-2-budget.md).
 //
 // Staging and production share one Cloudflare account, and so one allowance.
@@ -44,6 +44,33 @@ export const PHASE_2_ALLOWANCE = {
   r2ClassAPerMonth: 100_000,
   r2ClassBPerMonth: 1_000_000,
 } as const;
+
+/**
+ * The five-minute cron's D1 reads. Every query on its path searches an index
+ * that holds only the rows still waiting (test/node/query-plans.test.ts), so a
+ * run reads about the rows it handles and none of the history behind them
+ * (test/worker/cron-reads.test.ts measures a run against a history, and against
+ * twice that history).
+ */
+export const CRON_RUNS_PER_DAY = 24 * 12;
+/** A run with nothing to do, measured: about 35 rows, however long the tables grow. */
+export const CRON_ROWS_READ_PER_QUIET_RUN = 100;
+/**
+ * A run at its busiest, every lookup coming back full: the sweep's eight
+ * lookups of 100 and what it expires and deletes (about 1,600); the
+ * reconciliation's page of 50, and on the hour the photographs of three days'
+ * visits (about 1,700); erased people's files, 20 at a time (about 500); and
+ * the referral, reminder, invoice, asked-window and Books passes of 5 to 20
+ * each, with their joins (about 700).
+ */
+export const CRON_ROWS_READ_PER_BUSY_RUN = 5_000;
+/** The cron's share of the daily reads. The rest of the 80% is for requests. */
+export const CRON_READ_SHARE = 0.4;
+
+/** Production's cron as busy as it can be on every run, and staging's at rest. */
+export function cronRowsReadPerDay(perBusyRun: number = CRON_ROWS_READ_PER_BUSY_RUN): number {
+  return CRON_RUNS_PER_DAY * (perBusyRun + CRON_ROWS_READ_PER_QUIET_RUN);
+}
 
 /** A visit's photographs: five before and five after, each re-encoded on the phone to about 250 KB. */
 export const PHOTOS_PER_VISIT = 10;

@@ -104,12 +104,14 @@ export function grantStatements(
   return { statements, messageId };
 }
 
+// CROSS JOIN keeps the referrals as the outer loop. Left to itself, SQLite walks every visit ever made to
+// save sorting the few pending referrals, and the five-minute cron would read them all on each run.
 const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased_at AS referrer_erased,
     r.referred_person_id, a.id AS first_fit_id, a.window_start, r.via, pin.launched_at
   FROM referral_attributions r
   JOIN referral_codes rc ON rc.code = r.code JOIN people rp ON rp.id = rc.person_id
   JOIN people fp ON fp.id = r.referred_person_id
-  JOIN appointments a ON a.person_id = r.referred_person_id AND a.type = 'first_fit' AND a.status = 'completed'
+  CROSS JOIN appointments a ON a.person_id = r.referred_person_id AND a.type = 'first_fit' AND a.status = 'completed'
     AND a.deleted_at IS NULL
   JOIN visits v ON v.appointment_id = a.id AND v.outcome = 'done'
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode`;
