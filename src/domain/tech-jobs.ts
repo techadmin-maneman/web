@@ -227,7 +227,7 @@ export async function progressOf(db: D1Database, jobId: string): Promise<JobProg
   const { results } = await db
     .prepare(
       `SELECT kind, body, occurred_at FROM job_events
-       WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at`,
+       WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
     )
     .bind(jobId)
     .all<{ kind: JobEventKind; body: string; occurred_at: string }>();

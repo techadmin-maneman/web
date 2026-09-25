@@ -49,6 +49,8 @@ let fsm: StubFsm;
 let fsmQueue: ReturnType<typeof fakeQueue>;
 let messageQueue: ReturnType<typeof fakeQueue>;
 let cookie: string;
+/** How many of the queued FSM writes runFsmQueue has delivered. */
+let delivered: number;
 
 /** An appointment as FSM holds it, with only what the stub's transitions read. */
 const fsmAppointment = (id: string, status = "Scheduled"): FsmAppointment => ({
@@ -101,6 +103,7 @@ beforeEach(async () => {
   await markDatabase();
   fsm = createStubFsm(world());
   fsmQueue = fakeQueue();
+  delivered = 0;
   messageQueue = fakeQueue();
   deps = fakeDependencies({ fsm });
   tech = appFor("local", deps, {}, "tech");
@@ -449,6 +452,7 @@ describe("closing the job", () => {
   it("retries an FSM write that failed, and leaves the technician's work on the record", async () => {
     await startJob();
     await beforePhotos();
+    await runFsmQueue();
     fsm.failNext("updateAppointment", "FSM said 500");
 
     await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: ["piece_removed"] }, "event-checklist-01");
@@ -467,7 +471,9 @@ describe("closing the job", () => {
   });
 
   it("gives up after five attempts, alerts, and keeps the event", async () => {
-    await startJob();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    await runFsmQueue();
+    await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
     const eventId = await eventRowId("event-start-01");
     fsm.failNext("updateAppointment", "FSM said 500");
 
@@ -477,6 +483,58 @@ describe("closing the job", () => {
     expect(fifth.messages[0]?.ack).toHaveBeenCalled();
     expect(await writeStateOf(eventId)).toBe("rejected");
     expect(deps.alerts).toEqual([expect.stringMatching(/did not reach FSM after 5 attempts/)]);
+  });
+});
+
+// "A job's writes reach FSM in the order the technician made them" (ADR 0053).
+// Each write is its own message and a failed one is retried later, so the
+// order holds only if a write waits for the ones before it.
+describe("the order a job reaches FSM in", () => {
+  /** Every step of a service job after the before photographs, closed as done. */
+  async function finishJob(): Promise<void> {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: ["piece_removed"] }, "event-checklist-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+  }
+
+  it("holds a job's close back while an earlier step is retried, then writes the rest in order", async () => {
+    await startJob();
+    await beforePhotos();
+    await runFsmQueue();
+    await finishJob();
+    fsm.failNext("updateAppointment", "FSM said 500");
+
+    // The checklist fails; every step after it waits rather than overtaking it.
+    await runFsmQueue();
+    expect(fsm.made.transitioned.map(({ name }) => name)).toEqual(["Dispatch", "Start Work"]);
+    expect(await writeStateOf(await eventRowId("event-outcome-01"))).toBe("pending");
+
+    // Its retry lands, and each write sends the next one on.
+    const retried = batchOf(await eventRowId("event-checklist-01"), 2);
+    await handleFsmSyncBatch(retried as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    await runFsmQueue();
+    expect(fsm.made.transitioned.map(({ name }) => name)).toEqual(["Dispatch", "Start Work", "Complete Work"]);
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+  });
+
+  it("closes nothing in FSM after a step it gave up on, and names what is left to enter by hand", async () => {
+    await startJob();
+    await beforePhotos();
+    await runFsmQueue();
+    await finishJob();
+    fsm.failNext("updateAppointment", "FSM said 500");
+    await runFsmQueue();
+
+    const last = batchOf(await eventRowId("event-checklist-01"), 5);
+    fsm.failNext("updateAppointment", "FSM said 500");
+    await handleFsmSyncBatch(last as unknown as MessageBatch, queueEnv(), deps, createLogger());
+
+    expect(fsm.made.transitioned.map(({ name }) => name)).not.toContain("Complete Work");
+    expect(await writeStateOf(await eventRowId("event-outcome-01"))).toBe("rejected");
+    expect(deps.alerts).toEqual([
+      expect.stringMatching(/checklist did not reach FSM after 5 attempts.*consumables, after_photos, outcome/),
+    ]);
   });
 });
 
@@ -815,10 +873,14 @@ function batchOf(jobEventId: string, attempts: number) {
   };
 }
 
-/** Runs every FSM write the routes queued, in the order they were queued. */
+/**
+ * Delivers every FSM write queued since the last call, in the order it was
+ * queued, including those the consumer itself sends on. A retry is left for
+ * the test to deliver.
+ */
 async function runFsmQueue(): Promise<void> {
-  for (const message of [...fsmQueue.sent]) {
-    const body = message as { job_event_id?: string };
+  for (; delivered < fsmQueue.sent.length; delivered += 1) {
+    const body = fsmQueue.sent[delivered] as { job_event_id?: string };
     if (body.job_event_id === undefined) continue;
     const batch = batchOf(body.job_event_id, 1);
     await handleFsmSyncBatch(batch as unknown as MessageBatch, queueEnv(), deps, createLogger());

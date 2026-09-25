@@ -18,6 +18,8 @@ import type { WorkableJob } from "./tech-jobs.ts";
 
 export type FsmWriteState = "pending" | "written" | "rejected";
 
+const EVENT_COLUMNS = "id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded";
+
 export interface JobEvent {
   readonly id: string;
   readonly appointmentId: string;
@@ -124,7 +126,7 @@ export async function eventByClientId(
 ): Promise<JobEvent | null> {
   const row = await db
     .prepare(
-      `SELECT id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded FROM job_events
+      `SELECT ${EVENT_COLUMNS} FROM job_events
        WHERE appointment_id = ?1 AND event_id = ?2`,
     )
     .bind(appointmentId, eventId)
@@ -135,7 +137,7 @@ export async function eventByClientId(
 export async function eventById(db: D1Database, id: string): Promise<JobEvent | null> {
   const row = await db
     .prepare(
-      `SELECT id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded FROM job_events
+      `SELECT ${EVENT_COLUMNS} FROM job_events
        WHERE id = ?1`,
     )
     .bind(id)
@@ -147,12 +149,67 @@ export async function eventById(db: D1Database, id: string): Promise<JobEvent | 
 export async function eventsOf(db: D1Database, appointmentId: string): Promise<JobEvent[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded FROM job_events
-       WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at`,
+      `SELECT ${EVENT_COLUMNS} FROM job_events
+       WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
     )
     .bind(appointmentId)
     .all<EventRow>();
   return results.map(eventOf);
+}
+
+// A job's events in the order they landed: by our clock, then by the order the
+// rows were written, since two can land in the same millisecond.
+const LANDED_BEFORE = "(received_at, rowid) < (SELECT received_at, rowid FROM job_events WHERE id = ?2)";
+const LANDED_AFTER = "(received_at, rowid) > (SELECT received_at, rowid FROM job_events WHERE id = ?2)";
+
+/**
+ * The earliest event of the same job that landed before this one and is not
+ * yet written to FSM: what this one must wait for, or must not overtake.
+ */
+export async function unwrittenBefore(db: D1Database, event: JobEvent): Promise<JobEvent | null> {
+  const row = await db
+    .prepare(
+      `SELECT ${EVENT_COLUMNS} FROM job_events
+       WHERE appointment_id = ?1 AND superseded = 0 AND fsm_write_state <> 'written' AND ${LANDED_BEFORE}
+       ORDER BY received_at, rowid LIMIT 1`,
+    )
+    .bind(event.appointmentId, event.id)
+    .first<EventRow>();
+  return row === null ? null : eventOf(row);
+}
+
+/** The job's next event still waiting for FSM, after this one. */
+export async function nextPending(db: D1Database, event: JobEvent): Promise<JobEvent | null> {
+  const row = await db
+    .prepare(
+      `SELECT ${EVENT_COLUMNS} FROM job_events
+       WHERE appointment_id = ?1 AND superseded = 0 AND fsm_write_state = 'pending' AND ${LANDED_AFTER}
+       ORDER BY received_at, rowid LIMIT 1`,
+    )
+    .bind(event.appointmentId, event.id)
+    .first<EventRow>();
+  return row === null ? null : eventOf(row);
+}
+
+/**
+ * Gives up on every event of the job still waiting behind this one, which will
+ * never be written now that it was not. Returns their kinds, in order, for ops.
+ */
+export async function rejectPendingAfter(
+  db: D1Database,
+  event: JobEvent,
+  now: Date,
+  reason: string,
+): Promise<JobEventKind[]> {
+  const { results } = await db
+    .prepare(
+      `UPDATE job_events SET fsm_write_state = 'rejected', fsm_error = ?3, updated_at = ?4
+       WHERE appointment_id = ?1 AND superseded = 0 AND fsm_write_state = 'pending' AND ${LANDED_AFTER}
+       RETURNING kind, received_at, rowid`,
+    )
+    .bind(event.appointmentId, event.id, reason, now.toISOString())
+    .all<{ kind: JobEventKind; received_at: string; rowid: number }>();
+  return results.sort((a, b) => a.received_at.localeCompare(b.received_at) || a.rowid - b.rowid).map((row) => row.kind);
 }
 
 /** Marks what FSM did with the event. A rejection keeps FSM's status and message, never record data. */
@@ -202,7 +259,7 @@ async function record(db: D1Database, input: EventInput, options: { superseded: 
           fsm_write_state, superseded, updated_at)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?9)
        ON CONFLICT (appointment_id, event_id) DO NOTHING
-       RETURNING id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded`,
+       RETURNING ${EVENT_COLUMNS}`,
     )
     .bind(
       crypto.randomUUID(),
