@@ -384,15 +384,21 @@ textarea.input {
   margin: 0;
 }
 
-.primary:focus-visible,
-.secondary:focus-visible,
-.danger:focus-visible,
-.logout:focus-visible,
-.link:focus-visible,
-.switch:focus-visible,
-.whatsapp:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
+/* Taking a number change back, before ops decide it: a quiet way, beneath the card's own action. */
+.withdraw {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-top: var(--sp-10);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-15);
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-3);
+  cursor: pointer;
 }
 
 /* The building search (docs/decisions/0054-address-capture.md). The list sits

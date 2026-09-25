@@ -6,12 +6,16 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { changingClients } from "./changing.ts";
-import { confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
+import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
 // Each client's visit is moved, then cancelled, so these run one after another.
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ page }) => {
+  await noRealCheckout(page);
+});
 
 async function scan(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page })
@@ -33,6 +37,18 @@ async function pickAnother(page: Page, which: "first" | "last"): Promise<void> {
   await page.getByRole("button", { name: "Continue" }).click();
   await continueToPayment(page);
 }
+
+// Board C1's Prepaid, on a visit paid for ahead; and the visit opens its own page, with the same ways to change it
+// as Home has (CLI-26). Read before the tests below move and cancel it.
+test("C1: a paid visit is marked Prepaid, and opens with Reschedule", async ({ page }) => {
+  await logIn(page, changingClients().free.mobile);
+  await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
+  const card = page.getByRole("main").getByRole("link").first();
+  await expect(card).toContainText("Prepaid");
+  await card.click();
+  await page.getByRole("button", { name: "Reschedule" }).click();
+  await expect(page.getByRole("dialog", { name: /^Move \w+day's visit$/ })).toBeVisible();
+});
 
 test("C7: a visit more than 24 hours out moves for free, its payment carried over", async ({ page }) => {
   await confirmedByRazorpay(page);

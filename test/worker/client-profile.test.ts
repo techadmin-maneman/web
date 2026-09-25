@@ -121,9 +121,12 @@ describe("PATCH /api/profile/address", () => {
   });
 });
 
-describe("GET /api/address/suggestions", () => {
+describe("POST /api/address/suggestions", () => {
+  const suggest = (app: App, q: string, session?: string) =>
+    send(app, "POST", "/api/address/suggestions", session === undefined ? { q } : { q, session });
+
   it("answers the buildings, with Google's attribution", async () => {
-    const res = await send(client, "GET", "/api/address/suggestions?q=Sunrise&session=s-1");
+    const res = await suggest(client, "Sunrise", "s-1");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       suggestions: [{ place_id: "stub-place-sunrise", primary: "Sunrise Greens", secondary: "Sector 65, Gurugram" }],
@@ -132,13 +135,13 @@ describe("GET /api/address/suggestions", () => {
   });
 
   it("needs a session token, because Google bills per keystroke without one", async () => {
-    expect((await send(client, "GET", "/api/address/suggestions?q=Sunrise")).status).toBe(400);
+    expect((await suggest(client, "Sunrise")).status).toBe(400);
   });
 
   it("answers busy, having spent nothing, once the day's ceiling is reached", async () => {
     const capped = appFor("local", deps, { geocode: { apiKey: null, dailyCeiling: 1 } }, "client");
-    expect((await send(capped, "GET", "/api/address/suggestions?q=Sunrise&session=s-1")).status).toBe(200);
-    const refused = await send(capped, "GET", "/api/address/suggestions?q=Mayfield&session=s-2");
+    expect((await suggest(capped, "Sunrise", "s-1")).status).toBe(200);
+    const refused = await suggest(capped, "Mayfield", "s-2");
     expect(refused.status).toBe(503);
     expect((await refused.json<{ error: { code: string } }>()).error.code).toBe("busy");
     expect(deps.alerts).toEqual([
@@ -147,34 +150,39 @@ describe("GET /api/address/suggestions", () => {
   });
 
   it("answers unavailable, not an error, when Google cannot be reached", async () => {
-    const res = await send(client, "GET", "/api/address/suggestions?q=mm-stub:down&session=s-1");
+    const res = await suggest(client, "mm-stub:down", "s-1");
     expect(res.status).toBe(503);
     expect((await res.json<{ error: { code: string } }>()).error.code).toBe("unavailable");
   });
 
   it("tells ops once a day that Google refuses the search, in Google's words", async () => {
-    const res = await send(client, "GET", "/api/address/suggestions?q=mm-stub:refused&session=s-1");
+    const res = await suggest(client, "mm-stub:refused", "s-1");
     expect(res.status).toBe(503);
-    await send(client, "GET", "/api/address/suggestions?q=mm-stub:refused&session=s-2");
+    await suggest(client, "mm-stub:refused", "s-2");
     const told =
       "Google refused the address search (autocomplete 403: stub: quota). Clients can still type an address, " +
       "but none gets a pin. Check the key, its APIs and its quotas (runbook, section 13).";
     expect(deps.alerts).toEqual([told]);
 
     const tomorrow = fakeDependencies({ now: () => new Date(NOW.getTime() + 24 * 60 * 60 * 1000) });
-    await send(
-      appFor("local", tomorrow, {}, "client"),
-      "GET",
-      "/api/address/suggestions?q=mm-stub:refused&session=s-3",
-    );
+    await suggest(appFor("local", tomorrow, {}, "client"), "mm-stub:refused", "s-3");
     expect(tomorrow.alerts).toEqual([told]);
   });
 
   it("needs a signed-in client: suggestions cost money", async () => {
-    const res = await request(client, "/api/address/suggestions?q=Sunrise&session=s-1", {
-      headers: { Origin: ORIGIN },
+    const res = await request(client, "/api/address/suggestions", {
+      method: "POST",
+      headers: { Origin: ORIGIN, "Content-Type": "application/json" },
+      body: JSON.stringify({ q: "Sunrise", session: "s-1" }),
     });
     expect(res.status).toBe(401);
+  });
+
+  // A GET carries the cookie from any page that links here, and each one spends from Google's budget.
+  it("answers no GET: a link from another site spends nothing", async () => {
+    const res = await send(client, "GET", "/api/address/suggestions?q=Sunrise&session=s-1");
+    expect(res.status).toBe(404);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM counters").first()).toEqual({ n: 0 });
   });
 });
 
@@ -415,6 +423,20 @@ describe("a number change", () => {
     ).first<string>("id");
     const login = await send(client, "POST", "/api/auth/verify", { challenge_id: challenge, code: codeTo(OLD) });
     expect(login.status).toBe(410);
+  });
+
+  it("can be withdrawn by the client while it waits for ops, who then no longer see it", async () => {
+    const { body } = await start();
+    await verify(body.request_id, "old", codeTo(OLD));
+    await verify(body.request_id, "new", codeTo(NEW));
+
+    expect((await send(client, "DELETE", "/api/number-change")).status).toBe(204);
+    expect((await profile()).number_change).toBeNull();
+    expect(await (await send(ops, "GET", "/api/number-changes")).json()).toEqual({ changes: [] });
+    expect(await auditActions()).toEqual(["number_change.request", "number_change.withdraw"]);
+    // Withdrawing again finds nothing to withdraw, and records nothing.
+    expect((await send(client, "DELETE", "/api/number-change")).status).toBe(204);
+    expect(await auditActions()).toEqual(["number_change.request", "number_change.withdraw"]);
   });
 
   it("withdraws a change started earlier, whose codes then no longer count", async () => {

@@ -44,7 +44,8 @@ type Step =
   | { readonly kind: "pay"; readonly hold: Hold }
   | { readonly kind: "failed"; readonly hold: Hold }
   | { readonly kind: "expired" }
-  | { readonly kind: "confirming"; readonly hold: Hold }
+  /** `paidIn`: the phone saw the hold's time end, and found the payment already in. */
+  | { readonly kind: "confirming"; readonly hold: Hold; readonly paidIn?: boolean }
   | { readonly kind: "confirmed"; readonly hold: Hold }
   | { readonly kind: "slow" }
   | { readonly kind: "refunded" }
@@ -114,17 +115,22 @@ export function BookingSheet({
   }, [step.kind]);
 
   // The hold has lapsed while the client was paying or deciding. The phone may see it before the API
-  // does, so it lets the hold go itself, rather than leave the slot blocked for no one.
+  // does, so it lets the hold go itself, rather than leave the slot blocked for no one. A payment
+  // Razorpay took in time keeps the hold, though (ADR 0068), so the API is asked first.
   const holdOf = step.kind === "pay" || step.kind === "failed" ? step.hold : null;
   useEffect(() => {
     if (holdOf === null) return;
-    const timer = window.setTimeout(
-      () => {
-        setStep({ kind: "expired" });
-        void api.releaseHold(holdOf.id);
-      },
-      Math.max(0, Date.parse(holdOf.expires_at) - apiNow()),
-    );
+    const lapse = async () => {
+      const now = await api.holdById(holdOf.id);
+      if (now.ok && now.body.paid) {
+        changed.current = true;
+        setStep({ kind: "confirming", hold: now.body, paidIn: true });
+        return;
+      }
+      setStep({ kind: "expired" });
+      void api.releaseHold(holdOf.id);
+    };
+    const timer = window.setTimeout(() => void lapse(), Math.max(0, Date.parse(holdOf.expires_at) - apiNow()));
     return () => {
       window.clearTimeout(timer);
     };
@@ -302,7 +308,7 @@ export function BookingSheet({
           />
         )}
         {step.kind === "expired" && <ExpiredStep onPickAgain={() => void load()} />}
-        {step.kind === "confirming" && <WaitStep text={booking.confirming} />}
+        {step.kind === "confirming" && <WaitStep text={step.paidIn === true ? booking.paidIn : booking.confirming} />}
         {step.kind === "confirmed" && (
           <ConfirmedStep hold={step.hold} moved={moving !== undefined} reminded={reminders === true} onDone={close} />
         )}

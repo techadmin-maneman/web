@@ -29,7 +29,9 @@
   // import code written against the DOM.
   "exclude": [
     "test/node/app-api.test.ts",
+    "test/node/app-documents.test.ts",
     "test/node/app-money.test.ts",
+    "test/node/app-referral-card.test.ts",
     "test/node/app-route.test.ts",
     "test/node/tech-api.test.ts",
     "test/node/tech-kept.test.ts",

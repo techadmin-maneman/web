@@ -129,7 +129,8 @@ describe("GET /api/me, from the mirror", () => {
         place: "Gurgaon 122018",
       },
       credits: null,
-      prompt: null,
+      // Booked, and no address given yet: the technician has no door to go to.
+      prompt: { kind: "address" },
     });
   });
 
@@ -190,6 +191,191 @@ describe("GET /api/visits", () => {
 
   it("needs a session", async () => {
     expect((await get("/api/visits", false)).status).toBe(401);
+  });
+});
+
+// A visit stays the client's until FSM closes it. One that dropped out of both lists once its window
+// ended left Home saying nothing was booked, and offering the booking again (LIFE-03).
+describe("a visit FSM has not closed", () => {
+  // NOW is 12:00 on Monday 21 September in India.
+  const yesterday = fsmAppointment("ap-yesterday", {
+    scheduledStart: "2026-09-20T10:00:00+05:30",
+    scheduledEnd: "2026-09-20T11:30:00+05:30",
+  });
+  const now = fsmAppointment("ap-now", {
+    status: "In Progress",
+    scheduledStart: "2026-09-21T11:00:00+05:30",
+    scheduledEnd: "2026-09-21T12:30:00+05:30",
+  });
+
+  it("stays under upcoming once its window has passed, as being closed", async () => {
+    await mirror([yesterday, fsmAppointment("ap-next")]);
+    await signIn();
+    const visits = await (await get("/api/visits")).json<{ upcoming: { date: string; stage: string }[] }>();
+    expect(visits.upcoming.map(({ date, stage }) => ({ date, stage }))).toEqual([
+      { date: "2026-09-20", stage: "closing" },
+      { date: "2026-09-24", stage: "booked" },
+    ]);
+  });
+
+  it("is in progress while the technician works in its window", async () => {
+    await mirror([now]);
+    await signIn();
+    const visits = await (await get("/api/visits")).json<{ upcoming: { stage: string }[] }>();
+    expect(visits.upcoming.map((visit) => visit.stage)).toEqual(["in_progress"]);
+  });
+
+  it("keeps Home on the visit, rather than saying nothing is booked", async () => {
+    await mirror([yesterday]);
+    await signIn();
+    const me = await (await get("/api/me")).json<Record<string, unknown>>();
+    expect(me).toMatchObject({ state: "lead", next_visit: { date: "2026-09-20", stage: "closing" } });
+  });
+
+  it("gives way on Home to a visit still to come", async () => {
+    await mirror([yesterday, fsmAppointment("ap-next")]);
+    await signIn();
+    const me = await (await get("/api/me")).json<Record<string, unknown>>();
+    expect(me).toMatchObject({ next_visit: { date: "2026-09-24", stage: "booked" } });
+  });
+});
+
+// Board B1's one contextual prompt: an address to give, then a replacement falling due, then an invoice
+// just issued. One at a time, the first that applies (LIFE-08).
+describe("GET /api/me's one prompt", () => {
+  const personId = async () =>
+    (await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1").bind(MOBILE).first<{ id: string }>())?.id ??
+    "";
+  const giveAddress = async () =>
+    env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+       VALUES (?1, ?2, ?3, 'House 12', 'Sector 65', 'Gurgaon', '122018')`,
+    )
+      .bind(crypto.randomUUID(), await personId(), NOW.toISOString())
+      .run();
+  const fitPiece = async (due: string) =>
+    env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
+       VALUES (?1, ?1, ?2, 'MM-STD-4417-B', '2026-09-10', ?3, ?4)`,
+    )
+      .bind(crypto.randomUUID(), await personId(), due, NOW.toISOString())
+      .run();
+  const issueInvoice = async (appointmentId: string, daysAgo: number) =>
+    env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-1', invoice_issued_at = ?1 WHERE id = ?2")
+      .bind(new Date(NOW.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString(), appointmentId)
+      .run();
+  const prompt = async () => (await (await get("/api/me")).json<{ prompt: unknown }>()).prompt;
+
+  it("asks for an address first, where a visit is booked and none is given", async () => {
+    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await signIn();
+    await fitPiece("2027-03-09");
+    expect(await prompt()).toEqual({ kind: "address" });
+  });
+
+  it("then names the month the piece in wear falls due", async () => {
+    await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    await giveAddress();
+    await fitPiece("2027-03-09");
+    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2027-03" });
+  });
+
+  it("then says an invoice issued in the last fortnight is ready, and nothing once it is older", async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    await giveAddress();
+    await issueInvoice(ids["ap-done"] ?? "", 3);
+    expect(await prompt()).toEqual({
+      kind: "invoice_ready",
+      visit_id: ids["ap-done"],
+      date: "2026-09-10",
+      type: "service",
+    });
+    await issueInvoice(ids["ap-done"] ?? "", 15);
+    expect(await prompt()).toBeNull();
+  });
+
+  it("asks nothing of someone with nothing booked", async () => {
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, ?2, 'Rohit Malhotra')",
+    )
+      .bind(NOW.toISOString(), MOBILE)
+      .run();
+    await signIn();
+    expect(await (await get("/api/me")).json()).toMatchObject({ state: "nothing_booked", prompt: null });
+  });
+});
+
+describe("what was done on a visit (board C9)", () => {
+  it("is the checklist the technician ticked, in the job sheet's order", async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    const visitId = ids["ap-done"] ?? "";
+    await env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t-1', 'sr-t1', 'T', 'T', 1, ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const event = (id: string, body: object, superseded = 0) =>
+      env.DB.prepare(
+        `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+           superseded, updated_at) VALUES (?1, ?2, ?1, 't-1', 'checklist', ?3, ?4, ?4, ?5, ?4)`,
+      )
+        .bind(id, visitId, JSON.stringify(body), NOW.toISOString(), superseded)
+        .run();
+    await event("e-refused", { done: ["piece_removed", "scalp_cleaned", "piece_cleaned"] }, 1);
+    await event("e-1", { done: ["piece_refitted", "piece_removed"] });
+
+    const visit = await (await get(`/api/visits/${visitId}`)).json<{ what_was_done: string[] | null }>();
+    expect(visit.what_was_done).toEqual(["PLACEHOLDER Piece removed", "PLACEHOLDER Piece refitted"]);
+  });
+
+  it("is null for a visit with no checklist recorded, closed in FSM's own screens", async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    const visit = await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json<{ what_was_done: unknown }>();
+    expect(visit.what_was_done).toBeNull();
+  });
+});
+
+describe("a visit paid for ahead (board C1's Prepaid)", () => {
+  it("is prepaid once a payment for it is captured, or a credit covers it, and not otherwise", async () => {
+    const ids = await mirror([
+      fsmAppointment("ap-paid"),
+      fsmAppointment("ap-credit", { scheduledStart: "2026-09-25T10:00:00+05:30" }),
+      fsmAppointment("ap-unpaid", { scheduledStart: "2026-09-26T10:00:00+05:30" }),
+    ]);
+    await signIn();
+    const person = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1")
+      .bind(MOBILE)
+      .first<{ id: string }>();
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status, captured_at,
+         created_at, updated_at) VALUES ('pay-1', ?1, ?2, 'pay_1', 236000, 'INR', 'captured', ?3, ?3, ?3)`,
+    )
+      .bind(person?.id, ids["ap-paid"], NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t-held', 'sr-held', 'T', 'T', 1, ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
+         gst_percent, state, appointment_id, expires_at, created_at, updated_at, use_credit)
+       VALUES ('hold-1', ?1, 'service', '2026-09-25', 'morning', 't-held', 0, 0, 0, 0, 'booked', ?2, ?3, ?3, ?3, 1)`,
+    )
+      .bind(person?.id, ids["ap-credit"], NOW.toISOString())
+      .run();
+
+    const visits = await (await get("/api/visits")).json<{ upcoming: { id: string; prepaid: boolean }[] }>();
+    const prepaid = Object.fromEntries(visits.upcoming.map((visit) => [visit.id, visit.prepaid]));
+    expect(prepaid).toEqual({
+      [ids["ap-paid"] ?? ""]: true,
+      [ids["ap-credit"] ?? ""]: true,
+      [ids["ap-unpaid"] ?? ""]: false,
+    });
   });
 });
 

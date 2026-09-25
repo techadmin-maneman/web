@@ -1,11 +1,15 @@
 // "What you have agreed to" (board G1): each purpose with its date and a
-// switch. Turning referral cards on first shows the four lines its notice
-// carries (board F3), so the consent recorded is one the client has read.
+// switch. Turning referral cards on first shows the lines its notice carries
+// (board F3), so the consent recorded is one the client has read. A switch
+// moves only once the API has recorded it; one that did not go through says so
+// and stays as it was, since a switch that looks off while the consent stands
+// would tell the client something untrue about their data.
 
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type ConsentPurpose, type Profile } from "../api.ts";
 import { profile } from "../content.ts";
+import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import styles from "./profile.module.css";
 
 type Consent = Profile["consents"][number];
@@ -14,21 +18,28 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
   const copy = profile;
   const [shown, setShown] = useState(consents);
   const [confirming, setConfirming] = useState<ConsentPurpose | null>(null);
+  const [failed, setFailed] = useState<ConsentPurpose | null>(null);
+  // One switch at a time: each is a row in an append-only ledger, and two taps would be two agreements.
+  const [busy, once] = useOneAtATime();
 
-  async function switchTo(purpose: ConsentPurpose, granted: boolean) {
-    setConfirming(null);
-    const answer = await api.switchConsent(purpose, granted);
-    if (answer.ok) {
+  const switchTo = (purpose: ConsentPurpose, granted: boolean) =>
+    once(async () => {
+      const answer = await api.switchConsent(purpose, granted);
+      if (!answer.ok) {
+        setFailed(purpose);
+        return;
+      }
+      setFailed(null);
+      setConfirming(null);
       setShown((list) =>
         list.map((consent) =>
           consent.purpose === purpose ? { purpose, granted: answer.body.granted, since: answer.body.since } : consent,
         ),
       );
-    }
-  }
+    });
 
   return (
-    <section aria-labelledby="agreed">
+    <section aria-labelledby="agreed" aria-busy={busy}>
       <h2 className={styles.label} id="agreed">
         {copy.agreed}
       </h2>
@@ -53,6 +64,7 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
                   aria-checked={consent.granted}
                   aria-labelledby={`consent-${consent.purpose}`}
                   onClick={() => {
+                    setFailed(null);
                     if (!consent.granted && consent.purpose === "photos_referral_cards") setConfirming(consent.purpose);
                     else void switchTo(consent.purpose, !consent.granted);
                   }}
@@ -60,6 +72,11 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
                   <span className={styles.knob} />
                 </button>
               </div>
+              {failed === consent.purpose && (
+                <p className={styles.error} role="alert">
+                  {copy.switchFailed}
+                </p>
+              )}
               {confirming === consent.purpose && (
                 <div className={styles.confirm}>
                   <ul className={styles.lines}>
@@ -71,6 +88,7 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
                     <button
                       className={styles.primary}
                       type="button"
+                      disabled={busy}
                       onClick={() => void switchTo(consent.purpose, true)}
                     >
                       {copy.referralCards.confirm}
@@ -80,6 +98,7 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
                       type="button"
                       onClick={() => {
                         setConfirming(null);
+                        setFailed(null);
                       }}
                     >
                       {copy.referralCards.cancel}

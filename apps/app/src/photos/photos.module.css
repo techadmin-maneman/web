@@ -75,11 +75,6 @@ div.cell {
   cursor: default;
 }
 
-.cell:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .thumb {
   display: block;
   width: 100%;
@@ -173,21 +168,4 @@ div.cell {
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
-}
-
-.compareLink:focus-visible,
-.download:focus-visible,
-.close:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .thumb {
-    transition: none;
-  }
-
-  .sheet {
-    animation: none;
-  }
 }

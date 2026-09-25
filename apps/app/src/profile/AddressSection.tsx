@@ -1,9 +1,12 @@
 // "Where we come" (board G1): the address and its access notes, and a form to
 // change them. The design draws no form; its fields follow G2's number field.
+// The fields an address cannot do without say they are required, and one left
+// out is marked, named by the error, and given the focus.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api, type Address } from "../api.ts";
 import { profile } from "../content.ts";
+import { focusIfLost } from "../lib/arrival.ts";
 import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { BuildingSearch } from "./BuildingSearch.tsx";
 import styles from "./profile.module.css";
@@ -23,6 +26,10 @@ const EMPTY: Address = {
   place_id: null,
 };
 
+type Field = Exclude<keyof Address, "place_id">;
+
+const ERROR_ID = "address-error";
+
 /** A part the client filled in. Absent and null mean the same: they did not. */
 const given = (part: string | null | undefined): part is string =>
   part !== null && part !== undefined && part.trim() !== "";
@@ -38,26 +45,27 @@ function written(address: Address): string {
 }
 
 /**
- * The house and the area are still what make an address an address. The
- * building search is an addition, never a gate: a client who cannot use it, or
- * whose provider is down, fills these in and saves the same address.
- *
- * `line1` is the building where one was chosen, so a client who used the search
- * is never asked for the same words twice.
+ * The fields an address is not one without, left out. The building search is
+ * an addition, never a gate: a client who cannot use it, or whose provider is
+ * down, fills these in and saves the same address. `line1` is the building
+ * where one was chosen, so a client who used the search is never asked for the
+ * same words twice.
  */
-function complete(address: Address): boolean {
-  return (
-    address.line1.trim() !== "" &&
-    address.locality.trim() !== "" &&
-    address.city.trim() !== "" &&
-    /^\d{6}$/.test(address.pincode.trim())
-  );
+function missing(address: Address): Field[] {
+  const left: Field[] = [];
+  if (address.line1.trim() === "") left.push("line1");
+  if (address.locality.trim() === "") left.push("locality");
+  if (address.city.trim() === "") left.push("city");
+  if (!/^\d{6}$/.test(address.pincode.trim())) left.push("pincode");
+  return left;
 }
 
 export function AddressSection({ address, onSaved }: { address: Address | null; onSaved: () => void }) {
   const copy = profile;
+  const heading = useRef<HTMLHeadingElement>(null);
   const [editing, setEditing] = useState<Address | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState<readonly Field[]>([]);
   // One token for the whole search, made when the form opens: it is what puts
   // Google's autocomplete on the free per-session price rather than per
   // keystroke (docs/decisions/0054-address-capture.md).
@@ -66,15 +74,29 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
   // Place Details resolution against a session that was meant to close once (ADR 0054).
   const [busy, once] = useOneAtATime();
 
+  /** The form closes on the section's own heading, so the client lands where they were, not mid-page. */
+  function closeForm() {
+    setEditing(null);
+    setProblem(null);
+    setInvalid([]);
+    requestAnimationFrame(() => {
+      heading.current?.scrollIntoView({ block: "start" });
+      focusIfLost(heading.current);
+    });
+  }
+
   const save = (chosenDraft: Address) =>
     once(async () => {
       // A building chosen from the search is the address's first line, so the
-      // "House, flat or building" field is not shown and not asked for twice.
+      // "Building, society or street" field is not shown and not asked for twice.
       const draft: Address = given(chosenDraft.building)
         ? { ...chosenDraft, line1: chosenDraft.building }
         : chosenDraft;
-      if (!complete(draft)) {
+      const left = missing(draft);
+      setInvalid(left);
+      if (left.length > 0) {
         setProblem(copy.form.invalid);
+        document.getElementById(`address-${left[0] ?? ""}`)?.focus();
         return;
       }
       const answer = await api.saveAddress({
@@ -83,13 +105,12 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
         access_notes: draft.access_notes?.trim() === "" ? null : draft.access_notes,
         session_token: sessionToken,
       });
-      if (answer.ok) {
-        setEditing(null);
-        setProblem(null);
-        onSaved();
-      } else {
+      if (!answer.ok) {
         setProblem(copy.change.failed);
+        return;
       }
+      closeForm();
+      onSaved();
     });
 
   function edit() {
@@ -98,27 +119,34 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
   }
 
   const field = (
-    key: Exclude<keyof Address, "place_id">,
+    key: Field,
     label: string,
-    options: { inputMode?: "numeric"; autoComplete?: string } = {},
-  ) => (
-    <label className={styles.formField}>
-      <span className={styles.formLabel}>{label}</span>
-      <input
-        className={styles.input}
-        value={editing?.[key] ?? ""}
-        inputMode={options.inputMode}
-        autoComplete={options.autoComplete}
-        onChange={(event) => {
-          setEditing((draft) => ({ ...(draft ?? EMPTY), [key]: event.target.value }));
-        }}
-      />
-    </label>
-  );
+    options: { inputMode?: "numeric"; autoComplete?: string; required?: boolean } = {},
+  ) => {
+    const wrong = invalid.includes(key);
+    return (
+      <label className={styles.formField}>
+        <span className={styles.formLabel}>{label}</span>
+        <input
+          id={`address-${key}`}
+          className={styles.input}
+          value={editing?.[key] ?? ""}
+          inputMode={options.inputMode}
+          autoComplete={options.autoComplete}
+          required={options.required}
+          aria-invalid={wrong ? true : undefined}
+          aria-describedby={wrong ? ERROR_ID : undefined}
+          onChange={(event) => {
+            setEditing((draft) => ({ ...(draft ?? EMPTY), [key]: event.target.value }));
+          }}
+        />
+      </label>
+    );
+  };
 
   return (
     <section aria-labelledby="where">
-      <h2 className={styles.label} id="where">
+      <h2 className={styles.label} id="where" ref={heading}>
         {copy.where}
       </h2>
       {editing === null ? (
@@ -168,16 +196,17 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
           {field("floor", copy.form.floor)}
           {field("tower", copy.form.tower)}
           {/* Only for an address nobody searched for: otherwise the building is line one. */}
-          {(editing.building ?? "").trim() === "" && field("line1", copy.form.line1, { autoComplete: "address-line1" })}
+          {(editing.building ?? "").trim() === "" &&
+            field("line1", copy.form.line1, { autoComplete: "address-line1", required: true })}
           {field("line2", copy.form.line2, { autoComplete: "address-line2" })}
           {field("landmark", copy.form.landmark)}
-          {field("locality", copy.form.locality, { autoComplete: "address-level3" })}
-          {field("city", copy.form.city, { autoComplete: "address-level2" })}
-          {field("pincode", copy.form.pincode, { inputMode: "numeric", autoComplete: "postal-code" })}
+          {field("locality", copy.form.locality, { autoComplete: "address-level3", required: true })}
+          {field("city", copy.form.city, { autoComplete: "address-level2", required: true })}
+          {field("pincode", copy.form.pincode, { inputMode: "numeric", autoComplete: "postal-code", required: true })}
           {field("access_notes", copy.form.accessNotes)}
           <p className={styles.muted}>{copy.form.accessHint}</p>
           {problem !== null && (
-            <p className={styles.error} role="alert">
+            <p className={styles.error} id={ERROR_ID} role="alert">
               {problem}
             </p>
           )}
@@ -185,14 +214,7 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
             <button className={styles.primary} type="submit" disabled={busy}>
               {copy.form.save}
             </button>
-            <button
-              className={styles.secondary}
-              type="button"
-              onClick={() => {
-                setEditing(null);
-                setProblem(null);
-              }}
-            >
+            <button className={styles.secondary} type="button" onClick={closeForm}>
               {copy.form.cancel}
             </button>
           </div>

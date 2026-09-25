@@ -176,10 +176,10 @@
 .message {
   margin: var(--sp-16) 0 0;
   padding: var(--sp-12) var(--sp-14);
-  background: var(--ink-message);
+  background: var(--wa-dark);
   font-size: var(--fs-14);
   line-height: 1.5;
-  color: var(--ink-message-text);
+  color: var(--wa-dark-text);
 }
 
 .actions {

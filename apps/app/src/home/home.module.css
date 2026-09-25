@@ -1,4 +1,4 @@
-/* Boards B1 and B2: the next visit's card on ink; what to expect on paper. */
+/* Boards B1 and B2: the next visit's card on ink; what to expect, the credit tile and the prompt on paper. */
 
 .home {
   display: flex;
@@ -21,6 +21,7 @@
   margin-top: var(--sp-14);
   padding: var(--sp-24);
   background: var(--ink);
+  --focus-colour: var(--paper);
 }
 
 .card p {
@@ -118,11 +119,6 @@
   color: var(--ink-muted);
 }
 
-.action:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--sp-3);
-}
-
 .expect {
   padding-top: var(--sp-20);
   border-top: var(--hairline) solid var(--paper-line);
@@ -190,4 +186,68 @@
 .book:disabled {
   background: var(--paper-shade);
   color: var(--text-quiet);
+}
+
+/* Board B1's credit tile, ruled above and below. */
+.credits {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-18) 0;
+  border-top: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* Weightless, so a class's own margin always wins over it. */
+:where(.credits, .prompt) p {
+  margin: 0;
+}
+
+.creditsLabel {
+  font-size: var(--fs-16);
+}
+
+.creditsExpiry {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.creditsCount {
+  font-family: var(--font-serif);
+  font-size: var(--fs-30);
+  line-height: 1;
+  font-variant-numeric: lining-nums;
+}
+
+/* Board B1's one prompt: a line, and a quiet way on, underlined in brass. */
+.promptLine {
+  font-size: var(--fs-17);
+  line-height: 1.5;
+}
+
+.promptLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-top: var(--sp-12);
+  font-size: var(--fs-16);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.promptLink span:first-child {
+  padding-bottom: var(--sp-3);
+  border-bottom: var(--hairline) solid var(--brass);
+}
+
+/* Said to a screen reader only: the link leaves the app for a PDF. */
+.away {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

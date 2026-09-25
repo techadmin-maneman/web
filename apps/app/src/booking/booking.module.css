@@ -544,14 +544,22 @@
   text-align: center;
 }
 
+/* Board C5's credit line sits under the button on the left, where the money note is centred. */
+.sheet .creditNote {
+  margin-top: var(--sp-12);
+  font-size: var(--fs-14);
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
 .sheet .problem {
   margin-top: var(--sp-14);
   font-size: var(--fs-15);
   color: var(--error-on-paper);
 }
 
-/* Board C6. */
-.caption {
+/* Board C6. Within the sheet, so its margin outweighs the sheet's own for a paragraph. */
+.sheet .caption {
   margin-bottom: var(--sp-14);
   font-family: var(--font-serif);
   font-size: var(--fs-14);
