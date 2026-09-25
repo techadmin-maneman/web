@@ -7,17 +7,9 @@ import { byHost } from "./http/surfaces.ts";
 import { createLogger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
-import { handleMessagingBatch, type MessagingMessage } from "./queues/messaging.ts";
+import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
-import { resolveAskedWindows } from "./domain/asked-windows.ts";
-import { syncBooks } from "./domain/books-sync.ts";
-import { recordUtilisation } from "./domain/dispatch.ts";
-import { raiseInvoices } from "./domain/fsm-invoices.ts";
-import { queueReminders } from "./domain/visit-messages.ts";
-import { referralPass } from "./scheduled/referrals.ts";
-import { alertAgedDeletions } from "./domain/deletion.ts";
-import { reconcileFsm } from "./scheduled/reconcile-fsm.ts";
-import { sweep } from "./scheduled/sweeper.ts";
+import { CRON_JOBS, runCronJobs } from "./scheduled/cron.ts";
 
 // Runs at module load. A Worker without a valid ENVIRONMENT, missing a secret
 // its providers need, or in production with a stub provider, throws here:
@@ -76,93 +68,9 @@ export default {
   },
 
   async scheduled(_controller, workerEnv) {
-    const log = baseLog.child({ job: "sweeper" });
+    const log = baseLog.child({ job: "cron" });
     await assertOwnDatabase(workerEnv.DB);
     const deps = makeDependencies(workerEnv, log);
-    await sweep(workerEnv, deps, log, {
-      creditFloor: config.settings.tryon.creditFloor,
-      fsmErasure: config.providers.FSM_PROVIDER !== "none",
-    });
-    // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md), where FSM is connected. A failure is logged and left
-    // for the next run; the sweep above is done either way.
-    if (config.providers.FSM_PROVIDER !== "none") {
-      await reconcileFsm(workerEnv, deps, log.child({ job: "fsm_reconcile" })).catch((error: unknown) => {
-        log.error("fsm_reconcile_failed", { error });
-      });
-    }
-    await alertAgedDeletions(workerEnv.DB, deps.now(), deps.alert).catch((error: unknown) => {
-      log.error("deletion_alert_failed", { error });
-    });
-    // The dispatch board's utilisation, written to events once a day: the operating
-    // figure behind the model's weekend-share assumption (src/policy/dispatch.ts).
-    await recordUtilisation(workerEnv.DB, deps.now())
-      .then((date) => {
-        if (date !== null) log.info("dispatch_utilisation_recorded", { date });
-      })
-      .catch((error: unknown) => {
-        log.error("dispatch_utilisation_failed", { error });
-      });
-    const referralMessages = await referralPass(workerEnv.DB, deps.now(), log.child({ job: "referrals" })).catch(
-      (error: unknown) => {
-        log.error("referrals_failed", { error });
-        return [];
-      },
-    );
-    if (referralMessages.length > 0) {
-      await workerEnv.MESSAGE_QUEUE.sendBatch(
-        referralMessages.map((id) => ({
-          body: { message_id: id, request_id: "referrals" } satisfies MessagingMessage,
-        })),
-      );
-    }
-    if (config.settings.messaging.enabled) {
-      const reminders = await queueReminders(workerEnv.DB, deps.now()).catch((error: unknown) => {
-        log.error("visit_reminders_failed", { error });
-        return [];
-      });
-      if (reminders.length > 0) {
-        await workerEnv.MESSAGE_QUEUE.sendBatch(
-          reminders.map((id) => ({ body: { message_id: id, request_id: "reminders" } satisfies MessagingMessage })),
-        );
-        log.info("visit_reminders_queued", { count: reminders.length });
-      }
-    }
-    if (config.providers.FSM_PROVIDER !== "none" && config.providers.BOOKS_PROVIDER !== "none") {
-      // A finished job's invoice: FSM raises it, Books holds it and marks it sent,
-      // and the column keeps Books' ID (ADRs 0055 and 0056). Before the Books pass,
-      // which sets a client's advance against the invoice once it is issued.
-      const invoiceLog = log.child({ job: "invoices" });
-      await raiseInvoices(workerEnv.DB, deps.fsm, deps.books, deps.now(), invoiceLog, deps.alert)
-        .then((done) => {
-          if (done.raised + done.issued > 0) invoiceLog.info("invoices_raised", done);
-        })
-        .catch((error: unknown) => {
-          invoiceLog.error("invoices_failed", { error });
-        });
-
-      // What the client asked for, for the unassigned tray to show beside what
-      // it is offering them (ADR 0063). One read per visit, ever.
-      const askedLog = log.child({ job: "asked_windows" });
-      await resolveAskedWindows(workerEnv.DB, deps.fsm, deps.now(), askedLog)
-        .then((done) => {
-          if (done.resolved > 0) askedLog.info("asked_windows_resolved", done);
-        })
-        .catch((error: unknown) => {
-          askedLog.error("asked_windows_failed", { error });
-        });
-
-      const booksLog = log.child({ job: "books_sync" });
-      const options = {
-        refundAccountId: config.settings.zohoFsm?.booksRefundAccountId ?? null,
-        labelAsTest: config.environment !== "production",
-      };
-      await syncBooks(workerEnv.DB, deps.fsm, deps.books, options, deps.now(), booksLog)
-        .then((done) => {
-          if (done.recorded + done.applied + done.refunded > 0) booksLog.info("books_synced", done);
-        })
-        .catch((error: unknown) => {
-          booksLog.error("books_sync_failed", { error });
-        });
-    }
+    await runCronJobs(CRON_JOBS, { env: workerEnv, deps, config, log });
   },
 } satisfies ExportedHandler<Env>;
