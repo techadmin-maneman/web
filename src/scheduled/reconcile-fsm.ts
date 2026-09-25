@@ -9,8 +9,12 @@
 //               one alert if the pass repaired anything the webhook missed
 //   hourly      visits closed in the last three days still short of their
 //               ten photographs, which FSM may have received since
+//
+// Each page is one outside call from the cron run's budget. A run that cannot
+// pay for one reads nothing, and the next run carries on from the same place.
 
 import type { Dependencies } from "../dependencies.ts";
+import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
 import type { FsmAppointment } from "../providers/fsm.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -39,10 +43,16 @@ export interface ReconcileSummary {
   readonly nightPage?: number;
 }
 
-export async function reconcileFsm(env: ReconcileEnv, deps: Dependencies, log: Logger): Promise<ReconcileSummary> {
+export async function reconcileFsm(
+  env: ReconcileEnv,
+  deps: Dependencies,
+  log: Logger,
+  budget: CallBudget,
+): Promise<ReconcileSummary> {
   const now = deps.now();
   const db = env.DB;
 
+  if (!budget.spend(1)) return { queued: 0 };
   const latest = await deps.fsm.appointments(1, PAGE_SIZE);
   const queue = new Set(await staleOf(db, latest.appointments));
 
@@ -51,13 +61,13 @@ export async function reconcileFsm(env: ReconcileEnv, deps: Dependencies, log: L
   }
 
   let nightPage: number | undefined;
-  if (isNight(now)) {
-    const night = await nightlyPass(db, deps, log, now, latest);
+  const night = isNight(now) ? await nightlyPass(db, deps, log, now, latest, budget) : null;
+  if (night !== null) {
     nightPage = night.page;
     for (const fsmId of night.toSync) queue.add(fsmId);
     // The technician list, once a night: who FSM still lists as active, the number
     // each logs in with and his territory (docs/decisions/0052-technician-sessions.md).
-    if (nightPage === 1) {
+    if (nightPage === 1 && budget.spend(1)) {
       await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
         log.warn("technician_sync_failed", { error });
         return 0;
@@ -109,14 +119,18 @@ interface Cursor {
   repaired: number;
 }
 
-/** One run of the nightly pass: one page of the list, or, once the list is read, the copies it did not see. */
+/**
+ * One run of the nightly pass: one page of the list, or, once the list is read, the copies it did not see.
+ * Null when the run cannot pay for the page, which the next run reads instead.
+ */
 async function nightlyPass(
   db: D1Database,
   deps: Dependencies,
   log: Logger,
   now: Date,
   latest: { appointments: FsmAppointment[]; more: boolean },
-): Promise<{ page: number; toSync: string[] }> {
+  budget: CallBudget,
+): Promise<{ page: number; toSync: string[] } | null> {
   const at = now.toISOString();
   const tonight = indiaDate(now);
   const stored = await db
@@ -127,6 +141,8 @@ async function nightlyPass(
   if (cursor.next_page === 0) return { page: 0, toSync: [] };
 
   const page = cursor.next_page;
+  // The first page is the one every run reads already.
+  if (page > 1 && !budget.spend(1)) return null;
   const listed = page === 1 ? latest : await deps.fsm.appointments(page, PAGE_SIZE);
   const stale = await staleOf(db, listed.appointments);
   const drifted = listed.appointments.filter(

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
@@ -33,7 +34,7 @@ function sweepEnv() {
   return { bindings, queues };
 }
 
-const OPTIONS = { creditFloor: 200 };
+const OPTIONS = { creditFloor: 200, budget: createCallBudget(Infinity) };
 
 beforeEach(async () => {
   await markDatabase();
@@ -346,7 +347,7 @@ describe("sweeper: AILabTools credits", () => {
 
   it("reads the balance once an hour and alerts below the floor", async () => {
     const deps = fakeDependencies({ now: () => onTheHour });
-    const summary = await sweep(sweepEnv().bindings, deps, createLogger(), { creditFloor: 5000 });
+    const summary = await sweep(sweepEnv().bindings, deps, createLogger(), { ...OPTIONS, creditFloor: 5000 });
     expect(summary.credits).toBe(1000); // the stub's two pools, summed
     expect(deps.alerts).toEqual([expect.stringContaining("credits are down to 1000") as string]);
   });
@@ -356,6 +357,12 @@ describe("sweeper: AILabTools credits", () => {
     expect((await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS)).credits).toBe(1000);
     expect(deps.alerts).toEqual([]);
     expect((await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS)).credits).toBeUndefined();
+  });
+
+  it("leaves the balance to the next hour when the cron run has no call left for it", async () => {
+    const deps = fakeDependencies({ now: () => onTheHour });
+    const spent = { ...OPTIONS, budget: createCallBudget(0) };
+    expect((await sweep(sweepEnv().bindings, deps, createLogger(), spent)).credits).toBeUndefined();
   });
 
   it("logs, and does not alert, when the balance cannot be read", async () => {

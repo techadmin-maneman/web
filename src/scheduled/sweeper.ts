@@ -15,6 +15,7 @@ import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { failJob } from "../domain/tryon.ts";
+import type { CallBudget } from "../lib/call-budget.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
@@ -68,6 +69,8 @@ export async function sweep(
     readonly creditFloor: number;
     /** Whether FSM is connected, so an erased person's contact there can be anonymised. */
     readonly fsmErasure?: boolean;
+    /** The cron run's outside calls; the hourly balance check takes one. */
+    readonly budget: CallBudget;
   },
 ): Promise<SweepSummary> {
   const now = deps.now();
@@ -241,7 +244,7 @@ export async function sweep(
 
   // Once an hour: an exhausted balance would otherwise fail every try-on quietly.
   let credits: number | null | undefined;
-  if (now.getUTCMinutes() < 5) {
+  if (now.getUTCMinutes() < 5 && options.budget.spend(1)) {
     credits = await deps.image.credits();
     if (credits === null) log.warn("credits_unreadable");
     else if (credits < options.creditFloor) {

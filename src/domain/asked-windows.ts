@@ -15,12 +15,15 @@
 
 import { windowLabel, type VisitWindow } from "../config/booking.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
+import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
 import type { FsmProvider, FsmRequestPreference } from "../providers/fsm.ts";
 import { ZohoError } from "../providers/zoho-http.ts";
 
-/** How many a pass looks up, well inside a cron run's outside calls. */
+/** How many a pass looks up at most. */
 export const PER_PASS = 5;
+/** Outside calls one visit costs: its work order, then the Request it came from. */
+export const CALLS_PER_VISIT = 2;
 
 /**
  * The window a Phase 1 booking's choice falls in: its two are morning and
@@ -39,6 +42,7 @@ export async function resolveAskedWindows(
   fsm: FsmProvider,
   now: Date,
   log: Logger,
+  budget: CallBudget,
 ): Promise<{ resolved: number }> {
   const at = now.toISOString();
   const { results } = await db
@@ -53,6 +57,7 @@ export async function resolveAskedWindows(
 
   let resolved = 0;
   for (const appointment of results) {
+    if (!budget.spend(CALLS_PER_VISIT)) break;
     let asked: FsmRequestPreference | null;
     try {
       asked = await fsm.requestPreference(appointment.fsm_work_order_id);

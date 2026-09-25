@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { alertAgedDeletions } from "../../src/domain/deletion.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm } from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
@@ -97,7 +98,11 @@ describe("erasure reaches Phase 2's data", () => {
       MESSAGE_QUEUE: fakeQueue(),
       FSM_QUEUE: fsmQueue,
     };
-    await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), { creditFloor: 0, fsmErasure: true });
+    await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), {
+      creditFloor: 0,
+      fsmErasure: true,
+      budget: createCallBudget(Infinity),
+    });
     expect(fsmQueue.sent).toEqual([{ erase_person_id: PERSON, request_id: "sweeper" }]);
 
     const fsm = createStubFsm();
@@ -110,6 +115,7 @@ describe("erasure reaches Phase 2's data", () => {
     const again = fakeQueue();
     await sweep({ ...bindings, FSM_QUEUE: again }, fakeDependencies({ now: () => later }), createLogger(), {
       creditFloor: 0,
+      budget: createCallBudget(Infinity),
       fsmErasure: true,
     });
     expect(again.sent).toEqual([]);
@@ -122,7 +128,7 @@ describe("erasure reaches Phase 2's data", () => {
       { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fsmQueue },
       fakeDependencies({ now: () => new Date(NOW.getTime() + 10 * 60_000) }),
       createLogger(),
-      { creditFloor: 0 },
+      { creditFloor: 0, budget: createCallBudget(Infinity) },
     );
     expect(fsmQueue.sent).toEqual([]);
   });
