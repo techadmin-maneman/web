@@ -5,13 +5,21 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { alertAgedDeletions } from "../../src/domain/deletion.ts";
-import { erasePerson } from "../../src/domain/erasure.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm } from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { sweep } from "../../src/scheduled/sweeper.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  eraseByMobile,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  request,
+} from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -66,7 +74,7 @@ async function phase2Data() {
 describe("erasure reaches Phase 2's data", () => {
   it("deletes the visit photographs, addresses and grievance words, and keeps the visits", async () => {
     await phase2Data();
-    const summary = await erasePerson(env, MOBILE, NOW);
+    const summary = await eraseByMobile(MOBILE, NOW);
     expect(summary).toMatchObject({ visitPhotosDeleted: 1 });
     expect(await env.CLIENT_PHOTOS.get("visits/p/front.jpg")).toBeNull();
     const left = await env.DB.prepare(
@@ -79,7 +87,7 @@ describe("erasure reaches Phase 2's data", () => {
   });
 
   it("anonymises the FSM contact afterwards, through the sweeper and the fsm-sync queue, once", async () => {
-    await erasePerson(env, MOBILE, NOW);
+    await eraseByMobile(MOBILE, NOW);
     const later = new Date(NOW.getTime() + 10 * 60_000);
     const fsmQueue = fakeQueue();
     const bindings = {
@@ -108,7 +116,7 @@ describe("erasure reaches Phase 2's data", () => {
   });
 
   it("leaves FSM alone where it is not connected", async () => {
-    await erasePerson(env, MOBILE, NOW);
+    await eraseByMobile(MOBILE, NOW);
     const fsmQueue = fakeQueue();
     await sweep(
       { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fsmQueue },

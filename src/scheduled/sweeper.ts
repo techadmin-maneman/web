@@ -3,6 +3,8 @@
 //
 //   leads       pending over 2 minutes, or failed under 10 attempts   -> crm-sync
 //   erasures    a person erased whose CRM record is not yet blanked     -> crm-sync
+//               or whose FSM contact is not yet anonymised              -> fsm-sync
+//   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
 //   messages    queued but unsent for over 5 minutes                  -> messaging
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
@@ -24,6 +26,8 @@ const MINUTE_MS = 60 * 1000;
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
 const MESSAGE_GRACE_MS = 5 * MINUTE_MS;
+/** Past the fsm-sync consumer's whole retry chain: 30 s, 1, 2 and 4 minutes. */
+const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
 /** A submit that started this long ago and never recorded a task died part-way. */
 const SUBMIT_ABANDONED_MS = 10 * MINUTE_MS;
 /** Downloads are retried every sweep at first, then hourly until the URL expires. */
@@ -117,6 +121,30 @@ export async function sweep(
     );
   }
 
+  // A technician's steps whose queue message was lost, or never sent. Only a job's earliest step
+  // waiting for FSM: the consumer sends each next one on once the one before it is written. Each is
+  // stamped as it is sent, so it is not sent again while its retries may still be running.
+  const jobEvents = await ids(
+    db
+      .prepare(
+        `UPDATE job_events SET updated_at = ?1
+         WHERE id IN (
+           SELECT e.id FROM job_events e
+           WHERE e.fsm_write_state = 'pending' AND e.superseded = 0 AND e.updated_at < ?2
+             AND NOT EXISTS (
+               SELECT 1 FROM job_events b
+               WHERE b.appointment_id = e.appointment_id AND b.fsm_write_state = 'pending' AND b.superseded = 0
+                 AND (b.received_at, b.rowid) < (e.received_at, e.rowid))
+           ORDER BY e.received_at LIMIT ?3)
+         RETURNING id`,
+      )
+      .bind(now.toISOString(), before(JOB_EVENT_GRACE_MS), BATCH_LIMIT),
+  );
+  await sendAll(
+    env.FSM_QUEUE,
+    jobEvents.map((id) => ({ job_event_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
+  );
+
   // Result messages that were queued and never sent.
   const messages = await ids(
     db
@@ -191,12 +219,24 @@ export async function sweep(
   const jobsExpired = await expireJobs(env, now);
   const photosDeleted = await deletePhotos(env, now);
 
+  const sessionsEnded = before(SESSION_RETENTION_MS);
   await db.batch([
     db.prepare("DELETE FROM idempotency WHERE created_at < ?1").bind(before(IDEMPOTENCY_TTL_MS)),
     db.prepare("DELETE FROM counters WHERE window_start < ?1").bind(addDays(indiaDate(now), -COUNTER_RETENTION_DAYS)),
     db.prepare("DELETE FROM tryon_sessions WHERE expires_at < ?1").bind(now.toISOString()),
     db.prepare("DELETE FROM otp_challenges WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
-    db.prepare("DELETE FROM sessions WHERE expires_at < ?1 OR revoked_at < ?1").bind(before(SESSION_RETENTION_MS)),
+    // A technician's phone keeps pointing at the last session it logged in with,
+    // so it lets go of that session before the session is deleted.
+    db
+      .prepare(
+        `UPDATE technician_devices SET session_id = NULL
+         WHERE session_id IS NOT NULL AND EXISTS (
+           SELECT 1 FROM sessions s WHERE s.id = technician_devices.session_id AND (s.expires_at < ?1 OR s.revoked_at < ?1)
+         )`,
+      )
+      .bind(sessionsEnded),
+    db.prepare("DELETE FROM sessions WHERE expires_at < ?1").bind(sessionsEnded),
+    db.prepare("DELETE FROM sessions WHERE revoked_at < ?1").bind(sessionsEnded),
   ]);
 
   // Once an hour: an exhausted balance would otherwise fail every try-on quietly.
@@ -224,6 +264,7 @@ export async function sweep(
   log.info("sweep", {
     leads_requeued: summary.leadsRequeued,
     erasures_requeued: summary.erasuresRequeued,
+    job_events_requeued: jobEvents.length,
     messages_requeued: summary.messagesRequeued,
     renders_requeued: summary.rendersRequeued,
     downloads_requeued: summary.downloadsRequeued,

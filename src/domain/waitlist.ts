@@ -5,6 +5,7 @@
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 
 export interface WaitlistArea {
   readonly pincode: string;
@@ -82,28 +83,27 @@ export async function launchPreview(db: D1Database, pincode: string): Promise<{ 
 export const ALERTS_PER_MINUTE = 10;
 
 /**
- * Marks the pincode served from the day given, and queues a launch alert for each person who asked for one.
- * Returns the messages, each with the seconds to hold it back, so they leave in a paced line.
+ * Marks the pincode served from the day given, and queues a launch alert for each person who asked for one,
+ * in one batch with the launch's audit entry, which counts the alerts (src/domain/audit.ts). Returns the
+ * messages, each with the seconds to hold it back, so they leave in a paced line.
  */
 export async function launchPincode(
   db: D1Database,
-  input: { pincode: string; launchOn: string; now: Date },
+  input: { pincode: string; launchOn: string; audit: AuditEntry; now: Date },
 ): Promise<{ alerts: { id: string; delaySeconds: number }[] }> {
   const at = input.now.toISOString();
-  await db
-    .prepare(`UPDATE serviceable_pincodes SET served = 1, launched_at = COALESCE(launched_at, ?2) WHERE pincode = ?1`)
-    .bind(input.pincode, indiaInstant(input.launchOn, "00:00").toISOString())
-    .run();
   const waiting = await toAlert(db, input.pincode);
-  if (waiting.length === 0) return { alerts: [] };
   const alerts = waiting.map((entry, index) => ({
     id: crypto.randomUUID(),
     entryId: entry.id,
     personId: entry.person_id,
     delaySeconds: Math.floor(index / ALERTS_PER_MINUTE) * 60,
   }));
-  await db.batch(
-    alerts.flatMap((alert) => [
+  await db.batch([
+    db
+      .prepare(`UPDATE serviceable_pincodes SET served = 1, launched_at = COALESCE(launched_at, ?2) WHERE pincode = ?1`)
+      .bind(input.pincode, indiaInstant(input.launchOn, "00:00").toISOString()),
+    ...alerts.flatMap((alert) => [
       db
         .prepare(
           `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
@@ -112,7 +112,8 @@ export async function launchPincode(
         .bind(alert.id, at, alert.personId, input.pincode),
       db.prepare("UPDATE waitlist_entries SET alerted_at = ?2 WHERE id = ?1").bind(alert.entryId, at),
     ]),
-  );
+    auditStatement(db, { ...input.audit, detail: { alerts: alerts.length } }, input.now),
+  ]);
   return { alerts: alerts.map(({ id, delaySeconds }) => ({ id, delaySeconds })) };
 }
 

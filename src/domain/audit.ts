@@ -1,6 +1,8 @@
 // The audit log (migrations/0005_audit.sql, docs/decisions/0031-access-and-audit.md).
-// An entry is written before the action it records, and a failed write stops
-// the action: nothing audited happens unaudited.
+// An entry goes in one batch with the action it records, so both happen or
+// neither: nothing audited happens unaudited, and nothing is recorded that did
+// not happen. What only reads, an export or a photograph viewed, writes its
+// entry first, and a failed write stops the read.
 
 import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
@@ -58,24 +60,46 @@ export interface AuditEntry {
   readonly detail?: Readonly<Record<string, string | number | boolean>>;
 }
 
+const COLUMNS = "at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id, detail";
+
+function valuesOf(entry: AuditEntry, now: Date) {
+  return [
+    now.toISOString(),
+    entry.surface,
+    entry.actor.kind,
+    entry.actor.id,
+    entry.action,
+    entry.subject?.kind ?? null,
+    entry.subject?.id ?? null,
+    entry.requestId,
+    entry.detail === undefined ? null : JSON.stringify(entry.detail),
+  ];
+}
+
 /** The entry as a statement, to run in one batch with the action it records: both happen, or neither. */
 export function auditStatement(db: D1Database, entry: AuditEntry, now: Date): D1PreparedStatement {
   return db
+    .prepare(`INSERT INTO audit_log (${COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`)
+    .bind(...valuesOf(entry, now));
+}
+
+/**
+ * The entry for an insert earlier in the same batch that may write nothing, as
+ * one that skips a duplicate does: it is written only if that insert's row,
+ * `id` in `table`, is there.
+ */
+export function auditStatementIfWritten(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  written: { readonly table: "grievances"; readonly id: string },
+): D1PreparedStatement {
+  return db
     .prepare(
-      `INSERT INTO audit_log (at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id, detail)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9 WHERE EXISTS (SELECT 1 FROM ${written.table} WHERE id = ?10)`,
     )
-    .bind(
-      now.toISOString(),
-      entry.surface,
-      entry.actor.kind,
-      entry.actor.id,
-      entry.action,
-      entry.subject?.kind ?? null,
-      entry.subject?.id ?? null,
-      entry.requestId,
-      entry.detail === undefined ? null : JSON.stringify(entry.detail),
-    );
+    .bind(...valuesOf(entry, now), written.id);
 }
 
 export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date): Promise<void> {

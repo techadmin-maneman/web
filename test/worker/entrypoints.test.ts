@@ -159,4 +159,47 @@ describe("scheduled handler", () => {
     }>();
     expect(payment?.books_checked_at).not.toBeNull();
   });
+
+  it("runs every other job when one fails, and logs the one that failed", async () => {
+    await markDatabase();
+    const logs = captureLogs();
+    const now = new Date().toISOString();
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60_000).toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id) VALUES ('p-1', ?1, '+919810000001', 'Rohit Malhotra', 'c-1')",
+      ).bind(now),
+      // A lead the sweeper re-sends, onto a queue that is down: the sweep fails.
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, request_id)
+         VALUES ('lead-1', 'p-1', ?1, 'form', 'Gurgaon', 'weekday_am', 'crown', 'r')`,
+      ).bind(threeMinutesAgo),
+      env.DB.prepare(
+        `INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, status, captured_at, created_at,
+           updated_at)
+         VALUES ('pay-1', 'p-1', 'pay_test1', 200000, 'INR', 'captured', ?1, ?1, ?1)`,
+      ).bind(now),
+    ]);
+    const queueDown = {
+      send: () => Promise.reject(new Error("queue unavailable")),
+      sendBatch: () => Promise.reject(new Error("queue unavailable")),
+    } as unknown as Queue;
+
+    await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), {
+      ...env,
+      CRM_QUEUE: queueDown,
+      RENDER_QUEUE: fakeQueue(),
+      MESSAGE_QUEUE: fakeQueue(),
+      FSM_QUEUE: fakeQueue(),
+    });
+
+    expect(logs.lines().filter((line) => line.event === "cron_job_failed")).toEqual([
+      expect.objectContaining({ level: "error", job: "sweeper" }),
+    ]);
+    // The Books pass runs last, after the sweep that failed.
+    const payment = await env.DB.prepare("SELECT books_checked_at FROM payments WHERE id = 'pay-1'").first<{
+      books_checked_at: string | null;
+    }>();
+    expect(payment?.books_checked_at).not.toBeNull();
+  });
 });

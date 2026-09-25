@@ -41,7 +41,12 @@ const ME = {
   first_name: "Rohit",
   initials: "RM",
   // A Saturday, as the design's "Sat 21 Sep" is.
-  consultation: { date: "2030-09-21", window_label: "before noon", place: "Sector 65, Gurgaon 122018" },
+  consultation: {
+    date: "2030-09-21",
+    window: "morning",
+    window_label: "before noon",
+    place: "Sector 65, Gurgaon 122018",
+  },
   next_visit: null,
   credits: null,
   prompt: null,

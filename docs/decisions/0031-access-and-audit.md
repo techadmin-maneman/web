@@ -1,6 +1,6 @@
 # 0031. Access on the ops surface, and the audit log
 
-- Status: accepted
+- Status: accepted. Amended 25 September 2026: an audited action writes its entry in the same batch as its change.
 - Date: 2026-09-22
 
 ## Context
@@ -33,6 +33,8 @@ A refused call gets `403 access_required`, and the reason is logged; the token n
 - **`ACCESS_OPS_AUD`**, the ops application's audience tag, is required once the ops surface is switched on in that environment. It is optional until then, since the owner has not created the application yet (runbook, step 11).
 
 **Every ops call is audited before it runs.** `auditCall` (`src/domain/audit.ts`) follows `requireAccess`. It writes an `ops.call` entry naming the identity, the method and the route pattern (never the path, which can hold a token). If the write fails, the call is refused with `503`. The same rule, write first or refuse, will apply to each audited action as later milestones add them.
+
+**Amended 25 September 2026: an action's entry is written with it.** Written first, an entry claimed actions that then failed: a deletion that never happened was recorded twice. Written after, as several routes had drifted into doing, an action whose entry failed happened unrecorded. So an audited action (a decision, a revoke, leave, a launch, an answer, a request) now writes its entry in the same D1 batch as its change, and both happen or neither: `auditStatement` gives the statement, and `auditStatementIfWritten` one for an insert that may write nothing. What only reads, an export or a photograph viewed, still writes its entry first and refuses when it cannot. `test/worker/audit-with-action.test.ts` makes each route's entry fail and checks that nothing changed.
 
 - **One exception: `/api/health` on a database not yet proven to be this environment's.** It is the only route that passes that check, and it writes nothing there. It answers 503 and reads no data.
 

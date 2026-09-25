@@ -15,7 +15,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
-import { actorOf, recordAudit } from "../domain/audit.ts";
+import { actorOf } from "../domain/audit.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
 import { decideNoShow, listNoShowCases } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
@@ -219,11 +219,11 @@ export function registerOpsField(app: App): void {
     const { decision } = c.req.valid("json");
     const now = c.var.deps.now();
 
-    const decided = await decideNoShow(c.env.DB, { caseId: id, decision, actor: actorOf(identity).id, now });
-    if (!decided) return c.json(errorBody("not_found", c.var.requestId), 404);
-    await recordAudit(
-      c.env.DB,
-      {
+    const decided = await decideNoShow(c.env.DB, {
+      caseId: id,
+      decision,
+      actor: actorOf(identity).id,
+      audit: {
         surface: "ops",
         actor: actorOf(identity),
         action: "no_show.decide",
@@ -232,7 +232,8 @@ export function registerOpsField(app: App): void {
         detail: { decision },
       },
       now,
-    );
+    });
+    if (!decided) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json({ decided: true }, 200);
   });
 
@@ -303,12 +304,6 @@ export function registerOpsField(app: App): void {
       { technicianId: id, from, to, note: note ?? null, actor: actorOf(identity).id },
       indiaDate(now),
       now,
-    );
-    if (outcome.kind === "no_such_technician") return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (outcome.kind === "bad_dates") return c.json(errorBody("invalid_request", c.var.requestId, ["to"]), 400);
-
-    await recordAudit(
-      c.env.DB,
       {
         surface: "ops",
         actor: actorOf(identity),
@@ -317,8 +312,9 @@ export function registerOpsField(app: App): void {
         requestId: c.var.requestId,
         detail: { from, to },
       },
-      now,
     );
+    if (outcome.kind === "no_such_technician") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (outcome.kind === "bad_dates") return c.json(errorBody("invalid_request", c.var.requestId, ["to"]), 400);
     return c.json({ id: outcome.id }, 200);
   });
 
@@ -330,23 +326,22 @@ export function registerOpsField(app: App): void {
 
     const cancelled = await cancelLeave(
       c.env.DB,
-      { technicianId: id, leaveId: leave, actor: actorOf(identity).id },
-      now,
-    );
-    if (!cancelled) return c.json(errorBody("not_found", c.var.requestId), 404);
-
-    await recordAudit(
-      c.env.DB,
       {
-        surface: "ops",
-        actor: actorOf(identity),
-        action: "technician.leave_cancelled",
-        subject: { kind: "technician", id },
-        requestId: c.var.requestId,
-        detail: { leave_id: leave },
+        technicianId: id,
+        leaveId: leave,
+        actor: actorOf(identity).id,
+        audit: {
+          surface: "ops",
+          actor: actorOf(identity),
+          action: "technician.leave_cancelled",
+          subject: { kind: "technician", id },
+          requestId: c.var.requestId,
+          detail: { leave_id: leave },
+        },
       },
       now,
     );
+    if (!cancelled) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json({ cancelled: true }, 200);
   });
 
@@ -360,13 +355,7 @@ export function registerOpsField(app: App): void {
       technicianId: id,
       deviceId: device,
       actor: actorOf(identity).id,
-      now,
-    });
-    const revokedAt = revoked?.revokedAt ?? null;
-    if (revokedAt === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    await recordAudit(
-      c.env.DB,
-      {
+      audit: {
         surface: "ops",
         actor: actorOf(identity),
         action: "technician_device.revoke",
@@ -375,7 +364,9 @@ export function registerOpsField(app: App): void {
         detail: { device_id: device },
       },
       now,
-    );
+    });
+    const revokedAt = revoked?.revokedAt ?? null;
+    if (revokedAt === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     c.var.log.info("technician_device_revoked", { technician_id: id, device_id: device });
     return c.json({ revoked_at: revokedAt }, 200);
   });

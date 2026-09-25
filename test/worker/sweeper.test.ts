@@ -122,6 +122,92 @@ describe("sweeper: leads", () => {
       { id: "recently-revoked" },
     ]);
   });
+
+  // A revoked phone keeps pointing at its last session; deleting that session
+  // under it failed the whole batch, and the cron with it.
+  it("frees a phone from a technician session before deleting the session", async () => {
+    const day = 24 * 60;
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
+         VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)`,
+      ).bind(minutesAgo(40 * day)),
+      env.DB.prepare(
+        `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at, revoked_at)
+         VALUES ('revoked-long-ago', 'technician', 't1', ?1, ?2, ?3, ?2)`,
+      ).bind(minutesAgo(40 * day), minutesAgo(31 * day), minutesAhead(50 * day)),
+      env.DB.prepare(
+        `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
+         VALUES ('expired-long-ago', 'technician', 't1', ?1, ?2, ?2)`,
+      ).bind(minutesAgo(130 * day), minutesAgo(31 * day)),
+      env.DB.prepare(
+        `INSERT INTO technician_devices (id, technician_id, device_id, session_id, label, created_at, last_seen_at, revoked_at)
+         VALUES ('d1', 't1', 'phone-1', 'revoked-long-ago', 'Chrome on Android', ?1, ?2, ?2)`,
+      ).bind(minutesAgo(40 * day), minutesAgo(31 * day)),
+      env.DB.prepare(
+        `INSERT INTO technician_devices (id, technician_id, device_id, session_id, label, created_at, last_seen_at)
+         VALUES ('d2', 't1', 'phone-2', 'expired-long-ago', 'Safari on iPhone', ?1, ?2)`,
+      ).bind(minutesAgo(130 * day), minutesAgo(31 * day)),
+    ]);
+
+    await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect((await env.DB.prepare("SELECT id FROM sessions").all()).results).toEqual([]);
+    expect(
+      (await env.DB.prepare("SELECT id, session_id, revoked_at FROM technician_devices ORDER BY id").all()).results,
+    ).toEqual([
+      { id: "d1", session_id: null, revoked_at: minutesAgo(31 * day) },
+      { id: "d2", session_id: null, revoked_at: null },
+    ]);
+  });
+});
+
+describe("sweeper: a technician's steps", () => {
+  /** A step on visit `visit`, landed `landed` minutes ago, not yet written to FSM unless `state` says. */
+  const step = (id: string, visit: string, kind: string, landed: number, state = "pending") =>
+    env.DB.prepare(
+      `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+         fsm_write_state, updated_at)
+       VALUES (?1, ?2, ?1, 't1', ?3, '{}', ?4, ?4, ?5, ?4)`,
+    ).bind(id, visit, kind, minutesAgo(landed), state);
+
+  beforeEach(async () => {
+    const visit = (id: string) =>
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, type, status, fsm_status, fsm_modified_at, synced_at)
+         VALUES (?1, ?1, 'service', 'in_progress', 'In Progress', ?2, ?2)`,
+      ).bind(id, minutesAgo(60));
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'r-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      ).bind(minutesAgo(60)),
+      visit("visit-lost"),
+      visit("visit-fresh"),
+      visit("visit-done"),
+      // Its queue message never came: the send failed after the step landed.
+      step("lost-start", "visit-lost", "start", 40),
+      step("lost-photos", "visit-lost", "before_photos", 39),
+      step("fresh-start", "visit-fresh", "start", 3),
+      step("done-start", "visit-done", "start", 50, "written"),
+    ]);
+  });
+
+  it("sends a job's earliest step that never reached FSM on again, and leaves its next to follow it", async () => {
+    const { bindings, queues } = sweepEnv();
+
+    await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect(queues.fsm.sent).toEqual([{ job_event_id: "lost-start", request_id: "sweeper" }]);
+  });
+
+  it("does not send it again while its retries may still be running", async () => {
+    await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+    const again = sweepEnv();
+
+    await sweep(again.bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect(again.queues.fsm.sent).toEqual([]);
+  });
 });
 
 describe("sweeper: try-on", () => {

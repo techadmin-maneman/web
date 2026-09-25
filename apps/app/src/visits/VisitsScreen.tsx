@@ -1,5 +1,5 @@
 // Visits (board C1): what is coming on ink, what has been done below, each
-// past visit opening its detail (C9). A Phase 1 booking's consultation, not
+// past visit opening its detail (C9). A booking's consultation, not
 // yet in FSM, shows as the one upcoming. "Book your next visit" opens WhatsApp
 // to ops while self-serve booking is off, and waits for the connection
 // offline. C1's "Prepaid" arrives with prepayment (P2-M5).
@@ -13,7 +13,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type Visits } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { BookButton } from "../booking/BookButton.tsx";
-import { home, messages, PHASE1_WINDOWS, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
+import { home, messages, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { CHEVRON } from "../icons.ts";
 import { useLoad } from "../lib/useLoad.ts";
@@ -97,10 +97,7 @@ function VisitList({ list, consultation }: { list: Visits; consultation: Me["con
       ) : (
         <ul className={styles.upcoming}>
           {upcoming.length === 0 && consultation !== null && (
-            <Upcoming
-              date={consultation.date}
-              parts={[VISIT_TYPES.consultation, WINDOW_HOURS[PHASE1_WINDOWS[consultation.window_label] ?? "morning"]]}
-            />
+            <Upcoming date={consultation.date} parts={[VISIT_TYPES.consultation, WINDOW_HOURS[consultation.window]]} />
           )}
           {upcoming.map((visit) => (
             <Upcoming

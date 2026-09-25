@@ -3,6 +3,7 @@
 // only after that confirmation." Each number's code is its own challenge.
 
 import { newCode } from "../policy/one-time-code.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 import { createChallenge, verifyCode, type Challenge, type ChallengePurpose, type Verification } from "./login.ts";
 
 export type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
@@ -72,11 +73,20 @@ export interface StartedChange {
 /** Starts a change, withdrawing any the client had under way, with a code for each number. */
 export async function startNumberChange(
   db: D1Database,
-  options: { personId: string; newMobileE164: string; pepper: string; now: Date; fixedCode?: string | null },
+  options: {
+    personId: string;
+    newMobileE164: string;
+    pepper: string;
+    /** The request's audit entry, written with the change it names (src/domain/audit.ts). */
+    audit: AuditEntry;
+    now: Date;
+    fixedCode?: string | null;
+  },
 ): Promise<StartedChange> {
   const id = crypto.randomUUID();
   const at = options.now.toISOString();
   await db.batch([
+    auditStatement(db, { ...options.audit, subject: { kind: "number_change", id } }, options.now),
     db
       .prepare(
         `UPDATE number_change_requests SET state = 'withdrawn', decided_at = ?2
@@ -173,7 +183,7 @@ export type Decision = "confirm" | "reject";
  */
 export async function decideNumberChange(
   db: D1Database,
-  options: { id: string; decision: Decision; staff: string; reason: string | null; now: Date },
+  options: { id: string; decision: Decision; staff: string; reason: string | null; audit: AuditEntry; now: Date },
 ): Promise<"decided" | "not_waiting" | "number_in_use"> {
   const change = await findNumberChange(db, options.id);
   if (change?.state !== "awaiting_ops") return "not_waiting";
@@ -185,8 +195,10 @@ export async function decideNumberChange(
        WHERE id = ?1 AND state = 'awaiting_ops'`,
     )
     .bind(change.id, options.decision === "confirm" ? "confirmed" : "rejected", at, options.staff, options.reason);
+  // The decision's audit entry goes in the same batch as the decision (src/domain/audit.ts).
+  const audit = auditStatement(db, options.audit, options.now);
   if (options.decision === "reject") {
-    await decide.run();
+    await db.batch([decide, audit]);
     return "decided";
   }
 
@@ -198,6 +210,7 @@ export async function decideNumberChange(
   await db.batch([
     decide,
     db.prepare("UPDATE people SET mobile_e164 = ?2 WHERE id = ?1").bind(change.personId, change.newMobileE164),
+    audit,
   ]);
   return "decided";
 }
