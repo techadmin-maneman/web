@@ -105,6 +105,15 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 41. **The site's forms and a number we already know.** Neither prompt says what `/book` or the referral landing does for a client who already has a consultation, or is past one. **Taken 25 September 2026, for the owner to confirm** (ADR 0068): a number with a consultation still to happen is answered `already_booked`, with its day and window; one past consultations, consulted or fitted, `not_bookable`, and books in the app. A form never renames the person its number belongs to, so a returning Phase 1 lead keeps the name they first gave, and the name is corrected by ops.
 42. **Two minutes' grace, a charged consultation from the site, and ops' credit reasons.** **Taken 25 September 2026, for the owner to confirm** (ADR 0068): a payment Razorpay made up to two minutes after a hold's countdown counts as in time, and an unpaid hold keeps its time for those two minutes; the site takes a consultation the price book charges for as a request for ops, since it takes no payment; ops adjust a client's credits for one of two reasons, a correction or goodwill.
 
+43. **The dispatch board, where the boards and the prompt leave a move open.** **Taken 25 September 2026, for the owner to confirm** (ADR 0069):
+    - **Who is told of a move.** The prompt's move "messages the client with the new window", and board A2 promises it. A WhatsApp message about a visit goes only to a client who agreed to them, so the move sheet names any other and gives his number to call; the done line claims a message only where one was queued; and the move waits on the Tasks board as **Call about a move**, four hours, until ops record the call. A change of technician alone keeps the visit's time and messages nobody, since the client's window is as it was.
+    - **A row above the grid** for the week, the city and a search over technicians, zones and clients. The brief asks for "a city and week picker" (A1); the board letters the city in its header and draws no control.
+    - **What a day offers a job in hand.** Only the windows it would land in, by the server's own check, with "No room" on a day that has none, and a list of the same windows above the grid for the keyboard; the board draws the drag alone.
+    - **A day as it was worked.** A finished visit stays on the board where it was worked, and cannot be moved; the utilisation counts it, over the technicians not on leave that day, and, with a city chosen, that city's jobs against the whole team, since no technician carries a city.
+    - **The drawer's WhatsApp** opens a chat with any client on the board, as A3 draws it, whatever he said about WhatsApp messages from us.
+
+    Every word the boards do not draw is a placeholder in `apps/ops/src/content.ts`, approved with the rest of the console's copy (`docs/open-points.md`, item 20).
+
 ## Inputs still owed
 
 The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`. The FSM trial and licensing are in `docs/decisions/fsm-trial.md` and `docs/decisions/fsm-licensing.md`, both pending.
