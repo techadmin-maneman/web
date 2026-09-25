@@ -90,9 +90,13 @@ export async function writeEventToFsm(
       await fsm.updateAppointment(job.fsmId, { Summary: await summaryOf(db, job, deps) });
       return "written";
     }
-    case "checklist":
+    case "checklist": {
+      await fsm.updateAppointment(job.fsmId, { Summary: await summaryOf(db, job, deps) });
+      return "written";
+    }
     case "consumables": {
       await fsm.updateAppointment(job.fsmId, { Summary: await summaryOf(db, job, deps) });
+      await recordConsumables(db, job, event, now);
       return "written";
     }
     case "outcome": {
@@ -146,12 +150,20 @@ async function mirrorStatus(db: D1Database, appointmentId: string, fsmStatus: st
     .run();
 }
 
-/** The piece step: a fitted piece becomes an FSM asset, a failed one is marked there. */
+/**
+ * The piece step: on a replacement the piece that came off is marked failed in
+ * FSM first, then the fitted one becomes an FSM asset. A failure_reason on the
+ * piece itself marks that piece failed and fits nothing.
+ */
 async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, now: Date): Promise<void> {
-  const code = typeof event.body.piece_code === "string" ? event.body.piece_code : null;
-  if (code === null) return;
-  const failure = typeof event.body.failure_reason === "string" ? event.body.failure_reason : null;
+  const oldPiece = asOldPiece(event.body.old_piece);
+  if (oldPiece !== null) {
+    await recordFailedPiece(deps.db, deps.fsm, { pieceCode: oldPiece.pieceCode, reason: oldPiece.reason, now });
+  }
 
+  const code = asText(event.body.piece_code);
+  if (code === null) return;
+  const failure = asText(event.body.failure_reason);
   if (failure !== null) {
     await recordFailedPiece(deps.db, deps.fsm, { pieceCode: code, reason: failure, now });
     return;
@@ -196,13 +208,46 @@ export async function summaryOf(db: D1Database, job: JobForFsm, deps: { labelAsT
   }
 
   const piece = events.findLast((event) => event.kind === "piece");
-  if (piece !== undefined && typeof piece.body.piece_code === "string") {
-    parts.push(`Piece: ${piece.body.piece_code}`);
-  }
+  if (piece !== undefined) parts.push(...pieceLines(piece));
 
   const outcome = events.findLast((event) => event.kind === "outcome");
   if (outcome !== undefined) parts.push(outcomeLine(outcome));
   return parts.join(" · ");
+}
+
+/**
+ * The piece as the summary gives it. A failure's reason goes here as well as on
+ * our copy, since FSM holds nothing else of it: the asset only turns Inactive.
+ */
+function pieceLines(event: JobEvent): string[] {
+  const lines: string[] = [];
+  const oldPiece = asOldPiece(event.body.old_piece);
+  if (oldPiece !== null) lines.push(`Piece off: ${oldPiece.pieceCode} (${oldPiece.reason})`);
+  const code = asText(event.body.piece_code);
+  const failure = asText(event.body.failure_reason);
+  if (code !== null) lines.push(failure === null ? `Piece: ${code}` : `Piece failed: ${code} (${failure})`);
+  return lines;
+}
+
+/**
+ * What was used, row by row, once FSM has the summary that names it: the table
+ * ops count stock from (migration 0026). A replay writes the same rows.
+ */
+async function recordConsumables(db: D1Database, job: JobForFsm, event: JobEvent, now: Date): Promise<void> {
+  const totals = new Map<string, number>();
+  for (const item of asItems(event.body.items)) totals.set(item.name, (totals.get(item.name) ?? 0) + item.quantity);
+  if (totals.size === 0) return;
+  await db.batch(
+    [...totals].map(([name, quantity]) =>
+      db
+        .prepare(
+          `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+           ON CONFLICT (job_event_id, name) DO UPDATE SET quantity = excluded.quantity`,
+        )
+        .bind(crypto.randomUUID(), job.id, event.id, name, quantity, now.toISOString()),
+    ),
+  );
 }
 
 /** The mandatory note on the transition that closes the job. */
@@ -232,6 +277,15 @@ const indiaIsoOf = (instant: string): string => indiaIso(new Date(instant));
 
 /** One field of an event's body, when the phone sent it as text; null otherwise. */
 const asText = (value: unknown): string | null => (typeof value === "string" ? value : null);
+
+/** The piece that came off, as the piece step carries it; null when there was none. */
+function asOldPiece(value: unknown): { pieceCode: string; reason: string } | null {
+  if (typeof value !== "object" || value === null) return null;
+  const piece = value as { piece_code?: unknown; failure_reason?: unknown };
+  const pieceCode = asText(piece.piece_code);
+  const reason = asText(piece.failure_reason);
+  return pieceCode === null || reason === null ? null : { pieceCode, reason };
+}
 
 function asStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];

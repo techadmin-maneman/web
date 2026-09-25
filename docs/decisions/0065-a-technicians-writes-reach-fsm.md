@@ -52,6 +52,12 @@ The audit of 24 September 2026 found that no job worked in the technician app co
 - **A no-show is refused once the job has started** (409 `already_started`). The close now lands before its case is opened, so a close the server refuses — started, superseded or out of order — opens no case.
 - **The card carries what a phone can lose.** A job's `progress` gives the no-show wait's end and the check-in's distance, from the check-in the server holds, so a phone that lost its own copy can still close a no-show. The unlocked card gives the address whole — building, tower, floor, flat and landmark, which the client saved separately (ADR 0054) — and a visit the price book charges nothing for carries a Free badge (ADR 0025, item 32).
 
+### The piece, and what was used
+
+- **A replacement names the piece that came off.** The piece step takes `old_piece`, its label and why it failed, beside the new piece's label, base and supplier lot. The old one is marked failed in FSM first, then the new one becomes an asset.
+- **A failure's reason reaches FSM.** FSM's asset only turns Inactive, and no field of the asset is known to hold a reason, so the reason goes on the job's summary ("Piece off: MM-STD-4417-B (…)") as well as on our copy. The mirror reads Inactive back as failed, which it did not.
+- **What was used is kept row by row** in `consumables_used` once FSM has the summary that names it, where a stock count can read it. Nothing reads it yet: no board draws a stock report.
+
 ### Who may still work
 
 - **A session ends when its technician is no longer active** (`src/http/technician-session.ts`). `active` was read only at login and a session lives 90 days from last use, so a technician who had left kept his phone's cards — clients' addresses and mobiles — for up to three months. Now his next call answers 401 `session_required`, the session is revoked, and the app wipes what it holds, as it does on any 401 (ADR 0053).

@@ -711,6 +711,107 @@ describe("the order a job reaches FSM in", () => {
   });
 });
 
+// A replacement: the old piece comes off, failed, and a new one goes on.
+describe("the piece", () => {
+  const REPLACEMENT = OTHER_JOB;
+
+  beforeEach(async () => {
+    await insertJob(REPLACEMENT, { fsmId: "ap-other", start: TODAY_START.toISOString(), type: "replacement" });
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-old', 'asset-old', ?1, 'MM-STD-4417-B', 'Standard base', '2026-03-25', '2026-09-21', ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+  });
+
+  /** Every step of the replacement up to the piece, worked from 13:02, and replayed the next morning. */
+  async function upToThePiece(at: Date): Promise<void> {
+    const steps: [string, unknown, number][] = [
+      ["checkin", AT_THE_DOOR, 2],
+      ["start", undefined, 5],
+      ["photos", { phase: "before" }, 10],
+      ["checklist", { done: [] }, 30],
+      ["consumables", { items: [{ name: "Adhesive", quantity: 2 }] }, 40],
+    ];
+    for (const [step, body, minute] of steps) {
+      const answer = await postAt(at, `/api/tech/jobs/${REPLACEMENT}/${step}`, body, uuidv7At(minute));
+      expect(answer.status).toBeLessThan(300);
+    }
+  }
+
+  it("records the new piece with its base and lot, and the old one as failed with its reason, in FSM first", async () => {
+    // Sent at 9 am the next day; the piece went on at 23:40 on the visit's day.
+    const nextMorning = new Date("2026-09-22T03:30:00.000Z");
+    await upToThePiece(nextMorning);
+    const answer = await postAt(
+      nextMorning,
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      {
+        piece_code: "MM-STD-5520-A",
+        base: "Standard base",
+        supplier_lot: "LOT-2026-09",
+        old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "Adhesive lifted at the front" },
+      },
+      uuidv7At(610),
+    );
+    expect(answer.status).toBe(202);
+
+    await runFsmQueue();
+    expect(fsm.made.assets).toEqual([
+      {
+        contactId: "contact-1",
+        assetNumber: "MM-STD-5520-A",
+        productId: "part-standard",
+        serialNumber: "LOT-2026-09",
+        installedAt: "2026-09-21",
+      },
+    ]);
+    expect(fsm.made.assetUpdates).toEqual([{ assetId: "asset-old", status: "Inactive" }]);
+    // The reason reaches FSM too, on the job's summary, not only our copy.
+    expect(fsm.made.appointmentUpdates.at(-1)?.fields.Summary).toContain(
+      "Piece off: MM-STD-4417-B (Adhesive lifted at the front)",
+    );
+
+    const pieces = await env.DB.prepare(
+      "SELECT piece_code, fitted_at, replacement_due_at, failure_reason FROM pieces ORDER BY piece_code",
+    ).all();
+    expect(pieces.results).toEqual([
+      {
+        piece_code: "MM-STD-4417-B",
+        fitted_at: "2026-03-25",
+        replacement_due_at: "2026-09-21",
+        failure_reason: "Adhesive lifted at the front",
+      },
+      // Fitted on the 21st in India, whatever day the write arrived; due 180 days on.
+      { piece_code: "MM-STD-5520-A", fitted_at: "2026-09-21", replacement_due_at: "2027-03-20", failure_reason: null },
+    ]);
+  });
+
+  it("refuses a label that is not a piece's, for the old piece as for the new", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    const answer = await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", old_piece: { piece_code: "MM-STD-4417 B", failure_reason: "Torn" } },
+      uuidv7At(50),
+    );
+
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["old_piece"] } });
+  });
+
+  it("keeps what was used, with quantities, where ops can count stock", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    await runFsmQueue();
+
+    const used = await env.DB.prepare("SELECT name, quantity FROM consumables_used WHERE appointment_id = ?1")
+      .bind(REPLACEMENT)
+      .all();
+    expect(used.results).toEqual([{ name: "Adhesive", quantity: 2 }]);
+  });
+});
+
 describe("the no-show", () => {
   it("is refused before the wait ends, then closes with its three facts", async () => {
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");

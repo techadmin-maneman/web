@@ -225,9 +225,18 @@ const PieceRequestSchema = z
     base: z.string().min(1).max(60).nullable().optional(),
     supplier_lot: z.string().min(1).max(60).nullable().optional(),
     failure_reason: z.string().min(1).max(200).nullable().optional(),
+    old_piece: z
+      .object({ piece_code: z.string().min(3).max(40), failure_reason: z.string().min(1).max(200) })
+      .strict()
+      .nullable()
+      .optional()
+      .openapi({ description: "On a replacement: the piece that came off, and why it failed." }),
   })
   .strict()
-  .openapi("PieceRequest", { description: "A failure_reason marks the piece that came off as failed." });
+  .openapi("PieceRequest", {
+    description:
+      "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing.",
+  });
 
 const OutcomeRequestSchema = z
   .discriminatedUnion("outcome", [
@@ -570,11 +579,14 @@ export function registerTechJobs(app: App): void {
     return step(c, "piece", (job) => {
       if (!(stepsFor(job.type) as string[]).includes("piece")) return { invalid: ["piece_code"] };
       if (!isPieceCode(body.piece_code)) return { invalid: ["piece_code"] };
+      const oldPiece = body.old_piece ?? null;
+      if (oldPiece !== null && !isPieceCode(oldPiece.piece_code)) return { invalid: ["old_piece"] };
       return {
         piece_code: body.piece_code,
         base: body.base ?? null,
         supplier_lot: body.supplier_lot ?? null,
         failure_reason: body.failure_reason ?? null,
+        old_piece: oldPiece,
       };
     });
   });

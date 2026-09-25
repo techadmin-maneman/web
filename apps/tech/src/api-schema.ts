@@ -1407,12 +1407,17 @@ export interface components {
                 quantity: number;
             }[];
         };
-        /** @description A failure_reason marks the piece that came off as failed. */
+        /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
         PieceRequest: {
             piece_code: string;
             base?: string | null;
             supplier_lot?: string | null;
             failure_reason?: string | null;
+            /** @description On a replacement: the piece that came off, and why it failed. */
+            old_piece?: {
+                piece_code: string;
+                failure_reason: string;
+            } | null;
         };
         OutcomeRequest: {
             /** @enum {string} */

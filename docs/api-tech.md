@@ -1803,13 +1803,37 @@ The piece a label names
       ],
       "minLength": 1,
       "maxLength": 200
+    },
+    "old_piece": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "piece_code": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40
+        },
+        "failure_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "piece_code",
+        "failure_reason"
+      ],
+      "additionalProperties": false,
+      "description": "On a replacement: the piece that came off, and why it failed."
     }
   },
   "required": [
     "piece_code"
   ],
   "additionalProperties": false,
-  "description": "A failure_reason marks the piece that came off as failed."
+  "description": "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing."
 }
 ```
 
