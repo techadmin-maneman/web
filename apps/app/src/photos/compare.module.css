@@ -6,6 +6,7 @@
   height: 100dvh;
   background: var(--ink-deep);
   color: var(--paper);
+  --focus-colour: var(--paper);
 }
 
 .header {
@@ -80,8 +81,9 @@
   cursor: pointer;
 }
 
-.picker:focus-within {
-  outline: var(--rule-strong) solid var(--gilt);
+/* The select that takes the focus is unseen, so the global ring is drawn on the box around it. */
+.picker:has(select:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: var(--focus-offset);
 }
 
@@ -199,23 +201,10 @@
   color: var(--paper);
 }
 
-.back:focus-visible,
-.handle:focus-visible,
-.angle:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
-}
-
 /* Opened with fewer than two visits to compare, on paper. */
 .none {
   margin: 0;
   padding: var(--sp-24) var(--sp-20);
   font-size: var(--fs-16);
   line-height: 1.6;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .arriving {
-    animation: none;
-  }
 }

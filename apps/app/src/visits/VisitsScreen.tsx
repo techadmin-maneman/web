@@ -1,8 +1,10 @@
 // Visits (board C1): what is coming on ink, what has been done below, each
-// past visit opening its detail (C9). A booking's consultation, not
-// yet in FSM, shows as the one upcoming. "Book your next visit" opens WhatsApp
-// to ops while self-serve booking is off, and waits for the connection
-// offline. C1's "Prepaid" arrives with prepayment (P2-M5).
+// opening its own page (C9 for one done). A booking's consultation, not yet in
+// FSM, shows as the one upcoming. A visit FSM has not closed stays under
+// upcoming, saying it is under way or being closed, and "Book your next visit"
+// waits while it is. That opens WhatsApp to ops while self-serve booking is
+// off, and waits for the connection offline. "Prepaid" marks a visit paid for
+// ahead, or covered by a credit.
 //
 // Beneath them, the client's own record, which the board draws nowhere: how
 // often they have been served, what they have bought, what they have paid, and
@@ -10,11 +12,12 @@
 
 import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { api, type Me, type Visits } from "../api.ts";
+import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { BookButton } from "../booking/BookButton.tsx";
 import { home, messages, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
+import { hasBegun } from "../home/VisitCard.tsx";
 import { CHEVRON } from "../icons.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { technicianOf, visitName } from "../lib/visit.ts";
@@ -25,12 +28,28 @@ import styles from "./visits.module.css";
 
 const copy = visits.record;
 
-/** An upcoming visit's card, as C1 draws it: the date, then what, when and who. */
-function Upcoming({ date, parts }: { date: string; parts: readonly string[] }) {
+/** An upcoming visit's card, as C1 draws it: the date and whether it is paid, then what, when and who. */
+function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly string[]; prepaid: boolean }) {
   return (
-    <li className={styles.card}>
-      <p className={styles.cardDate}>{shortDate(date)}</p>
-      <p className={styles.cardWhat}>{parts.join(" · ")}</p>
+    <>
+      <span className={styles.cardHead}>
+        <span className={styles.cardDate}>{shortDate(date)}</span>
+        {prepaid && <span className={styles.prepaid}>{visits.prepaid}</span>}
+      </span>
+      <span className={styles.cardWhat}>{parts.join(" · ")}</span>
+    </>
+  );
+}
+
+/** A visit FSM has, which opens its own page; the window, or where one that has begun stands. */
+function Upcoming({ visit }: { visit: VisitSummary }) {
+  const when = visit.stage === "in_progress" || visit.stage === "closing" ? home.stages[visit.stage] : null;
+  const parts = [visitName(visit.type), when ?? WINDOW_HOURS[visit.window_label], ...technicianOf(visit)];
+  return (
+    <li>
+      <AppLink className={styles.card} to={`/visits/${visit.id}`}>
+        <UpcomingCard date={visit.date} parts={parts} prepaid={visit.prepaid} />
+      </AppLink>
     </li>
   );
 }
@@ -96,15 +115,18 @@ function VisitList({ list, consultation }: { list: Visits; consultation: Me["con
         <p className={styles.none}>{visits.none}</p>
       ) : (
         <ul className={styles.upcoming}>
+          {/* A booking's consultation, not yet in FSM, has no page of its own to open. */}
           {upcoming.length === 0 && consultation !== null && (
-            <Upcoming date={consultation.date} parts={[VISIT_TYPES.consultation, WINDOW_HOURS[consultation.window]]} />
+            <li className={styles.card}>
+              <UpcomingCard
+                date={consultation.date}
+                parts={[VISIT_TYPES.consultation, WINDOW_HOURS[consultation.window]]}
+                prepaid={false}
+              />
+            </li>
           )}
           {upcoming.map((visit) => (
-            <Upcoming
-              key={visit.id}
-              date={visit.date}
-              parts={[visitName(visit.type), WINDOW_HOURS[visit.window_label], ...technicianOf(visit)]}
-            />
+            <Upcoming key={visit.id} visit={visit} />
           ))}
         </ul>
       )}
@@ -137,6 +159,8 @@ export function VisitsScreen() {
   const { me } = useSession();
   const [loaded, retry] = useLoad(api.visits);
   const firstFit = me.booking.types.includes("first_fit");
+  // While a visit is under way or being closed, another is not booked in its place.
+  const begun = me.next_visit !== null && hasBegun(me.next_visit);
   const book = (
     <BookButton
       className={styles.book}
@@ -148,7 +172,7 @@ export function VisitsScreen() {
     <Shell
       header={{ kind: "tab", title: visits.title }}
       tab="/visits"
-      {...(me.state === "fitted" || firstFit ? { footer: book } : {})}
+      {...((me.state === "fitted" || firstFit) && !begun ? { footer: book } : {})}
     >
       {loaded.state === "loading" ? (
         <Loading />

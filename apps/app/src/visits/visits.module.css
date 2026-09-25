@@ -39,22 +39,37 @@
   margin: 0 var(--sp-20);
 }
 
+/* Each upcoming visit's card opens its own page, as Home's next one does. */
 .card {
+  display: block;
   padding: var(--sp-20);
   background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
 }
 
-.card p {
-  margin: 0;
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-12);
 }
 
 .cardDate {
   font-family: var(--font-serif);
   font-size: var(--fs-26);
-  color: var(--paper);
 }
 
-.card .cardWhat {
+.prepaid {
+  font-family: var(--font-serif);
+  font-size: var(--fs-14);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  color: var(--gilt);
+}
+
+.cardWhat {
+  display: block;
   margin-top: var(--sp-7);
   font-size: var(--fs-16);
   color: var(--ink-soft);
@@ -196,6 +211,47 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Board C9's last row: what was done, beneath its name rather than beside it. */
+.done {
+  padding: var(--sp-15) 0;
+  font-size: var(--fs-16);
+}
+
+.done dt {
+  margin-bottom: var(--sp-10);
+  color: var(--text-muted);
+}
+
+.done dd {
+  margin: 0;
+  line-height: 1.65;
+}
+
+/* An upcoming visit's own page: its card, as Home draws the next one, 24 px under the header as C9's page is. */
+.coming {
+  padding: var(--sp-10) var(--sp-20) var(--sp-24);
+}
+
+/* An invoice a day late, and a way to ask for it. */
+.late {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-12);
+}
+
+.message {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink);
+  font-size: var(--fs-15);
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+}
+
 /* The one document row, drawn as board E2 draws a tax document. */
 .invoice {
   display: flex;
@@ -230,11 +286,4 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-.row:focus-visible,
-.book:focus-visible,
-.invoice:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }

@@ -1,19 +1,25 @@
-// One past visit (board C9): its photographs, technician, duration and type,
-// and the visit's own tax invoice beneath them (ADR 0056; the board has none).
-// "What was done" arrives with the job sheet (P2-M4).
+// One visit. Past (board C9): its photographs, technician, duration and type,
+// what was done, and the visit's own tax invoice beneath them (ADR 0056; the
+// board has none). Still to come, or under way: its card as Home draws its next
+// visit (board B1), with Reschedule and Add a note. A visit that is not the
+// client's says so, rather than offering to try again.
 
 import { ICONS } from "@maneman/brand/icons";
-import { fullDate } from "@maneman/web-kit/dates";
+import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
-import { visits } from "../content.ts";
+import { messages, visits } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
+import { VisitCard } from "../home/VisitCard.tsx";
+import { apiNow } from "../lib/clock.ts";
 import { useLoad } from "../lib/useLoad.ts";
-import { duration, visitName } from "../lib/visit.ts";
+import { duration, invoiceState, visitName } from "../lib/visit.ts";
+import { whatsappWith } from "../lib/whatsapp.ts";
 import { PhotoRow, type OpenPhoto } from "../photos/PhotoRow.tsx";
 import { PhotoSheet } from "../photos/PhotoSheet.tsx";
 import { Loading } from "../states/Loading.tsx";
+import { NotFound } from "../states/NotFound.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import styles from "./visits.module.css";
 
@@ -26,27 +32,40 @@ function Fact({ name, value, numeric = false }: { name: string; value: string; n
   );
 }
 
-/**
- * The visit's invoice, in one of its three states: here to open, still to come,
- * or never coming because the visit was free. Nothing is offered for a visit
- * FSM did not complete, which is billed by hand if it is billed at all.
- */
+/** The visit's invoice: here to open, still to come, late, or never coming because the visit was free. */
 function Invoice({ visit }: { visit: VisitDetail }) {
   const copy = visits.detail.invoice;
-  if (visit.status !== "completed") return null;
-  if (visit.document_id === null) {
-    return <p className={styles.invoiceLine}>{visit.invoice_expected ? copy.generating : copy.free}</p>;
+  const state = invoiceState(visit, apiNow());
+  switch (state) {
+    case "none":
+      return null;
+    case "free":
+      return <p className={styles.invoiceLine}>{copy.free}</p>;
+    case "generating":
+      return <p className={styles.invoiceLine}>{copy.generating}</p>;
+    case "late": {
+      const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
+      return (
+        <div className={styles.late}>
+          <p className={styles.invoiceLine}>{copy.late}</p>
+          <a className={styles.message} href={whatsappWith(message)} rel="noopener">
+            {copy.message}
+          </a>
+        </div>
+      );
+    }
+    case "open":
+      return visit.document_id === null ? null : (
+        <a className={styles.invoice} href={documentUrl(visit.document_id)} target="_blank" rel="noopener">
+          <span>{copy.open}</span>
+          <span className={styles.away}>{copy.newTab}</span>
+          <Icon className={styles.invoiceIcon} d={ICONS.download} size={18} />
+        </a>
+      );
   }
-  return (
-    <a className={styles.invoice} href={documentUrl(visit.document_id)} target="_blank" rel="noopener">
-      <span>{copy.open}</span>
-      <span className={styles.away}>{copy.newTab}</span>
-      <Icon className={styles.invoiceIcon} d={ICONS.download} size={18} />
-    </a>
-  );
 }
 
-function Visit({ visit }: { visit: VisitDetail }) {
+function PastVisit({ visit }: { visit: VisitDetail }) {
   const [open, setOpen] = useState<OpenPhoto | null>(null);
   const copy = visits.detail;
   const photographed = visit.photos.before.length > 0 || visit.photos.after.length > 0;
@@ -66,6 +85,12 @@ function Visit({ visit }: { visit: VisitDetail }) {
           <Fact name={copy.duration} value={duration(visit.duration_minutes)} numeric />
         )}
         <Fact name={copy.type} value={visitName(visit.type)} />
+        {visit.what_was_done !== null && visit.what_was_done.length > 0 && (
+          <div className={styles.done}>
+            <dt>{copy.done}</dt>
+            <dd>{copy.doneLine(visit.what_was_done)}</dd>
+          </div>
+        )}
       </dl>
       <Invoice visit={visit} />
       {open !== null && (
@@ -80,18 +105,26 @@ function Visit({ visit }: { visit: VisitDetail }) {
   );
 }
 
+function Visit({ visit }: { visit: VisitDetail }) {
+  if (visit.stage === null) return <PastVisit visit={visit} />;
+  return (
+    <div className={styles.coming}>
+      <VisitCard visit={visit} />
+    </div>
+  );
+}
+
 export function VisitScreen({ id }: { id: string }) {
   const [loaded, retry] = useLoad(useCallback(() => api.visit(id), [id]));
   const title = loaded.state === "loaded" ? fullDate(loaded.value.date) : visits.title;
   return (
     <Shell header={{ kind: "back", title, to: "/visits", label: visits.detail.back }} tab="/visits">
-      {loaded.state === "loading" ? (
-        <Loading />
-      ) : loaded.state === "failed" ? (
-        <PageFailed onRetry={retry} />
-      ) : (
-        <Visit visit={loaded.value} />
+      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "failed" && loaded.notFound && (
+        <NotFound message={visits.notFound} back={visits.detail.back} to="/visits" />
       )}
+      {loaded.state === "failed" && !loaded.notFound && <PageFailed onRetry={retry} />}
+      {loaded.state === "loaded" && <Visit visit={loaded.value} />}
     </Shell>
   );
 }
