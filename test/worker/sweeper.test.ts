@@ -162,6 +162,54 @@ describe("sweeper: leads", () => {
   });
 });
 
+describe("sweeper: a technician's steps", () => {
+  /** A step on visit `visit`, landed `landed` minutes ago, not yet written to FSM unless `state` says. */
+  const step = (id: string, visit: string, kind: string, landed: number, state = "pending") =>
+    env.DB.prepare(
+      `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+         fsm_write_state, updated_at)
+       VALUES (?1, ?2, ?1, 't1', ?3, '{}', ?4, ?4, ?5, ?4)`,
+    ).bind(id, visit, kind, minutesAgo(landed), state);
+
+  beforeEach(async () => {
+    const visit = (id: string) =>
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, type, status, fsm_status, fsm_modified_at, synced_at)
+         VALUES (?1, ?1, 'service', 'in_progress', 'In Progress', ?2, ?2)`,
+      ).bind(id, minutesAgo(60));
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'r-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      ).bind(minutesAgo(60)),
+      visit("visit-lost"),
+      visit("visit-fresh"),
+      visit("visit-done"),
+      // Its queue message never came: the send failed after the step landed.
+      step("lost-start", "visit-lost", "start", 40),
+      step("lost-photos", "visit-lost", "before_photos", 39),
+      step("fresh-start", "visit-fresh", "start", 3),
+      step("done-start", "visit-done", "start", 50, "written"),
+    ]);
+  });
+
+  it("sends a job's earliest step that never reached FSM on again, and leaves its next to follow it", async () => {
+    const { bindings, queues } = sweepEnv();
+
+    await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect(queues.fsm.sent).toEqual([{ job_event_id: "lost-start", request_id: "sweeper" }]);
+  });
+
+  it("does not send it again while its retries may still be running", async () => {
+    await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+    const again = sweepEnv();
+
+    await sweep(again.bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect(again.queues.fsm.sent).toEqual([]);
+  });
+});
+
 describe("sweeper: try-on", () => {
   it("re-enqueues renders whose message was lost, and fails a submit that died part-way", async () => {
     await insertJob({ id: "lost-queued", state: "queued", created_at: minutesAgo(3) });
