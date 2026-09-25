@@ -83,7 +83,7 @@ async function queueMessages(queue: Queue, ids: readonly string[], requestId: st
 async function sweepJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   await sweep(env, deps, log, {
     creditFloor: config.settings.tryon.creditFloor,
-    fsmErasure: config.providers.FSM_PROVIDER !== "none",
+    fsmConnected: config.providers.FSM_PROVIDER !== "none",
     budget,
   });
 }

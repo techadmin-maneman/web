@@ -2,6 +2,7 @@
 // moved on and has not is put back on its queue from here.
 //
 //   leads       pending over 2 minutes, or failed under 10 attempts   -> crm-sync
+//   bookings    a booked lead never put on its queue, after 2 minutes  -> fsm-sync
 //   erasures    a person erased whose CRM record is not yet blanked     -> crm-sync
 //               or whose FSM contact is not yet anonymised              -> fsm-sync
 //   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
@@ -26,6 +27,8 @@ import type { RenderMessage } from "../queues/render.ts";
 const MINUTE_MS = 60 * 1000;
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
+/** A booking not sent to FSM within a day is left to ops. */
+const BOOKING_TO_FSM_WITHIN_MS = 24 * 60 * MINUTE_MS;
 const MESSAGE_GRACE_MS = 5 * MINUTE_MS;
 /** Past the fsm-sync consumer's whole retry chain: 30 s, 1, 2 and 4 minutes. */
 const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
@@ -67,8 +70,8 @@ export async function sweep(
   log: Logger,
   options: {
     readonly creditFloor: number;
-    /** Whether FSM is connected, so an erased person's contact there can be anonymised. */
-    readonly fsmErasure?: boolean;
+    /** Whether FSM is connected, so bookings are sent there and an erased person's contact is anonymised. */
+    readonly fsmConnected?: boolean;
     /** The cron run's outside calls; the hourly balance check takes one. */
     readonly budget: CallBudget;
   },
@@ -107,8 +110,29 @@ export async function sweep(
     erasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
   );
 
-  // Erased people whose FSM contact is still to be anonymised (docs/decisions/0049-dpdp.md).
-  if (options.fsmErasure === true) {
+  if (options.fsmConnected === true) {
+    // Bookings whose message to the fsm-sync queue never went (src/routes/lead.ts), sent now, once.
+    // One over a day old is left: past that, sending it would surprise ops, who have it from the CRM.
+    const bookings = await ids(
+      db
+        .prepare(
+          `UPDATE leads SET fsm_queued_at = ?1
+           WHERE id IN (
+             SELECT id FROM leads
+             WHERE fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form'
+               AND first_choice_window IS NOT NULL AND created_at > ?2 AND created_at < ?3
+             ORDER BY created_at LIMIT ?4)
+           RETURNING id`,
+        )
+        .bind(now.toISOString(), before(BOOKING_TO_FSM_WITHIN_MS), before(PENDING_GRACE_MS), BATCH_LIMIT),
+    );
+    await sendAll(
+      env.FSM_QUEUE,
+      bookings.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
+    );
+    if (bookings.length > 0) log.warn("bookings_sent_to_fsm_late", { lead_ids: bookings });
+
+    // Erased people whose FSM contact is still to be anonymised (docs/decisions/0049-dpdp.md).
     const fsmErasures = await ids(
       db
         .prepare(

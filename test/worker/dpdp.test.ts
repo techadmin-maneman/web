@@ -101,7 +101,7 @@ describe("erasure reaches Phase 2's data", () => {
     };
     await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), {
       creditFloor: 0,
-      fsmErasure: true,
+      fsmConnected: true,
       budget: createCallBudget(Infinity),
     });
     expect(fsmQueue.sent).toEqual([{ erase_person_id: PERSON, request_id: "sweeper" }]);
@@ -117,7 +117,7 @@ describe("erasure reaches Phase 2's data", () => {
     await sweep({ ...bindings, FSM_QUEUE: again }, fakeDependencies({ now: () => later }), createLogger(), {
       creditFloor: 0,
       budget: createCallBudget(Infinity),
-      fsmErasure: true,
+      fsmConnected: true,
     });
     expect(again.sent).toEqual([]);
   });

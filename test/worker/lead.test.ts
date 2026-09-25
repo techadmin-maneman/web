@@ -11,6 +11,7 @@ import {
   fakeQueue,
   json,
   markDatabase,
+  NOW,
   request,
   TURNSTILE_URL,
   turnstilePasses,
@@ -87,6 +88,29 @@ describe("POST /api/lead: a served city", () => {
 
     expect(queue.sent).toEqual([{ lead_id: body.lead_id, request_id: res.headers.get("X-Request-Id") }]);
     expect(fsmQueue.sent).toEqual([{ lead_id: body.lead_id, request_id: res.headers.get("X-Request-Id") }]);
+  });
+
+  it("stamps a booking put on the fsm-sync queue, and leaves one that failed to go for the sweeper", async () => {
+    const queued = await request(appFor(), "/api/lead", post(BOOKING), {
+      CRM_QUEUE: fakeQueue(),
+      FSM_QUEUE: fakeQueue(),
+    });
+    const { lead_id: sent } = LeadResponseSchema.parse(await queued.json());
+
+    const broken = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) } as unknown as Queue;
+    const failed = await request(appFor(), "/api/lead", post({ ...BOOKING, mobile: "98100 00002" }), {
+      CRM_QUEUE: fakeQueue(),
+      FSM_QUEUE: broken,
+    });
+    expect(failed.status).toBe(201);
+    const { lead_id: unsent } = LeadResponseSchema.parse(await failed.json());
+
+    const stamp = (id: string) =>
+      env.DB.prepare("SELECT fsm_queued_at FROM leads WHERE id = ?1")
+        .bind(id)
+        .first<{ fsm_queued_at: string | null }>();
+    expect((await stamp(sent))?.fsm_queued_at).toBe(NOW.toISOString());
+    expect((await stamp(unsent))?.fsm_queued_at).toBeNull();
   });
 
   it("proposes the first weekend day for a weekend window, after four for an evening", async () => {
