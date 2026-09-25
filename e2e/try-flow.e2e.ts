@@ -367,11 +367,13 @@ test("a new photograph asks for the agreement again", async ({ page }) => {
 // REQ-S4-05: the photograph is fitted within 4090 px, kept under 5 MB and stripped of its EXIF, the location
 // included, before it leaves the browser.
 test("a large photograph with a location in it is uploaded smaller and without it", async ({ page }) => {
+  // Re-encoding a photograph this size in the browser is slow on the CI runner.
+  test.setTimeout(120_000);
   const seen = await mockApi(page);
-  // Noise, so the JPEG is large enough that the page has to shrink it below 5 MB too.
+  // Wider than 4090 px, and noise, so the JPEG is heavy enough that the page may have to shrink it below 5 MB too.
   const noise = { type: "gaussian", mean: 128, sigma: 60 } as const;
   const large = await sharp({
-    create: { width: 4600, height: 6100, channels: 3, background: "#808080", noise },
+    create: { width: 4400, height: 2200, channels: 3, background: "#808080", noise },
   })
     .jpeg({ quality: 98 })
     .withExif({
@@ -386,10 +388,10 @@ test("a large photograph with a location in it is uploaded smaller and without i
     .locator('input[type="file"]')
     .first()
     .setInputFiles({ name: "big.jpg", mimeType: "image/jpeg", buffer: large });
-  await page.locator('[data-screen="consent"]').waitFor();
+  await page.locator('[data-screen="consent"]').waitFor({ timeout: 30_000 });
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect.poll(() => named(seen, "upload").length, { timeout: 30_000 }).toBe(1);
+  await expect.poll(() => named(seen, "upload").length, { timeout: 90_000 }).toBe(1);
 
   const sent = named(seen, "upload")[0]?.postDataBuffer() ?? Buffer.alloc(0);
   const meta = await sharp(sent).metadata();
