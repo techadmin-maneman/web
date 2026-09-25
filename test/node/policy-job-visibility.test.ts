@@ -70,7 +70,8 @@ describe("job visibility", () => {
   });
 
   it(RULES[2], () => {
-    expect([...PAYMENT_BADGES]).toEqual(["prepaid", "credit"]);
+    // Board A1's Free on a visit that costs nothing is a badge too (ADR 0025, item 33).
+    expect([...PAYMENT_BADGES]).toEqual(["prepaid", "credit", "free"]);
     // Nothing a technician's job can carry is an amount.
     for (const field of visibleFields(noon("2026-09-21"), NOW)) {
       expect(field).not.toMatch(/amount|price|paise|fee/);

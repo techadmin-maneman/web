@@ -8,6 +8,11 @@ import { addressLine, wayTo } from "../../apps/tech/src/lib/navigate.ts";
 const WITH_PIN = {
   line1: "Tower C, 14th floor",
   line2: null,
+  building: null,
+  tower: null,
+  floor: null,
+  flat: null,
+  landmark: null,
   locality: "Sector 65",
   city: "Gurgaon",
   pincode: "122018",

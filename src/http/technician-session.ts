@@ -10,7 +10,7 @@ import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "../app.ts";
-import { findSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession } from "../domain/sessions.ts";
+import { findSession, revokeSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession } from "../domain/sessions.ts";
 import { deviceOfSession, markWiped, touchDevice } from "../domain/technicians.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { errorBody } from "./errors.ts";
@@ -63,6 +63,14 @@ export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next)
 
   const session = await findSession(c.env.DB, "technician", token, now);
   if (session === null || device === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+
+  // One FSM no longer lists as active has left, and his phone still holds clients'
+  // addresses: the session ends here, and the app wipes what it holds on the 401.
+  if (!device.technicianActive) {
+    await revokeSession(c.env.DB, session.id, now);
+    clearTechnicianCookie(c);
+    return c.json(errorBody("session_required", c.var.requestId), 401);
+  }
 
   if (now.getTime() - session.lastSeenAt.getTime() > SESSION_TOUCH_MS) {
     await touchSession(c.env.DB, session, now);

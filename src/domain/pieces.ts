@@ -94,7 +94,8 @@ function upsertStatement(
   const base = asset.productName;
   const fittedAt = asset.installedAt;
   const due = fittedAt === null ? null : addDays(fittedAt.slice(0, 10), cycleDaysFor(base, cycles));
-  const failed = asset.status !== null && /fail|replac|retired/i.test(asset.status);
+  // Inactive is how recordFailedPiece marks one, below; the others are words ops may use in FSM.
+  const failed = asset.status !== null && /fail|replac|retired|inactive/i.test(asset.status);
   return db
     .prepare(
       `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, supplier_lot, fitted_at, replacement_due_at,
@@ -176,7 +177,11 @@ export async function recordFittedPiece(db: D1Database, fsm: FsmProvider, piece:
   return fsmId;
 }
 
-/** Records a piece that failed: FSM's asset status first, then our copy's reason. */
+/**
+ * Records a piece that failed: FSM's asset status first, then our copy's reason.
+ * FSM's asset has no field we know of for the reason, so it reaches FSM on the
+ * job's summary (src/domain/job-sheet.ts).
+ */
 export async function recordFailedPiece(
   db: D1Database,
   fsm: FsmProvider,

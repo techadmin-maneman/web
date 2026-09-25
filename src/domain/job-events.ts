@@ -10,13 +10,20 @@
 // "If FSM has changed underneath (for example ops reassigned the job while the
 // phone was offline), the write is rejected with 409 superseded. The technician
 // sees what changed. Nothing is merged silently." The rejection is recorded as
-// an event too, marked superseded, so the record says the phone tried.
+// an event too, marked superseded, so the record says the phone tried. A job
+// moved to another time is superseded like one given to another technician.
+//
+// An event's time is the phone's, held within bounds (src/policy/phone-clock.ts),
+// so a job worked offline keeps its real durations; received_at is ours.
 
 import { JOB_STEPS, type JobEventKind, type JobStep, PIECE_STEP_TYPES } from "../policy/in-job-steps.ts";
+import { onTheVisitsDay } from "../policy/phone-clock.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
 
 export type FsmWriteState = "pending" | "written" | "rejected";
+
+const EVENT_COLUMNS = "id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded";
 
 export interface JobEvent {
   readonly id: string;
@@ -35,7 +42,11 @@ export type Landing =
   /** FSM moved the job under the phone; the fields that changed, never their values. */
   | { readonly kind: "superseded"; readonly changed: readonly string[] }
   /** A step sent before the one ahead of it; the app sends its outbox in order. */
-  | { readonly kind: "out_of_order"; readonly needs: JobEventKind };
+  | { readonly kind: "out_of_order"; readonly needs: JobEventKind }
+  /** A check-in or a start on a day that is not the job's own. */
+  | { readonly kind: "not_today" }
+  /** A no-show on a job already started: the client was home. */
+  | { readonly kind: "already_started" };
 
 export interface EventInput {
   readonly job: WorkableJob;
@@ -44,7 +55,10 @@ export interface EventInput {
   readonly eventId: string;
   readonly kind: JobEventKind;
   readonly body: Record<string, unknown>;
+  /** The phone's time for it, within bounds. */
   readonly occurredAt: Date;
+  /** The job's start as the phone holds it, when the phone says; a different one means ops moved it. */
+  readonly expectedStart: Date | null;
   readonly now: Date;
 }
 
@@ -56,13 +70,17 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
   const held = await eventByClientId(db, input.job.id, input.eventId);
   if (held !== null) return { kind: "landed", event: held, replayed: true };
 
-  const changed = supersededBy(input.job, input.technicianId);
+  const changed = supersededBy(input.job, input.technicianId, input.expectedStart);
   if (changed.length > 0) {
     await record(db, input, { superseded: true });
     return { kind: "superseded", changed };
   }
 
+  const startsTheDay = input.kind === "check_in" || input.kind === "start";
+  if (startsTheDay && !onTheVisitsDay(input.occurredAt, input.job.windowStart)) return { kind: "not_today" };
+
   const done = await kindsLanded(db, input.job.id);
+  if (isNoShow(input.kind, input.body) && done.has("start")) return { kind: "already_started" };
   const needs = stepBefore(input.kind, input.job.type, done, input.body);
   if (needs !== null) return { kind: "out_of_order", needs };
 
@@ -76,12 +94,16 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
 }
 
 /** What FSM changed under the phone, by field name. Empty when nothing did. */
-function supersededBy(job: WorkableJob, technicianId: string): string[] {
+function supersededBy(job: WorkableJob, technicianId: string, expectedStart: Date | null): string[] {
   const changed: string[] = [];
   if (job.technicianId !== technicianId) changed.push("technician");
   if (job.status === "cancelled" || job.status === "terminated") changed.push("status");
+  if (expectedStart !== null && expectedStart.getTime() !== job.windowStart.getTime()) changed.push("time");
   return changed;
 }
+
+const isNoShow = (kind: JobEventKind, body: Record<string, unknown>): boolean =>
+  kind === "outcome" && body.outcome === "no_show";
 
 /** The step this one must follow, or null when it may land now. */
 function stepBefore(
@@ -94,7 +116,7 @@ function stepBefore(
   if (kind === "start") return done.has("check_in") ? null : "check_in";
   // A no-show closes a job that was never started, so it needs only the check-in
   // the wait ran from (src/policy/no-show.ts).
-  if (kind === "outcome" && body.outcome === "no_show") return done.has("check_in") ? null : "check_in";
+  if (isNoShow(kind, body)) return done.has("check_in") ? null : "check_in";
   if (!done.has("start")) return "start";
   const wanted: readonly JobEventKind[] = stepsFor(type);
   const position = wanted.indexOf(kind);
@@ -124,7 +146,7 @@ export async function eventByClientId(
 ): Promise<JobEvent | null> {
   const row = await db
     .prepare(
-      `SELECT id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded FROM job_events
+      `SELECT ${EVENT_COLUMNS} FROM job_events
        WHERE appointment_id = ?1 AND event_id = ?2`,
     )
     .bind(appointmentId, eventId)
@@ -135,7 +157,7 @@ export async function eventByClientId(
 export async function eventById(db: D1Database, id: string): Promise<JobEvent | null> {
   const row = await db
     .prepare(
-      `SELECT id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded FROM job_events
+      `SELECT ${EVENT_COLUMNS} FROM job_events
        WHERE id = ?1`,
     )
     .bind(id)
@@ -147,12 +169,67 @@ export async function eventById(db: D1Database, id: string): Promise<JobEvent | 
 export async function eventsOf(db: D1Database, appointmentId: string): Promise<JobEvent[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded FROM job_events
-       WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at`,
+      `SELECT ${EVENT_COLUMNS} FROM job_events
+       WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
     )
     .bind(appointmentId)
     .all<EventRow>();
   return results.map(eventOf);
+}
+
+// A job's events in the order they landed: by our clock, then by the order the
+// rows were written, since two can land in the same millisecond.
+const LANDED_BEFORE = "(received_at, rowid) < (SELECT received_at, rowid FROM job_events WHERE id = ?2)";
+const LANDED_AFTER = "(received_at, rowid) > (SELECT received_at, rowid FROM job_events WHERE id = ?2)";
+
+/**
+ * The earliest event of the same job that landed before this one and is not
+ * yet written to FSM: what this one must wait for, or must not overtake.
+ */
+export async function unwrittenBefore(db: D1Database, event: JobEvent): Promise<JobEvent | null> {
+  const row = await db
+    .prepare(
+      `SELECT ${EVENT_COLUMNS} FROM job_events
+       WHERE appointment_id = ?1 AND superseded = 0 AND fsm_write_state <> 'written' AND ${LANDED_BEFORE}
+       ORDER BY received_at, rowid LIMIT 1`,
+    )
+    .bind(event.appointmentId, event.id)
+    .first<EventRow>();
+  return row === null ? null : eventOf(row);
+}
+
+/** The job's next event still waiting for FSM, after this one. */
+export async function nextPending(db: D1Database, event: JobEvent): Promise<JobEvent | null> {
+  const row = await db
+    .prepare(
+      `SELECT ${EVENT_COLUMNS} FROM job_events
+       WHERE appointment_id = ?1 AND superseded = 0 AND fsm_write_state = 'pending' AND ${LANDED_AFTER}
+       ORDER BY received_at, rowid LIMIT 1`,
+    )
+    .bind(event.appointmentId, event.id)
+    .first<EventRow>();
+  return row === null ? null : eventOf(row);
+}
+
+/**
+ * Gives up on every event of the job still waiting behind this one, which will
+ * never be written now that it was not. Returns their kinds, in order, for ops.
+ */
+export async function rejectPendingAfter(
+  db: D1Database,
+  event: JobEvent,
+  now: Date,
+  reason: string,
+): Promise<JobEventKind[]> {
+  const { results } = await db
+    .prepare(
+      `UPDATE job_events SET fsm_write_state = 'rejected', fsm_error = ?3, updated_at = ?4
+       WHERE appointment_id = ?1 AND superseded = 0 AND fsm_write_state = 'pending' AND ${LANDED_AFTER}
+       RETURNING kind, received_at, rowid`,
+    )
+    .bind(event.appointmentId, event.id, reason, now.toISOString())
+    .all<{ kind: JobEventKind; received_at: string; rowid: number }>();
+  return results.sort((a, b) => a.received_at.localeCompare(b.received_at) || a.rowid - b.rowid).map((row) => row.kind);
 }
 
 /** Marks what FSM did with the event. A rejection keeps FSM's status and message, never record data. */
@@ -202,7 +279,7 @@ async function record(db: D1Database, input: EventInput, options: { superseded: 
           fsm_write_state, superseded, updated_at)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?9)
        ON CONFLICT (appointment_id, event_id) DO NOTHING
-       RETURNING id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded`,
+       RETURNING ${EVENT_COLUMNS}`,
     )
     .bind(
       crypto.randomUUID(),

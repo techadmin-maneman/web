@@ -50,8 +50,12 @@ export const OUTLINE_FIELDS = ["window_start", "window_end", "type", "sector"] a
 /** What it gains the day before. The API enforces this, not just the screen. */
 export const UNLOCKED_FIELDS = ["address", "access_notes", "client_card"] as const;
 
-/** The only money a technician's job carries: a badge, never an amount. */
-export const PAYMENT_BADGES = ["prepaid", "credit"] as const;
+/**
+ * The only money a technician's job carries: a badge, never an amount. The
+ * prompt names two; board A1 draws a third, Free, on a visit the price book
+ * charges nothing for, such as a consultation (ADR 0025, item 33).
+ */
+export const PAYMENT_BADGES = ["prepaid", "credit", "free"] as const;
 export type PaymentBadge = (typeof PAYMENT_BADGES)[number];
 
 /** The fields a job may carry at this moment, so a route can build its answer from one list. */

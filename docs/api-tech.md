@@ -235,7 +235,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
 
 ```json
 {
@@ -279,7 +279,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
 
 ```json
 {
@@ -657,7 +657,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home
 
 ```json
 {
@@ -748,6 +748,8 @@ The piece a label names
             "device_revoked",
             "superseded",
             "out_of_order",
+            "not_today",
+            "already_started",
             "clash",
             "on_leave",
             "fsm_refused",
@@ -1131,9 +1133,10 @@ The piece a label names
       "type": "string",
       "enum": [
         "prepaid",
-        "credit"
+        "credit",
+        "free"
       ],
-      "description": "No response to a technician carries an amount."
+      "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
     },
     "unlocked": {
       "type": "boolean"
@@ -1190,6 +1193,56 @@ The piece a label names
                     }
                   ]
                 },
+                "building": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "tower": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "floor": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "flat": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "landmark": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "locality": {
                   "type": "string"
                 },
@@ -1223,6 +1276,11 @@ The piece a label names
               "required": [
                 "line1",
                 "line2",
+                "building",
+                "tower",
+                "floor",
+                "flat",
+                "landmark",
                 "locality",
                 "city",
                 "pincode",
@@ -1366,6 +1424,29 @@ The piece a label names
         }
       ]
     },
+    "wait_ends_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the job may close as a no-show, from the check-in we hold; null before one landed."
+    },
+    "distance_m": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How far from the address that check-in was; null when nothing could be measured."
+    },
     "started_at": {
       "anyOf": [
         {
@@ -1406,6 +1487,8 @@ The piece a label names
   },
   "required": [
     "checked_in_at",
+    "wait_ends_at",
+    "distance_m",
     "started_at",
     "steps_done",
     "outcome"
@@ -1538,7 +1621,7 @@ The piece a label names
     "at": {
       "type": "string",
       "format": "date-time",
-      "description": "The phone's clock; ours is used when it is left out."
+      "description": "The phone's clock, kept within bounds and never later than we received it; left out, the event ID's time, else ours."
     }
   },
   "required": [
@@ -1720,13 +1803,37 @@ The piece a label names
       ],
       "minLength": 1,
       "maxLength": 200
+    },
+    "old_piece": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "piece_code": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40
+        },
+        "failure_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "piece_code",
+        "failure_reason"
+      ],
+      "additionalProperties": false,
+      "description": "On a replacement: the piece that came off, and why it failed."
     }
   },
   "required": [
     "piece_code"
   ],
   "additionalProperties": false,
-  "description": "A failure_reason marks the piece that came off as failed."
+  "description": "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing."
 }
 ```
 
