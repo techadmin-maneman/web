@@ -20,10 +20,15 @@ export type Area = Body<paths["/api/waitlist"]["get"]>["areas"][number];
 export type Launch = Body<paths["/api/pincodes/{pin}/launch"]["post"]>;
 export type Decision = Body<paths["/api/referrals/{id}/decision"]["post"]>;
 
-export type ClientFound = Body<paths["/api/clients/search"]["post"]>;
+export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
 export type ClientRecord = Body<paths["/api/clients/{id}"]["get"]>;
+export type ClientVisit = ClientRecord["visits"]["past"][number];
+export type ClientPayment = ClientRecord["payments"][number];
+export type CreditBalance = Body<paths["/api/clients/{id}/credits"]["post"]>;
+export type CreditAdjustment = Sent<paths["/api/clients/{id}/credits"]["post"]>;
 export type PhotoVisit = Body<paths["/api/clients/{id}/photos"]["get"]>["visits"][number];
 export type Photo = PhotoVisit["photos"][number];
+export type PhotoView = Body<paths["/api/clients/{id}/photos/view"]["post"]>;
 export type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
 export type Consent = Consents["consents"][number];
 export type Piece = Body<paths["/api/clients/{id}/pieces"]["get"]>["pieces"][number];
@@ -167,18 +172,29 @@ export const api = {
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => call<{ told: true }>("POST", `/api/dispatch/moves/${moveId}/told`),
   held: () => call<{ held: Held[] }>("GET", "/api/referrals/held"),
-  decideReferral: (id: string, decision: "approve" | "reject", reason: string | null) =>
+  /** Either decision needs a reason, which the server keeps with it (src/policy/decision-reasons.ts). */
+  decideReferral: (id: string, decision: "approve" | "reject", reason: string) =>
     call<Decision>("POST", `/api/referrals/${id}/decision`, { decision, reason }),
-  referrers: () => call<{ referrers: Referrer[] }>("GET", "/api/referrers"),
-  waitlist: () => call<{ areas: Area[] }>("GET", "/api/waitlist"),
+  /** A page of referrers, the busiest first, from `offset`. */
+  referrers: (offset: number) =>
+    call<{ referrers: Referrer[]; more: boolean }>("GET", `/api/referrers${queryOf({ offset: String(offset) })}`),
+  waitlist: () => call<{ areas: Area[]; more: boolean }>("GET", "/api/waitlist"),
   /** Without confirm, what a launch would send; with it, the launch itself. */
   launch: (pincode: string, confirm: boolean) => call<Launch>("POST", `/api/pincodes/${pincode}/launch`, { confirm }),
-  /** The number goes in the body, never in a path or a query string, so it stays out of logs and referrers. */
-  findClient: (mobile: string) => call<ClientFound>("POST", "/api/clients/search", { mobile }),
+  /**
+   * Clients by part of a name or of a number. What ops type goes in the body,
+   * never in a path or a query string, so a number stays out of logs and referrers.
+   */
+  findClients: (text: string) => call<ClientsFound>("POST", "/api/clients/find", { text }),
   client: (id: string) => call<ClientRecord>("GET", `/api/clients/${id}`),
+  /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
+  adjustCredits: (id: string, adjustment: CreditAdjustment) =>
+    call<CreditBalance>("POST", `/api/clients/${id}/credits`, adjustment),
   /** Which photographs exist, by visit. No image comes with it, and nothing is audited. */
   clientPhotos: (id: string) => call<{ visits: PhotoVisit[] }>("GET", `/api/clients/${id}/photos`),
-  /** One photograph. The API writes the audit entry before it serves the bytes (ADR 0031). */
+  /** Opening them: one audit entry, written before any image is served, and who opened them before (ADR 0031). */
+  openPhotos: (id: string) => call<PhotoView>("POST", `/api/clients/${id}/photos/view`),
+  /** One photograph, within the opening already logged. */
   clientPhoto: (id: string, photoId: string) => image(`/api/clients/${id}/photos/${photoId}`),
   clientConsents: (id: string) => call<Consents>("GET", `/api/clients/${id}/consents`),
   /** The client's pieces. The route reads FSM afresh first, since FSM is the record. */
@@ -189,9 +205,12 @@ export const api = {
   noShows: () => call<{ cases: NoShowCase[] }>("GET", "/api/no-shows?decision=undecided"),
   /** Today's money, as board D1 heads it. The route takes a date; the board draws no way of asking for another. */
   dayMoney: () => call<DayMoney>("GET", "/api/payments"),
-  /** Charge the visit or waive it. Neither takes money: the charge follows the 24-hour policy at P2-M5. */
-  decideNoShow: (id: string, decision: "charged" | "waived") =>
-    call<{ decided: boolean }>("POST", `/api/no-shows/${id}/decision`, { decision }),
+  /**
+   * Charge the visit or waive it, with the reason either way. Neither takes
+   * money: the charge follows the 24-hour policy at P2-M5.
+   */
+  decideNoShow: (id: string, decision: "charged" | "waived", reason: string) =>
+    call<{ decided: boolean }>("POST", `/api/no-shows/${id}/decision`, { decision, reason }),
   /** The grievances nobody has answered yet, oldest first. */
   grievances: () => call<{ grievances: Grievance[] }>("GET", "/api/grievances"),
   /** Ops' answer, which closes the grievance. Nothing sends it to the client; ops do that themselves. */

@@ -57,6 +57,9 @@
   --ops-zone: 96px; /* and the zone beside it */
   --ops-jobs: 64px; /* the jobs he has finished, right aligned as every column of figures is */
   --ops-service: 88px; /* and how they ran against the length they were planned for */
+  --ops-waitlist-count: 54px; /* the waitlist's three narrower columns of figures, count, Ref and Alerts (board C3) */
+  --ops-waitlist-ref: 60px;
+  --ops-waitlist-alerts: 62px;
 
   /* The technician app's targets (design/phase2/Technician App.dc.html, "Targets" and "Gloved use"). */
   --tech-primary: 64px; /* the one primary action, bottom of every screen, and the fields beside it */

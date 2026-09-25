@@ -1,19 +1,22 @@
 // Number changes: the changes waiting for ops to confirm, both numbers already
 // proven by code (docs/decisions/0042-client-profile.md). The API is answered
 // from e2e/ops/fixtures.ts, since a change is started in a client's own app and
-// needs a code sent to each number.
+// needs a code sent to each number. The clock is fixed to the day the
+// fixture's dates are read against, so the days left mean the same on every run.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, NUMBER_CHANGES } from "./fixtures.ts";
+import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-const DECISION = `/api/number-changes/${NUMBER_CHANGES.changes[0]?.id ?? ""}/decision`;
+const CHANGE = NUMBER_CHANGES.changes[0]?.id ?? "";
+const DECISION = `/api/number-changes/${CHANGE}/decision`;
 
-async function open(page: Page, decision = json({ state: "confirmed" })): Promise<void> {
+async function open(page: Page, decision = json({ state: "confirmed" }), path = "/number-changes"): Promise<void> {
+  await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "/api/number-changes": json(NUMBER_CHANGES), [DECISION]: decision });
-  await page.goto("/number-changes");
+  await page.goto(path);
   await expect(page.getByRole("heading", { level: 1, name: "Number changes" })).toBeVisible();
 }
 
@@ -26,6 +29,12 @@ test("shows both numbers, the day it was asked for, and that each was proven", a
   await expect(only).toContainText("+919810004417 → +919810004421");
   await expect(only).toContainText("Requested 21 Sep 2027");
   await expect(only).toContainText("A code went to both numbers, and both were entered.");
+});
+
+// A number change once showed no age at all (OPS-08); it falls due when the Tasks board says it does.
+test("says how long the change has left, as the Tasks board counts it", async ({ page }) => {
+  await open(page);
+  await expect(queue(page).getByRole("listitem")).toContainText("1 day left");
 });
 
 test("says what confirming does before it is confirmed", async ({ page }) => {
@@ -65,6 +74,24 @@ test("leaves the change waiting when the rejection is called off", async ({ page
   await page.getByRole("button", { name: "Reject", exact: true }).click();
   await page.getByRole("button", { name: "Leave it waiting" }).click();
   await expect(page.getByRole("button", { name: "Confirm the change" })).toBeVisible();
+  // The keyboard goes back to the button that asked, not to the top of the page.
+  await expect(page.getByRole("button", { name: "Reject", exact: true })).toBeFocused();
+});
+
+test("moves the keyboard into the reason as it opens, and to the heading once decided", async ({ page }) => {
+  await open(page, json({ state: "rejected" }));
+  await page.getByRole("button", { name: "Reject", exact: true }).click();
+  const reason = page.getByRole("textbox", { name: "Why you are rejecting it" });
+  await expect(reason).toBeFocused();
+  await reason.fill("The client says they did not ask.");
+  await page.getByRole("button", { name: "Reject the change" }).click();
+  await expect(page.getByRole("heading", { name: "Waiting for ops" })).toBeFocused();
+});
+
+// The Tasks board links a number change to its row here (OPS-05).
+test("brings the change a task named into view, and gives it the keyboard", async ({ page }) => {
+  await open(page, undefined, `/number-changes#change-${CHANGE}`);
+  await expect(queue(page).getByRole("listitem")).toBeFocused();
 });
 
 // The API answers with the code alone, so the console says whose number it is.

@@ -25,8 +25,8 @@ type Launching = {
 
 const areaName = (area: Area) => area.area ?? area.city ?? waitlist.unknown;
 
-/** Each column head, aligned with the cells under it, in waitlist.columns' order. */
-const HEADS = [styles.text, styles.text, styles.figure, styles.date, styles.figure, styles.figure];
+/** Each column, head and cells alike, at the board's own width, in waitlist.columns' order. */
+const COLUMNS = [styles.pincode, styles.area, styles.count, styles.oldest, styles.referred, styles.alerts];
 
 function LaunchPanel({
   launching,
@@ -110,12 +110,12 @@ function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; o
         {areaName(area)}
         {area.served && <span className={styles.live}>{waitlist.live}</span>}
       </td>
-      <td className={styles.figure}>{area.waiting}</td>
-      <td className={styles.date}>
+      <td className={styles.count}>{area.waiting}</td>
+      <td className={styles.oldest}>
         {area.oldest === null ? waitlist.unknown : listDate(indiaDate(area.oldest), thisYear)}
       </td>
-      <td className={styles.quietFigure}>{area.referred}</td>
-      <td className={styles.quietFigure}>{area.alerts}</td>
+      <td className={styles.referred}>{area.referred}</td>
+      <td className={styles.alerts}>{area.alerts}</td>
     </tr>
   );
 }
@@ -167,7 +167,7 @@ export function WaitlistScreen() {
               <thead>
                 <tr>
                   {waitlist.columns.map((column, index) => (
-                    <th key={column} scope="col" className={HEADS[index] ?? styles.figure}>
+                    <th key={column} scope="col" className={COLUMNS[index]}>
                       {column}
                     </th>
                   ))}
@@ -179,6 +179,7 @@ export function WaitlistScreen() {
                 ))}
               </tbody>
             </table>
+            {loaded.value.more && <p className={styles.more}>{waitlist.more}</p>}
           </section>
         )}
         {launching !== null && (

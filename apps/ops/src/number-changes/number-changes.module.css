@@ -52,9 +52,21 @@
   list-style: none;
 }
 
-.change {
+.change,
+.targeted {
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* The change a task on the Tasks board led here, marked as the board marks a selection. */
+.targeted {
+  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
+}
+
+.change:focus-visible,
+.targeted:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
 }
 
 .head {
@@ -77,10 +89,9 @@
 }
 
 .when {
-  flex-shrink: 0;
+  margin: var(--sp-3) 0 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
-  white-space: nowrap;
 }
 
 /* The one line ops read digit by digit, so it is set in figures of one width. */

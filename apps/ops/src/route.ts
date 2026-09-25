@@ -4,8 +4,10 @@
 //   /dispatch               the week's board (A1), its drawer (A3) and its move (A2)
 //   /referrals              the review queue (C1) over the referrers' figures (C2)
 //   /waitlist               who is waiting, and marking a pincode live (C3)
-//   /clients                finding one client by their mobile number
+//   /clients                finding a client by part of their name or number
+//   /clients/:id/visits     their address, and their visits to come and done
 //   /clients/:id/pieces     the pieces they have been fitted with (B1)
+//   /clients/:id/payments   what they have paid and had back, and their credits
 //   /clients/:id/photos     that client's photographs (B2), locked until the view is logged
 //   /clients/:id/consents   what they have agreed to (B3)
 //   /clients/:id/history    how often they have been served, and what they have bought
@@ -26,11 +28,13 @@ import { useEffect, useState } from "react";
 
 /**
  * The tabs of the design's eight that a client's page carries, in its order,
- * and History last: the board draws no such tab, so it stands after the three
- * it does draw (docs/fidelity-method.md).
+ * and History last: the board draws no such tab, so it stands after the ones
+ * it does draw (docs/fidelity-method.md). The page opens on Pieces, as the
+ * board draws it.
  */
-export const CLIENT_TABS = ["pieces", "consents", "photos", "history"] as const;
+export const CLIENT_TABS = ["visits", "pieces", "payments", "consents", "photos", "history"] as const;
 export type ClientTab = (typeof CLIENT_TABS)[number];
+const OPENING_TAB: ClientTab = "pieces";
 
 /** What Settings holds, in the order the section lists it. */
 export const SETTINGS_TABS = ["rules", "prices", "area"] as const;
@@ -50,11 +54,11 @@ export type Route =
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
 const DISPATCH: Route = { page: "dispatch" };
-const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(pieces|photos|consents|history))?$/;
+const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|photos|consents|history))?$/;
 const SETTINGS_PATH = /^\/settings(?:\/(prices|area))?$/;
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
-const tabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? CLIENT_TABS[0];
+const tabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? OPENING_TAB;
 
 export function routeOf(path: string): Route {
   if (path === "/referrals") return { page: "referrals" };

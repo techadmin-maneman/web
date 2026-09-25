@@ -52,9 +52,21 @@
   list-style: none;
 }
 
-.grievance {
+.grievance,
+.targeted {
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* The grievance a task on the Tasks board led here, marked as the board marks a selection. */
+.targeted {
+  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
+}
+
+.grievance:focus-visible,
+.targeted:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
 }
 
 .head {
@@ -74,18 +86,6 @@
 .name:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--sp-2);
-}
-
-.left {
-  flex-shrink: 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-/* Past the day the app promised an answer by, in oxblood, as board D2 marks one. */
-.late {
-  color: var(--error-on-paper);
 }
 
 .who {
