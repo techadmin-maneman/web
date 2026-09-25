@@ -22,7 +22,7 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmInvoice, FsmProvider } from "../providers/fsm.ts";
-import { ZohoError } from "../providers/zoho-http.ts";
+import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 
 /** How many a pass bills at most. */
@@ -44,10 +44,6 @@ export interface InvoiceDeps {
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;
 }
-
-/** FSM refuses it: a 4xx, which asking again at once will not change. */
-const refused = (error: unknown): error is ZohoError =>
-  error instanceof ZohoError && error.status >= 400 && error.status < 500;
 
 /** A draft is not a valid tax invoice, and a voided one is no longer one; anything else has been issued. */
 const isIssued = (status: string) => status !== "draft" && status !== "void";
@@ -164,7 +160,7 @@ async function tellDraft(pass: Pass, visit: Visit, invoice: FsmInvoice, why: "dr
 /** Logs it, and tells ops of a refusal at once and of any other failure on its third time. */
 async function tellFailure(pass: Pass, visit: Visit, error: unknown): Promise<void> {
   const workOrder = `visit ${visit.id} (work order ${visit.fsm_work_order_id})`;
-  if (refused(error)) {
+  if (isRefusal(error)) {
     pass.log.warn("invoice_refused", { appointment_id: visit.id, status: error.status, code: error.code });
     await pass.deps.alertOnce({
       key: `invoice_refused:${visit.id}`,

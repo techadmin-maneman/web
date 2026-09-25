@@ -5,6 +5,7 @@
 // per call would soon be refused.
 
 import type { Logger } from "../log.ts";
+import { ProviderError } from "./provider-error.ts";
 
 /**
  * No one waits on these calls; queue consumers make them. On staging a token
@@ -16,15 +17,11 @@ const TIMEOUT_MS = 20_000;
 const TOKEN_MARGIN_MS = 60_000;
 
 /** A failed Zoho call. The message never includes record data. */
-export class ZohoError extends Error {
+export class ZohoError extends ProviderError {
   override readonly name = "ZohoError";
-  readonly status: number;
-  readonly code: string;
 
   constructor(status: number, code: string, message: string) {
-    super(`Zoho ${String(status)} ${code}: ${message}`);
-    this.status = status;
-    this.code = code;
+    super(status, code, `Zoho ${String(status)} ${code}: ${message}`);
   }
 }
 

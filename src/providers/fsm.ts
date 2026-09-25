@@ -9,6 +9,7 @@ import type { ZohoFsmSettings } from "../config/settings.ts";
 import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { createZohoFsm } from "./fsm-zoho.ts";
+import { ProviderError } from "./provider-error.ts";
 
 /** An appointment as FSM holds it, in our words. Times are ISO 8601 with India's offset. */
 export interface FsmAppointment {
@@ -365,6 +366,8 @@ export interface StubFsm extends FsmProvider {
   };
   /** Makes the next call of this kind throw, so a test can prove the retry. */
   failNext(step: StubFsmStep, message?: string): void;
+  /** Makes the next call of this kind refused, as FSM refuses: a 4xx with its own code. */
+  refuseNext(step: StubFsmStep, code?: string): void;
   /**
    * Makes the next call of this kind take effect and then throw, as a call does
    * whose answer never reaches us: FSM has the record, and we do not know it.
@@ -410,13 +413,13 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     appointmentUpdates: [] as { appointmentId: string; fields: Record<string, string> }[],
     attached: [] as { appointmentId: string; name: string; contentType: string; bytes: number }[],
   };
-  const failures = new Map<StubFsmStep, string>();
+  const failures = new Map<StubFsmStep, Error>();
   /** Throws once if the test asked this step to fail; a retry then succeeds. */
   function checkFailure(step: StubFsmStep): void {
-    const message = failures.get(step);
-    if (message === undefined) return;
+    const failure = failures.get(step);
+    if (failure === undefined) return;
     failures.delete(step);
-    throw new Error(message);
+    throw failure;
   }
 
   const lostAnswers = new Set<StubFsmCreate>();
@@ -452,7 +455,10 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   return {
     made,
     failNext: (step, message = `the stub FSM refused ${step}`) => {
-      failures.set(step, message);
+      failures.set(step, new Error(message));
+    },
+    refuseNext: (step, code = "INVALID_DATA") => {
+      failures.set(step, new ProviderError(400, code, `the stub FSM refused ${step}`));
     },
     loseAnswer: (step) => {
       lostAnswers.add(step);

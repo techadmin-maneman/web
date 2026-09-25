@@ -24,7 +24,7 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import { ZohoError } from "../providers/zoho-http.ts";
+import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 
 /** How many of each a pass handles at most. */
@@ -48,10 +48,6 @@ export interface BooksSyncDeps {
 }
 
 export type BooksSyncSummary = { recorded: number; applied: number; refunded: number };
-
-/** Books refuses it: a 4xx, which asking again at once will not change. */
-const refused = (error: unknown): error is ZohoError =>
-  error instanceof ZohoError && error.status >= 400 && error.status < 500;
 
 const describe = (error: unknown): string =>
   scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 200);
@@ -228,7 +224,7 @@ async function applyPayment(pass: Pass, payment: PaymentToApply): Promise<boolea
   } catch (error) {
     await tellFailure(pass, failed, error);
     // A refusal is not asked again, and ops set it by hand; anything else is, in an hour.
-    if (refused(error)) await markApplied(pass, payment.id);
+    if (isRefusal(error)) await markApplied(pass, payment.id);
     else await checkPaymentLater(pass, payment.id);
     return false;
   }
@@ -362,7 +358,7 @@ interface FailedRecord {
 async function tellFailure(pass: Pass, record: FailedRecord, error: unknown): Promise<void> {
   const idField = `${record.kind === "refund" ? "refund" : "payment"}_id`;
   const link = `/clients/${record.personId}`;
-  if (refused(error)) {
+  if (isRefusal(error)) {
     pass.log.warn(`books_${record.kind}_refused`, { [idField]: record.id, status: error.status, code: error.code });
     await pass.deps.alertOnce({
       key: `books_${record.kind}_refused:${record.id}`,
