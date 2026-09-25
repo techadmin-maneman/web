@@ -20,6 +20,7 @@ The public site (`mm-site`) is built, edited and published as `docs/frontend.md`
 | ------------------------------------------- | -------------------------------------------------- | ----------------------------------------------- |
 | 1. D1 database, queues                      | done                                               | done                                            |
 | 1. R2 buckets, 30-day expiry                | done                                               | done                                            |
+| 1. R2 buckets: photographs, referral cards  | done                                               | not yet: before the next release (below)        |
 | 2. DNS record                               | done                                               | exists (the apex record)                        |
 | 3. Access application and service token     | done                                               | not applicable                                  |
 | 4. Migrations and identity mark             | done                                               | done                                            |
@@ -58,6 +59,19 @@ for bucket in mm-<t>-tryon-uploads mm-<t>-tryon-results; do
   W r2 bucket create $bucket --location apac
   W r2 bucket lifecycle add $bucket expire-after-30-days --expire-days 30 --abort-multipart-days 1 --force
 done
+```
+
+Phase 2's two buckets get no rule: a client's photograph is deleted only on purpose, and a referral card when its referrer or a revoke takes it down. `wrangler.jsonc` binds both in every environment, so a release fails at its first step, before any migration, until they exist.
+
+```sh
+W r2 bucket create mm-<t>-client-photos --location apac
+W r2 bucket create mm-<t>-referral-cards --location apac
+```
+
+Then check every bucket the Workers bind: that it exists, that the try-on ones expire everything within 30 days, and that no other expires anything. CI's tokens may not read R2 (step 6), so this takes a token of your own that can (Account → Workers R2 Storage → Read), as `CLOUDFLARE_API_TOKEN` in a git-ignored `.env.cf-read`:
+
+```sh
+node --env-file=.env.cf-read scripts/check-buckets.ts <env> --strict
 ```
 
 ### 2. DNS
@@ -113,8 +127,9 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 
 - Name `mm-ci-<env>`.
 - Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>`, `mm-ops-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
-- Account → **D1 → Edit**. This is account-wide, so the staging token can also reach production's database; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
-- No zone permissions.
+- Account → **D1 → Edit**. This is account-wide, so the staging token can also read and write production's database, and production's staging's; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
+- Optional, production's token: Account → **Account Analytics → Read**. With it, the canary's soak judges the new version on real visitors' errors as well as the smoke's (`docs/decisions/0006-deployment-pipeline.md`); without it the soak says so and the smoke checks stand alone.
+- No zone permissions, and nothing on R2 or Queues: a token that reads a bucket's settings can read the photographs in it.
 
 Put each environment's secrets in a file at the repository root. Git ignores `.env.*` files.
 
@@ -253,13 +268,17 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
 ### 9. Triggers
 
-CI deploys code but cannot attach cron schedules, queue consumers or routes (`docs/decisions/0010-applying-triggers.md`). After the code that handles them is live:
+CI deploys code but cannot attach cron schedules, queue consumers or routes (`docs/decisions/0010-applying-triggers.md`). After the code that handles them is live, attach every Worker's:
 
 ```sh
 npm run apply-triggers -- --env <env>
 ```
 
-`deploy-staging` prints a warning when a merge changed the staging triggers.
+After every deploy, both workflows compare the live cron schedules and queue consumers with every Worker's config, and warn on a difference. CI's token cannot read the queues, so its consumers read "not compared"; check them, and confirm an `apply-triggers`, with a token of your own that can read Workers and Queues:
+
+```sh
+node --env-file=.env.cf-read scripts/check-triggers.ts <env> --strict
+```
 
 ### 10. Result links through Access (staging only)
 
@@ -298,7 +317,7 @@ To switch one on:
    The config check fails if either comes without the other.
 
 5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
-6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md), the ops console is `mm-ops`, and the technician app is `mm-tech` (docs/decisions/0053-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then its deploy step says so and does nothing, so a release does not fail on a Worker that does not exist.
+6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md), the ops console is `mm-ops`, and the technician app is `mm-tech` (docs/decisions/0053-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then a production release passes over it, as long as its surface is not switched on there. A Worker that must be there and is not — mm-api, mm-site, or an app whose host is live — fails the deploy, and so does any answer from Cloudflare other than "it does not exist".
 
    ```sh
    npm run build:app -- --env <env>
@@ -363,10 +382,10 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 
    Set the secrets before deploying with the providers switched on: the guard refuses a Worker without them.
 
-5. **The bucket and the queue.** Create both once, before the first deploy that uses them. The photographs bucket gets no lifecycle rule: a client's photograph is only deleted on purpose.
+5. **The bucket and the queue.** Create both once, before the first deploy that uses them. The photographs bucket (step 1) gets no lifecycle rule: a client's photograph is only deleted on purpose.
 
    ```sh
-   W r2 bucket create mm-<t>-client-photos
+   W r2 bucket create mm-<t>-client-photos --location apac
    ```
 
    Then attach the queue's consumer after that deploy (step 9):
@@ -537,7 +556,7 @@ GitHub Actions jobs run on the owner's machine, in containers (docs/decisions/00
 
 - **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
-- **Move the jobs back to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They are then within GitHub's free minutes, which a run spends about twice as fast as it used to: GitHub bills each of the seven jobs a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs").
+- **Move the jobs back to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They are then within GitHub's free minutes, which a run spends about twice as fast as it used to: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). A merge whose files already passed CI as a pull request does not run it again before its staging deploy.
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
 
 ## Staying on the free tier
@@ -815,7 +834,7 @@ The restore prints a bookmark for the state it replaced, so the restore itself c
 
 ## Rolling back a Worker version
 
-A production release rolls itself back when a smoke check fails. To roll back by hand:
+A production release rolls itself back when a smoke check or the soak fails: every Worker goes back to the version it served before the release, whichever step failed. To roll back by hand:
 
 ```sh
 node scripts/release.ts current --worker mm-api --env production    # what is serving now
@@ -824,6 +843,6 @@ node scripts/release.ts deploy --worker mm-api --env production --split <good-ve
 npm run smoke -- --base https://maneman.in --environment production --version-id <good-version-id>
 ```
 
-Use `--worker mm-site` for the site. Rolling back code never rolls back D1: every migration works with the previous code (`docs/decisions/0006-deployment-pipeline.md`), so the previous version runs on the migrated schema.
+Use `--worker mm-site`, `mm-app`, `mm-ops` or `mm-tech` for the others, or put several back at once, each only if it no longer serves that version: `node scripts/release.ts restore --env production --to mm-api=<id> --to mm-app=<id>`. Rolling back code never rolls back D1: every migration works with the previous code (`docs/decisions/0006-deployment-pipeline.md`), so the previous version runs on the migrated schema.
 
 If a release stopped halfway through a rollout, `release.ts current` refuses to answer and prints the split. Deploy the good version at 100% as above.

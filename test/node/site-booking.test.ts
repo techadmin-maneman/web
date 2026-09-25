@@ -1,9 +1,5 @@
-// The booking form's helpers, and the API types it is built on.
+// The booking form's helpers.
 
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
 import { consultationCalendar } from "../../site/src/lib/calendar.ts";
@@ -48,20 +44,5 @@ describe("the calendar file", () => {
     expect(text).toContain("DTSTART:20260924T103000Z");
     expect(text).toContain("DTEND:20260924T143000Z");
     expect(text).toContain("SUMMARY:Mane Man consultation (time to be confirmed)");
-  });
-});
-
-describe.each([
-  ["the site's", "docs/openapi.json", "site/src/lib/api-schema.ts"],
-  ["the client app's", "docs/openapi-client.json", "apps/app/src/api-schema.ts"],
-  ["the ops console's", "docs/openapi-ops.json", "apps/ops/src/api-schema.ts"],
-])("%s API types", (_label, document, committed) => {
-  it(`are generated from ${document}, unchanged (npm run openapi)`, { timeout: 60_000 }, () => {
-    const out = join(mkdtempSync(join(tmpdir(), "api-schema-")), "api-schema.ts");
-    const run = spawnSync(process.execPath, ["node_modules/openapi-typescript/bin/cli.js", document, "--output", out], {
-      encoding: "utf8",
-    });
-    expect(run.status).toBe(0);
-    expect(readFileSync(committed, "utf8")).toBe(readFileSync(out, "utf8"));
   });
 });

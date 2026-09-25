@@ -44,6 +44,8 @@ To publish one:
 
 Never edit `design-placeholders.ts` to let a build through.
 
+The referral landing's copy (`referral.ts`) is Phase 2's, and marks a line still waiting for the owner's wording with a `PLACEHOLDER` comment, as the apps' `content.ts` files do. A production build of the site, or of an app, names each marked line and stops (`scripts/lib/content-gate.ts`). Staging builds them as they are (ADR 0025, item 27).
+
 ## Approving a notice
 
 The three consent notices (booking, photo, gate) are the backend's, in `src/config/notices.ts`. The page shows that text, and a consent row records its version.

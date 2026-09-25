@@ -5,11 +5,19 @@
   "timezone": "Asia/Kolkata",
   "schedule": ["before 9am on monday"],
   "labels": ["dependencies"],
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
   "packageRules": [
     {
-      "description": "wrangler, workerd and the Workers test pool move together.",
+      "description": "wrangler, workerd and the Workers test pool move together, and the pool pins vitest's major.",
       "groupName": "cloudflare tooling",
-      "matchPackageNames": ["wrangler", "@cloudflare/vitest-pool-workers", "@cloudflare/workers-types"]
+      "matchPackageNames": [
+        "wrangler",
+        "@cloudflare/vitest-pool-workers",
+        "@cloudflare/workers-types",
+        "vitest",
+        "@vitest/coverage-istanbul"
+      ]
     },
     {
       "description": "typescript-eslint caps TypeScript; update them together.",
@@ -17,9 +25,37 @@
       "matchPackageNames": ["typescript", "typescript-eslint", "@eslint/js", "eslint"]
     },
     {
-      "description": "The Workers test pool pins vitest's major.",
-      "groupName": "vitest",
-      "matchPackageNames": ["vitest", "@vitest/coverage-istanbul"]
+      "description": "The design's own libraries at the root stay at the versions the design loads (docs/fidelity-method.md); the apps have their own React.",
+      "matchFileNames": ["package.json"],
+      "matchPackageNames": ["react", "react-dom", "@babel/standalone"],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "The actionlint image in ci.yml, pinned by version and digest.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.yml$/"],
+      "matchStrings": ["(?<depName>rhysd/actionlint):(?<currentValue>[0-9.]+)@(?<currentDigest>sha256:[a-f0-9]{64})"],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "GitHub's runner agent in the runner image (ops/runner/Dockerfile). The SHA-256 beside it is updated by hand from the release.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^ops/runner/Dockerfile$/"],
+      "matchStrings": ["ARG RUNNER_VERSION=(?<currentValue>[0-9.]+)"],
+      "depNameTemplate": "actions/runner",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "description": "actionlint in the runner image (ops/runner/Dockerfile). The SHA-256 beside it is updated by hand from the release.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^ops/runner/Dockerfile$/"],
+      "matchStrings": ["ARG ACTIONLINT_VERSION=(?<currentValue>[0-9.]+)"],
+      "depNameTemplate": "rhysd/actionlint",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ],
   "vulnerabilityAlerts": { "labels": ["security"], "schedule": ["at any time"] }

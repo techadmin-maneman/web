@@ -1,11 +1,13 @@
 # Production release, started by hand for a commit on main that passed staging.
 #
-#   migrate -> upload the new mm-api version -> send it 10% of traffic -> smoke it
-#   -> wait -> smoke it again -> 100% -> smoke -> deploy mm-site, mm-app, mm-ops and mm-tech -> smoke
+#   record what serves -> check the database -> upload the new mm-api version -> migrate
+#   -> send it 10% of traffic -> smoke it -> soak, watching its errors -> smoke it again -> 100% -> smoke
+#   -> deploy mm-site, mm-app, mm-ops and mm-tech -> smoke every host
 #
-# If anything fails after traffic starts moving, every Worker deployed goes back
-# to the version that was serving before. Migrations are not rolled back; every
-# migration works with the previous code (docs/decisions/0006-deployment-pipeline.md).
+# If anything fails after traffic starts moving, every Worker goes back to the
+# version that was serving before, whatever its own deploy step did. Migrations
+# are not rolled back; every migration works with the previous code
+# (docs/decisions/0006-deployment-pipeline.md).
 #
 # Runs in the GitHub Environment "production". Required reviewers get added
 # there when the GitHub plan allows it (docs/decisions/0007-platform-constraints.md).
@@ -86,6 +88,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.sha }}
+          persist-credentials: false
       - uses: ./.github/actions/setup
 
       - name: Check the inputs and setup
@@ -104,19 +107,16 @@ jobs:
           fi
           npm run check:config -- --require-provisioned
 
+      # "" only for an app not yet deployed in production (docs/runbook.md, step 11). Anything else Cloudflare
+      # cannot answer, and a Worker that must be there and is not, stops the release here.
       - name: Record the versions serving now
         id: before
         run: |
           api=$(node scripts/release.ts current --worker mm-api --env production)
           site=$(node scripts/release.ts current --worker mm-site --env production)
-          # Empty until mm-app, mm-ops and mm-tech are bootstrapped in production (docs/runbook.md, step 11).
-          app=$(node scripts/release.ts current --worker mm-app --env production || true)
-          ops=$(node scripts/release.ts current --worker mm-ops --env production || true)
-          tech=$(node scripts/release.ts current --worker mm-tech --env production || true)
-          if [ -z "$api" ] || [ -z "$site" ]; then
-            echo "::error::Production has never been deployed, so there is nothing to roll back to. Bootstrap it first (docs/runbook.md)."
-            exit 1
-          fi
+          app=$(node scripts/release.ts current --worker mm-app --env production)
+          ops=$(node scripts/release.ts current --worker mm-ops --env production)
+          tech=$(node scripts/release.ts current --worker mm-tech --env production)
           {
             echo "api=$api"
             echo "site=$site"
@@ -124,6 +124,17 @@ jobs:
             echo "ops=$ops"
             echo "tech=$tech"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Check the database is production's, before anything touches it
+        run: node scripts/mark-database.ts production --check
+
+      # An upload sends no traffic, and fails on a binding whose bucket, queue or database is missing:
+      # so a missing resource stops the release here, before any migration runs.
+      - name: Upload the new mm-api version (no traffic yet)
+        id: api
+        run: |
+          version=$(node scripts/release.ts upload --worker mm-api --env production --tag "$SHA")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Migrate the production database
         run: |
@@ -134,12 +145,8 @@ jobs:
           done
           exit 1
 
-      - name: Check the database is production's
+      - name: Mark the database as production's
         run: node scripts/mark-database.ts production
-
-      - name: Upload the new mm-api version (no traffic yet)
-        id: api
-        run: echo "version=$(node scripts/release.ts upload --worker mm-api --env production --tag "$SHA")" >> "$GITHUB_OUTPUT"
 
       - name: Send the new version ${{ inputs.canary_percent }}% of traffic
         id: canary
@@ -156,8 +163,12 @@ jobs:
           --override "mm-api-production=${{ steps.api.outputs.version }}"
           --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
-      - name: Let it serve for a while
-        run: sleep "$SOAK"
+      # Real visitors' requests, not only the smoke's: the soak fails if the new version's invocations error
+      # much more than the old one's, where the token can read Workers analytics (scripts/lib/soak.ts).
+      - name: Let it serve for a while, watching its errors
+        run: >-
+          node scripts/soak.ts --worker mm-api --env production --seconds "$SOAK"
+          --new "${{ steps.api.outputs.version }}" --old "${{ steps.before.outputs.api }}"
 
       - name: Smoke the new version again
         run: >-
@@ -176,83 +187,58 @@ jobs:
           --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
       - name: Deploy mm-site
-        id: site
-        run: |
-          version=$(node scripts/release.ts upload --worker mm-site --env production --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-site --env production --split "$version@100" --message "release $SHA"
+        run: node scripts/release.ts ship --worker mm-site --env production --tag "$SHA" --message "release $SHA"
 
-      # mm-app has no route in production until the client surface is switched on there (docs/decisions/0043).
-      # Its first deploy is a bootstrap (docs/runbook.md, step 5); until then this step does nothing.
+      # mm-app, mm-ops and mm-tech have no route in production until their surface is switched on there
+      # (docs/decisions/0026), and their first deploy is a bootstrap (docs/runbook.md, step 11). Until then
+      # there is nothing to build or deploy; the production build refuses their placeholder copy anyway.
       - name: Deploy mm-app
-        id: app
+        if: steps.before.outputs.app != ''
         run: |
-          if [ -z "${{ steps.before.outputs.app }}" ]; then
-            echo "::notice::mm-app-production is not bootstrapped yet, so it is not deployed."
-            exit 0
-          fi
           npm run build:app -- --env production
-          version=$(node scripts/release.ts upload --worker mm-app --env production --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-app --env production --split "$version@100" --message "release $SHA"
+          node scripts/release.ts ship --worker mm-app --env production --tag "$SHA" --message "release $SHA"
 
-      # mm-ops has no route in production until the ops surface is switched on there (docs/decisions/0026).
-      # Its first deploy is a bootstrap (docs/runbook.md, step 5); until then this step does nothing.
       - name: Deploy mm-ops
-        id: ops
+        if: steps.before.outputs.ops != ''
         run: |
-          if [ -z "${{ steps.before.outputs.ops }}" ]; then
-            echo "::notice::mm-ops-production is not bootstrapped yet, so it is not deployed."
-            exit 0
-          fi
           npm run build:ops -- --env production
-          version=$(node scripts/release.ts upload --worker mm-ops --env production --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-ops --env production --split "$version@100" --message "release $SHA"
+          node scripts/release.ts ship --worker mm-ops --env production --tag "$SHA" --message "release $SHA"
 
-      # mm-tech has no route in production until the technician surface is switched on there
-      # (docs/decisions/0026). Its first deploy is a bootstrap (docs/runbook.md, step 5); until
-      # then this step does nothing.
       - name: Deploy mm-tech
-        id: tech
+        if: steps.before.outputs.tech != ''
         run: |
-          if [ -z "${{ steps.before.outputs.tech }}" ]; then
-            echo "::notice::mm-tech-production is not bootstrapped yet, so it is not deployed."
-            exit 0
-          fi
           npm run build:tech -- --env production
-          version=$(node scripts/release.ts upload --worker mm-tech --env production --tag "$SHA")
-          node scripts/release.ts deploy --worker mm-tech --env production --split "$version@100" --message "release $SHA"
+          node scripts/release.ts ship --worker mm-tech --env production --tag "$SHA" --message "release $SHA"
 
       - name: Final smoke
         run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"
 
-      # Nothing until a Phase 2 surface is switched on in production. ops.maneman.in is behind
-      # Access, so it needs the mm-ci-production service token (runbook, step 3).
+      # Nothing until a Phase 2 surface is switched on in production. Then mm-api on its host, and the app
+      # the host serves at /, built from this commit. ops.maneman.in is behind Access, so it needs the
+      # mm-ci-production service token (runbook, step 3).
       - name: Smoke the Phase 2 surfaces
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run smoke -- --environment production --surfaces --version-tag "$SHA"
 
+      # Every Worker goes back to what it served before, whichever step failed: restoring one that still
+      # serves its old version changes nothing (scripts/lib/release.ts).
       - name: Roll back
-        if: failure() && steps.canary.outcome != 'skipped' && steps.before.outputs.api != ''
+        if: failure() && steps.canary.outcome != 'skipped'
+        env:
+          API: ${{ steps.before.outputs.api }}
+          SITE: ${{ steps.before.outputs.site }}
+          APP: ${{ steps.before.outputs.app }}
+          OPS: ${{ steps.before.outputs.ops }}
+          TECH: ${{ steps.before.outputs.tech }}
         run: |
           echo "::error::Release $SHA failed. Restoring the versions that were serving before it."
-          node scripts/release.ts deploy --worker mm-api --env production \
-            --split "${{ steps.before.outputs.api }}@100" --message "rollback of $SHA"
-          if [ "${{ steps.site.outcome }}" != "skipped" ]; then
-            node scripts/release.ts deploy --worker mm-site --env production \
-              --split "${{ steps.before.outputs.site }}@100" --message "rollback of $SHA"
-          fi
-          if [ "${{ steps.app.outcome }}" == "success" ] && [ -n "${{ steps.before.outputs.app }}" ]; then
-            node scripts/release.ts deploy --worker mm-app --env production \
-              --split "${{ steps.before.outputs.app }}@100" --message "rollback of $SHA"
-          fi
-          if [ "${{ steps.ops.outcome }}" == "success" ] && [ -n "${{ steps.before.outputs.ops }}" ]; then
-            node scripts/release.ts deploy --worker mm-ops --env production \
-              --split "${{ steps.before.outputs.ops }}@100" --message "rollback of $SHA"
-          fi
-          if [ "${{ steps.tech.outcome }}" == "success" ] && [ -n "${{ steps.before.outputs.tech }}" ]; then
-            node scripts/release.ts deploy --worker mm-tech --env production \
-              --split "${{ steps.before.outputs.tech }}@100" --message "rollback of $SHA"
-          fi
-          npm run smoke -- --base https://maneman.in --environment production \
-            --version-id "${{ steps.before.outputs.api }}"
+          node scripts/release.ts restore --env production --message "rollback of $SHA" \
+            --to "mm-api=$API" --to "mm-site=$SITE" --to "mm-app=$APP" --to "mm-ops=$OPS" --to "mm-tech=$TECH"
+          npm run smoke -- --base https://maneman.in --environment production --version-id "$API"
+
+      # Read-only, and a warning at most: CI cannot apply triggers (docs/decisions/0010-applying-triggers.md).
+      - name: The cron schedules and queue consumers live match every Worker's config
+        continue-on-error: true
+        run: node scripts/check-triggers.ts production

@@ -20,11 +20,15 @@ describe("the Worker registry", () => {
     expect(config.env.production?.name).toBe(`${worker.name}-production`);
   });
 
-  it.each(WORKERS)("$name is uploaded and deployed by both deploy workflows", (worker) => {
+  it.each(WORKERS)("$name is released by both deploy workflows", (worker) => {
     for (const file of ["deploy-staging.yml", "deploy-production.yml"]) {
       const text = workflow(file);
-      expect(text, file).toContain(`release.ts upload --worker ${worker.name}`);
-      expect(text, file).toContain(`release.ts deploy --worker ${worker.name}`);
+      // `ship` uploads and sends all traffic in one; mm-api's upload and its traffic are separate steps.
+      const shipped = text.includes(`release.ts ship --worker ${worker.name} `);
+      const uploadedAndDeployed =
+        text.includes(`release.ts upload --worker ${worker.name} `) &&
+        text.includes(`release.ts deploy --worker ${worker.name} `);
+      expect(shipped || uploadedAndDeployed, file).toBe(true);
     }
   });
 

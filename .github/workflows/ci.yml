@@ -32,13 +32,16 @@ jobs:
     timeout-minutes: 5
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      migrations: ${{ steps.filter.outputs.migrations }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # the filter compares with the base branch
+          persist-credentials: false
 
-      # Nothing outside a pull request is filtered: a staging deploy runs every check.
-      - name: Anything a build, a Worker or a browser can see
+      # Nothing outside a pull request is filtered: a staging deploy runs every check but the one
+      # comparing with the base, which its pull request ran.
+      - name: Anything a build, a Worker or a browser can see, and any migration
         id: filter
         env:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
@@ -46,6 +49,7 @@ jobs:
           if [ -z "$BASE" ]; then
             echo "Not a pull request: every job runs."
             echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git diff --name-only "$BASE...HEAD" | tee changed.txt
@@ -57,6 +61,12 @@ jobs:
             echo "code=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Only documentation changed: the build, the browser tests, Lighthouse and the local smoke have nothing to do."
           fi
+          # A change to the check itself runs it too.
+          if grep -qE '^(migrations/|scripts/old-code-on-new-schema\.ts$)' changed.txt; then
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
+          fi
 
   static:
     name: static checks
@@ -66,10 +76,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # the migrations check compares with the base
+          persist-credentials: false
       - uses: ./.github/actions/setup
 
       - name: Env types match wrangler.jsonc
-        run: npm run types:check
+        run: npm run check:types
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
@@ -79,7 +90,8 @@ jobs:
           if command -v actionlint > /dev/null; then
             actionlint -color
           else
-            docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+            docker run --rm -v "$PWD:/repo" --workdir /repo \
+              rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
           fi
       - name: Format
         run: npm run format:check
@@ -115,9 +127,32 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Unit and contract tests, 85% line coverage on src/
         run: npm run test:coverage
+
+  # Migrations run before code, so the code now deployed runs on this branch's schema until the deploy, and
+  # again after a rollback: its own Worker tests must pass on these migrations (docs/decisions/0006).
+  old-code-on-new-schema:
+    name: deployed code on these migrations
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true'
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the base branch's code is read from history
+          persist-credentials: false
+      # The script needs Node alone; it installs the base's dependencies where it unpacks the base.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
+      - name: The base branch's Worker tests, on this branch's migrations
+        run: node scripts/old-code-on-new-schema.ts --base "origin/${{ github.base_ref }}"
 
   build:
     name: build
@@ -127,6 +162,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Bundle every Worker for every environment (dry run)
         run: npm run build
@@ -139,12 +176,33 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
 
       # WebKit is the engine an iPhone runs, for the technician app's tech-ios
       # project alone (playwright.config.ts). Everything else is Chromium.
+      # On GitHub's runners the browsers are cached by Playwright's version; the
+      # system libraries they need are not files a cache can keep, so they are
+      # installed either way. The machine's runners keep both on their own disk.
+      - name: Which Playwright
+        id: playwright
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Playwright's browsers, from the cache
+        id: browsers
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
       - name: Chromium and WebKit for Playwright
+        if: steps.browsers.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium webkit
+      - name: Their system libraries
+        if: steps.browsers.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium webkit
       - name: Local secrets, and every migration applied to an empty D1
         run: |
           node scripts/ensure-dev-vars.ts
@@ -160,7 +218,7 @@ jobs:
 
       # After the browser tests, and in their job: Lighthouse measures a page
       # load, so nothing this run starts should be competing for the machine.
-      - name: Lighthouse on /, /try and /book, mobile profile, against the budgets
+      - name: Lighthouse on /, /try, /book, an invite's landing and the client app, mobile profile, against the budgets
         run: npm run lighthouse
 
       - name: Traces of failed tests
@@ -187,6 +245,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
 
       - name: Local secrets, and every migration applied to an empty D1
@@ -239,7 +299,7 @@ jobs:
   # A job that was skipped had nothing it could affect, which is a pass.
   checks:
     name: checks
-    needs: [changes, static, tests, build, browser, smoke]
+    needs: [changes, static, tests, old-code-on-new-schema, build, browser, smoke]
     if: ${{ !cancelled() }}
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
@@ -250,6 +310,7 @@ jobs:
             changes ${{ needs.changes.result }}
             static ${{ needs.static.result }}
             tests ${{ needs.tests.result }}
+            old-code-on-new-schema ${{ needs.old-code-on-new-schema.result }}
             build ${{ needs.build.result }}
             browser ${{ needs.browser.result }}
             smoke ${{ needs.smoke.result }}

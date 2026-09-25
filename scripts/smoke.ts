@@ -1,10 +1,11 @@
 // npm run smoke -- --base https://staging.maneman.in --environment staging
 // npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
-// npm run smoke -- --environment staging --surfaces    every switched-on Phase 2 host (docs/decisions/0026)
+// npm run smoke -- --environment staging --surfaces    every switched-on Phase 2 host (docs/decisions/0026):
+//                                                      mm-api there, and the app the host serves at /
 //
 // Options:
 //   --version-id <id>         require /api/health to report this Worker version
-//   --version-tag <sha>       require /api/health to report this upload tag
+//   --version-tag <sha>       require /api/health, and each surface's app, to report this commit
 //   --override <worker>=<id>  pin requests to a version (Cloudflare-Workers-Version-Overrides)
 // Environment:
 //   CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET   Access service token (staging)
