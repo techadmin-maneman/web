@@ -575,6 +575,28 @@ If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RE
 
 ---
 
+## Alerts and the cron
+
+Every alert says what went wrong with IDs only, and most link to the place in the ops console to act on it. Most are kept in D1 and told once, then again when they have happened 10, 100 and 1,000 times ("Still happening, 10 times: …"), and closed when what they were about is put right. What is told, and when, is the table in `docs/decisions/0067-alerts-and-silent-failures.md`. Without `ALERT_WEBHOOK_URL` they are logged as `alert` and still kept.
+
+What is still open:
+
+```sql
+SELECT key, message, link, count, first_seen_at, last_seen_at FROM alerts WHERE resolved_at IS NULL ORDER BY last_seen_at DESC;
+```
+
+A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept charge, an FSM erasure) stay open once dealt with. Close one with `UPDATE alerts SET resolved_at = '<now, ISO>' WHERE key = '<key>' AND resolved_at IS NULL;`.
+
+**A cron job keeps failing.** The alert names the job and its last error. Where each job stands:
+
+```sql
+SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_runs > 0;
+```
+
+The other jobs run regardless. A run shares 40 outside calls between its jobs; a job that finds them spent stops and leaves the rest to the next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
+
+---
+
 ## Leads and Zoho
 
 ### Checking the lead path on staging
@@ -645,7 +667,7 @@ Symptoms: jobs fail as `render_failed`. A refused key (401 or 403), a retired en
 
 ### Credits are low
 
-The sweeper reads the balance once an hour and alerts below `AILAB_CREDIT_FLOOR`. Top up in the AILabTools dashboard. At zero, every render fails.
+The sweeper reads the balance once an hour and alerts once when it is below `AILAB_CREDIT_FLOOR`, not every hour; a top-up that lifts it over the floor closes the alert. Top up in the AILabTools dashboard. At zero, every render fails.
 
 ### A ceiling was reached
 
@@ -660,7 +682,7 @@ Alert: "its result was billed but never downloaded, and its URL has expired". Th
 
 ### WhatsApp (Evolution) is down
 
-Symptoms: messages fail with `HTTP 5xx`, `unreachable` or `Connection Closed`, and an alert names each after four attempts. A message that failed with `delivery unconfirmed` is different: the bridge did not answer within 60 s, and the message may have arrived. It is never retried automatically.
+Symptoms: messages fail with `HTTP 5xx`, `unreachable` or `Connection Closed`, and an alert names each after four attempts. Every login code goes through the bridge too, so clients and technicians cannot sign in. Two alerts say so: the cron reads the bridge's connection state every five minutes and alerts when two readings in a row find it closed, and login codes alert when three fail to send in an hour. Both close once it works again. A message that failed with `delivery unconfirmed` is different: the bridge did not answer in time (20 s for a text, 60 s for an image), and the message may have arrived. It is never retried automatically.
 
 1. Check the bridge. `GET {EVOLUTION_API_URL}/instance/connectionState/{instance}` with the `apikey` header should say `"state": "open"`.
 2. If the WhatsApp session dropped, reconnect it in the bridge (scan the QR code again).
@@ -727,6 +749,8 @@ Check FSM as you check Zoho:
 ```sql
 SELECT erased_at, fsm_erased_at, fsm_erasure_attempts FROM people WHERE id = '<person_id>';
 ```
+
+After 10 failed attempts the sweeper stops asking, ops are alerted with the FSM contact's ID, and the console's Tasks board lists it under "Erasure left in FSM". Anonymise the contact in FSM by hand (name, mobile, phone, e-mail and street blanked, last name "Erased"), then run `UPDATE people SET fsm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`, and the task leaves the board.
 
 A request waiting 5 days alerts ops: process it before its 7 days run out. The console counts the days left against each request. Invoices stay in Books for 8 years, by law.
 

@@ -1,6 +1,6 @@
 # 0011. The lead API
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0067: Turnstile refusing our own secret, or failing itself, answers `503 unavailable`, and an outage is logged and alerted.
 - Date: 2026-09-21
 
 ## Context
