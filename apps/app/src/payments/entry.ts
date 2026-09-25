@@ -49,6 +49,41 @@ export function entryStatus(entry: Entry, withSpeed = false): string {
   return withSpeed && speed !== undefined ? `${status} · ${speed}` : status;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Days from one India date (YYYY-MM-DD) to another. */
+const daysFrom = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS);
+
+/** Razorpay's normal refund is 5 to 7 working days: ten days take in any weekend and holiday among them. */
+const REFUND_DAYS = 10;
+
+/** A refund still processing after its working days, which the client should hear is late. */
+export function refundIsLate(entry: Entry, today: string): boolean {
+  return entry.kind === "refund" && entry.status === "created" && daysFrom(entry.date, today) > REFUND_DAYS;
+}
+
+/**
+ * What a payment's missing invoice says, by where its visit stands (content.ts, payments.unavailable): an
+ * invoice is raised once the visit is done, is usually there within the hour, and a day on is late.
+ */
+export function missingInvoice(
+  entry: Extract<Entry, { kind: "payment" }>,
+  today: string,
+): "invoiceAfterVisit" | "invoice" | "invoiceLate" {
+  if (entry.visit === null) return "invoiceLate";
+  const since = daysFrom(entry.visit.date, today);
+  if (since < 0) return "invoiceAfterVisit";
+  return since <= 1 ? "invoice" : "invoiceLate";
+}
+
+/**
+ * A payment's documents: the visit's invoice and the receipt. A charge was kept for a visit that did not happen,
+ * and a late fee is not the visit, so neither has the visit's invoice: only the receipt.
+ */
+export function documentsOf(entry: Extract<Entry, { kind: "payment" }>): ("invoice" | "receipt")[] {
+  if (entry.charge !== null || entry.purpose === "late_fee") return ["receipt"];
+  return ["invoice", "receipt"];
+}
+
 /** What a WhatsApp asking for a document names: the reference, else the entry and its date. */
 export const entryNamed = (entry: Entry) =>
   entry.kind === "payment" && entry.reference !== null

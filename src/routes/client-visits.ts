@@ -35,6 +35,12 @@ export const VisitSummarySchema = z
     length_minutes: z.number().int(),
     type: z.union([z.enum(VISIT_TYPES), z.null()]),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
+    stage: z.union([z.enum(["booked", "in_progress", "closing"]), z.null()]).openapi({
+      description:
+        "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to " +
+        "close it. Null once FSM has closed it.",
+    }),
+    prepaid: z.boolean().openapi({ description: "Paid for ahead, or covered by a visit credit: board C1's Prepaid." }),
     technician: z.union([TechnicianSchema, z.null()]),
     place: z
       .string()
@@ -63,7 +69,11 @@ const PhotoSetSchema = z
 const VisitDetailSchema = VisitSummarySchema.extend({
   duration_minutes: z.union([z.number().int(), z.null()]).openapi({ description: "From start to finish, once done." }),
   outcome: z.union([z.enum(["done", "partial"]), z.null()]),
-  what_was_done: z.null().openapi({ description: "What the technician did, from the job sheet (P2-M4)." }),
+  what_was_done: z.union([z.array(z.string()), z.null()]).openapi({
+    description:
+      "The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was " +
+      "recorded, as for a visit closed in FSM's own screens.",
+  }),
   photos: PhotoSetSchema,
   document_id: z
     .union([z.uuid(), z.null()])

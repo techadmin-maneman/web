@@ -5,13 +5,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { checkoutOnTop, confirmedByRazorpay, fakeCheckout } from "./checkout-fakes.ts";
+import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another.
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ page }) => {
+  await noRealCheckout(page);
+});
 
 const CHECKOUT = "https://checkout.razorpay.com/v1/checkout.js";
 const REMIND = "Remind me on WhatsApp the day before";
@@ -424,6 +428,23 @@ test("lets a lapsed hold go the moment the phone sees it lapse, and picks again"
   await released;
   await expired.getByRole("button", { name: "Pick again" }).click();
   await expect(page.getByRole("dialog", { name: "Pick a date" })).toBeVisible();
+});
+
+// A payment Razorpay took in time keeps the hold (ADR 0068): when the phone sees the time end, it asks, and says
+// the payment is in rather than that the slot has gone, and lets nothing go.
+test("says the payment is in, and lets nothing go, when the time ends on a paid hold", async ({ page }) => {
+  await page.clock.install();
+  const hold = await holdAs(page, {});
+  const released = releases(page);
+  await page.route(/\/api\/holds\/[0-9a-f-]{36}$/, (route) =>
+    route.request().method() === "GET"
+      ? route.fulfill({ json: { ...hold(), state: "held", paid: true } })
+      : route.fallback(),
+  );
+  await toPayment(page);
+  await page.clock.fastForward("11:00");
+  await expect(page.getByRole("dialog", { name: "Your payment is in. We are booking your visit." })).toBeVisible();
+  expect(released).toEqual([]);
 });
 
 test("counts the hold on the API's clock, however far out the phone's is", async ({ page }) => {

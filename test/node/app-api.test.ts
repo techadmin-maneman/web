@@ -41,6 +41,27 @@ describe("a 401", () => {
   });
 });
 
+describe("the building search", () => {
+  // Each answer spends from Google's budget, so the query goes in a POST's body, never in a link (SEC-05).
+  it("asks by POST, with what was typed and the search's one token in the body", async () => {
+    const sent: { url: string; init: RequestInit | undefined }[] = [];
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
+      sent.push({ url, init });
+      return Promise.resolve(json(200, { suggestions: [], attribution: "Google Maps" }));
+    });
+    await api.addressSuggestions("Sunrise Greens", "token-1");
+    expect(sent).toEqual([
+      {
+        url: "/api/address/suggestions",
+        init: expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ q: "Sunrise Greens", session: "token-1" }),
+        }) as RequestInit,
+      },
+    ]);
+  });
+});
+
 describe("an answer that is not the API's", () => {
   it("counts as no connection rather than leaving the page loading for ever", async () => {
     // A Wi-Fi sign-in page, answering 200 with HTML in place of the API.

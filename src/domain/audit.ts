@@ -17,6 +17,7 @@ export const AUDIT_ACTIONS = [
   // The client's profile (docs/decisions/0042-client-profile.md).
   "consent.switch",
   "number_change.request",
+  "number_change.withdraw",
   "number_change.decide",
   "deletion.request",
   "deletion.decide",

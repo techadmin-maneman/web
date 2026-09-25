@@ -1,19 +1,19 @@
 // The client's own referral card (design/phase2/Referral and Waitlist, A1), composed on the phone from their
-// first fit's front photographs: the before on the left, the after on the right, one gold rule between them.
-// Same crop, same distance; no name, no words, no arrow. The photographs never leave the phone except as this
-// card, which goes to the API only when the client shares it (docs/decisions/0048-referrals.md).
+// first fit's front photographs, in a Worker (compose.worker.ts) with board A1's layout (card-layout.ts). The
+// photographs never leave the phone except as this card, which goes to the API only when the client shares it
+// (docs/decisions/0048-referrals.md).
 
 import type { PhotoTimeline } from "../api.ts";
+import type { CardColours } from "./card-layout.ts";
+import type { ComposeRequest } from "./compose.worker.ts";
 
-export const CARD_WIDTH = 1200;
-export const CARD_HEIGHT = 630;
-const RULE = 6;
-/** The brand's gold, as packages/brand/tokens.css holds it. */
-const GOLD = "#7a5b24";
-const INK = "#16233a";
+export interface FirstFitPair {
+  readonly before: string;
+  readonly after: string;
+}
 
 /** The client's first fit, with a front photograph on each side of it. */
-export function firstFitPhotos(timeline: PhotoTimeline): { before: string; after: string } | null {
+export function firstFitPhotos(timeline: PhotoTimeline): FirstFitPair | null {
   const fit = timeline.visits.find((visit) => visit.type === "first_fit");
   const front = (photos: PhotoTimeline["visits"][number]["photos"]["before"]) =>
     photos.find((photo) => photo.angle === "front")?.url ?? null;
@@ -22,49 +22,39 @@ export function firstFitPhotos(timeline: PhotoTimeline): { before: string; after
   return before === null || after === null ? null : { before, after };
 }
 
-/** One half of the card: the photograph, cropped to fill, from the top where a face is. */
-function drawHalf(context: CanvasRenderingContext2D, image: ImageBitmap, left: number, width: number): void {
-  const scale = Math.max(width / image.width, CARD_HEIGHT / image.height);
-  const drawn = { width: image.width * scale, height: image.height * scale };
-  context.save();
-  context.beginPath();
-  context.rect(left, 0, width, CARD_HEIGHT);
-  context.clip();
-  context.drawImage(image, left + (width - drawn.width) / 2, 0, drawn.width, drawn.height);
-  context.restore();
+/** The brand's colours, as the page's stylesheet holds them (packages/brand/tokens.css). */
+function cardColours(): CardColours {
+  const style = getComputedStyle(document.documentElement);
+  const token = (name: string) => style.getPropertyValue(name).trim();
+  return { ink: token("--ink"), gilt: token("--gilt"), paper: token("--paper") };
 }
 
-/** The card as a JPEG, or null where the browser cannot make one. */
-export async function composeCard(photos: { before: string; after: string }): Promise<Blob | null> {
-  const [before, after] = await Promise.all(
-    [photos.before, photos.after].map(async (url) => {
-      const response = await fetch(url, { credentials: "same-origin" });
-      if (!response.ok) throw new Error("photograph unavailable");
-      return createImageBitmap(await response.blob());
-    }),
-  );
-  if (before === undefined || after === undefined) return null;
-  const canvas = document.createElement("canvas");
-  canvas.width = CARD_WIDTH;
-  canvas.height = CARD_HEIGHT;
-  const context = canvas.getContext("2d");
-  if (context === null) return null;
-  context.fillStyle = INK;
-  context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-  const half = (CARD_WIDTH - RULE) / 2;
-  drawHalf(context, before, 0, half);
-  drawHalf(context, after, half + RULE, half);
-  context.fillStyle = GOLD;
-  context.fillRect(half, 0, RULE, CARD_HEIGHT);
-  before.close();
-  after.close();
-  return new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(
-      (blob) => {
-        resolve(blob);
-      },
-      "image/jpeg",
-      0.82,
-    );
+async function photograph(url: string): Promise<Blob | null> {
+  const response = await fetch(url, { credentials: "same-origin" }).catch(() => null);
+  return response?.ok === true ? response.blob() : null;
+}
+
+/** The Worker's answer: the card, or null if it could not be made. */
+function inWorker(request: ComposeRequest): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const worker = new Worker(new URL("./compose.worker.ts", import.meta.url), { type: "module" });
+    const done = (card: Blob | null) => {
+      worker.terminate();
+      resolve(card);
+    };
+    worker.addEventListener("message", (event: MessageEvent<Blob | null>) => {
+      done(event.data);
+    });
+    worker.addEventListener("error", () => {
+      done(null);
+    });
+    worker.postMessage(request);
   });
+}
+
+/** The card as a JPEG, or null where the photographs cannot be read or the phone cannot draw it. */
+export async function composeCard(pair: FirstFitPair): Promise<Blob | null> {
+  const [before, after] = await Promise.all([photograph(pair.before), photograph(pair.after)]);
+  if (before === null || after === null) return null;
+  return inWorker({ before, after, colours: cardColours() });
 }

@@ -77,7 +77,7 @@ export function PhotoSheet({ photo, onClose }: { photo: OpenPhoto; onClose: () =
         if (event.target === dialog.current) dialog.current.close();
       }}
     >
-      <Thumb link={photo.link} alt={photos.alt(angle, photo.phase, date)} className={styles.large} />
+      <Thumb link={photo.link} alt={photos.alt(angle, photo.phase, date)} className={styles.large} eager />
       <div className={styles.save}>
         <p className={styles.photoOf} id="photo-title">
           {photos.photoOf(angle, date)}

@@ -355,7 +355,7 @@ export function PayStep(props: {
         {payLabel(hold, moving)}
       </button>
       {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
-      {covered && <p className={styles.moneyNote}>{copy.credit.note}</p>}
+      {covered && <p className={styles.creditNote}>{copy.credit.note}</p>}
     </>
   );
 }
@@ -395,6 +395,7 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
 export function ExpiredStep({ onPickAgain }: { onPickAgain: () => void }) {
   return (
     <div role="alert">
+      <p className={styles.caption}>{booking.expired.label}</p>
       <h2 className={styles.outcome} id={TITLE_ID}>
         {booking.expired.title}
       </h2>

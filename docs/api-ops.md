@@ -2112,6 +2112,26 @@ Request body:
         "other"
       ]
     },
+    "stage": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "booked",
+            "in_progress",
+            "closing"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+    },
+    "prepaid": {
+      "type": "boolean",
+      "description": "Paid for ahead, or covered by a visit credit: board C1's Prepaid."
+    },
     "technician": {
       "anyOf": [
         {
@@ -2136,6 +2156,8 @@ Request body:
     "length_minutes",
     "type",
     "status",
+    "stage",
+    "prepaid",
     "technician",
     "place"
   ],

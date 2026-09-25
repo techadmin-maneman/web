@@ -123,10 +123,7 @@ export const api = {
   saveAddress: (address: AddressSave) => call<Address>("PATCH", "/api/profile/address", address),
   /** One session token for every keystroke of a search, so Google bills the session and not the letters. */
   addressSuggestions: (query: string, session: string) =>
-    call<Schemas["AddressSuggestions"]>(
-      "GET",
-      `/api/address/suggestions?q=${encodeURIComponent(query)}&session=${encodeURIComponent(session)}`,
-    ),
+    call<Schemas["AddressSuggestions"]>("POST", "/api/address/suggestions", { q: query, session }),
   switchConsent: (purpose: ConsentPurpose, granted: boolean) =>
     call<{ purpose: ConsentPurpose; granted: boolean; since: string }>("PATCH", `/api/consents/${purpose}`, {
       granted,
@@ -139,6 +136,7 @@ export const api = {
       number,
       code,
     }),
+  withdrawNumberChange: () => call<null>("DELETE", "/api/number-change"),
   requestDeletion: () => call<{ state: "requested"; requested_at: string }>("POST", "/api/deletion-request"),
   raiseGrievance: (text: string) => call<{ id: string; state: "open" }>("POST", "/api/grievances", { text }),
   refer: () => call<Refer>("GET", "/api/refer"),

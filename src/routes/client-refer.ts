@@ -11,7 +11,7 @@ import type { App } from "../app.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
-import { referralCodeOf } from "../domain/referrals.ts";
+import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -28,8 +28,21 @@ const ReferSchema = z
   .object({
     code: z.string(),
     link: z.string().openapi({ description: "The invite link to share: maneman.in/r/<code>." }),
+    named: z.boolean().openapi({
+      description:
+        "Whether the invite's preview names the client, as GET /api/r/{code} will: they agreed to the cards' " +
+        "current lines, and naming is on (REFERRER_NAME_ON_INVITE).",
+    }),
     credits: CreditsSchema,
-    card: z.object({ state: z.enum(["house", "personal"]), version: z.number().int() }).strict(),
+    card: z
+      .object({
+        state: z.enum(["house", "personal"]),
+        version: z.number().int(),
+        consented: z.boolean().openapi({
+          description: "Whether the client has agreed to photographs on referral cards, on the notice's current lines.",
+        }),
+      })
+      .strict(),
     fitted: z
       .array(z.object({ first_name: z.string(), month: z.string().openapi({ description: "YYYY-MM, in India." }) }))
       .openapi({ description: "Friends whose first fit closed as done, most recent first." }),
@@ -117,11 +130,14 @@ export function registerClientRefer(app: App): void {
       .bind(session.subjectId)
       .first<{ name: string }>();
     const code = await referralCodeOf(db, session.subjectId, person?.name ?? "", now);
-    const [card, balance, fitted] = await Promise.all([
+    const [card, invite, balance, fitted] = await Promise.all([
       db
         .prepare("SELECT card_state, card_version FROM referral_codes WHERE code = ?1")
         .bind(code)
         .first<{ card_state: "house" | "personal"; card_version: number }>(),
+      // The invite as the landing reads it, with naming on: it names the client exactly when they have agreed to
+      // the cards' current lines.
+      inviteOf(db, code, true),
       creditBalance(db, session.subjectId, now),
       db
         .prepare(
@@ -132,12 +148,14 @@ export function registerClientRefer(app: App): void {
         .bind(code)
         .all<{ name: string; window_start: string }>(),
     ]);
+    const consented = (invite?.referrerFirstName ?? null) !== null;
     return c.json(
       {
         code,
         link: `${PUBLIC_ORIGIN[c.var.config.environment]}/r/${code}`,
+        named: consented && c.var.config.settings.referrerNameOnInvite,
         credits: { visits: balance.visits, earliest_expiry: balance.earliestExpiry },
-        card: { state: card?.card_state ?? ("house" as const), version: card?.card_version ?? 1 },
+        card: { state: card?.card_state ?? ("house" as const), version: card?.card_version ?? 1, consented },
         fitted: fitted.results.map((friend) => ({
           first_name: friend.name.split(" ")[0] ?? friend.name,
           month: indiaDate(new Date(friend.window_start)).slice(0, 7),

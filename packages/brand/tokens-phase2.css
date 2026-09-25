@@ -10,8 +10,16 @@
   --text-quiet: #4a453c; /* a window's hours beside its name, on white */
   --paper-shade: #ded7c8; /* loading blocks; a full window; leave and replacement cells */
   --brass-text: #7a5b24; /* brass for small text on paper: "Prepaid", the busiest day */
-  --ink-message: #1f2c33; /* the ops console's preview of a message we are about to send (board C3) */
-  --ink-message-text: #e9edef; /* and the words in it */
+
+  /*
+   * WhatsApp's own colours, never ours: only where a board draws a message as WhatsApp will show it, so the
+   * client or ops see what the other side will. Nowhere else.
+   */
+  --wa-bubble: #dff7c9; /* the client app's preview of an invite, in the chat's sent bubble (board F4) */
+  --wa-preview: #f6ffeb; /* and the link's preview inside it */
+  --wa-bubble-width: 310px; /* the widest a bubble is drawn (board F4) */
+  --wa-dark: #1f2c33; /* the ops console's preview of a message we are about to send, in the dark theme (board C3) */
+  --wa-dark-text: #e9edef; /* and the words in it */
 
   /* The apps' sizes (docs/prompts/phase2-frontend.md, "Layout and targets"). */
   --app-column: 390px; /* the design's width; wider screens centre it */
@@ -22,6 +30,7 @@
   --fs-21: 21px; /* an entry's amount in the payments list (board E1) */
   --fs-26: 26px; /* an upcoming visit's date (board C1) */
   --fs-28: 28px; /* a confirmed booking's day and window (board C6) */
+  --fs-25: 25px; /* the empty tracker's line (board F6) */
   --fs-30: 30px; /* what a referral earns (board F1) */
   --fs-34: 34px; /* the credit tile's count (board F1) */
   --fs-40: 40px; /* an entry's amount on its own page (board E2) */
