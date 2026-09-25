@@ -20,7 +20,7 @@ import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/l
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { devicesOf, revokeDevice } from "../domain/technicians.ts";
+import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
@@ -302,17 +302,18 @@ export function registerOpsField(app: App): void {
     const { results } = await c.env.DB.prepare(
       "SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name",
     ).all<{ id: string; name: string; initials: string; zone: string | null }>();
-    // Leave is one read for the whole roster, not one per technician.
-    const leave = await leaveFrom(c.env.DB, indiaDate(c.var.deps.now()));
-    const technicians = await Promise.all(
-      results.map(async (technician) => ({
-        ...technician,
-        devices: await devicesOf(c.env.DB, technician.id),
-        leave: leave
-          .filter((period) => period.technician_id === technician.id)
-          .map(({ id, from, to, note }) => ({ id, from, to, note })),
-      })),
-    );
+    // The phones and the leave are one read each for the whole roster, not one per technician.
+    const [devices, leave] = await Promise.all([
+      devicesByTechnician(c.env.DB),
+      leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
+    ]);
+    const technicians = results.map((technician) => ({
+      ...technician,
+      devices: devices.get(technician.id) ?? [],
+      leave: leave
+        .filter((period) => period.technician_id === technician.id)
+        .map(({ id, from, to, note }) => ({ id, from, to, note })),
+    }));
     return c.json({ technicians }, 200);
   });
 

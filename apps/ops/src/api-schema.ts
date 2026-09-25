@@ -112,6 +112,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/find": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find clients by part of a name, or four or more digits of a number. A POST, so the words stay out of the URL */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientFind"];
+                };
+            };
+            responses: {
+                /** @description The clients it matches, by name */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientsFound"];
+                    };
+                };
+                /** @description invalid_request: fewer than two letters or four digits */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}": {
         parameters: {
             query?: never;
@@ -206,6 +255,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/photos/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open the client's photographs: one audit entry, written before any image is served */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Logged */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PhotoView"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: the opening could not be logged, so nothing is shown */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/photos/{photo_id}": {
         parameters: {
             query?: never;
@@ -213,7 +318,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One of the client's photographs. The audit entry is written before the image is */
+        /** One of the client's photographs, within an opening logged in the last 30 minutes; asked for outside one, it logs one first */
         get: {
             parameters: {
                 query?: never;
@@ -898,6 +1003,8 @@ export interface paths {
                                 /** @description How many asked to be told when we launch. */
                                 alerts: number;
                             }[];
+                            /** @description More than 200 pincodes have someone waiting; these are the longest waits. */
+                            more: boolean;
                         };
                     };
                 };
@@ -974,10 +1081,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every referrer's figures, the busiest first */
+        /** The referrers' figures, the busiest first, 50 at a time */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description How many to skip: 0, then 50 on. */
+                    offset?: number | null;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1001,6 +1111,8 @@ export interface paths {
                                 /** @description Credits of theirs spent on visits. */
                                 redeemed: number;
                             }[];
+                            /** @description Another page follows this one. */
+                            more: boolean;
                         };
                     };
                 };
@@ -2244,6 +2356,20 @@ export interface components {
         ClientSearch: {
             mobile: string;
         };
+        ClientsFound: {
+            clients: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                mobile: string;
+            }[];
+            /** @description More than 20 match: narrow the search. */
+            more: boolean;
+        };
+        ClientFind: {
+            /** @description Any part of a name, or of a number typed any of the usual ways. */
+            text: string;
+        };
         ClientRecord: {
             /** Format: uuid */
             id: string;
@@ -2460,6 +2586,19 @@ export interface components {
             height: number | null;
             /** Format: date-time */
             taken_at: string;
+        };
+        PhotoView: {
+            /**
+             * Format: date-time
+             * @description When the opening was logged, by our clock.
+             */
+            logged_at: string;
+            /** @description Who opened them before, and when, the latest first. */
+            before: {
+                by: string;
+                /** Format: date-time */
+                at: string;
+            }[];
         };
         ClientConsents: {
             consents: {

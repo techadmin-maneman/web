@@ -157,6 +157,58 @@
         ],
         "additionalProperties": false
       },
+      "ClientsFound": {
+        "type": "object",
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "mobile": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "mobile"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "more": {
+            "type": "boolean",
+            "description": "More than 20 match: narrow the search."
+          }
+        },
+        "required": [
+          "clients",
+          "more"
+        ],
+        "additionalProperties": false
+      },
+      "ClientFind": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Any part of a name, or of a number typed any of the usual ways."
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
       "ClientRecord": {
         "type": "object",
         "properties": {
@@ -1006,6 +1058,42 @@
           "width",
           "height",
           "taken_at"
+        ],
+        "additionalProperties": false
+      },
+      "PhotoView": {
+        "type": "object",
+        "properties": {
+          "logged_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the opening was logged, by our clock."
+          },
+          "before": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "by": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "by",
+                "at"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Who opened them before, and when, the latest first."
+          }
+        },
+        "required": [
+          "logged_at",
+          "before"
         ],
         "additionalProperties": false
       },
@@ -3336,6 +3424,43 @@
         }
       }
     },
+    "/api/clients/find": {
+      "post": {
+        "summary": "Find clients by part of a name, or four or more digits of a number. A POST, so the words stay out of the URL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientFind"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The clients it matches, by name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientsFound"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fewer than two letters or four digits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/{id}": {
       "get": {
         "summary": "The client's record: who they are, their address, their visits, their payments and their history",
@@ -3412,9 +3537,57 @@
         }
       }
     },
+    "/api/clients/{id}/photos/view": {
+      "post": {
+        "summary": "Open the client's photographs: one audit entry, written before any image is served",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such client, or the client has been erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: the opening could not be logged, so nothing is shown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/{id}/photos/{photo_id}": {
       "get": {
-        "summary": "One of the client's photographs. The audit entry is written before the image is",
+        "summary": "One of the client's photographs, within an opening logged in the last 30 minutes; asked for outside one, it logs one first",
         "parameters": [
           {
             "schema": {
@@ -4262,10 +4435,15 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "more": {
+                      "type": "boolean",
+                      "description": "More than 200 pincodes have someone waiting; these are the longest waits."
                     }
                   },
                   "required": [
-                    "areas"
+                    "areas",
+                    "more"
                   ],
                   "additionalProperties": false
                 }
@@ -4346,7 +4524,24 @@
     },
     "/api/referrers": {
       "get": {
-        "summary": "Every referrer's figures, the busiest first",
+        "summary": "The referrers' figures, the busiest first, 50 at a time",
+        "parameters": [
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "default": 0,
+              "description": "How many to skip: 0, then 50 on."
+            },
+            "required": false,
+            "description": "How many to skip: 0, then 50 on.",
+            "name": "offset",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Referrers",
@@ -4394,10 +4589,15 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "more": {
+                      "type": "boolean",
+                      "description": "Another page follows this one."
                     }
                   },
                   "required": [
-                    "referrers"
+                    "referrers",
+                    "more"
                   ],
                   "additionalProperties": false
                 }

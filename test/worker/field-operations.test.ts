@@ -1162,6 +1162,28 @@ describe("leave", () => {
   });
 });
 
+describe("the roster", () => {
+  // Read in one query for the whole roster, where it was once a query a technician (OPS-11).
+  it("lists each technician's phones, the latest used first, beside their leave", async () => {
+    await openTechnicianSession(env.DB, {
+      technicianId: SAMEER,
+      deviceId: "phone-def-456",
+      label: null,
+      now: new Date(NOW.getTime() - 60_000),
+    });
+    const roster = await (
+      await request(ops, "/api/technicians", {}, bindings())
+    ).json<{
+      technicians: { id: string; devices: { device_id: string; label: string | null }[]; leave: unknown[] }[];
+    }>();
+
+    expect(roster.technicians.map((each) => [each.id, each.devices, each.leave])).toEqual([
+      [IMRAN, [expect.objectContaining({ device_id: DEVICE, label: "Chrome on Android" })], []],
+      [SAMEER, [expect.objectContaining({ device_id: "phone-def-456", label: null })], []],
+    ]);
+  });
+});
+
 describe("a revoked phone", () => {
   it("is told to drop its cached jobs on its next call, and the wipe is recorded", async () => {
     expect((await get("/api/tech/jobs")).status).toBe(200);

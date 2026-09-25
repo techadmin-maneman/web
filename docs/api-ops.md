@@ -91,6 +91,34 @@ Request body:
 }
 ```
 
+### POST /api/clients/find
+
+Find clients by part of a name, or four or more digits of a number. A POST, so the words stay out of the URL
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientFind"
+}
+```
+
+**200**: The clients it matches, by name
+
+```json
+{
+  "$ref": "#/components/schemas/ClientsFound"
+}
+```
+
+**400**: invalid_request: fewer than two letters or four digits
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/clients/{id}
 
 The client's record: who they are, their address, their visits, their payments and their history
@@ -131,9 +159,37 @@ Which photographs the client has, by visit, newest first. No image is served her
 }
 ```
 
+### POST /api/clients/{id}/photos/view
+
+Open the client's photographs: one audit entry, written before any image is served
+
+**200**: Logged
+
+```json
+{
+  "$ref": "#/components/schemas/PhotoView"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: the opening could not be logged, so nothing is shown
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/clients/{id}/photos/{photo_id}
 
-One of the client's photographs. The audit entry is written before the image is
+One of the client's photographs, within an opening logged in the last 30 minutes; asked for outside one, it logs one first
 
 **200**: The image
 
@@ -788,10 +844,15 @@ Who is waiting, by pincode, the longest wait first
         ],
         "additionalProperties": false
       }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 200 pincodes have someone waiting; these are the longest waits."
     }
   },
   "required": [
-    "areas"
+    "areas",
+    "more"
   ],
   "additionalProperties": false
 }
@@ -848,7 +909,7 @@ Request body:
 
 ### GET /api/referrers
 
-Every referrer's figures, the busiest first
+The referrers' figures, the busiest first, 50 at a time
 
 **200**: Referrers
 
@@ -895,10 +956,15 @@ Every referrer's figures, the busiest first
         ],
         "additionalProperties": false
       }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "Another page follows this one."
     }
   },
   "required": [
-    "referrers"
+    "referrers",
+    "more"
   ],
   "additionalProperties": false
 }
@@ -1837,6 +1903,68 @@ Request body:
 }
 ```
 
+### ClientsFound
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "clients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mobile"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 20 match: narrow the search."
+    }
+  },
+  "required": [
+    "clients",
+    "more"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientFind
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "Any part of a name, or of a number typed any of the usual ways."
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientRecord
 
 ```json
@@ -2734,6 +2862,47 @@ Request body:
     "width",
     "height",
     "taken_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PhotoView
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "logged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the opening was logged, by our clock."
+    },
+    "before": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "by",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Who opened them before, and when, the latest first."
+    }
+  },
+  "required": [
+    "logged_at",
+    "before"
   ],
   "additionalProperties": false
 }
