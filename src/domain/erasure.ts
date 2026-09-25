@@ -136,7 +136,10 @@ export async function erasePerson(
 /** Of the person's addresses, one a technician's check-in was measured against. */
 const MEASURED_AGAINST = "EXISTS (SELECT 1 FROM checkins c WHERE c.address_id = addresses.id)";
 
-/** Everything the batch changes besides the messages: each statement before any that a foreign key needs gone. */
+/**
+ * Everything else the batch changes, in an order the foreign keys allow: what
+ * points at a row is dealt with before the row is deleted.
+ */
 async function personalDataStatements(db: D1Database, personId: string, at: string): Promise<D1PreparedStatement[]> {
   // One withdrawal row for each purpose the person had agreed to. Consents are append-only.
   const { results: granted } = await db
