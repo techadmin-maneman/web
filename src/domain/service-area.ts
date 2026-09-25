@@ -12,7 +12,7 @@
 // from. Ops change only the two columns that are theirs, and never add or
 // remove a pincode: that file is the reference data.
 
-import { indiaInstant } from "../lib/india-time.ts";
+import { indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 
 export interface AreaPincode {
@@ -38,7 +38,8 @@ const pincodeOf = (row: Row): AreaPincode => ({
   area: row.area,
   city: row.city,
   served: row.served === 1,
-  launch_on: row.launched_at === null ? null : row.launched_at.slice(0, 10),
+  // Stored as midnight in India, which is the evening before in UTC.
+  launch_on: row.launched_at === null ? null : indiaDate(new Date(row.launched_at)),
 });
 
 /** Every pincode we hold, by city and then by pincode, as the console lists them. */

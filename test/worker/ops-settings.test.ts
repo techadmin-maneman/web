@@ -263,7 +263,8 @@ describe("the price book", () => {
 
 describe("the service area", () => {
   beforeEach(async () => {
-    await pincode("110001", "Delhi", "Connaught Place", 1, "2026-09-01T00:00:00.000Z");
+    // Midnight in India on 1 September, as the import and the console store a launch date.
+    await pincode("110001", "Delhi", "Connaught Place", 1, "2026-08-31T18:30:00.000Z");
     await pincode("110017", "Delhi", "Saket", 0, null);
     await pincode("122018", "Gurgaon", "Sector 65", 0, null);
   });
@@ -286,6 +287,26 @@ describe("the service area", () => {
     });
     expect(await answer.json()).toEqual({ changed: 1, served: 2 });
     expect((await auditFor("pincode.set")).results).toHaveLength(1);
+  });
+
+  it("keeps a pincode's launch date however often it is switched off and on", async () => {
+    // Another served pincode, since switching off the only one is refused.
+    await post("/api/service-area", { changes: [{ pincode: "122018", served: true, launch_on: null }] });
+    for (const served of [false, true, false, true]) {
+      await post("/api/service-area", { changes: [{ pincode: "110001", served, launch_on: "2026-09-01" }] });
+    }
+    const body = await (
+      await request(ops, "/api/service-area")
+    ).json<{ pincodes: { pincode: string; launch_on: string | null }[] }>();
+    expect(body.pincodes.find((each) => each.pincode === "110001")?.launch_on).toBe("2026-09-01");
+    const { results } = await auditFor("pincode.set");
+    const toggles = results.filter((row) => row.subject_id === "110001");
+    expect(toggles.map((row) => JSON.parse(row.detail) as Record<string, unknown>)).toEqual([
+      { served_from: true, served_to: false, launch_from: "2026-09-01", launch_to: "2026-09-01" },
+      { served_from: false, served_to: true, launch_from: "2026-09-01", launch_to: "2026-09-01" },
+      { served_from: true, served_to: false, launch_from: "2026-09-01", launch_to: "2026-09-01" },
+      { served_from: false, served_to: true, launch_from: "2026-09-01", launch_to: "2026-09-01" },
+    ]);
   });
 
   it("records what a pincode was and what it is", async () => {
