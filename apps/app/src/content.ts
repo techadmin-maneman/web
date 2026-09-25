@@ -424,11 +424,15 @@ export const refer = {
     instead: "Use the example instead",
   },
   /**
-   * Board F4: the chat's preview, exactly as the friend receives it. Its title and line are the landing's own
-   * (packages/web-kit/invite.ts), so they name the client only when the invite will.
+   * Board F4: the chat's preview, exactly as the friend receives it. Its heading and line are the landing's own
+   * preview (site/src/content/referral.ts), which test/node/app-invite-preview.test.ts holds them to, so the
+   * client is named only when the invite will name them, and the area is the site's.
    */
   preview: {
     title: "Preview · what your friend sees",
+    heading: (name: string | null) =>
+      name === null ? "You have a Mane Man invite" : `${name} sent you a Mane Man invite`,
+    body: "Home-fitted hair systems across Delhi NCR. 3 service visits free when you're fitted.",
     domain: "maneman.in",
     message: (link: string) => `Had my hair system fitted at home by these people. Worth a look — ${link}`,
     via: "Share via",

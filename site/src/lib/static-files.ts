@@ -87,7 +87,9 @@ const PERMISSIONS = (camera: string) => `camera=${camera}, microphone=(), geoloc
 export function headersFile(environment: SiteEnvironment, csp: string): string {
   const everyPage = [
     `Content-Security-Policy: ${csp}`,
-    "Strict-Transport-Security: max-age=31536000",
+    // Two years, for every host under the site's, as the apps send it (packages/web-kit/headers.ts). No preload: the
+    // owner's call, since leaving the preload list takes months (ADR 0023, 1).
+    "Strict-Transport-Security: max-age=63072000; includeSubDomains",
     "Referrer-Policy: strict-origin-when-cross-origin",
     "X-Content-Type-Options: nosniff",
     `Permissions-Policy: ${PERMISSIONS("()")}`,
@@ -116,6 +118,14 @@ export function robotsFile(environment: SiteEnvironment): string {
 export function pagePath(file: string): string | null {
   if (!file.endsWith(".html") || file === "404.html" || file === "r.html") return null;
   return file === "index.html" ? "/" : `/${file.slice(0, -".html".length)}`;
+}
+
+/**
+ * The built assets nothing refers to. The images module imports every design file so that staging can show the
+ * placeholders; a production build shows none of them, and must not publish them at an address nobody links to.
+ */
+export function unreferencedAssets(assets: readonly string[], texts: readonly string[]): string[] {
+  return assets.filter((asset) => !texts.some((text) => text.includes(asset)));
 }
 
 export function sitemapFile(paths: readonly string[]): string {

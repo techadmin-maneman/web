@@ -1,6 +1,6 @@
 # 0023. Launch hardening: headers, analytics, budgets
 
-- Status: accepted, except item 2, which waits for the owner
+- Status: accepted, except item 2, which waits for the owner. Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
 - Date: 2026-09-22
 
 ## Context
@@ -18,7 +18,7 @@ The build writes them into the Workers static-assets `_headers` file (`site/src/
   - The R2 endpoint the prompt names is not needed, because the photo goes to the API (ADR 0022, 1).
   - `blob:` images are allowed, for the try-on's photograph and result shown from memory.
   - Cloudflare limits a `_headers` line to 2,000 characters. The policy is about 870 today, and a test fails if the policy with every tag enabled would go past the limit.
-- **HSTS** for a year, without `includeSubDomains` or `preload`. The owner can add both once every subdomain of maneman.in serves HTTPS.
+- **HSTS** for a year, without `includeSubDomains` or `preload`. The owner can add both once every subdomain of maneman.in serves HTTPS. **Changed 25 September 2026:** two years with `includeSubDomains`, as the apps already send it (`packages/web-kit/headers.ts`); every host under maneman.in the platform uses serves HTTPS on Cloudflare's certificate. `preload` stays off, and is the owner's call: once on the browsers' preload list the domain takes months to leave it (`docs/open-points.md`, item 82).
 - **`Referrer-Policy: strict-origin-when-cross-origin`**, and `X-Content-Type-Options: nosniff`.
 - **`Permissions-Policy`.** It turns the camera, microphone and location off everywhere, and allows the camera on `/try` alone, through `_headers`'s `!` detach. Cloudflare's asset server was checked under `wrangler dev`: `/try` gets `camera=(self)` only.
 - **Caching.** Built files under `/_astro/` carry a content hash in their names, so they are cached for a year as immutable.
@@ -40,15 +40,18 @@ Staging runs as (b) until the owner decides.
 ### 3. Analytics
 
 - **The tags.** GA4, the Google Ads conversion tag and the Meta Pixel load only when their ID is set for the environment, in `site/src/lib/analytics-ids.ts`. None is set yet; the owner supplies them. Staging's IDs must be test or debug streams, and GA4 marks every hit outside production as debug traffic. Cloudflare Web Analytics needs no code: Cloudflare adds its beacon at the edge, and the policy allows it.
-- **The events.** The prompt's events fire from the booking form and the try-on.
-  - `lead_submitted` carries `first_choice_window`, `loss_extent`, `city` and `served`, followed by `booking_confirmed` or `waitlist_submitted`.
+- **The events.** The prompt's events fire from the booking pages and the try-on. Since ADR 0051 the booking pages are `/book` and the referral landing at `/r/:code`, one form with a pincode check; the Phase 1 form these events were first written for is gone. (Updated 25 September 2026: until then the new form fired none of them, so a paid campaign's booking was never counted.)
+  - A booking sends `lead_submitted` with `page` (`book` or `invite`), `served`, the pincode's `area`, the `window` and `loss_extent` (null on an invite, which does not ask), then `booking_confirmed` with the `area`, the `window` and whether it was `booked` or `requested`.
+  - A number left for an unserved pincode sends `lead_submitted` with `served` false and no window, then `waitlist_submitted` with the `area`.
   - The try-on sends `try_on_started` when a photograph is chosen, `try_on_gate_shown`, `try_on_claimed`, `try_on_completed` when the result is shown, and `try_on_failed` with its `failure_code`.
   - `try_on_additional_look` never fires, because each visitor gets one look (ADR 0022, 2).
 - **Conversions.** `lead_submitted` and `try_on_claimed` are the conversions: the Google Ads conversion (one label for each) and Meta's `Lead`.
 - **No personal data.**
   - The event types allow no name, number or image reference.
-  - Every event also goes onto GA's `dataLayer`, loaded tags or not. The browser tests read it and fail on a name, a number, a `blob:` URL or a result link.
+  - Every event also goes onto GA's `dataLayer`, loaded tags or not. The browser tests read it and fail on a name, a number, an invite code, a `blob:` URL or a result link.
   - On arrival, the address loses any query parameter that is not a campaign tag, so no tag reads a number someone put in a link.
+  - **The referral landing's code.** `/r/RM4K7P` names one person's invite. Google's tags are told the address as `/r/`, the page sets `Referrer-Policy: strict-origin` so the next page's referrer carries no code, and the Meta Pixel is not loaded there at all: it reports the address as it stands and offers no way to change it. The landing's conversions reach Google's tags only. The landing's visitors arrive from a friend's WhatsApp message, not from an advert.
+  - **The Meta Pixel's automatic collection is off** (`autoConfig`), so it reads no buttons or meta tags; on the landing those carry the referrer's first name.
 
 ### 4. Budgets in CI
 
@@ -73,7 +76,7 @@ axe checks every page and every try-on and booking state at both widths against 
 ### 5. SEO
 
 - **Every page** has a title, a description, a canonical link to production's host, and Open Graph and X card tags. The canonical points to production from every environment.
-- **The shared-link card** (`/og.png`) and the Apple touch icon are drawn from the brand kit at build time: the gilt lockup on ink, and the favicon drawing on ink.
+- **The shared-link card** (`/og.png`) and the Apple touch icon are drawn from the brand kit at build time: the gilt lockup on ink, and the favicon drawing on ink. Since 25 September 2026 so are the tab's icons, as the kit's README asks: PNGs at 16, 32 and 48 px on ink, the 16 in the kit's silhouette cut. The page used to link the 32 px SVG itself, gilt on a transparent ground (2.4:1 on a light tab) and mostly the file's own provenance metadata.
 - **The home page** carries `LocalBusiness` and `FAQPage` structured data, from content. The business entry holds only published facts: the WhatsApp number, the cities the FAQ names, and the price range from the price table.
 - **The 404 page** is `noindex` with no canonical link.
 - **The sitemap** lists the built pages, and production's `robots.txt` points to it.

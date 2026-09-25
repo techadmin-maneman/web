@@ -8,7 +8,6 @@
 // (docs/decisions/0048-referrals.md).
 
 import { ICONS } from "@maneman/brand/icons";
-import { inviteTitle, INVITE_DESCRIPTION } from "@maneman/web-kit/invite";
 import { useEffect, useRef, useState } from "react";
 import { api, putCard, type Refer } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
@@ -70,8 +69,8 @@ function Bubble({ state, card }: { state: Refer; card: Shown }) {
       <div className={styles.bubblePreview}>
         <CardPreview shown={card} />
         <div className={styles.bubbleText}>
-          <p className={styles.bubbleTitle}>{inviteTitle(state.named ? me.first_name : null)}</p>
-          <p className={styles.bubbleLine}>{INVITE_DESCRIPTION}</p>
+          <p className={styles.bubbleTitle}>{refer.preview.heading(state.named ? me.first_name : null)}</p>
+          <p className={styles.bubbleLine}>{refer.preview.body}</p>
           <p className={styles.bubbleDomain}>{refer.preview.domain}</p>
         </div>
       </div>

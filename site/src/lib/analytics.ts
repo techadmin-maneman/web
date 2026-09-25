@@ -5,22 +5,42 @@
 // Every event goes onto GA's dataLayer queue whether or not a tag is loaded,
 // so the browser tests can read exactly what would be sent. No event carries a
 // name, a number or an image: the types below allow nothing else.
+//
+// The referral landing's address holds a person's invite code, so no tag reads
+// it: Google's tags are given the address without the code, and the Meta Pixel,
+// which reports the address as it stands, is not loaded there.
 
-import type { LossExtent, VisitWindow } from "../../../src/config/booking.ts";
+import type { LossExtent } from "../../../src/config/booking.ts";
+import type { BookingWindow } from "../../../src/config/scheduling.ts";
 import { ANALYTICS_IDS } from "./analytics-ids.ts";
 import { ENVIRONMENT } from "./build.ts";
+
+/** Which booking page: the site's own /book, or a friend's invite at /r/:code. */
+type BookingPage = "book" | "invite";
 
 export type AnalyticsEvent =
   | { readonly name: "try_on_started" | "try_on_gate_shown" | "try_on_claimed" | "try_on_completed" }
   | { readonly name: "try_on_failed"; readonly failure_code: string }
   | {
       readonly name: "lead_submitted";
-      readonly first_choice_window: VisitWindow;
-      readonly loss_extent: LossExtent;
-      readonly city: string;
+      readonly page: BookingPage;
       readonly served: boolean;
+      /** The pincode's area, "Sector 65"; null for a pincode we do not know. */
+      readonly area: string | null;
+      /** Null on the waitlist, which asks for no window. */
+      readonly window: BookingWindow | null;
+      /** Null on an invite, which does not ask. */
+      readonly loss_extent: LossExtent | null;
     }
-  | { readonly name: "booking_confirmed" | "waitlist_submitted"; readonly city: string };
+  | {
+      readonly name: "booking_confirmed";
+      readonly page: BookingPage;
+      readonly area: string;
+      readonly window: BookingWindow;
+      /** "requested" while self-serve booking is off and ops fix the hour. */
+      readonly state: "booked" | "requested";
+    }
+  | { readonly name: "waitlist_submitted"; readonly page: BookingPage; readonly area: string | null };
 
 type Command = (...args: unknown[]) => void;
 
@@ -62,8 +82,18 @@ function startMetaPixel(pixelId: string): void {
   window.fbq = fbq;
   window._fbq ??= fbq;
   loadScript("https://connect.facebook.net/en_US/fbevents.js");
+  // Automatic collection reads the page's buttons and meta tags, a referrer's first name among them.
+  fbq("set", "autoConfig", false, pixelId);
   fbq("init", pixelId);
   fbq("track", "PageView");
+}
+
+/** A referral invite's address: /r/ and the code, which is one person's. */
+const INVITE_PATH = /\/r\/[A-Za-z0-9]{4,12}\/?(?=[?#]|$)/;
+
+/** The address as the tags are told it: an invite's code taken out. */
+function reportedAddress(address: string): string {
+  return address.replace(INVITE_PATH, "/r/");
 }
 
 /**
@@ -87,10 +117,12 @@ export function startAnalytics(): void {
     loadScript(`https://www.googletagmanager.com/gtag/js?id=${googleTag}`);
     gtag("js", new Date());
   }
+  gtag("set", { page_location: reportedAddress(location.href) });
   // Outside production, GA4 marks every hit as debug traffic.
   if (ids.ga4 !== null) gtag("config", ids.ga4, ENVIRONMENT === "production" ? {} : { debug_mode: true });
   if (ids.googleAds !== null) gtag("config", ids.googleAds.id);
-  if (ids.metaPixel !== null) startMetaPixel(ids.metaPixel);
+  const onInvite = INVITE_PATH.test(location.pathname);
+  if (ids.metaPixel !== null && !onInvite) startMetaPixel(ids.metaPixel);
 }
 
 export function track(event: AnalyticsEvent): void {

@@ -1,17 +1,25 @@
-// "Add to calendar": an .ics file for the proposed visit, made in the browser.
-// The hour is not fixed yet, so the event covers the whole window in India's
-// time: 09:00–12:00 before noon, 16:00–20:00 after four.
+// "Add to calendar": an .ics file for a booked consultation, made in the browser. The technician comes within the
+// window, so the event covers the whole of it, in India's time as src/config/scheduling.ts gives it.
 
-const WINDOWS: Readonly<Record<string, readonly [string, string]>> = {
-  // In UTC: India is 5 h 30 min ahead.
-  "before noon": ["033000", "063000"],
-  "after four": ["103000", "143000"],
-};
+import { WINDOW_TIMES, type BookingWindow } from "../../../src/config/scheduling.ts";
 
-/** The calendar file for a visit on `date` (YYYY-MM-DD) in the given window. */
-export function consultationCalendar(date: string, windowLabel: string, id: string, now: Date): string {
-  const [start, end] = WINDOWS[windowLabel] ?? WINDOWS["before noon"] ?? ["", ""];
-  const day = date.replace(/-/g, "");
+/** India is five and a half hours ahead of UTC, all year. */
+const INDIA_OFFSET_MINUTES = 330;
+
+/** "2026-09-24" at "09:00" in India, as a calendar file's UTC time: 20260924T033000Z. */
+function utcStamp(date: string, time: string): string {
+  const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
+  const [hours = 0, minutes = 0] = time.split(":").map(Number);
+  const instant = new Date(Date.UTC(year, month - 1, day, hours, minutes - INDIA_OFFSET_MINUTES));
+  return instant
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d+Z$/, "Z");
+}
+
+/** The calendar file for a consultation on `date` (YYYY-MM-DD) in `window`. */
+export function consultationCalendar(date: string, window: BookingWindow, title: string, now: Date): string {
+  const { start, end } = WINDOW_TIMES[window];
   const stamp = now
     .toISOString()
     .replace(/[-:]/g, "")
@@ -23,11 +31,12 @@ export function consultationCalendar(date: string, windowLabel: string, id: stri
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
-    `UID:${id}@maneman.in`,
+    // One consultation a number, so the day and window name it: a second download replaces the first.
+    `UID:consultation-${date}-${window}@maneman.in`,
     `DTSTAMP:${stamp}`,
-    `DTSTART:${day}T${start}Z`,
-    `DTEND:${day}T${end}Z`,
-    "SUMMARY:Mane Man consultation (time to be confirmed)",
+    `DTSTART:${utcStamp(date, start)}`,
+    `DTEND:${utcStamp(date, end)}`,
+    `SUMMARY:${title}`,
     "END:VEVENT",
     "END:VCALENDAR",
     "",
