@@ -1,9 +1,10 @@
 // Service-visit credits (docs/decisions/0033-credit-ledger.md): the ledger is append-only, and a balance is
-// always summed from it. A grant adds visits that expire together. Each redeem, restore, expire or clawback
-// names the grant it draws on, so credits are spent oldest grant first, and a grant's remaining visits are
-// its own plus everything drawn on it.
+// always summed from it. A grant adds visits that expire together. Each redeem, restore, expire, clawback or
+// adjust names the grant it draws on, so credits are spent oldest grant first, and a grant's remaining visits
+// are its own plus everything drawn on it. Ops put a balance right by hand with adjustCredits.
 
 import { creditExpiry } from "../policy/referral-reward.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 
 export type CreditSource = "referral" | "appointment" | "ops" | "import";
 
@@ -66,7 +67,10 @@ export function grantCredits(
     );
 }
 
-/** One credit, from the grant that expires soonest, for a visit; null if the person has none left. */
+/**
+ * One credit, from the grant that expires soonest, for a visit; null if the person has none left. A visit
+ * redeems once: asked again, it writes nothing (credit_ledger_one_use).
+ */
 export async function redeemCredit(
   db: D1Database,
   personId: string,
@@ -78,9 +82,57 @@ export async function redeemCredit(
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       VALUES (?1, ?2, 'redeem', -1, ?3, 'appointment', ?4, ?5)`,
+       VALUES (?1, ?2, 'redeem', -1, ?3, 'appointment', ?4, ?5) ON CONFLICT DO NOTHING`,
     )
     .bind(crypto.randomUUID(), personId, grant.id, appointmentId, now.toISOString());
+}
+
+/** Why ops put a balance right by hand: a credit given or taken in error, or visits given to make up for something. */
+export const ADJUST_REASONS = ["correction", "goodwill"] as const;
+export type AdjustReason = (typeof ADJUST_REASONS)[number];
+
+/**
+ * Ops putting a balance right by hand, with the audit entry in the same batch: a change that is not recorded
+ * does not happen (ADR 0031). Visits added are a grant from ops, which expires as any grant does; visits taken
+ * away are adjust entries drawn on the live grants, soonest to expire first. Null, and nothing written, when
+ * more are taken away than the person has.
+ */
+export async function adjustCredits(
+  db: D1Database,
+  input: { personId: string; visits: number; audit: AuditEntry; now: Date },
+): Promise<Balance | null> {
+  const { personId, visits, now } = input;
+  const adjustmentId = crypto.randomUUID();
+  const changes =
+    visits > 0
+      ? [grantCredits(db, { personId, visits, source: "ops", sourceId: adjustmentId, now })]
+      : await takeAway(db, { personId, visits: -visits, adjustmentId, now });
+  if (changes === null) return null;
+  await db.batch([...changes, auditStatement(db, input.audit, now)]);
+  return creditBalance(db, personId, now);
+}
+
+/** The adjust entries that take visits away, oldest-expiring grant first; null if the grants hold too few. */
+async function takeAway(
+  db: D1Database,
+  input: { personId: string; visits: number; adjustmentId: string; now: Date },
+): Promise<D1PreparedStatement[] | null> {
+  const statements: D1PreparedStatement[] = [];
+  let left = input.visits;
+  for (const grant of await liveGrants(db, input.personId, input.now)) {
+    if (left === 0) break;
+    const taken = Math.min(left, grant.remaining);
+    left -= taken;
+    statements.push(
+      db
+        .prepare(
+          `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+           VALUES (?1, ?2, 'adjust', ?3, ?4, 'ops', ?5, ?6)`,
+        )
+        .bind(crypto.randomUUID(), input.personId, -taken, grant.id, input.adjustmentId, input.now.toISOString()),
+    );
+  }
+  return left === 0 ? statements : null;
 }
 
 /** How many expired grants a pass closes. */

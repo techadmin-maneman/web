@@ -55,6 +55,7 @@
                   "taken",
                   "not_bookable",
                   "hold_expired",
+                  "already_booked",
                   "not_changeable",
                   "terms_changed",
                   "consent_required",
@@ -326,6 +327,107 @@
         ],
         "additionalProperties": false
       },
+      "AlreadyBooked": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "not_found",
+                  "invalid_request",
+                  "turnstile_failed",
+                  "rate_limited",
+                  "idempotency_in_progress",
+                  "idempotency_key_reused",
+                  "environment_mismatch",
+                  "unavailable",
+                  "internal_error",
+                  "busy",
+                  "photo_invalid_file",
+                  "upload_already_received",
+                  "upload_missing",
+                  "session_required",
+                  "job_not_claimable",
+                  "look_limit_reached",
+                  "unauthorized",
+                  "visit_booked",
+                  "payment_held",
+                  "forbidden_origin",
+                  "access_required",
+                  "code_expired",
+                  "too_early",
+                  "number_in_use",
+                  "not_ready",
+                  "ops_assisted",
+                  "taken",
+                  "not_bookable",
+                  "hold_expired",
+                  "already_booked",
+                  "not_changeable",
+                  "terms_changed",
+                  "consent_required",
+                  "device_revoked",
+                  "superseded",
+                  "out_of_order",
+                  "not_today",
+                  "already_started",
+                  "clash",
+                  "on_leave",
+                  "fsm_refused",
+                  "too_early_to_close",
+                  "no_service_area"
+                ]
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "invalid_request only: the fields that failed validation, never their values."
+              }
+            },
+            "required": [
+              "code",
+              "request_id"
+            ],
+            "additionalProperties": false
+          },
+          "booked": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "window": {
+                "type": "string",
+                "enum": [
+                  "morning",
+                  "afternoon",
+                  "evening"
+                ]
+              }
+            },
+            "required": [
+              "date",
+              "window"
+            ],
+            "additionalProperties": false,
+            "description": "The day and window of the consultation still to happen."
+          }
+        },
+        "required": [
+          "error",
+          "booked"
+        ],
+        "additionalProperties": false
+      },
       "Waitlist": {
         "type": "object",
         "properties": {
@@ -463,6 +565,15 @@
           "credits": {
             "type": "boolean",
             "description": "Whether the invite's 3 service visits apply."
+          },
+          "invite": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "expired",
+              "unknown"
+            ],
+            "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have."
           }
         },
         "required": [
@@ -470,7 +581,8 @@
           "date",
           "window",
           "area",
-          "credits"
+          "credits",
+          "invite"
         ],
         "additionalProperties": false
       },
@@ -489,11 +601,21 @@
           },
           "credits": {
             "type": "boolean"
+          },
+          "invite": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "expired",
+              "unknown"
+            ],
+            "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have."
           }
         },
         "required": [
           "area",
-          "credits"
+          "credits",
+          "invite"
         ],
         "additionalProperties": false
       },
@@ -1264,17 +1386,24 @@
             }
           },
           "409": {
-            "description": "taken: that window has gone",
+            "description": "taken: that window has gone; or already_booked: this number has a consultation still to happen",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AlreadyBooked"
+                    }
+                  ]
                 }
               }
             }
           },
           "422": {
-            "description": "invalid_request: the pincode is not served, or the day is not open",
+            "description": "invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app",
             "content": {
               "application/json": {
                 "schema": {
@@ -1675,17 +1804,24 @@
             }
           },
           "409": {
-            "description": "taken: that window has gone",
+            "description": "taken: that window has gone; or already_booked: this number has a consultation still to happen",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AlreadyBooked"
+                    }
+                  ]
                 }
               }
             }
           },
           "422": {
-            "description": "not_bookable: the pincode is not served, or the day is not open",
+            "description": "not_bookable: the pincode is not served, the day is not open, or this number is past consultations",
             "content": {
               "application/json": {
                 "schema": {

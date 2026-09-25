@@ -184,14 +184,14 @@ describe("confirmBooking", () => {
     expect(fsm.made.visits).toHaveLength(1);
   });
 
-  it("refunds, once, a payment captured after its hold had lapsed", async () => {
+  it("refunds, once, a payment made after its hold had lapsed and the two minutes' grace after it", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);
     await post(app, "/api/bookings", { hold_id: holdId });
-    await captured(holdId, new Date(NOW.getTime() + 12 * 60_000).toISOString());
+    await captured(holdId, new Date(NOW.getTime() + 13 * 60_000).toISOString());
     const payments = createStubPayments();
     const fsm = createStubFsm(world());
-    const later = new Date(NOW.getTime() + 12 * 60_000);
+    const later = new Date(NOW.getTime() + 13 * 60_000);
     expect(await confirmBooking(env.DB, fsm, payments, holdId, later, { labelAsTest: true })).toBe("refunded");
     expect(await confirmBooking(env.DB, fsm, payments, holdId, later, { labelAsTest: true })).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 200000 }]);
@@ -206,7 +206,7 @@ describe("confirmBooking", () => {
     const payments = createStubPayments();
     const failing: FsmProvider = {
       ...createStubFsm(world()),
-      createVisit: () => Promise.reject(new Error("Zoho 400 INVALID_DATA: no resource")),
+      createWorkOrder: () => Promise.reject(new Error("Zoho 400 INVALID_DATA: no resource")),
     };
     const deps = fakeDependencies({ fsm: failing, payments });
     const batchOf = (attempts: number) => ({

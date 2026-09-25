@@ -53,13 +53,20 @@ export async function fraudSignals(db: D1Database, attribution: Attribution): Pr
     .all<{ window_start: string }>();
   const thisMonth = results.filter((fit) => indiaDate(new Date(fit.window_start)).slice(0, 7) === month).length;
   if (thisMonth >= REFERRAL_MONTHLY_CAP) met.add("monthly_cap");
-  const mobiles = await db
+  // A number belongs to one person at a time, and nobody is attributed to their own invite
+  // (src/domain/referrals.ts), so the two can only share a number one of them has changed to since.
+  const sharedNumber = await db
     .prepare(
-      "SELECT (SELECT mobile_e164 FROM people WHERE id = ?1) = (SELECT mobile_e164 FROM people WHERE id = ?2) AS same",
+      `SELECT 1 FROM people r JOIN people f ON f.id = ?2
+       WHERE r.id = ?1 AND (
+         EXISTS (SELECT 1 FROM number_change_requests n
+                 WHERE n.person_id = r.id AND n.state = 'confirmed' AND n.new_mobile_e164 = f.mobile_e164)
+         OR EXISTS (SELECT 1 FROM number_change_requests n
+                    WHERE n.person_id = f.id AND n.state = 'confirmed' AND n.new_mobile_e164 = r.mobile_e164))`,
     )
     .bind(referrerId, referredId)
-    .first<{ same: number | null }>();
-  if (mobiles?.same === 1) met.add("same_mobile");
+    .first();
+  if (sharedNumber !== null) met.add("same_mobile");
   return FRAUD_SIGNALS.filter((signal) => met.has(signal));
 }
 
@@ -156,7 +163,11 @@ export async function settleReferrals(
     .all<AttributionRow>();
   const outcome = { granted: 0, held: 0, expired: 0, messageIds: [] as string[] };
   const at = now.toISOString();
+  const settled = new Set<string>();
   for (const row of results) {
+    // A friend with two first fits done comes once for each; the earliest settles the referral.
+    if (settled.has(row.id)) continue;
+    settled.add(row.id);
     // An invite from a waitlist holds until 12 months after its area launched.
     if (row.via === "waitlist" && row.launched_at !== null && inviteLapsed(new Date(row.launched_at), now)) {
       await db

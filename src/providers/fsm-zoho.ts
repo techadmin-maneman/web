@@ -34,6 +34,16 @@
 //        answers Books' ID under data.Invoices[0].finance_data.Invoice_Id
 //   GET  /fsm/v1/Invoices/{id}                                   { data: [invoice with ZBilling_InvoiceId] }
 //
+// Three reads have not yet been tried on the org, and nothing waits on them
+// (docs/decisions/0068-a-paid-hold-is-kept.md): a contact looked for by mobile
+// number before one is added, and the latest Requests and work orders, read as
+// the latest appointments are, when a retry looks for one whose answer was
+// lost. A look that fails is logged, and the record is made as before.
+//
+//   GET  /fsm/v1/Contacts/search?criteria=(Mobile:equals:…)      { data: [contact] }, or 204
+//   GET  /fsm/v1/Requests?page=1&per_page=&sort_by=Modified_Time&sort_order=desc
+//   GET  /fsm/v1/Work_Orders?page=1&per_page=&sort_by=Modified_Time&sort_order=desc
+//
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
 import { z } from "zod";
@@ -50,10 +60,11 @@ import type {
   FsmProvider,
   FsmTechnician,
   FsmUpload,
+  NewFsmAppointment,
   NewFsmAsset,
   NewFsmContact,
   NewFsmRequest,
-  NewFsmVisit,
+  NewFsmWorkOrder,
 } from "./fsm.ts";
 import { createTokenCache, type TokenStore, ZohoError, zohoErrorFrom, zohoSend } from "./zoho-http.ts";
 
@@ -153,6 +164,19 @@ const Transitions = z.object({ transitions: z.array(z.object({ id: z.string(), n
 
 /** A new contact's street, until the client gives their address. */
 const ADDRESS_TO_CONFIRM = "To be confirmed with the client";
+
+/** A record's summary as a retry reads it: ours, and the reference that says which booking or lead made it. */
+const Summarised = z.object({ id: z.string(), Summary: z.string().nullish() });
+
+/**
+ * How many of the latest records a retry reads to find one it made. A retry
+ * comes within minutes of the write it repeats, so the record is among the
+ * newest, and one page is one call.
+ */
+const LATEST = 50;
+
+/** The summary FSM keeps, with our reference at its end: "Service visit for Rohit Malhotra (booking 6f1c…)". */
+const stamped = (summary: string, kind: "booking" | "lead", reference: string) => `${summary} (${kind} ${reference})`;
 
 const Attachment = z.object({
   id: z.string(),
@@ -321,6 +345,25 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
     return { id: invoice.id, booksInvoiceId, created: false };
   }
 
+  /** The latest records of a module, most recently changed first, as the reconciliation reads appointments. */
+  async function latest(step: string, module: string): Promise<unknown> {
+    const query = new URLSearchParams({
+      page: "1",
+      per_page: String(LATEST),
+      sort_by: "Modified_Time",
+      sort_order: "desc",
+    });
+    return json(step, `/${module}?${query.toString()}`);
+  }
+
+  /** The newest record of a module whose summary ends with our reference; null if none of the latest does. */
+  async function findStamped(step: string, module: string, ending: string): Promise<string | null> {
+    const found = records(await latest(step, module), "data", Summarised).find(
+      (record) => record.Summary?.endsWith(ending) === true,
+    );
+    return found?.id ?? null;
+  }
+
   let territory: Promise<string> | null = null;
   /** The territory a new address goes in: the org's first, until territories follow pincodes (P2-M4). */
   function firstTerritory(): Promise<string> {
@@ -415,6 +458,15 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       };
     },
 
+    // Search by criteria is how Zoho's own CRM finds a record (ADR 0012); on
+    // FSM's Contacts it has not yet been tried against the org
+    // (docs/decisions/0068-a-paid-hold-is-kept.md, "Not yet tried on the org").
+    async findContact(mobile) {
+      const criteria = encodeURIComponent(`(Mobile:equals:${mobile})`);
+      const [found] = records(await json("find_contact", `/Contacts/search?criteria=${criteria}`), "data", Contact);
+      return found?.id ?? null;
+    },
+
     async createContact(contact: NewFsmContact) {
       return create("create_contact", "Contacts", {
         ...(contact.firstName === null ? {} : { First_Name: contact.firstName }),
@@ -428,11 +480,16 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
           Street_1: ADDRESS_TO_CONFIRM,
           City: contact.city,
           ...(contact.state === null ? {} : { State: contact.state }),
+          ...(contact.pincode === null ? {} : { Zip_Code: contact.pincode }),
           Country: "India",
           Territory: await firstTerritory(),
         },
         Billing_Address: "$SUBLOOKUP_Service_Address",
       });
+    },
+
+    async findRequest(reference) {
+      return findStamped("find_request", "Requests", `(lead ${reference})`);
     },
 
     // A Request and its line both need the contact's addresses by ID.
@@ -441,7 +498,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       if (contact === undefined) throw new ZohoError(404, "NO_CONTACT", "the Request's contact is not in FSM");
       const serviceAddress = { id: contact.Service_Address.id };
       return create("create_request", "Requests", {
-        Summary: wanted.summary,
+        Summary: stamped(wanted.summary, "lead", wanted.reference),
         Contact: wanted.contactId,
         Service_Address: serviceAddress,
         Billing_Address: { id: contact.Billing_Address.id },
@@ -463,31 +520,49 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       });
     },
 
-    // The appointment is made on the work order's service line, which the work order's answer names.
-    async createVisit(visit: NewFsmVisit) {
-      const [contact] = records(await json("visit_contact", `/Contacts/${visit.contactId}`), "data", Addresses);
+    async findWorkOrder(reference) {
+      return findStamped("find_work_order", "Work_Orders", `(booking ${reference})`);
+    },
+
+    async createWorkOrder(order: NewFsmWorkOrder) {
+      const [contact] = records(await json("visit_contact", `/Contacts/${order.contactId}`), "data", Addresses);
       if (contact === undefined) throw new ZohoError(404, "NO_CONTACT", "the visit's contact is not in FSM");
-      const territory = await firstTerritory();
-      const order = await createWith("create_work_order", "Work_Orders", {
-        Summary: visit.summary,
+      return create("create_work_order", "Work_Orders", {
+        Summary: stamped(order.summary, "booking", order.reference),
         Type: "Service",
-        Contact: visit.contactId,
-        Territory: territory,
+        Contact: order.contactId,
+        Territory: await firstTerritory(),
         Service_Address: { id: contact.Service_Address.id },
         Billing_Address: { id: contact.Billing_Address.id },
-        Service_Line_Items: [{ Service: visit.serviceId, Quantity: 1, Sequence: 1 }],
+        Service_Line_Items: [{ Service: order.serviceId, Quantity: 1, Sequence: 1 }],
       });
-      const line = order.Service_Line_Items;
-      if (line === undefined) throw new ZohoError(201, "NO_LINE", "the work order answered without its service line");
-      const appointmentId = await create("create_appointment", "Service_Appointments", {
-        Summary: visit.summary,
-        Scheduled_Start_Date_Time: visit.start,
-        Scheduled_End_Date_Time: visit.end,
-        Territory: territory,
+    },
+
+    // The same read as the reconciliation's, of the appointments changed last; ours was made minutes ago.
+    async workOrderAppointment(workOrderId) {
+      const found = records(await latest("work_order_appointment", "Service_Appointments"), "data", Appointment).find(
+        (appointment) => appointment.Work_Order?.id === workOrderId && appointment.Status !== "Cancelled",
+      );
+      return found?.id ?? null;
+    },
+
+    // The appointment is made on the work order's service line, read from the work order itself.
+    async createAppointment(workOrderId, appointment: NewFsmAppointment) {
+      const [order] = records(
+        await json("appointment_work_order", `/Work_Orders/${workOrderId}`),
+        "data",
+        WorkOrderBilling,
+      );
+      const line = order?.Service_Line_Items[0]?.id;
+      if (line === undefined) throw new ZohoError(404, "NO_LINE", "the work order has no service line to schedule");
+      return create("create_appointment", "Service_Appointments", {
+        Summary: appointment.summary,
+        Scheduled_Start_Date_Time: appointment.start,
+        Scheduled_End_Date_Time: appointment.end,
+        Territory: await firstTerritory(),
         $Service_Line_Items: [line],
-        $Service_Resources: [visit.technicianId],
+        $Service_Resources: [appointment.technicianId],
       });
-      return { workOrderId: order.Work_Orders ?? "", appointmentId };
     },
 
     async rescheduleVisit(appointmentId, times) {

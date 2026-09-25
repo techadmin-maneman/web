@@ -5,6 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
+import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/razorpay.ts";
@@ -186,6 +187,43 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(shown).toMatchObject({ notice: "late", refund: 2600000, kept: 400000 });
     await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: true, notice: "late" });
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 2600000 }]);
+  });
+
+  // BIZ-09 of the audit, 24 September 2026.
+  it("keeps the late fee the visit was booked under, whatever the price book says since", async () => {
+    await booked("first_fit", TUESDAY_MORNING, 3000000);
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, appointment_id, late_fee_ex_gst,
+         late_fee_gst_percent)
+       VALUES ('hold-fit', ?1, 'first_fit', '2026-09-22', 'morning', 't1', 0, 3000000, 3000000, 0, 'booked', ?2, ?2,
+         ?2, ?3, 400000, 0)`,
+    )
+      .bind(PERSON, "2026-09-20T06:30:00.000Z", VISIT)
+      .run();
+    // Ops correct the late fee in force, which rewrites the very row the visit was sold under.
+    await env.DB.prepare("UPDATE price_book SET amount_ex_gst = 500000 WHERE item = 'late_fee_first_fit'").run();
+    const shown = await (await post(client(), `/api/appointments/${VISIT}/cancel`, { confirm: false })).json();
+    expect(shown).toMatchObject({ notice: "late", refund: 2600000, kept: 400000 });
+    const move = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    expect(move).toMatchObject({ cost: "late_fee", price: { amount: 400000 } });
+  });
+
+  // W5 of the audit, 24 September 2026 (BIZ-11).
+  it("gives no credit back to a grant the guarantee refund took back, even when the cancel is free", async () => {
+    await booked("service", THURSDAY_NOON, 0);
+    await env.DB.prepare("DELETE FROM payments").run();
+    await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "referral", sourceId: "attr-1", now: NOW }).run();
+    await (await redeemCredit(env.DB, PERSON, VISIT, NOW))?.run();
+    await clawBack(env.DB, "referral", "attr-1", NOW);
+    const app = client({ fsm: createStubFsm(world()) });
+
+    const shown = await (await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: false })).json();
+    expect(shown).toMatchObject({ notice: "free", credit: "lost" });
+    await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: true, notice: "free" });
+    const restored = await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'").first();
+    expect(restored).toEqual({ n: 0 });
+    expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(0);
   });
 
   it("refuses to cancel on terms the client was not shown", async () => {

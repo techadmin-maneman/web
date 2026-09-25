@@ -1,7 +1,7 @@
 // Moving or cancelling a visit, each rule named by the prompt's own words (src/policy/moving-a-visit.ts).
 
 import { describe, expect, it } from "vitest";
-import { cancelRefund, freeUntil, moveCost, noticeAt, RULES } from "../../src/policy/moving-a-visit.ts";
+import { cancelRefund, creditOnChange, freeUntil, moveCost, noticeAt, RULES } from "../../src/policy/moving-a-visit.ts";
 
 /** A window starting at noon on Thursday 24 September, in India. */
 const WINDOW = new Date("2026-09-24T06:30:00Z");
@@ -15,12 +15,18 @@ describe("moving a visit", () => {
       expect(moveCost(type, "free", "client")).toBe("free");
       expect(cancelRefund(type, "free")).toBe("all");
     }
+    expect(creditOnChange("free")).toBe("restored");
   });
 
   it(`${RULES[1]} ${RULES[2]}`, () => {
     expect(noticeAt(WINDOW, hoursBefore(24))).toBe("late");
     expect(moveCost("service", "late", "client")).toBe("charged");
     expect(cancelRefund("service", "late")).toBe("none");
+  });
+
+  it(`${RULES[1]} ${RULES[3]}`, () => {
+    expect(creditOnChange(noticeAt(WINDOW, hoursBefore(24)))).toBe("lost");
+    expect(creditOnChange(noticeAt(WINDOW, hoursBefore(24.01)))).toBe("restored");
   });
 
   it(RULES[4], () => {

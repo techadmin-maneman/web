@@ -9,13 +9,17 @@
 // held slot written to FSM, and the same lead behind it so the CRM funnel sees
 // every booking. Whether we come is decided by the pincode, which
 // GET /api/pincodes/{pin} answers for the form.
+//
+// A number that already has a consultation still to happen is answered
+// already_booked, with its day and window, rather than booked twice; one past
+// consultations books in the app (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
 const PincodeSchema = z
@@ -80,6 +84,24 @@ const WaitlistSchema = z
   .strict()
   .openapi("Waitlist");
 
+/** The consultation a number already has, which a second booking is refused for. */
+export const AlreadyBookedSchema = z
+  .object({
+    error: ErrorResponseSchema.shape.error,
+    booked: z
+      .object({ date: z.iso.date(), window: z.enum(BOOKING_WINDOWS) })
+      .strict()
+      .openapi({ description: "The day and window of the consultation still to happen." }),
+  })
+  .strict()
+  .openapi("AlreadyBooked");
+
+/** 409: a window gone, or a consultation this number already has. */
+export const takenOrBooked = {
+  description: "taken: that window has gone; or already_booked: this number has a consultation still to happen",
+  content: { "application/json": { schema: z.union([ErrorResponseSchema, AlreadyBookedSchema]) } },
+} as const;
+
 const consultationRoute = createRoute({
   method: "post",
   path: "/api/consultation",
@@ -89,8 +111,11 @@ const consultationRoute = createRoute({
     201: { description: "Booked, or asked for", content: { "application/json": { schema: ConsultationSchema } } },
     400: errorResponse("invalid_request"),
     403: errorResponse("turnstile_failed"),
-    409: errorResponse("taken: that window has gone"),
-    422: errorResponse("invalid_request: the pincode is not served, or the day is not open"),
+    409: takenOrBooked,
+    422: errorResponse(
+      "invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past " +
+        "consultations, and books in the app",
+    ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
   },
@@ -125,7 +150,12 @@ export function registerConsultations(app: App): void {
       attribution: body.attribution ?? {},
       invite: null,
     });
-    if (!booked.ok) return c.json(errorBody(booked.code, c.var.requestId), booked.status);
+    if (!booked.ok) {
+      if (booked.booked !== undefined) {
+        return c.json({ ...errorBody("already_booked", c.var.requestId), booked: booked.booked }, 409);
+      }
+      return c.json(errorBody(booked.code, c.var.requestId), booked.status);
+    }
     return c.json({ state: booked.state, date: booked.date, window: booked.window, area: booked.area }, 201);
   });
 

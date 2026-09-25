@@ -8,8 +8,10 @@
 //   GET /api/documents/:id           a visit's invoice, as a PDF from Books
 //
 // Amounts are in paise, as Razorpay charged them, GST included; each carries
-// its ex-GST part, which the app shows as the main figure. A failed attempt is
-// not a payment and is left out. A payment kept under the 24-hour rule is a
+// its ex-GST part, which the app shows as the main figure, at the rate it was
+// sold at: the hold's, kept on the payment when it was captured. A payment no
+// hold priced is split at GST_PERCENT. A failed attempt is not a payment and
+// is left out. A payment kept under the 24-hour rule is a
 // charge, and carries its evidence (docs/decisions/0046-moving-and-cancelling.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
@@ -163,11 +165,17 @@ interface VisitColumns {
   type: (typeof VISIT_TYPES)[number] | null;
 }
 
-interface PaymentRow extends VisitColumns {
+/** The GST rate a payment was sold at; null for one no hold priced. */
+interface RateColumns {
+  gst_percent: number | null;
+}
+
+interface PaymentRow extends VisitColumns, RateColumns {
   id: string;
   reference: string | null;
   created_at: string;
   amount: number;
+  amount_ex_gst: number | null;
   refunded_amount: number;
   status: "authorized" | "captured" | "refunded" | "partially_refunded";
   method: string | null;
@@ -180,7 +188,7 @@ interface PaymentRow extends VisitColumns {
   charged_amount: number | null;
 }
 
-interface RefundRow extends VisitColumns {
+interface RefundRow extends VisitColumns, RateColumns {
   id: string;
   payment_id: string;
   created_at: string;
@@ -193,7 +201,8 @@ interface RefundRow extends VisitColumns {
 const VISIT_JOIN = `LEFT JOIN appointments a ON a.id = p.appointment_id AND a.deleted_at IS NULL`;
 
 // The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee.
-const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.refunded_amount, p.status, p.method,
+const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.amount_ex_gst, p.gst_percent,
+    p.refunded_amount, p.status, p.method,
     p.books_payment_id, p.kind, a.id AS appointment_id, a.window_start, a.type, a.invoice_issued_at,
     c.kind AS charged_change, c.created_at AS charged_at, c.was_start AS charged_visit_start,
     c.kept_amount AS charged_amount
@@ -201,17 +210,20 @@ const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.refun
   LEFT JOIN visit_changes c ON c.payment_id = p.id AND c.notice = 'late' AND c.kept_amount > 0
   WHERE p.person_id = ?1 AND p.status != 'failed'`;
 
-const REFUND_QUERY = `SELECT r.id, r.payment_id, r.created_at, r.amount, r.status, r.speed, p.method,
+const REFUND_QUERY = `SELECT r.id, r.payment_id, r.created_at, r.amount, r.status, r.speed, p.method, p.gst_percent,
     a.id AS appointment_id, a.window_start, a.type
   FROM refunds r JOIN payments p ON p.id = r.payment_id ${VISIT_JOIN}
   WHERE p.person_id = ?1`;
 
-function moneyOf(row: VisitColumns & { created_at: string; amount: number }) {
+function moneyOf(
+  row: VisitColumns & RateColumns & { created_at: string; amount: number; amount_ex_gst?: number | null },
+) {
+  const rate = row.gst_percent ?? GST_PERCENT;
   return {
     date: indiaDate(new Date(row.created_at)),
     amount: row.amount,
-    amount_ex_gst: exGst(row.amount),
-    gst_percent: GST_PERCENT,
+    amount_ex_gst: row.amount_ex_gst ?? exGst(row.amount, rate),
+    gst_percent: rate,
     visit:
       row.appointment_id === null || row.window_start === null
         ? null

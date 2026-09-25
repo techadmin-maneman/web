@@ -9,6 +9,7 @@
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
+import { confirmPaidHold } from "./bookings.ts";
 
 export type PaymentStatus = "authorized" | "captured" | "failed" | "refunded" | "partially_refunded";
 
@@ -72,12 +73,18 @@ export async function recordPayment(
   const appointmentId = await appointmentOf(db, notes.appointment_id);
   const vpa = payment.vpa ?? null;
   const vpaHash = vpa === null ? null : await saltedHash(hashSalt, vpa.trim().toLowerCase());
+  /** Razorpay's own time for the payment, which says whether it came in time for its hold. */
+  const madeAt = new Date(payment.created_at * 1000).toISOString();
 
+  // The split before GST is the hold's, whose price is what Razorpay was asked to charge: only when the amounts
+  // agree, since a payment for any other figure was not priced by the hold.
+  const heldPrice = "FROM slot_holds WHERE razorpay_order_id = ?4 AND amount = ?6";
   await db
     .prepare(
       `INSERT INTO payments (id, person_id, appointment_id, razorpay_order_id, razorpay_payment_id, amount, currency,
-         method, vpa_hash, card_network, status, captured_at, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
+         method, vpa_hash, card_network, status, captured_at, created_at, updated_at, amount_ex_gst, gst_percent)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14,
+         (SELECT amount_ex_gst ${heldPrice}), (SELECT gst_percent ${heldPrice}))
        ON CONFLICT (razorpay_payment_id) DO UPDATE SET
          person_id = COALESCE(payments.person_id, excluded.person_id),
          appointment_id = COALESCE(payments.appointment_id, excluded.appointment_id),
@@ -90,6 +97,8 @@ export async function recordPayment(
              WHEN 'partially_refunded' THEN 3 ELSE 4 END)
            THEN excluded.status ELSE payments.status END,
          captured_at = COALESCE(payments.captured_at, excluded.captured_at),
+         amount_ex_gst = COALESCE(payments.amount_ex_gst, excluded.amount_ex_gst),
+         gst_percent = COALESCE(payments.gst_percent, excluded.gst_percent),
          updated_at = excluded.updated_at`,
     )
     .bind(
@@ -105,12 +114,15 @@ export async function recordPayment(
       payment.card?.network ?? null,
       status,
       status === "captured" ? at : null,
-      new Date(payment.created_at * 1000).toISOString(),
+      madeAt,
       at,
       RANK[status],
     )
     .run();
-  if (status === "captured") await giveReference(db, payment.id, now);
+  if (status !== "captured") return;
+  await giveReference(db, payment.id, now);
+  // The hold it paid for keeps its time from here until it is booked or refunded (src/domain/bookings.ts).
+  if (typeof payment.order_id === "string") await confirmPaidHold(db, payment.order_id, madeAt, now).run();
 }
 
 /**

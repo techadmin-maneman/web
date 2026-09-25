@@ -311,6 +311,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add service-visit credits to a client, or take them away, with the reason */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreditAdjustment"];
+                };
+            };
+            responses: {
+                /** @description The client's balance now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreditBalance"];
+                    };
+                };
+                /** @description invalid_request: visits takes away more than the client has */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or one who has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/number-changes": {
         parameters: {
             query?: never;
@@ -2010,7 +2079,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -2271,6 +2340,19 @@ export interface components {
                 requested_at: string;
                 decided_at: string | null;
             } | null;
+        };
+        CreditBalance: {
+            visits: number;
+            earliest_expiry: string | null;
+        };
+        CreditAdjustment: {
+            /** @description Visits to add, or, below nought, to take away. */
+            visits: number;
+            /**
+             * @description correction: given or taken in error; goodwill: given to make up for something.
+             * @enum {string}
+             */
+            reason: "correction" | "goodwill";
         };
         NumberChangeDecision: {
             /** @enum {string} */
@@ -2649,7 +2731,8 @@ export interface components {
             } | null;
         };
         Price: {
-            item: string;
+            /** @enum {string} */
+            item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
             tier: string;
             /** @description In paise, before GST. */
             amount_ex_gst: number;
@@ -2662,7 +2745,11 @@ export interface components {
             in_force: boolean;
         };
         PriceChange: {
-            item: string;
+            /**
+             * @description A kind of visit, or one of the two late fees.
+             * @enum {string}
+             */
+            item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
             tier: string;
             amount_ex_gst: number;
             gst_percent: number;
