@@ -3,8 +3,10 @@
 // webhooks and the reconciliation put them here; neither is trusted for the
 // appointment's contents, only for which one changed. Others name a booked
 // lead to send to FSM as a Request (src/domain/fsm-leads.ts), a hold paid
-// for in the app to book as a visit (src/domain/bookings.ts), or an erased
-// person whose FSM contact is to be anonymised (docs/decisions/0049-dpdp.md).
+// for in the app to book as a visit (src/domain/bookings.ts), an erased
+// person whose FSM contact is to be anonymised (docs/decisions/0049-dpdp.md),
+// or a client whose new number or address their contact is to take
+// (docs/decisions/0070-vendor-correctness.md).
 //
 // Once an appointment is closed, its photographs are copied from FSM into the
 // client-photos bucket (src/domain/visit-photos.ts).

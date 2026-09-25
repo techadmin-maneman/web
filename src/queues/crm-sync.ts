@@ -1,6 +1,6 @@
 // The crm-sync consumer: the only caller of the CRM. Each message names a lead
-// to sync, or a person to erase; either is read fresh from D1, which is the
-// system of record.
+// to sync, a person to erase, or a person whose number or address changed;
+// each is read fresh from D1, which is the system of record.
 //
 // A failed sync is marked `failed`. A lead's first failure goes back on the
 // queue for one more try QUICK_RETRY_DELAY_SECONDS later, so a passing hiccup
