@@ -1,15 +1,23 @@
 /* Refer (boards F1 to F6): the invite, the card sheet, and who has been fitted. */
 
-.page {
+.page,
+.tracker {
   display: flex;
   min-height: 100%;
   flex-direction: column;
-  gap: var(--sp-26);
   padding: var(--sp-28) var(--sp-20);
 }
 
-.page p,
-.page ul {
+.page {
+  gap: var(--sp-26);
+}
+
+.tracker {
+  padding-top: var(--sp-24);
+}
+
+/* Weightless, so a class's own margin always wins over it. */
+:where(.page, .tracker, .dialog) :where(p, ul) {
   margin: 0;
 }
 
@@ -47,145 +55,258 @@
   font-variant-numeric: lining-nums;
 }
 
-.note {
-  font-size: var(--fs-15);
-  line-height: 1.6;
-  color: var(--text-muted);
+.noOther {
+  font-size: var(--fs-16);
+  line-height: 1.65;
+  color: var(--text-soft);
 }
 
+/* The two ways on, at the foot of the screen (board F1). */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-14);
+  margin-top: auto;
+}
+
+.share,
+.shareSmall,
 .primary,
-.secondary,
-.quiet {
+.outline {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  border: 0;
+  background: var(--ink);
   font: inherit;
+  font-weight: 500;
+  color: var(--paper);
   cursor: pointer;
 }
 
+.share,
 .primary {
+  gap: var(--sp-11);
+  width: 100%;
   min-height: var(--btn-lg);
-  border: 0;
-  background: var(--ink);
   font-size: var(--fs-16);
-  font-weight: 500;
-  color: var(--paper);
-  text-decoration: none;
 }
 
-.primary:disabled {
+.primary:disabled,
+.shareSmall:disabled {
   background: var(--paper-shade);
   color: var(--text-quiet);
   cursor: default;
 }
 
-/* The two ways on, at the foot of the screen (board F1). */
-.actions {
-  margin-top: auto;
-  display: grid;
-  gap: var(--sp-16);
-}
-
-.secondary {
-  min-height: var(--tap);
+.outline {
+  border: var(--hairline) solid var(--ink);
   background: none;
-  font-size: var(--fs-15);
   color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: var(--sp-4);
 }
 
-.secondary:disabled {
-  color: var(--text-quiet);
-  cursor: default;
-}
-
-/* Board F1's quiet way to the tracker, and F6's revoke. */
+/* Board F1's quiet way to the tracker, and F6's way to the revoke. */
 .quiet {
-  min-height: var(--btn-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: 0;
   border: 0;
   background: none;
+  font: inherit;
   font-size: var(--fs-16);
   color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: var(--sp-3);
+  text-decoration: none;
+  cursor: pointer;
 }
 
-/* Board F5. */
-.earned {
+.quiet span {
+  padding-bottom: var(--sp-3);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* Board F5: what the fits have earned and what is left, then each friend fitted. */
+.figures {
   display: flex;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  font-size: var(--fs-16);
+  gap: var(--sp-32);
+  padding-bottom: var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
 }
 
-.remaining {
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-7);
+}
+
+.figureCount {
+  font-family: var(--font-serif);
+  font-size: var(--fs-34);
+  line-height: 1;
+  font-variant-numeric: lining-nums;
+}
+
+.figureWord,
+.friendWhen {
+  font-size: var(--fs-14);
   color: var(--text-muted);
 }
 
-.fitted {
-  display: flex;
-  flex-direction: column;
-  list-style: none;
+.friends {
+  margin: 0;
   padding: 0;
+  list-style: none;
 }
 
 .friend {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--sp-16);
-  padding: var(--sp-16) 0;
+  gap: var(--sp-14);
+  min-height: var(--tap-row);
+  padding: var(--sp-18) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
 }
 
 .friendName {
-  font-size: var(--fs-16);
+  font-size: var(--fs-17);
 }
 
-.confirm {
-  padding: var(--sp-16);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-shade);
+.tracker .friendWhen {
+  margin-top: var(--sp-4);
 }
 
-.confirmTitle {
+.friendEarned {
+  font-size: var(--fs-15);
+}
+
+.tracker .only {
+  margin-top: var(--sp-24);
+  font-size: var(--fs-15);
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+/* Board F6: nobody fitted yet, and the invite. */
+.nobody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-14);
+}
+
+.nobodyTitle {
   font-family: var(--font-serif);
-  font-size: var(--fs-19);
-  line-height: 1.25;
+  font-size: var(--fs-25);
+  line-height: 1.2;
 }
 
-.confirm .note {
-  margin-top: var(--sp-8);
+.nobodyLine {
+  font-size: var(--fs-15);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.shareSmall {
+  align-self: flex-start;
+  min-height: var(--btn-md);
+  margin-top: var(--sp-6);
+  padding: 0 var(--sp-20);
+  font-size: var(--fs-15);
+}
+
+.tracker > .quiet {
+  align-self: flex-start;
+  margin-top: var(--sp-24);
+}
+
+/* Board F6's revoke, and the share failure's panel on F4. */
+.panel,
+.failed {
+  padding: var(--sp-20);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+  color: var(--text);
+  --focus-colour: var(--ink);
+}
+
+.panel {
+  margin-top: var(--sp-24);
+}
+
+.panelLabel,
+.failedLabel {
+  margin-bottom: var(--sp-14);
+  font-family: var(--font-serif);
+  font-size: var(--fs-14);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  color: var(--text-muted);
+}
+
+.panelTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  line-height: 1.2;
+}
+
+.panel .panelBody {
+  margin-top: var(--sp-14);
+  padding-top: var(--sp-14);
+  border-top: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-16);
+  line-height: 1.6;
 }
 
 .pair {
   display: flex;
   gap: var(--sp-10);
-  margin-top: var(--sp-16);
+  margin-top: var(--sp-18);
 }
 
 .pair .primary,
-.pair .secondary {
+.pair .outline {
+  flex: 1;
   min-height: var(--btn-md);
-  margin-top: 0;
   font-size: var(--fs-15);
 }
 
-/* The share sheet (boards F2 to F4). */
-.sheet {
-  position: relative;
+.problem {
+  font-size: var(--fs-15);
+  line-height: 1.55;
+  color: var(--error-on-paper);
+}
+
+.panel .problem {
+  margin-top: var(--sp-14);
+}
+
+/*
+ * The share sheet (boards F2 to F4). The dialog fills the screen and is clear: F2 and F4 fill it, as drawn, and
+ * F3 sits at its foot over the dark ground, with Close above it, where anyone can see it and reach it.
+ */
+.dialog {
   width: 100%;
   max-width: var(--app-column);
+  height: 100dvh;
   max-height: 100dvh;
-  margin: auto auto 0;
-  padding: var(--sp-22) var(--sp-20) var(--sp-24);
-  overflow-y: auto;
+  margin: 0 auto;
+  padding: 0;
   border: 0;
-  background: var(--paper);
-  color: var(--text);
+  background: none;
+  --focus-colour: var(--paper);
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   animation: rise var(--ease-progress);
+}
+
+.dialog::backdrop {
+  background: var(--ink-night);
 }
 
 @keyframes rise {
@@ -194,72 +315,95 @@
   }
 }
 
-.sheet::backdrop {
-  background: var(--ink-night);
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--paper);
+  color: var(--text);
+  --focus-colour: var(--ink);
 }
 
-.sheet p,
-.sheet ul {
-  margin: 0;
+.screenHead {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--sp-14);
+  height: var(--btn-lg);
+  padding: 0 var(--sp-20);
+  border-bottom: var(--hairline) solid var(--paper-line);
 }
 
-.close {
-  display: block;
-  min-height: var(--tap);
-  margin: calc(-1 * var(--sp-8)) calc(-1 * var(--sp-8)) var(--sp-8) auto;
-  padding: var(--sp-8);
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: calc(-1 * var(--sp-11));
+  padding: 0;
   border: 0;
   background: none;
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--text);
   cursor: pointer;
 }
 
-.sheetTitle {
+.screenTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: var(--fs-24);
-  font-weight: 400;
-  line-height: 1.2;
+  font-size: var(--fs-22);
 }
 
-.sheetLine {
-  margin-top: var(--sp-10);
-  font-size: var(--fs-15);
-  line-height: 1.6;
-  color: var(--text-muted);
+.screenBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-18);
+  padding: var(--sp-24) var(--sp-20);
+  overflow-y: auto;
 }
 
-.lines {
-  margin-top: var(--sp-14);
-  padding-left: var(--sp-18);
-  font-size: var(--fs-15);
+.lead {
+  font-size: var(--fs-16);
   line-height: 1.6;
+  color: var(--text-soft);
 }
 
 .choices {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-10);
-  margin-top: var(--sp-18);
+  gap: var(--sp-18);
 }
 
+/* Board F2: each card drawn, with its box ticked when it is the one chosen. */
 .choice {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  padding: var(--sp-14) var(--sp-16);
+  display: block;
+  width: 100%;
+  padding: 0;
   border: var(--hairline) solid var(--paper-line);
   background: none;
   font: inherit;
+  color: var(--text);
   text-align: left;
   cursor: pointer;
 }
 
 .chosen {
   border-color: var(--ink);
-  outline: var(--hairline) solid var(--ink);
+}
+
+.choiceText {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  padding: var(--sp-16);
+}
+
+.choiceName,
+.choiceNote {
+  display: block;
 }
 
 .choiceName {
@@ -267,59 +411,322 @@
 }
 
 .choiceNote {
+  margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
 
-.sheet .primary,
-.sheet .secondary {
+.box {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--sp-20);
+  height: var(--sp-20);
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.chosen .box {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.screenBody > .primary {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+/* The card, drawn at 1200:630 as boards F2 and F4 draw it. */
+.card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  background: var(--ink);
+}
+
+img.card {
+  display: block;
+  height: auto;
+  object-fit: cover;
+}
+
+.before,
+.after {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  object-fit: cover;
+}
+
+.before {
+  background: var(--ink-frame);
+}
+
+.after {
+  background: var(--ink-raised);
+}
+
+.rule {
+  width: var(--hairline);
+  background: var(--gilt);
+}
+
+.lockup {
+  position: absolute;
+  right: var(--sp-12);
+  bottom: var(--sp-10);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-7);
+}
+
+.lockupMark {
+  width: var(--sp-15);
+  height: var(--sp-16);
+  fill: var(--gilt);
+}
+
+.lockupWordmark {
+  width: var(--switch-width);
+  height: var(--sp-8);
+  fill: var(--paper);
+}
+
+.bubble .lockup {
+  right: var(--sp-10);
+  bottom: var(--sp-8);
+  gap: var(--sp-6);
+}
+
+.bubble .lockupMark {
+  width: var(--sp-13);
+  height: var(--sp-14);
+}
+
+.bubble .lockupWordmark {
+  width: var(--sp-40);
+  height: var(--sp-7);
+}
+
+/* Board F3: the lines the photographs need agreed to, the irreversible one last. */
+.close {
+  flex-shrink: 0;
+  align-self: flex-end;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin-right: var(--sp-8);
+  padding: 0 var(--sp-12);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-15);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.sheet {
+  min-height: 0;
+  padding: var(--sp-24) var(--sp-20) var(--sp-26);
+  overflow-y: auto;
+  background: var(--paper);
+  color: var(--text);
+  --focus-colour: var(--ink);
+}
+
+.sheetTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  line-height: 1.18;
+}
+
+.lines {
+  margin-top: var(--sp-20);
+  padding: 0;
+  border-top: var(--hairline) solid var(--text);
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-14);
+  padding: var(--sp-15) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-16);
+  line-height: 1.55;
+}
+
+.bullet {
+  flex-shrink: 0;
+  width: var(--sp-6);
+  height: var(--sp-6);
+  margin-top: var(--sp-8);
+  background: var(--ink);
+}
+
+.sheet .problem,
+.composing {
   margin-top: var(--sp-14);
 }
 
-/* Board F4's preview of the chat. */
-.preview {
-  margin-top: var(--sp-16);
-  padding: var(--sp-12);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-shade);
+.composing {
+  font-size: var(--fs-15);
+  color: var(--text-muted);
 }
 
-.previewCard {
-  aspect-ratio: 1200 / 630;
-  background: linear-gradient(to right, var(--ink) 0 49.7%, var(--brass-text) 49.7% 50.3%, var(--paper) 50.3% 100%);
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  margin-top: var(--sp-24);
 }
 
-.previewText {
-  padding: var(--sp-10) var(--sp-4) 0;
+.stack .outline {
+  min-height: var(--btn-lg);
+  font-size: var(--fs-16);
 }
 
-.previewDomain {
+/* Board F4: on the dark ground, exactly as the friend will receive it, and the ways to send it. */
+.inkScreen {
+  background: var(--ink-night);
+  color: var(--paper);
+  --focus-colour: var(--paper);
+}
+
+.inkScreen .screenBody {
+  gap: var(--sp-20);
+  padding-top: 0;
+}
+
+.inkClose {
+  flex-shrink: 0;
+  align-self: flex-end;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin-right: var(--sp-8);
+  padding: 0 var(--sp-12);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-15);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  color: var(--ink-muted);
+}
+
+.bubble {
+  max-width: var(--wa-bubble-width);
+  padding: var(--sp-8);
+  background: var(--wa-bubble);
+  color: var(--text);
+}
+
+.bubblePreview {
+  background: var(--wa-preview);
+}
+
+.bubbleText {
+  padding: var(--sp-9) var(--sp-11);
+}
+
+.bubbleTitle {
+  font-size: var(--fs-14);
+  line-height: 1.35;
+}
+
+.bubble .bubbleLine,
+.bubble .bubbleDomain {
   font-size: var(--fs-13);
   color: var(--text-muted);
 }
 
-.previewTitle {
+.bubble .bubbleLine {
   margin-top: var(--sp-4);
+  line-height: 1.4;
+}
+
+.bubble .bubbleDomain {
+  margin-top: var(--sp-5);
+}
+
+.bubble .bubbleMessage {
+  padding: var(--sp-8) var(--sp-4) var(--sp-2);
   font-size: var(--fs-15);
-  font-weight: 500;
-}
-
-.previewBody {
-  margin-top: var(--sp-4);
-  font-size: var(--fs-14);
-  line-height: 1.5;
-  color: var(--text-soft);
-}
-
-.previewMessage {
-  margin-top: var(--sp-12);
-  font-size: var(--fs-14);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-.sheet .problem {
-  margin-top: var(--sp-12);
+.inkProblem {
   font-size: var(--fs-15);
-  color: var(--error-on-paper);
+  line-height: 1.55;
+  color: var(--error-on-ink);
+}
+
+.failed p + p {
+  font-size: var(--fs-16);
+  line-height: 1.6;
+}
+
+.retry {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-top: var(--sp-16);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.via {
+  margin-top: auto;
+  padding-top: var(--sp-20);
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+.via .eyebrow {
+  margin-bottom: var(--sp-14);
+}
+
+.ways {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-10);
+}
+
+.way {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-14);
+  width: 100%;
+  min-height: var(--btn-lg);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink-line);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-16);
+  color: var(--ink-soft);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.whatsapp {
+  border-color: var(--gilt);
+  color: var(--paper);
 }

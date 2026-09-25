@@ -6,8 +6,6 @@
 // name is filled in where {name} appears; without a name the page says "You
 // have an invite" instead.
 
-import { fill } from "../lib/text.ts";
-
 export const referral = {
   city: "Gurgaon",
   /** The navy block at the top, before the pincode is known (C1). */
@@ -146,7 +144,5 @@ export const referral = {
   },
 };
 
-/** The title a shared invite carries, which the mm-site Worker writes into the preview. */
-export function inviteTitle(name: string | null): string {
-  return name === null ? "You have a Mane Man invite" : fill("{name} sent you a Mane Man invite", { name });
-}
+/** The title a shared invite carries, which the mm-site Worker writes into the preview and the app's preview shows. */
+export { inviteTitle } from "@maneman/web-kit/invite";

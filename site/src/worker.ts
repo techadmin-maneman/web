@@ -8,6 +8,8 @@
 //
 // Everything else falls through to the assets, as before.
 
+import { INVITE_DESCRIPTION, inviteTitle } from "@maneman/web-kit/invite";
+
 interface SiteEnv {
   readonly ASSETS: Fetcher;
   /** mm-api, bound directly: on staging its host is behind Access, which a request over the internet fails. */
@@ -22,11 +24,6 @@ interface Invite {
 
 const CODE = /^\/r\/([A-Za-z0-9]{4,12})\/?$/;
 const HOUSE_CARD = "/images/invite-house.jpg";
-
-/** What the preview says, in the design's words (Referral and Waitlist, B1 and B2). */
-const TITLE = (name: string | null) =>
-  name === null ? "You have a Mane Man invite" : `${name} sent you a Mane Man invite`;
-const DESCRIPTION = "Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.";
 
 class Meta {
   readonly invite: Invite;
@@ -46,11 +43,12 @@ class Meta {
       card.state === "personal"
         ? `${this.origin}/api/og/${this.code}.jpg?v=${String(card.version)}`
         : `${this.origin}${HOUSE_CARD}`;
+    // What the preview says, in the design's words (Referral and Waitlist, B1 and B2), as the app's preview says it.
     if (property === "og:title" || property === "twitter:title") {
-      element.setAttribute("content", TITLE(this.invite.referrer_first_name));
+      element.setAttribute("content", inviteTitle(this.invite.referrer_first_name));
     }
     if (property === "og:description" || property === "twitter:description") {
-      element.setAttribute("content", DESCRIPTION);
+      element.setAttribute("content", INVITE_DESCRIPTION);
     }
     if (property === "og:image" || property === "twitter:image") element.setAttribute("content", image);
     if (property === "og:url") element.setAttribute("content", `${this.origin}/r/${this.code}`);

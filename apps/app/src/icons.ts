@@ -20,5 +20,11 @@ export const CHEVRON = "M9 5 L16 12 L9 19";
 /** Beside board C4's "Slot held": a clock face. */
 export const CLOCK = "M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M12 7.5 V12 L15 14.5";
 
-/** In board C4's chosen way to pay. */
+/** In board C4's chosen way to pay, and board F2's chosen card. */
 export const CHECK = "M5 13 L10 18 L19 6";
+
+/** Board F4's two other ways to share: to another app, and by copying the link. */
+export const OTHER_APPS =
+  "M8 7 H6 A2 2 0 0 0 4 9 V18 A2 2 0 0 0 6 20 H18 A2 2 0 0 0 20 18 V9 A2 2 0 0 0 18 7 H16 M12 3 V13 M8.5 6.5 L12 3 L15.5 6.5";
+export const COPY_LINK =
+  "M9.5 13.5 L14.5 8.5 M8 11 L6 13 A3.5 3.5 0 0 0 11 18 L13 16 M11 8 L13 6 A3.5 3.5 0 0 1 18 11 L16 13";
