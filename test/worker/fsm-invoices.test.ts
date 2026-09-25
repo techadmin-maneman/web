@@ -5,6 +5,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { CALLS_PER_VISIT, raiseInvoices, RECHECK_AFTER_MS } from "../../src/domain/fsm-invoices.ts";
+import { outstandingTasks } from "../../src/domain/tasks.ts";
+import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubBooks, type BooksProvider, type StubBooks } from "../../src/providers/books.ts";
@@ -364,6 +366,12 @@ describe("what the invoice totals, before it is issued", () => {
     await invoicePass(fsm, books, later(RECHECK_AFTER_MS * 4));
     expect(books.made.issued).toEqual([]);
     expect(alerted).toHaveLength(1);
+
+    // The Tasks board's Draft invoice group lists it until it is sent.
+    const tasks = await outstandingTasks(env.DB, NOW, 50, TASK_SLA_HOURS);
+    expect(tasks).toContainEqual(
+      expect.objectContaining({ group: "draft_invoice", id: VISIT, detail: held?.fsm_invoice_id }),
+    );
   });
 
   it("checks a visit with no payment against the price book on the day it happened", async () => {
