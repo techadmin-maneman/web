@@ -202,6 +202,21 @@ describe("Access's signing keys", () => {
     const result = await verifier.verify(withToken(await tokenFor(published, staffClaims())));
     expect(result).toMatchObject({ ok: false, reason: "keys_unavailable" });
   });
+
+  // A fetch that hangs would hold every ops request open until the Worker's own limit.
+  it("are fetched with a time limit, which then refuses the request as unavailable", async () => {
+    const signals: (AbortSignal | null | undefined)[] = [];
+    const timedOut: typeof fetch = (_input, init) => {
+      signals.push(init?.signal);
+      return Promise.reject(new DOMException("The operation timed out.", "TimeoutError"));
+    };
+    const verifier = createAccessVerifier(SETTINGS, { fetch: timedOut, now: () => NOW });
+
+    const result = await verifier.verify(withToken(await tokenFor(published, staffClaims())));
+
+    expect(signals).toEqual([expect.any(AbortSignal)]);
+    expect(result).toMatchObject({ ok: false, reason: "keys_unavailable" });
+  });
 });
 
 describe("the ops surface", () => {
