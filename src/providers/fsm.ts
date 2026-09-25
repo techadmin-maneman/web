@@ -164,6 +164,24 @@ export interface NewFsmRequest {
   readonly preferenceNote: string;
 }
 
+/**
+ * The org's own names for an appointment's blueprint transitions. FSM finds a
+ * transition by its name, so a name it does not know is one it never offers.
+ * Dispatch, Reschedule, Cancel and Terminate are the trial's
+ * (docs/decisions/fsm-trial.md, question 7); Start Work and Complete Work are
+ * what both staging runs of 23 September 2026 took (docs/verification.md, P2-M2).
+ */
+export type AppointmentTransition = "Dispatch" | "Start Work" | "Complete Work" | "Terminate" | "Cancel" | "Reschedule";
+
+/** FSM's status after each transition. A reschedule leaves the appointment where it was. */
+export const STATUS_AFTER: Readonly<Record<Exclude<AppointmentTransition, "Reschedule">, string>> = {
+  Dispatch: "Dispatched",
+  "Start Work": "In Progress",
+  "Complete Work": "Completed",
+  Terminate: "Terminated",
+  Cancel: "Cancelled",
+};
+
 /** A visit to book in FSM: a work order for the service, and its appointment with the technician. */
 export interface NewFsmVisit {
   readonly contactId: string;
@@ -206,9 +224,10 @@ export interface FsmProvider {
   appointmentTransitions(appointmentId: string): Promise<string[]>;
   /**
    * Makes one of them, with its mandatory note; false when FSM does not offer
-   * it, which is how a job FSM has already moved past says so.
+   * it from where the appointment is. Only its status says whether that is a
+   * step FSM has already taken or one it refuses.
    */
-  transitionAppointment(appointmentId: string, name: string, note: string): Promise<boolean>;
+  transitionAppointment(appointmentId: string, name: AppointmentTransition, note: string): Promise<boolean>;
   /** Writes the job's own fields on the appointment, e.g. its summary. */
   updateAppointment(appointmentId: string, fields: Record<string, string>): Promise<void>;
   /** Uploads a file and attaches it to an appointment; returns FSM's attachment ID. */
@@ -253,14 +272,24 @@ export interface StubFsmWorld {
   readonly assets?: Record<string, FsmAsset[]>;
   /** What the Request behind each work order asked for, by work order ID; a work order not here names no Request. */
   readonly preferences?: Record<string, FsmRequestPreference>;
-  /** The transitions each appointment offers, by appointment ID; the default is below. */
-  readonly transitions?: Record<string, string[]>;
   /** Work orders with nothing to bill, as a free consultation has. */
   readonly unbillable?: string[];
 }
 
-/** What FSM offers a scheduled appointment, as the trial found (docs/decisions/fsm-trial.md). */
-export const STUB_TRANSITIONS = ["Dispatch", "Reschedule", "Cancel", "Terminate", "Start", "Complete"];
+/**
+ * What the stub offers an appointment in each status, as the org does. From
+ * Scheduled, what the trial found (docs/decisions/fsm-trial.md, question 7);
+ * Start Work from Dispatched and Complete Work from In Progress, as the staging
+ * runs took them (docs/verification.md, P2-M2). Terminate from Dispatched and
+ * In Progress is what a no-show and a partial job close with, and has not yet
+ * been tried on the org (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
+ * A closed appointment offers nothing.
+ */
+export const STUB_TRANSITIONS: Readonly<Record<string, readonly AppointmentTransition[]>> = {
+  Scheduled: ["Dispatch", "Reschedule", "Cancel", "Terminate"],
+  Dispatched: ["Start Work", "Terminate"],
+  "In Progress": ["Complete Work", "Terminate"],
+};
 
 /** The catalogue scripts/setup-fsm.ts makes in FSM, which the local stub holds, so local bookings reach it. */
 const CATALOGUE: FsmItem[] = [
@@ -346,14 +375,30 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
 
   const stubAssets = world.assets ?? {};
   const invoices = new Map<string, FsmInvoice>();
+
+  /** Where each appointment's transitions have moved it, over the status the world gave it. */
+  const statuses = new Map<string, string>();
+  function appointmentNow(id: string): FsmAppointment | null {
+    const held = world.appointments.find((appointment) => appointment.id === id);
+    if (held === undefined) return null;
+    return { ...held, status: statuses.get(id) ?? held.status };
+  }
+  /** An appointment the stub does not hold offers nothing, as FSM offers nothing for a record it lacks. */
+  function offeredFor(id: string): readonly AppointmentTransition[] {
+    const status = appointmentNow(id)?.status;
+    return status === undefined ? [] : (STUB_TRANSITIONS[status] ?? []);
+  }
+
   return {
     made,
     failNext: (step, message = `the stub FSM refused ${step}`) => {
       failures.set(step, message);
     },
-    appointment: (id) => Promise.resolve(world.appointments.find((appointment) => appointment.id === id) ?? null),
+    appointment: (id) => Promise.resolve(appointmentNow(id)),
     appointments: (page, perPage) => {
-      const sorted = [...world.appointments].sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
+      const sorted = world.appointments
+        .flatMap((appointment) => appointmentNow(appointment.id) ?? [])
+        .sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
       const start = (page - 1) * perPage;
       return Promise.resolve({
         appointments: sorted.slice(start, start + perPage),
@@ -409,13 +454,12 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       made.assigned.push({ appointmentId, technicianId });
       return Promise.resolve();
     },
-    appointmentTransitions: (appointmentId) =>
-      Promise.resolve([...(world.transitions?.[appointmentId] ?? STUB_TRANSITIONS)]),
+    appointmentTransitions: (appointmentId) => Promise.resolve([...offeredFor(appointmentId)]),
     transitionAppointment: (appointmentId, name, note) => {
       checkFailure("transitionAppointment");
-      const offered = world.transitions?.[appointmentId] ?? STUB_TRANSITIONS;
-      if (!offered.includes(name)) return Promise.resolve(false);
+      if (!offeredFor(appointmentId).includes(name)) return Promise.resolve(false);
       made.transitioned.push({ appointmentId, name, note });
+      if (name !== "Reschedule") statuses.set(appointmentId, STATUS_AFTER[name]);
       return Promise.resolve(true);
     },
     updateAppointment: (appointmentId, fields) => {

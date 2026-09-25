@@ -10,13 +10,16 @@
 // the day the template exists.
 //
 // Every call here throws when FSM refuses, so the fsm-sync queue retries it
-// rather than losing the technician's work.
+// rather than losing the technician's work. That includes a transition FSM
+// does not offer: the org names its own (src/providers/fsm.ts), and a job whose
+// start or close FSM never took must never be counted as written
+// (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
 
 import { CHECKLIST } from "../config/job-sheet.ts";
 import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaIso } from "../lib/india-time.ts";
-import type { FsmProvider } from "../providers/fsm.ts";
+import type { AppointmentTransition, FsmProvider } from "../providers/fsm.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
 import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";
 import { attachPhotosToFsm } from "./tech-photos.ts";
@@ -41,6 +44,21 @@ export interface FsmWriteDeps {
 /** What the write did, for the log: never the event's contents. */
 export type FsmWriteOutcome = "written" | "nothing_to_write";
 
+/** The transitions a technician's job makes, in the order it makes them. */
+type JobTransition = Extract<AppointmentTransition, "Dispatch" | "Start Work" | "Complete Work" | "Terminate">;
+
+/**
+ * Where FSM is once each step is behind it. A transition FSM no longer offers
+ * from one of these statuses is one it has already made — ops moved the job in
+ * FSM's own screen — and nothing of the technician's is lost.
+ */
+const ALREADY_PAST: Readonly<Record<JobTransition, readonly string[]>> = {
+  Dispatch: ["Dispatched", "In Progress", "Completed", "Terminated"],
+  "Start Work": ["In Progress", "Completed", "Terminated"],
+  "Complete Work": ["Completed"],
+  Terminate: ["Terminated"],
+};
+
 /** Writes one event to FSM. Throws on refusal, so the queue retries it. */
 export async function writeEventToFsm(
   deps: FsmWriteDeps,
@@ -52,12 +70,12 @@ export async function writeEventToFsm(
   switch (event.kind) {
     case "check_in": {
       // The technician is on site: FSM's own Dispatch transition says so.
-      const note = `${prefix(deps)}Technician checked in at ${asText(event.body.at) ?? event.occurredAt}.`;
-      return (await fsm.transitionAppointment(job.fsmId, "Dispatch", note)) ? "written" : "nothing_to_write";
+      const note = `${prefix(deps)}Technician checked in at ${indiaIsoOf(event.occurredAt)}.`;
+      return moveAppointment(fsm, job, "Dispatch", note);
     }
     case "start": {
       await fsm.updateAppointment(job.fsmId, { Actual_Start_Date_Time: indiaIsoOf(event.occurredAt) });
-      await fsm.transitionAppointment(job.fsmId, "Start", `${prefix(deps)}Job started.`);
+      await moveAppointment(fsm, job, "Start Work", `${prefix(deps)}Job started.`);
       return "written";
     }
     case "before_photos":
@@ -82,12 +100,32 @@ export async function writeEventToFsm(
         Actual_End_Date_Time: indiaIsoOf(event.occurredAt),
       });
       const outcome = asText(event.body.outcome) ?? "";
-      const transition = outcome === "done" ? "Complete" : "Terminate";
+      const transition = outcome === "done" ? "Complete Work" : "Terminate";
       const note = `${prefix(deps)}${await closingNote(db, job, event)}`;
-      await fsm.transitionAppointment(job.fsmId, transition, note);
+      await moveAppointment(fsm, job, transition, note);
       return "written";
     }
   }
+}
+
+/**
+ * Moves the appointment on by one transition. FSM offers only what its
+ * blueprint allows from where the appointment is, so one it does not offer is
+ * either behind it already or refused, and the appointment's status says
+ * which. A refusal throws: the queue tries again, and alerts after its last
+ * attempt, rather than counting a step FSM never took as written.
+ */
+async function moveAppointment(
+  fsm: FsmProvider,
+  job: JobForFsm,
+  transition: JobTransition,
+  note: string,
+): Promise<FsmWriteOutcome> {
+  if (await fsm.transitionAppointment(job.fsmId, transition, note)) return "written";
+
+  const status = (await fsm.appointment(job.fsmId))?.status;
+  if (status !== undefined && ALREADY_PAST[transition].includes(status)) return "nothing_to_write";
+  throw new Error(`FSM does not offer ${transition} on this appointment, which is ${status ?? "not in FSM"}`);
 }
 
 /** The piece step: a fitted piece becomes an FSM asset, a failed one is marked there. */

@@ -15,7 +15,13 @@ import type { App } from "../../src/app.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubFsm, EMPTY_FSM, STUB_TRANSITIONS, type StubFsm } from "../../src/providers/fsm.ts";
+import {
+  createStubFsm,
+  EMPTY_FSM,
+  STUB_TRANSITIONS,
+  type FsmAppointment,
+  type StubFsm,
+} from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
@@ -44,8 +50,27 @@ let fsmQueue: ReturnType<typeof fakeQueue>;
 let messageQueue: ReturnType<typeof fakeQueue>;
 let cookie: string;
 
+/** An appointment as FSM holds it, with only what the stub's transitions read. */
+const fsmAppointment = (id: string, status = "Scheduled"): FsmAppointment => ({
+  id,
+  name: `AP-${id}`,
+  status,
+  workOrderId: `wo-${id}`,
+  contactId: "contact-1",
+  scheduledStart: null,
+  scheduledEnd: null,
+  actualStart: null,
+  actualEnd: null,
+  technicianIds: ["resource-1"],
+  serviceIds: [],
+  serviceCity: "Gurgaon",
+  servicePincode: "122018",
+  modifiedAt: "2026-09-21T12:00:00+05:30",
+});
+
 const world = () => ({
   ...EMPTY_FSM,
+  appointments: [fsmAppointment("ap-today"), fsmAppointment("ap-later"), fsmAppointment("ap-other")],
   items: [{ id: "part-standard", name: "Standard base", type: "Part" as const }],
 });
 
@@ -359,6 +384,51 @@ describe("closing the job", () => {
     expect(summary).toContain("Outcome: partial (client_stopped_it)");
     expect(fsm.made.transitioned.at(-1)).toMatchObject({ appointmentId: "ap-today", name: "Terminate" });
     expect(fsm.made.transitioned.at(-1)?.note).toMatch(/Duration \d+ minutes/);
+  });
+
+  // The org calls starting and closing a job "Start Work" and "Complete Work"
+  // (docs/verification.md, both staging runs of 23 September 2026). The stub
+  // offers each only from the status FSM offers it from, so a wrong name fails here.
+  it("closes a job as done in FSM with the org's own transitions", async () => {
+    await startJob();
+    await beforePhotos();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: ["piece_removed"] }, "event-checklist-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+
+    await runFsmQueue();
+    expect(fsm.made.transitioned.map(({ name }) => name)).toEqual(["Dispatch", "Start Work", "Complete Work"]);
+    expect((await fsm.appointment("ap-today"))?.status).toBe("Completed");
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+  });
+
+  it("does not count a step as written when FSM refuses its transition, and alerts after the last attempt", async () => {
+    // Ops cancelled the job in FSM's own screen; the mirror has not heard yet.
+    await fsm.transitionAppointment("ap-today", "Cancel", "Cancelled by ops.");
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    const eventId = await eventRowId("event-checkin-01");
+
+    const first = batchOf(eventId, 1);
+    await handleFsmSyncBatch(first as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    expect(first.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
+    expect(await writeStateOf(eventId)).toBe("pending");
+
+    const fifth = batchOf(eventId, 5);
+    await handleFsmSyncBatch(fifth as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    expect(await writeStateOf(eventId)).toBe("rejected");
+    expect(deps.alerts).toEqual([expect.stringMatching(/check_in did not reach FSM after 5 attempts/)]);
+  });
+
+  it("counts a step FSM has already taken as written, when ops moved the job in FSM first", async () => {
+    await startJob();
+    // Ops dispatched and started it in FSM's own screen before the phone's writes arrived.
+    await fsm.transitionAppointment("ap-today", "Dispatch", "Dispatched by ops.");
+    await fsm.transitionAppointment("ap-today", "Start Work", "Started by ops.");
+
+    await runFsmQueue();
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+    expect(deps.alerts).toEqual([]);
   });
 
   it("retries an FSM write that failed, and leaves the technician's work on the record", async () => {
@@ -754,7 +824,21 @@ async function writeStateOf(id: string): Promise<string> {
   return row?.fsm_write_state ?? "";
 }
 
-it("offers the transitions the trial found, so the stub matches FSM", () => {
-  expect(STUB_TRANSITIONS).toContain("Dispatch");
-  expect(STUB_TRANSITIONS).toContain("Terminate");
+/** The distinct write states of a job's events. */
+async function writeStatesOf(appointmentId: string): Promise<string[]> {
+  const { results } = await env.DB.prepare(
+    "SELECT DISTINCT fsm_write_state AS state FROM job_events WHERE appointment_id = ?1 ORDER BY state",
+  )
+    .bind(appointmentId)
+    .all<{ state: string }>();
+  return results.map((row) => row.state);
+}
+
+it("offers what the org offers from each status, by the org's own names", () => {
+  // The trial, from Scheduled (docs/decisions/fsm-trial.md, question 7).
+  expect(STUB_TRANSITIONS.Scheduled).toEqual(["Dispatch", "Reschedule", "Cancel", "Terminate"]);
+  // The staging runs (docs/verification.md): Dispatch, then Start Work, then Complete Work.
+  expect(STUB_TRANSITIONS.Dispatched).toContain("Start Work");
+  expect(STUB_TRANSITIONS["In Progress"]).toContain("Complete Work");
+  expect(STUB_TRANSITIONS.Completed).toBeUndefined();
 });
