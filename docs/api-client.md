@@ -1634,12 +1634,26 @@ Request body:
           "type": "string",
           "format": "date"
         },
-        "window_label": {
+        "window": {
           "type": "string",
           "enum": [
+            "morning",
+            "afternoon",
+            "evening"
+          ],
+          "description": "The window the client asked for."
+        },
+        "window_label": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
             "before noon",
-            "after four"
-          ]
+            "after four",
+            null
+          ],
+          "description": "Deprecated: read `window`. The window in the Phase 1 booked page's words; null for the afternoon, which Phase 1 had no words for."
         },
         "place": {
           "type": "string",
@@ -1648,11 +1662,12 @@ Request body:
       },
       "required": [
         "date",
+        "window",
         "window_label",
         "place"
       ],
       "additionalProperties": false,
-      "description": "A Phase 1 booking's proposed consultation, to be confirmed on WhatsApp. Null once the mirror has the visit."
+      "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
     },
     "next_visit": {
       "anyOf": [

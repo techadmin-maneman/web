@@ -2108,12 +2108,20 @@ export interface components {
             first_name: string;
             /** @description For the profile's button: the first letters of the first and last names. */
             initials: string;
-            /** @description A Phase 1 booking's proposed consultation, to be confirmed on WhatsApp. Null once the mirror has the visit. */
+            /** @description A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit. */
             consultation: {
                 /** Format: date */
                 date: string;
-                /** @enum {string} */
-                window_label: "before noon" | "after four";
+                /**
+                 * @description The window the client asked for.
+                 * @enum {string}
+                 */
+                window: "morning" | "afternoon" | "evening";
+                /**
+                 * @description Deprecated: read `window`. The window in the Phase 1 booked page's words; null for the afternoon, which Phase 1 had no words for.
+                 * @enum {string|null}
+                 */
+                window_label: "before noon" | "after four" | null;
                 /** @description Where it is: the saved address (locality, city and pincode), else the booking's city. */
                 place: string;
             } | null;

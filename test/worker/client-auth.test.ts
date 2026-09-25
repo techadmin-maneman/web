@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
 import type { Settings } from "../../src/config/settings.ts";
+import { openSession } from "../../src/domain/sessions.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
 import { RULES } from "../../src/policy/one-time-code.ts";
 import {
@@ -306,11 +307,71 @@ describe("the session", () => {
       name: "Arjun Mehta",
       first_name: "Arjun",
       initials: "AM",
-      consultation: { date: "2026-09-24", window_label: "after four", place: "Gurgaon" },
+      consultation: { date: "2026-09-24", window: "evening", window_label: "after four", place: "Gurgaon" },
       next_visit: null,
       credits: null,
       prompt: null,
       booking: { self_serve: true, types: ["consultation"] },
+    });
+  });
+
+  describe("a booking from the site's form, which asks for no rough window", () => {
+    /** A person who booked on the site for Friday, with a session in the app. */
+    async function bookedOnTheSite(): Promise<string> {
+      await env.DB.batch([
+        env.DB.prepare(
+          "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-site', ?1, '+919810000005', 'Kabir Anand', 1)",
+        ).bind(NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO leads (id, person_id, created_at, source, city, loss_extent, proposed_visit_date, request_id)
+           VALUES ('l-site', 'p-site', ?1, 'form', 'Gurgaon', 'crown', '2026-09-25', 'r')`,
+        ).bind(NOW.toISOString()),
+      ]);
+      return `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p-site", deviceLabel: null, now: NOW })}`;
+    }
+
+    it("shows the window asked for while self-serve booking is off", async () => {
+      const cookie = await bookedOnTheSite();
+      await env.DB.prepare(
+        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+         VALUES ('request-1', 'p-site', '122018', '2026-09-25', 'afternoon', ?1)`,
+      )
+        .bind(NOW.toISOString())
+        .run();
+
+      const res = await request(app, "/api/me", { headers: { Cookie: cookie } });
+
+      expect(res.status).toBe(200);
+      expect((await res.json<{ consultation: unknown }>()).consultation).toEqual({
+        date: "2026-09-25",
+        window: "afternoon",
+        window_label: null,
+        place: "Gurgaon",
+      });
+    });
+
+    it("shows the window of the slot it held, before FSM has the visit", async () => {
+      const cookie = await bookedOnTheSite();
+      await env.DB.batch([
+        env.DB.prepare(
+          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+        ).bind(NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+             amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at)
+           VALUES ('hold-1', 'p-site', 'consultation', '2026-09-25', 'evening', 't1', 6, 0, 0, 0, 'booked', ?1, ?1, ?1)`,
+        ).bind(NOW.toISOString()),
+      ]);
+
+      const res = await request(app, "/api/me", { headers: { Cookie: cookie } });
+
+      expect(res.status).toBe(200);
+      expect((await res.json<{ consultation: unknown }>()).consultation).toEqual({
+        date: "2026-09-25",
+        window: "evening",
+        window_label: "after four",
+        place: "Gurgaon",
+      });
     });
   });
 

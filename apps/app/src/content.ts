@@ -88,12 +88,6 @@ export const WINDOW_NAMES = { morning: "Morning", afternoon: "Afternoon", evenin
 export const WINDOW_HOURS = { morning: "9 am to 12 pm", afternoon: "12 to 4 pm", evening: "4 to 8 pm" } as const;
 export type WindowLabel = keyof typeof WINDOW_NAMES;
 
-/** The window a Phase 1 booking asked for, as one of the three (docs/decisions/0040-phase-1-alignment.md). */
-export const PHASE1_WINDOWS: Readonly<Record<string, WindowLabel>> = {
-  "before noon": "morning",
-  "after four": "evening",
-};
-
 /** "Afternoon, 12 to 4 pm", as a visit's card gives its window. */
 export const windowText = (label: WindowLabel) => `${WINDOW_NAMES[label]}, ${WINDOW_HOURS[label]}`;
 
