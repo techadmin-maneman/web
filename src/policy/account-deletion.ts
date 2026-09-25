@@ -6,7 +6,7 @@ export const RULES = [
 ] as const;
 
 /**
- * Ours, not the prompt's (docs/decisions/0065-erasure-all-or-nothing.md): an
+ * Ours, not the prompt's (docs/decisions/0066-erasure-all-or-nothing.md): an
  * account is not erased while a visit of theirs is still to happen, or while we
  * hold a payment of theirs with no visit behind it. Erasing then would send a
  * technician to nobody, or keep money owed back. Ops cancel the visit, or

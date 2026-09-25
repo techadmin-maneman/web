@@ -1,4 +1,4 @@
-# 0065. Erasure is all or nothing
+# 0066. Erasure is all or nothing
 
 - Status: accepted. Amends the order in ADR 0019 and the record of a deletion decision in ADR 0049.
 - Date: 2026-09-25
@@ -19,7 +19,7 @@ The audit of 24 September 2026 (findings LIFE-01, ARCH-02, OPS-02) found three w
   - an address a technician's check-in was measured against is blanked to its city and pincode instead of deleted. The check-in points at it, and the no-show evidence reads a check-in with no address as "not measured", so detaching it would change what ops rule a charge on;
   - the codes of a number change are deleted with the change.
 - The caller's own statements go in the same batch: the ops decision's audit entry and the request's new state. So a decision is recorded only if the erasure happened, and a failed erasure changes nothing and can simply be asked for again.
-- Then the files are deleted from R2, each before the row that names it. If R2 fails part-way, the person stays erased, and `people.files_erased_at` stays empty (migration 0035). The cron's `erased_files` job deletes what is left, a few people a run, and sets it.
+- Then the files are deleted from R2, each before the row that names it. If R2 fails part-way, the person stays erased, and `people.files_erased_at` stays empty (migration 0036). The cron's `erased_files` job deletes what is left, a few people a run, and sets it.
 - Visit photographs' rows and their sets now go with the files, after the batch, rather than in it. A referral card shows the house card from the batch on; its file and `card_key` go after it.
 
 **Nothing is erased while something is still owed.** Until the money path can cancel and refund on its own, an erasure is refused while the person has:

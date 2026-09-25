@@ -1,7 +1,7 @@
 // No statement on the five-minute cron's path, or on the requests made while a
 // client pays, reads a whole table that keeps growing. The cron runs 288 times
 // a day in each environment, and past 5 million rows read a day D1 refuses
-// every query until midnight UTC (ADR 0009, migration 0036).
+// every query until midnight UTC (ADR 0009, migration 0037).
 //
 // Each statement is read out of the source, where it is passed to .prepare(),
 // and planned by SQLite against every migration. It passes when every table it

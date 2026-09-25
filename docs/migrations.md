@@ -19,7 +19,7 @@ So a statement that deletes from a table deals with every row pointing at it fir
 
 ## Indexes
 
-The five-minute cron runs 288 times a day in each environment, and past 5 million rows read a day D1 refuses every query until midnight UTC (ADR 0009). A lookup on the cron's path, or one made while a client pays, needs an index. Where it looks for rows still waiting on something, make it partial, `WHERE` that state, so it stays small however much history the table gathers (migration 0036). `test/node/query-plans.test.ts` plans every statement on those paths and fails on one that reads a growing table from end to end. `test/worker/cron-reads.test.ts` checks that a run reads no more over twice the history.
+The five-minute cron runs 288 times a day in each environment, and past 5 million rows read a day D1 refuses every query until midnight UTC (ADR 0009). A lookup on the cron's path, or one made while a client pays, needs an index. Where it looks for rows still waiting on something, make it partial, `WHERE` that state, so it stays small however much history the table gathers (migration 0037). `test/node/query-plans.test.ts` plans every statement on those paths and fails on one that reads a growing table from end to end. `test/worker/cron-reads.test.ts` checks that a run reads no more over twice the history.
 
 An index costs a write whenever a row it covers changes, and D1's free plan allows 100,000 rows written a day, so index what is looked up, not every column.
 

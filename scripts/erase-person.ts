@@ -8,7 +8,7 @@
 // argument, so it stays out of shell history.
 //
 // The API refuses while the person has a visit booked or a payment held with no
-// visit behind it (docs/decisions/0065-erasure-all-or-nothing.md), and this
+// visit behind it (docs/decisions/0066-erasure-all-or-nothing.md), and this
 // prints what to settle first. --override-open-bookings erases anyway.
 
 import { stdin, stdout } from "node:process";

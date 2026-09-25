@@ -1,4 +1,4 @@
--- Migration number: 0036
+-- Migration number: 0037
 -- Indexes for what the five-minute cron and the busiest requests look up, so
 -- that each reads about the rows it wants rather than the whole table
 -- (ADR 0009: past 5 million rows read a day, D1 refuses every query until

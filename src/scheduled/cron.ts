@@ -119,7 +119,7 @@ async function booksJob({ env, deps, config, log }: CronContext): Promise<void> 
 
 export const CRON_JOBS: readonly CronJob[] = [
   { name: "sweeper", needs: "nothing", run: sweepJob },
-  // What an erasure could not delete from R2 at the time (docs/decisions/0065-erasure-all-or-nothing.md).
+  // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
   { name: "fsm_reconcile", needs: "fsm", run: reconcileJob },

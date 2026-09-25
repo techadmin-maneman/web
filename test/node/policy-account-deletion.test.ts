@@ -1,5 +1,5 @@
 // What stands in the way of erasing an account (src/policy/account-deletion.ts,
-// docs/decisions/0065-erasure-all-or-nothing.md).
+// docs/decisions/0066-erasure-all-or-nothing.md).
 
 import { describe, expect, it } from "vitest";
 import { erasureRefusal, LIVE_VISIT_STATUSES } from "../../src/policy/account-deletion.ts";

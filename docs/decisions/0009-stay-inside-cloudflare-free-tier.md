@@ -50,7 +50,7 @@ On Workers Free every product except R2 fails closed, which is an outage rather 
 
 D1's 5 million rows read a day had no budget, and the five-minute cron read whole tables that only grow. The sweep's photograph check alone read every try-on job ever made on each run: at production's ceiling, about 29,000 a year, or some 8 million rows a day within the year, past the allowance.
 
-- **Migration 0036** gives each lookup on the cron's path, and the lookups made while a client pays, an index. Most are partial: they hold only the rows still waiting, so they stay small however much history gathers.
+- **Migration 0037** gives each lookup on the cron's path, and the lookups made while a client pays, an index. Most are partial: they hold only the rows still waiting, so they stay small however much history gathers.
 - **`test/node/query-plans.test.ts`** plans each statement on those paths against every migration, and fails when one reads a growing table from end to end.
 - **`test/worker/cron-reads.test.ts`** runs every cron job over a finished history and again over twice that history, and fails when a run reads more for it. A quiet run reads about 35 rows.
 - **`scripts/lib/free-tier-budget.ts`** models the cron's reads: production busy on every run (5,000 rows) and staging at rest, about 1.5 million a day. `test/node/free-tier-budget.test.ts` holds that under 40% of the allowance, which leaves requests the rest of the 80%.

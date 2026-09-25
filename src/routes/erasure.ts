@@ -2,7 +2,7 @@
 // number, the day they ask (docs/decisions/0019-erasure.md and the runbook's
 // "Erasure within the day"). Authorised by ERASURE_SECRET as a bearer token.
 // Refused while the person has a visit booked or a payment held, unless the
-// operator says they have settled both by hand (docs/decisions/0065).
+// operator says they have settled both by hand (docs/decisions/0066).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";

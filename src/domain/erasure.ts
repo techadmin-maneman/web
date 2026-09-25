@@ -1,7 +1,7 @@
 // Erasing a person on request. The photo notice promises "Message us and it is
 // deleted the same day"; this is what the operators' endpoint and ops' deletion
 // decision do. See docs/decisions/0019-erasure.md and
-// 0065-erasure-all-or-nothing.md.
+// 0066-erasure-all-or-nothing.md.
 //
 // In order: one D1 batch blanks the person and what they left, ends their
 // sessions, cancels their unsent messages and expires their jobs, with the

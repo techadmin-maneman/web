@@ -1,6 +1,6 @@
 # 0019. Erasure
 
-- Status: accepted. The order below, R2 before D1, is superseded by ADR 0065: D1 goes first, and R2 after.
+- Status: accepted. The order below, R2 before D1, is superseded by ADR 0066: D1 goes first, and R2 after.
 - Date: 2026-09-21
 
 ## Context
@@ -53,7 +53,7 @@ The Zoho update goes through the crm-sync queue, because Zoho may be down. It is
 
 ### Order: R2, then D1, then the CRM
 
-Superseded by ADR 0065. A D1 batch that failed after R2 had gone left a person with no photographs and every other detail, and an erasure that could not be repeated. D1 now goes first, and the cron finishes R2 if it fails.
+Superseded by ADR 0066. A D1 batch that failed after R2 had gone left a person with no photographs and every other detail, and an erasure that could not be repeated. D1 now goes first, and the cron finishes R2 if it fails.
 
 - R2 goes first. If it fails, nothing in D1 has changed, and the request can be repeated.
 - D1 is one batch, so the person is either erased or not.
