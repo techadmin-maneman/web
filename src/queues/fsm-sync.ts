@@ -110,6 +110,7 @@ export async function handleFsmSyncBatch(
           ? await exportVisitPhotos(db, env.CLIENT_PHOTOS, deps.fsm, { id: result.appointmentId, fsmId }, deps.now())
           : null;
       if (inboxId !== undefined) await recordAttempt(db, inboxId, deps.now().toISOString(), null);
+      await deps.resolveAlert(`fsm_sync:${fsmId}`);
       messageLog.info("fsm_synced", {
         outcome: result.outcome,
         appointment_id: result.appointmentId,
@@ -122,10 +123,13 @@ export async function handleFsmSyncBatch(
       if (inboxId !== undefined) await recordAttempt(db, inboxId, null, reason);
       messageLog.warn("fsm_sync_failed", { attempt: message.attempts, reason });
       if (message.attempts >= MAX_FSM_SYNC_ATTEMPTS) {
-        await deps.alert(
-          `FSM sync gave up on appointment ${fsmId} after ${String(message.attempts)} attempts: ${reason}. ` +
+        // The reconciliation queues it again each night, so a failure that lasts is counted, not told nightly.
+        await deps.alertOnce({
+          key: `fsm_sync:${fsmId}`,
+          message:
+            `FSM sync gave up on appointment ${fsmId} after ${String(message.attempts)} attempts: ${reason}. ` +
             "The reconciliation will try it again.",
-        );
+        });
         message.ack();
       } else {
         message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });

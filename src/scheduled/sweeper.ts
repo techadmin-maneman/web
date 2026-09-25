@@ -276,9 +276,13 @@ export async function sweep(
     credits = await deps.image.credits();
     if (credits === null) log.warn("credits_unreadable");
     else if (credits < options.creditFloor) {
-      await deps.alert(
-        `AILabTools credits are down to ${String(credits)}, below the floor of ${String(options.creditFloor)}.`,
-      );
+      // Told once, not every hour, until a top-up lifts the balance over the floor.
+      await deps.alertOnce({
+        key: "ailab_credits_low",
+        message: `AILabTools credits are down to ${String(credits)}, below the floor of ${String(options.creditFloor)}.`,
+      });
+    } else {
+      await deps.resolveAlert("ailab_credits_low");
     }
   }
 

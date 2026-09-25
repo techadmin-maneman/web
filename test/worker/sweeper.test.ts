@@ -414,6 +414,18 @@ describe("sweeper: AILabTools credits", () => {
     expect(deps.alerts).toEqual([expect.stringContaining("credits are down to 1000") as string]);
   });
 
+  it("tells ops once, not every hour, until a top-up lifts the balance over the floor", async () => {
+    const deps = fakeDependencies({ now: () => onTheHour });
+    const low = { ...OPTIONS, creditFloor: 5000 };
+    await sweep(sweepEnv().bindings, deps, createLogger(), low);
+    await sweep(sweepEnv().bindings, deps, createLogger(), low);
+    expect(deps.alerts).toHaveLength(1);
+
+    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
+    await sweep(sweepEnv().bindings, deps, createLogger(), low);
+    expect(deps.alerts).toHaveLength(2);
+  });
+
   it("stays quiet above the floor, and skips the check between hours", async () => {
     const deps = fakeDependencies({ now: () => onTheHour });
     expect((await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS)).credits).toBe(1000);
