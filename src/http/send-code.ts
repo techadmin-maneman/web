@@ -7,6 +7,7 @@
 
 import type { Context } from "hono";
 import type { AppEnv } from "../app.ts";
+import { onAllowlist } from "../config/settings.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { countOne } from "../domain/rate-limit.ts";
 import { indiaHour } from "../lib/india-time.ts";
@@ -26,9 +27,8 @@ export async function sendCodeAfterResponse(
 ): Promise<void> {
   if (mobileE164 === null) return;
   const { log, deps, config } = c.var;
-  const { allowlist } = config.settings.messaging;
   const work = (async () => {
-    if (allowlist.length > 0 && !allowlist.includes(mobileE164)) {
+    if (!onAllowlist(config.settings.messaging, mobileE164)) {
       log.info("login_code_skipped", { channel, reason: "number not on the allowlist" });
       return;
     }

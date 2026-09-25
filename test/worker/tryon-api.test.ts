@@ -121,6 +121,28 @@ describe("POST /api/tryon/upload-url", () => {
     });
   });
 
+  it("ties a new photo to the session of a visitor who passed the gate, so its result needs no second gate", async () => {
+    const browser = visitor();
+    const failed = await browser.uploaded();
+    await browser.generate(failed);
+    await browser.claim(failed);
+    await setState(failed, "failed");
+    const session = await env.DB.prepare("SELECT id, person_id FROM tryon_sessions").first<{
+      id: string;
+      person_id: string;
+    }>();
+
+    const again = await (await browser.uploadLink()).json<{ job_id: string; upload_url: string }>();
+    expect(await jobRow(again.job_id)).toMatchObject({ session_id: session?.id, person_id: session?.person_id });
+
+    expect((await browser.put(again.upload_url, syntheticJpeg(800, 800))).status).toBe(204);
+    await browser.generate(again.job_id);
+    await makeReady(again.job_id);
+    const claimant = visitor();
+    claimant.useCookie("mm_tryon", browser.cookie("mm_tryon"));
+    expect((await claimant.call(`/api/tryon/result/${again.job_id}`)).status).toBe(200);
+  });
+
   it("refuses consent that is not literally true, and a notice that is not the photo notice", async () => {
     const browser = visitor();
     for (const body of [{ photo_consent: false }, { notice_version: "booking-v1" }, { extra: 1 }]) {
@@ -351,6 +373,18 @@ describe("POST /api/tryon/claim", () => {
     const jobId = await browser.uploaded();
     await browser.generate(jobId);
     expect(await (await browser.claim(jobId)).json()).toMatchObject({ whatsapp_copy: false });
+  });
+
+  it("promises a WhatsApp copy only to a number on the allowlist, where there is one", async () => {
+    const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
+    const skipped = await browser.uploaded();
+    await browser.generate(skipped);
+    expect(await (await browser.claim(skipped, "98100 00001")).json()).toMatchObject({ whatsapp_copy: false });
+
+    const other = visitor({ messaging: { allowlist: ["+919810000002"] } });
+    const sent = await other.uploaded();
+    await other.generate(sent);
+    expect(await (await other.claim(sent, "98100 00002")).json()).toMatchObject({ whatsapp_copy: true });
   });
 
   it("keeps a person who booked before contactable", async () => {

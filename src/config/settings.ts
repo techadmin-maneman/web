@@ -45,6 +45,10 @@ export interface MessagingSettings {
   readonly evolution: EvolutionSettings | null;
 }
 
+/** A number messages may go to: every number, unless there is an allowlist and it does not name this one. */
+export const onAllowlist = (messaging: MessagingSettings, mobileE164: string): boolean =>
+  messaging.allowlist.length === 0 || messaging.allowlist.includes(mobileE164);
+
 export interface ZohoSettings {
   readonly clientId: string;
   readonly clientSecret: string;
