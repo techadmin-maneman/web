@@ -3,9 +3,11 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { raiseInvoices, RECHECK_AFTER_MS } from "../../src/domain/fsm-invoices.ts";
+import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
+import { CALLS_PER_VISIT, raiseInvoices, RECHECK_AFTER_MS } from "../../src/domain/fsm-invoices.ts";
+import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubBooks, type StubBooks } from "../../src/providers/books.ts";
+import { createStubBooks, type BooksProvider, type StubBooks } from "../../src/providers/books.ts";
 import {
   createStubFsm,
   EMPTY_FSM,
@@ -28,21 +30,38 @@ const alert = (message: string) => {
   return Promise.resolve();
 };
 
+const CLIENT_LINK = `http://ops.localhost:4323/clients/${PERSON}`;
+
+function invoicePass(
+  fsm: FsmProvider,
+  books: BooksProvider,
+  now: Date,
+  budget: CallBudget = createCallBudget(Infinity),
+) {
+  const alertOnce = createAlertOnce({ db: env.DB, alert, now: () => now, environment: "local", log: createLogger() });
+  const resolveAlert = createResolveAlert({ db: env.DB, now: () => now });
+  return raiseInvoices(env.DB, { fsm, books, alertOnce, resolveAlert }, now, createLogger(), budget);
+}
+
 function pass(fsm: StubFsm = createStubFsm(EMPTY_FSM), books: StubBooks = createStubBooks(), now = NOW) {
-  return { fsm, books, done: raiseInvoices(env.DB, fsm, books, now, createLogger(), alert) };
+  return { fsm, books, done: invoicePass(fsm, books, now) };
 }
 
 const world = (overrides: Partial<StubFsmWorld>): StubFsmWorld => ({ ...EMPTY_FSM, ...overrides });
 
-/** A visit as the mirror writes it, with the status FSM gave the appointment. */
-async function visit(id: string, status: string, workOrderId: string | null = "fsm-wo-1") {
+/** A visit as the mirror writes it, with the status FSM gave the appointment. It ended the day before NOW. */
+async function visit(
+  id: string,
+  status: string,
+  workOrderId: string | null = "fsm-wo-1",
+  windowEnd = "2026-09-20T06:00:00.000Z",
+) {
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status,
        window_start, window_end, fsm_modified_at, synced_at)
-     VALUES (?1, ?2, ?3, ?4, 'service', ?5, 'Completed', '2026-09-20T04:30:00.000Z',
-       '2026-09-20T06:00:00.000Z', ?6, ?6)`,
+     VALUES (?1, ?2, ?3, ?4, 'service', ?5, 'Completed', '2026-09-20T04:30:00.000Z', ?7, ?6, ?6)`,
   )
-    .bind(id, `fsm-${id}`, workOrderId, PERSON, status, NOW.toISOString())
+    .bind(id, `fsm-${id}`, workOrderId, PERSON, status, NOW.toISOString(), windowEnd)
     .run();
 }
 
@@ -80,8 +99,8 @@ describe("the invoice a finished job gets", () => {
     const fsm = createStubFsm(EMPTY_FSM);
     const books = createStubBooks();
 
-    await raiseInvoices(env.DB, fsm, books, NOW, createLogger(), alert);
-    await raiseInvoices(env.DB, fsm, books, later(RECHECK_AFTER_MS * 2), createLogger(), alert);
+    await invoicePass(fsm, books, NOW);
+    await invoicePass(fsm, books, later(RECHECK_AFTER_MS * 2));
     expect(fsm.made.invoiced).toEqual(["fsm-wo-1"]);
     expect(books.made.issued).toHaveLength(1);
   });
@@ -99,28 +118,28 @@ describe("the invoice a finished job gets", () => {
     await visit(VISIT, "completed");
     const fsm = createStubFsm(world({ unbillable: ["fsm-wo-1"] }));
 
-    expect(await raiseInvoices(env.DB, fsm, createStubBooks(), NOW, createLogger(), alert)).toEqual({
+    expect(await invoicePass(fsm, createStubBooks(), NOW)).toEqual({
       raised: 0,
       issued: 0,
     });
     expect((await row())?.invoice_checked_at).toBe(NOW.toISOString());
 
     // Within the hour it is not offered again; after it, it is.
-    await raiseInvoices(env.DB, fsm, createStubBooks(), later(RECHECK_AFTER_MS / 2), createLogger(), alert);
+    await invoicePass(fsm, createStubBooks(), later(RECHECK_AFTER_MS / 2));
     expect(fsm.made.invoiced).toEqual([]);
     const after = later(RECHECK_AFTER_MS * 2);
-    await raiseInvoices(env.DB, createStubFsm(EMPTY_FSM), createStubBooks(), after, createLogger(), alert);
+    await invoicePass(createStubFsm(EMPTY_FSM), createStubBooks(), after);
     expect((await row())?.fsm_invoice_id).toMatch(/^stub-invoice-/);
   });
 
-  it("logs a refusal for ops and leaves the visit for the next hour, rather than failing the pass", async () => {
+  it("logs a refusal, tells ops once, and leaves the visit for the next hour, rather than failing the pass", async () => {
     await visit(VISIT, "completed");
     const fsm = {
       ...createStubFsm(EMPTY_FSM),
       invoiceWorkOrder: () => Promise.reject(new ZohoError(400, "2031", "One or more line items are already invoiced")),
     };
 
-    expect(await raiseInvoices(env.DB, fsm, createStubBooks(), NOW, createLogger(), alert)).toEqual({
+    expect(await invoicePass(fsm, createStubBooks(), NOW)).toEqual({
       raised: 0,
       issued: 0,
     });
@@ -130,17 +149,47 @@ describe("the invoice a finished job gets", () => {
       invoice_checked_at: NOW.toISOString(),
       invoice_issued_at: null,
     });
+    expect(alerted).toEqual([
+      `FSM refused to invoice visit ${VISIT} (work order fsm-wo-1): 400 2031. Raise its invoice in FSM by hand. ${CLIENT_LINK}`,
+    ]);
   });
 
-  it("fails the pass loudly when FSM is the one that is broken, so the next run tries again", async () => {
+  it("logs a broken FSM, leaves that visit an hour, and goes on to the next", async () => {
+    const next = "33333333-3333-4333-8333-333333333333";
     await visit(VISIT, "completed");
+    await visit(next, "completed", "fsm-wo-2");
     const fsm = createStubFsm(EMPTY_FSM);
     fsm.failNext("invoiceWorkOrder", "FSM answered 500");
 
-    await expect(raiseInvoices(env.DB, fsm, createStubBooks(), NOW, createLogger(), alert)).rejects.toThrow(
-      "FSM answered 500",
-    );
-    expect((await row())?.invoice_checked_at).toBeNull();
+    expect(await invoicePass(fsm, createStubBooks(), NOW)).toEqual({ raised: 1, issued: 1 });
+    const failed = [await row(), await row(next)].filter((each) => each?.invoice_issued_at === null);
+    expect(failed).toEqual([{ fsm_invoice_id: null, invoice_checked_at: NOW.toISOString(), invoice_issued_at: null }]);
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "invoice_failed" }));
+    expect(alerted).toEqual([]);
+  });
+
+  it("tells ops once FSM has failed on a visit three times", async () => {
+    await visit(VISIT, "completed");
+    const fsm = {
+      ...createStubFsm(EMPTY_FSM),
+      invoiceWorkOrder: () => Promise.reject(new Error("FSM answered 500")),
+    };
+    for (const hours of [0, 1, 2]) await invoicePass(fsm, createStubBooks(), later(hours * (RECHECK_AFTER_MS + 1000)));
+    expect(alerted).toEqual([
+      `The invoice pass has failed 3 times on visit ${VISIT} (work order fsm-wo-1): FSM answered 500. ${CLIENT_LINK}`,
+    ]);
+  });
+
+  it("bills only the visits the cron run's outside calls pay for", async () => {
+    await visit(VISIT, "completed");
+    await visit("33333333-3333-4333-8333-333333333333", "completed", "fsm-wo-2");
+
+    const fsm = createStubFsm(EMPTY_FSM);
+    expect(await invoicePass(fsm, createStubBooks(), NOW, createCallBudget(CALLS_PER_VISIT))).toEqual({
+      raised: 1,
+      issued: 1,
+    });
+    expect(fsm.made.invoiced).toHaveLength(1);
   });
 });
 
@@ -162,7 +211,7 @@ describe("issuing it", () => {
     const books = createStubBooks();
 
     // The pass holds the invoice, so a second one is never raised, but the client is shown nothing.
-    expect(await raiseInvoices(env.DB, alreadyInvoiced(), books, NOW, createLogger(), alert)).toEqual({
+    expect(await invoicePass(alreadyInvoiced(), books, NOW)).toEqual({
       raised: 0,
       issued: 0,
     });
@@ -172,16 +221,48 @@ describe("issuing it", () => {
     expect(held?.invoice_issued_at).toBeNull();
   });
 
+  it("tells ops once of a draft still unsent an hour after the visit, and not before", async () => {
+    await visit(VISIT, "completed", "fsm-wo-1", "2026-09-21T06:00:00.000Z");
+    const fsm = alreadyInvoiced();
+    const books = createStubBooks();
+
+    await invoicePass(fsm, books, NOW);
+    expect(alerted).toEqual([]);
+
+    await invoicePass(fsm, books, later(RECHECK_AFTER_MS * 2));
+    const invoice = (await row())?.fsm_invoice_id ?? "";
+    expect(alerted).toEqual([
+      `Invoice ${invoice} of visit ${VISIT} is still a draft in Books an hour after the visit, so the client ` +
+        `cannot open it. Send it in Books: nothing here sends a draft that already exists. ${CLIENT_LINK}`,
+    ]);
+
+    await invoicePass(fsm, books, later(RECHECK_AFTER_MS * 4));
+    expect(alerted).toHaveLength(1);
+  });
+
+  it("closes the draft's alert once the invoice is sent", async () => {
+    await visit(VISIT, "completed");
+    const fsm = alreadyInvoiced();
+    const books = createStubBooks();
+    await invoicePass(fsm, books, NOW);
+    expect(alerted).toHaveLength(1);
+
+    await books.issueInvoice((await row())?.fsm_invoice_id ?? "");
+    await invoicePass(fsm, books, later(RECHECK_AFTER_MS * 2));
+    const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
+    expect(open).toEqual({ n: 0 });
+  });
+
   it("shows one the owner has since sent in Books, whoever raised it", async () => {
     await visit(VISIT, "completed");
     const fsm = alreadyInvoiced();
     const books = createStubBooks();
-    await raiseInvoices(env.DB, fsm, books, NOW, createLogger(), alert);
+    await invoicePass(fsm, books, NOW);
 
     // The owner presses Send in Books, and the next pass finds it is no longer a draft.
     await books.issueInvoice((await row())?.fsm_invoice_id ?? "");
     const after = later(RECHECK_AFTER_MS * 2);
-    expect(await raiseInvoices(env.DB, fsm, books, after, createLogger(), alert)).toEqual({ raised: 0, issued: 1 });
+    expect(await invoicePass(fsm, books, after)).toEqual({ raised: 0, issued: 1 });
     expect((await row())?.invoice_issued_at).toBe(after.toISOString());
   });
 
@@ -192,7 +273,7 @@ describe("issuing it", () => {
       issueInvoice: () => Promise.reject(new ZohoError(400, "4000", "customer has no billing address")),
     };
 
-    expect(await raiseInvoices(env.DB, createStubFsm(EMPTY_FSM), books, NOW, createLogger(), alert)).toEqual({
+    expect(await invoicePass(createStubFsm(EMPTY_FSM), books, NOW)).toEqual({
       raised: 1,
       issued: 0,
     });
@@ -216,9 +297,11 @@ describe("issuing it", () => {
       },
     };
 
-    await raiseInvoices(env.DB, fsm, books, NOW, createLogger(), alert);
-    await raiseInvoices(env.DB, fsm, books, later(RECHECK_AFTER_MS * 2), createLogger(), alert);
+    await invoicePass(fsm, books, NOW);
+    await invoicePass(fsm, books, later(RECHECK_AFTER_MS * 2));
     expect(refusals).toBe(1);
     expect((await row())?.invoice_issued_at).toBeNull();
+    // The draft it left is the one ops were told of; they are not told again an hour later.
+    expect(alerted).toHaveLength(1);
   });
 });

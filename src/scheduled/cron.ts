@@ -1,7 +1,11 @@
 // The five-minute cron (wrangler.jsonc "triggers"): every job below, in this
 // order. A job that throws is logged as `cron_job_failed` and the next one runs
-// anyway, so one failing job never stops the others. runCronJobs returns each
-// job's outcome, for alerting on a job that keeps failing.
+// anyway, so one failing job never stops the others. Each job's failed runs in
+// a row are counted in `cron_jobs`, and a job that fails three in a row alerts
+// (docs/decisions/0067-alerts-and-silent-failures.md).
+//
+// The jobs share one budget of outside calls a run, so that together they stay
+// under the free plan's 50 subrequests (src/lib/call-budget.ts).
 
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
@@ -12,11 +16,13 @@ import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
-import type { Logger } from "../log.ts";
+import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
+import { scrubString, type Logger } from "../log.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import { sweep } from "./sweeper.ts";
+import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -24,7 +30,19 @@ export interface CronContext {
   readonly config: StaticConfig;
   /** Carries the job's name on every line. */
   readonly log: Logger;
+  /** The run's outside calls, shared by every job in it. */
+  readonly budget: CallBudget;
 }
+
+/**
+ * Outside calls one run may make. The free plan allows 50 subrequests an
+ * invocation; the other ten are for what no job can plan: a Zoho token
+ * refresh, and the alerts the run sends.
+ */
+export const CRON_CALLS = 40;
+
+/** One failed run is a blip; three in a row is a quarter of an hour of it. */
+const ALERT_AFTER_FAILED_RUNS = 3;
 
 /** What a job needs switched on in this environment before it runs. */
 type Needs = "nothing" | "fsm" | "fsm_and_books" | "messaging";
@@ -62,10 +80,11 @@ async function queueMessages(queue: Queue, ids: readonly string[], requestId: st
   );
 }
 
-async function sweepJob({ env, deps, config, log }: CronContext): Promise<void> {
+async function sweepJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   await sweep(env, deps, log, {
     creditFloor: config.settings.tryon.creditFloor,
-    fsmErasure: config.providers.FSM_PROVIDER !== "none",
+    fsmConnected: config.providers.FSM_PROVIDER !== "none",
+    budget,
   });
 }
 
@@ -74,12 +93,16 @@ async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
   if (finished > 0) log.info("erased_files_deleted", { people: finished });
 }
 
-async function reconcileJob({ env, deps, log }: CronContext): Promise<void> {
-  await reconcileFsm(env, deps, log);
+async function reconcileJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  await reconcileFsm(env, deps, log, budget);
 }
 
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
+}
+
+async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
+  await checkWhatsAppBridge(deps, log, budget);
 }
 
 async function utilisationJob({ env, deps, log }: CronContext): Promise<void> {
@@ -98,22 +121,22 @@ async function remindersJob({ env, deps, log }: CronContext): Promise<void> {
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
 
-async function invoicesJob({ env, deps, log }: CronContext): Promise<void> {
-  const done = await raiseInvoices(env.DB, deps.fsm, deps.books, deps.now(), log, deps.alert);
+async function invoicesJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const done = await raiseInvoices(env.DB, deps, deps.now(), log, budget);
   if (done.raised + done.issued > 0) log.info("invoices_raised", done);
 }
 
-async function askedWindowsJob({ env, deps, log }: CronContext): Promise<void> {
-  const done = await resolveAskedWindows(env.DB, deps.fsm, deps.now(), log);
+async function askedWindowsJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const done = await resolveAskedWindows(env.DB, deps.fsm, deps.now(), log, budget);
   if (done.resolved > 0) log.info("asked_windows_resolved", done);
 }
 
-async function booksJob({ env, deps, config, log }: CronContext): Promise<void> {
+async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const options = {
     refundAccountId: config.settings.zohoFsm?.booksRefundAccountId ?? null,
     labelAsTest: config.environment !== "production",
   };
-  const done = await syncBooks(env.DB, deps.fsm, deps.books, options, deps.now(), log);
+  const done = await syncBooks(env.DB, deps, options, deps.now(), log, budget);
   if (done.recorded + done.applied + done.refunded > 0) log.info("books_synced", done);
 }
 
@@ -124,6 +147,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
   { name: "fsm_reconcile", needs: "fsm", run: reconcileJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
+  // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
+  { name: "whatsapp_bridge", needs: "nothing", run: whatsAppBridgeJob },
   // Once a day: the operating figure behind the weekend-share assumption (src/policy/dispatch.ts).
   { name: "dispatch_utilisation", needs: "nothing", run: utilisationJob },
   { name: "referrals", needs: "nothing", run: referralsJob },
@@ -136,19 +161,59 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "books_sync", needs: "fsm_and_books", run: booksJob },
 ];
 
-/** Runs each job switched on here, in order, each under a logger named for it. */
-export async function runCronJobs(jobs: readonly CronJob[], context: CronContext): Promise<CronOutcome[]> {
+/** Runs each job switched on here, in order, each under a logger named for it, on one budget of outside calls. */
+export async function runCronJobs(jobs: readonly CronJob[], run: Omit<CronContext, "budget">): Promise<CronOutcome[]> {
+  const budget = createCallBudget(CRON_CALLS);
   const outcomes: CronOutcome[] = [];
   for (const job of jobs) {
-    if (!isSwitchedOn(job.needs, context.config)) continue;
-    const log = context.log.child({ job: job.name });
+    if (!isSwitchedOn(job.needs, run.config)) continue;
+    const context = { ...run, log: run.log.child({ job: job.name }), budget };
     try {
-      await job.run({ ...context, log });
+      await job.run(context);
       outcomes.push({ job: job.name, ok: true });
+      await countSuccess(context, job.name);
     } catch (error) {
-      log.error("cron_job_failed", { error });
+      context.log.error("cron_job_failed", { error });
       outcomes.push({ job: job.name, ok: false });
+      await countFailure(context, job.name, error);
     }
   }
+  if (budget.ranOut()) run.log.warn("cron_calls_spent", { calls: CRON_CALLS });
   return outcomes;
+}
+
+/** A job that works again starts its count afresh, and its alert is closed. */
+async function countSuccess({ env, deps, log }: CronContext, job: string): Promise<void> {
+  try {
+    const recovered = await env.DB.prepare(
+      "UPDATE cron_jobs SET failed_runs = 0 WHERE job = ?1 AND failed_runs > 0 RETURNING job",
+    )
+      .bind(job)
+      .first();
+    if (recovered !== null) await deps.resolveAlert(`cron_job:${job}`);
+  } catch (error) {
+    log.error("cron_outcome_not_counted", { error });
+  }
+}
+
+async function countFailure({ env, deps, log }: CronContext, job: string, error: unknown): Promise<void> {
+  const reason = scrubString(error instanceof Error ? error.message : String(error)).slice(0, 300);
+  try {
+    const row = await env.DB.prepare(
+      `INSERT INTO cron_jobs (job, failed_runs, last_failed_at, last_error) VALUES (?1, 1, ?2, ?3)
+       ON CONFLICT (job) DO UPDATE SET failed_runs = failed_runs + 1, last_failed_at = excluded.last_failed_at,
+         last_error = excluded.last_error
+       RETURNING failed_runs`,
+    )
+      .bind(job, deps.now().toISOString(), reason)
+      .first<{ failed_runs: number }>();
+    const failedRuns = row?.failed_runs ?? 1;
+    if (failedRuns < ALERT_AFTER_FAILED_RUNS) return;
+    await deps.alertOnce({
+      key: `cron_job:${job}`,
+      message: `The cron's ${job} job has failed ${String(failedRuns)} runs in a row: ${reason}.`,
+    });
+  } catch (countingError) {
+    log.error("cron_outcome_not_counted", { error: countingError });
+  }
 }

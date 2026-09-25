@@ -5,6 +5,7 @@ import { createApp, type App } from "../../src/app.ts";
 import { EXPECTED_DATABASE_NAME, type EnvironmentName, type Surface } from "../../src/config/environments.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
+import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/erasure.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createAccessVerifier } from "../../src/http/access.ts";
@@ -154,6 +155,12 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
   const leadNotices: string[] = [];
   const sentCodes: SentCode[] = [];
   const now = overrides.now ?? (() => NOW);
+  const alert =
+    overrides.alert ??
+    ((message: string) => {
+      alerts.push(message);
+      return Promise.resolve();
+    });
   return {
     fetch: fakeFetch({ [TURNSTILE_URL]: turnstilePasses }).fetch,
     now,
@@ -161,10 +168,9 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     image: createImageProvider(null, { fetch, now }),
     geocode: createGeocodeProvider("stub", null, { fetch }),
     messaging: createStubMessaging(createLogger()),
-    alert: (message) => {
-      alerts.push(message);
-      return Promise.resolve();
-    },
+    alert,
+    alertOnce: createAlertOnce({ db: env.DB, alert, now, environment: "local", log: createLogger() }),
+    resolveAlert: createResolveAlert({ db: env.DB, now }),
     alerts,
     notifyLead: (message) => {
       leadNotices.push(message);

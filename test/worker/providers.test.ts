@@ -14,15 +14,36 @@ describe("verifyTurnstile", () => {
   const check = (fetchImpl: typeof fetch) => verifyTurnstile({ secret: "s", token: "t", ip: null, fetch: fetchImpl });
 
   it("passes only when Cloudflare says success", async () => {
-    expect(await check(fakeFetch({ [TURNSTILE_URL]: () => json({ success: true }) }).fetch)).toBe("passed");
-    expect(await check(fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch)).toBe("rejected");
-    expect(await check(fakeFetch({ [TURNSTILE_URL]: () => new Response("not json") }).fetch)).toBe("rejected");
+    expect(await check(fakeFetch({ [TURNSTILE_URL]: () => json({ success: true }) }).fetch)).toEqual({
+      result: "passed",
+    });
+    expect(await check(fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch)).toEqual({
+      result: "rejected",
+    });
+    expect(await check(fakeFetch({ [TURNSTILE_URL]: () => new Response("not json") }).fetch)).toEqual({
+      result: "rejected",
+    });
   });
 
-  it("reports unavailable when Cloudflare cannot be reached", async () => {
+  it("reports unavailable, and why, when Cloudflare cannot be reached or answers an error", async () => {
     const unreachable = (() => Promise.reject(new TypeError("network down"))) as typeof fetch;
-    expect(await check(unreachable)).toBe("unavailable");
+    expect(await check(unreachable)).toEqual({ result: "unavailable", detail: "unreachable: TypeError" });
+    expect(await check(fakeFetch({ [TURNSTILE_URL]: () => new Response("", { status: 502 }) }).fetch)).toEqual({
+      result: "unavailable",
+      detail: "siteverify 502",
+    });
   });
+
+  it.each(["internal-error", "invalid-input-secret", "missing-input-secret"])(
+    "reports unavailable, not a rejected visitor, when Cloudflare says %s: no token could pass",
+    async (code) => {
+      const answer = json({ success: false, "error-codes": [code] });
+      expect(await check(fakeFetch({ [TURNSTILE_URL]: () => answer }).fetch)).toEqual({
+        result: "unavailable",
+        detail: `siteverify said ${code}`,
+      });
+    },
+  );
 });
 
 describe("createAlert", () => {

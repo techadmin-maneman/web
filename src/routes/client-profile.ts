@@ -33,6 +33,7 @@ import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
+import type { LookupFailure } from "../providers/geocode.ts";
 import { CONSENT_PURPOSES } from "../policy/consents.ts";
 import { revokeCard } from "../domain/referral-cards.ts";
 
@@ -57,6 +58,26 @@ async function withinGeocodeCeiling(c: Context<AppEnv>, now: Date): Promise<bool
   if (await takeFromCeiling(c.env.DB, "geocode", ceiling, now)) return true;
   await alertCeilingReached(c.env.DB, c.var.deps.alert, "geocode", ceiling, now);
   return false;
+}
+
+/**
+ * A lookup that failed is logged. One Google refused is ops' to put right — the
+ * key, its APIs or its quota — and until then no address gets a pin, so they
+ * are told, once a day while it lasts, in Google's own words.
+ */
+async function lookupFailed(
+  c: Context<AppEnv>,
+  event: string,
+  failure: { reason: LookupFailure; detail: string },
+): Promise<void> {
+  c.var.log.warn(event, { reason: failure.reason, detail: failure.detail });
+  if (failure.reason !== "refused") return;
+  await c.var.deps.alertOnce({
+    key: `google_refused:${indiaDate(c.var.deps.now())}`,
+    message:
+      `Google refused the address search (${failure.detail}). Clients can still type an address, but none gets ` +
+      "a pin. Check the key, its APIs and its quotas (runbook, section 13).",
+  });
 }
 
 /**
@@ -367,7 +388,7 @@ export function registerClientProfile(app: App): void {
     const answer = await c.var.deps.geocode.suggest(q, session);
     if (!answer.ok) {
       // The form carries on without suggestions: an address can always be typed.
-      c.var.log.warn("address_suggest_failed", { reason: answer.reason, detail: answer.detail });
+      await lookupFailed(c, "address_suggest_failed", answer);
       return c.json(errorBody("unavailable", c.var.requestId), 503);
     }
     return c.json(
@@ -399,7 +420,7 @@ export function registerClientProfile(app: App): void {
         blankToNull(body.session_token) ?? crypto.randomUUID(),
       );
       if (resolved.ok) pin = { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
-      else c.var.log.warn("address_resolve_failed", { reason: resolved.reason, detail: resolved.detail });
+      else await lookupFailed(c, "address_resolve_failed", resolved);
     }
 
     const address = {

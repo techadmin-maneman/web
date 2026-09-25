@@ -144,6 +144,29 @@ describe("resolving a place", () => {
     expect(answer.reason).toBe("not_found");
   });
 
+  it.each([
+    ["REQUEST_DENIED", "This API project is not authorized to use this API."],
+    ["OVER_DAILY_LIMIT", "You have exceeded your daily request quota for this API."],
+    ["OVER_QUERY_LIMIT", "You have exceeded your rate-limit for this API."],
+  ])("answers refused, with Google's words, when geocoding says %s under a 200", async (status, message) => {
+    const provider = createGooglePlaces(STUB_API_KEY, {
+      fetch: (input, init) =>
+        new URL(new Request(input, init).url).hostname === "maps.googleapis.com"
+          ? Promise.resolve(Response.json({ status, error_message: message, results: [] }))
+          : createStubGeocodeFetch()(input, init),
+    });
+    const answer = await provider.resolve("stub-place-mayfield", SESSION);
+    expect(answer).toEqual({ ok: false, reason: "refused", detail: `geocoding said ${status}: ${message}` });
+  });
+
+  it("answers the stub's refused key as Google does: a 200 that says REQUEST_DENIED", async () => {
+    const provider = createGooglePlaces("not-the-stub-key", { fetch: createStubGeocodeFetch() });
+    const answer = await provider.resolve("stub-place-mayfield", SESSION);
+    expect(answer).toMatchObject({ ok: false, reason: "refused" });
+    if (answer.ok) return;
+    expect(answer.detail).toContain("geocoding said REQUEST_DENIED");
+  });
+
   it("never lets the API key into a detail, because geocoding takes it in the URL", async () => {
     const provider = createGooglePlaces("a-very-secret-key", { fetch: createStubGeocodeFetch() });
     const answer = await provider.resolve("stub-place-mayfield", SESSION);

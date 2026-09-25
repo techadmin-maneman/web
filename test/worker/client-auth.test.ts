@@ -89,6 +89,45 @@ async function loggedIn(): Promise<string> {
   return `mm_app=${cookie}`;
 }
 
+describe("a login code that does not go", () => {
+  const failing = (detail: string) => {
+    deps = fakeDependencies({
+      now: () => clock,
+      codes: { smsAvailable: true, send: () => Promise.resolve({ ok: false, transient: true, detail }) },
+    });
+    app = appFor("local", deps, {}, "client");
+  };
+
+  async function tries(times: number) {
+    for (let time = 0; time < times; time += 1) {
+      await start("98100 00001");
+      later(5 * 60);
+    }
+  }
+
+  it("is logged, and the third within the hour tells ops once", async () => {
+    failing("HTTP 500 INTERNAL_SERVER_ERROR");
+    await tries(2);
+    expect(deps.alerts).toEqual([]);
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "login_code_failed" }));
+
+    await tries(2);
+    expect(deps.alerts).toEqual([
+      "3 login codes failed to send in the last hour, the latest with HTTP 500 INTERNAL_SERVER_ERROR. Clients " +
+        'and technicians cannot sign in. Check the WhatsApp bridge (runbook, "WhatsApp (Evolution) is down").',
+    ]);
+  });
+
+  it("is forgotten once a code goes through, so the next run of failures is told afresh", async () => {
+    failing("HTTP 500 INTERNAL_SERVER_ERROR");
+    await tries(3);
+    build();
+    await tries(1);
+    const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
+    expect(open).toEqual({ n: 0 });
+  });
+});
+
 describe("POST /api/auth/otp", () => {
   it("sends a six-digit code on WhatsApp to a number with a booking", async () => {
     const { res, body } = await start("98100 00001");

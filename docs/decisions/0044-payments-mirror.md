@@ -1,6 +1,6 @@
 # 0044. The payments mirror
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0067: a refusal from Books is told to ops, once, as well as logged.
 - Date: 2026-09-22
 
 ## Context

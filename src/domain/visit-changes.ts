@@ -21,6 +21,7 @@ import {
 } from "../policy/moving-a-visit.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/razorpay.ts";
+import type { AlertOnce } from "./alerts.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { windowAt } from "./scheduling.ts";
 import { visitMessage } from "./visit-messages.ts";
@@ -171,7 +172,7 @@ export async function cancelVisit(
   deps: {
     fsm: FsmProvider;
     payments: PaymentsProvider;
-    alert: (message: string) => Promise<void>;
+    alertOnce: AlertOnce;
     /** Queues the cancel's confirmation to the client. */
     notify?: (messageId: string) => Promise<unknown>;
   },
@@ -254,7 +255,14 @@ export async function cancelVisit(
         .run();
     } catch (error) {
       log.error("cancel_refund_failed", { appointment_id: visit.id, error });
-      await deps.alert(`A cancelled visit's refund failed; refund ${String(cancel.refund / 100)} rupees by hand.`);
+      // Keyed on the visit, so ops are told once and a second refund by hand is not asked for.
+      await deps.alertOnce({
+        key: `cancel_refund_failed:${visit.id}`,
+        message:
+          `The refund of Rs. ${String(cancel.refund / 100)} for visit ${visit.id}, cancelled by the client, failed ` +
+          `(Razorpay payment ${payment.razorpayPaymentId}). Refund it by hand in Razorpay, once.`,
+        link: `/clients/${visit.personId}`,
+      });
     }
   }
   await deps.notify?.(message.id);

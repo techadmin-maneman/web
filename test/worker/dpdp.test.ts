@@ -6,8 +6,10 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { alertAgedDeletions } from "../../src/domain/deletion.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm } from "../../src/providers/fsm.ts";
+import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { sweep } from "../../src/scheduled/sweeper.ts";
 import {
@@ -97,7 +99,11 @@ describe("erasure reaches Phase 2's data", () => {
       MESSAGE_QUEUE: fakeQueue(),
       FSM_QUEUE: fsmQueue,
     };
-    await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), { creditFloor: 0, fsmErasure: true });
+    await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), {
+      creditFloor: 0,
+      fsmConnected: true,
+      budget: createCallBudget(Infinity),
+    });
     expect(fsmQueue.sent).toEqual([{ erase_person_id: PERSON, request_id: "sweeper" }]);
 
     const fsm = createStubFsm();
@@ -110,9 +116,34 @@ describe("erasure reaches Phase 2's data", () => {
     const again = fakeQueue();
     await sweep({ ...bindings, FSM_QUEUE: again }, fakeDependencies({ now: () => later }), createLogger(), {
       creditFloor: 0,
-      fsmErasure: true,
+      budget: createCallBudget(Infinity),
+      fsmConnected: true,
     });
     expect(again.sent).toEqual([]);
+  });
+
+  it("tells ops once when FSM will not anonymise the contact and the sweeper stops asking", async () => {
+    await eraseByMobile(MOBILE, NOW);
+    const fsm = createStubFsm();
+    const deps = fakeDependencies({
+      fsm: { ...fsm, eraseContact: () => Promise.reject(new Error("FSM answered 500")) },
+    });
+    const attempt = async (attempts: number) => {
+      await env.DB.prepare("UPDATE people SET fsm_erasure_attempts = ?1 WHERE id = ?2").bind(attempts, PERSON).run();
+      const message = { id: "m1", body: { erase_person_id: PERSON, request_id: "sweeper" }, attempts: 1, ack: vi.fn() };
+      const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
+      await handleFsmSyncBatch(batch as unknown as MessageBatch, env, deps, createLogger());
+    };
+
+    await attempt(MAX_SYNC_ATTEMPTS - 2);
+    expect(deps.alerts).toEqual([]);
+
+    await attempt(MAX_SYNC_ATTEMPTS - 1);
+    expect(deps.alerts).toEqual([
+      `FSM would not anonymise contact contact-1 of erased person ${PERSON} after ${String(MAX_SYNC_ATTEMPTS)} ` +
+        "attempts (FSM answered 500), and nothing will ask again. Anonymise it in FSM by hand, then record it " +
+        '(runbook, "Erasure within the day"). http://ops.localhost:4323/tasks',
+    ]);
   });
 
   it("leaves FSM alone where it is not connected", async () => {
@@ -122,7 +153,7 @@ describe("erasure reaches Phase 2's data", () => {
       { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fsmQueue },
       fakeDependencies({ now: () => new Date(NOW.getTime() + 10 * 60_000) }),
       createLogger(),
-      { creditFloor: 0 },
+      { creditFloor: 0, budget: createCallBudget(Infinity) },
     );
     expect(fsmQueue.sent).toEqual([]);
   });

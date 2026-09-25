@@ -11,6 +11,7 @@ import {
   fakeQueue,
   json,
   markDatabase,
+  NOW,
   request,
   TURNSTILE_URL,
   turnstilePasses,
@@ -87,6 +88,29 @@ describe("POST /api/lead: a served city", () => {
 
     expect(queue.sent).toEqual([{ lead_id: body.lead_id, request_id: res.headers.get("X-Request-Id") }]);
     expect(fsmQueue.sent).toEqual([{ lead_id: body.lead_id, request_id: res.headers.get("X-Request-Id") }]);
+  });
+
+  it("stamps a booking put on the fsm-sync queue, and leaves one that failed to go for the sweeper", async () => {
+    const queued = await request(appFor(), "/api/lead", post(BOOKING), {
+      CRM_QUEUE: fakeQueue(),
+      FSM_QUEUE: fakeQueue(),
+    });
+    const { lead_id: sent } = LeadResponseSchema.parse(await queued.json());
+
+    const broken = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) } as unknown as Queue;
+    const failed = await request(appFor(), "/api/lead", post({ ...BOOKING, mobile: "98100 00002" }), {
+      CRM_QUEUE: fakeQueue(),
+      FSM_QUEUE: broken,
+    });
+    expect(failed.status).toBe(201);
+    const { lead_id: unsent } = LeadResponseSchema.parse(await failed.json());
+
+    const stamp = (id: string) =>
+      env.DB.prepare("SELECT fsm_queued_at FROM leads WHERE id = ?1")
+        .bind(id)
+        .first<{ fsm_queued_at: string | null }>();
+    expect((await stamp(sent))?.fsm_queued_at).toBe(NOW.toISOString());
+    expect((await stamp(unsent))?.fsm_queued_at).toBeNull();
   });
 
   it("proposes the first weekend day for a weekend window, after four for an evening", async () => {
@@ -221,13 +245,32 @@ describe("POST /api/lead: Turnstile", () => {
     expect(await errorCode(res)).toBe("turnstile_failed");
   });
 
-  it("refuses the lead when Turnstile cannot be reached", async () => {
+  it("refuses the lead when Turnstile cannot be reached, and logs why", async () => {
     const deps = fakeDependencies({
       fetch: fakeFetch({ [TURNSTILE_URL]: () => new Response("", { status: 502 }) }).fetch,
     });
+    const logs = captureLogs();
     const res = await request(appFor("local", deps), "/api/lead", post(BOOKING));
     expect(res.status).toBe(503);
     expect(await errorCode(res)).toBe("unavailable");
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "turnstile_unavailable", detail: "siteverify 502" }),
+    );
+  });
+
+  it("tells ops once a day when Turnstile has turned five visitors away in an hour", async () => {
+    const deps = fakeDependencies({
+      fetch: fakeFetch({ [TURNSTILE_URL]: () => new Response("", { status: 502 }) }).fetch,
+    });
+    const app = appFor("local", deps);
+    for (let visitor = 0; visitor < 4; visitor += 1) await request(app, "/api/lead", post(BOOKING));
+    expect(deps.alerts).toEqual([]);
+
+    for (let visitor = 0; visitor < 3; visitor += 1) await request(app, "/api/lead", post(BOOKING));
+    expect(deps.alerts).toEqual([
+      "Turnstile could not check 5 visitors in the last hour (siteverify 502), so their leads and try-ons were " +
+        "turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
+    ]);
   });
 
   it("sends Cloudflare the secret, the token and the visitor's IP", async () => {

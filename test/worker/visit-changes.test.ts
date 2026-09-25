@@ -147,6 +147,22 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(payments.made.refunds).toHaveLength(1);
   });
 
+  it("tells ops which visit and payment to refund by hand when Razorpay fails the refund, and where to find the client", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    const deps = fakeDependencies({
+      fsm: createStubFsm(world()),
+      payments: { ...createStubPayments(), refund: () => Promise.reject(new Error("Razorpay 502")) },
+    });
+    const app = appFor("local", deps, {}, "client");
+
+    const done = await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: true, notice: "free" });
+    expect(await done.json()).toMatchObject({ cancelled: true });
+    expect(deps.alerts).toEqual([
+      `The refund of Rs. 2000 for visit ${VISIT}, cancelled by the client, failed (Razorpay payment pay_visit). ` +
+        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+    ]);
+  });
+
   it("keeps a service visit's payment inside 24 hours, and shows it as a charge with its evidence", async () => {
     await booked("service", TUESDAY_MORNING, 200000);
     const payments = createStubPayments();
