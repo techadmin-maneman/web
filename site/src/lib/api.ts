@@ -10,9 +10,6 @@ type Body<P extends keyof paths> = paths[P]["post"] extends {
 }
   ? B
   : never;
-export type City = Schemas["City"];
-export type LeadRequest = Schemas["LeadRequest"];
-export type LeadResponse = Schemas["LeadResponse"];
 export type Attribution = Schemas["Attribution"];
 export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
 export type UploadUrlRequest = Schemas["UploadUrlRequest"];
@@ -40,10 +37,18 @@ export type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
  */
 const POLL_TIMEOUT_MS = 10_000;
 
-/** An answer from the API: the body, or the error code and the fields it names. */
+/** The consultation a number already has, which a booking form's `409 already_booked` names. */
+export type AlreadyBooked = Schemas["AlreadyBooked"]["booked"];
+
+/** An answer from the API: the body, or the error code, the fields it names and, for `already_booked`, the day. */
 export type Answer<T> =
   | { readonly ok: true; readonly body: T }
-  | { readonly ok: false; readonly code: ErrorCode | "network"; readonly fields: readonly string[] };
+  | {
+      readonly ok: false;
+      readonly code: ErrorCode | "network";
+      readonly fields: readonly string[];
+      readonly booked?: AlreadyBooked;
+    };
 
 async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
   let response: Response;
@@ -55,23 +60,17 @@ async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
   const body: unknown = await response.json().catch(() => null);
   // Only 204 has no body. Any other answer that is not JSON came from something other than mm-api.
   if (response.ok && (body !== null || response.status === 204)) return { ok: true, body: body as T };
-  const error = (body as Partial<Schemas["ErrorResponse"]> | null)?.error;
-  return { ok: false, code: error?.code ?? "network", fields: error?.fields ?? [] };
-}
-
-export function fetchCities(): Promise<Answer<City[]>> {
-  return call<City[]>("/api/cities");
+  const refusal = body as Partial<Schemas["AlreadyBooked"]> | null;
+  const code = refusal?.error?.code ?? "network";
+  const fields = refusal?.error?.fields ?? [];
+  const booked = refusal?.booked;
+  return booked === undefined ? { ok: false, code, fields } : { ok: false, code, fields, booked };
 }
 
 function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<Answer<T>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (idempotencyKey !== undefined) headers["Idempotency-Key"] = idempotencyKey;
   return call<T>(path, { method: "POST", headers, body: JSON.stringify(body) });
-}
-
-/** A new idempotency key for each submission attempt, so a repeat of one attempt books once. */
-export function submitLead(lead: LeadRequest, idempotencyKey: string): Promise<Answer<LeadResponse>> {
-  return post<LeadResponse>("/api/lead", lead, idempotencyKey);
 }
 
 // The try-on, in order: a link to upload one photo, the upload, the render,

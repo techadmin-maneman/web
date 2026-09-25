@@ -1,8 +1,6 @@
 // axe on every page and every screen, at both widths, against WCAG 2.2 AA.
-//
-// One known exception: v2 draws the try-on's countdown at 1.6:1 against its
-// ground, under the 3:1 large text needs. It is raised with the owner (ADR
-// 0022, 30) rather than changed, and is the only element axe skips.
+// Nothing is skipped: the try-on's countdown, which v2 draws at 1.6:1, is now
+// drawn at 4.2:1 (ADR 0022, 30).
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
@@ -28,6 +26,7 @@ const PAGES = [
   "/book?state=booked",
   "/book?state=requested",
   "/book?state=listed",
+  "/book?state=expired",
   "/privacy",
   "/terms",
   // The referral landing: every /r/:code is the one page, and ?state= opens each state.
@@ -36,12 +35,13 @@ const PAGES = [
   "/r/RM4K7P?state=unserved",
   "/r/RM4K7P?state=booked",
   "/r/RM4K7P?state=requested",
+  "/r/RM4K7P?state=expired",
   "/r/RM4K7P?state=listed",
   "/no-such-page",
 ];
 
 async function violations(page: Page): Promise<string[]> {
-  const results = await new AxeBuilder({ page }).withTags(WCAG_22_AA).exclude("[data-countdown]").analyze();
+  const results = await new AxeBuilder({ page }).withTags(WCAG_22_AA).analyze();
   return results.violations.map(
     (violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`,
   );

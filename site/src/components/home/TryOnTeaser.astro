@@ -5,7 +5,7 @@ import { placeholderTag, teaserPair, tryOnTeaser } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
 
-const sizes = "(min-width: 760px) 50vw, 100vw";
+const sizes = "(min-width: 761px) 50vw, 100vw";
 const widths = [390, 780, 1200];
 ---
 
@@ -27,6 +27,7 @@ const widths = [390, 780, 1200];
         beforeLabel={tryOnTeaser.before}
         afterLabel={tryOnTeaser.after}
         sliderLabel={tryOnTeaser.sliderLabel}
+        sliderValue={tryOnTeaser.sliderValue}
         tag={SHOW_PLACEHOLDER_TAGS ? placeholderTag : undefined}
       >
         <DesignPicture

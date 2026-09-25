@@ -8,10 +8,10 @@ import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import Sprite from "../components/Sprite.astro";
 import StickyBar from "../components/StickyBar.astro";
+import { business } from "../content/site.ts";
 import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
-import { OG_IMAGE, token } from "../lib/brand-images.ts";
+import { FAVICON_SIZES, OG_IMAGE, token } from "../lib/brand-images.ts";
 import { SITE_ORIGIN } from "../lib/static-files.ts";
-import favicon from "../../../design/brand/favicon-32.svg?url";
 import serif400 from "../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2?url";
 import sans400 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff2?url";
 import sans500 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff2?url";
@@ -47,7 +47,7 @@ const ogImage = new URL("/og.png", SITE_ORIGIN).href;
     {!noindex && <link rel="canonical" href={canonical} />}
     <meta name="theme-color" content={token("--ink")} />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Mane Man" />
+    <meta property="og:site_name" content={business.name} />
     <meta property="og:locale" content="en_IN" />
     <meta property="og:title" content={title} />
     {description !== undefined && <meta property="og:description" content={description} />}
@@ -55,9 +55,16 @@ const ogImage = new URL("/og.png", SITE_ORIGIN).href;
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content={String(OG_IMAGE.width)} />
     <meta property="og:image:height" content={String(OG_IMAGE.height)} />
-    <meta property="og:image:alt" content="Mane Man" />
+    <meta property="og:image:alt" content={business.name} />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" type="image/svg+xml" href={favicon} />
+    {FAVICON_SIZES.map((size) => (
+      <link
+        rel="icon"
+        type="image/png"
+        sizes={`${String(size)}x${String(size)}`}
+        href={`/favicon-${String(size)}.png`}
+      />
+    ))}
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href={serif400} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={sans400} as="font" type="font/woff2" crossorigin />

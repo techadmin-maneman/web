@@ -14,6 +14,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* Whatever the page scrolls to, a section or a focused control, stops below the fixed header. */
+  scroll-padding-top: var(--header-h);
 }
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -46,7 +48,7 @@ textarea {
   color: inherit;
 }
 ::placeholder {
-  color: var(--paper-placeholder);
+  color: var(--paper-hint);
   opacity: 1;
 }
 .on-ink ::placeholder {
@@ -65,9 +67,9 @@ select {
   --focus-colour: var(--paper);
 }
 
-/* Sections that the header links to stop below the fixed header. */
-[id] {
-  scroll-margin-top: var(--header-h);
+/* A heading focused by the page, to say where a step has moved to, is not a control and draws no ring. */
+[tabindex="-1"]:focus {
+  outline: none;
 }
 
 .visually-hidden {

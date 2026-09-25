@@ -6,8 +6,9 @@
 // island fetches it — the same fallback that runs if the Worker cannot reach
 // mm-api.
 
+import { readFileSync } from "node:fs";
 import type { Page, Request } from "@playwright/test";
-import { expect, fakeTurnstile, test, visit } from "./support.ts";
+import { analyticsCommands, analyticsEvents, expect, fakeTurnstile, test, visit } from "./support.ts";
 
 const CODE = "RM4K7P";
 
@@ -39,13 +40,20 @@ async function mockApi(page: Page, answers: Answers = {}): Promise<Request[]> {
     requests.push(route.request());
     const answer = answers.consultation ?? {
       status: 201,
-      body: { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, credits: true },
+      body: {
+        state: "booked",
+        date: "2026-09-25",
+        window: "morning",
+        area: SERVED.area,
+        credits: true,
+        invite: "valid",
+      },
     };
     return route.fulfill({ status: answer.status, json: answer.body });
   });
   await page.route(`**/api/r/${CODE}/waitlist`, (route) => {
     requests.push(route.request());
-    const answer = answers.waitlist ?? { status: 201, body: { area: UNSERVED.area, credits: true } };
+    const answer = answers.waitlist ?? { status: 201, body: { area: UNSERVED.area, credits: true, invite: "valid" } };
     return route.fulfill({ status: answer.status, json: answer.body });
   });
   return requests;
@@ -61,7 +69,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await visit(page, `/r/${CODE}`);
 
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home in Gurgaon.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home across Delhi NCR.");
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeVisible();
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
@@ -84,6 +92,32 @@ test("the invite names the referrer, and a served pincode opens the consultation
   expect(sent.turnstile_token).toBeTruthy();
 });
 
+// FEO-17: the booking is the conversion paid campaigns are bought for. FEO-24: the invite's code is a person's, so no
+// tag reads it, in the address or anywhere else.
+test("a booking through the invite is counted, with nothing personal and no code", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillPerson(page);
+  await page.getByText("Afternoon", { exact: true }).click();
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+
+  expect(await analyticsEvents(page)).toEqual([
+    ["lead_submitted", { page: "invite", served: true, area: "Sector 65", window: "afternoon", loss_extent: null }],
+    ["booking_confirmed", { page: "invite", area: "Sector 65", window: "morning", state: "booked" }],
+  ]);
+  const commands = await analyticsCommands(page);
+  expect(commands).toContainEqual(["set", { page_location: `${new URL(page.url()).origin}/r/` }]);
+  const sent = JSON.stringify(commands);
+  for (const personal of [CODE, "Rohit", "Test Friend", "9810000000", "98100 00000"])
+    expect(sent).not.toContain(personal);
+  // The next page is told only where the visitor came from, not which invite.
+  await expect(page.locator('meta[name="referrer"]')).toHaveAttribute("content", "strict-origin");
+});
+
 test("the invited page does say who is told, and what lands when", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
@@ -100,8 +134,8 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   await page.getByRole("button", { name: "Check" }).click();
   // The navy block says what the pincode answered, in place of the pincode field (board C3).
   await expect(page.getByText("We are not in Bandra yet")).toBeVisible();
-  await expect(page.getByLabel("Pincode")).toBeHidden();
-  await expect(page.getByText("For 400050, Bandra.")).toBeVisible();
+  await expect(page.getByLabel("Pincode", { exact: true })).toBeHidden();
+  await expect(page.getByText("For 400050, Bandra")).toBeVisible();
 
   await fillPerson(page);
   await page.getByText("You may contact me about this request.").click();
@@ -122,7 +156,14 @@ test("a code we do not know still books, without the invite's visits", async ({ 
     invite: { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } },
     consultation: {
       status: 201,
-      body: { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, credits: false },
+      body: {
+        state: "booked",
+        date: "2026-09-25",
+        window: "morning",
+        area: SERVED.area,
+        credits: false,
+        invite: "unknown",
+      },
     },
   });
   await visit(page, `/r/${CODE}`);
@@ -133,13 +174,44 @@ test("a code we do not know still books, without the invite's visits", async ({ 
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  await expect(page.getByText("Whoever invited you is told when you are fitted.", { exact: false })).toBeVisible();
+  // The API books this one with no invite, so nobody is told and no visits land (REQ-S8-01).
+  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
+  await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 
   await fillPerson(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Consultation booked")).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
+});
+
+test("a code we do not know promises nothing to hold on the waitlist either", async ({ page }) => {
+  await mockApi(page, {
+    invite: { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } },
+  });
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByRole("button", { name: "Add me to the list" })).toBeVisible();
+  await expect(page.getByText(/invite stays valid/)).toHaveCount(0);
+});
+
+// FEO-18: the invite could not be fetched, which says nothing about the code. The page neither calls it unknown
+// nor promises its visits, and it books as ever.
+test("an invite that cannot be fetched is neither refused nor promised", async ({ page }) => {
+  await mockApi(page);
+  await page.route(`**/api/r/${CODE}`, (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
+  );
+  await visit(page, `/r/${CODE}`);
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home across Delhi NCR.");
+  await expect(page.getByText("You have an invite")).toBeVisible();
+  await expect(page.getByText("We do not recognise this invite")).toBeHidden();
+  await expect(page.getByText(/3 service visits/)).toHaveCount(0);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 });
 
 // With self-serve booking off, the API records the day asked for and answers
@@ -150,7 +222,14 @@ test("a consultation nobody can book outright is confirmed as a request", async 
   await mockApi(page, {
     consultation: {
       status: 201,
-      body: { state: "requested", date: "2026-09-25", window: "morning", area: SERVED.area, credits: true },
+      body: {
+        state: "requested",
+        date: "2026-09-25",
+        window: "morning",
+        area: SERVED.area,
+        credits: true,
+        invite: "valid",
+      },
     },
   });
   await visit(page, `/r/${CODE}`);
@@ -226,4 +305,222 @@ test("the form will not send without a name, a number and the agreement", async 
   await expect(page.getByText("Please enter a ten-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
   expect(requests).toHaveLength(0);
+});
+
+// A11Y-18: the answer used to replace the focused button, dropping focus to the page and saying nothing. CLI-08: a
+// mistyped pincode could only be undone by reloading the page.
+test("the pincode's answer is announced, and the pincode can be changed", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
+  await page.getByLabel("Pincode").press("Enter");
+  await expect(page.getByRole("heading", { name: "We are not in Bandra yet" })).toBeFocused();
+
+  await page.getByRole("button", { name: "Change the pincode" }).click();
+  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await expect(page.getByLabel("Pincode")).toHaveValue(UNSERVED.pincode);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
+  await expect(page.getByText(`For ${SERVED.pincode}`)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
+});
+
+// A11Y-16: what must be filled in says so to a screen reader, before any error.
+test("the fields the form needs are marked as required", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await expect(page.getByLabel("Pincode")).toHaveAttribute("aria-required", "true");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByLabel("Name")).toHaveAttribute("aria-required", "true");
+  await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-required", "true");
+  await expect(page.getByRole("checkbox")).toHaveAttribute("aria-required", "true");
+});
+
+/**
+ * The outline a keyboard user sees for the focused hidden radio or checkbox: on its label, or on the box drawn
+ * inside the label for a checkbox.
+ */
+function outlineOf(page: Page, drawn: "label" | "box"): Promise<string> {
+  return page.evaluate((part) => {
+    const label = document.activeElement?.closest("label") ?? null;
+    const element = part === "label" ? label : (label?.querySelector("[aria-hidden='true']") ?? null);
+    if (element === null) return "nothing focused";
+    const style = getComputedStyle(element);
+    return `${style.outlineStyle} ${style.outlineWidth}`;
+  }, drawn);
+}
+
+// A11Y-8: the radios and checkboxes are hidden and drawn, so the keyboard's focus must be drawn too.
+test("a keyboard user sees which day, window and agreement has focus", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel("Pincode").press("Enter");
+  await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
+
+  await page.keyboard.press("Tab"); // Change the pincode
+  await page.keyboard.press("Tab"); // the date strip
+  await expect(page.getByRole("radio").first()).toBeFocused();
+  expect(await outlineOf(page, "label")).toBe("solid 2px");
+  await page.keyboard.press("Tab"); // the windows
+  await expect(page.getByRole("radio", { name: /Morning/ })).toBeFocused();
+  expect(await outlineOf(page, "label")).toBe("solid 2px");
+  await page.keyboard.press("Tab"); // name
+  await page.keyboard.press("Tab"); // mobile
+  await page.keyboard.press("Tab"); // the agreement
+  await expect(page.getByRole("checkbox")).toBeFocused();
+  expect(await outlineOf(page, "box")).toBe("solid 2px");
+});
+
+// FEO-21: a retap after the answer was lost is the same request, so it carries the same key.
+test("pressing again after a lost answer sends the same request key", async ({ page }) => {
+  await mockApi(page);
+  const keys: (string | undefined)[] = [];
+  await page.route(`**/api/r/${CODE}/consultation`, (route) => {
+    keys.push(route.request().headers()["idempotency-key"]);
+    if (keys.length === 1) return route.abort("internetdisconnected");
+    const body = {
+      state: "booked",
+      date: "2026-09-25",
+      window: "morning",
+      area: SERVED.area,
+      credits: true,
+      invite: "valid",
+    };
+    return route.fulfill({ status: 201, json: body });
+  });
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillPerson(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Something went wrong at our end. Please try again.")).toBeVisible();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+
+  expect(keys).toHaveLength(2);
+  expect(keys[0]).toBeTruthy();
+  expect(keys[1]).toBe(keys[0]);
+});
+
+// FEO-35: Turnstile's script failing to load once used to fail every booking until the page was reloaded.
+test("Turnstile that failed to load is tried again when the form is sent", async ({ page }) => {
+  const requests = await mockApi(page);
+  let failed = false;
+  await page.route("https://challenges.cloudflare.com/turnstile/**", (route) => {
+    if (failed) return route.fallback();
+    failed = true;
+    return route.abort("internetdisconnected");
+  });
+  await visit(page, `/r/${CODE}`);
+  await bookThrough(page);
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect(failed).toBe(true);
+  expect(requests).toHaveLength(1);
+});
+
+async function bookThrough(page: Page): Promise<void> {
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillPerson(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+}
+
+// CLI-02: the API answers 409 already_booked, with the day, for a number with a consultation to come.
+test("a number that already has a consultation is told which day it is", async ({ page }) => {
+  await mockApi(page, {
+    consultation: {
+      status: 409,
+      body: { error: { code: "already_booked", request_id: "r" }, booked: { date: "2026-09-26", window: "evening" } },
+    },
+  });
+  await visit(page, `/r/${CODE}`);
+  await bookThrough(page);
+  await expect(
+    page.getByText(
+      "This number already has a consultation, Saturday 26 Sep, 4 to 8 pm. To change it, message us on WhatsApp.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("Consultation booked")).toBeHidden();
+});
+
+// REQ-06: the invite had lapsed for this friend, which only the booking's answer can say (ADR 0025, item 40).
+test("an invite that has expired for this friend says so once the booking is made", async ({ page }) => {
+  const expired = { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, credits: false };
+  await mockApi(page, { consultation: { status: 201, body: { ...expired, invite: "expired" } } });
+  await visit(page, `/r/${CODE}`);
+  await bookThrough(page);
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Code expired")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "This invite has expired" })).toBeVisible();
+  await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
+});
+
+// CLI-13, REQ-05: the booking ends with the number we message, the window in a calendar file, and the client app.
+test("a booked consultation names the number, and offers the calendar and the app", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await bookThrough(page);
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("On WhatsApp to +91 98100 00000")).toBeVisible();
+  await expect(page.getByRole("link", { name: "See it in the app" })).toHaveAttribute(
+    "href",
+    "http://app.localhost:4322",
+  );
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Add to calendar" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe("mane-man-consultation.ics");
+  const calendar = readFileSync(await file.path(), "utf8");
+  expect(calendar).toContain("DTSTART:20260925T033000Z");
+  expect(calendar).toContain("DTEND:20260925T063000Z");
+});
+
+test("a consultation asked for, not booked, offers no calendar and no app", async ({ page }) => {
+  const requested = { state: "requested", date: "2026-09-25", window: "morning", area: SERVED.area, credits: true };
+  await mockApi(page, { consultation: { status: 201, body: { ...requested, invite: "valid" } } });
+  await visit(page, `/r/${CODE}`);
+  await bookThrough(page);
+  await expect(page.getByText("Consultation requested")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "See it in the app" })).toHaveCount(0);
+});
+
+// CLI-21, VIS-11: at 1440 the card sits beside the headline (board C5), and no field runs the width of the page.
+test("the desktop page is board C5's two columns, and its fields keep to their column", async ({ page }) => {
+  const width = page.viewportSize()?.width ?? 0;
+  test.skip(width < 1024, "board C5 is the desktop page");
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  const title = await page.getByRole("heading", { level: 1 }).boundingBox();
+  const card = await page.locator("img[width='1200']").boundingBox();
+  expect(card?.x ?? 0).toBeGreaterThan(width / 2);
+  expect(card?.y ?? 0).toBeLessThan(title?.y ?? 0);
+
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  const name = await page.getByLabel("Name").boundingBox();
+  expect(name?.width ?? 0).toBeLessThanOrEqual(width / 2);
+});
+
+// A11Y-03: at 320 px, the narrowest phone WCAG asks for, nothing is cut off and the page does not scroll sideways.
+test("the form fits a 320 px screen", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  for (const field of ["Name", "Mobile"]) {
+    const box = await page.getByLabel(field).boundingBox();
+    expect((box?.x ?? 0) + (box?.width ?? 0), field).toBeLessThanOrEqual(320);
+  }
+  const lastDay = await page.locator("label:has(input[name='date'])").last().boundingBox();
+  expect((lastDay?.x ?? 0) + (lastDay?.width ?? 0)).toBeLessThanOrEqual(320);
 });

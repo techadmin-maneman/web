@@ -18,6 +18,10 @@ import Icon from "./Icon.astro";
 </div>
 
 <style>
+  /* Only the home page has the bar, and nothing the keyboard reaches may sit under it. */
+  :global(html) {
+    scroll-padding-bottom: var(--bar-reserve);
+  }
   .bar {
     position: fixed;
     left: 0;

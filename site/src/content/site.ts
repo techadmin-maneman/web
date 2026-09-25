@@ -10,14 +10,16 @@
 // - Notices carry the version recorded with a consent, and `approved`. The
 //   wording itself is the backend's (src/config/notices.ts), so the page and
 //   the consent record can never disagree. The production build stops while
-//   any notice is unapproved.
+//   any notice is unapproved, and a new version is unapproved until it is
+//   added to APPROVED_NOTICES.
 //
 // Images are file names in design/assets; src/lib/images.ts resolves them.
 // `{city}` and similar are filled in by the page.
 
-import { LOSS_EXTENTS, VISIT_WINDOWS, type LossExtent, type VisitWindow } from "../../../src/config/booking.ts";
-import { CURRENT_NOTICE, findNotice } from "../../../src/config/notices.ts";
+import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
+import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
 import { PRESETS } from "../../../src/config/presets.ts";
+import { capitalised, serviceArea, visitLength } from "./service.ts";
 
 export interface Picture {
   readonly file: string;
@@ -31,10 +33,22 @@ export interface Notice {
   readonly lines: readonly string[];
 }
 
-function notice(version: string, approved: boolean): Notice {
+/**
+ * The versions approved word for word: the try-on's three by the owner on 22 September 2026, and the consents,
+ * the landing's among them, by counsel the same day (ADR 0025, item 25).
+ */
+const APPROVED_NOTICES: readonly string[] = [
+  "photo-v1",
+  "gate-v1",
+  "referral-consultation-v1",
+  "waitlist-v1",
+  "whatsapp-launches-v1",
+];
+
+function notice(version: string): Notice {
   const found = findNotice(version);
   if (found === undefined) throw new Error(`no notice ${version} in src/config/notices.ts`);
-  return { version, approved, lines: found.text };
+  return { version, approved: APPROVED_NOTICES.includes(version), lines: found.text };
 }
 
 // ---------------------------------------------------------------------------
@@ -42,12 +56,16 @@ function notice(version: string, approved: boolean): Notice {
 // ---------------------------------------------------------------------------
 
 export const notices = {
-  /** The booking form's consent checkbox. */
-  booking: notice(CURRENT_NOTICE.contact, true),
-  /** The try-on consent screen. The owner approved it on 22 September 2026. */
-  photo: notice(CURRENT_NOTICE.tryon_photo, true),
+  /** The try-on consent screen. */
+  photo: notice(CURRENT_NOTICE.tryon_photo),
   /** The try-on gate. */
-  gate: notice(CURRENT_NOTICE.result_delivery, true),
+  gate: notice(CURRENT_NOTICE.result_delivery),
+  /** The booking form's agreement, on /book and /r/:code. */
+  consultation: notice(LANDING_NOTICES.consultation),
+  /** The waitlist's required agreement. */
+  waitlist: notice(LANDING_NOTICES.waitlist),
+  /** The waitlist's optional launch alert. */
+  launchAlert: notice(CURRENT_NOTICE.whatsapp_launches),
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -219,7 +237,7 @@ export const legalPages = {
     title: "Terms",
     paragraphs: [
       "These terms cover the service Mane Man Grooming Services Private Limited provides: non-surgical hair systems, measured, fitted and serviced at your home across Delhi NCR. By booking a visit or using the try-on you agree to them. We may change them; the version on this page when you book is the one that applies to that booking.",
-      "The first visit is a consultation: forty minutes, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones published on this site when you order. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
+      "The first visit is a consultation: an hour, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones published on this site when you order. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
       "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within fourteen days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we publish are typical, not promised.",
       "The try-on is an illustrative simulation made by software from one photograph. It is not a photograph of a result, and not a promise of how a fitted piece will look: a fitted piece is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
       "We are responsible for the care and skill of our technicians. Beyond a refit or refund under the guarantee, and except where the law provides otherwise, our liability for a visit is limited to what you paid for it. These terms are governed by the laws of India, and the courts at New Delhi have jurisdiction. For questions or complaints, message or call us on +91 90079 73247.",
@@ -233,12 +251,14 @@ export const legalPages = {
 
 export const header = {
   homeLabel: "Mane Man, home",
+  /** What a screen reader calls the header's links. */
+  navLabel: "Sections",
   nav: [
     { label: "What it is", href: "/#what" },
     { label: "Prices", href: "/#prices" },
     { label: "Questions", href: "/#faq" },
   ],
-  area: "Delhi NCR",
+  area: serviceArea,
   book: "Book a visit",
 };
 
@@ -266,7 +286,7 @@ export const footer = {
       ],
     },
   },
-  area: "Delhi NCR · home service only",
+  area: `${serviceArea} · home service only`,
   entity: "Mane Man Grooming Services Private Limited",
 };
 
@@ -277,10 +297,13 @@ export const placeholderTag = "Placeholder";
 // ---------------------------------------------------------------------------
 
 export const hero = {
-  title: "Hair, fitted at your home across Delhi NCR.",
-  body: "A technician comes to your home, matches the piece to the hair you already have, and fits it in about ninety minutes.",
+  title: `Hair, fitted at your home across ${serviceArea}.`,
+  body: `A technician comes to your home, matches the piece to the hair you already have, and fits it in about ${visitLength.firstFit}.`,
   tryOn: "See yourself with hair",
   book: "Book a free consultation",
+  // Not in v2: the footage loops, so it can be stopped (WCAG 2.2.2). The owner approves the words (open point 85).
+  pause: "Pause the film",
+  play: "Play the film",
 };
 
 export const whatItIs = {
@@ -409,11 +432,13 @@ export const tryOnTeaser = {
   before: "Before",
   after: "After",
   sliderLabel: "Compare before and after",
+  /** What a screen reader hears as the handle moves. */
+  sliderValue: "{before}% before, {after}% after",
   start_percent: 46,
 };
 
 export const discretionBand = {
-  text: "Ninety minutes at your own table, and nobody else need ever know.",
+  text: `${capitalised(visitLength.firstFit)} at your own table, and nobody else need ever know.`,
 };
 
 export const howItWorks = {
@@ -429,19 +454,19 @@ export const howItWorks = {
       number: "02",
       title: "Consultation at home",
       body: "A template of your scalp taken in cling film and tape, and your hair colour matched against forty samples in daylight.",
-      meta: "Forty minutes · free",
+      meta: `${capitalised(visitLength.consultation)} · free`,
     },
     {
       number: "03",
       title: "The fit",
       body: "Your piece arrives cut to that template. The technician seats it, trims it into your own hair and styles it.",
-      meta: "Ninety minutes · at your table",
+      meta: `${capitalised(visitLength.firstFit)} · at your table`,
     },
     {
       number: "04",
       title: "Monthly service",
       body: "He returns each month to lift the base, clean it, re-seat it and trim the hair back to your own growth.",
-      meta: "₹1,500 a visit · one hour",
+      meta: `₹1,500 a visit · ${visitLength.service}`,
     },
   ],
 };
@@ -542,7 +567,7 @@ export const faq = {
     },
     {
       q: "What happens during the monthly service visit?",
-      a: "The technician lifts the piece, cleans the adhesive off the base and your scalp, checks the knots, re-seats it and trims the hair to match your own growth. About an hour, at your home.",
+      a: `The technician lifts the piece, cleans the adhesive off the base and your scalp, checks the knots, re-seats it and trims the hair to match your own growth. About ${visitLength.service}, at your home.`,
     },
     {
       q: "Can I swim, shower and exercise with it?",
@@ -576,7 +601,7 @@ export const faq = {
 };
 
 export const closing = {
-  title: "The consultation takes forty minutes and costs nothing.",
+  title: `The consultation takes ${visitLength.consultation} and costs nothing.`,
   book: "Book a free consultation",
 };
 
@@ -697,6 +722,9 @@ export const tryOn = {
     preview: "Preview",
     choose: "Choose one to continue",
     generate: "Generate the simulation",
+    // Not in v2: back here once the render has started, when the look can no longer change. The owner approves the words (open point 85).
+    fixed: "Your simulation is being made with this look. Each visitor gets one.",
+    continue: "Continue",
   },
   processing: {
     title: "Working on it.",
@@ -735,13 +763,15 @@ export const tryOn = {
     beforeAlt: "Your photograph",
     afterAlt: "Simulated result",
     sliderLabel: "Compare your photograph with the simulation",
+    sliderValue: "{before}% your photograph, {after}% the simulation",
     pending: "Still working on it",
     disclaimer:
       "This is an illustrative simulation, not a photograph of a result. A fitted piece is matched to your own hair colour, density and growth pattern, and will differ.",
     book: "Book a free consultation",
     download: "Download",
     whatsapp: "WhatsApp",
-    copy: { before: "A copy is on its way to ", after: ". Deleted after thirty days." },
+    // The simulation's retention in production, RESULT_RETENTION_DAYS, as the privacy notice gives it (ADR 0039).
+    copy: { before: "A copy is on its way to ", after: ". Deleted after fourteen days." },
     fileName: "mane-man-simulation",
     /** A visitor who has had their look, back again: the result alone, since the photograph is not kept. */
     returning: {
@@ -788,75 +818,14 @@ export const tryOn = {
 // Booking (/book)
 // ---------------------------------------------------------------------------
 
-const [bookingConsent = ""] = notices.booking.lines;
-
-/** The four visit windows, in the backend's order. v2 selects weekday evening. */
-export const visitWindows: readonly { readonly id: VisitWindow; readonly label: string }[] = [
-  { id: "weekday_am", label: "Weekday morning" },
-  { id: "weekday_pm", label: "Weekday evening" },
-  { id: "weekend_am", label: "Weekend morning" },
-  { id: "weekend_pm", label: "Weekend evening" },
-];
-if (visitWindows.map((window) => window.id).join() !== VISIT_WINDOWS.join()) {
-  throw new Error("visitWindows must list the backend's VISIT_WINDOWS in order");
-}
-
+/**
+ * The site's own booking page, the referral landing without its invite (docs/decisions/0051-booking-from-the-site.md).
+ * The form's words are the landing's (referral.ts); these are the page's own.
+ */
 export const booking = {
   title: "Book a free consultation",
-  intro:
-    "Nothing is fitted on the first visit. He measures your scalp and matches your colour, then leaves. Forty minutes, nothing to pay.",
-  name: "Name",
-  namePlaceholder: "Your name",
-  nameError: "Tell us what to call you.",
-  mobile: "Mobile",
-  mobilePlaceholder: "98100 00000",
-  mobileError: "Enter all ten digits so the technician can reach you.",
-  city: "City",
-  comingSoon: " — coming soon",
-  notServed: "Not served yet — you will join the {city} list instead.",
-  window: "Preferred visit",
-  defaultWindow: "weekday_pm" as VisitWindow,
+  intro: `Nothing is fitted on the first visit. He measures your scalp and matches your colour, then leaves. ${capitalised(visitLength.consultation)}, nothing to pay.`,
   extent: "Extent of hair loss",
-  consent: bookingConsent,
-  consentError: "Please agree to be contacted before we arrange a visit.",
-  submit: "Request a visit",
-  sending: "Sending",
-  reply: "We reply on WhatsApp inside a working day.",
-  /**
-   * When the API refuses a booking. v2 has no words for these (ADR 0022); they
-   * show above the button, in the form's error style.
-   */
-  errors: {
-    rateLimited: "This number has asked for a visit several times today. We will reply on WhatsApp.",
-    turnstile: "We could not check this browser. Please try again.",
-    other: "That did not go through. Please try again in a minute.",
-    cities: "The list of cities did not load. Please reload the page.",
-  },
-  booked: {
-    /** When every day in reach is blacked out, the API proposes none. */
-    noDate: "Your consultation is booked.",
-    confirmation: "He will confirm the hour on WhatsApp by tomorrow evening.",
-    rows: {
-      what: { k: "What happens", v: "Consultation, not a fitting" },
-      howLong: { k: "How long", v: "Forty minutes" },
-      pay: { k: "To pay", v: "Nothing" },
-      where: { k: "Where", v: "Your address" },
-      confirming: { k: "Confirming to" },
-    },
-    discretion: "No branding on the car or the bag, and will call from the gate rather than ring the bell if you ask.",
-    calendar: "Add to calendar",
-    back: "Back to the site",
-  },
-  waitlist: {
-    label: "On the list",
-    title: "We are across Delhi NCR, not yet in {city}.",
-    body: "Your number is on the {city} list. We will message you when a technician is working there, and not about anything else.",
-    rows: { city: "City", number: "Number", expected: "Expected" },
-    expected: "First quarter, 2027",
-    note: "If you are ever in Delhi NCR for a day, a fit can be done there. Say so on WhatsApp and we will arrange it.",
-    tryOn: "Try the simulation meanwhile",
-    back: "Back to the site",
-  },
 };
 
 // ---------------------------------------------------------------------------
@@ -870,7 +839,7 @@ export const notFound = {
 };
 
 export const pageTitles = {
-  home: "Mane Man — hair, fitted at your home across Delhi NCR",
+  home: `Mane Man — hair, fitted at your home across ${serviceArea}`,
   tryOn: "See yourself with hair — Mane Man",
   book: "Book a free consultation — Mane Man",
   privacy: "Privacy — Mane Man",

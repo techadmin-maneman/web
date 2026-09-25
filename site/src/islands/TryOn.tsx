@@ -11,12 +11,13 @@
 // ?state=error&kind=<busy|renderFailed|lookLimit> opens the other error copy,
 // and ?state=result&kind=returning a returning visitor's look.
 
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { looks, notices, stageOptions, tryOn } from "../content/site.ts";
 import { track } from "../lib/analytics.ts";
 import { claimResult, fetchLook, fetchResult, jobStatus, type ClaimResponse } from "../lib/api.ts";
 import { downloadFile } from "../lib/download.ts";
 import { ICONS } from "@maneman/brand/icons";
+import { keyPerRequest } from "../lib/idempotency.ts";
 import { formatMobile, isCompleteMobile } from "../lib/phone.ts";
 import { preparePhoto, type PreparedPhoto } from "../lib/photo.ts";
 import { startRender, startUpload, type Outcome, type Uploaded } from "../lib/tryon.ts";
@@ -59,7 +60,10 @@ interface Rendered {
   readonly file: File | null;
 }
 
-/** v2's back control: upload → home, error → upload, result → gate, gate → looks, else the previous screen. */
+/**
+ * v2's back control: upload → home, error → upload, result → gate, gate → looks, else the previous screen. Once a
+ * render has started, the looks screen shows the chosen look fixed, since each visitor gets one (ADR 0022, 24).
+ */
 function backFrom(screen: Screen): Screen | "home" {
   switch (screen) {
     case "upload":
@@ -81,6 +85,12 @@ function backFrom(screen: Screen): Screen | "home" {
   }
 }
 
+/** The looks screen's button: choose one, generate it, or, once it is being made, go on to the gate. */
+function lookLabel(look: number, fixed: boolean): string {
+  if (fixed) return tryOn.looks.continue;
+  return look >= 0 ? tryOn.looks.generate : tryOn.looks.choose;
+}
+
 /** Fetches the result image once, for the page and for sharing. */
 async function loadRendered(url: string): Promise<Rendered | null> {
   const response = await fetch(url).catch(() => null);
@@ -100,6 +110,8 @@ export default function TryOn(props: Props) {
   const [consent, setConsent] = useState(false);
   const [stage, setStage] = useState(0);
   const [look, setLook] = useState(-1);
+  // Generate has been pressed for this photograph: its look can no longer change.
+  const [lookFixed, setLookFixed] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -116,6 +128,7 @@ export default function TryOn(props: Props) {
   const turnstileBox = useRef<HTMLDivElement>(null);
   const soloFrame = useRef<HTMLDivElement>(null);
   const turnstile = useRef<ReturnType<typeof turnstileWidget> | null>(null);
+  const keyFor = useMemo(keyPerRequest, []);
   // The current photograph's work. Each is replaced when a new photograph is chosen.
   const preparing = useRef<Promise<PreparedPhoto> | null>(null);
   const uploading = useRef<Promise<Outcome<Uploaded>> | null>(null);
@@ -267,6 +280,9 @@ export default function TryOn(props: Props) {
     jobId.current = null;
     setShowing(null);
     setRendered(null);
+    setLookFixed(false);
+    // The agreement is to this photograph's use, so each new one is asked for afresh.
+    setConsent(false);
     setPhoto(URL.createObjectURL(file));
     setScreen("consent");
     if (prepared === null) return;
@@ -309,6 +325,7 @@ export default function TryOn(props: Props) {
       ),
     );
     setLook(looks.findIndex((option) => option.id === own.preset));
+    setLookFixed(true);
     setRendered(null);
     setShowing({ jobId: own.job_id, claim: null, returning: true });
     setScreen("result");
@@ -316,6 +333,12 @@ export default function TryOn(props: Props) {
 
   function generate() {
     if (look < 0) return;
+    // Back from the gate returns here with the look fixed, and Continue goes back to the gate.
+    if (lookFixed) {
+      setScreen("gate");
+      return;
+    }
+    setLookFixed(true);
     setScreen("processing");
     const upload = uploading.current;
     const stageId = stageOptions[stage]?.id;
@@ -371,10 +394,13 @@ export default function TryOn(props: Props) {
       return;
     }
     const attribution = readAttribution();
-    const answer = await claimResult(
-      { job_id: render.value, name: name.trim(), mobile, ...(attribution === undefined ? {} : { attribution }) },
-      crypto.randomUUID(),
-    );
+    const claim = {
+      job_id: render.value,
+      name: name.trim(),
+      mobile,
+      ...(attribution === undefined ? {} : { attribution }),
+    };
+    const answer = await claimResult(claim, keyFor(claim));
     setSending(false);
     if (answer.ok) {
       setShowing({ jobId: render.value, claim: answer.body, returning });
@@ -410,7 +436,8 @@ export default function TryOn(props: Props) {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   }
 
-  const chosenLook = looks[look] ?? looks[2];
+  // A returning visitor's look may be a preset no longer offered: then it goes unnamed rather than misnamed.
+  const chosenLook = look >= 0 ? looks[look] : undefined;
   const errorCopy = tryOn.error.kinds[errorKind];
   const showCopyLine = (demo && showing?.returning !== true) || showing?.claim?.whatsapp_copy === true;
   const returning = showing?.returning === true;
@@ -582,16 +609,20 @@ export default function TryOn(props: Props) {
         {screen === "looks" && (
           <div>
             {title(tryOn.looks.title)}
-            <p class={styles.body}>{tryOn.looks.body}</p>
+            <p class={styles.body}>{lookFixed ? tryOn.looks.fixed : tryOn.looks.body}</p>
             <fieldset class={`${styles.choices} ${styles.lookGrid}`}>
               <legend class="visually-hidden">{tryOn.looks.title}</legend>
               {looks.map((option, index) => (
-                <label key={option.id} class={`${styles.look} ${look === index ? styles.picked : ""}`}>
+                <label
+                  key={option.id}
+                  class={`${styles.look} ${look === index ? styles.picked : ""} ${lookFixed && look !== index ? styles.lookOff : ""}`}
+                >
                   <input
                     type="radio"
                     name="look"
                     class="visually-hidden"
                     checked={look === index}
+                    disabled={lookFixed && look !== index}
                     onChange={() => {
                       setLook(index);
                     }}
@@ -612,7 +643,7 @@ export default function TryOn(props: Props) {
               aria-disabled={look < 0}
               onClick={generate}
             >
-              {look >= 0 ? tryOn.looks.generate : tryOn.looks.choose}
+              {lookLabel(look, lookFixed)}
             </button>
           </div>
         )}
@@ -733,6 +764,7 @@ export default function TryOn(props: Props) {
                 beforeLabel={tryOn.result.before}
                 afterLabel={tryOn.result.after}
                 sliderLabel={tryOn.result.sliderLabel}
+                sliderValue={tryOn.result.sliderValue}
                 before={<img src={photo ?? props.mockBefore} alt={tryOn.result.beforeAlt} />}
                 after={afterImage}
               />

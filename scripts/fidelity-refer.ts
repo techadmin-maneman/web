@@ -121,6 +121,10 @@ try {
   await pair(OUT, PHONE, "c4-booked", await stateFrame(design, "Consultation booked"), await shot(booked));
   await booked.close();
 
+  const expired = await openSite(browser, PHONE, "expired");
+  await pair(OUT, PHONE, "c4-expired", await stateFrame(design, "Code expired"), await shot(expired));
+  await expired.close();
+
   const listed = await openSite(browser, PHONE, "listed");
   await pair(OUT, PHONE, "c4-on-the-list", await stateFrame(design, "On the list"), await shot(listed));
   await listed.close();

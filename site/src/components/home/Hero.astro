@@ -35,6 +35,17 @@ const showFootage = isShown(heroFootage);
   <div class="scrim scrim--up"></div>
   <div class="scrim scrim--side"></div>
   {SHOW_PLACEHOLDER_TAGS && showFootage && <div class="label tag">{heroFootage.tag}</div>}
+  {showFootage && poster !== undefined && (
+    <button
+      type="button"
+      class="btn btn--sm btn--line-on-ink strong pause"
+      data-hero-toggle
+      data-pause={hero.pause}
+      data-play={hero.play}
+    >
+      {hero.pause}
+    </button>
+  )}
   <div class="content">
     <h1>{hero.title}</h1>
     <p>{hero.body}</p>
@@ -50,19 +61,40 @@ const showFootage = isShown(heroFootage);
 </section>
 
 <script>
-  // Plays the footage unless the visitor asked for reduced motion. It waits for
-  // the page to load, so its download never slows the poster or the fonts.
-  // Browsers pause media in a background tab, so it is resumed when the tab returns.
+  // Plays the footage unless the visitor asked for reduced motion or pressed
+  // Pause (WCAG 2.2.2). It waits for the page to load, so its download never
+  // slows the poster or the fonts. Browsers pause media in a background tab,
+  // so it is resumed when the tab returns.
   const video = document.querySelector<HTMLVideoElement>("[data-hero-video]");
+  const toggle = document.querySelector<HTMLButtonElement>("[data-hero-toggle]");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let stopped = reduced.matches;
+
+  const label = () => {
+    if (toggle === null) return;
+    toggle.textContent = (stopped ? toggle.dataset.play : toggle.dataset.pause) ?? "";
+  };
   const play = () => {
-    if (video === null || reduced.matches || document.hidden) return;
+    if (video === null || stopped || document.hidden) return;
     video.play().catch(() => undefined);
   };
+  const stopOrStart = (stop: boolean) => {
+    stopped = stop;
+    label();
+    if (stop) video?.pause();
+    else play();
+  };
+
+  label();
   if (document.readyState === "complete") play();
   else window.addEventListener("load", play, { once: true });
   document.addEventListener("visibilitychange", play);
-  reduced.addEventListener("change", () => (reduced.matches ? video?.pause() : play()));
+  reduced.addEventListener("change", () => {
+    stopOrStart(reduced.matches);
+  });
+  toggle?.addEventListener("click", () => {
+    stopOrStart(!stopped);
+  });
 </script>
 
 <style>
@@ -104,6 +136,13 @@ const showFootage = isShown(heroFootage);
     left: var(--gutter);
     padding: var(--sp-7) var(--sp-12);
     font-size: var(--fs-14);
+  }
+  /* Not in v2: the way to stop the footage, at the corner the placeholder tag leaves free (ADR 0022, item 37). */
+  .pause {
+    position: absolute;
+    z-index: 1;
+    top: var(--hero-tag-top);
+    right: var(--gutter);
   }
   .content {
     position: relative;

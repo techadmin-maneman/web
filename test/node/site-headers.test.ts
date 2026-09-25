@@ -84,7 +84,8 @@ describe("the content security policy", () => {
 describe("the headers file", () => {
   it("sends HSTS, the referrer policy and no camera, except on /try", () => {
     const file = headersFile("production", "default-src 'self'");
-    expect(file).toContain("  Strict-Transport-Security: max-age=31536000\n");
+    // SEC-02: the same as the apps send (packages/web-kit/headers.ts), for every host under the site's.
+    expect(file).toContain("  Strict-Transport-Security: max-age=63072000; includeSubDomains\n");
     expect(file).toContain("  Referrer-Policy: strict-origin-when-cross-origin\n");
     expect(file).toMatch(/\/\*\n[\s\S]*Permissions-Policy: camera=\(\),/);
     expect(file).toContain("/try\n  ! Permissions-Policy\n  Permissions-Policy: camera=(self),");
