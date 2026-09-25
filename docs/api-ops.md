@@ -1577,6 +1577,8 @@ Request body:
             "device_revoked",
             "superseded",
             "out_of_order",
+            "not_today",
+            "already_started",
             "clash",
             "on_leave",
             "fsm_refused",
@@ -3310,7 +3312,58 @@ Request body:
     "checked_in_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Fact one: when the technician arrived."
+      "description": "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here."
+    },
+    "phone_checked_in_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the phone itself said, before the bounds; null when it said nothing."
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the check-in reached us: long after the phone's time means no signal, or a clock set back."
+    },
+    "window_start": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit's booked window."
+    },
+    "window_end": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "minutes_late": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Minutes from the booked start to the check-in; negative when he was early."
     },
     "distance_m": {
       "anyOf": [
@@ -3376,6 +3429,11 @@ Request body:
     "visit_date",
     "technician",
     "checked_in_at",
+    "phone_checked_in_at",
+    "received_at",
+    "window_start",
+    "window_end",
+    "minutes_late",
     "distance_m",
     "message_delivered_at",
     "wait_ends_at",

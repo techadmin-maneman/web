@@ -11,6 +11,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
 import type { App } from "../../src/app.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
@@ -176,6 +177,31 @@ const opsPost = (path: string, body: unknown) =>
     bindings(),
   );
 
+/** A write that reaches the API at `at`, as a phone replaying its outbox from a basement does. */
+const postAt = (at: Date, path: string, body: unknown, eventId: string, headers: Record<string, string> = {}) =>
+  request(
+    appFor("local", fakeDependencies({ fsm, now: () => at }), {}, "tech"),
+    path,
+    {
+      method: "POST",
+      headers: {
+        Cookie: cookie,
+        Origin: "https://maneman.test",
+        "Content-Type": "application/json",
+        "X-Client-Event-Id": eventId,
+        ...headers,
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    },
+    bindings(),
+  );
+
+/** Today's job starts at 13:00 in India. */
+const TODAY_START = new Date("2026-09-21T07:30:00.000Z");
+const minutesAfterStart = (minutes: number) => new Date(TODAY_START.getTime() + minutes * 60_000);
+/** The event ID the app makes for a write queued that many minutes after the start. */
+const uuidv7At = (minutes: number) => uuidv7(minutesAfterStart(minutes).getTime());
+
 /** Checks in at the door and starts the job, which every later step needs. */
 async function startJob(): Promise<void> {
   await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
@@ -218,6 +244,38 @@ describe("the day's jobs", () => {
       access_notes: "Gate 4417, visitor bay B",
       client: { name: "Rohit Malhotra", mobile: "+919810000001" },
     });
+  });
+
+  it("gives the whole address the client saved: building, tower, floor, flat and landmark", async () => {
+    await env.DB.prepare(
+      `UPDATE addresses SET building = 'Emerald Heights', tower = 'C', floor = '14', flat = '1402',
+         landmark = 'Opposite the water tank' WHERE id = 'addr-1'`,
+    ).run();
+
+    const job = await (await get(`/api/tech/jobs/${TODAY_JOB}`)).json<{ address: Record<string, unknown> }>();
+
+    expect(job.address).toMatchObject({
+      line1: "House 7",
+      building: "Emerald Heights",
+      tower: "C",
+      floor: "14",
+      flat: "1402",
+      landmark: "Opposite the water tank",
+    });
+  });
+
+  it("marks a visit the price book charges nothing for as free, still with no amount", async () => {
+    await insertJob(OTHER_JOB, { fsmId: "ap-other", start: "2026-09-21T10:30:00.000Z", type: "consultation" });
+
+    const answer = await get("/api/tech/jobs?date=2026-09-21");
+    const body = await answer.text();
+
+    const { jobs } = JSON.parse(body) as { jobs: { id: string; badge: string }[] };
+    expect(jobs.map(({ id, badge }) => ({ id, badge }))).toEqual([
+      { id: TODAY_JOB, badge: "prepaid" },
+      { id: OTHER_JOB, badge: "free" },
+    ]);
+    expect(body).not.toMatch(/amount|price|rupee|"paise"/i);
   });
 
   it("carries a badge and never an amount", async () => {
@@ -263,6 +321,94 @@ describe("checking in", () => {
     expect(body.distance_m).toBeLessThan(200);
     // Fifteen minutes from the check-in.
     expect(body.wait_ends_at).toBe(new Date(NOW.getTime() + 15 * 60_000).toISOString());
+  });
+
+  it("gives the card the wait and the distance, so a phone that lost its copy can still close a no-show", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    const job = await (
+      await get(`/api/tech/jobs/${TODAY_JOB}`)
+    ).json<{
+      progress: { wait_ends_at: string | null; distance_m: number | null };
+    }>();
+    expect(job.progress.wait_ends_at).toBe(new Date(NOW.getTime() + 15 * 60_000).toISOString());
+    expect(job.progress.distance_m).toBeLessThan(200);
+  });
+
+  it("refuses a check-in on a day other than the job's own", async () => {
+    const answer = await post(`/api/tech/jobs/${LATER_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_today" } });
+    const landed = await env.DB.prepare("SELECT COUNT(*) AS n FROM job_events WHERE appointment_id = ?1")
+      .bind(LATER_JOB)
+      .first<{ n: number }>();
+    expect(landed?.n).toBe(0);
+  });
+});
+
+// A check-in's time is the evidence a no-show is charged on, and the phone's
+// clock is the technician's to set (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
+describe("the phone's clock", () => {
+  it("keeps a back-dated check-in's claim, bounds it, and runs the no-show wait on our clock too", async () => {
+    // Ten minutes after the booked start, the phone says he arrived three hours ago.
+    const received = minutesAfterStart(10);
+    const claimed = minutesAfterStart(-180);
+    const answer = await postAt(
+      received,
+      `/api/tech/jobs/${TODAY_JOB}/checkin`,
+      { ...AT_THE_DOOR, at: claimed.toISOString() },
+      "event-checkin-01",
+    );
+    const body = await answer.json<{ checked_in_at: string; wait_ends_at: string }>();
+
+    // No earlier than an hour before the booked start; the wait ends fifteen minutes after we heard.
+    expect(body.checked_in_at).toBe(minutesAfterStart(-60).toISOString());
+    expect(body.wait_ends_at).toBe(minutesAfterStart(25).toISOString());
+
+    const early = await postAt(minutesAfterStart(11), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    expect(early.status).toBe(425);
+    const closed = await postAt(minutesAfterStart(25), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    expect(closed.status).toBe(200);
+
+    const { cases } = await (
+      await request(ops, "/api/no-shows", {}, bindings())
+    ).json<{
+      cases: Record<string, unknown>[];
+    }>();
+    expect(cases[0]).toMatchObject({
+      checked_in_at: minutesAfterStart(-60).toISOString(),
+      phone_checked_in_at: claimed.toISOString(),
+      received_at: received.toISOString(),
+      window_start: TODAY_START.toISOString(),
+      window_end: minutesAfterStart(90).toISOString(),
+      minutes_late: -60,
+      wait_ends_at: minutesAfterStart(25).toISOString(),
+    });
+  });
+
+  it("keeps the phone's times for a job worked offline and replayed at once, so its duration is real", async () => {
+    // Worked from 13:05 to 14:20 with no signal, and sent at 14:30 in one go.
+    const replayedAt = minutesAfterStart(90);
+    const steps: [string, unknown, number][] = [
+      ["checkin", AT_THE_DOOR, 2],
+      ["start", undefined, 5],
+      ["photos", { phase: "before" }, 10],
+      ["checklist", { done: ["piece_removed"] }, 40],
+      ["consumables", { items: [] }, 45],
+      ["photos", { phase: "after" }, 75],
+      ["outcome", { outcome: "done" }, 80],
+    ];
+    for (const [step, body, minute] of steps) {
+      const answer = await postAt(replayedAt, `/api/tech/jobs/${TODAY_JOB}/${step}`, body, uuidv7At(minute));
+      expect(answer.status).toBeLessThan(300);
+    }
+
+    await runFsmQueue();
+    const fields = fsm.made.appointmentUpdates.map((update) => update.fields);
+    expect(fields).toContainEqual({ Actual_Start_Date_Time: "2026-09-21T13:05:00+05:30" });
+    expect(fields.at(-1)?.Actual_End_Date_Time).toBe("2026-09-21T14:20:00+05:30");
+    expect(fsm.made.transitioned.at(-1)?.note).toContain("Duration 75 minutes");
   });
 });
 
@@ -310,6 +456,33 @@ describe("the outbox", () => {
       "SELECT superseded, fsm_write_state FROM job_events WHERE event_id = 'event-late-01'",
     ).first<{ superseded: number; fsm_write_state: string }>();
     expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected" });
+  });
+
+  it("rejects a write as superseded once ops have moved the job to another time", async () => {
+    const heldStart = TODAY_START.toISOString();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    // Ops move it to 16:00 while the phone is offline, still holding 13:00.
+    await env.DB.prepare("UPDATE appointments SET window_start = ?2 WHERE id = ?1")
+      .bind(TODAY_JOB, minutesAfterStart(180).toISOString())
+      .run();
+
+    const answer = await postAt(NOW, `/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01", {
+      "X-Job-Starts-At": heldStart,
+    });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "superseded", fields: ["time"] } });
+  });
+
+  it("refuses a check-in on a job moved to another day, even from a phone that does not say what it held", async () => {
+    await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-22T07:30:00.000Z' WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .run();
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_today" } });
   });
 });
 
@@ -598,9 +771,20 @@ describe("the no-show", () => {
     expect(after?.decided_by).not.toBe("");
   });
 
+  it("is refused once the job has started, and opens no case", async () => {
+    await startJob();
+
+    const answer = await postAt(minutesAfterStart(0), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "already_started" } });
+    const cases = await env.DB.prepare("SELECT COUNT(*) AS n FROM no_show_cases").first<{ n: number }>();
+    expect(cases?.n).toBe(0);
+  });
+
   // ADR 0036: "An address with no coordinates cannot be measured against ... It is
-  // never silently treated as a pass at zero metres." checkins.distance_m is NOT
-  // NULL, so the row stores 0 and names no address; ops must be given the second.
+  // never silently treated as a pass at zero metres." The row names no address and
+  // holds no distance (migration 0035), where it once held a filler 0.
   it("carries no distance when the address had no coordinates to measure against", async () => {
     await env.DB.prepare("UPDATE addresses SET lat = NULL, lng = NULL WHERE id = 'addr-1'").run();
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
@@ -620,8 +804,8 @@ describe("the no-show", () => {
 
     const row = await env.DB.prepare("SELECT address_id, distance_m FROM checkins WHERE appointment_id = ?1")
       .bind(TODAY_JOB)
-      .first<{ address_id: string | null; distance_m: number }>();
-    expect(row).toMatchObject({ address_id: null, distance_m: 0 });
+      .first<{ address_id: string | null; distance_m: number | null }>();
+    expect(row).toMatchObject({ address_id: null, distance_m: null });
 
     const body = await (await request(ops, "/api/no-shows", {}, bindings())).text();
     const cases = (JSON.parse(body) as { cases: { distance_m: number | null }[] }).cases;

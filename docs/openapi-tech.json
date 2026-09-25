@@ -59,6 +59,8 @@
                   "device_revoked",
                   "superseded",
                   "out_of_order",
+                  "not_today",
+                  "already_started",
                   "clash",
                   "on_leave",
                   "fsm_refused",
@@ -402,9 +404,10 @@
             "type": "string",
             "enum": [
               "prepaid",
-              "credit"
+              "credit",
+              "free"
             ],
-            "description": "No response to a technician carries an amount."
+            "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
           },
           "unlocked": {
             "type": "boolean"
@@ -456,6 +459,56 @@
                           }
                         ]
                       },
+                      "building": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "tower": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "floor": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "flat": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "landmark": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "locality": {
                         "type": "string"
                       },
@@ -489,6 +542,11 @@
                     "required": [
                       "line1",
                       "line2",
+                      "building",
+                      "tower",
+                      "floor",
+                      "flat",
+                      "landmark",
                       "locality",
                       "city",
                       "pincode",
@@ -627,6 +685,29 @@
               }
             ]
           },
+          "wait_ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the job may close as a no-show, from the check-in we hold; null before one landed."
+          },
+          "distance_m": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How far from the address that check-in was; null when nothing could be measured."
+          },
           "started_at": {
             "anyOf": [
               {
@@ -667,6 +748,8 @@
         },
         "required": [
           "checked_in_at",
+          "wait_ends_at",
+          "distance_m",
           "started_at",
           "steps_done",
           "outcome"
@@ -784,7 +867,7 @@
           "at": {
             "type": "string",
             "format": "date-time",
-            "description": "The phone's clock; ours is used when it is left out."
+            "description": "The phone's clock, kept within bounds and never later than we received it; left out, the event ID's time, else ours."
           }
         },
         "required": [
@@ -1400,10 +1483,23 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
             },
             "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
             "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
             "in": "header"
           }
         ],
@@ -1459,7 +1555,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
             "content": {
               "application/json": {
                 "schema": {
@@ -1487,10 +1583,23 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
             },
             "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
             "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
             "in": "header"
           }
         ],
@@ -1536,7 +1645,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
             "content": {
               "application/json": {
                 "schema": {
@@ -1684,10 +1793,23 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
             },
             "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
             "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
             "in": "header"
           }
         ],
@@ -1771,10 +1893,23 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
             },
             "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
             "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
             "in": "header"
           }
         ],
@@ -1858,10 +1993,23 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
             },
             "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
             "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
             "in": "header"
           }
         ],
@@ -1945,10 +2093,23 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
             },
             "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
             "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
             "in": "header"
           }
         ],
@@ -2032,10 +2193,23 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
             },
             "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
             "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
             "in": "header"
           }
         ],
@@ -2119,10 +2293,23 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued."
             },
             "required": true,
+            "description": "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
             "name": "x-client-event-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+            },
+            "required": false,
+            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "name": "x-job-starts-at",
             "in": "header"
           }
         ],
@@ -2168,7 +2355,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
             "content": {
               "application/json": {
                 "schema": {

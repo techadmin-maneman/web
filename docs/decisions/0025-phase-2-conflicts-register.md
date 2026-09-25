@@ -83,6 +83,7 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 29. **The UPI app on a payment.** Board E2 names it ("UPI · Google Pay"), but Razorpay's payment does not always say which app paid. **Ruled 22 September 2026:** the app shows "UPI" alone.
 30. **The GSTIN on staging.** **Ruled 22 September 2026:** Books keeps `27AAPFU0939F1ZV` as a placeholder, which makes it treat the org as in Maharashtra. The real GSTIN replaces it before any real invoice (`docs/open-points.md`, item 3).
 31. **GST on staging.** FSM would not sync with Books once GST was on in Books, since FSM keeps no GST settings of its own. **Ruled 22 September 2026:** GST stays off in Books on staging, and every staging price is at 0% (migration 0018), so billing and invoicing work end to end; GST is switched on for production, with the real GSTIN and the CA's rates.
+32. **A free visit's badge.** The prompt says a technician's job "shows a Prepaid or Credit badge only"; board A1 writes "Free" on the consultation, and the technician was shown "Prepaid" on a visit nobody paid for. **Taken 25 September 2026, for the owner to confirm** (ADR 0065): a visit the price book charges nothing for on its day carries a third badge, Free, as the board draws it. It is still a badge and never an amount: the price book is asked in SQL for a yes or a no, and no figure leaves the database.
 
 ## Inputs still owed
 

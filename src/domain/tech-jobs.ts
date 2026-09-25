@@ -7,13 +7,16 @@
 // here: a locked job is built without the fields, not merely without them
 // rendered, so no response carries an address the technician may not have yet.
 //
-// "No money anywhere in the technician app": a job carries a Prepaid or Credit
-// badge, and no amount is read from the database at all.
+// "No money anywhere in the technician app": a job carries a Prepaid, Credit or
+// Free badge, and no amount leaves the database. Whether the price book charges
+// nothing for the visit is asked in SQL, as a yes or a no.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import type { JobEventKind } from "../policy/in-job-steps.ts";
 import { jobDay, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
+import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
+import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { windowAt } from "./scheduling.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
@@ -43,9 +46,15 @@ export interface JobClient {
   readonly note: string | null;
 }
 
+/** The address as the client saved it, the parts ADR 0054 added included: what gets him to the right door. */
 export interface JobAddress {
   readonly line1: string;
   readonly line2: string | null;
+  readonly building: string | null;
+  readonly tower: string | null;
+  readonly floor: string | null;
+  readonly flat: string | null;
+  readonly landmark: string | null;
   readonly locality: string;
   readonly city: string;
   readonly pincode: string;
@@ -55,6 +64,13 @@ export interface JobAddress {
 
 export interface JobProgress {
   readonly checked_in_at: string | null;
+  /**
+   * When the job may close as a no-show, from the check-in the server holds, so
+   * a phone that lost its own copy still knows (src/policy/no-show.ts).
+   */
+  readonly wait_ends_at: string | null;
+  /** How far from the door that check-in was; null when nothing was measured. */
+  readonly distance_m: number | null;
   readonly started_at: string | null;
   /** The steps sent so far, in the order they were taken. */
   readonly steps_done: JobEventKind[];
@@ -81,6 +97,11 @@ interface JobRow {
   client_mobile: string | null;
   line1: string | null;
   line2: string | null;
+  building: string | null;
+  tower: string | null;
+  floor: string | null;
+  flat: string | null;
+  landmark: string | null;
   locality: string | null;
   city: string | null;
   pincode: string | null;
@@ -88,13 +109,20 @@ interface JobRow {
   lat: number | null;
   lng: number | null;
   on_credit: number;
+  free: number;
 }
 
+// `free`: the price book's row for the visit type on the visit's day in India
+// charges nothing, as it does a consultation.
 const SELECT_JOB = `
   SELECT a.id, a.window_start, a.window_end, a.type, a.status, a.person_id, a.service_city,
     p.name AS client_name, p.mobile_e164 AS client_mobile,
-    d.line1, d.line2, d.locality, d.city, d.pincode, d.access_notes, d.lat, d.lng,
-    EXISTS (SELECT 1 FROM credit_ledger l WHERE l.kind = 'redeem' AND l.source_id = a.id) AS on_credit
+    d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
+    d.access_notes, d.lat, d.lng,
+    EXISTS (SELECT 1 FROM credit_ledger l WHERE l.kind = 'redeem' AND l.source_id = a.id) AS on_credit,
+    COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
+              WHERE b.item = a.type AND b.tier = 'standard' AND b.valid_from <= date(a.window_start, '+330 minutes')
+              ORDER BY b.valid_from DESC LIMIT 1), 0) AS free
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
@@ -122,38 +150,42 @@ export async function jobsOn(
 /** One job of this technician's, with everything the day-before unlock allows. */
 export async function jobDetail(
   db: D1Database,
-  technicianId: string,
-  jobId: string,
-  now: Date,
-  unlockHour: number,
+  options: { technicianId: string; jobId: string; now: Date; unlockHour: number; waits: Waits },
 ): Promise<JobDetail | null> {
-  const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(technicianId, jobId).first<JobRow>();
+  const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
   if (row === null) return null;
-  const summary = summaryOf(row, now, unlockHour);
-  const progress = await progressOf(db, jobId);
+  const summary = summaryOf(row, options.now, options.unlockHour);
+  const progress = await progressOf(db, { id: row.id, type: row.type ?? "service" }, options.waits);
   if (!summary.unlocked) {
     return { ...summary, address: null, access_notes: null, client: null, progress };
   }
   return {
     ...summary,
-    address:
-      row.line1 === null
-        ? null
-        : {
-            line1: row.line1,
-            line2: row.line2,
-            locality: row.locality ?? "",
-            city: row.city ?? "",
-            pincode: row.pincode ?? "",
-            lat: row.lat,
-            lng: row.lng,
-          },
+    address: addressOf(row),
     access_notes: row.access_notes,
     client:
       row.client_name === null || row.client_mobile === null
         ? null
         : { name: row.client_name, mobile: row.client_mobile, note: null },
     progress,
+  };
+}
+
+function addressOf(row: JobRow): JobAddress | null {
+  if (row.line1 === null) return null;
+  return {
+    line1: row.line1,
+    line2: row.line2,
+    building: row.building,
+    tower: row.tower,
+    floor: row.floor,
+    flat: row.flat,
+    landmark: row.landmark,
+    locality: row.locality ?? "",
+    city: row.city ?? "",
+    pincode: row.pincode ?? "",
+    lat: row.lat,
+    lng: row.lng,
   };
 }
 
@@ -216,26 +248,39 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
     // "only time, type and sector": the area, never the street, whether the job is unlocked or not.
     sector: row.locality ?? row.service_city,
     status: row.status,
-    badge: row.on_credit === 1 ? "credit" : "prepaid",
+    badge: badgeOf(row),
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
   };
 }
 
+function badgeOf(row: JobRow): PaymentBadge {
+  if (row.on_credit === 1) return "credit";
+  if (row.free === 1) return "free";
+  return "prepaid";
+}
+
 /** What the phone has already sent for this job, from the events it landed. */
-export async function progressOf(db: D1Database, jobId: string): Promise<JobProgress> {
+export async function progressOf(
+  db: D1Database,
+  job: { id: string; type: VisitType },
+  waits: Waits,
+): Promise<JobProgress> {
   const { results } = await db
     .prepare(
       `SELECT kind, body, occurred_at FROM job_events
        WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
     )
-    .bind(jobId)
+    .bind(job.id)
     .all<{ kind: JobEventKind; body: string; occurred_at: string }>();
   const checkIn = results.find((event) => event.kind === "check_in");
   const start = results.find((event) => event.kind === "start");
   const outcome = results.findLast((event) => event.kind === "outcome");
+  const arrival = checkIn === undefined ? null : await latestArrival(db, job.id);
   return {
     checked_in_at: checkIn?.occurred_at ?? null,
+    wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.type, waits).toISOString(),
+    distance_m: arrival?.distanceM ?? null,
     started_at: start?.occurred_at ?? null,
     steps_done: results
       .filter((event) => event.kind !== "check_in" && event.kind !== "start")

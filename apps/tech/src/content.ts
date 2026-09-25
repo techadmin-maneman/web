@@ -235,6 +235,7 @@ export const closeOut = {
 export const badges = {
   prepaid: "Prepaid",
   credit: "Credit",
+  free: "Free",
 } as const;
 
 export const types = {

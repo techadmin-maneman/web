@@ -10,9 +10,14 @@
 // "If FSM has changed underneath (for example ops reassigned the job while the
 // phone was offline), the write is rejected with 409 superseded. The technician
 // sees what changed. Nothing is merged silently." The rejection is recorded as
-// an event too, marked superseded, so the record says the phone tried.
+// an event too, marked superseded, so the record says the phone tried. A job
+// moved to another time is superseded like one given to another technician.
+//
+// An event's time is the phone's, held within bounds (src/policy/phone-clock.ts),
+// so a job worked offline keeps its real durations; received_at is ours.
 
 import { JOB_STEPS, type JobEventKind, type JobStep, PIECE_STEP_TYPES } from "../policy/in-job-steps.ts";
+import { onTheVisitsDay } from "../policy/phone-clock.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
 
@@ -37,7 +42,11 @@ export type Landing =
   /** FSM moved the job under the phone; the fields that changed, never their values. */
   | { readonly kind: "superseded"; readonly changed: readonly string[] }
   /** A step sent before the one ahead of it; the app sends its outbox in order. */
-  | { readonly kind: "out_of_order"; readonly needs: JobEventKind };
+  | { readonly kind: "out_of_order"; readonly needs: JobEventKind }
+  /** A check-in or a start on a day that is not the job's own. */
+  | { readonly kind: "not_today" }
+  /** A no-show on a job already started: the client was home. */
+  | { readonly kind: "already_started" };
 
 export interface EventInput {
   readonly job: WorkableJob;
@@ -46,7 +55,10 @@ export interface EventInput {
   readonly eventId: string;
   readonly kind: JobEventKind;
   readonly body: Record<string, unknown>;
+  /** The phone's time for it, within bounds. */
   readonly occurredAt: Date;
+  /** The job's start as the phone holds it, when the phone says; a different one means ops moved it. */
+  readonly expectedStart: Date | null;
   readonly now: Date;
 }
 
@@ -58,13 +70,17 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
   const held = await eventByClientId(db, input.job.id, input.eventId);
   if (held !== null) return { kind: "landed", event: held, replayed: true };
 
-  const changed = supersededBy(input.job, input.technicianId);
+  const changed = supersededBy(input.job, input.technicianId, input.expectedStart);
   if (changed.length > 0) {
     await record(db, input, { superseded: true });
     return { kind: "superseded", changed };
   }
 
+  const startsTheDay = input.kind === "check_in" || input.kind === "start";
+  if (startsTheDay && !onTheVisitsDay(input.occurredAt, input.job.windowStart)) return { kind: "not_today" };
+
   const done = await kindsLanded(db, input.job.id);
+  if (isNoShow(input.kind, input.body) && done.has("start")) return { kind: "already_started" };
   const needs = stepBefore(input.kind, input.job.type, done, input.body);
   if (needs !== null) return { kind: "out_of_order", needs };
 
@@ -78,12 +94,16 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
 }
 
 /** What FSM changed under the phone, by field name. Empty when nothing did. */
-function supersededBy(job: WorkableJob, technicianId: string): string[] {
+function supersededBy(job: WorkableJob, technicianId: string, expectedStart: Date | null): string[] {
   const changed: string[] = [];
   if (job.technicianId !== technicianId) changed.push("technician");
   if (job.status === "cancelled" || job.status === "terminated") changed.push("status");
+  if (expectedStart !== null && expectedStart.getTime() !== job.windowStart.getTime()) changed.push("time");
   return changed;
 }
+
+const isNoShow = (kind: JobEventKind, body: Record<string, unknown>): boolean =>
+  kind === "outcome" && body.outcome === "no_show";
 
 /** The step this one must follow, or null when it may land now. */
 function stepBefore(
@@ -96,7 +116,7 @@ function stepBefore(
   if (kind === "start") return done.has("check_in") ? null : "check_in";
   // A no-show closes a job that was never started, so it needs only the check-in
   // the wait ran from (src/policy/no-show.ts).
-  if (kind === "outcome" && body.outcome === "no_show") return done.has("check_in") ? null : "check_in";
+  if (isNoShow(kind, body)) return done.has("check_in") ? null : "check_in";
   if (!done.has("start")) return "start";
   const wanted: readonly JobEventKind[] = stepsFor(type);
   const position = wanted.indexOf(kind);

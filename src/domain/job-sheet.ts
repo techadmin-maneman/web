@@ -18,7 +18,7 @@
 import { CHECKLIST } from "../config/job-sheet.ts";
 import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
-import { addDays, indiaIso } from "../lib/india-time.ts";
+import { addDays, indiaDate, indiaIso } from "../lib/india-time.ts";
 import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../providers/fsm.ts";
 import { statusOf } from "./fsm-mirror.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
@@ -159,6 +159,8 @@ async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, n
   if (job.personId === null || job.fsmContactId === null) return;
   const base = typeof event.body.base === "string" ? event.body.base : null;
   const lot = typeof event.body.supplier_lot === "string" ? event.body.supplier_lot : null;
+  // The day in India the phone fitted it, not the day the write reached us.
+  const fittedOn = indiaDate(new Date(event.occurredAt));
   await recordFittedPiece(deps.db, deps.fsm, {
     personId: job.personId,
     fsmContactId: job.fsmContactId,
@@ -166,8 +168,8 @@ async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, n
     pieceCode: code,
     base,
     supplierLot: lot,
-    fittedOn: event.occurredAt.slice(0, 10),
-    replacementDue: addDays(event.occurredAt.slice(0, 10), cycleDaysFor(base, deps.cycles)),
+    fittedOn,
+    replacementDue: addDays(fittedOn, cycleDaysFor(base, deps.cycles)),
     now,
   });
 }

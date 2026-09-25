@@ -18,6 +18,10 @@
 // idempotent": a phone replaying its outbox lands each event once and gets the
 // first answer back (docs/decisions/0038-offline-writes.md).
 //
+// When a write happened is the phone's to say, within bounds, since a phone in
+// a basement sends an hour's work at once (src/policy/phone-clock.ts): the
+// check-in's own `at`, else the millisecond its event ID, a UUIDv7, begins with.
+//
 // No response here carries an amount.
 
 import { createRoute, z } from "@hono/zod-openapi";
@@ -29,15 +33,18 @@ import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { latestArrival, recordArrival } from "../domain/check-ins.ts";
 import { landJobEvent, stepsFor, type Landing } from "../domain/job-events.ts";
-import { closeAsNoShow } from "../domain/no-shows.ts";
+import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
 import { jobDetail, jobsOn, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
 import { anglesHeld, MAX_PHOTO_BYTES, slotOfLink, storeTechnicianPhoto, uploadLink } from "../domain/tech-photos.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { timeOfUuidV7 } from "../lib/uuidv7.ts";
 import { JOB_EVENT_KINDS, type JobEventKind } from "../policy/in-job-steps.ts";
-import { waitEndsAt } from "../policy/no-show.ts";
+import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
+import { noShowWaitEnds } from "../policy/no-show.ts";
+import { boundedPhoneTime } from "../policy/phone-clock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
@@ -46,9 +53,23 @@ const jobId = z.object({ id: z.uuid() });
 
 /** The header every write carries, so a replay lands once. */
 const EVENT_ID_HEADER = "X-Client-Event-Id";
+/** The job's start as the phone holds it, which a write may carry. */
+const JOB_STARTS_AT_HEADER = "X-Job-Starts-At";
 const EventIdSchema = z
-  .object({ "x-client-event-id": z.string().regex(/^[A-Za-z0-9_-]{8,64}$/) })
-  .openapi({ description: "The phone's own ID for this write; a replay of it changes nothing." });
+  .object({
+    "x-client-event-id": z
+      .string()
+      .regex(/^[A-Za-z0-9_-]{8,64}$/)
+      .openapi({
+        description:
+          "The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued.",
+      }),
+    "x-job-starts-at": z.iso.datetime().optional().openapi({
+      description:
+        "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+    }),
+  })
+  .openapi({ description: "Every write's headers." });
 
 const JobSummarySchema = z
   .object({
@@ -61,7 +82,10 @@ const JobSummarySchema = z
     type: z.union([z.enum(VISIT_TYPES), z.null()]),
     sector: z.union([z.string(), z.null()]).openapi({ description: "The area, never the street." }),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
-    badge: z.enum(["prepaid", "credit"]).openapi({ description: "No response to a technician carries an amount." }),
+    badge: z.enum(PAYMENT_BADGES).openapi({
+      description:
+        "Free for a visit the price book charges nothing for. No response to a technician carries an amount.",
+    }),
     unlocked: z.boolean(),
     unlocks_at: z.iso.datetime(),
   })
@@ -76,6 +100,12 @@ const JobsSchema = z
 const ProgressSchema = z
   .object({
     checked_in_at: z.union([z.iso.datetime(), z.null()]),
+    wait_ends_at: z.union([z.iso.datetime(), z.null()]).openapi({
+      description: "When the job may close as a no-show, from the check-in we hold; null before one landed.",
+    }),
+    distance_m: z.union([z.number().int(), z.null()]).openapi({
+      description: "How far from the address that check-in was; null when nothing could be measured.",
+    }),
     started_at: z.union([z.iso.datetime(), z.null()]),
     steps_done: z.array(z.enum(JOB_EVENT_KINDS)),
     outcome: z.union([z.string(), z.null()]),
@@ -90,6 +120,11 @@ const JobDetailSchema = JobSummarySchema.extend({
         .object({
           line1: z.string(),
           line2: z.union([z.string(), z.null()]),
+          building: z.union([z.string(), z.null()]),
+          tower: z.union([z.string(), z.null()]),
+          floor: z.union([z.string(), z.null()]),
+          flat: z.union([z.string(), z.null()]),
+          landmark: z.union([z.string(), z.null()]),
           locality: z.string(),
           city: z.string(),
           pincode: z.string(),
@@ -128,7 +163,10 @@ const CheckInRequestSchema = z
     lat: z.number().min(-90).max(90),
     lng: z.number().min(-180).max(180),
     accuracy_m: z.number().min(0).max(100_000).nullable().optional(),
-    at: z.iso.datetime().optional().openapi({ description: "The phone's clock; ours is used when it is left out." }),
+    at: z.iso.datetime().optional().openapi({
+      description:
+        "The phone's clock, kept within bounds and never later than we received it; left out, the event ID's time, else ours.",
+    }),
   })
   .strict()
   .openapi("CheckInRequest");
@@ -241,7 +279,9 @@ const checkinRoute = createRoute({
     400: errorResponse("invalid_request: see error.fields"),
     401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
     404: errorResponse("not_found: no such job"),
-    409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+    409: errorResponse(
+      "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+    ),
   },
 });
 
@@ -255,7 +295,9 @@ const startRoute = createRoute({
     400: errorResponse("invalid_request: see error.fields"),
     401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
     404: errorResponse("not_found: no such job"),
-    409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+    409: errorResponse(
+      "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+    ),
   },
 });
 
@@ -365,7 +407,9 @@ const noShowRoute = createRoute({
     400: errorResponse("invalid_request: see error.fields"),
     401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
     404: errorResponse("not_found: no such job"),
-    409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+    409: errorResponse(
+      "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
+    ),
     425: errorResponse("too_early_to_close: the wait has not run out"),
   },
 });
@@ -385,9 +429,14 @@ export function registerTechJobs(app: App): void {
 
   app.openapi(jobRoute, async (c) => {
     const { technicianId } = technicianOf(c);
-    const now = c.var.deps.now();
-    const unlockHour = (await opsInputs(c)).addressUnlockHour;
-    const job = await jobDetail(c.env.DB, technicianId, c.req.valid("param").id, now, unlockHour);
+    const inputs = await opsInputs(c);
+    const job = await jobDetail(c.env.DB, {
+      technicianId,
+      jobId: c.req.valid("param").id,
+      now: c.var.deps.now(),
+      unlockHour: inputs.addressUnlockHour,
+      waits: inputs.noShowWaitMin,
+    });
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const type: VisitType = job.type ?? "service";
     return c.json(
@@ -404,7 +453,9 @@ export function registerTechJobs(app: App): void {
     const job = await ownJob(c, c.req.valid("param").id);
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
 
-    const at = body.at === undefined ? now : new Date(body.at);
+    const eventId = c.req.valid("header")["x-client-event-id"];
+    const claimed = body.at === undefined ? timeOfUuidV7(eventId) : new Date(body.at);
+    const at = boundedPhoneTime(claimed, { visitStart: job.windowStart, receivedAt: now });
     const inputs = await opsInputs(c);
     const arrival = await recordArrival(c.env.DB, {
       appointmentId: job.id,
@@ -413,6 +464,7 @@ export function registerTechJobs(app: App): void {
       device: { lat: body.lat, lng: body.lng },
       accuracyM: body.accuracy_m ?? null,
       at,
+      claimedAt: claimed,
       now,
       radiusM: inputs.checkinRadiusM,
     });
@@ -436,7 +488,7 @@ export function registerTechJobs(app: App): void {
       );
     }
 
-    const landing = await land(c, job, "check_in", { at: arrival.at, distance_m: arrival.distanceM });
+    const landing = await land(c, job, "check_in", { at: arrival.at, distance_m: arrival.distanceM }, at);
     if (!landing.ok) return c.json(errorBody(landing.code, requestId, landing.fields), 409);
     return c.json(
       {
@@ -444,7 +496,7 @@ export function registerTechJobs(app: App): void {
         distance_m: arrival.distanceM,
         radius_m: arrival.radiusM,
         checked_in_at: arrival.at,
-        wait_ends_at: waitEndsAt(at, job.type, inputs.noShowWaitMin).toISOString(),
+        wait_ends_at: noShowWaitEnds({ at, receivedAt: now }, job.type, inputs.noShowWaitMin).toISOString(),
         accepted: landing.accepted,
       },
       200,
@@ -457,7 +509,14 @@ export function registerTechJobs(app: App): void {
     const { technicianId } = technicianOf(c);
     const now = c.var.deps.now();
     const id = c.req.valid("param").id;
-    const job = await jobDetail(c.env.DB, technicianId, id, now, (await opsInputs(c)).addressUnlockHour);
+    const inputs = await opsInputs(c);
+    const job = await jobDetail(c.env.DB, {
+      technicianId,
+      jobId: id,
+      now,
+      unlockHour: inputs.addressUnlockHour,
+      waits: inputs.noShowWaitMin,
+    });
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const { phase, angle } = c.req.valid("json");
     const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
@@ -534,24 +593,29 @@ export function registerTechJobs(app: App): void {
     const job = await ownJob(c, c.req.valid("param").id);
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
 
-    const arrival = await latestArrival(c.env.DB, job.id);
-    const closing = await closeAsNoShow(c.env.DB, {
-      appointmentId: job.id,
-      type: job.type,
-      checkIn: arrival,
+    const readiness = noShowReadiness(
+      await latestArrival(c.env.DB, job.id),
+      job.type,
       now,
-      wait: (await opsInputs(c)).noShowWaitMin,
-    });
-    if (closing.kind === "no_check_in") return c.json(errorBody("out_of_order", requestId), 409);
-    if (closing.kind === "too_early") return c.json(errorBody("too_early_to_close", requestId), 425);
+      (await opsInputs(c)).noShowWaitMin,
+    );
+    if (readiness.kind === "no_check_in") return c.json(errorBody("out_of_order", requestId), 409);
+    if (readiness.kind === "too_early") return c.json(errorBody("too_early_to_close", requestId), 425);
 
-    const landing = await land(c, job, "outcome", { outcome: "no_show", case_id: closing.caseId });
+    // The close lands first, so a job started, superseded or moved opens no case.
+    const landing = await land(c, job, "outcome", { outcome: "no_show" });
     if (!landing.ok) return c.json(errorBody(landing.code, requestId, landing.fields), 409);
+    const caseId = await openNoShowCase(c.env.DB, {
+      appointmentId: job.id,
+      checkIn: readiness.checkIn,
+      waitEndsAt: readiness.waitEndsAt,
+      now,
+    });
     return c.json(
       {
         closed: true,
-        wait_ends_at: closing.waitEndsAt,
-        case_id: closing.caseId,
+        wait_ends_at: readiness.waitEndsAt.toISOString(),
+        case_id: caseId,
         accepted: landing.accepted,
       },
       200,
@@ -587,14 +651,29 @@ async function step(c: Ctx, kind: JobEventKind, build: (job: WorkableJob) => Ste
 /** What landing an event came to: the write, or the 409 the route answers. */
 type Landed =
   | { readonly ok: true; readonly accepted: z.infer<typeof AcceptedSchema> }
-  | { readonly ok: false; readonly code: "superseded" | "out_of_order"; readonly fields: string[] };
+  | {
+      readonly ok: false;
+      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started";
+      readonly fields?: string[];
+    };
 
-/** Records one event and queues its FSM write. */
-async function land(c: Ctx, job: WorkableJob, kind: JobEventKind, body: Record<string, unknown>): Promise<Landed> {
+/**
+ * Records one event and queues its FSM write. Its time is the phone's, within
+ * bounds: the check-in passes its own, and any other write's comes from its
+ * event ID.
+ */
+async function land(
+  c: Ctx,
+  job: WorkableJob,
+  kind: JobEventKind,
+  body: Record<string, unknown>,
+  phoneTime?: Date,
+): Promise<Landed> {
   const { technicianId, deviceRowId } = technicianOf(c);
   const { requestId, deps } = c.var;
   const now = deps.now();
   const eventId = c.req.header(EVENT_ID_HEADER) ?? "";
+  const heldStart = c.req.header(JOB_STARTS_AT_HEADER);
 
   const landing: Landing = await landJobEvent(c.env.DB, {
     job,
@@ -603,7 +682,8 @@ async function land(c: Ctx, job: WorkableJob, kind: JobEventKind, body: Record<s
     eventId,
     kind,
     body,
-    occurredAt: now,
+    occurredAt: phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), { visitStart: job.windowStart, receivedAt: now }),
+    expectedStart: heldStart === undefined ? null : new Date(heldStart),
     now,
   });
   if (landing.kind === "superseded") {
@@ -611,18 +691,20 @@ async function land(c: Ctx, job: WorkableJob, kind: JobEventKind, body: Record<s
     return { ok: false, code: "superseded", fields: [...landing.changed] };
   }
   if (landing.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [landing.needs] };
+  if (landing.kind === "not_today" || landing.kind === "already_started") return { ok: false, code: landing.kind };
 
   // A replay landed nothing new, so nothing new goes to FSM either.
   if (!landing.replayed) {
     await c.env.FSM_QUEUE.send({ job_event_id: landing.event.id, request_id: requestId } satisfies FsmSyncMessage);
   }
+  const { noShowWaitMin } = await opsInputs(c);
   return {
     ok: true,
     accepted: {
       event_id: landing.event.eventId,
       replayed: landing.replayed,
       fsm_write_state: landing.event.fsmWriteState,
-      progress: await progressOf(c.env.DB, job.id),
+      progress: await progressOf(c.env.DB, job, noShowWaitMin),
     },
   };
 }
