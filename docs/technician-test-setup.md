@@ -61,7 +61,7 @@ One thing to watch, and the reason the test technician should be cleared when yo
 8. Type the six digits, and tap **Sign in**.
 9. You should land on the day's jobs: **1 job today**, a line reading **First at 10:00 am · Sector 45**, and a round chip at the top right with the initials **TT**.
 
-If you get **That code did not match**, you have four more tries before the code is thrown away; ask for a new one and start again from step 4. If nothing arrives at all, go to "If the code does not arrive", below.
+If you get **That code did not match**, you have four more tries before the code is thrown away. When it is, the screen says **That code no longer works. Send the code again.** and goes back to your number: start again from step 5. Typed the number wrong? Tap **Change number** under the code boxes. If nothing arrives at all, go to "If the code does not arrive", below.
 
 ---
 
@@ -105,7 +105,7 @@ Work down this list. Most of it you can check yourself.
 1. **Wait a full minute.** WhatsApp through the provider is usually a few seconds, but it is not instant.
 2. **Check you typed your own number**, ten digits, no +91 and no spaces.
 3. **Check WhatsApp itself.** The message reads "**NNNNNN is your Mane Man code. It works for ten minutes. We will never ask you for it.**" It arrives from whatever number staging's WhatsApp instance sends on, which is not the published Mane Man number and will not be labelled — so look for an unknown number, not for a name you recognise.
-4. **Ask for one more code.** Tap **Send the code** again. You get **five codes a day** for one number; after that the app says "Too many codes for this number today", and the count resets at midnight India time.
+4. **Ask for one more code.** Tap **Send a new code**, under the code boxes; it comes on 30 seconds after the last code went out. You get **five codes a day** for one number; after that the app says "Too many codes for this number today", and the count resets at midnight India time.
 5. **If the screen says "Codes are not going out just now"**, staging has hit its daily ceiling of 300 codes across all numbers. That resets at midnight too.
 6. **If nothing arrives after two tries, stop and tell the developers.** It is one of four things, and one line tells them which:
 
@@ -135,6 +135,8 @@ What it does mean is that a job's steps reach FSM in order, each waiting for the
 ## When you are finished
 
 Tap the **TT** chip at the top right and then **Sign out**. You should be back at **Technician sign in**, and nothing of any client should still be on the phone.
+
+If anything is still waiting to go up, Sign out says how much first and offers **Send first**: tap it, wait for the waiting line to go, then sign out. With no signal it will not sign you out at all — it says so, and keeps everything until there is signal.
 
 Then have a developer take the fixture out of staging, which removes the technician, the jobs, the invented client and — this is the part that matters — **your mobile number from staging's database**:
 

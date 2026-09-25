@@ -55,6 +55,16 @@ describe("what the service worker keeps", () => {
     ]);
   });
 
+  it("leaves out the fonts the app never draws with: extended Latin, and the rupee", () => {
+    const built = [
+      "assets/instrument-sans-latin-400-normal-a.woff2",
+      "assets/instrument-sans-latin-ext-400-normal-b.woff2",
+      "assets/eb-garamond-latin-ext-400-normal-c.woff2",
+      "assets/eb-garamond-rupee-400-d.woff2",
+    ];
+    expect(precacheList(built)).toEqual(["/", "/assets/instrument-sans-latin-400-normal-a.woff2"]);
+  });
+
   it("changes its version when any kept file changes, so a new build installs afresh", () => {
     const before = version([{ name: "a.js", content: "one" }]);
     expect(version([{ name: "a.js", content: "one" }])).toBe(before);

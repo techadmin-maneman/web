@@ -163,6 +163,10 @@ Run steps 1 to 8 at **each** of the three buildings.
 | How long you waited before anything happened, in seconds                                        |               |
 | If it failed: the distance it showed, in metres                                                 |               |
 | The time of the check-in that passed (hh:mm)                                                    |               |
+| One bar, not in aeroplane mode: close the app, open it. Seconds until the jobs showed           |               |
+| Did it then say **No signal · working offline**? (yes / no)                                     |               |
+
+> A signal that shows a bar and answers nothing is the case the app is least able to tell from a good one. It now opens from what the phone holds and waits at most a few seconds on the network (ADR 0053, update of 25 September 2026). More than ten seconds, or a blank screen, is worth telling the developers.
 
 ### Getting the numbers out
 
@@ -379,12 +383,13 @@ If a second iPhone is available, sign in on it **in Safari only**, leave the sam
 
 > **On an iPhone running Part 6, do not sign out yet.** Part 6 needs the half-finished job left exactly where it is. Do the three steps below on the eighth day instead, once Part 6 is answered.
 
-1. Tap **Sign out** on the day's jobs screen.
+1. Tap **Sign out** on the day's jobs screen. If anything has not gone up yet, the app says how much and offers **Send first** before it lets you: tap it, stay in signal until the waiting line has gone, then tap **Sign out** again. **Sign out anyway** deletes what has not gone up, for good. With no signal the app will not sign out at all, and says so.
 2. You should be back at **Technician sign in**.
 3. Turn on aeroplane mode, close the app, and open it again. You should see the sign-in screen and **no jobs at all** — nothing of any client should still be on the phone.
 
 | Question                                                     | Write it here |
 | ------------------------------------------------------------ | ------------- |
+| Did Sign out ask about unsent work first? What did it say?   |               |
 | After signing out, was anything of a client's still visible? |               |
 | iPhone: did you also sign out of Safari, or revoke that row? |               |
 | Anything else that went wrong today, in your own words       |               |

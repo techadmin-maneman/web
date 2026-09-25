@@ -91,3 +91,51 @@ Beside it, the outbox is now replayed whenever the app comes to the front, not o
 `playwright.config.ts` gains a `tech-ios` project on WebKit, and `e2e/tech/ios.e2e.ts` runs the app on it. **WebKit in Playwright is the engine an iPhone runs and it is not Safari on iOS**: no Intelligent Tracking Prevention, no seven-day cap, no Home Screen Web Apps, and no reason for its answers about storage to match Safari's. What it proves is that nothing in this app is Chromium-only. Measured there on 24 September 2026, for the record rather than as a claim about any iPhone: `navigator.storage.persist()` answered **false**, `persisted()` stayed false, and the quota was **1,000 MB** — the same order as Safari's own per-origin quota. Headless Chromium answered false as well, on its own heuristics.
 
 What no desk can settle, and what `docs/tech-field-test.md`'s iPhone pass asks: whether a real iPhone grants persistence once the app is on the home screen; whether an installed app's store survives a week of not being opened; whether `getUserMedia` gives ten usable frames through iOS's own camera pipeline; and whether the installed app keeps its session across an iOS update. Until those are answered, an iPhone is a phone the app degrades safely on, not a phone the offline outbox is proven on.
+
+---
+
+## Update, 25 September 2026: what the phone keeps, when the session ends, and a signal that never answers
+
+The audit of 24 September found the decision above stated and not kept in six places. This section records what each now does.
+
+### A 401 from any call ends the session
+
+"A 401 is the end of the session, whatever caused it" held for one call: `GET /tech/me`, asked when the app opened and when it came back online. Every other call treated a 401 as no signal, and the day's list and each card fell back to what the phone held — so a phone revoked with the app open went on showing a client's name, address and gate code. The outbox noticed the 401 and told no one.
+
+Now `apps/tech/src/api.ts` tells App of any 401, from any call, and App hides the screens, wipes the database and shows the sign-in, wherever the technician was. The screens fall back to the phone's copy only when the API could not be reached — no signal, a 429 or a 5xx. Any other answer is the API's word: a 401 has ended the session, and a 404 says the job is not this technician's. The first 401 a revoked phone meets carries `device_revoked`, so it now says it was revoked, where before it usually said only that the session had ended.
+
+### The phone keeps two days and no more
+
+The cards and day lists were written and never deleted, so a phone held every card it had opened for as long as its 90-day session. Now, each time a day arrives fresh from the API, the phone lets go of everything but today's and tomorrow's lists, the cards and check-ins of the jobs in them, and any job whose work has not reached us (`forgetOld` in `apps/tech/src/store/jobs.ts`). The service worker keeps today's list alone, dropping the earlier day's as it keeps the new one. `docs/open-points.md`'s item 71 now describes this.
+
+### Sign out asks first, and needs signal
+
+One tap on Sign out wiped the phone, unsent photographs and all, and with no signal the API never heard: the phone came back signed in when the signal did, with nothing on it. Now Sign out, with work still on the phone, says how much and offers **Send first**. And the phone is wiped only once the API has ended the session: with no signal it keeps everything and says the technician is still signed in.
+
+### The sign-in always has a way on
+
+Once a code was sent the number was locked, and a closed code said "Ask for another" with nothing to ask with — a dead end in an installed app, which has no reload button. Now **Change number** is there from the moment a code goes out, **Send a new code** 30 seconds after, and a closed code (a `410`, or no tries left) takes the screen back to sending one.
+
+### A weak signal opens the app from the phone
+
+The service worker served every page network-first, with no limit, so a signal that never answered held the app closed while one that was plainly off opened it at once. Now the shell comes from the kept copy first. A new build still arrives: the browser checks for a new `sw.js` each time the app opens, the new worker keeps its own shell and drops this one, and the next open is the new app. Racing the network against a timeout, with navigation preload, was the other way; it keeps a fresher shell on a good signal at the price of a wait on every weak one, and a technician in a basement is the case this app exists for.
+
+Every call now gives up too: after 4 seconds for a read the phone holds its own copy of, 15 for a write or a sign-in, and 60 for a photograph. An answer that is not JSON — a Wi-Fi sign-in page, say — counts as no signal rather than leaving a screen loading. And whether the phone has signal is now what the last call found, not only what the phone says, so "No signal · working offline" shows when nothing answers on a network the phone believes in, and the day the service worker answered from its copy (`Mm-Served-From: cache`) shows as offline too.
+
+The worker no longer keeps the extended-Latin fonts or the rupee, which the app never draws with, and `scripts/build-tech.ts` counts `sw.js` in the 150 KB budget.
+
+### The store survives other tabs, new builds and a full phone
+
+- **Upgrades run step by step** (`UPGRADES` in `apps/tech/src/store/db.ts`), from whatever version a phone last had, and every record carries the version of its shape as `v`, so a later build can tell what it must move.
+- **A connection lets go when asked.** Another tab, a newer build or the app's own wipe no longer waits on it; a wipe held up by an older build's tab waits three seconds, then lets the sign-in show while the browser finishes the delete.
+- **A write settles when it commits**, not when it is queued, and one the phone has no room for fails as "storage full": App says so above every screen until a write to the same store lands.
+- **A store that will not open is tried again** on the next call, and no screen waits for ever on one.
+
+### The camera and a screen that fails
+
+The camera is let go while the app is hidden and opened again when it comes back, and opened again when its track ends; a refused camera offers **Try again**; and a frame that did not keep says so and can be taken again, where before any failure left "camera unavailable" for good. A screen that throws while it draws shows a line and **Reload** instead of a blank page, and the reload loses nothing: the outbox and the frames are in IndexedDB, not in the page.
+
+### Consequences
+
+- The store and the sending have their own tests, on an IndexedDB that runs in Node (`fake-indexeddb`): `test/node/tech-store.test.ts`, `tech-kept.test.ts`, `tech-outbox-replay.test.ts`, `tech-api.test.ts` and `tech-sw.test.ts`. The browser walks each change in `e2e/tech/`.
+- The words for the states no board draws are placeholders in `apps/tech/src/content.ts`, for the owner (`docs/open-points.md`, item 20; ADR 0025, item 32).

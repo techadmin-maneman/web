@@ -112,6 +112,38 @@
   border-color: var(--gilt);
 }
 
+/* The ways back once a code is out: outlined, never gold, since the one action stays at the bottom. */
+.again {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+  margin-top: var(--sp-18);
+}
+
+.againButton {
+  display: flex;
+  align-items: center;
+  min-height: var(--tech-min);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-size: var(--fs-17);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.againButton:disabled {
+  color: var(--ink-soft);
+  cursor: default;
+}
+
+.againButton:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
+}
+
 .note {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-16);

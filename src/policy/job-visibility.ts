@@ -53,7 +53,7 @@ export const UNLOCKED_FIELDS = ["address", "access_notes", "client_card"] as con
 /**
  * The only money a technician's job carries: a badge, never an amount. The
  * prompt names two; board A1 draws a third, Free, on a visit the price book
- * charges nothing for, such as a consultation (ADR 0025, item 32).
+ * charges nothing for, such as a consultation (ADR 0025, item 33).
  */
 export const PAYMENT_BADGES = ["prepaid", "credit", "free"] as const;
 export type PaymentBadge = (typeof PAYMENT_BADGES)[number];

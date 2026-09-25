@@ -50,7 +50,7 @@ The audit of 24 September 2026 found that no job worked in the technician app co
 - **A job moved to another time is superseded, field `time`,** like one given to another technician. A write may carry `X-Job-Starts-At`, the start the phone holds; when ops have moved the job since, the write is refused with 409 `superseded` and nothing lands. The app is to send it on every write.
 - **A check-in or a start is refused on any day but the job's own** (409 `not_today`), by the bounded time of the write. That also catches a job moved to another day from a phone that does not yet send `X-Job-Starts-At`.
 - **A no-show is refused once the job has started** (409 `already_started`). The close now lands before its case is opened, so a close the server refuses — started, superseded or out of order — opens no case.
-- **The card carries what a phone can lose.** A job's `progress` gives the no-show wait's end and the check-in's distance, from the check-in the server holds, so a phone that lost its own copy can still close a no-show. The unlocked card gives the address whole — building, tower, floor, flat and landmark, which the client saved separately (ADR 0054) — and a visit the price book charges nothing for carries a Free badge (ADR 0025, item 32).
+- **The card carries what a phone can lose.** A job's `progress` gives the no-show wait's end and the check-in's distance, from the check-in the server holds, so a phone that lost its own copy can still close a no-show. The unlocked card gives the address whole — building, tower, floor, flat and landmark, which the client saved separately (ADR 0054) — and a visit the price book charges nothing for carries a Free badge (ADR 0025, item 33).
 
 ### The piece, and what was used
 
