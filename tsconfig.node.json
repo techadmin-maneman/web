@@ -24,8 +24,14 @@
     "vitest.config.ts",
     "eslint.config.ts"
   ],
-  // Browser-side tooling has its own config: tsconfig.browser.json.
+  // Browser-side tooling has its own config: tsconfig.browser.json, as do the
+  // technician app's store tests, which run in Node on a fake IndexedDB but
+  // import code written against the DOM.
   "exclude": [
+    "test/node/tech-api.test.ts",
+    "test/node/tech-kept.test.ts",
+    "test/node/tech-outbox-replay.test.ts",
+    "test/node/tech-store.test.ts",
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",
     "scripts/fidelity-ops.ts",

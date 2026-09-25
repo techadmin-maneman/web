@@ -4,7 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { fakeTech, JOB_ID } from "./fixtures.ts";
+import { card, fakeTech, JOB_ID, keptOnPhone, leftOnPhone, todayInIndia } from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -64,6 +64,54 @@ test("shows board A2's banner with no signal, and the card still opens from the 
 
   const results = await wcag(page);
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("says there is no signal when nothing answers, even while the phone says it has a network", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await expect(page.getByText("No signal · working offline")).toHaveCount(0);
+
+  // A weak signal: the phone reports a network, and nothing on it answers.
+  fake.online = false;
+  await page.getByText("Rohit M.").first().click();
+  await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByText("No signal · working offline")).toBeVisible();
+
+  // And once something answers again, it stops saying so.
+  fake.online = true;
+  await page.getByText("Rohit M.").first().click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await expect(page.getByText("No signal · working offline")).toHaveCount(0);
+});
+
+test("keeps today's and tomorrow's jobs and lets go of every older day and card as the day arrives", async ({
+  page,
+}) => {
+  await fakeTech(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await expect.poll(() => keptOnPhone(page)).toContain(JOB_ID);
+
+  // What a week-old day left behind: its list, a client's card and what the check-in measured.
+  const old = "a0000000-0000-4000-8000-00000000000f";
+  const progress = { checked_in_at: null, started_at: null, steps_done: [], outcome: null };
+  await leftOnPhone(page, [
+    { id: "day:2020-01-01", kind: "day", date: "2020-01-01", jobs: [] },
+    { id: old, kind: "job", job: { ...card("2020-01-01", progress), id: old } },
+    { id: `arrival:${old}`, kind: "arrival", job_id: old, arrival: { passed: true } },
+  ]);
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await expect.poll(() => keptOnPhone(page)).not.toContain(old);
+  const kept = await keptOnPhone(page);
+  expect(kept).not.toContain("day:2020-01-01");
+  expect(kept).not.toContain(`arrival:${old}`);
+  expect(kept).toContain(`day:${todayInIndia()}`);
+  expect(kept).toContain(JOB_ID);
 });
 
 test("opens a job's card with its address, access notes and the way in (board A3)", async ({ page }) => {

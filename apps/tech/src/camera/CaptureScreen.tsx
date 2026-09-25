@@ -7,6 +7,11 @@
 // into the app's own store and stays there until the outbox has PUT it to the
 // link the API hands out and the set itself has landed
 // (apps/tech/src/store/outbox.ts).
+//
+// The camera is let go while the app is hidden and opened again on the way
+// back (./useCamera.ts). A frame that fails to keep — the phone full, say, which
+// App says above every screen — is said here and can be taken again: it is not
+// a camera that failed.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
@@ -15,7 +20,8 @@ import { Failed, Loading } from "../states/States.tsx";
 import { StepFrame } from "../steps/StepFrame.tsx";
 import { useStep } from "../steps/useStep.ts";
 import { dropFrame, frames as keptFrames, keepFrame } from "../store/outbox.ts";
-import { cameraAvailable, captureFrame, closeCamera, openCamera } from "./capture.ts";
+import { captureFrame } from "./capture.ts";
+import { useCamera } from "./useCamera.ts";
 import styles from "./capture.module.css";
 
 /** The five angles, in the order the design guides them (board B1). */
@@ -25,42 +31,23 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const step = phase === "before" ? "before_photos" : "after_photos";
   const { loaded, retry, finish, back } = useStep(id, step);
   const video = useRef<HTMLVideoElement | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [camera, reopen] = useCamera();
+  const stream = camera.state === "open" ? camera.stream : null;
   const [taken, setTaken] = useState<readonly { angle: Angle; frameId: string }[]>([]);
   const [ready, setReady] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let opened: MediaStream | null = null;
-    let current = true;
-    if (!cameraAvailable()) setFailed(true);
-    else {
-      void openCamera().then(
-        (camera) => {
-          opened = camera;
-          if (current) setStream(camera);
-          else closeCamera(camera);
-        },
-        () => {
-          if (current) setFailed(true);
-        },
-      );
-    }
-    return () => {
-      current = false;
-      closeCamera(opened);
-    };
-  }, []);
+  const [missed, setMissed] = useState(false);
 
   /**
    * The camera and the element arrive in either order — the job's card may still
    * be loading when the camera opens — so the stream is attached whichever is
    * last. Capture then waits for the first frame, not merely for the camera to
-   * open: a canvas drawn from a video with no dimensions yet holds nothing.
+   * open: a canvas drawn from a video with no dimensions yet holds nothing, so
+   * each new stream starts not ready.
    */
   const attach = useCallback(
     (element: HTMLVideoElement | null) => {
       video.current = element;
+      setReady(false);
       if (element !== null && stream !== null) element.srcObject = stream;
     },
     [stream],
@@ -84,9 +71,10 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
     try {
       const frame = await captureFrame(video.current);
       const frameId = await keepFrame(id, angle, phase, frame.blob);
+      setMissed(false);
       setTaken((already) => [...already, { angle, frameId }]);
     } catch {
-      setFailed(true);
+      setMissed(true);
     }
   }, [angle, id, phase]);
 
@@ -114,10 +102,13 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       onAction={() => void finish({ phase })}
     >
       <div className={styles.stage}>
-        {failed ? (
-          <p className={styles.unavailable} role="alert">
-            {copy.unavailable}
-          </p>
+        {camera.state === "refused" ? (
+          <div className={styles.unavailable} role="alert">
+            <p className={styles.unavailableLine}>{copy.unavailable}</p>
+            <button className={styles.reopen} type="button" onClick={reopen}>
+              {copy.retry}
+            </button>
+          </div>
         ) : (
           <>
             {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
@@ -131,7 +122,13 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
                 setReady(true);
               }}
             />
-            <p className={styles.guide}>{angle === undefined ? copy.done : copy.guide(copy.angles[angle])}</p>
+            {missed ? (
+              <p className={styles.guide} role="alert">
+                {copy.missed}
+              </p>
+            ) : (
+              <p className={styles.guide}>{angle === undefined ? copy.done : copy.guide(copy.angles[angle])}</p>
+            )}
           </>
         )}
       </div>
@@ -155,7 +152,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         <button
           className={styles.take}
           type="button"
-          disabled={!ready || angle === undefined}
+          disabled={stream === null || !ready || angle === undefined}
           onClick={() => void take()}
         >
           {copy.take}

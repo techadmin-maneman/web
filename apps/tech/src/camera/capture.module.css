@@ -30,12 +30,36 @@
 }
 
 .unavailable {
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-18);
+  align-items: center;
   padding: var(--sp-24) var(--sp-20);
+}
+
+.unavailableLine {
+  margin: 0;
   font-size: var(--fs-17);
   line-height: 1.55;
   text-align: center;
   color: var(--paper);
+}
+
+/* Asking the phone for its camera again: outlined, since Capture stays the one gold action. */
+.reopen {
+  min-height: var(--tech-min);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-size: var(--fs-17);
+  cursor: pointer;
+}
+
+.reopen:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
 }
 
 .tiles {
