@@ -1,0 +1,97 @@
+// Ops putting a client's service-visit credits right by hand, behind Access
+// (docs/decisions/0033-credit-ledger.md, 0067-a-paid-hold-is-kept.md):
+//
+//   POST /api/clients/:id/credits   { visits, reason }: add visits, or take them away
+//
+// The ledger stays append-only: this writes a grant from ops, or adjust entries
+// against the grants the client holds, with its audit entry in the same batch.
+// The console's form for it arrives with the client page's other screens.
+
+import { createRoute, z } from "@hono/zod-openapi";
+import type { App } from "../app.ts";
+import { actorOf } from "../domain/audit.ts";
+import { ADJUST_REASONS, adjustCredits } from "../domain/credits.ts";
+import { errorBody, errorResponse } from "../http/errors.ts";
+
+/** More than a year of monthly visits either way is not a correction. */
+const MOST_VISITS = 12;
+
+const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
+
+const adjustRoute = createRoute({
+  method: "post",
+  path: "/api/clients/{id}/credits",
+  summary: "Add service-visit credits to a client, or take them away, with the reason",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            visits: z
+              .number()
+              .int()
+              .min(-MOST_VISITS)
+              .max(MOST_VISITS)
+              .refine((visits) => visits !== 0, "nothing to change")
+              .openapi({ description: "Visits to add, or, below nought, to take away." }),
+            reason: z.enum(ADJUST_REASONS).openapi({
+              description: "correction: given or taken in error; goodwill: given to make up for something.",
+            }),
+          })
+          .strict()
+          .openapi("CreditAdjustment"),
+      ),
+    },
+  },
+  responses: {
+    200: {
+      description: "The client's balance now",
+      ...json(
+        z
+          .object({
+            visits: z.number().int(),
+            earliest_expiry: z.union([z.iso.datetime(), z.null()]),
+          })
+          .strict()
+          .openapi("CreditBalance"),
+      ),
+    },
+    400: errorResponse("invalid_request: visits takes away more than the client has"),
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such client, or one who has been erased"),
+  },
+});
+
+export function registerOpsCredits(app: App): void {
+  app.openapi(adjustRoute, async (c) => {
+    const identity = c.var.accessIdentity;
+    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const personId = c.req.valid("param").id;
+    const { visits, reason } = c.req.valid("json");
+    const db = c.env.DB;
+    const person = await db
+      .prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
+      .bind(personId)
+      .first<{ id: string }>();
+    if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+
+    const balance = await adjustCredits(db, {
+      personId,
+      visits,
+      audit: {
+        surface: "ops",
+        actor: actorOf(identity),
+        action: "credit.adjust",
+        subject: { kind: "person", id: personId },
+        requestId: c.var.requestId,
+        detail: { visits, reason },
+      },
+      now: c.var.deps.now(),
+    });
+    if (balance === null) return c.json(errorBody("invalid_request", c.var.requestId, ["visits"]), 400);
+    c.var.log.info("credits_adjusted", { person_id: personId, visits, reason });
+    return c.json({ visits: balance.visits, earliest_expiry: balance.earliestExpiry }, 200);
+  });
+}

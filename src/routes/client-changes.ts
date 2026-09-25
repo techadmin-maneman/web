@@ -28,8 +28,7 @@ const termsOf = (terms: ChangeTerms) => ({
   notice: terms.notice,
   free_until: terms.freeUntil.toISOString(),
   paid: terms.payment?.paid ?? 0,
-  // A credit comes back when changing is free, and is lost inside 24 hours.
-  credit: terms.credit === null ? null : terms.notice === "free" ? ("restored" as const) : ("lost" as const),
+  credit: terms.credit?.outcome ?? null,
 });
 
 const common = {
@@ -39,7 +38,9 @@ const common = {
   free_until: z.iso.datetime(),
   paid: z.number().int().openapi({ description: "In paise: what the visit's payment holds, carried over or kept." }),
   credit: z.union([z.enum(["restored", "lost"]), z.null()]).openapi({
-    description: "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late).",
+    description:
+      "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late, or its grant " +
+      "has been taken back or has expired).",
   }),
 };
 

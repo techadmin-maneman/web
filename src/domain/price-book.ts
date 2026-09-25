@@ -2,17 +2,21 @@
 // source of prices for the app. Amounts are in paise.
 //
 // Ops set every price from the console, each from the date it applies
-// (docs/decisions/0061-ops-editable-inputs.md). A change is a new row and never
-// an edit, so an invoice already issued keeps the figure it was issued under
-// and priceOf still reads that row for that day.
+// (docs/decisions/0061-ops-editable-inputs.md). A change from a new date is a
+// new row; a second change for the same date corrects that date's row. What a
+// client was sold never moves with either: a hold keeps its price and its late
+// fee, and a payment the split before GST it was taken at
+// (docs/decisions/0067-a-paid-hold-is-kept.md).
 
 import { withGst } from "../config/gst.ts";
 import { PRICE_BOUNDS } from "../config/ops-settings.ts";
-import type { VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPES } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 
-export type PriceItem = VisitType | "late_fee_first_fit" | "late_fee_replacement";
+/** What the book prices: each kind of visit, and the two late fees. */
+export const PRICE_ITEMS = [...VISIT_TYPES, "late_fee_first_fit", "late_fee_replacement"] as const;
+export type PriceItem = (typeof PRICE_ITEMS)[number];
 
 export interface Price {
   readonly amount_ex_gst: number;
@@ -102,7 +106,7 @@ export async function setPrice(
   db: D1Database,
   input: {
     readonly price: {
-      readonly item: string;
+      readonly item: PriceItem;
       readonly tier: string;
       readonly amount_ex_gst: number;
       readonly gst_percent: number;
@@ -114,7 +118,7 @@ export async function setPrice(
   },
 ): Promise<void> {
   const { price, actor, requestId, now } = input;
-  const was = await priceOf(db, price.item as PriceItem, indiaDate(now), price.tier);
+  const was = await priceOf(db, price.item, indiaDate(now), price.tier);
   await db.batch([
     auditStatement(
       db,

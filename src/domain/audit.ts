@@ -42,6 +42,8 @@ export const AUDIT_ACTIONS = [
   "setting.change",
   "price.set",
   "pincode.set",
+  // Ops putting a client's service-visit credits right by hand (docs/decisions/0067-a-paid-hold-is-kept.md).
+  "credit.adjust",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

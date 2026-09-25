@@ -1,6 +1,6 @@
 // A client moving or cancelling a visit, and ops moving one (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them, and what each costs (docs/decisions/0046-moving-and-cancelling.md).
-// A credit booking's rule arrives with the credits (P2-M3).
+// The rules as the prompt states them, and what each costs (docs/decisions/0046-moving-and-cancelling.md). The
+// terms are worked out in src/domain/visit-changes.ts, and a move is booked in src/domain/bookings.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
 
@@ -45,6 +45,15 @@ export function moveCost(type: VisitType, notice: Notice, by: "client" | "ops"):
   if (LATE_FEES[type] !== undefined) return "late_fee";
   return type === "service" ? "charged" : "free";
 }
+
+/**
+ * What becomes of the credit a visit was paid with, when the client moves or cancels it:
+ *   restored  it comes back, more than 24 hours ahead;
+ *   lost      it is spent, inside 24 hours.
+ */
+export type CreditOnChange = "restored" | "lost";
+
+export const creditOnChange = (notice: Notice): CreditOnChange => (notice === "free" ? "restored" : "lost");
 
 /**
  * What cancelling gives back:

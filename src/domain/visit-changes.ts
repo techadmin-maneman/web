@@ -5,17 +5,25 @@
 // refund. A move is a hold like any booking: its price is what the move costs
 // now, and confirmBooking moves the visit once that is paid (or at once, when
 // free).
+//
+// A late fee is the one the visit was booked under, kept on its hold, so a
+// price changed since does not change what moving it costs
+// (docs/decisions/0067-a-paid-hold-is-kept.md). A credit comes back only to a
+// grant that can still take it: not one clawed back or expired.
 
 import { WINDOW_TIMES } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
+import { withGst } from "../config/gst.ts";
 import {
   cancelRefund,
+  creditOnChange,
   freeUntil,
   LATE_FEES,
   moveCost,
   noticeAt,
+  type CreditOnChange,
   type MoveCost,
   type Notice,
 } from "../policy/moving-a-visit.ts";
@@ -109,8 +117,44 @@ export interface ChangeTerms {
   readonly move: { readonly cost: MoveCost; readonly price: Price };
   /** In paise: what cancelling gives back, and what it keeps. */
   readonly cancel: { readonly refund: number; readonly kept: number };
-  /** For a visit paid with a credit, the grant it came from; cancelling gives it back only when free. */
-  readonly credit: { readonly grantId: string } | null;
+  /** For a visit paid with a credit: the grant it came from, and whether changing the visit now gives it back. */
+  readonly credit: { readonly grantId: string; readonly outcome: CreditOnChange } | null;
+}
+
+/** The late fee the visit was booked under, kept on the hold that booked it; null for a visit ops booked in FSM. */
+async function lateFeeBookedAt(db: D1Database, visitId: string): Promise<Price | null> {
+  const held = await db
+    .prepare(
+      `SELECT late_fee_ex_gst, late_fee_gst_percent FROM slot_holds
+       WHERE appointment_id = ?1 AND state = 'booked' AND late_fee_ex_gst IS NOT NULL AND late_fee_gst_percent IS NOT NULL
+       ORDER BY updated_at DESC LIMIT 1`,
+    )
+    .bind(visitId)
+    .first<{ late_fee_ex_gst: number; late_fee_gst_percent: number }>();
+  if (held === null) return null;
+  return {
+    amount_ex_gst: held.late_fee_ex_gst,
+    amount: withGst(held.late_fee_ex_gst, held.late_fee_gst_percent),
+    gst_percent: held.late_fee_gst_percent,
+  };
+}
+
+/** The credit a visit was paid with, if it was, and whether its grant could take it back now. */
+async function creditOf(db: D1Database, visitId: string, notice: Notice, now: Date): Promise<ChangeTerms["credit"]> {
+  const redeemed = await db
+    .prepare(
+      `SELECT r.grant_id, g.expires_at,
+         EXISTS (SELECT 1 FROM credit_ledger c WHERE c.grant_id = r.grant_id AND c.kind = 'clawback') AS clawed_back
+       FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id
+       WHERE r.kind = 'redeem' AND r.source_id = ?1
+         AND NOT EXISTS (SELECT 1 FROM credit_ledger x WHERE x.kind = 'restore' AND x.source_id = ?1)`,
+    )
+    .bind(visitId)
+    .first<{ grant_id: string; expires_at: string | null; clawed_back: number }>();
+  if (redeemed === null) return null;
+  const grantLive =
+    redeemed.clawed_back === 0 && (redeemed.expires_at === null || redeemed.expires_at > now.toISOString());
+  return { grantId: redeemed.grant_id, outcome: grantLive ? creditOnChange(notice) : "lost" };
 }
 
 /**
@@ -128,21 +172,16 @@ export async function changeTerms(
   const payment = await visitPayment(db, visit.id);
   const paid = payment?.paid ?? 0;
   const lateFeeItem = LATE_FEES[visit.type];
-  const lateFee = lateFeeItem === undefined ? null : await priceOf(db, lateFeeItem, indiaDate(visit.start));
+  const lateFee =
+    lateFeeItem === undefined
+      ? null
+      : ((await lateFeeBookedAt(db, visit.id)) ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));
   const visitPrice = await priceOf(db, visit.type, on);
   const gst = visitPrice?.gst_percent ?? 0;
 
   const cost = moveCost(visit.type, notice, "client");
   const movePrice =
     cost === "late_fee" ? (lateFee ?? ZERO(gst)) : cost === "charged" ? (visitPrice ?? ZERO(gst)) : ZERO(gst);
-
-  const redeemed = await db
-    .prepare(
-      `SELECT r.grant_id FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = ?1
-         AND NOT EXISTS (SELECT 1 FROM credit_ledger x WHERE x.kind = 'restore' AND x.source_id = ?1)`,
-    )
-    .bind(visit.id)
-    .first<{ grant_id: string }>();
 
   const refunding = cancelRefund(visit.type, notice);
   const refund =
@@ -154,7 +193,7 @@ export async function changeTerms(
     payment,
     move: { cost, price: movePrice },
     cancel: { refund, kept: paid - refund },
-    credit: redeemed === null ? null : { grantId: redeemed.grant_id },
+    credit: await creditOf(db, visit.id, notice, now),
   };
 }
 
@@ -223,13 +262,15 @@ export async function cancelVisit(
     kind: "cancel_confirmation",
     now,
   });
+  // A clawback between the terms and the cancel still stops the credit coming back.
   const restore =
-    terms.credit !== null && notice === "free"
+    terms.credit?.outcome === "restored"
       ? [
           db
             .prepare(
               `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-               VALUES (?1, ?2, 'restore', 1, ?3, 'appointment', ?4, ?5)`,
+               SELECT ?1, ?2, 'restore', 1, ?3, 'appointment', ?4, ?5
+               WHERE NOT EXISTS (SELECT 1 FROM credit_ledger WHERE grant_id = ?3 AND kind = 'clawback')`,
             )
             .bind(crypto.randomUUID(), visit.personId, terms.credit.grantId, visit.id, at),
         ]
