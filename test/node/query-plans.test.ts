@@ -15,6 +15,8 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const CRON_PATH = [
+  "src/scheduled/cron.ts",
+  "src/domain/alerts.ts",
   "src/scheduled/sweeper.ts",
   "src/scheduled/reconcile-fsm.ts",
   "src/domain/erasure.ts",
@@ -47,6 +49,7 @@ const SMALL_TABLES = new Set([
   "ops_settings",
   "fsm_items",
   "sync_cursors",
+  "cron_jobs",
 ]);
 
 /** Statements that do read a whole table, each with why that is all right. */
