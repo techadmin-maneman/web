@@ -9,6 +9,7 @@
 // dispatch answers "on_leave" before anything is written to FSM.
 
 import { addDays } from "../lib/india-time.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 
 /** One period, both ends inclusive, as ops recorded it. */
 export interface LeavePeriod {
@@ -68,7 +69,14 @@ export async function leaveFrom(db: D1Database, from: string): Promise<LeavePeri
  * refused: two overlapping periods keep the technician away on the same days,
  * and ops should not have to unpick their own entries to add a day.
  */
-export async function recordLeave(db: D1Database, leave: NewLeave, today: string, now: Date): Promise<LeaveOutcome> {
+/** Records leave, with its audit entry in the same batch (src/domain/audit.ts). */
+export async function recordLeave(
+  db: D1Database,
+  leave: NewLeave,
+  today: string,
+  now: Date,
+  audit: AuditEntry,
+): Promise<LeaveOutcome> {
   if (leave.to < leave.from || leave.to > addDays(today, LEAVE_MAX_DAYS)) return { kind: "bad_dates" };
 
   const technician = await db
@@ -78,28 +86,40 @@ export async function recordLeave(db: D1Database, leave: NewLeave, today: string
   if (technician === null) return { kind: "no_such_technician" };
 
   const id = crypto.randomUUID();
-  await db
-    .prepare(
-      `INSERT INTO technician_leave (id, technician_id, from_date, to_date, note, actor, created_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
-    )
-    .bind(id, leave.technicianId, leave.from, leave.to, leave.note, leave.actor, now.toISOString())
-    .run();
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, note, actor, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+      )
+      .bind(id, leave.technicianId, leave.from, leave.to, leave.note, leave.actor, now.toISOString()),
+    auditStatement(db, audit, now),
+  ]);
   return { kind: "recorded", id };
 }
 
-/** Takes leave back. False when there is no such uncancelled period of that technician's. */
+/**
+ * Takes leave back, with its audit entry in the same batch. False when there is
+ * no such uncancelled period of that technician's.
+ */
 export async function cancelLeave(
   db: D1Database,
-  input: { technicianId: string; leaveId: string; actor: string },
+  input: { technicianId: string; leaveId: string; actor: string; audit: AuditEntry },
   now: Date,
 ): Promise<boolean> {
-  const row = await db
-    .prepare(
-      `UPDATE technician_leave SET cancelled_at = ?3, cancelled_by = ?4
-       WHERE id = ?1 AND technician_id = ?2 AND cancelled_at IS NULL RETURNING id`,
-    )
-    .bind(input.leaveId, input.technicianId, now.toISOString(), input.actor)
-    .first<{ id: string }>();
-  return row !== null;
+  const standing = await db
+    .prepare("SELECT 1 FROM technician_leave WHERE id = ?1 AND technician_id = ?2 AND cancelled_at IS NULL")
+    .bind(input.leaveId, input.technicianId)
+    .first();
+  if (standing === null) return false;
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE technician_leave SET cancelled_at = ?3, cancelled_by = ?4
+         WHERE id = ?1 AND technician_id = ?2 AND cancelled_at IS NULL`,
+      )
+      .bind(input.leaveId, input.technicianId, now.toISOString(), input.actor),
+    auditStatement(db, input.audit, now),
+  ]);
+  return true;
 }

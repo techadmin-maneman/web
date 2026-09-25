@@ -4,6 +4,7 @@
 
 import type { Logger } from "../log.ts";
 import { erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 import { erasePerson, erasureBlockers, type ErasureBlockers, type ErasureEnv } from "./erasure.ts";
 
 export type DeletionState = "requested" | "done" | "rejected";
@@ -15,19 +16,25 @@ export interface DeletionRequest {
   readonly createdAt: string;
 }
 
-/** The client's open request, or a new one: asking twice makes no second request. */
+/**
+ * The client's open request, or a new one, recorded with its audit entry: asking
+ * twice makes no second request.
+ */
 export async function requestDeletion(
   db: D1Database,
   personId: string,
   now: Date,
+  audit: AuditEntry,
 ): Promise<{ request: DeletionRequest; created: boolean }> {
   const open = await openDeletion(db, personId);
   if (open !== null) return { request: open, created: false };
   const id = crypto.randomUUID();
-  await db
-    .prepare("INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES (?1, ?2, ?3, 'requested')")
-    .bind(id, personId, now.toISOString())
-    .run();
+  await db.batch([
+    db
+      .prepare("INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES (?1, ?2, ?3, 'requested')")
+      .bind(id, personId, now.toISOString()),
+    auditStatement(db, { ...audit, subject: { kind: "deletion", id } }, now),
+  ]);
   return { request: { id, personId, state: "requested", createdAt: now.toISOString() }, created: true };
 }
 
@@ -81,12 +88,13 @@ export async function decideDeletion(
     decision: "delete" | "reject";
     staff: string;
     reason: string | null;
-    audit: D1PreparedStatement;
+    audit: AuditEntry;
     now: Date;
     log: Logger;
   },
 ): Promise<DeletionOutcome> {
   const db = env.DB;
+  const audit = auditStatement(db, options.audit, options.now);
   const request = await db
     .prepare("SELECT person_id FROM deletion_requests WHERE id = ?1 AND state = 'requested'")
     .bind(options.id)
@@ -107,16 +115,16 @@ export async function decideDeletion(
       options.reason,
     );
   if (options.decision === "reject") {
-    await db.batch([options.audit, decided]);
+    await db.batch([audit, decided]);
     return { kind: "decided", personId };
   }
 
   const blockers = await erasureBlockers(db, personId);
   const refusal = erasureRefusal(blockers);
   if (refusal !== null) return { kind: "refused", refusal, blockers };
-  const erased = await erasePerson(env, personId, options.now, options.log, [options.audit, decided]);
+  const erased = await erasePerson(env, personId, options.now, options.log, [audit, decided]);
   // Erased already, by the operators' endpoint: the request is done all the same.
-  if (erased === null) await db.batch([options.audit, decided]);
+  if (erased === null) await db.batch([audit, decided]);
   return { kind: "decided", personId };
 }
 

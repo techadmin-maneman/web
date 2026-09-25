@@ -4,13 +4,13 @@
 //   POST /api/number-changes/:id/decision     confirm or reject
 //   GET  /api/deletion-requests               requests waiting for ops
 //   POST /api/deletion-requests/:id/decision  delete (the Phase 1 erasure) or reject
-// Each decision is audited under the member of staff who made it. Ops answer
+// Each decision is audited under the member of staff who made it, in the same batch as the decision. Ops answer
 // all three in the console's own sections (apps/ops/src).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../app.ts";
-import { actorOf, auditStatement, recordAudit, type AuditAction } from "../domain/audit.ts";
+import { actorOf, type AuditAction, type AuditEntry } from "../domain/audit.ts";
 import { decideDeletion, deletionsWaiting } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -141,32 +141,14 @@ function staffOf(c: Context<AppEnv>) {
   return actorOf(identity);
 }
 
-/** A decision's audit entry, to run in one batch with the decision itself. */
+/** A decision's audit entry, which the decision writes in its own batch. */
 function decisionAudit(
   c: Context<AppEnv>,
   action: AuditAction,
   subject: { kind: string; id: string },
   decision: string,
-  now: Date,
-): D1PreparedStatement {
-  return auditStatement(
-    c.env.DB,
-    { surface: "ops", actor: staffOf(c), action, subject, requestId: c.var.requestId, detail: { decision } },
-    now,
-  );
-}
-
-async function auditDecision(
-  c: Context<AppEnv>,
-  action: AuditAction,
-  subject: { kind: string; id: string },
-  decision: string,
-): Promise<void> {
-  await recordAudit(
-    c.env.DB,
-    { surface: "ops", actor: staffOf(c), action, subject, requestId: c.var.requestId, detail: { decision } },
-    c.var.deps.now(),
-  );
+): AuditEntry {
+  return { surface: "ops", actor: staffOf(c), action, subject, requestId: c.var.requestId, detail: { decision } };
 }
 
 export function registerOpsProfile(app: App): void {
@@ -197,11 +179,16 @@ export function registerOpsProfile(app: App): void {
     if (decision === "reject" && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
-    const staff = staffOf(c).id;
-    const outcome = await decideNumberChange(c.env.DB, { id, decision, staff, reason, now: c.var.deps.now() });
+    const outcome = await decideNumberChange(c.env.DB, {
+      id,
+      decision,
+      staff: staffOf(c).id,
+      reason,
+      audit: decisionAudit(c, "number_change.decide", { kind: "number_change", id }, decision),
+      now: c.var.deps.now(),
+    });
     if (outcome === "not_waiting") return c.json(errorBody("not_found", c.var.requestId), 404);
     if (outcome === "number_in_use") return c.json(errorBody("number_in_use", c.var.requestId), 409);
-    await auditDecision(c, "number_change.decide", { kind: "number_change", id }, decision);
     return c.json({ state: decision === "confirm" ? ("confirmed" as const) : ("rejected" as const) }, 200);
   });
 
@@ -234,7 +221,7 @@ export function registerOpsProfile(app: App): void {
       decision,
       staff: staffOf(c).id,
       reason,
-      audit: decisionAudit(c, "deletion.decide", { kind: "deletion", id }, decision, now),
+      audit: decisionAudit(c, "deletion.decide", { kind: "deletion", id }, decision),
       now,
       log: c.var.log,
     });

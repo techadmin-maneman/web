@@ -11,6 +11,7 @@
 
 import type { VisitType } from "../config/visit-types.ts";
 import { canCloseAsNoShow, waitEndsAt, type NoShowDecision, type Waits } from "../policy/no-show.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 
 /** The three facts, and nothing else. */
 export interface NoShowCase {
@@ -157,17 +158,33 @@ export async function listNoShowCases(
   }));
 }
 
-/** Ops charge or waive the visit. Ruled once: a second ruling on the same case changes nothing. */
+/**
+ * Ops charge or waive the visit. Ruled once: a second ruling on the same case changes nothing. The ruling's
+ * audit entry goes in the same batch (src/domain/audit.ts).
+ */
 export async function decideNoShow(
   db: D1Database,
-  input: { caseId: string; decision: Exclude<NoShowDecision, "undecided">; actor: string; now: Date },
+  input: {
+    caseId: string;
+    decision: Exclude<NoShowDecision, "undecided">;
+    actor: string;
+    audit: AuditEntry;
+    now: Date;
+  },
 ): Promise<boolean> {
-  const ruled = await db
-    .prepare(
-      `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4
-       WHERE id = ?1 AND decision = 'undecided' RETURNING id`,
-    )
-    .bind(input.caseId, input.decision, input.actor, input.now.toISOString())
+  const open = await db
+    .prepare("SELECT 1 FROM no_show_cases WHERE id = ?1 AND decision = 'undecided'")
+    .bind(input.caseId)
     .first();
-  return ruled !== null;
+  if (open === null) return false;
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4
+         WHERE id = ?1 AND decision = 'undecided'`,
+      )
+      .bind(input.caseId, input.decision, input.actor, input.now.toISOString()),
+    auditStatement(db, input.audit, input.now),
+  ]);
+  return true;
 }

@@ -6,7 +6,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
-import { actorOf, recordAudit } from "../domain/audit.ts";
+import { actorOf } from "../domain/audit.ts";
 import { decideHeldReferral } from "../domain/referral-grants.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -121,11 +121,12 @@ export function registerOpsReferrals(app: App): void {
     if (identity === undefined) throw new Error("ops routes run after requireAccess");
     const staff = actorOf(identity);
     const now = deps.now();
-    const outcome = await decideHeldReferral(c.env.DB, { id, decision, staff: staff.id, reason, now });
-    if (outcome === null) return c.json(errorBody("not_found", requestId), 404);
-    await recordAudit(
-      c.env.DB,
-      {
+    const outcome = await decideHeldReferral(c.env.DB, {
+      id,
+      decision,
+      staff: staff.id,
+      reason,
+      audit: {
         surface: "ops",
         actor: staff,
         action: "referral.decide",
@@ -134,7 +135,8 @@ export function registerOpsReferrals(app: App): void {
         detail: { decision },
       },
       now,
-    );
+    });
+    if (outcome === null) return c.json(errorBody("not_found", requestId), 404);
     if (outcome.messageId !== null) {
       await c.env.MESSAGE_QUEUE.send({
         message_id: outcome.messageId,

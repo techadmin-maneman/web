@@ -8,6 +8,7 @@ import { indiaDate } from "../lib/india-time.ts";
 import { FRAUD_SIGNALS, REFERRAL_MONTHLY_CAP, type FraudSignal } from "../policy/fraud-holds.ts";
 import { inviteLapsed } from "../policy/invites.ts";
 import { CREDITS_PER_REFERRAL } from "../policy/referral-reward.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 import { clawBack, grantCredits } from "./credits.ts";
 
 export interface Attribution {
@@ -190,29 +191,40 @@ export async function settleReferrals(
 /** Ops' decision on a held grant: approve it, and the credits follow, or reject it with the reason. */
 export async function decideHeldReferral(
   db: D1Database,
-  input: { id: string; decision: "approve" | "reject"; staff: string; reason: string | null; now: Date },
+  input: {
+    id: string;
+    decision: "approve" | "reject";
+    staff: string;
+    reason: string | null;
+    /** Written in the same batch as the decision (src/domain/audit.ts). */
+    audit: AuditEntry;
+    now: Date;
+  },
 ): Promise<{ state: "approved" | "rejected"; messageId: string | null } | null> {
   const row = await db
     .prepare(`${ATTRIBUTION} WHERE r.id = ?1 AND r.grant_state = 'held'`)
     .bind(input.id)
     .first<AttributionRow>();
   if (row === null) return null;
+  const audit = auditStatement(db, input.audit, input.now);
   if (input.decision === "reject") {
-    await db
-      .prepare(
-        `UPDATE referral_attributions SET grant_state = 'rejected', reviewed_by = ?2, review_reason = ?3,
-           reviewed_at = ?4, updated_at = ?4
-         WHERE id = ?1 AND grant_state = 'held'`,
-      )
-      .bind(input.id, input.staff, input.reason, input.now.toISOString())
-      .run();
+    await db.batch([
+      db
+        .prepare(
+          `UPDATE referral_attributions SET grant_state = 'rejected', reviewed_by = ?2, review_reason = ?3,
+             reviewed_at = ?4, updated_at = ?4
+           WHERE id = ?1 AND grant_state = 'held'`,
+        )
+        .bind(input.id, input.staff, input.reason, input.now.toISOString()),
+      audit,
+    ]);
     return { state: "rejected", messageId: null };
   }
   const { statements, messageId } = grantStatements(db, attributionFrom(row), "approved", input.now, {
     staff: input.staff,
     reason: input.reason,
   });
-  await db.batch(statements);
+  await db.batch([...statements, audit]);
   return { state: "approved", messageId };
 }
 
