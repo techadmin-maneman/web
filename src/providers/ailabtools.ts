@@ -9,6 +9,7 @@
 //
 // Endpoint A (hairstyle-editor) is dead (7.1) and never called.
 
+import { z } from "zod";
 import type { Endpoint, Preset } from "../config/presets.ts";
 import { MAX_RESULT_BYTES } from "../config/tryon.ts";
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
@@ -32,14 +33,30 @@ const DOWNLOAD_TIMEOUT_MS = 20_000;
 /** Where a task stands, from the poll response (1). */
 const TASK_DONE = 2;
 
-interface ApiBody {
-  error_code?: unknown;
-  error_msg?: unknown;
-  error_detail?: unknown;
-  task_id?: unknown;
-  task_status?: unknown;
-  data?: unknown;
-}
+/**
+ * What an answer may carry (sections 0 to 4). A field of the wrong kind reads
+ * as absent rather than failing the whole answer, since the error fields are
+ * what says why a call failed.
+ */
+const ApiBody = z.object({
+  error_code: z.union([z.number(), z.string()]).optional().catch(undefined),
+  error_msg: z.unknown().optional(),
+  error_detail: z.unknown().optional(),
+  task_id: z.string().optional().catch(undefined),
+  task_status: z.coerce.number().optional().catch(undefined),
+  data: z.unknown().optional(),
+});
+type ApiBody = z.infer<typeof ApiBody>;
+
+/** A finished task's result: Pro lists its images, Premium names one (0). */
+const ResultData = z.object({
+  images: z.array(z.string()).optional().catch(undefined),
+  image: z.string().optional().catch(undefined),
+});
+
+/** The credit pools, a list or a single one; a balance that is not a number counts as none. */
+const Pool = z.object({ balance: z.coerce.number().catch(0) });
+const Credits = z.object({ data: z.union([z.array(Pool), Pool]).optional() });
 
 export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeof fetch }): ImageProvider {
   const { apiKey, fetch } = options;
@@ -90,10 +107,8 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
       }
 
       const body = await readBody(response);
-      const taskId = body?.task_id;
-      if (response.ok && isSuccess(body) && typeof taskId === "string" && taskId !== "") {
-        return { ok: true, taskId };
-      }
+      const taskId = body?.task_id ?? "";
+      if (response.ok && isSuccess(body) && taskId !== "") return { ok: true, taskId };
       return { ok: false, failure: failure(response.status, body, "submit") };
     },
 
@@ -110,7 +125,7 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
 
       const body = await readBody(response);
       if (!response.ok || !isSuccess(body)) return { state: "failed", failure: failure(response.status, body, "poll") };
-      if (Number(body?.task_status) !== TASK_DONE) return { state: "running" };
+      if (body?.task_status !== TASK_DONE) return { state: "running" };
 
       const resultUrl = resultUrlOf(body, endpoint);
       if (resultUrl === null) {
@@ -162,12 +177,11 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
           headers: authorised,
           signal: AbortSignal.timeout(CREDITS_TIMEOUT_MS),
         });
-        const body = await readBody(response);
-        if (!response.ok || body === null) return null;
-        const pools = Array.isArray(body.data) ? body.data : body.data === undefined ? [] : [body.data];
-        let total = 0;
-        for (const pool of pools as { balance?: unknown }[]) total += Number(pool.balance ?? 0) || 0;
-        return total;
+        const answer = Credits.safeParse(await response.json().catch(() => null));
+        if (!response.ok || !answer.success) return null;
+        const { data } = answer.data;
+        const pools = data === undefined ? [] : Array.isArray(data) ? data : [data];
+        return pools.reduce((total, pool) => total + pool.balance, 0);
       } catch {
         return null;
       }
@@ -205,12 +219,8 @@ function submitForm(
 const unusable = (detail: string): DownloadResult => ({ ok: false, detail, transient: false });
 
 async function readBody(response: Response): Promise<ApiBody | null> {
-  try {
-    const body: unknown = await response.json();
-    return typeof body === "object" && body !== null && !Array.isArray(body) ? body : null;
-  } catch {
-    return null;
-  }
+  const answer = ApiBody.safeParse(await response.json().catch(() => null));
+  return answer.success ? answer.data : null;
 }
 
 /** error_code is 0 (or absent) on success. */
@@ -220,9 +230,11 @@ function isSuccess(body: ApiBody | null): boolean {
 
 /** Pro returns data.images[], Premium data.image (0). */
 function resultUrlOf(body: ApiBody | null, endpoint: Endpoint): string | null {
-  const data = body?.data as { images?: unknown; image?: unknown } | undefined;
-  const url = endpoint === "pro" && Array.isArray(data?.images) ? (data.images[0] as unknown) : data?.image;
-  return typeof url === "string" && url !== "" ? url : null;
+  const result = ResultData.safeParse(body?.data);
+  if (!result.success) return null;
+  const { images, image } = result.data;
+  const url = endpoint === "pro" && images !== undefined ? images[0] : image;
+  return url === undefined || url === "" ? null : url;
 }
 
 /**
