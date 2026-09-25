@@ -251,6 +251,8 @@ export const legalPages = {
 
 export const header = {
   homeLabel: "Mane Man, home",
+  /** What a screen reader calls the header's links. */
+  navLabel: "Sections",
   nav: [
     { label: "What it is", href: "/#what" },
     { label: "Prices", href: "/#prices" },
@@ -299,6 +301,9 @@ export const hero = {
   body: `A technician comes to your home, matches the piece to the hair you already have, and fits it in about ${visitLength.firstFit}.`,
   tryOn: "See yourself with hair",
   book: "Book a free consultation",
+  // Not in v2: the footage loops, so it can be stopped (WCAG 2.2.2). The owner approves the words (open point 85).
+  pause: "Pause the film",
+  play: "Play the film",
 };
 
 export const whatItIs = {
@@ -717,7 +722,7 @@ export const tryOn = {
     preview: "Preview",
     choose: "Choose one to continue",
     generate: "Generate the simulation",
-    // Not in v2: back here once the render has started, when the look can no longer change. Placeholder words.
+    // Not in v2: back here once the render has started, when the look can no longer change. The owner approves the words (open point 85).
     fixed: "Your simulation is being made with this look. Each visitor gets one.",
     continue: "Continue",
   },

@@ -1,7 +1,7 @@
 ---
 // The footer, on the home page only (as v2). The wordmark here is 132 px wide,
 // so it is the display cut (design/brand/README.md); v2 drew the small cut.
-import { footer, phone, whatsapp } from "../content/site.ts";
+import { business, footer, phone, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { whatsappLink } from "../lib/whatsapp.ts";
 
@@ -17,7 +17,7 @@ const showPhone = isShown(phone);
         <svg class="mark" viewBox="0 0 200 217.4" width="38" height="41" aria-hidden="true">
           <use href="#mm"></use>
         </svg>
-        <svg class="word" viewBox="-4 -4 741 108" width="132" height="19" role="img" aria-label="Mane Man">
+        <svg class="word" viewBox="-4 -4 741 108" width="132" height="19" role="img" aria-label={business.name}>
           <use href="#wm"></use>
         </svg>
       </div>

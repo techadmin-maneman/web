@@ -65,9 +65,11 @@ const [standard, premium] = prices.columns;
   .table {
     border-top: var(--hairline) solid var(--text);
   }
+  /* Each row is its own grid, so the first column may not grow to fit its words: then every row's columns agree,
+     and on the narrowest phones a long word breaks rather than pushing the prices off the page. */
   .row {
     display: grid;
-    grid-template-columns: 1fr var(--price-column) var(--price-column);
+    grid-template-columns: minmax(0, 1fr) var(--price-column) var(--price-column);
     align-items: baseline;
     padding: var(--price-row-pad) 0;
     border-bottom: var(--hairline) solid var(--paper-line);
@@ -83,6 +85,8 @@ const [standard, premium] = prices.columns;
   }
   .what {
     padding-right: var(--sp-16);
+    hyphens: auto;
+    overflow-wrap: break-word;
   }
   .name {
     font-size: var(--fs-body);

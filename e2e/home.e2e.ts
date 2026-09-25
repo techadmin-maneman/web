@@ -221,6 +221,55 @@ test.describe("reduced motion", () => {
     await page.waitForTimeout(500);
     expect(await page.locator("[data-hero-video]").evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
+    // Paused already, so the control offers to play it.
+    await expect(page.getByRole("button", { name: "Play the film" })).toBeVisible();
+  });
+});
+
+test.describe("WCAG on the home page", () => {
+  // A11Y-10: looping footage needs a way to stop it (WCAG 2.2.2).
+  test("the hero footage can be paused, and stays paused", async ({ page }) => {
+    await page.goto("/");
+    const video = page.locator("[data-hero-video]");
+    await page.getByRole("button", { name: "Pause the film" }).click();
+    await expect(page.getByRole("button", { name: "Play the film" })).toBeVisible();
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+  });
+
+  // A11Y-02: a link in its sentence's colour must look like a link (WCAG 1.4.1).
+  test("the FAQ's WhatsApp link is underlined", async ({ page }) => {
+    await page.goto("/");
+    const link = page.locator('[data-section="faq"]').getByRole("link", { name: "ask on WhatsApp" });
+    expect(await link.evaluate((element) => getComputedStyle(element).textDecorationLine)).toBe("underline");
+  });
+
+  // A11Y-09: the fixed header and the sticky bar never cover what the keyboard has reached (WCAG 2.4.11).
+  test("a focused link is never under the header or the sticky bar", async ({ page }) => {
+    await page.goto("/");
+    const height = page.viewportSize()?.height ?? 0;
+    for (const name of ["Try-on", "Privacy", "Terms"]) {
+      const link = page.locator("footer").getByRole("link", { name, exact: true });
+      await link.focus();
+      // The page scrolls smoothly; where the link comes to rest is what counts.
+      const clear = async () => {
+        const box = await link.boundingBox();
+        return box !== null && box.y >= 56 && box.y + box.height <= height - 64;
+      };
+      await expect.poll(clear, { message: name }).toBe(true);
+    }
+  });
+
+  // VIS-10, A11Y-03: the prices keep their columns, and the page its width, on a 320 px phone.
+  test("the prices table fits a 320 px screen, its columns in line", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto("/");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    const lefts = await page
+      .locator('[data-section="prices"] [role="row"] > :nth-child(2)')
+      .evaluateAll((cells) => cells.map((cell) => Math.round(cell.getBoundingClientRect().left)));
+    expect(new Set(lefts).size).toBe(1);
   });
 });
 

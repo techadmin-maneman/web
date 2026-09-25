@@ -15,7 +15,7 @@ import { header } from "../content/site.ts";
     </svg>
   </a>
   <div class="right">
-    <nav class="wide-only" aria-label="Sections">
+    <nav class="wide-only" aria-label={header.navLabel}>
       {header.nav.map((link) => (
         <a class="link" href={link.href}>
           {link.label}

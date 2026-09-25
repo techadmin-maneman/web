@@ -18,7 +18,7 @@ The build writes them into the Workers static-assets `_headers` file (`site/src/
   - The R2 endpoint the prompt names is not needed, because the photo goes to the API (ADR 0022, 1).
   - `blob:` images are allowed, for the try-on's photograph and result shown from memory.
   - Cloudflare limits a `_headers` line to 2,000 characters. The policy is about 870 today, and a test fails if the policy with every tag enabled would go past the limit.
-- **HSTS** for a year, without `includeSubDomains` or `preload`. The owner can add both once every subdomain of maneman.in serves HTTPS.
+- **HSTS** for a year, without `includeSubDomains` or `preload`. The owner can add both once every subdomain of maneman.in serves HTTPS. **Changed 25 September 2026:** two years with `includeSubDomains`, as the apps already send it (`packages/web-kit/headers.ts`); every host under maneman.in the platform uses serves HTTPS on Cloudflare's certificate. `preload` stays off, and is the owner's call: once on the browsers' preload list the domain takes months to leave it (`docs/open-points.md`, item 82).
 - **`Referrer-Policy: strict-origin-when-cross-origin`**, and `X-Content-Type-Options: nosniff`.
 - **`Permissions-Policy`.** It turns the camera, microphone and location off everywhere, and allows the camera on `/try` alone, through `_headers`'s `!` detach. Cloudflare's asset server was checked under `wrangler dev`: `/try` gets `camera=(self)` only.
 - **Caching.** Built files under `/_astro/` carry a content hash in their names, so they are cached for a year as immutable.
@@ -76,7 +76,7 @@ axe checks every page and every try-on and booking state at both widths against 
 ### 5. SEO
 
 - **Every page** has a title, a description, a canonical link to production's host, and Open Graph and X card tags. The canonical points to production from every environment.
-- **The shared-link card** (`/og.png`) and the Apple touch icon are drawn from the brand kit at build time: the gilt lockup on ink, and the favicon drawing on ink.
+- **The shared-link card** (`/og.png`) and the Apple touch icon are drawn from the brand kit at build time: the gilt lockup on ink, and the favicon drawing on ink. Since 25 September 2026 so are the tab's icons, as the kit's README asks: PNGs at 16, 32 and 48 px on ink, the 16 in the kit's silhouette cut. The page used to link the 32 px SVG itself, gilt on a transparent ground (2.4:1 on a light tab) and mostly the file's own provenance metadata.
 - **The home page** carries `LocalBusiness` and `FAQPage` structured data, from content. The business entry holds only published facts: the WhatsApp number, the cities the FAQ names, and the price range from the price table.
 - **The 404 page** is `noindex` with no canonical link.
 - **The sitemap** lists the built pages, and production's `robots.txt` points to it.

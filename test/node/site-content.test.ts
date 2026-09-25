@@ -1,7 +1,7 @@
 // The site's content file and the publish gate that guards production.
 
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../site/src/content/design-placeholders.ts";
 import { referral } from "../../site/src/content/referral.ts";
@@ -199,6 +199,26 @@ describe("site helpers", () => {
   it("refuses an unknown build environment", () => {
     expect(siteEnvironment("staging")).toBe("staging");
     expect(() => siteEnvironment(undefined)).toThrow(/MM_ENV must be one of local, staging, production/);
+  });
+
+  // REQ-S3-05: every word a visitor or a screen reader meets is in the content files.
+  it("leaves no label, alternative text or site name written in a component", () => {
+    const components = [
+      "site/src/components",
+      "site/src/components/home",
+      "site/src/layouts",
+      "site/src/islands",
+      "site/src/pages",
+    ].flatMap((dir) =>
+      readdirSync(dir)
+        .filter((name) => /\.(astro|tsx)$/.test(name))
+        .map((name) => `${dir}/${name}`),
+    );
+    for (const path of components) {
+      const text = readFileSync(path, "utf8");
+      expect(text, path).not.toMatch(/\b(aria-label|alt|title|placeholder)="[A-Za-z]/);
+      expect(text, path).not.toMatch(/property="og:(site_name|image:alt)" content="[A-Za-z]/);
+    }
   });
 
   it("keeps the hash-route redirects for links built on v2", () => {

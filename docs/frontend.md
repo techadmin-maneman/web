@@ -74,7 +74,7 @@ The browser tests run the site against a local `mm-api` with stub providers (`pl
 - **Tokens.** Every colour, size and space comes from `tokens.css`, and `test/node/site-tokens.test.ts` fails on a raw value. Media query conditions keep their pixels, since CSS custom properties cannot be used there.
 - **No inline styles.** A component renders no `style` attribute; an island that must move something sets a CSS variable from script instead.
 - **Placeholder tags and `noindex`.** Staging and local show the design's tags and are not indexed. Production shows no tags and is indexed.
-- **Previewing a screen.** Outside production, `?state=` opens any try-on screen (`/try?state=gate`) or booking state (`/book?state=waitlist`), with stand-in images and no API calls. `/try?state=error&kind=busy` shows another error (`renderFailed`, `busy` or `lookLimit`). The screenshots and tests use it.
+- **Previewing a screen.** Outside production, `?state=` opens any try-on screen (`/try?state=gate`) or booking state (`/book?state=listed`), with stand-in images and no API calls. `/try?state=error&kind=busy` shows another error (`renderFailed`, `busy` or `lookLimit`). The screenshots and tests use it.
 - **No photographs of people in tests.** The try-on tests upload a drawn head (`test/node/drawn-head.ts`).
 
 ## Adding the analytics IDs
@@ -95,7 +95,8 @@ The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a G
 
 Production still serves `site/placeholder/production`. To go live:
 
-1. Keep `npm run build:site -- --env production` passing. It has passed since 22 September 2026, when the terms and the phone number were published; `test/node/site-production-gate.test.ts` checks it.
-2. Add production's analytics IDs, and decide on Bot Fight Mode (docs/decisions/0023-launch-hardening.md, 2).
-3. In `site/wrangler.jsonc`, point production's `assets.directory` at `./dist/production`.
-4. In `deploy-production.yml`, build the production site before "Deploy mm-site".
+1. Keep `npm run build:site -- --env production` passing. It has passed since 22 September 2026, when the terms and the phone number were published; `test/node/site-production-gate.test.ts` checks it. **A passing build is not a finished home page:** every placeholder block is left out of it, so today's production home page has no photograph or film at all.
+2. **Look at the production build's home page before going live** (`npm run build:site -- --env production`, then serve `site/dist/production`). Each unpublished block is an open point (`docs/open-points.md`, items 86 to 94): the owner supplies its cleared material, or the section goes. The build ships none of the design's placeholder files, even unlinked, and the gate test checks that too.
+3. Add production's analytics IDs, and decide on Bot Fight Mode (docs/decisions/0023-launch-hardening.md, 2).
+4. In `site/wrangler.jsonc`, point production's `assets.directory` at `./dist/production`.
+5. In `deploy-production.yml`, build the production site before "Deploy mm-site".

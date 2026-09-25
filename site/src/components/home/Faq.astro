@@ -58,8 +58,11 @@ const link = isShown(whatsapp) ? whatsappLink(whatsapp.number) : null;
     color: var(--text-muted);
     text-wrap: pretty;
   }
+  /* The WhatsApp link is in the sentence's own colour, so it is underlined to be seen as a link (WCAG 1.4.1). */
   .intro a {
     color: inherit;
+    text-decoration: underline;
+    text-underline-offset: var(--sp-3);
   }
   .list {
     border-top: var(--hairline) solid var(--text);

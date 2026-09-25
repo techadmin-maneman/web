@@ -81,7 +81,7 @@ export const referral = {
     checking: "Checking",
     invalid: "That is not a six-digit Indian pincode.",
     failed: "We could not check that just now. Try again.",
-    // Not drawn: a pincode typed wrong could only be put right by reloading the page. Placeholder words.
+    // Not drawn: a pincode typed wrong could only be put right by reloading the page. The owner approves the words (open point 85).
     change: "Change",
     changeLabel: "Change the pincode",
   },
@@ -137,7 +137,7 @@ export const referral = {
     free: "free",
     credits: "The 3 service visits land when you are fitted.",
     back: "See the site",
-    // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). Placeholder words.
+    // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 85).
     number: "On WhatsApp to +91 {mobile}",
     calendar: "Add to calendar",
     calendarFile: "mane-man-consultation.ics",
@@ -179,7 +179,7 @@ export const referral = {
     taken: "That window has just gone. Please pick another.",
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
-    // Not drawn: the number already has a consultation to come (ADR 0025, item 41). Placeholder words.
+    // Not drawn: the number already has a consultation to come (ADR 0025, item 41). The owner approves the words (open point 85).
     alreadyBooked: "This number already has a consultation, {when}. To change it, message us on WhatsApp.",
   },
   /**
