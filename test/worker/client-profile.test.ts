@@ -436,7 +436,7 @@ describe("a deletion request", () => {
     expect(await auditActions()).toEqual(["deletion.request"]);
   });
 
-  it("erases the person when ops delete, audited before the erasure", async () => {
+  it("erases the person when ops delete, audited in the same batch as the erasure", async () => {
     await send(client, "POST", "/api/deletion-request");
     const { requests } = await (
       await send(ops, "GET", "/api/deletion-requests")

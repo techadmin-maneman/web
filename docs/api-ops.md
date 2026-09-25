@@ -387,6 +387,14 @@ Request body:
 }
 ```
 
+**409**: visit_booked or payment_held: cancel the visits and refund the payments it names first
+
+```json
+{
+  "$ref": "#/components/schemas/ErasureRefused"
+}
+```
+
 ### GET /api/referrals/held
 
 Referral grants held for review, oldest first
@@ -1561,6 +1569,8 @@ Request body:
             "job_not_claimable",
             "look_limit_reached",
             "unauthorized",
+            "visit_booked",
+            "payment_held",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -2706,6 +2716,115 @@ Request body:
   "required": [
     "decision",
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ErasureRefused
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "visit_booked",
+            "payment_held"
+          ]
+        },
+        "request_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "visits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement",
+              null
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "dispatched",
+              "in_progress"
+            ]
+          },
+          "window_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "window_start"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "payments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In paise."
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "amount"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "error",
+    "visits",
+    "payments"
   ],
   "additionalProperties": false
 }

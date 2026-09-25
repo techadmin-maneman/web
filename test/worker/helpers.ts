@@ -5,6 +5,7 @@ import { createApp, type App } from "../../src/app.ts";
 import { EXPECTED_DATABASE_NAME, type EnvironmentName, type Surface } from "../../src/config/environments.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
+import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/erasure.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createAccessVerifier } from "../../src/http/access.ts";
 import { createLogger } from "../../src/log.ts";
@@ -74,6 +75,12 @@ export const LOCAL_CONFIG: StaticConfig = {
   },
   settings: LOCAL_SETTINGS,
 };
+
+/** Erases whoever has this number, as POST /api/erasure does, without the route's checks. */
+export async function eraseByMobile(mobileE164: string, now: Date = NOW): Promise<ErasureSummary | null> {
+  const personId = await personWithMobile(env.DB, mobileE164);
+  return personId === null ? null : erasePerson(env, personId, now, createLogger());
+}
 
 export async function markDatabase(databaseName: string = EXPECTED_DATABASE_NAME.local): Promise<void> {
   await env.DB.prepare("INSERT INTO deployment_identity (id, database_name) VALUES (1, ?)").bind(databaseName).run();

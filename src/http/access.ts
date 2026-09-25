@@ -16,6 +16,8 @@ export const ACCESS_TOKEN_HEADER = "Cf-Access-Jwt-Assertion";
 const KEY_TTL_MS = 60 * 60 * 1000;
 /** A token naming an unknown key may refetch the keys, but at most once a minute. */
 const UNKNOWN_KEY_REFETCH_MS = 60 * 1000;
+/** Every ops request waits on the keys when they are due, so a slow Access fails it rather than holding it. */
+const KEYS_TIMEOUT_MS = 5_000;
 
 export type AccessIdentity =
   { readonly kind: "staff"; readonly email: string } | { readonly kind: "service"; readonly clientId: string };
@@ -136,7 +138,7 @@ function createKeyCache(url: string, deps: { fetch: typeof fetch; now: () => Dat
   let fetchedAt = Number.NEGATIVE_INFINITY;
 
   async function refresh(): Promise<void> {
-    const res = await deps.fetch(url);
+    const res = await deps.fetch(url, { signal: AbortSignal.timeout(KEYS_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`Access keys answered ${String(res.status)}`);
     const body = await res.json<{ keys?: unknown }>();
     const fresh = new Map<string, CryptoKey>();

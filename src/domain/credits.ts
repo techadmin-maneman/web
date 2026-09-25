@@ -85,6 +85,11 @@ export async function redeemCredit(
 
 /** How many expired grants a pass closes. */
 const EXPIRE_PER_PASS = 20;
+/**
+ * How far back a pass looks for a grant to close. Every grant that ever expired would otherwise be read again on
+ * every five-minute run; a week covers any outage the cron is likely to have.
+ */
+const EXPIRE_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Closes grants past their expiry: an expire entry takes whatever is left, or marks a spent one closed, so each
@@ -96,11 +101,11 @@ export async function expireCredits(db: D1Database, now: Date): Promise<number> 
       `SELECT g.id, g.person_id, g.source_kind, g.source_id,
          g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
        FROM credit_ledger g
-       WHERE g.kind = 'grant' AND g.expires_at <= ?1
+       WHERE g.kind = 'grant' AND g.expires_at <= ?1 AND g.expires_at > ?3
          AND NOT EXISTS (SELECT 1 FROM credit_ledger x WHERE x.grant_id = g.id AND x.kind = 'expire')
        LIMIT ?2`,
     )
-    .bind(now.toISOString(), EXPIRE_PER_PASS)
+    .bind(now.toISOString(), EXPIRE_PER_PASS, new Date(now.getTime() - EXPIRE_LOOKBACK_MS).toISOString())
     .all<{ id: string; person_id: string; source_kind: CreditSource; source_id: string; remaining: number }>();
   if (results.length === 0) return 0;
   await db.batch(

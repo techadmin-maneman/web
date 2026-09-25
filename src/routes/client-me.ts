@@ -1,13 +1,15 @@
 // GET /api/me: the client app's Home card (docs/prompts/phase2-backend.md,
 // "Read endpoints"). A client is fitted once a first fit or a later visit is
 // done (the FSM mirror, docs/decisions/0032-fsm-mirror.md); a lead has a
-// consultation, from the mirror or their Phase 1 booking; else nothing is
-// booked. The next visit comes from the mirror.
+// consultation, from the mirror or from their booking on the site before FSM
+// has it; else nothing is booked. The next visit comes from the mirror.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
-import { WINDOW_LABELS, windowLabel, type VisitWindow } from "../config/booking.ts";
+import { WINDOW_LABELS, type VisitWindow, type WindowLabel } from "../config/booking.ts";
+import { BOOKING_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
+import { askedWindowOf } from "../domain/asked-windows.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
@@ -29,7 +31,15 @@ export const MeSchema = z
     consultation: z
       .object({
         date: z.iso.date(),
-        window_label: z.enum(WINDOW_LABELS),
+        window: z.enum(BOOKING_WINDOWS).openapi({ description: "The window the client asked for." }),
+        window_label: z
+          .enum(WINDOW_LABELS)
+          .nullable()
+          .openapi({
+            description:
+              "Deprecated: read `window`. The window in the Phase 1 booked page's words; null for the afternoon, " +
+              "which Phase 1 had no words for.",
+          }),
         place: z.string().openapi({
           description: "Where it is: the saved address (locality, city and pincode), else the booking's city.",
         }),
@@ -38,7 +48,7 @@ export const MeSchema = z
       .nullable()
       .openapi({
         description:
-          "A Phase 1 booking's proposed consultation, to be confirmed on WhatsApp. Null once the mirror has the visit.",
+          "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit.",
       }),
     next_visit: z
       .union([VisitSummarySchema, z.null()])
@@ -58,6 +68,34 @@ export const MeSchema = z
   })
   .strict()
   .openapi("Me");
+
+/** The words the Phase 1 booked page had for a window. It had none for the afternoon. */
+const PHASE1_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
+
+type Booking = { proposed_visit_date: string; first_choice_window: VisitWindow | null; city: string | null };
+
+/**
+ * The window a booking asked for. A Phase 1 lead carries its own rough choice.
+ * A booking from the site's form carries none: its window is on the slot it
+ * held or, while self-serve booking is off, on the request ops confirm
+ * (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+ */
+async function windowAskedFor(db: D1Database, personId: string, booking: Booking): Promise<BookingWindow | null> {
+  if (booking.first_choice_window !== null) return askedWindowOf(booking.first_choice_window);
+  const asked = await db
+    .prepare(
+      `SELECT asked FROM (
+         SELECT requested_window AS asked, created_at FROM consultation_requests
+         WHERE person_id = ?1 AND requested_date = ?2
+         UNION ALL
+         SELECT window_label AS asked, created_at FROM slot_holds
+         WHERE person_id = ?1 AND date = ?2 AND type = 'consultation'
+       ) ORDER BY created_at DESC LIMIT 1`,
+    )
+    .bind(personId, booking.proposed_visit_date)
+    .first<{ asked: BookingWindow }>();
+  return asked?.asked ?? null;
+}
 
 export const meRoute = createRoute({
   method: "get",
@@ -92,14 +130,18 @@ export function registerClientMe(app: App): void {
          WHERE person_id = ?1 AND proposed_visit_date IS NOT NULL ORDER BY created_at DESC LIMIT 1`,
       )
       .bind(session.subjectId)
-      .first<{ proposed_visit_date: string; first_choice_window: VisitWindow; city: string | null }>();
-    // A Phase 1 booking's proposal stands only until FSM has any visit for the person.
+      .first<Booking>();
+    // A booking's proposal stands only until FSM has any visit for the person.
     const inFsm =
       (await db
         .prepare("SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL LIMIT 1")
         .bind(session.subjectId)
         .first()) !== null;
     const proposal = inFsm ? null : booking;
+    const window = proposal === null ? null : await windowAskedFor(db, session.subjectId, proposal);
+    if (proposal !== null && window === null) {
+      c.var.log.warn("consultation_window_unknown", { person_id: session.subjectId });
+    }
     const address = proposal === null ? null : await currentAddress(db, session.subjectId);
     const place = address === null ? (booking?.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
 
@@ -110,9 +152,9 @@ export function registerClientMe(app: App): void {
         first_name: person.name.trim().split(/\s+/)[0] ?? "",
         initials: initialsOf(person.name),
         consultation:
-          proposal === null
+          proposal === null || window === null
             ? null
-            : { date: proposal.proposed_visit_date, window_label: windowLabel(proposal.first_choice_window), place },
+            : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
         next_visit: upcoming,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         prompt: null,

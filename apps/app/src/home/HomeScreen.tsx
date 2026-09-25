@@ -1,6 +1,6 @@
 // Home (boards B1 and B2). The next visit from FSM: a consultation as B2
 // draws it, with what to expect, and any other visit as B1 draws it, with its
-// technician. A Phase 1 booking's consultation, not yet in FSM, shows as B2.
+// technician. A booking's consultation, not yet in FSM, shows as B2.
 // While self-serve booking is on, Reschedule opens the move sheet (C7), from
 // which the visit can be cancelled (C8). Until then, Reschedule, Add a note and
 // Book open WhatsApp to ops with a message ready (docs/prompts/phase2-backend.md,
@@ -11,7 +11,7 @@
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { Me, VisitSummary } from "../api.ts";
-import { BOOKING_URL, home, messages, PHASE1_WINDOWS, VISIT_TYPES, windowText, type WindowLabel } from "../content.ts";
+import { BOOKING_URL, home, messages, VISIT_TYPES, windowText, type WindowLabel } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
 import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { firstName, visitName } from "../lib/visit.ts";
@@ -47,16 +47,8 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   }
   if (visit !== null) return <NextVisit visit={visit} offline={offline} />;
   if (me.consultation !== null) {
-    const { date, window_label, place } = me.consultation;
-    return (
-      <Consultation
-        date={date}
-        window={PHASE1_WINDOWS[window_label] ?? "morning"}
-        place={place}
-        offline={offline}
-        changing={null}
-      />
-    );
+    const { date, place } = me.consultation;
+    return <Consultation date={date} window={me.consultation.window} place={place} offline={offline} changing={null} />;
   }
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext me={me} />;
   return <NothingBooked me={me} offline={offline} />;
@@ -129,7 +121,7 @@ function Consultation(props: {
   window: WindowLabel;
   place: string;
   offline: boolean;
-  /** Null for a Phase 1 booking's consultation, not yet in FSM: ops move it. */
+  /** Null for a booking's consultation, not yet in FSM: ops move it. */
   changing: ChangingVisit | null;
 }) {
   const date = shortDate(props.date);

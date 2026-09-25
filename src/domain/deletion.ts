@@ -2,7 +2,10 @@
 // Ops process it, and processing is the erasure Phase 1 already has
 // (docs/decisions/0019-erasure.md): photographs, results and details, the same day.
 
-import { erasePerson, type ErasureEnv } from "./erasure.ts";
+import type { Logger } from "../log.ts";
+import { erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
+import { erasePerson, erasureBlockers, type ErasureBlockers, type ErasureEnv } from "./erasure.ts";
 
 export type DeletionState = "requested" | "done" | "rejected";
 
@@ -13,19 +16,25 @@ export interface DeletionRequest {
   readonly createdAt: string;
 }
 
-/** The client's open request, or a new one: asking twice makes no second request. */
+/**
+ * The client's open request, or a new one, recorded with its audit entry: asking
+ * twice makes no second request.
+ */
 export async function requestDeletion(
   db: D1Database,
   personId: string,
   now: Date,
+  audit: AuditEntry,
 ): Promise<{ request: DeletionRequest; created: boolean }> {
   const open = await openDeletion(db, personId);
   if (open !== null) return { request: open, created: false };
   const id = crypto.randomUUID();
-  await db
-    .prepare("INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES (?1, ?2, ?3, 'requested')")
-    .bind(id, personId, now.toISOString())
-    .run();
+  await db.batch([
+    db
+      .prepare("INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES (?1, ?2, ?3, 'requested')")
+      .bind(id, personId, now.toISOString()),
+    auditStatement(db, { ...audit, subject: { kind: "deletion", id } }, now),
+  ]);
   return { request: { id, personId, state: "requested", createdAt: now.toISOString() }, created: true };
 }
 
@@ -60,23 +69,40 @@ export async function deletionsWaiting(
   }));
 }
 
-/** Ops' decision: "delete" erases the person at once; "reject" keeps them, with the reason. */
+export type DeletionOutcome =
+  | { readonly kind: "decided"; readonly personId: string }
+  | { readonly kind: "not_waiting" }
+  | { readonly kind: "refused"; readonly refusal: ErasureRefusal; readonly blockers: ErasureBlockers };
+
+/**
+ * Ops' decision: "delete" erases the person at once; "reject" keeps them, with
+ * the reason. The decision's audit entry and the request's new state go in the
+ * erasure's own batch, so a decision is recorded only if it happened. Deleting
+ * is refused while the person has a visit booked or a payment held
+ * (src/policy/account-deletion.ts), and the request waits.
+ */
 export async function decideDeletion(
   env: ErasureEnv,
-  options: { id: string; decision: "delete" | "reject"; staff: string; reason: string | null; now: Date },
-): Promise<"decided" | "not_waiting"> {
+  options: {
+    id: string;
+    decision: "delete" | "reject";
+    staff: string;
+    reason: string | null;
+    audit: AuditEntry;
+    now: Date;
+    log: Logger;
+  },
+): Promise<DeletionOutcome> {
   const db = env.DB;
+  const audit = auditStatement(db, options.audit, options.now);
   const request = await db
-    .prepare(
-      `SELECT d.person_id, p.mobile_e164 FROM deletion_requests d JOIN people p ON p.id = d.person_id
-       WHERE d.id = ?1 AND d.state = 'requested'`,
-    )
+    .prepare("SELECT person_id FROM deletion_requests WHERE id = ?1 AND state = 'requested'")
     .bind(options.id)
-    .first<{ person_id: string; mobile_e164: string }>();
-  if (request === null) return "not_waiting";
+    .first<{ person_id: string }>();
+  if (request === null) return { kind: "not_waiting" };
+  const personId = request.person_id;
 
-  if (options.decision === "delete") await erasePerson(env, request.mobile_e164, options.now);
-  await db
+  const decided = db
     .prepare(
       `UPDATE deletion_requests SET state = ?2, decided_at = ?3, decided_by = ?4, reason = ?5
        WHERE id = ?1 AND state = 'requested'`,
@@ -87,9 +113,19 @@ export async function decideDeletion(
       options.now.toISOString(),
       options.staff,
       options.reason,
-    )
-    .run();
-  return "decided";
+    );
+  if (options.decision === "reject") {
+    await db.batch([audit, decided]);
+    return { kind: "decided", personId };
+  }
+
+  const blockers = await erasureBlockers(db, personId);
+  const refusal = erasureRefusal(blockers);
+  if (refusal !== null) return { kind: "refused", refusal, blockers };
+  const erased = await erasePerson(env, personId, options.now, options.log, [audit, decided]);
+  // Erased already, by the operators' endpoint: the request is done all the same.
+  if (erased === null) await db.batch([audit, decided]);
+  return { kind: "decided", personId };
 }
 
 /** Ops are told when a request has waited this long, so it is processed within its 7 days. */

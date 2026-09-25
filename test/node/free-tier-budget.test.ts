@@ -4,7 +4,10 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  CRON_READ_SHARE,
+  cronRowsReadPerDay,
   FREE_TIER,
+  HEADROOM,
   overBudget,
   PHASE_2_ALLOWANCE,
   photoRunwayVisits,
@@ -62,6 +65,18 @@ describe("free-tier budget", () => {
     ]);
     const tooManyReads = worstCaseUsage([staging, { ...production, resultReadDaily: 300_000 }]);
     expect(overBudget(tooManyReads)).toEqual([expect.stringMatching(/^R2 Class B/) as string]);
+  });
+
+  it("keeps the cron's reads, busy on every run, inside its share of D1's daily reads", () => {
+    // 288 runs of 5,100 rows: about 1.5 million of the 5 million, leaving requests the rest of the 80%.
+    expect(cronRowsReadPerDay()).toBe(1_468_800);
+    expect(cronRowsReadPerDay()).toBeLessThanOrEqual(FREE_TIER.d1RowsReadPerDay * CRON_READ_SHARE);
+    expect(CRON_READ_SHARE).toBeLessThan(HEADROOM);
+  });
+
+  it("fails when a run would read far more, as one reading a whole table would", () => {
+    // Every try-on job ever made, read on each run: the sweep's photo check before its index.
+    expect(cronRowsReadPerDay(29_000)).toBeGreaterThan(FREE_TIER.d1RowsReadPerDay * CRON_READ_SHARE);
   });
 
   it("reads the allowances Cloudflare publishes", () => {

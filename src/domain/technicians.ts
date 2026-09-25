@@ -9,6 +9,7 @@
 
 import { sha256Hex, secretsMatch } from "../lib/hash.ts";
 import { attemptsLeft, CODE_TTL_MS, ONE_TIME_CODE } from "../policy/one-time-code.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 import { codeHashOf } from "./login.ts";
 import { SESSION_TTL_MS } from "./sessions.ts";
 
@@ -219,40 +220,41 @@ export async function touchDevice(db: D1Database, deviceRowId: string, now: Date
 
 /**
  * Ops revoke a phone: its session ends, and the row records that the device was
- * told to drop its cached jobs the next time it called. Null when there is no
+ * told to drop its cached jobs the next time it called. The revoke's audit
+ * entry goes in the same batch (src/domain/audit.ts). Null when there is no
  * such device of that technician's.
  */
 export async function revokeDevice(
   db: D1Database,
-  options: { technicianId: string; deviceId: string; actor: string; now: Date },
+  options: { technicianId: string; deviceId: string; actor: string; audit: AuditEntry; now: Date },
 ): Promise<TechnicianDevice | null> {
   const at = options.now.toISOString();
   const device = await db
-    .prepare(
-      `UPDATE technician_devices SET revoked_at = COALESCE(revoked_at, ?3), revoked_by = COALESCE(revoked_by, ?4)
-       WHERE technician_id = ?1 AND device_id = ?2
-       RETURNING id, technician_id, device_id, session_id, revoked_at`,
-    )
-    .bind(options.technicianId, options.deviceId, at, options.actor)
-    .first<{
-      id: string;
-      technician_id: string;
-      device_id: string;
-      session_id: string | null;
-      revoked_at: string | null;
-    }>();
+    .prepare("SELECT id, session_id, revoked_at FROM technician_devices WHERE technician_id = ?1 AND device_id = ?2")
+    .bind(options.technicianId, options.deviceId)
+    .first<{ id: string; session_id: string | null; revoked_at: string | null }>();
   if (device === null) return null;
-  if (device.session_id !== null) {
-    await db
-      .prepare("UPDATE sessions SET revoked_at = COALESCE(revoked_at, ?2) WHERE id = ?1")
-      .bind(device.session_id, at)
-      .run();
-  }
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE technician_devices SET revoked_at = COALESCE(revoked_at, ?2), revoked_by = COALESCE(revoked_by, ?3)
+         WHERE id = ?1`,
+      )
+      .bind(device.id, at, options.actor),
+    ...(device.session_id === null
+      ? []
+      : [
+          db
+            .prepare("UPDATE sessions SET revoked_at = COALESCE(revoked_at, ?2) WHERE id = ?1")
+            .bind(device.session_id, at),
+        ]),
+    auditStatement(db, options.audit, options.now),
+  ]);
   return {
     id: device.id,
-    technicianId: device.technician_id,
-    deviceId: device.device_id,
-    revokedAt: device.revoked_at,
+    technicianId: options.technicianId,
+    deviceId: options.deviceId,
+    revokedAt: device.revoked_at ?? at,
   };
 }
 

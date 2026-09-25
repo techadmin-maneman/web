@@ -7,7 +7,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
-import { recordAudit } from "../domain/audit.ts";
+import { auditStatementIfWritten, recordAudit } from "../domain/audit.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 
@@ -61,6 +61,19 @@ export function registerClientData(app: App): void {
     if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
     const db = c.env.DB;
     const id = session.subjectId;
+    const now = c.var.deps.now();
+    // Written before anything is read: an export the log could not record is not given.
+    await recordAudit(
+      db,
+      {
+        surface: "client",
+        actor: { kind: "client", id },
+        action: "data.export",
+        subject: { kind: "person", id },
+        requestId: c.var.requestId,
+      },
+      now,
+    );
     const all = (sql: string) =>
       db
         .prepare(sql)
@@ -97,18 +110,6 @@ export function registerClientData(app: App): void {
         all("SELECT text, state, response, created_at FROM grievances WHERE person_id = ?1 ORDER BY created_at"),
         all("SELECT state, created_at FROM tryon_jobs WHERE person_id = ?1 ORDER BY created_at"),
       ]);
-    const now = c.var.deps.now();
-    await recordAudit(
-      db,
-      {
-        surface: "client",
-        actor: { kind: "client", id },
-        action: "data.export",
-        subject: { kind: "person", id },
-        requestId: c.var.requestId,
-      },
-      now,
-    );
     return c.json(
       {
         exported_at: now.toISOString(),
@@ -140,16 +141,30 @@ export function registerClientData(app: App): void {
     // concern however many times Send is tapped, and each row ops see carries its own answer-time
     // clock. The write settles it rather than a read before it, so two requests in the same moment
     // cannot both find nothing and both record one (ADR 0058).
-    const raised = await db
-      .prepare(
-        `INSERT INTO grievances (id, person_id, text, state, created_at)
-         SELECT ?1, ?2, ?3, 'open', ?4
-         WHERE NOT EXISTS (SELECT 1 FROM grievances WHERE person_id = ?2 AND text = ?3 AND state = 'open')
-         RETURNING id`,
-      )
-      .bind(id, session.subjectId, text, now.toISOString())
-      .first<string>("id");
-    if (raised === null) {
+    const [raised] = await db.batch([
+      db
+        .prepare(
+          `INSERT INTO grievances (id, person_id, text, state, created_at)
+           SELECT ?1, ?2, ?3, 'open', ?4
+           WHERE NOT EXISTS (SELECT 1 FROM grievances WHERE person_id = ?2 AND text = ?3 AND state = 'open')
+           RETURNING id`,
+        )
+        .bind(id, session.subjectId, text, now.toISOString()),
+      // Recorded only if the grievance above was, in the same batch (src/domain/audit.ts).
+      auditStatementIfWritten(
+        db,
+        {
+          surface: "client",
+          actor: { kind: "client", id: session.subjectId },
+          action: "grievance.raise",
+          subject: { kind: "grievance", id },
+          requestId: c.var.requestId,
+        },
+        now,
+        { table: "grievances", id },
+      ),
+    ]);
+    if (raised?.results.length !== 1) {
       // The tap that recorded nothing answers with the grievance the other raised, so both name
       // one concern and ops are alerted about it once.
       const already = await db
@@ -158,17 +173,6 @@ export function registerClientData(app: App): void {
         .first<string>("id");
       return c.json({ id: already ?? id, state: "open" as const }, 201);
     }
-    await recordAudit(
-      db,
-      {
-        surface: "client",
-        actor: { kind: "client", id: session.subjectId },
-        action: "grievance.raise",
-        subject: { kind: "grievance", id },
-        requestId: c.var.requestId,
-      },
-      now,
-    );
     // The alert names the grievance, never its words or the person.
     await c.var.deps.alert(`A client raised grievance ${id}; answer it in the ops console.`);
     return c.json({ id, state: "open" as const }, 201);

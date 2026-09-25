@@ -7,7 +7,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
-import { actorOf, recordAudit } from "../domain/audit.ts";
+import { actorOf } from "../domain/audit.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../domain/waitlist.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -149,8 +149,18 @@ export function registerOpsWaitlist(app: App): void {
     }
     const identity = c.var.accessIdentity;
     if (identity === undefined) throw new Error("ops routes run after requireAccess");
-    const staff = actorOf(identity);
-    const { alerts } = await launchPincode(db, { pincode: pin, launchOn: launchOn ?? indiaDate(now), now });
+    const { alerts } = await launchPincode(db, {
+      pincode: pin,
+      launchOn: launchOn ?? indiaDate(now),
+      audit: {
+        surface: "ops",
+        actor: actorOf(identity),
+        action: "pincode.launch",
+        subject: { kind: "pincode", id: pin },
+        requestId: c.var.requestId,
+      },
+      now,
+    });
     if (alerts.length > 0) {
       await c.env.MESSAGE_QUEUE.sendBatch(
         alerts.map((alert) => ({
@@ -159,18 +169,6 @@ export function registerOpsWaitlist(app: App): void {
         })),
       );
     }
-    await recordAudit(
-      db,
-      {
-        surface: "ops",
-        actor: staff,
-        action: "pincode.launch",
-        subject: { kind: "pincode", id: pin },
-        requestId: c.var.requestId,
-        detail: { alerts: alerts.length },
-      },
-      now,
-    );
     const waiting = await launchPreview(db, pin);
     return c.json({ pincode: pin, waiting: waiting.waiting, alerts: alerts.length, launched: true }, 200);
   });

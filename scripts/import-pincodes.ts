@@ -12,6 +12,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EXPECTED_DATABASE_NAME, isEnvironmentName } from "../src/config/environments.ts";
+import { indiaInstant } from "../src/lib/india-time.ts";
 import { areaOf, fields } from "./lib/pincodes.ts";
 
 const [environment, flag, allServedFrom] = process.argv.slice(2);
@@ -36,8 +37,9 @@ const values = lines.map((line) => {
   const city = at(row, "city");
   const served = allServedFrom === undefined ? at(row, "served").toLowerCase() === "yes" : true;
   const launchOn = allServedFrom ?? (at(row, "launch_on") || null);
-  // Midnight in India on the day, as an instant, like every other time in the database.
-  const launchedAt = launchOn === null ? null : new Date(`${launchOn}T00:00:00+05:30`).toISOString();
+  // Midnight in India on the day, as an instant, like every other time in the database. It is read
+  // back as India's date (src/domain/service-area.ts), never by cutting the UTC string.
+  const launchedAt = launchOn === null ? null : indiaInstant(launchOn, "00:00").toISOString();
   return `(${quote(pincode)}, ${quote(areaOf(at(row, "office_names"), city))}, ${quote(city)}, ${served ? "1" : "0"}, ${quote(launchedAt)})`;
 });
 

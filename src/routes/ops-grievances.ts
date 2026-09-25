@@ -5,7 +5,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
-import { actorOf, recordAudit } from "../domain/audit.ts";
+import { actorOf, auditStatement } from "../domain/audit.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
@@ -88,24 +88,29 @@ export function registerOpsGrievances(app: App): void {
     if (identity === undefined) throw new Error("ops routes run after requireAccess");
     const staff = actorOf(identity);
     const now = c.var.deps.now();
-    const closed = await c.env.DB.prepare(
-      `UPDATE grievances SET state = 'resolved', response = ?2, resolved_by = ?3, resolved_at = ?4
-       WHERE id = ?1 AND state = 'open' RETURNING id`,
-    )
-      .bind(id, c.req.valid("json").response, staff.id, now.toISOString())
-      .first();
-    if (closed === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    await recordAudit(
-      c.env.DB,
-      {
-        surface: "ops",
-        actor: staff,
-        action: "grievance.resolve",
-        subject: { kind: "grievance", id },
-        requestId: c.var.requestId,
-      },
-      now,
-    );
+    const db = c.env.DB;
+    const open = await db.prepare("SELECT 1 FROM grievances WHERE id = ?1 AND state = 'open'").bind(id).first();
+    if (open === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    // The answer and its audit entry, together or not at all (src/domain/audit.ts).
+    await db.batch([
+      db
+        .prepare(
+          `UPDATE grievances SET state = 'resolved', response = ?2, resolved_by = ?3, resolved_at = ?4
+           WHERE id = ?1 AND state = 'open'`,
+        )
+        .bind(id, c.req.valid("json").response, staff.id, now.toISOString()),
+      auditStatement(
+        db,
+        {
+          surface: "ops",
+          actor: staff,
+          action: "grievance.resolve",
+          subject: { kind: "grievance", id },
+          requestId: c.var.requestId,
+        },
+        now,
+      ),
+    ]);
     return c.json({ state: "resolved" as const }, 200);
   });
 }

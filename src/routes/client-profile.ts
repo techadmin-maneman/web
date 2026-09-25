@@ -14,7 +14,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../app.ts";
-import { auditStatement, recordAudit, type AuditEntry } from "../domain/audit.ts";
+import { auditStatement, type AuditEntry } from "../domain/audit.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { openDeletion, requestDeletion } from "../domain/deletion.ts";
 import { openNumberChange, startNumberChange, verifyNumberChange, type NumberChange } from "../domain/number-change.ts";
@@ -488,17 +488,10 @@ export function registerClientProfile(app: App): void {
       personId,
       newMobileE164: newMobile,
       pepper: config.settings.login.codePepper,
+      audit: audit(personId, requestId, { action: "number_change.request" }),
       now,
       fixedCode: config.settings.login.fixedCode,
     });
-    await recordAudit(
-      db,
-      audit(personId, requestId, {
-        action: "number_change.request",
-        subject: { kind: "number_change", id: started.change.id },
-      }),
-      now,
-    );
     await sendCodeAfterResponse(c, current, "whatsapp", started.codes.old.code);
     await sendCodeAfterResponse(c, newMobile, "whatsapp", started.codes.new.code);
     const expiresIn = Math.round((started.codes.new.challenge.expiresAt.getTime() - now.getTime()) / 1000);
@@ -527,14 +520,12 @@ export function registerClientProfile(app: App): void {
   app.openapi(deletionRoute, async (c) => {
     const personId = c.var.clientSession?.subjectId ?? "";
     const now = c.var.deps.now();
-    const { request, created } = await requestDeletion(c.env.DB, personId, now);
-    if (created) {
-      await recordAudit(
-        c.env.DB,
-        audit(personId, c.var.requestId, { action: "deletion.request", subject: { kind: "deletion", id: request.id } }),
-        now,
-      );
-    }
+    const { request } = await requestDeletion(
+      c.env.DB,
+      personId,
+      now,
+      audit(personId, c.var.requestId, { action: "deletion.request" }),
+    );
     return c.json({ state: "requested" as const, requested_at: request.createdAt }, 202);
   });
 }

@@ -533,6 +533,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description visit_booked or payment_held: cancel the visits and refund the payments it names first */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErasureRefused"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -2001,7 +2010,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -2268,6 +2277,28 @@ export interface components {
             decision: "confirm" | "reject";
             /** @description Required to reject; kept with the decision. */
             reason: string | null;
+        };
+        ErasureRefused: {
+            error: {
+                /** @enum {string} */
+                code: "visit_booked" | "payment_held";
+                request_id: string;
+            };
+            visits: {
+                id: string;
+                /** @enum {string|null} */
+                type: "consultation" | "first_fit" | "service" | "replacement" | null;
+                /** @enum {string} */
+                status: "scheduled" | "dispatched" | "in_progress";
+                /** Format: date-time */
+                window_start: string | null;
+            }[];
+            payments: {
+                id: string;
+                reference: string | null;
+                /** @description In paise. */
+                amount: number;
+            }[];
         };
         DeletionDecision: {
             /** @enum {string} */
