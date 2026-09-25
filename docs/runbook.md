@@ -405,6 +405,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    - **The workflow rule.** Setup → Automation → Workflow Rules → Service Appointments → New Rule:
      - when a record is created or edited, and when it is deleted;
      - action: the webhook.
+   - **The deletion's own webhook.** A deleted appointment keeps the modified time of its last edit, so its hint reads as a repeat of that edit and is dropped. Make a second webhook like the first, with a fourth parameter `event` of value `delete`, and a second workflow rule that runs it when a record is deleted; take deletion out of the first rule. Until this is done, the reconciliation still finds a deletion: each run reads two upcoming visits afresh, the longest unread first, so an upcoming visit deleted in FSM leaves the mirror within a few hours rather than the next night.
    - **On staging,** the hooks path already has the Access bypass (step 12, point 3).
 
 7. **The refund account.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"). Refunds need the account Books pays them from, which must be a bank account: Books refuses Undeposited Funds.

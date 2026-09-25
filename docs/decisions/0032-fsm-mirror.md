@@ -61,7 +61,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 - **Webhooks are hints.**
   - FSM's workflow rule posts the appointment's ID and modified time to `POST /api/hooks/fsm/<token>`, as JSON or a form.
   - FSM does not sign webhooks, so the secret is in the URL, as Evolution's is. Without `FSM_WEBHOOK_TOKEN` the route answers 404.
-  - Each hint is kept once in `webhook_inbox`. FSM sends no event ID, so a repeat is the same record at the same modified time.
+  - Each hint is kept once in `webhook_inbox`. FSM sends no event ID, so a repeat is the same record at the same modified time, for the same event where the rule names one (`event`, amended 25 September 2026: a deletion keeps its last edit's modified time, and was dropped as that edit's repeat; runbook, step 11b).
   - The hint goes on the `fsm-sync` queue, whose consumer reads the appointment afresh.
   - A failed read is retried after 30 s, 1, 2 and 4 minutes; the fifth failure alerts, and the reconciliation picks it up.
 - **The queue fits the Phase 2 budget** (ADR 0039): 2,000 queue operations a day for FSM hints and messages.
@@ -72,6 +72,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcile-fsm.ts`, migration 0012). It runs with the sweeper on the existing five-minute cron, and adds no cron of its own. It only puts appointments on the `fsm-sync` queue: the consumer reads them afresh, as it does for a webhook.
 
 - **Every run** reads the first page of FSM's appointments, the 50 changed most recently, and queues each whose copy is missing or older than FSM's. A missed webhook is repaired within five minutes.
+- **Every run also** queues two upcoming visits, the ones read longest ago, so that an appointment deleted in FSM, which is on no page, leaves the mirror within hours rather than the next night (added 25 September 2026, audit finding INT-09). The consumer's read costs FSM about 580 calls a day.
 - **Overnight,** from 1 am to 5 am India time, it also walks the whole list, one page a run, and marks each copy it sees.
 - **At the end of the pass,** it queues every copy the pass did not see, 50 a run. FSM may have deleted those; the consumer marks them gone if it did.
 - **Then it alerts once** if the pass repaired anything. A copy less than 10 minutes behind FSM does not count, since its webhook may still be on the way.

@@ -371,6 +371,16 @@ describe("FSM's webhook", () => {
     expect([...first.queue.sent, ...again.queue.sent]).toHaveLength(1);
   });
 
+  // A deleted appointment keeps the modified time of its last edit, so without its event the hint is a repeat.
+  it("takes a deletion sent at the last edit's modified time, since it names its event, and a repeat of it once", async () => {
+    const queue = fakeQueue();
+    await hook(hint, "application/json", TOKEN, connected, queue).response;
+    const deleted = JSON.stringify({ ...(JSON.parse(hint) as object), event: "delete" });
+    await hook(deleted, "application/json", TOKEN, connected, queue).response;
+    await hook(deleted, "application/json", TOKEN, connected, queue).response;
+    expect(queue.sent).toHaveLength(2);
+  });
+
   it("reads the hint from the query string, as FSM sends it, with an empty form body", async () => {
     // As a delivery from FSM arrived on staging on 22 September 2026.
     const query = "?modified_time=2026-09-22+05%3A41%3A09&module=Service_Appointments&id=ap-1";
