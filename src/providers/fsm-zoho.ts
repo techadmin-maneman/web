@@ -22,7 +22,7 @@
 //   GET  /fsm/v1/Assets?contact=                                 { data: [asset] }, or 204: the client's pieces
 //   POST /fsm/v1/Assets                                          an asset needs a Product; our label is Asset_Number
 //   PUT  /fsm/v1/Assets/{id}                                     the piece's status, when one fails
-//   PUT  /fsm/v1/Service_Appointments/{id}                       the technician, and the job's own fields
+//   PUT  /fsm/v1/Service_Appointments/{id}                       the technician, read back after; the job's own fields
 //   GET  /fsm/v1/Service_Appointments/{id}/actions/blueprint/transitions
 //   PUT  /fsm/v1/Service_Appointments/{id}/actions/blueprint     start, close or terminate, with its mandatory note
 //   POST /fsm/v1/files                                           multipart; answers { data: { file_id } }
@@ -516,11 +516,19 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
     },
 
     // The times must go through /actions/reschedule, but the resources are a plain field edit.
+    // A plain edit of the times answers "record updated" and changes nothing (the trial), and
+    // this one has never been tried with a second technician, so it is read back: the mirror
+    // takes the first resource as the lead, so that is the one checked.
     async assignVisit(appointmentId, technicianId) {
-      await request("assign", `/fsm/v1/Service_Appointments/${appointmentId}`, {
+      const path = `/Service_Appointments/${appointmentId}`;
+      await request("assign", `/fsm/v1${path}`, {
         method: "PUT",
         body: { data: [{ $Service_Resources: [technicianId] }] },
       });
+      const [record] = records(await json("assign_check", path), "data", Appointment);
+      if (record?.$Service_Resources?.[0]?.id !== technicianId) {
+        throw new ZohoError(200, "NOT_ASSIGNED", "FSM answered the reassignment and kept the appointment's technician");
+      }
     },
 
     async appointmentTransitions(appointmentId) {

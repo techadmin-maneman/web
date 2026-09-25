@@ -370,7 +370,10 @@ export interface paths {
             parameters: {
                 query?: never;
                 header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
                     "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
                 };
                 path: {
                     id: string;
@@ -419,7 +422,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -450,7 +453,10 @@ export interface paths {
             parameters: {
                 query?: never;
                 header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
                     "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
                 };
                 path: {
                     id: string;
@@ -495,7 +501,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -658,7 +664,10 @@ export interface paths {
             parameters: {
                 query?: never;
                 header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
                     "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
                 };
                 path: {
                     id: string;
@@ -738,7 +747,10 @@ export interface paths {
             parameters: {
                 query?: never;
                 header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
                     "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
                 };
                 path: {
                     id: string;
@@ -818,7 +830,10 @@ export interface paths {
             parameters: {
                 query?: never;
                 header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
                     "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
                 };
                 path: {
                     id: string;
@@ -898,7 +913,10 @@ export interface paths {
             parameters: {
                 query?: never;
                 header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
                     "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
                 };
                 path: {
                     id: string;
@@ -978,7 +996,10 @@ export interface paths {
             parameters: {
                 query?: never;
                 header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
                     "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
                 };
                 path: {
                     id: string;
@@ -1058,7 +1079,10 @@ export interface paths {
             parameters: {
                 query?: never;
                 header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
                     "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
                 };
                 path: {
                     id: string;
@@ -1103,7 +1127,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1193,7 +1217,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -1279,10 +1303,10 @@ export interface components {
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /**
-             * @description No response to a technician carries an amount.
+             * @description Free for a visit the price book charges nothing for. No response to a technician carries an amount.
              * @enum {string}
              */
-            badge: "prepaid" | "credit";
+            badge: "prepaid" | "credit" | "free";
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
@@ -1292,6 +1316,11 @@ export interface components {
             address: {
                 line1: string;
                 line2: string | null;
+                building: string | null;
+                tower: string | null;
+                floor: string | null;
+                flat: string | null;
+                landmark: string | null;
                 locality: string;
                 city: string;
                 pincode: string;
@@ -1316,6 +1345,10 @@ export interface components {
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;
+            /** @description When the job may close as a no-show, from the check-in we hold; null before one landed. */
+            wait_ends_at: string | null;
+            /** @description How far from the address that check-in was; null when nothing could be measured. */
+            distance_m: number | null;
             started_at: string | null;
             steps_done: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome")[];
             outcome: string | null;
@@ -1345,7 +1378,7 @@ export interface components {
             accuracy_m?: number | null;
             /**
              * Format: date-time
-             * @description The phone's clock; ours is used when it is left out.
+             * @description The phone's clock, kept within bounds and never later than we received it; left out, the event ID's time, else ours.
              */
             at?: string;
         };
@@ -1374,12 +1407,17 @@ export interface components {
                 quantity: number;
             }[];
         };
-        /** @description A failure_reason marks the piece that came off as failed. */
+        /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
         PieceRequest: {
             piece_code: string;
             base?: string | null;
             supplier_lot?: string | null;
             failure_reason?: string | null;
+            /** @description On a replacement: the piece that came off, and why it failed. */
+            old_piece?: {
+                piece_code: string;
+                failure_reason: string;
+            } | null;
         };
         OutcomeRequest: {
             /** @enum {string} */

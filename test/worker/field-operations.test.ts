@@ -11,11 +11,18 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
 import type { App } from "../../src/app.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubFsm, EMPTY_FSM, STUB_TRANSITIONS, type StubFsm } from "../../src/providers/fsm.ts";
+import {
+  createStubFsm,
+  EMPTY_FSM,
+  STUB_TRANSITIONS,
+  type FsmAppointment,
+  type StubFsm,
+} from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
@@ -43,9 +50,30 @@ let fsm: StubFsm;
 let fsmQueue: ReturnType<typeof fakeQueue>;
 let messageQueue: ReturnType<typeof fakeQueue>;
 let cookie: string;
+/** How many of the queued FSM writes runFsmQueue has delivered. */
+let delivered: number;
+
+/** An appointment as FSM holds it, with only what the stub's transitions read. */
+const fsmAppointment = (id: string, status = "Scheduled"): FsmAppointment => ({
+  id,
+  name: `AP-${id}`,
+  status,
+  workOrderId: `wo-${id}`,
+  contactId: "contact-1",
+  scheduledStart: null,
+  scheduledEnd: null,
+  actualStart: null,
+  actualEnd: null,
+  technicianIds: ["resource-1"],
+  serviceIds: [],
+  serviceCity: "Gurgaon",
+  servicePincode: "122018",
+  modifiedAt: "2026-09-21T12:00:00+05:30",
+});
 
 const world = () => ({
   ...EMPTY_FSM,
+  appointments: [fsmAppointment("ap-today"), fsmAppointment("ap-later"), fsmAppointment("ap-other")],
   items: [{ id: "part-standard", name: "Standard base", type: "Part" as const }],
 });
 
@@ -76,6 +104,7 @@ beforeEach(async () => {
   await markDatabase();
   fsm = createStubFsm(world());
   fsmQueue = fakeQueue();
+  delivered = 0;
   messageQueue = fakeQueue();
   deps = fakeDependencies({ fsm });
   tech = appFor("local", deps, {}, "tech");
@@ -148,6 +177,31 @@ const opsPost = (path: string, body: unknown) =>
     bindings(),
   );
 
+/** A write that reaches the API at `at`, as a phone replaying its outbox from a basement does. */
+const postAt = (at: Date, path: string, body: unknown, eventId: string, headers: Record<string, string> = {}) =>
+  request(
+    appFor("local", fakeDependencies({ fsm, now: () => at }), {}, "tech"),
+    path,
+    {
+      method: "POST",
+      headers: {
+        Cookie: cookie,
+        Origin: "https://maneman.test",
+        "Content-Type": "application/json",
+        "X-Client-Event-Id": eventId,
+        ...headers,
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    },
+    bindings(),
+  );
+
+/** Today's job starts at 13:00 in India. */
+const TODAY_START = new Date("2026-09-21T07:30:00.000Z");
+const minutesAfterStart = (minutes: number) => new Date(TODAY_START.getTime() + minutes * 60_000);
+/** The event ID the app makes for a write queued that many minutes after the start. */
+const uuidv7At = (minutes: number) => uuidv7(minutesAfterStart(minutes).getTime());
+
 /** Checks in at the door and starts the job, which every later step needs. */
 async function startJob(): Promise<void> {
   await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
@@ -190,6 +244,38 @@ describe("the day's jobs", () => {
       access_notes: "Gate 4417, visitor bay B",
       client: { name: "Rohit Malhotra", mobile: "+919810000001" },
     });
+  });
+
+  it("gives the whole address the client saved: building, tower, floor, flat and landmark", async () => {
+    await env.DB.prepare(
+      `UPDATE addresses SET building = 'Emerald Heights', tower = 'C', floor = '14', flat = '1402',
+         landmark = 'Opposite the water tank' WHERE id = 'addr-1'`,
+    ).run();
+
+    const job = await (await get(`/api/tech/jobs/${TODAY_JOB}`)).json<{ address: Record<string, unknown> }>();
+
+    expect(job.address).toMatchObject({
+      line1: "House 7",
+      building: "Emerald Heights",
+      tower: "C",
+      floor: "14",
+      flat: "1402",
+      landmark: "Opposite the water tank",
+    });
+  });
+
+  it("marks a visit the price book charges nothing for as free, still with no amount", async () => {
+    await insertJob(OTHER_JOB, { fsmId: "ap-other", start: "2026-09-21T10:30:00.000Z", type: "consultation" });
+
+    const answer = await get("/api/tech/jobs?date=2026-09-21");
+    const body = await answer.text();
+
+    const { jobs } = JSON.parse(body) as { jobs: { id: string; badge: string }[] };
+    expect(jobs.map(({ id, badge }) => ({ id, badge }))).toEqual([
+      { id: TODAY_JOB, badge: "prepaid" },
+      { id: OTHER_JOB, badge: "free" },
+    ]);
+    expect(body).not.toMatch(/amount|price|rupee|"paise"/i);
   });
 
   it("carries a badge and never an amount", async () => {
@@ -235,6 +321,94 @@ describe("checking in", () => {
     expect(body.distance_m).toBeLessThan(200);
     // Fifteen minutes from the check-in.
     expect(body.wait_ends_at).toBe(new Date(NOW.getTime() + 15 * 60_000).toISOString());
+  });
+
+  it("gives the card the wait and the distance, so a phone that lost its copy can still close a no-show", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    const job = await (
+      await get(`/api/tech/jobs/${TODAY_JOB}`)
+    ).json<{
+      progress: { wait_ends_at: string | null; distance_m: number | null };
+    }>();
+    expect(job.progress.wait_ends_at).toBe(new Date(NOW.getTime() + 15 * 60_000).toISOString());
+    expect(job.progress.distance_m).toBeLessThan(200);
+  });
+
+  it("refuses a check-in on a day other than the job's own", async () => {
+    const answer = await post(`/api/tech/jobs/${LATER_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_today" } });
+    const landed = await env.DB.prepare("SELECT COUNT(*) AS n FROM job_events WHERE appointment_id = ?1")
+      .bind(LATER_JOB)
+      .first<{ n: number }>();
+    expect(landed?.n).toBe(0);
+  });
+});
+
+// A check-in's time is the evidence a no-show is charged on, and the phone's
+// clock is the technician's to set (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
+describe("the phone's clock", () => {
+  it("keeps a back-dated check-in's claim, bounds it, and runs the no-show wait on our clock too", async () => {
+    // Ten minutes after the booked start, the phone says he arrived three hours ago.
+    const received = minutesAfterStart(10);
+    const claimed = minutesAfterStart(-180);
+    const answer = await postAt(
+      received,
+      `/api/tech/jobs/${TODAY_JOB}/checkin`,
+      { ...AT_THE_DOOR, at: claimed.toISOString() },
+      "event-checkin-01",
+    );
+    const body = await answer.json<{ checked_in_at: string; wait_ends_at: string }>();
+
+    // No earlier than an hour before the booked start; the wait ends fifteen minutes after we heard.
+    expect(body.checked_in_at).toBe(minutesAfterStart(-60).toISOString());
+    expect(body.wait_ends_at).toBe(minutesAfterStart(25).toISOString());
+
+    const early = await postAt(minutesAfterStart(11), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    expect(early.status).toBe(425);
+    const closed = await postAt(minutesAfterStart(25), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    expect(closed.status).toBe(200);
+
+    const { cases } = await (
+      await request(ops, "/api/no-shows", {}, bindings())
+    ).json<{
+      cases: Record<string, unknown>[];
+    }>();
+    expect(cases[0]).toMatchObject({
+      checked_in_at: minutesAfterStart(-60).toISOString(),
+      phone_checked_in_at: claimed.toISOString(),
+      received_at: received.toISOString(),
+      window_start: TODAY_START.toISOString(),
+      window_end: minutesAfterStart(90).toISOString(),
+      minutes_late: -60,
+      wait_ends_at: minutesAfterStart(25).toISOString(),
+    });
+  });
+
+  it("keeps the phone's times for a job worked offline and replayed at once, so its duration is real", async () => {
+    // Worked from 13:05 to 14:20 with no signal, and sent at 14:30 in one go.
+    const replayedAt = minutesAfterStart(90);
+    const steps: [string, unknown, number][] = [
+      ["checkin", AT_THE_DOOR, 2],
+      ["start", undefined, 5],
+      ["photos", { phase: "before" }, 10],
+      ["checklist", { done: ["piece_removed"] }, 40],
+      ["consumables", { items: [] }, 45],
+      ["photos", { phase: "after" }, 75],
+      ["outcome", { outcome: "done" }, 80],
+    ];
+    for (const [step, body, minute] of steps) {
+      const answer = await postAt(replayedAt, `/api/tech/jobs/${TODAY_JOB}/${step}`, body, uuidv7At(minute));
+      expect(answer.status).toBeLessThan(300);
+    }
+
+    await runFsmQueue();
+    const fields = fsm.made.appointmentUpdates.map((update) => update.fields);
+    expect(fields).toContainEqual({ Actual_Start_Date_Time: "2026-09-21T13:05:00+05:30" });
+    expect(fields.at(-1)?.Actual_End_Date_Time).toBe("2026-09-21T14:20:00+05:30");
+    expect(fsm.made.transitioned.at(-1)?.note).toContain("Duration 75 minutes");
   });
 });
 
@@ -282,6 +456,33 @@ describe("the outbox", () => {
       "SELECT superseded, fsm_write_state FROM job_events WHERE event_id = 'event-late-01'",
     ).first<{ superseded: number; fsm_write_state: string }>();
     expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected" });
+  });
+
+  it("rejects a write as superseded once ops have moved the job to another time", async () => {
+    const heldStart = TODAY_START.toISOString();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    // Ops move it to 16:00 while the phone is offline, still holding 13:00.
+    await env.DB.prepare("UPDATE appointments SET window_start = ?2 WHERE id = ?1")
+      .bind(TODAY_JOB, minutesAfterStart(180).toISOString())
+      .run();
+
+    const answer = await postAt(NOW, `/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01", {
+      "X-Job-Starts-At": heldStart,
+    });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "superseded", fields: ["time"] } });
+  });
+
+  it("refuses a check-in on a job moved to another day, even from a phone that does not say what it held", async () => {
+    await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-22T07:30:00.000Z' WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .run();
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_today" } });
   });
 });
 
@@ -361,9 +562,70 @@ describe("closing the job", () => {
     expect(fsm.made.transitioned.at(-1)?.note).toMatch(/Duration \d+ minutes/);
   });
 
+  // The org calls starting and closing a job "Start Work" and "Complete Work"
+  // (docs/verification.md, both staging runs of 23 September 2026). The stub
+  // offers each only from the status FSM offers it from, so a wrong name fails here.
+  it("closes a job as done in FSM with the org's own transitions", async () => {
+    await startJob();
+    await beforePhotos();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: ["piece_removed"] }, "event-checklist-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+
+    await runFsmQueue();
+    expect(fsm.made.transitioned.map(({ name }) => name)).toEqual(["Dispatch", "Start Work", "Complete Work"]);
+    expect((await fsm.appointment("ap-today"))?.status).toBe("Completed");
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+  });
+
+  it("moves the mirror as FSM takes each step, without waiting for FSM's webhook", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    await runFsmQueue();
+    expect(await mirrorStatusOf(TODAY_JOB)).toEqual({ status: "dispatched", fsm_status: "Dispatched" });
+
+    await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+    await beforePhotos();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: [] }, "event-checklist-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    await runFsmQueue();
+    expect(await mirrorStatusOf(TODAY_JOB)).toEqual({ status: "completed", fsm_status: "Completed" });
+  });
+
+  it("does not count a step as written when FSM refuses its transition, and alerts after the last attempt", async () => {
+    // Ops cancelled the job in FSM's own screen; the mirror has not heard yet.
+    await fsm.transitionAppointment("ap-today", "Cancel", "Cancelled by ops.");
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    const eventId = await eventRowId("event-checkin-01");
+
+    const first = batchOf(eventId, 1);
+    await handleFsmSyncBatch(first as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    expect(first.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
+    expect(await writeStateOf(eventId)).toBe("pending");
+
+    const fifth = batchOf(eventId, 5);
+    await handleFsmSyncBatch(fifth as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    expect(await writeStateOf(eventId)).toBe("rejected");
+    expect(deps.alerts).toEqual([expect.stringMatching(/check_in did not reach FSM after 5 attempts/)]);
+  });
+
+  it("counts a step FSM has already taken as written, when ops moved the job in FSM first", async () => {
+    await startJob();
+    // Ops dispatched and started it in FSM's own screen before the phone's writes arrived.
+    await fsm.transitionAppointment("ap-today", "Dispatch", "Dispatched by ops.");
+    await fsm.transitionAppointment("ap-today", "Start Work", "Started by ops.");
+
+    await runFsmQueue();
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+    expect(deps.alerts).toEqual([]);
+  });
+
   it("retries an FSM write that failed, and leaves the technician's work on the record", async () => {
     await startJob();
     await beforePhotos();
+    await runFsmQueue();
     fsm.failNext("updateAppointment", "FSM said 500");
 
     await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: ["piece_removed"] }, "event-checklist-01");
@@ -382,7 +644,9 @@ describe("closing the job", () => {
   });
 
   it("gives up after five attempts, alerts, and keeps the event", async () => {
-    await startJob();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    await runFsmQueue();
+    await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
     const eventId = await eventRowId("event-start-01");
     fsm.failNext("updateAppointment", "FSM said 500");
 
@@ -392,6 +656,159 @@ describe("closing the job", () => {
     expect(fifth.messages[0]?.ack).toHaveBeenCalled();
     expect(await writeStateOf(eventId)).toBe("rejected");
     expect(deps.alerts).toEqual([expect.stringMatching(/did not reach FSM after 5 attempts/)]);
+  });
+});
+
+// "A job's writes reach FSM in the order the technician made them" (ADR 0053).
+// Each write is its own message and a failed one is retried later, so the
+// order holds only if a write waits for the ones before it.
+describe("the order a job reaches FSM in", () => {
+  /** Every step of a service job after the before photographs, closed as done. */
+  async function finishJob(): Promise<void> {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: ["piece_removed"] }, "event-checklist-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+  }
+
+  it("holds a job's close back while an earlier step is retried, then writes the rest in order", async () => {
+    await startJob();
+    await beforePhotos();
+    await runFsmQueue();
+    await finishJob();
+    fsm.failNext("updateAppointment", "FSM said 500");
+
+    // The checklist fails; every step after it waits rather than overtaking it.
+    await runFsmQueue();
+    expect(fsm.made.transitioned.map(({ name }) => name)).toEqual(["Dispatch", "Start Work"]);
+    expect(await writeStateOf(await eventRowId("event-outcome-01"))).toBe("pending");
+
+    // Its retry lands, and each write sends the next one on.
+    const retried = batchOf(await eventRowId("event-checklist-01"), 2);
+    await handleFsmSyncBatch(retried as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    await runFsmQueue();
+    expect(fsm.made.transitioned.map(({ name }) => name)).toEqual(["Dispatch", "Start Work", "Complete Work"]);
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+  });
+
+  it("closes nothing in FSM after a step it gave up on, and names what is left to enter by hand", async () => {
+    await startJob();
+    await beforePhotos();
+    await runFsmQueue();
+    await finishJob();
+    fsm.failNext("updateAppointment", "FSM said 500");
+    await runFsmQueue();
+
+    const last = batchOf(await eventRowId("event-checklist-01"), 5);
+    fsm.failNext("updateAppointment", "FSM said 500");
+    await handleFsmSyncBatch(last as unknown as MessageBatch, queueEnv(), deps, createLogger());
+
+    expect(fsm.made.transitioned.map(({ name }) => name)).not.toContain("Complete Work");
+    expect(await writeStateOf(await eventRowId("event-outcome-01"))).toBe("rejected");
+    expect(deps.alerts).toEqual([
+      expect.stringMatching(/checklist did not reach FSM after 5 attempts.*consumables, after_photos, outcome/),
+    ]);
+  });
+});
+
+// A replacement: the old piece comes off, failed, and a new one goes on.
+describe("the piece", () => {
+  const REPLACEMENT = OTHER_JOB;
+
+  beforeEach(async () => {
+    await insertJob(REPLACEMENT, { fsmId: "ap-other", start: TODAY_START.toISOString(), type: "replacement" });
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-old', 'asset-old', ?1, 'MM-STD-4417-B', 'Standard base', '2026-03-25', '2026-09-21', ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+  });
+
+  /** Every step of the replacement up to the piece, worked from 13:02, and replayed the next morning. */
+  async function upToThePiece(at: Date): Promise<void> {
+    const steps: [string, unknown, number][] = [
+      ["checkin", AT_THE_DOOR, 2],
+      ["start", undefined, 5],
+      ["photos", { phase: "before" }, 10],
+      ["checklist", { done: [] }, 30],
+      ["consumables", { items: [{ name: "Adhesive", quantity: 2 }] }, 40],
+    ];
+    for (const [step, body, minute] of steps) {
+      const answer = await postAt(at, `/api/tech/jobs/${REPLACEMENT}/${step}`, body, uuidv7At(minute));
+      expect(answer.status).toBeLessThan(300);
+    }
+  }
+
+  it("records the new piece with its base and lot, and the old one as failed with its reason, in FSM first", async () => {
+    // Sent at 9 am the next day; the piece went on at 23:40 on the visit's day.
+    const nextMorning = new Date("2026-09-22T03:30:00.000Z");
+    await upToThePiece(nextMorning);
+    const answer = await postAt(
+      nextMorning,
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      {
+        piece_code: "MM-STD-5520-A",
+        base: "Standard base",
+        supplier_lot: "LOT-2026-09",
+        old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "Adhesive lifted at the front" },
+      },
+      uuidv7At(610),
+    );
+    expect(answer.status).toBe(202);
+
+    await runFsmQueue();
+    expect(fsm.made.assets).toEqual([
+      {
+        contactId: "contact-1",
+        assetNumber: "MM-STD-5520-A",
+        productId: "part-standard",
+        serialNumber: "LOT-2026-09",
+        installedAt: "2026-09-21",
+      },
+    ]);
+    expect(fsm.made.assetUpdates).toEqual([{ assetId: "asset-old", status: "Inactive" }]);
+    // The reason reaches FSM too, on the job's summary, not only our copy.
+    expect(fsm.made.appointmentUpdates.at(-1)?.fields.Summary).toContain(
+      "Piece off: MM-STD-4417-B (Adhesive lifted at the front)",
+    );
+
+    const pieces = await env.DB.prepare(
+      "SELECT piece_code, fitted_at, replacement_due_at, failure_reason FROM pieces ORDER BY piece_code",
+    ).all();
+    expect(pieces.results).toEqual([
+      {
+        piece_code: "MM-STD-4417-B",
+        fitted_at: "2026-03-25",
+        replacement_due_at: "2026-09-21",
+        failure_reason: "Adhesive lifted at the front",
+      },
+      // Fitted on the 21st in India, whatever day the write arrived; due 180 days on.
+      { piece_code: "MM-STD-5520-A", fitted_at: "2026-09-21", replacement_due_at: "2027-03-20", failure_reason: null },
+    ]);
+  });
+
+  it("refuses a label that is not a piece's, for the old piece as for the new", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    const answer = await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", old_piece: { piece_code: "MM-STD-4417 B", failure_reason: "Torn" } },
+      uuidv7At(50),
+    );
+
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["old_piece"] } });
+  });
+
+  it("keeps what was used, with quantities, where ops can count stock", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    await runFsmQueue();
+
+    const used = await env.DB.prepare("SELECT name, quantity FROM consumables_used WHERE appointment_id = ?1")
+      .bind(REPLACEMENT)
+      .all();
+    expect(used.results).toEqual([{ name: "Adhesive", quantity: 2 }]);
   });
 });
 
@@ -455,9 +872,20 @@ describe("the no-show", () => {
     expect(after?.decided_by).not.toBe("");
   });
 
+  it("is refused once the job has started, and opens no case", async () => {
+    await startJob();
+
+    const answer = await postAt(minutesAfterStart(0), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "already_started" } });
+    const cases = await env.DB.prepare("SELECT COUNT(*) AS n FROM no_show_cases").first<{ n: number }>();
+    expect(cases?.n).toBe(0);
+  });
+
   // ADR 0036: "An address with no coordinates cannot be measured against ... It is
-  // never silently treated as a pass at zero metres." checkins.distance_m is NOT
-  // NULL, so the row stores 0 and names no address; ops must be given the second.
+  // never silently treated as a pass at zero metres." The row names no address and
+  // holds no distance (migration 0035), where it once held a filler 0.
   it("carries no distance when the address had no coordinates to measure against", async () => {
     await env.DB.prepare("UPDATE addresses SET lat = NULL, lng = NULL WHERE id = 'addr-1'").run();
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
@@ -477,8 +905,8 @@ describe("the no-show", () => {
 
     const row = await env.DB.prepare("SELECT address_id, distance_m FROM checkins WHERE appointment_id = ?1")
       .bind(TODAY_JOB)
-      .first<{ address_id: string | null; distance_m: number }>();
-    expect(row).toMatchObject({ address_id: null, distance_m: 0 });
+      .first<{ address_id: string | null; distance_m: number | null }>();
+    expect(row).toMatchObject({ address_id: null, distance_m: null });
 
     const body = await (await request(ops, "/api/no-shows", {}, bindings())).text();
     const cases = (JSON.parse(body) as { cases: { distance_m: number | null }[] }).cases;
@@ -486,6 +914,34 @@ describe("the no-show", () => {
     expect(cases[0]?.distance_m).toBeNull();
     // The 0 in the column must not reach ops as fact two under any spelling.
     expect(body).not.toContain('"distance_m":0');
+  });
+});
+
+describe("dispatch, when FSM keeps its own technician", () => {
+  it("moves nothing, tells the client nothing, and records why", async () => {
+    // What the provider throws when its read-back finds the old technician still on the job.
+    fsm.failNext("assignVisit", "FSM answered the reassignment and kept the appointment's technician");
+
+    const answer = await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      technician_id: SAMEER,
+      reason: "zone_rebalance",
+    });
+
+    expect(answer.status).toBe(502);
+    const job = await env.DB.prepare("SELECT technician_id FROM appointments WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .first<{ technician_id: string }>();
+    expect(job?.technician_id).toBe(IMRAN);
+    expect(messageQueue.sent).toEqual([]);
+    const move = await env.DB.prepare("SELECT fsm_write_state, fsm_error FROM dispatch_moves").first<{
+      fsm_write_state: string;
+      fsm_error: string;
+    }>();
+    expect(move).toEqual({
+      fsm_write_state: "rejected",
+      fsm_error: "FSM answered the reassignment and kept the appointment's technician",
+    });
   });
 });
 
@@ -730,10 +1186,14 @@ function batchOf(jobEventId: string, attempts: number) {
   };
 }
 
-/** Runs every FSM write the routes queued, in the order they were queued. */
+/**
+ * Delivers every FSM write queued since the last call, in the order it was
+ * queued, including those the consumer itself sends on. A retry is left for
+ * the test to deliver.
+ */
 async function runFsmQueue(): Promise<void> {
-  for (const message of [...fsmQueue.sent]) {
-    const body = message as { job_event_id?: string };
+  for (; delivered < fsmQueue.sent.length; delivered += 1) {
+    const body = fsmQueue.sent[delivered] as { job_event_id?: string };
     if (body.job_event_id === undefined) continue;
     const batch = batchOf(body.job_event_id, 1);
     await handleFsmSyncBatch(batch as unknown as MessageBatch, queueEnv(), deps, createLogger());
@@ -754,7 +1214,27 @@ async function writeStateOf(id: string): Promise<string> {
   return row?.fsm_write_state ?? "";
 }
 
-it("offers the transitions the trial found, so the stub matches FSM", () => {
-  expect(STUB_TRANSITIONS).toContain("Dispatch");
-  expect(STUB_TRANSITIONS).toContain("Terminate");
+async function mirrorStatusOf(appointmentId: string) {
+  return env.DB.prepare("SELECT status, fsm_status FROM appointments WHERE id = ?1")
+    .bind(appointmentId)
+    .first<{ status: string; fsm_status: string }>();
+}
+
+/** The distinct write states of a job's events. */
+async function writeStatesOf(appointmentId: string): Promise<string[]> {
+  const { results } = await env.DB.prepare(
+    "SELECT DISTINCT fsm_write_state AS state FROM job_events WHERE appointment_id = ?1 ORDER BY state",
+  )
+    .bind(appointmentId)
+    .all<{ state: string }>();
+  return results.map((row) => row.state);
+}
+
+it("offers what the org offers from each status, by the org's own names", () => {
+  // The trial, from Scheduled (docs/decisions/fsm-trial.md, question 7).
+  expect(STUB_TRANSITIONS.Scheduled).toEqual(["Dispatch", "Reschedule", "Cancel", "Terminate"]);
+  // The staging runs (docs/verification.md): Dispatch, then Start Work, then Complete Work.
+  expect(STUB_TRANSITIONS.Dispatched).toContain("Start Work");
+  expect(STUB_TRANSITIONS["In Progress"]).toContain("Complete Work");
+  expect(STUB_TRANSITIONS.Completed).toBeUndefined();
 });

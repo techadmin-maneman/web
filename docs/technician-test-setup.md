@@ -128,7 +128,7 @@ Work down this list. Most of it you can check yourself.
 
 The three jobs are rows in our own database with no Zoho record behind them, so **every step you take will fail to reach FSM**. That is expected and nothing is lost: the step is recorded in `job_events` and the app carries on as if nothing happened.
 
-What it does mean is that about seven minutes after each step, ops get an alert reading **"A technician's `start` did not reach FSM after 5 attempts: … Enter it in FSM by hand."** — one per step, so roughly six over a job. **Ignore them for this test**, and tell whoever watches the alert channel that you are running it. They stop as soon as you stop tapping.
+What it does mean is that a job's steps reach FSM in order, each waiting for the one before it (ADR 0065), and the first never gets there. About seven minutes after the check-in, ops get an alert reading **"A technician's `check_in` did not reach FSM after 5 attempts: … Enter it in FSM by hand, with what came after it and was held back: …"**, naming the steps already waiting behind it; each step you take after that alerts as it arrives, **"A technician's `checklist` was not sent to FSM, because the `check_in` before it did not reach FSM."** — roughly six over a job. **Ignore them for this test**, and tell whoever watches the alert channel that you are running it. They stop as soon as you stop tapping.
 
 ---
 

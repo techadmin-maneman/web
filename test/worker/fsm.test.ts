@@ -272,6 +272,63 @@ describe("FSM: moving and cancelling a visit", () => {
     });
   });
 
+  it("puts an appointment on another technician, and reads it back to be sure FSM did", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/ap-1`]: (call) =>
+        call.method === "PUT"
+          ? json({ data: [{ code: "SUCCESS", message: "record updated" }] })
+          : json({ data: [fsmAppointmentRecord({ $Service_Resources: [{ id: "sr-2" }] })] }),
+    });
+    await provider.assignVisit("ap-1", "sr-2");
+    expect(JSON.parse(calls[1]?.body ?? "null")).toEqual({ data: [{ $Service_Resources: ["sr-2"] }] });
+    expect(calls[2]?.method).toBe("GET");
+  });
+
+  // A plain edit of an appointment's times answers "record updated" and changes
+  // nothing (docs/decisions/fsm-trial.md, question 7); the technician is a plain
+  // edit too, and has never been tried with a second technician.
+  it("refuses a reassignment FSM answered but did not make", async () => {
+    const { fsm: provider } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/ap-1`]: (call) =>
+        call.method === "PUT"
+          ? json({ data: [{ code: "SUCCESS", message: "record updated" }] })
+          : json({ data: [fsmAppointmentRecord()] }),
+    });
+    await expect(provider.assignVisit("ap-1", "sr-2")).rejects.toThrow(/kept the appointment's technician/);
+  });
+
+  it("starts a job by the appointment's own Start Work, by its ID, with the note FSM requires", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/ap-1/actions/blueprint/transitions`]: () =>
+        json({
+          code: "SUCCESS",
+          transitions: [
+            { id: "tr-start", name: "Start Work" },
+            { id: "tr-terminate", name: "Terminate" },
+          ],
+        }),
+      [`${FSM_API}/Service_Appointments/ap-1/actions/blueprint`]: () =>
+        json({ code: "SUCCESS", message: "record updated" }),
+    });
+    expect(await provider.transitionAppointment("ap-1", "Start Work", "Job started.")).toBe(true);
+    expect(JSON.parse(calls[2]?.body ?? "null")).toEqual({
+      blueprint: [{ transition_id: "tr-start", data: { Notes: "Job started." } }],
+    });
+  });
+
+  it("answers false, and moves nothing, for a transition the appointment does not offer", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/ap-1/actions/blueprint/transitions`]: () =>
+        json({ code: "SUCCESS", transitions: [{ id: "tr-dispatch", name: "Dispatch" }] }),
+    });
+    expect(await provider.transitionAppointment("ap-1", "Complete Work", "Outcome: done.")).toBe(false);
+    expect(calls).toHaveLength(2);
+  });
+
   it("answers false when the work order offers no Cancel, as a closed one does", async () => {
     const { fsm: provider, calls } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),

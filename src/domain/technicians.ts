@@ -117,6 +117,11 @@ export interface TechnicianDevice {
   readonly revokedAt: string | null;
 }
 
+/** A session's phone, and whether FSM still lists its technician as active. */
+export interface SessionDevice extends TechnicianDevice {
+  readonly technicianActive: boolean;
+}
+
 /**
  * Opens a session bound to one phone: the session row, and the device row that
  * names it. A fresh login on the same phone reuses its row and lets the old
@@ -184,15 +189,24 @@ export async function signedInTechnician(
     : { name: row.name, deviceId: row.device_id, label: row.label, enrolledAt: row.created_at };
 }
 
-/** The device a live session belongs to, revoked or not. */
-export async function deviceOfSession(db: D1Database, sessionId: string): Promise<TechnicianDevice | null> {
+/** The device a live session belongs to, revoked or not, with whether its technician is still active. */
+export async function deviceOfSession(db: D1Database, sessionId: string): Promise<SessionDevice | null> {
   const row = await db
-    .prepare("SELECT id, technician_id, device_id, revoked_at FROM technician_devices WHERE session_id = ?1")
+    .prepare(
+      `SELECT d.id, d.technician_id, d.device_id, d.revoked_at, t.active FROM technician_devices d
+       JOIN technicians t ON t.id = d.technician_id
+       WHERE d.session_id = ?1`,
+    )
     .bind(sessionId)
-    .first<{ id: string; technician_id: string; device_id: string; revoked_at: string | null }>();
-  return row === null
-    ? null
-    : { id: row.id, technicianId: row.technician_id, deviceId: row.device_id, revokedAt: row.revoked_at };
+    .first<{ id: string; technician_id: string; device_id: string; revoked_at: string | null; active: number }>();
+  if (row === null) return null;
+  return {
+    id: row.id,
+    technicianId: row.technician_id,
+    deviceId: row.device_id,
+    revokedAt: row.revoked_at,
+    technicianActive: row.active === 1,
+  };
 }
 
 /** Moves the device's last-seen time on; hourly, like the session's own expiry. */
