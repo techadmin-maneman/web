@@ -8,8 +8,10 @@ import { defineConfig, type Plugin } from "vite";
 import { serviceWorker } from "./sw-build.ts";
 
 const environment = process.env.MM_ENV ?? "local";
+/** The commit built, which scripts/lib/spa-build.ts passes in and the smoke tests compare with the deploy's. */
+const version = process.env.MM_VERSION ?? "unversioned";
 
-/** Names the Worker and the environment in the page, as the public site does, for the smoke tests. */
+/** Names the Worker, the environment and the commit in the page, for the smoke tests (scripts/lib/smoke.ts). */
 const identify: Plugin = {
   name: "mm-identify",
   transformIndexHtml: (html) =>
@@ -17,6 +19,7 @@ const identify: Plugin = {
       "</head>",
       `<meta name="mm-worker" content="mm-tech" />
 <meta name="mm-environment" content="${environment}" />
+<meta name="mm-version" content="${version}" />
 </head>`,
     ),
 };

@@ -3,6 +3,7 @@
 // after every staging and production deploy, and against wrangler dev in CI.
 
 import type { EnvironmentName, Surface } from "../../src/config/environments.ts";
+import { STATIC_WORKERS } from "./workers.ts";
 
 export interface SmokeOptions {
   readonly apiBase: string;
@@ -12,12 +13,13 @@ export interface SmokeOptions {
   readonly surface?: Surface;
   /** Require /api/health to report this Worker version ID. */
   readonly versionId?: string;
-  /** Require /api/health to report this upload tag (the git SHA). */
+  /** Require /api/health, and a surface's app at /, to report this upload tag (the git SHA). */
   readonly versionTag?: string;
   /** Sent on every request, e.g. the Access service token or a version override. */
   readonly headers?: Readonly<Record<string, string>>;
   readonly fetch?: typeof fetch;
-  readonly healthAttempts?: number;
+  /** How many times a check that waits for a deploy to reach every edge tries. */
+  readonly attempts?: number;
   readonly retryDelayMs?: number;
 }
 
@@ -45,11 +47,31 @@ function assert(condition: boolean, message: string): asserts condition {
  * A new version usually serves everywhere within seconds, but on 21 September
  * 2026 staging served the previous one for over 12 s. Allow a minute.
  */
-const HEALTH_ATTEMPTS = 12;
-const HEALTH_RETRY_DELAY_MS = 5_000;
+const ATTEMPTS = 12;
+const RETRY_DELAY_MS = 5_000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Runs `attempt` until it passes or the attempts run out: a deploy takes a moment to reach every edge. */
+async function retried(options: SmokeOptions, attempt: () => Promise<string>): Promise<string> {
+  const attempts = options.attempts ?? ATTEMPTS;
+  let lastFailure = "";
+  for (let tried = 1; tried <= attempts; tried++) {
+    try {
+      return await attempt();
+    } catch (error) {
+      lastFailure = error instanceof Error ? error.message : String(error);
+      if (tried < attempts) await sleep(options.retryDelayMs ?? RETRY_DELAY_MS);
+    }
+  }
+  throw new Error(`after ${String(attempts)} attempt(s): ${lastFailure}`);
+}
+
+/** The content of a page's `<meta name="…">`, or "none". */
+function metaContent(html: string, name: string): string {
+  return new RegExp(`<meta name="${name}" content="([^"]*)"`).exec(html)?.[1] ?? "none";
 }
 
 async function readJsonObject(response: Response): Promise<Record<string, unknown>> {
@@ -65,42 +87,32 @@ async function readJsonObject(response: Response): Promise<Record<string, unknow
 // ---------------------------------------------------------------------------
 
 /** The right environment, version and database. Retried: a deploy takes a moment to reach every edge. */
-const health: Check = async ({ options, api }) => {
-  const attempts = options.healthAttempts ?? HEALTH_ATTEMPTS;
-  let lastFailure = "";
-
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      const response = await api("/api/health");
-      const body = await readJsonObject(response);
-      assert(response.status === 200, `status ${String(response.status)}, body ${JSON.stringify(body)}`);
+const health: Check = ({ options, api }) =>
+  retried(options, async () => {
+    const response = await api("/api/health");
+    const body = await readJsonObject(response);
+    assert(response.status === 200, `status ${String(response.status)}, body ${JSON.stringify(body)}`);
+    assert(
+      body.environment === options.environment,
+      `environment is ${String(body.environment)}, expected ${options.environment}`,
+    );
+    assert(body.d1 === "ok", `d1 is ${String(body.d1)}`);
+    assert((response.headers.get("x-request-id") ?? "") !== "", "no X-Request-Id header");
+    assert(response.headers.get("cache-control") === "no-store", "health must not be cacheable");
+    if (options.versionId !== undefined) {
       assert(
-        body.environment === options.environment,
-        `environment is ${String(body.environment)}, expected ${options.environment}`,
+        body.version_id === options.versionId,
+        `version_id is ${String(body.version_id)}, expected ${options.versionId}`,
       );
-      assert(body.d1 === "ok", `d1 is ${String(body.d1)}`);
-      assert((response.headers.get("x-request-id") ?? "") !== "", "no X-Request-Id header");
-      assert(response.headers.get("cache-control") === "no-store", "health must not be cacheable");
-      if (options.versionId !== undefined) {
-        assert(
-          body.version_id === options.versionId,
-          `version_id is ${String(body.version_id)}, expected ${options.versionId}`,
-        );
-      }
-      if (options.versionTag !== undefined) {
-        assert(
-          body.version_tag === options.versionTag,
-          `version_tag is ${String(body.version_tag)}, expected ${options.versionTag}`,
-        );
-      }
-      return `${options.environment}, version ${String(body.version_id)}, d1 ok`;
-    } catch (error) {
-      lastFailure = error instanceof Error ? error.message : String(error);
-      if (attempt < attempts) await sleep(options.retryDelayMs ?? HEALTH_RETRY_DELAY_MS);
     }
-  }
-  throw new Error(`after ${String(attempts)} attempt(s): ${lastFailure}`);
-};
+    if (options.versionTag !== undefined) {
+      assert(
+        body.version_tag === options.versionTag,
+        `version_tag is ${String(body.version_tag)}, expected ${options.versionTag}`,
+      );
+    }
+    return `${options.environment}, version ${String(body.version_id)}, d1 ok`;
+  });
 
 /** Errors carry exactly a stable code and the request ID. */
 const errorShape: Check = async ({ api }) => {
@@ -172,6 +184,38 @@ const apiIndexing: Check = async ({ options, api }) => {
   return "noindex on the API";
 };
 
+/** The Worker that serves a Phase 2 surface's app, from the registry (scripts/lib/workers.ts). */
+function appWorkerFor(surface: Surface | undefined): string {
+  const worker = STATIC_WORKERS.find((entry) => entry.surface === surface);
+  if (worker === undefined) throw new Error(`no app serves the ${String(surface)} surface`);
+  return worker.name;
+}
+
+/**
+ * The app a surface's host serves at /: its own Worker, this environment's
+ * build, and, given a tag, built from that commit. Each app's build names all
+ * three in the page (apps/<app>/vite.config.ts). Retried, as health is.
+ */
+const appAtRoot: Check = ({ options, site }) =>
+  retried(options, async () => {
+    const worker = appWorkerFor(options.surface);
+    const response = await site("/");
+    assert(response.status === 200, `status ${String(response.status)}`);
+
+    const html = await response.text();
+    const expected: [name: string, value: string | undefined][] = [
+      ["mm-worker", worker],
+      ["mm-environment", options.environment],
+      ["mm-version", options.versionTag],
+    ];
+    for (const [name, value] of expected) {
+      const found = metaContent(html, name);
+      assert(value === undefined || found === value, `${name} is ${found}, expected ${String(value)}`);
+    }
+    const of = options.versionTag === undefined ? "" : ` of ${options.versionTag}`;
+    return `${worker} serves the ${options.environment} build${of}`;
+  });
+
 export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["mm-api /api/health", health],
   ["mm-api error shape", errorShape],
@@ -180,12 +224,13 @@ export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["indexing", indexing],
 ];
 
-/** For the client, ops and technician hosts. Their apps are not built yet, so only mm-api is checked. */
+/** For the client, ops and technician hosts: mm-api on the host, and the app the host serves. */
 export const SURFACE_CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["mm-api /api/health", health],
   ["mm-api error shape", errorShape],
   ["public routes absent", publicRoutesAbsent],
   ["indexing", apiIndexing],
+  ["app at /", appAtRoot],
 ];
 
 export async function runSmoke(options: SmokeOptions): Promise<SmokeResult[]> {

@@ -68,7 +68,7 @@ function smokeOptions(
     siteBase: "https://h",
     environment,
     fetch: fakeDeployment(environment, faults).fetch,
-    healthAttempts: 2,
+    attempts: 2,
     retryDelayMs: 1,
     ...extra,
   };
@@ -190,12 +190,26 @@ describe("smoke suite", () => {
   });
 });
 
+/** The page a Phase 2 app's build writes at /, naming its Worker, environment and commit (apps/<app>/vite.config.ts). */
+function appPage(worker: string, environment: string, version: string): string {
+  return (
+    `<!doctype html><html><head><meta name="mm-worker" content="${worker}" />\n` +
+    `<meta name="mm-environment" content="${environment}" />\n<meta name="mm-version" content="${version}" />\n` +
+    `</head><body><div id="root"></div></body></html>`
+  );
+}
+
 describe("smoke suite, on a Phase 2 surface's host", () => {
-  const onSurface = (environment: SmokeOptions["environment"], faults: Faults = {}) =>
-    smokeOptions(environment, { publicRoutes: "absent", ...faults }, { surface: "ops" });
+  /** The ops host, which mm-api and mm-ops serve; mm-ops built from commit "abc" unless `faults` says otherwise. */
+  const onSurface = (environment: SmokeOptions["environment"], faults: Faults = {}, versionTag = "abc") =>
+    smokeOptions(
+      environment,
+      { publicRoutes: "absent", site: { html: appPage("mm-ops", environment, "abc") }, ...faults },
+      { surface: "ops", versionTag },
+    );
 
   it.each(["staging", "production"] as const)(
-    "passes a healthy %s surface, without asking for the site",
+    "passes a healthy %s surface: mm-api on its host, and the app it serves at /",
     async (environment) => {
       const results = await runSmoke(onSurface(environment));
       expect(results.filter((result) => !result.ok)).toEqual([]);
@@ -204,6 +218,7 @@ describe("smoke suite, on a Phase 2 surface's host", () => {
         "mm-api error shape",
         "public routes absent",
         "indexing",
+        "app at /",
       ]);
     },
   );
@@ -217,5 +232,39 @@ describe("smoke suite, on a Phase 2 surface's host", () => {
   it("fails when a staging surface is indexable", async () => {
     const indexable = { health: { headers: { "x-robots-tag": "all" } } };
     expect(await failures(onSurface("staging", indexable))).toEqual(['indexing: API X-Robots-Tag is "all"']);
+  });
+
+  it("fails when / on the host is not its app, as when the app's Worker was never deployed", async () => {
+    expect(await failures(onSurface("staging", { site: { html: "<html>origin</html>" } }))).toEqual([
+      "app at /: after 2 attempt(s): mm-worker is none, expected mm-ops",
+    ]);
+    expect(await failures(onSurface("staging", { site: { html: appPage("mm-app", "staging", "abc") } }))).toEqual([
+      "app at /: after 2 attempt(s): mm-worker is mm-app, expected mm-ops",
+    ]);
+  });
+
+  it("fails when the app was built from another commit, as when its deploy was skipped", async () => {
+    const stale = { site: { html: appPage("mm-ops", "staging", "0ld") } };
+    expect(await failures(onSurface("staging", stale))).toEqual([
+      "app at /: after 2 attempt(s): mm-version is 0ld, expected abc",
+    ]);
+  });
+
+  it("fails when the app is another environment's build, or does not answer", async () => {
+    const other = { site: { html: appPage("mm-ops", "production", "abc") } };
+    expect(await failures(onSurface("staging", other))).toEqual([
+      "app at /: after 2 attempt(s): mm-environment is production, expected staging",
+    ]);
+    const down = { site: { status: 500, html: appPage("mm-ops", "staging", "abc") } };
+    expect(await failures(onSurface("staging", down))).toEqual(["app at /: after 2 attempt(s): status 500"]);
+  });
+
+  it("does not ask for a version when none is given", async () => {
+    const untagged = smokeOptions(
+      "staging",
+      { publicRoutes: "absent", site: { html: appPage("mm-ops", "staging", "anything") } },
+      { surface: "ops" },
+    );
+    expect(await failures(untagged)).toEqual([]);
   });
 });
