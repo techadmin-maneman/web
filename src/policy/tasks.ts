@@ -5,10 +5,11 @@
 // There is no `tasks` table and there is not going to be one. Every group below
 // is a queue the database already keeps: a consultation asked for, a held grant,
 // an undecided no-show, a number change waiting for ops, an erasure asked for, a
-// piece past its replacement date, an invoice still a draft, an erasure FSM
-// would not finish. A task is those rows read at the moment ops
-// look, so it cannot go stale, be closed twice or be left open by mistake.
-// Closing a task means doing the thing: the row leaves the queue on its own.
+// grievance not yet answered, a piece past its replacement date, an invoice
+// still a draft, an erasure FSM would not finish. A task is those rows read at
+// the moment ops look, so it cannot go stale, be closed twice or be left open
+// by mistake. Closing a task means doing the thing: the row leaves the queue on
+// its own.
 //
 // The board draws four groups (Replacement order, At-risk client, Referral
 // review, Photo QA). Two of them have no record behind them, and four queues
@@ -24,10 +25,13 @@
 // ops moved to another day or window whose client has not heard of it, having
 // not agreed to WhatsApp about his visits, or the message having never gone.
 // Ops call him, and say so on the dispatch board.
+//
+// And so is a grievance (docs/decisions/0071-ops-clients-and-queues.md): the
+// client has been promised an answer within a time, as with an erasure, so it
+// is counted down on this board as the other requests about their data are.
 
 export const RULES = [
   "The replacement due date follows the per-base cycle config already defined in this prompt.",
-  "Referral review queue: approve or reject, with the reason recorded.",
   "GET /no-shows and POST /no-shows/:id/decision, for ops to charge or waive from the evidence.",
   "number-change confirmations and deletion-request processing",
 ] as const;
@@ -41,17 +45,18 @@ export const TASK_GROUPS = [
   "no_show_decision",
   "number_change",
   "erasure_request",
+  "grievance",
   "draft_invoice",
   "erasure_unfinished",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 
 /**
- * How long a task may wait before it is overdue. The board writes "2 days",
- * "1 day", "Today" and "Overdue 3" and names no group's own allowance, and the
- * prompt states none, so every group waits the same two days, but a client
- * not told of a move, who waits four hours: placeholders until the owner rules
- * each one (docs/open-points.md, item 58).
+ * How long a task may wait before it is overdue, and the one deadline its own
+ * queue counts down to as well. The board writes "2 days", "1 day", "Today"
+ * and "Overdue 3" and names no group's own allowance, and the prompt states
+ * none, so every group waits the same two days, with three exceptions:
+ * placeholders until the owner rules each one (docs/open-points.md, item 58).
  */
 export type Slas = Readonly<Record<TaskGroup, number>>;
 
@@ -63,7 +68,10 @@ export const TASK_SLA_HOURS: Slas = {
   referral_review: 48,
   no_show_decision: 48,
   number_change: 48,
-  erasure_request: 48,
+  // What the client was promised: the 7 days run from the request to ops' decision (ADR 0049).
+  erasure_request: 7 * 24,
+  // The app promises an answer within 30 days at the latest (docs/open-points.md, item 42).
+  grievance: 30 * 24,
   draft_invoice: 48,
   erasure_unfinished: 48,
 };

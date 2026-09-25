@@ -85,10 +85,11 @@ export const OPS_SETTINGS = [
   {
     name: "task_sla_hours",
     title: "How long a task may wait",
-    note: "How long each queue on the Tasks board has before it counts as overdue.",
+    note: "How long each queue on the Tasks board has before it counts as overdue. Its own section counts down to the same day.",
     unit: "hours",
     min: 1,
-    max: 336,
+    // A month, so the 30 days the app promises a grievance its answer within can stand (src/policy/tasks.ts).
+    max: 720,
     keys: TASK_GROUPS,
     fallback: TASK_SLA_HOURS,
     source: "src/policy/tasks.ts",

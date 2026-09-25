@@ -864,7 +864,10 @@ describe("the no-show", () => {
     expect(cases.cases[0]?.distance_m).toBeLessThan(200);
 
     // Nothing is charged automatically: a person rules on it.
-    const ruled = await opsPost(`/api/no-shows/${cases.cases[0]?.id ?? ""}/decision`, { decision: "charged" });
+    const ruled = await opsPost(`/api/no-shows/${cases.cases[0]?.id ?? ""}/decision`, {
+      decision: "charged",
+      reason: "Delivered the evening before, and nobody came to the door",
+    });
     expect(ruled.status).toBe(200);
     const after = await env.DB.prepare("SELECT decision, decided_by FROM no_show_cases").first<{
       decision: string;

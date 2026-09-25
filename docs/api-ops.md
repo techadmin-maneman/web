@@ -252,6 +252,11 @@ Number changes waiting for ops: both numbers proven by code
           "requested_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When ops should have decided: the Tasks board's allowance for this queue, which ops set."
           }
         },
         "required": [
@@ -260,7 +265,8 @@ Number changes waiting for ops: both numbers proven by code
           "name",
           "old_mobile",
           "new_mobile",
-          "requested_at"
+          "requested_at",
+          "due"
         ],
         "additionalProperties": false
       }
@@ -362,6 +368,11 @@ Deletion requests waiting for ops
           "requested_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When ops should have decided: the Tasks board's allowance for this queue, which ops set."
           }
         },
         "required": [
@@ -369,7 +380,8 @@ Deletion requests waiting for ops
           "person_id",
           "name",
           "mobile",
-          "requested_at"
+          "requested_at",
+          "due"
         ],
         "additionalProperties": false
       }
@@ -507,6 +519,16 @@ Referral grants held for review, oldest first
                 "same_mobile"
               ]
             }
+          },
+          "held_since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fraud rules held it for review."
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When ops should have decided: the Tasks board's allowance for a review."
           }
         },
         "required": [
@@ -514,7 +536,9 @@ Referral grants held for review, oldest first
           "referrer",
           "referred",
           "fitted_on",
-          "signals"
+          "signals",
+          "held_since",
+          "due"
         ],
         "additionalProperties": false
       }
@@ -560,7 +584,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: a rejection needs a reason
+**400**: invalid_request: a decision needs a reason
 
 ```json
 {
@@ -610,6 +634,11 @@ Open grievances, oldest first
           "raised_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When ops should have answered: the Tasks board's allowance for a grievance, the 30 days the app promises until ops set another."
           }
         },
         "required": [
@@ -618,7 +647,8 @@ Open grievances, oldest first
           "name",
           "mobile",
           "text",
-          "raised_at"
+          "raised_at",
+          "due"
         ],
         "additionalProperties": false
       }
@@ -1131,7 +1161,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: a ruling needs a reason
 
 ```json
 {
@@ -2904,7 +2934,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision."
+      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -3043,7 +3073,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision."
+      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -3073,7 +3103,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject, and kept with the decision either way."
+      "description": "Required either way, and kept with the decision (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -3882,6 +3912,31 @@ Request body:
       "type": "string",
       "format": "uuid"
     },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whose visit it was, so ops can open their page and call them; null once they have been erased."
+    },
     "visit_date": {
       "anyOf": [
         {
@@ -3969,6 +4024,17 @@ Request body:
       ],
       "description": "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured."
     },
+    "message_state": {
+      "type": "string",
+      "enum": [
+        "delivered",
+        "sent",
+        "not_sent",
+        "no_consent",
+        "none"
+      ],
+      "description": "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+    },
     "message_delivered_at": {
       "anyOf": [
         {
@@ -3979,7 +4045,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Fact three: when WhatsApp reported the visit message delivered; null if never."
+      "description": "When WhatsApp reported it delivered; null if it never did."
     },
     "wait_ends_at": {
       "type": "string",
@@ -3995,6 +4061,16 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "opened_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the case opened, and started waiting for ops."
+    },
+    "due": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When ops should have ruled: the Tasks board's allowance for a no-show, from opened_at."
     },
     "decision": {
       "type": "string",
@@ -4019,6 +4095,7 @@ Request body:
   "required": [
     "id",
     "appointment_id",
+    "person",
     "visit_date",
     "technician",
     "checked_in_at",
@@ -4028,9 +4105,12 @@ Request body:
     "window_end",
     "minutes_late",
     "distance_m",
+    "message_state",
     "message_delivered_at",
     "wait_ends_at",
     "closed_at",
+    "opened_at",
+    "due",
     "decision",
     "decided_at"
   ],
@@ -4051,10 +4131,19 @@ Request body:
         "charged",
         "waived"
       ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Required either way, and kept with the ruling (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
-    "decision"
+    "decision",
+    "reason"
   ],
   "additionalProperties": false
 }
@@ -4346,6 +4435,10 @@ Request body:
       "type": "integer",
       "description": "How many are past their day in India, across every group."
     },
+    "truncated": {
+      "type": "boolean",
+      "description": "More were waiting than one look reads (2000 a statement), so a count may be short."
+    },
     "groups": {
       "type": "array",
       "items": {
@@ -4361,19 +4454,21 @@ Request body:
               "no_show_decision",
               "number_change",
               "erasure_request",
+              "grievance",
               "draft_invoice",
               "erasure_unfinished"
             ]
           },
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How many are waiting in the group, all of them."
           },
           "tasks": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Task"
             },
-            "description": "The longest wait first."
+            "description": "The longest wait first, at most 50."
           }
         },
         "required": [
@@ -4387,6 +4482,7 @@ Request body:
   },
   "required": [
     "overdue",
+    "truncated",
     "groups"
   ],
   "additionalProperties": false,
@@ -4428,7 +4524,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Null for a no-show, whose case names the technician and never the client, and for an erased client."
+      "description": "Null for an erased client, whose record is gone."
     },
     "detail": {
       "anyOf": [

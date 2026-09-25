@@ -7,6 +7,8 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { actorOf, auditStatement } from "../domain/audit.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
+import { dueAt } from "../policy/tasks.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
@@ -29,6 +31,10 @@ const openRoute = createRoute({
                   mobile: z.string(),
                   text: z.string(),
                   raised_at: z.iso.datetime(),
+                  due: z.iso.datetime().openapi({
+                    description:
+                      "When ops should have answered: the Tasks board's allowance for a grievance, the 30 days the app promises until ops set another.",
+                  }),
                 })
                 .strict(),
             ),
@@ -67,6 +73,7 @@ export function registerOpsGrievances(app: App): void {
       `SELECT g.id, g.person_id, p.name, p.mobile_e164, g.text, g.created_at FROM grievances g
        JOIN people p ON p.id = g.person_id WHERE g.state = 'open' ORDER BY g.created_at`,
     ).all<{ id: string; person_id: string; name: string; mobile_e164: string; text: string; created_at: string }>();
+    const sla = (await opsInputs(c)).taskSlaHours;
     return c.json(
       {
         grievances: results.map((row) => ({
@@ -76,6 +83,7 @@ export function registerOpsGrievances(app: App): void {
           mobile: row.mobile_e164,
           text: row.text,
           raised_at: row.created_at,
+          due: dueAt(new Date(row.created_at), "grievance", sla).toISOString(),
         })),
       },
       200,

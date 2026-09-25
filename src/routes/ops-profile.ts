@@ -13,7 +13,11 @@ import type { App, AppEnv } from "../app.ts";
 import { actorOf, type AuditAction, type AuditEntry } from "../domain/audit.ts";
 import { decideDeletion, deletionsWaiting } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
+import { NUMBER_CHANGE_WAITING_SINCE } from "../domain/tasks.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
+import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
+import { dueAt } from "../policy/tasks.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { ErasureRefusedSchema, erasureRefused } from "./erasure.ts";
@@ -22,9 +26,12 @@ const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json
 const Reason = z
   .string()
   .trim()
-  .max(300)
+  .max(REASON_MAX_CHARS)
   .nullable()
-  .openapi({ description: "Required to reject; kept with the decision." });
+  .openapi({ description: "Required to reject; kept with the decision (src/policy/decision-reasons.ts)." });
+const DueSchema = z.iso.datetime().openapi({
+  description: "When ops should have decided: the Tasks board's allowance for this queue, which ops set.",
+});
 
 export const numberChangesRoute = createRoute({
   method: "get",
@@ -45,6 +52,7 @@ export const numberChangesRoute = createRoute({
                   old_mobile: z.string(),
                   new_mobile: z.string(),
                   requested_at: z.iso.datetime(),
+                  due: DueSchema,
                 })
                 .strict(),
             ),
@@ -97,6 +105,7 @@ export const deletionRequestsRoute = createRoute({
                   name: z.string(),
                   mobile: z.string(),
                   requested_at: z.iso.datetime(),
+                  due: DueSchema,
                 })
                 .strict(),
             ),
@@ -154,10 +163,16 @@ function decisionAudit(
 export function registerOpsProfile(app: App): void {
   app.openapi(numberChangesRoute, async (c) => {
     const changes = await changesAwaitingOps(c.env.DB);
-    const names = await namesOf(
-      c.env.DB,
-      changes.map((change) => change.personId),
-    );
+    const [names, since, inputs] = await Promise.all([
+      namesOf(
+        c.env.DB,
+        changes.map((change) => change.personId),
+      ),
+      waitingSince(c.env.DB),
+      opsInputs(c),
+    ]);
+    const due = (id: string, requestedAt: string) =>
+      dueAt(new Date(since.get(id) ?? requestedAt), "number_change", inputs.taskSlaHours).toISOString();
     return c.json(
       {
         changes: changes.map((change) => ({
@@ -167,6 +182,7 @@ export function registerOpsProfile(app: App): void {
           old_mobile: change.oldMobileE164,
           new_mobile: change.newMobileE164,
           requested_at: change.createdAt,
+          due: due(change.id, change.createdAt),
         })),
       },
       200,
@@ -176,7 +192,7 @@ export function registerOpsProfile(app: App): void {
   app.openapi(numberChangeDecisionRoute, async (c) => {
     const { id } = c.req.valid("param");
     const { decision, reason } = c.req.valid("json");
-    if (decision === "reject" && (reason ?? "") === "") {
+    if (needsReason("number_change", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
     const outcome = await decideNumberChange(c.env.DB, {
@@ -193,7 +209,7 @@ export function registerOpsProfile(app: App): void {
   });
 
   app.openapi(deletionRequestsRoute, async (c) => {
-    const requests = await deletionsWaiting(c.env.DB);
+    const [requests, inputs] = await Promise.all([deletionsWaiting(c.env.DB), opsInputs(c)]);
     return c.json(
       {
         requests: requests.map((request) => ({
@@ -202,6 +218,7 @@ export function registerOpsProfile(app: App): void {
           name: request.name,
           mobile: request.mobileE164,
           requested_at: request.createdAt,
+          due: dueAt(new Date(request.createdAt), "erasure_request", inputs.taskSlaHours).toISOString(),
         })),
       },
       200,
@@ -211,7 +228,7 @@ export function registerOpsProfile(app: App): void {
   app.openapi(deletionDecisionRoute, async (c) => {
     const { id } = c.req.valid("param");
     const { decision, reason } = c.req.valid("json");
-    if (decision === "reject" && (reason ?? "") === "") {
+    if (needsReason("deletion", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
     const now = c.var.deps.now();
@@ -248,6 +265,17 @@ async function queueOutsideErasure(c: Context<AppEnv>, personId: string): Promis
   } catch (error) {
     c.var.log.warn("erasure_enqueue_failed", { person_id: personId, error }); // the sweeper sends it on
   }
+}
+
+/** When each change waiting for ops started waiting, by its ID, as the Tasks board counts it. */
+async function waitingSince(db: D1Database): Promise<Map<string, string>> {
+  const rows = await db
+    .prepare(
+      `SELECT nc.id, ${NUMBER_CHANGE_WAITING_SINCE} AS since FROM number_change_requests nc
+       WHERE nc.state = 'awaiting_ops'`,
+    )
+    .all<{ id: string; since: string }>();
+  return new Map(rows.results.map((row) => [row.id, row.since]));
 }
 
 async function namesOf(db: D1Database, personIds: readonly string[]): Promise<Map<string, string>> {

@@ -72,7 +72,7 @@ describe("what a rule will take", () => {
   it("names metres, minutes, hours and days, so a figure is never read as the wrong unit", () => {
     expect(allowed(named("checkin_radius_m"))).toBe("50 to 1000 metres, a whole number");
     expect(allowed(named("no_show_wait_min"))).toBe("5 to 120 minutes, a whole number");
-    expect(allowed(named("task_sla_hours"))).toBe("1 to 336 hours, a whole number");
+    expect(allowed(named("task_sla_hours"))).toBe("1 to 720 hours, a whole number");
     expect(allowed(named("piece_cycle_days"))).toBe("30 to 1095 days, a whole number");
   });
 
