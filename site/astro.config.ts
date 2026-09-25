@@ -5,9 +5,10 @@
 //
 // A production build first runs the publish gate: it stops the build while any
 // published block still holds the design's placeholder material, or while any
-// consent notice is unapproved (docs/frontend.md).
+// consent notice is unapproved (docs/frontend.md). Afterwards it removes every
+// built asset no page names, so the placeholders staging shows never ship.
 
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import preact from "@astrojs/preact";
 import { defineConfig } from "astro/config";
 import { ANALYTICS_IDS } from "./src/lib/analytics-ids.ts";
@@ -20,10 +21,23 @@ import {
   pagePath,
   robotsFile,
   sitemapFile,
+  unreferencedAssets,
 } from "./src/lib/static-files.ts";
 
 const environment = siteEnvironment(process.env.MM_ENV);
 if (environment === "production") assertPublishable();
+
+/** Deletes every file in _astro that no page, script or stylesheet names (unreferencedAssets). */
+async function removeUnreferencedAssets(dir: URL): Promise<void> {
+  const assets = new URL("_astro/", dir);
+  const files = await readdir(assets);
+  const readable = [
+    ...(await readdir(dir)).filter((file) => file.endsWith(".html")).map((file) => new URL(file, dir)),
+    ...files.filter((file) => /\.(js|css)$/.test(file)).map((file) => new URL(file, assets)),
+  ];
+  const texts = await Promise.all(readable.map((file) => readFile(file, "utf8")));
+  for (const file of unreferencedAssets(files, texts)) await rm(new URL(file, assets));
+}
 
 export default defineConfig({
   output: "static",
@@ -49,6 +63,7 @@ export default defineConfig({
           await writeFile(new URL("_headers", dir), headersFile(environment, csp));
           await writeFile(new URL("robots.txt", dir), robotsFile(environment));
           await writeFile(new URL("sitemap.xml", dir), sitemapFile(paths.sort()));
+          if (environment === "production") await removeUnreferencedAssets(dir);
         },
       },
     },

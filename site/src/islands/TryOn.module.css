@@ -46,12 +46,18 @@
   margin: 0 auto;
   padding: var(--flow-pad-top) var(--gutter) var(--flow-pad-bottom);
 }
+/* On a narrow phone the step label goes beneath Back, whole, rather than either breaking in two. */
 .topline {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-20);
+  gap: 0 var(--sp-20);
   margin-bottom: var(--flow-topline-gap);
+}
+.back,
+.stepLabel {
+  white-space: nowrap;
 }
 .back {
   background: transparent;
@@ -280,7 +286,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: var(--hairline) solid var(--ink-line);
+  /* A checkbox's and a field's edge on ink is 3:1 or more (WCAG 1.4.11; ADR 0022, item 37). */
+  border: var(--hairline) solid var(--ink-line-strong);
   color: var(--ink);
   transition:
     background-color var(--ease),
@@ -354,6 +361,11 @@
   border-color: var(--paper);
   color: var(--paper);
 }
+/* Once the render has started, the looks not chosen stand back. */
+.lookOff {
+  cursor: default;
+  color: var(--ink-muted);
+}
 .thumb {
   aspect-ratio: 4 / 3;
   display: flex;
@@ -426,7 +438,8 @@
   font-family: var(--font-serif);
   font-size: var(--fs-countdown);
   line-height: 1;
-  color: var(--ink-disabled);
+  /* v2's --ink-disabled is 1.6:1 here; this is 4.2:1, over WCAG's 3:1 for large text (ADR 0022, item 30). */
+  color: var(--ink-line-strong);
   font-variant-numeric: lining-nums tabular-nums;
 }
 
@@ -490,7 +503,7 @@
 .input {
   height: var(--btn-lg);
   width: 100%;
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
   background: transparent;
   padding: 0 var(--sp-15);
   font-size: var(--fs-16);
@@ -499,7 +512,7 @@
 .mobile {
   height: var(--btn-lg);
   display: flex;
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
 }
 .inputBad {
   border-color: var(--error-on-ink);
@@ -566,9 +579,9 @@
   --frame-aspect: 4 / 3;
 
   position: relative;
-  width: 100%;
+  /* As tall as the cap at most, narrowing to keep the photograph's shape, so it is never letterboxed. */
+  width: min(100%, calc(var(--result-frame-max-h) * var(--frame-aspect)));
   aspect-ratio: var(--frame-aspect);
-  max-height: var(--result-frame-max-h);
   background: var(--ink-frame);
   overflow: hidden;
 }

@@ -209,7 +209,7 @@ test.describe("result", () => {
     await expect(page.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
     await expect(page.getByRole("button", { name: "Download" })).toBeVisible();
     await expect(page.getByRole("button", { name: "WhatsApp" })).toBeVisible();
-    await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after thirty days.")).toBeVisible();
+    await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after fourteen days.")).toBeVisible();
     await expect(page.getByText("Try another look")).toHaveCount(0);
   });
 });

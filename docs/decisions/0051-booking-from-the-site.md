@@ -31,7 +31,7 @@ We can now. `serviceable_pincodes` holds 198 NCR pincodes, and `GET /api/pincode
 - **The consent is recorded once**, under the notice the page actually showed — `referral-consultation-v1` for a booking, `waitlist-v1` for the list — instead of Phase 1's booking notice.
 - **A pincode we do not know** is treated as one we do not serve: the page takes the number for it. The 198 pincodes are NCR's; someone outside it joins a list with no area named.
 - **`/book`'s fidelity pairs move** to the referral harness, because the Phase 1 design's booking board no longer describes the page. The Phase 2 design has no board for a public booking; boards C2 to C4 are that page, minus the invite.
-- **`/api/lead` stays.** The try-on's gate still creates leads through it, and nothing else changes for them.
+- **`/api/lead` stays.** The try-on's gate still creates leads through it, and nothing else changes for them. (Corrected 25 September 2026: the try-on's gate writes its lead through `POST /api/tryon/claim`, not `/api/lead`, and no page of the site calls `/api/lead` or `/api/cities` any more. Both stay in the API for now; the site's own copies of them were removed as dead code.)
 
 ## What this does not do
 

@@ -86,6 +86,10 @@ const WaitlistRequestSchema = z
   })
   .strict();
 
+/** The crawlers that fetch a shared link to draw its preview in a chat or a feed, by their user agents. */
+const LINK_PREVIEW =
+  /WhatsApp|facebookexternalhit|facebookcatalog|meta-externalagent|TelegramBot|Discordbot|Slackbot|LinkedInBot|Twitterbot|SkypeUriPreview|Googlebot|bingbot|Applebot/i;
+
 /** The house card, a static file of the site's (site/public/images/invite-house.jpg). */
 export const HOUSE_CARD_PATH = "/images/invite-house.jpg";
 
@@ -191,8 +195,9 @@ export function registerReferralLanding(app: App): void {
 
   app.openapi(inviteRoute, async (c) => {
     const found = await invite(c, c.req.valid("param").code);
-    // Ops' funnel counts opens; the referrer never sees them (the tracker shows fits only).
-    if (found !== null) {
+    // Ops' funnel counts opens; the referrer never sees them (the tracker shows fits only). A chat app fetching the
+    // link for its preview is not an open: the site's Worker passes the visitor's user agent on.
+    if (found !== null && !LINK_PREVIEW.test(c.req.header("User-Agent") ?? "")) {
       await c.env.DB.prepare("UPDATE referral_codes SET opens = opens + 1 WHERE code = ?1").bind(found.code).run();
     }
     return c.json(

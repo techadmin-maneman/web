@@ -9,6 +9,7 @@ import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { fitFrameToPhotos } from "../lib/frame-aspect.ts";
+import { fill } from "../lib/text.ts";
 import styles from "./BeforeAfter.module.css";
 
 interface Props {
@@ -21,6 +22,8 @@ interface Props {
   beforeLabel: string;
   afterLabel: string;
   sliderLabel: string;
+  /** What a screen reader hears as the handle moves: "{before}% before, {after}% after". */
+  sliderValue: string;
   /** The design's "Placeholder" tag, when this pair is placeholder material. */
   tag?: string | undefined;
 }
@@ -72,7 +75,7 @@ export default function BeforeAfter(props: Props) {
         max={100}
         value={position}
         aria-label={props.sliderLabel}
-        aria-valuetext={`${String(position)}% ${props.beforeLabel.toLowerCase()}`}
+        aria-valuetext={fill(props.sliderValue, { before: String(position), after: String(100 - position) })}
         onInput={(event) => {
           setPosition(Number(event.currentTarget.value));
         }}

@@ -48,10 +48,20 @@ function isFile(path: string): boolean {
 /** Every /r/:code is the one referral landing, as run_worker_first makes it behind Cloudflare. */
 const REFERRAL_CODE = /^\/r\/[A-Za-z0-9]{4,12}\/?$/;
 
+/** A request's path, decoded, or null when it is not valid percent-encoding. */
+function decodedPath(urlPath: string): string | null {
+  try {
+    return decodeURIComponent(urlPath.split("?")[0] ?? "/");
+  } catch {
+    return null;
+  }
+}
+
 /** The file a request path maps to, or null. */
 export function resolveFile(root: string, urlPath: string): string | null {
   const base = resolve(root);
-  const decoded = decodeURIComponent(urlPath.split("?")[0] ?? "/");
+  const decoded = decodedPath(urlPath);
+  if (decoded === null) return null;
   const path = normalize(join(base, REFERRAL_CODE.test(decoded) ? "/r" : decoded));
   if (path !== base && !path.startsWith(base + sep)) return null;
   for (const candidate of [path, `${path}.html`, join(path, "index.html")]) {
@@ -75,7 +85,7 @@ export function parseHeaders(text: string): HeaderRule[] {
       const pattern = line
         .trim()
         .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-        .replace("*", ".*");
+        .replaceAll("*", ".*");
       rules.push({ path: new RegExp(`^${pattern}$`), set: [], unset: [] });
       continue;
     }
@@ -174,6 +184,11 @@ export function serveDirectory(
   const server = createServer((request, response) => {
     if (apiOrigin !== undefined && (request.url ?? "").startsWith("/api/")) {
       void (options.keepHost === true ? forwardKeepingHost : forward)(request, response, apiOrigin);
+      return;
+    }
+    // Several runs share this machine's ports, so a path that is not valid percent-encoding is refused, not thrown.
+    if (decodedPath(request.url ?? "/") === null) {
+      response.writeHead(400).end("bad request");
       return;
     }
     const pagePath = extname((request.url ?? "/").split("?")[0] ?? "") === "";

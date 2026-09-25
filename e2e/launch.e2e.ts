@@ -3,6 +3,7 @@
 // with (docs/feature-inventory.md, "Launch").
 
 import { gzipSync } from "node:zlib";
+import sharp from "sharp";
 import { expect, fakeTurnstile, test } from "./support.ts";
 
 const JS_BUDGET_BYTES = 60 * 1024;
@@ -79,10 +80,27 @@ test("every page is served with the security headers, and only /try may use the 
     const headers = (await request.get(path)).headers();
     expect(headers["content-security-policy"]).toMatch(/^default-src 'self'; script-src 'self' 'sha256-/);
     expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
-    expect(headers["strict-transport-security"]).toBe("max-age=31536000");
+    expect(headers["strict-transport-security"]).toBe("max-age=63072000; includeSubDomains");
     expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(headers["x-content-type-options"]).toBe("nosniff");
     expect(headers["permissions-policy"]).toMatch(path === "/try" ? /^camera=\(self\),/ : /^camera=\(\),/);
+  }
+});
+
+// DS-26: the kit's favicons, drawn on ink at 16, 32 and 48 px, the 16 in its silhouette cut, with no metadata.
+test("the tab icons are the kit's favicons on ink, and carry nothing else", async ({ page, request }) => {
+  await page.goto("/");
+  const icons = page.locator('link[rel="icon"]');
+  await expect(icons).toHaveCount(3);
+  for (const [index, size] of [16, 32, 48].entries()) {
+    await expect(icons.nth(index)).toHaveAttribute("href", `/favicon-${String(size)}.png`);
+    const response = await request.get(`/favicon-${String(size)}.png`);
+    expect(response.headers()["content-type"]).toBe("image/png");
+    const png = await response.body();
+    const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+    expect(info.width).toBe(size);
+    expect([...data.subarray(0, 3)]).toEqual([0x16, 0x23, 0x3a]);
+    expect(png.includes("c2pa")).toBe(false);
   }
 });
 
