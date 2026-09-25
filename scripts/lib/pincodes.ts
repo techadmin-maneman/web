@@ -42,8 +42,8 @@ const sqlText = (value: string | null) => (value === null ? "NULL" : `'${value.r
 
 /**
  * The statement that loads the rows, replacing each pincode's with the file's.
- * An area ops have named from the console keeps its name (area_named_by,
- * migration 0041): the post offices' name is only ever the first guess.
+ * An area ops have named from the console keeps its name, since area_named_by
+ * says so: the post offices' name is only ever the first guess.
  */
 export function pincodeUpsert(rows: readonly PincodeRow[]): string {
   const values = rows.map(

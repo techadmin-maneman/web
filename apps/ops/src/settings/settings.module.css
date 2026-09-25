@@ -138,7 +138,8 @@
 
 /*
  * The form's boxes, edged at 3:1 against paper and white as the client app's
- * are (ADR 0025, item 36), square, and as tall as the buttons beside them.
+ * are (ADR 0025, "Where the client app departs from the boards for WCAG 2.2"),
+ * square, and as tall as the buttons beside them.
  */
 .number,
 .text,
