@@ -76,13 +76,13 @@ interface Visit {
   readonly pincode: string | null;
   readonly person: BoardClient | null;
   readonly badge: PaymentBadge;
+  /** The visit's size on the board: 1, 1, 1.5 or 2. */
+  readonly slots: number;
 }
 
 export interface Block extends Visit {
   readonly starts_at: string;
   readonly window: BookingWindow;
-  /** The block's size on the board: 1, 1, 1.5 or 2. */
-  readonly slots: number;
   readonly status: AppointmentStatus;
   /** The latest move of this visit that its client has not heard of: ops call him (src/policy/dispatch.ts). */
   readonly untold: { readonly move_id: string; readonly starts_at: string } | null;
@@ -280,6 +280,7 @@ function visitOf(job: BoardJobRow): Visit {
     pincode: job.service_pincode,
     person: clientOf(job),
     badge: paymentBadge({ onCredit: job.on_credit === 1, free: job.free === 1 }),
+    slots: slotsFor(job.type ?? "service"),
   };
 }
 
@@ -302,7 +303,6 @@ function blockOf(job: BoardJobRow, untold: Block["untold"]): Block {
     ...visitOf(job),
     starts_at: start.toISOString(),
     window: windowAt(indiaTime(start)),
-    slots: slotsFor(job.type ?? "service"),
     status: job.status,
     untold,
   };

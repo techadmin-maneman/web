@@ -54,6 +54,7 @@ const VISIT = {
     description: "Null for a visit with no client on our records, and for a client who has been erased.",
   }),
   badge: z.enum(PAYMENT_BADGES).openapi({ description: "Never an amount: prepaid, credit, or free." }),
+  slots: z.number().openapi({ description: "Consultation 1, service 1, replacement 1.5, first fit 2." }),
   starts_at: z.iso.datetime(),
 };
 
@@ -61,7 +62,6 @@ const BlockSchema = z
   .object({
     ...VISIT,
     window: z.enum(BOOKING_WINDOWS),
-    slots: z.number().openapi({ description: "Consultation 1, service 1, replacement 1.5, first fit 2." }),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
     untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
       description:

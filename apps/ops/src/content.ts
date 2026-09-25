@@ -86,9 +86,29 @@ export const dispatch = {
     afternoon: "12 to 4 pm",
     evening: "4 to 8 pm",
   } as Readonly<Record<string, string>>,
+  /**
+   * The week and the city the board shows, and a way to find a row among many.
+   * The board letters the city in the header ("Gurgaon") and draws no control;
+   * the brief asks for "a city and week picker" (A1), so they sit in a row
+   * above the grid (docs/fidelity-method.md).
+   */
+  tools: {
+    label: "Week, city and search",
+    previous: "Previous week",
+    next: "Next week",
+    thisWeek: "This week",
+    city: "City",
+    everyCity: "Every city",
+    /** A technician's name or zone, or a client on one of their days. */
+    find: "Find a technician, zone or client",
+    // PLACEHOLDER: the board draws no search, and so no search that finds nothing.
+    nothingFound: (text: string) => `No technician, zone or client this week matches “${text}”.`,
+  },
   board: {
     /** A block, for whoever is reading with a screen reader or moving by keyboard. */
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
+    /** A block for a visit already done, which stays where it was worked and cannot be moved. */
+    doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
     /** PLACEHOLDER: the board draws no board without technicians. */
     empty: "No technician is on this board.",
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
@@ -99,22 +119,33 @@ export const dispatch = {
   },
   tray: {
     title: "Unassigned",
+    /**
+     * The window the client picked. The day is not recorded with it, so none is
+     * written: "Asked · Sat, morning" would pair the offered day with the asked
+     * window (ADR 0063).
+     */
     asked: (window: string) => `Asked · ${window}`,
-    offered: (window: string) => `Offered · ${window}`,
+    offered: (when: string) => `Offered · ${when}`,
     /** No Request behind the visit recorded a window, so there is nothing to compare (ADR 0063). */
     notAsked: "Asked · not recorded",
+    /** The brief's "referral source": who invited the client, where someone did. */
+    referred: (name: string) => `Referred by ${name}`,
     /** Beneath the tray: where the asked window comes from, and why some rows have none. */
     same: "Asked is what the client picked on their booking. A visit booked without one says so.",
     // PLACEHOLDER: the board draws four waiting and no empty tray.
     empty: "Nothing is waiting for a technician.",
   },
-  /** Board A3: the drawer a block opens, narrowed to what a block carries. */
+  /** Board A3: the drawer a block opens. */
   drawer: {
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
-    rows: { type: "Type", area: "Area", state: "State" },
+    /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
+    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free" } as Readonly<Record<string, string>>,
+    rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
+    /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
+    area: (area: string, pincode: string | null) => (pincode === null ? area : `${area} · ${pincode}`),
     // PLACEHOLDER: the board draws a scheduled visit only, and names no state.
     states: {
       scheduled: "Scheduled",
@@ -125,6 +156,12 @@ export const dispatch = {
       terminated: "Terminated",
       other: "Other",
     } as Readonly<Record<string, string>>,
+    /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
+    whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
+    openClient: "Open client",
+    /** PLACEHOLDER: a move the client has not heard of, which ops tell him of by phone (ADR 0069). */
+    untold: (when: string, mobile: string) =>
+      `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
     close: "Close",
@@ -146,23 +183,56 @@ export const dispatch = {
       { reason: "skill_needed", label: "Skill needed · first fit certified" },
       { reason: "running_over", label: "Running over on an earlier job" },
     ],
-    note: (job: string | null) =>
-      `${job ?? "The client"} is messaged on WhatsApp with the new window. Their payment carries over.`,
+    /** The board's line, for a client who agreed to WhatsApp about his visits. */
+    note: (job: string) => `${job} is messaged on WhatsApp with the new window. Their payment carries over.`,
+    /** PLACEHOLDER: one who has not; the move goes to the Tasks board until ops say they called (ADR 0069). */
+    call: (name: string, mobile: string) =>
+      `${name} has not agreed to WhatsApp — call ${mobile} with the new window. Their payment carries over.`,
+    /** PLACEHOLDER: a change of technician alone leaves the client's window as it was. */
+    sameTime: (job: string) => `Only the technician changes. ${job} keeps the same window, so nobody is messaged.`,
+    /** PLACEHOLDER: a visit with no client on our records. */
+    noClient: "This visit has no client on our records to tell. Their payment carries over.",
     /** The board's extra line within 24 hours of the visit. */
     soon: "This visit is inside 24 hours. The client is not charged, because we moved it.",
     send: "Move and notify",
+    /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
+    sendQuietly: "Move",
     sending: "Moving",
     cancel: "Cancel",
   },
   /** Choosing where a job lands, which the design does by dragging. */
   landing: {
-    /** The bar above the board while a job is in hand. */
-    moving: (job: string) => `Moving ${job}. Choose a technician and a window.`,
-    /** Each window of each technician's day, while a job is in hand. */
+    /** The bar above the board while a job is in hand, with the slot-size hint the brief asks for (A2). */
+    moving: (job: string, size: string) => `Moving ${job}, ${size}. Choose a technician and a window.`,
+    /** "a first fit, 2 slots". */
+    size: (type: string, slots: number) => `${type}, ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
+    /** PLACEHOLDER: while the board asks where the job would fit. */
+    checking: "Finding where it fits.",
+    /** PLACEHOLDER: a day with no window the job would land in; the board offers nothing to drop on. */
+    noRoom: "No room",
+    /** Each window of each technician's day with room, while a job is in hand. */
     choose: (job: string, technician: string, date: string, window: string) =>
       `Move ${job} to ${technician}, ${date}, ${window}`,
+    /** The brief's "keyboard alternative: choose a destination from a list" (A2). */
+    list: "Or choose where from a list",
+    listPrompt: "A technician, day and window",
+    listOption: (technician: string, date: string, window: string) => `${technician} · ${date} · ${window}`,
+    listGo: "Choose",
+    // PLACEHOLDER: a week with nowhere the job fits.
+    nowhere: "Nowhere on this week's board has room for it.",
     stop: "Stop moving it",
-    moved: (job: string) => `${job} moved. The client has been messaged.`,
+    /** What happened, from the move's own answer: a message is claimed only where one was queued. */
+    moved: {
+      messaged: (job: string) => `${job} moved. The client was sent the new window on WhatsApp.`,
+      call: (job: string, name: string, mobile: string) =>
+        `${job} moved. ${name} has not agreed to WhatsApp: call ${mobile} with the new window.`,
+      unchanged: (job: string, technician: string) =>
+        `${job} is now with ${technician}. The window is the same, so nobody was messaged.`,
+      noClient: (job: string) => `${job} moved. The visit has no client on our records to tell.`,
+    },
+    /** PLACEHOLDER: the button that closes the call's task, beside the line that asks for the call. */
+    told: "Told by phone",
+    toldDone: (name: string) => `Recorded that ${name} was told by phone.`,
     /**
      * A refusal names the technician and the window it asked for: the clash check
      * runs before anything is written (ADR 0034), and the API answers with the
@@ -172,13 +242,26 @@ export const dispatch = {
       `${technician} already holds a job on ${date}, ${window}. Nothing was moved.`,
     /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0062). */
     onLeave: (technician: string, date: string) => `${technician} is away on ${date}. Nothing was moved.`,
+    /** PLACEHOLDER: the window is free, but the visit's block has no room in it (ADR 0069). */
+    doesNotFit: (type: string, technician: string, date: string, window: string) =>
+      `${type} has no room in ${technician}'s ${window} on ${date}: its time is taken, or it would run past the day's end. Nothing was moved.`,
+    /** PLACEHOLDER: another ops user moved the job while this one was choosing (ADR 0069). */
+    superseded: (job: string, where: string) =>
+      `Someone else moved ${job} while you were choosing. It is now ${where}. Nothing was moved.`,
+    supersededWhere: (technician: string, date: string, window: string) => `with ${technician}, ${date}, ${window}`,
+    /** PLACEHOLDER: the job has left this week, or the city asked for, since. */
+    supersededGone: "off this board",
+    /** PLACEHOLDER: another ops user's move of the same job is still being written. */
+    beingMoved: (job: string) => `Someone else is moving ${job} right now. Nothing was moved.`,
     errors: {
       invalid_request: "That move is not one we can make. Nothing was moved.",
-      not_found: "This visit is no longer live. Reload the board to see it as it stands.",
+      not_found: "This visit is no longer live. The board now shows it as it stands.",
       fsm_refused: "Our scheduling system would not take it. Nothing was moved.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was moved.",
     },
+    /** PLACEHOLDER: the call's record did not go through. */
+    toldFailed: "That was not recorded. Try again.",
   },
 } as const;
 

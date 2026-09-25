@@ -23,7 +23,7 @@ import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
-import { BOARD, PIECES, TASKS } from "../e2e/ops/fixtures.ts";
+import { BOARD, PIECES, ROOM, TASKS } from "../e2e/ops/fixtures.ts";
 import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
@@ -311,6 +311,7 @@ const API: Api = {
   // Boards A1 to A3 are answered with the week the browser tests use, so the
   // board's figures are written once and both read beside it (e2e/ops/fixtures.ts).
   "/api/dispatch": json(BOARD),
+  "/api/dispatch/room": json(ROOM),
   "/api/referrals/held": json(HELD),
   "/api/referrers": json(REFERRERS),
   "/api/waitlist": json(AREAS),
@@ -396,7 +397,7 @@ async function dispatch(browser: Browser, design: Page): Promise<void> {
   await pair(OUT, SHOWN, "a1-dispatch", await frame(design, "Dispatch"), await shrink(await page.screenshot(), SHOWN));
 
   await block.click();
-  const drawer = page.getByRole("dialog", { name: "Rohit M." });
+  const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
   await drawer.getByText("Service visit · 1 slot").waitFor();
   await pair(OUT, PANEL, "a3-block-drawer", await frame(design, "Dispatch · drawer"), await drawer.screenshot());
 

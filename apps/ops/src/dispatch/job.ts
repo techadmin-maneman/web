@@ -2,7 +2,7 @@
 // or a job from the unassigned tray. The two are moved the same way and are
 // written by the same two routes, so the board holds them under one type.
 
-import type { Block, BookingWindow, BoardRow, Unassigned } from "../api.ts";
+import type { Block, BoardClient, BookingWindow, BoardRow, Shown, Unassigned } from "../api.ts";
 import { dispatch } from "../content.ts";
 
 /** The three windows a day is booked in, in their order (src/config/scheduling.ts). */
@@ -31,8 +31,11 @@ export interface Target {
 
 export const idOf = (job: Job): string => (job.kind === "block" ? job.block.appointment_id : job.job.appointment_id);
 
-/** The client the board writes on a block; the tray carries no client at all. */
-export const clientOf = (job: Job): string | null => (job.kind === "block" ? job.block.client : null);
+/** The client the board writes on a block: "Rohit M.". */
+export const clientOf = (job: Job): string | null => (job.kind === "block" ? job.block.client : job.job.client);
+
+/** The client in full, with what reaches him; none for a visit with no client, or one erased. */
+export const personOf = (job: Job): BoardClient | null => (job.kind === "block" ? job.block.person : job.job.person);
 
 const typeOf = (job: Job) => (job.kind === "block" ? job.block.type : job.job.type);
 
@@ -57,4 +60,37 @@ export function nameOf(job: Job): string {
 export function whenOf(job: Job): { readonly date: string | null; readonly window: BookingWindow | null } {
   if (job.kind === "block") return { date: job.date, window: job.block.window };
   return { date: job.job.date, window: job.job.offered_window };
+}
+
+/** The job as the board shows it, which a move sends so a stale board is refused (FEO-05). */
+export function shownOf(job: Job): Shown {
+  if (job.kind === "block") return { technicianId: job.technician.technician_id, startsAt: job.block.starts_at };
+  return { technicianId: null, startsAt: job.job.starts_at };
+}
+
+/** Whether a move to this target changes the day or window, which is what the client is told of. */
+export function changesTime(job: Job, to: Target): boolean {
+  const was = whenOf(job);
+  return was.date !== to.date || was.window !== to.window;
+}
+
+/** A job done stays where it was worked: only one still to do, or under way, can move. */
+export const isMovable = (block: Block): boolean => block.status !== "completed";
+
+/** "Rohit", as the drawer's WhatsApp button names him. */
+export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;
+
+/** "+91 98100 00001", as a mobile number is read out; any other number as it is stored. */
+export function phoneWords(mobile: string): string {
+  const india = /^\+91(\d{5})(\d{5})$/.exec(mobile);
+  return india === null ? mobile : `+91 ${india[1] ?? ""} ${india[2] ?? ""}`;
+}
+
+/** A chat with the client in WhatsApp, opened from the drawer (board A3). */
+export const whatsAppLink = (mobile: string): string => `https://wa.me/${mobile.replace(/\D/g, "")}`;
+
+/** The India date `days` after `date`: the board's weeks are counted in whole days. */
+export function addDays(date: string, days: number): string {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + days)).toISOString().slice(0, 10);
 }

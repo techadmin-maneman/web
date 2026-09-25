@@ -2558,6 +2558,8 @@ export interface components {
                  * @enum {string}
                  */
                 badge: "prepaid" | "credit" | "free";
+                /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
+                slots: number;
                 /** Format: date-time */
                 starts_at: string;
                 /** @description The window the client asked for, from the Request behind the visit; null where nothing recorded one. */
@@ -2598,12 +2600,12 @@ export interface components {
              * @enum {string}
              */
             badge: "prepaid" | "credit" | "free";
+            /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
+            slots: number;
             /** Format: date-time */
             starts_at: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
-            /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
-            slots: number;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told. */

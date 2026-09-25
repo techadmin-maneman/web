@@ -3275,6 +3275,10 @@ Request body:
             ],
             "description": "Never an amount: prepaid, credit, or free."
           },
+          "slots": {
+            "type": "number",
+            "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
+          },
           "starts_at": {
             "type": "string",
             "format": "date-time"
@@ -3330,6 +3334,7 @@ Request body:
           "pincode",
           "person",
           "badge",
+          "slots",
           "starts_at",
           "asked_window",
           "offered_window",
@@ -3490,6 +3495,10 @@ Request body:
       ],
       "description": "Never an amount: prepaid, credit, or free."
     },
+    "slots": {
+      "type": "number",
+      "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
+    },
     "starts_at": {
       "type": "string",
       "format": "date-time"
@@ -3501,10 +3510,6 @@ Request body:
         "afternoon",
         "evening"
       ]
-    },
-    "slots": {
-      "type": "number",
-      "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
     },
     "status": {
       "type": "string",
@@ -3553,9 +3558,9 @@ Request body:
     "pincode",
     "person",
     "badge",
+    "slots",
     "starts_at",
     "window",
-    "slots",
     "status",
     "untold"
   ],
