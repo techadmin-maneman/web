@@ -3,7 +3,7 @@
 // typed address when there is not, and never a scheme an iPhone ignores.
 
 import { describe, expect, it } from "vitest";
-import { addressLine, wayTo } from "../../apps/tech/src/lib/navigate.ts";
+import { addressLine, callLink, wayTo, whatsAppLink } from "../../apps/tech/src/lib/navigate.ts";
 
 const WITH_PIN = {
   line1: "Tower C, 14th floor",
@@ -51,5 +51,34 @@ describe("wayTo", () => {
       expect(wayTo(address)).toContain("api=1");
       expect(wayTo(address).length).toBeLessThan(2048);
     }
+  });
+});
+
+describe("the whole address the client saved", () => {
+  const CHOSEN = {
+    ...WITH_PIN,
+    line1: "Emerald Heights",
+    building: "Emerald Heights",
+    tower: "C",
+    floor: "14th floor",
+    flat: "1402",
+    landmark: "Opposite the water tank",
+  };
+
+  it("is written narrowest first, as the client app writes it, with the building once", () => {
+    expect(addressLine(CHOSEN)).toBe("1402, 14th floor, C, Emerald Heights, Sector 65, Gurgaon 122018");
+  });
+
+  it("asks a map for the building and the area when there is no pin, never the flat", () => {
+    expect(wayTo({ ...CHOSEN, lat: null, lng: null })).toBe(
+      "https://www.google.com/maps/dir/?api=1&destination=Emerald%20Heights%2C%20Sector%2065%2C%20Gurgaon%20122018",
+    );
+  });
+});
+
+describe("the way to the client", () => {
+  it("calls the number on the card, and opens WhatsApp on it without the plus", () => {
+    expect(callLink("+919810000000")).toBe("tel:+919810000000");
+    expect(whatsAppLink("+919810000000")).toBe("https://wa.me/919810000000");
   });
 });

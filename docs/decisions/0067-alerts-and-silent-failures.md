@@ -51,7 +51,7 @@ Alerts that already fire once per record, and name it, still post directly: a le
 | FSM sync giving up on an appointment                                   | at once, then counted as the reconciliation queues it night after night | it syncs                                                 |
 | AILabTools credits below the floor                                     | once, not every hour                                                    | a top-up lifts them over the floor                       |
 
-**Two groups join the Tasks board**, read from the rows as the others are: a finished visit whose invoice is still a draft (Draft invoice), and an erased client whose FSM contact the sweeper gave up on (Erasure left in FSM). Board D2 draws neither (ADR 0025, item 38). A task allowance ops saved before a group was added keeps its figures, and the new group takes its committed one.
+**Two groups join the Tasks board**, read from the rows as the others are: a finished visit whose invoice is still a draft (Draft invoice), and an erased client whose FSM contact the sweeper gave up on (Erasure left in FSM). Board D2 draws neither (ADR 0025, item 39). A task allowance ops saved before a group was added keeps its figures, and the new group takes its committed one.
 
 **Smaller changes.**
 

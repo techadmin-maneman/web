@@ -39,7 +39,7 @@ The owner ruled on 23 September 2026 that we build our own interface over FSM (`
 
 - **The rules can be read.** `apps/tech/src/store/replay.ts` holds the ordering and the stopping, with no IndexedDB in it, and `test/node/tech-outbox.test.ts` checks them. `e2e/tech/outbox.e2e.ts` walks the whole thing in a browser: a step queued with no signal, replayed on reconnection, and a supersede that says what changed.
 - **iOS may evict the store.** The prompt asks for company Android phones for this reason; it is `docs/open-points.md`'s item 27.
-- **The app follows the API, not the boards.** `npm run openapi` writes `apps/tech/src/api-schema.ts` from the schemas that serve the routes, and `apps/tech/src/routes.ts` assumes nothing. What the boards draw and the API cannot answer — a job's slots, its distance, a piece card on the job, last visit's photograph, the day-before WhatsApp's delivery receipt — is recorded beside the fidelity pairs in `docs/fidelity-method.md`. The "Free" badge was on that list until 25 September 2026, when the API began answering it (ADR 0065).
+- **The app follows the API, not the boards.** `npm run openapi` writes `apps/tech/src/api-schema.ts` from the schemas that serve the routes, and `apps/tech/src/routes.ts` assumes nothing. What the boards draw and the API cannot answer — a job's distance from the technician, and the piece card's tier, colour, adhesive, template and scalp — is recorded beside the fidelity pairs in `docs/fidelity-method.md`. The "Free" badge was on that list until 25 September 2026, when the API began answering it (ADR 0065); a job's slots, the client's pieces, the last visit's after photograph and the day-before WhatsApp's delivery receipt left it the same day ("The job flow", below).
 - **The check-in is queued like every other write, and its answer is kept.** It is the one write whose answer a screen needs: how far the phone was from the door, and when the no-show wait ends. Both are kept beside the job (`apps/tech/src/store/jobs.ts`), so a reload does not lose the countdown. A check-in queued in a basement says so, and the check runs when there is signal. From ADR 0065 the job's card carries both as well, in its `progress`, so a phone that lost its copy — a second store on an iPhone, a sign-out, a loaner — can still close a no-show.
 - **The close-out's duration is the phone's.** It runs from the `started_at` the API keeps to the instant the technician took the outcome, because nothing gives the closing time back.
 
@@ -139,3 +139,45 @@ The camera is let go while the app is hidden and opened again when it comes back
 
 - The store and the sending have their own tests, on an IndexedDB that runs in Node (`fake-indexeddb`): `test/node/tech-store.test.ts`, `tech-kept.test.ts`, `tech-outbox-replay.test.ts`, `tech-api.test.ts` and `tech-sw.test.ts`. The browser walks each change in `e2e/tech/`.
 - The words for the states no board draws are placeholders in `apps/tech/src/content.ts`, for the owner (`docs/open-points.md`, item 20; ADR 0025, item 32).
+
+---
+
+## Update, 25 September 2026: the job flow
+
+The audit of 24 September walked the job at the door and in the steps and found work lost or doubled, a charge one unconfirmed tap away, and a technician told what changed only on a screen he had no reason to open. This section records what each became. Where it departs from a board, ADR 0025's "The technician boards" says so for the owner.
+
+### One tap, one write
+
+- **The outbox queues a step once.** A step already waiting for its job is not queued again, whichever screen asks, so a gloved double tap on Start job or Next sends one write (`queue` in `apps/tech/src/store/outbox.ts`). The screens run each action one at a time as well (`apps/tech/src/lib/useOneAtATime.ts`, the client app's own).
+- **A step takes no tap while it is sliding in.** A double tap's second tap lands on the screen the first one opened, where the next step's action sits in the same place; for its first 350 ms a step's action ignores it (`useSettled`, `apps/tech/src/steps/StepFrame.tsx`).
+- **A photograph is kept by its angle.** A frame's key is its job, phase and angle, so a second frame for one angle replaces the first rather than standing in for the next: the API keeps one photograph per angle, and a set that had two of one had none of another.
+
+### What changed reaches every screen
+
+- **Every write carries the job's start as the card gave it** (`X-Job-Starts-At`), so a job ops moved to another time is superseded like one given to someone else (ADR 0065).
+- **A 404 on the way to a write is the job moving, not a failure.** The API answers 404 to an upload link or a write for a job that is no longer this technician's; the outbox stops that job as superseded, and the screens say "This job is no longer on your list", never "The photographs would not upload".
+- **What stopped a job is said above every screen**, not only on the waiting screen, and across the job's card, which then offers nothing to press on with. The 409 names the fields that moved and never their values; once the card is fetched again it carries the new time, and the card then says "Ops moved this job to 11:30 am" rather than only that it moved.
+- **"Got it" asks before it deletes.** It lets go of the job's photographs and writes, which never reach us, so it says how many and asks a second time.
+- **A step the API refused is put right, not only thrown away.** "Correct it" opens the step again with the refusal said; finishing it sends the corrected step in the place the refused one had, under a new event ID, since the API recorded nothing of the refused one, and the steps queued behind it follow (`correct`).
+
+### The door
+
+- **The stage decides what the card offers** (`stageOf`, `apps/tech/src/lib/progress.ts`): nothing on a job ops changed; its next step and nothing of the door's once it has started; "Closed out" and no gold once it has closed; no check-in on tomorrow's unlocked card, which now carries its day. The stage's one action sits at the foot.
+- **The wait runs whether or not the phone kept its copy.** The card carries the wait's end and the distance the API holds, so a phone that lost its own check-in — a second store on an iPhone, a sign-out, a loaner — counts the wait and closes the no-show. With no signal the wait counts from the tap, and the close waits for signal, because the API holds the wait on its own clock too (ADR 0065).
+- **Close as no-show asks first.** It is outlined, never gold, and a sheet says "Ops may charge the client" before anything is sent. A no-show the API refuses as early is said on the card, and the close-out never reads "done" for a job that is not closed; a no-show's close-out is board B5's evidence summary.
+
+### The steps
+
+- **The piece's label is checked on the phone** with the API's own pattern, a space taken for the hyphen it means, so a label the API would refuse is caught where it can be put right. A lookup with no signal says so, rather than that the label is unknown; another client's piece keeps Next dim. The step takes the new piece's base and supplier lot, and on a replacement the piece that came off and why it failed, which the pieces tab reads; "Pick from the list" offers the client's pieces the card now carries.
+- **The outcome starts with nothing chosen.**
+- **Board B1's framing guide is drawn over the camera**, and Capture sits at the foot beside Retake and finishes the step once the five are in.
+- **Each screen names itself in the title and takes the focus to its heading when it opens**; a count or a capture is said as it changes.
+
+### The small routes the card needed
+
+Board A3's piece card and last visit's photograph, board B3's "Pick from the list" and board B5's delivery receipt were recorded above as things the API could not answer. They are now fields of the card itself, so the phone keeps them with it for the basement, rather than routes of their own: `pieces` (the client's, newest fit first), `last_visit` (its date and technician), `reminder` (the day-before WhatsApp's delivery) and `no_show_wait_min`. The day's list carries each visit's `slots`. The one new route is the photograph, `GET /api/tech/jobs/{id}/last-visit-photo`: under the card's own unlock, to this job's technician alone, and answered `private, no-store`, so neither the browser nor the service worker keeps a client's photograph on a technician's phone.
+
+### Consequences
+
+- `test/node/tech-progress.test.ts`, `tech-when.test.ts`, `tech-piece-label.test.ts` and new cases in `tech-outbox-replay.test.ts` hold the rules above; `test/node/tech-contrast.test.ts` holds the colours; `test/worker/tech-job-card.test.ts` the card's new fields and the photograph's route; `e2e/tech/job.e2e.ts`, `steps.e2e.ts`, `camera.e2e.ts` and `outbox.e2e.ts` walk them in a browser.
+- The words for what no board draws are placeholders in `apps/tech/src/content.ts`, for the owner with the rest (ADR 0025, "The technician boards").

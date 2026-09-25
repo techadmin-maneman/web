@@ -3,21 +3,27 @@
 // Finishing queues the event and moves on. It never waits for the API: a step
 // taken in a basement is recorded on the phone and sent when there is signal
 // (docs/decisions/0038-offline-writes.md).
+//
+// A step the API refused — a label it would not take — is opened again to be
+// put right. Finishing it then sends the corrected step in the place the
+// refused one had, and the steps queued behind it follow (../store/outbox.ts).
 
-import { useCallback } from "react";
 import type { Job } from "../api.ts";
-import { nextStep, stepsOf } from "../lib/progress.ts";
+import { done, stepsOf } from "../lib/progress.ts";
+import type { Loaded } from "../lib/useDay.ts";
 import { useJob } from "../lib/useDay.ts";
+import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { go, stepPath, type InJobStep } from "../route.ts";
-import type { Loaded } from "../lib/useDay.ts";
 import { keepClosed } from "../store/jobs.ts";
-import { queue, replay } from "../store/outbox.ts";
+import { correct, queue, replay, type Queued } from "../store/outbox.ts";
 
 export interface Standing {
   readonly loaded: Loaded<Job>;
   readonly retry: () => void;
-  /** Queues this step's write and opens the next screen. */
+  /** This step as it was sent and refused, when the technician is putting it right. */
+  readonly refused: Queued | null;
+  /** Queues this step's write, once however often it is tapped, and opens the next screen. */
   readonly finish: (body: unknown) => Promise<void>;
   readonly back: () => void;
 }
@@ -25,25 +31,30 @@ export interface Standing {
 export function useStep(id: string, step: InJobStep): Standing {
   const waiting = useOutbox();
   const [loaded, retry] = useJob(id, signatureOf(waiting));
+  const [, once] = useOneAtATime();
   const job = loaded.state === "loaded" ? loaded.value : null;
+  const refused =
+    waiting.events.find((event) => event.job_id === id && event.kind === step && event.state === "refused") ?? null;
 
-  const finish = useCallback(
-    async (body: unknown) => {
+  const finish = (body: unknown) =>
+    once(async () => {
       if (job === null) return;
-      await queue(step, id, body);
+      if (refused === null) await queue(step, id, body, job.starts_at);
+      else await correct(refused.seq, body);
       // The duration board B4 shows runs from Start job to the outcome, and nothing gives it back.
       if (step === "outcome") await keepClosed(id);
       void replay();
-      const remaining = stepsOf(job).slice(stepsOf(job).indexOf(step) + 1);
-      const following = remaining[0] ?? nextStep(job, waiting.events);
-      go(following === null || step === "outcome" ? `/jobs/${id}/done` : stepPath(id, following));
-    },
-    [id, job, step, waiting.events],
-  );
 
-  const back = useCallback(() => {
+      const sent = done(job, waiting.events);
+      const following = stepsOf(job)
+        .slice(stepsOf(job).indexOf(step) + 1)
+        .find((later) => !sent.has(later));
+      go(following === undefined || step === "outcome" ? `/jobs/${id}/done` : stepPath(id, following));
+    });
+
+  const back = () => {
     go(`/jobs/${id}`);
-  }, [id]);
+  };
 
-  return { loaded, retry, finish, back };
+  return { loaded, retry, refused, finish, back };
 }

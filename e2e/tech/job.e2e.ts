@@ -1,21 +1,26 @@
-// Boards B2 to B5: the in-job steps, and the evidence chain when the client is
-// not home. The whole of a service visit is walked once, and the no-show is
-// refused before its wait is over.
+// Board A3's card and board B5's evidence chain at the door: arrive, wait, and
+// either start the job or close it as a no-show. A charge-bearing close is
+// never one unconfirmed tap, a started job offers nothing but its next step,
+// and the wait counts whether or not the phone has signal.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, JOB_ID } from "./fixtures.ts";
+import { atTheDoor, fakeTech, JOB_ID, ROHITS_PIECE, TOMORROW_JOB_ID } from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
 
-const capture = async (page: Page) => {
-  const take = page.getByRole("button", { name: "Capture" });
-  await expect(take).toBeEnabled();
-  for (let angle = 1; angle <= 5; angle += 1) await take.click();
-  await page.getByRole("button", { name: "Done" }).click();
-};
+/** The one gold action at the foot of the screen, which board B5's chain hands on stage by stage. */
+const foot = (page: Page) => page.locator("main > div").last().getByRole("button");
+
+/** Opens the card and checks in at the door. */
+async function arrive(page: Page): Promise<void> {
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("button", { name: "I have arrived" }).click();
+  await expect(page.getByText("2 · Waiting")).toBeVisible();
+}
 
 test("sends Navigate to a route any phone opens, by the pin when the address has one", async ({ page }) => {
   await fakeTech(page);
@@ -39,6 +44,49 @@ test("sends Navigate to the typed address when it was saved without a pin", asyn
   );
 });
 
+test("shows the flat, floor, tower, building and landmark, and a way to reach the client", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.address = {
+    line1: "Emerald Heights",
+    building: "Emerald Heights",
+    tower: "C",
+    floor: "14th floor",
+    flat: "1402",
+    landmark: "Opposite the water tank",
+  };
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  // As the client app writes it, narrowest first (apps/app/src/profile/AddressSection.tsx).
+  await expect(page.getByText("1402, 14th floor, C, Emerald Heights, Sector 65, Gurgaon 122018")).toBeVisible();
+  await expect(page.getByText("Near Opposite the water tank")).toBeVisible();
+  // A map finds the building, not the flat.
+  await expect(page.getByRole("link", { name: "Navigate" })).toHaveAttribute("href", /destination=28\.39/);
+
+  await expect(page.getByRole("link", { name: "Call Rohit" })).toHaveAttribute("href", "tel:+919810000000");
+  await expect(page.getByRole("link", { name: "WhatsApp Rohit" })).toHaveAttribute(
+    "href",
+    "https://wa.me/919810000000",
+  );
+  const results = await wcag(page);
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("shows the piece on the client's head and the last visit's after photograph (board A3)", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.pieces = [ROHITS_PIECE];
+  fake.lastVisit = true;
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  const piece = page.getByRole("region", { name: "The piece" });
+  await expect(piece).toContainText("MM-STD-4417-B");
+  await expect(piece).toContainText("PLACEHOLDER_STANDARD");
+  await expect(piece).toContainText("LOT-4417");
+  const photo = page.getByRole("img", { name: "Last visit, after" });
+  await expect(photo).toHaveAttribute("src", `/api/tech/jobs/${JOB_ID}/last-visit-photo`);
+  await expect.poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
+  await expect(page.getByText("Last visit, after. 22 Aug, Imran.")).toBeVisible();
+});
+
 test("checks in at the door, and records the time and the distance (board B5)", async ({ page }) => {
   const fake = await fakeTech(page);
   await atTheDoor(page);
@@ -46,12 +94,16 @@ test("checks in at the door, and records the time and the distance (board B5)", 
 
   await expect(page.getByText("1 · Arrived")).toBeVisible();
   await expect(page.getByText("Tap at the door. We record the time and check you are within 200 m.")).toBeVisible();
-  await page.getByRole("button", { name: "I have arrived" }).click();
+  // The one action sits at the foot of the card, where every screen keeps it.
+  await expect(foot(page)).toHaveText("I have arrived");
+  await foot(page).click();
 
   await expect(page.getByText("2 · Waiting")).toBeVisible();
   await expect(page.getByText(/left of 15 minutes/)).toBeVisible();
   const checkIn = fake.writes.find((write) => write.path.endsWith("/checkin"));
   expect(checkIn?.body).toMatchObject({ lat: 28.39, lng: 77.07 });
+  // Every write carries the job's start as the phone holds it, so a job ops moved is refused.
+  expect(checkIn?.startsAt).toMatch(/T04:00:00\.000Z$/);
 
   const results = await wcag(page);
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
@@ -68,49 +120,177 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
   await expect(page.getByText("You are 1.4 km from the address.")).toBeVisible();
   await expect(page.getByText("Get to the door and tap again. No-show cannot be recorded from here.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Close as no-show" })).toHaveCount(0);
+  // Board B5 draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
 
   const results = await wcag(page);
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-test("keeps Close as no-show dim until the wait has run out, and the API refuses it early", async ({ page }) => {
+test("keeps Close as no-show dim and outlined beside the gold Start job until the wait has run", async ({ page }) => {
   const fake = await fakeTech(page);
-  // A four-second wait, so the button is plainly dim first and plainly open after.
   fake.waitMinutes = 4 / 60;
-  fake.tooEarly = true;
-  await atTheDoor(page);
-  await page.goto(`/jobs/${JOB_ID}`);
-  await page.getByRole("button", { name: "I have arrived" }).click();
+  await arrive(page);
 
   const close = page.getByRole("button", { name: "Close as no-show" });
-  await expect(close).toBeVisible();
   await expect(close).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Start job" })).toBeEnabled();
+  await expect(foot(page)).toHaveText("Start job");
+  // One gold action per screen: Close as no-show is never the same button as Start job.
+  const gold = await close.evaluate((button) => getComputedStyle(button).backgroundColor);
+  expect(gold).not.toBe("rgb(201, 163, 99)");
 
-  // The wait runs out on the phone and the button opens; the API still refuses
-  // it, as it does whenever the phone's clock has run ahead of ours.
   await expect(close).toBeEnabled({ timeout: 15_000 });
-  await close.click();
-
-  // Refused with 425: nothing was recorded, and nothing is left stuck in the queue.
-  await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/no-show")).length).toBe(0);
-  await page.goto("/waiting");
-  await expect(page.getByText("Everything has reached us.")).toBeVisible();
+  expect(await close.evaluate((button) => getComputedStyle(button).backgroundColor)).not.toBe("rgb(201, 163, 99)");
+  // The wait's end is said, not only drawn.
+  await expect(page.getByRole("status").filter({ hasText: "The wait is over." })).toBeAttached();
 });
 
-test("closes the job as a no-show once the wait has run", async ({ page }) => {
+test("asks before closing as a no-show, since ops may charge the client", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.waitMinutes = 1 / 60;
-  await atTheDoor(page);
-  await page.goto(`/jobs/${JOB_ID}`);
-  await page.getByRole("button", { name: "I have arrived" }).click();
+  fake.reminderDelivered = new Date().toISOString();
+  await arrive(page);
 
   const close = page.getByRole("button", { name: "Close as no-show" });
   await expect(close).toBeEnabled({ timeout: 10_000 });
   await close.click();
 
-  await expect(page.getByText("Rohit M. · no-show")).toBeVisible();
+  const sheet = page.getByRole("dialog", { name: "Close as a no-show?" });
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toContainText("Ops may charge the client");
+  const asked = await wcag(page);
+  expect(asked.violations.map((violation) => violation.id)).toEqual([]);
+
+  // A mis-tap is undone with one tap, and nothing was sent.
+  await sheet.getByRole("button", { name: "Not yet" }).click();
+  await expect(sheet).toBeHidden();
+  expect(fake.writes.filter((write) => write.path.endsWith("/no-show"))).toHaveLength(0);
+
+  await close.click();
+  await page.getByRole("dialog").getByRole("button", { name: "Close as no-show" }).click();
+
+  // Board B5's close: the evidence ops rule on, and what happens next.
+  await expect(page.getByRole("heading", { name: "Rohit M. · no-show" })).toBeVisible();
+  await expect(page.getByText("This goes to ops with the charge.")).toBeVisible();
+  await expect(page.getByText("Checked in")).toBeVisible();
+  await expect(page.getByText("40 m")).toBeVisible();
+  await expect(page.getByText(/^Delivered /)).toBeVisible();
   await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/no-show")).length).toBe(1);
+  const closed = await wcag(page);
+  expect(closed.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("a no-show the API refuses as early stays open on the card, and never reads as done", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.waitMinutes = 1 / 60;
+  fake.tooEarly = true;
+  await arrive(page);
+
+  const close = page.getByRole("button", { name: "Close as no-show" });
+  await expect(close).toBeEnabled({ timeout: 10_000 });
+  await close.click();
+  await page.getByRole("dialog").getByRole("button", { name: "Close as no-show" }).click();
+
+  // The phone's clock ran ahead of ours: nothing was recorded, and the card says so.
+  await expect(page.getByText("Our clock says the wait has not run out yet. Try again in a minute.")).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
+  expect(fake.writes.filter((write) => write.path.endsWith("/no-show"))).toHaveLength(0);
+
+  // And the close-out, opened by hand, does not claim the job was done.
+  await page.goto(`/jobs/${JOB_ID}/done`);
+  await expect(page.getByText("Rohit M. · done")).toHaveCount(0);
+  await expect(page.getByText("This job is not closed yet.")).toBeVisible();
+});
+
+test("a phone that lost its copy of the check-in still counts the wait and can close the no-show", async ({ page }) => {
+  const fake = await fakeTech(page);
+  // Checked in on another store — the browser, before the app was installed — a minute and more ago.
+  const checkedIn = new Date(Date.now() - 16 * 60_000);
+  fake.progress = {
+    ...fake.progress,
+    checked_in_at: checkedIn.toISOString(),
+    wait_ends_at: new Date(checkedIn.getTime() + 15 * 60_000).toISOString(),
+    distance_m: 40,
+  };
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(page.getByText("2 · Waiting")).toBeVisible();
+  await expect(page.getByText(/^No signal/)).toHaveCount(0);
+  await expect(page.getByText("0:00")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close as no-show" })).toBeEnabled();
+});
+
+test("with no signal the wait still counts down from the tap, and says what closing needs", async ({
+  page,
+  context,
+}) => {
+  const fake = await fakeTech(page);
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await expect(page.getByRole("button", { name: "I have arrived" })).toBeVisible();
+
+  // The basement.
+  fake.online = false;
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "I have arrived" }).click();
+
+  await expect(page.getByText("2 · Waiting")).toBeVisible();
+  await expect(page.getByText(/^1[45]:\d\d$/)).toBeVisible();
+  await expect(page.getByText(/^No signal\. The wait counts from your tap/)).toBeVisible();
+  // Ours has to hold the check-in for the wait as well (ADR 0065), so the close waits for signal.
+  await expect(page.getByRole("button", { name: "Close as no-show" })).toBeDisabled();
+});
+
+test("a started job offers only its next step: no check-in, no no-show, no second Start job", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.progress = {
+    ...fake.progress,
+    checked_in_at: new Date(Date.now() - 20 * 60_000).toISOString(),
+    wait_ends_at: new Date(Date.now() - 5 * 60_000).toISOString(),
+    distance_m: 40,
+    started_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+    steps_done: ["before_photos"],
+  };
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(foot(page)).toHaveText("Continue");
+  await expect(page.getByRole("button", { name: "Close as no-show" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
+  await expect(page.getByText("In progress")).toBeVisible();
+
+  await foot(page).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+});
+
+test("a closed job reads as closed, with no gold Continue", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.progress = {
+    ...fake.progress,
+    checked_in_at: new Date(Date.now() - 90 * 60_000).toISOString(),
+    started_at: new Date(Date.now() - 80 * 60_000).toISOString(),
+    steps_done: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
+    outcome: "done",
+  };
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(page.getByText("Closed out · done")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
+  await page.getByRole("button", { name: "See the close-out" }).click();
+  await expect(page.getByRole("heading", { name: "Rohit M. · done" })).toBeVisible();
+});
+
+test("tomorrow's job shows its day, and cannot be checked in to today", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.tomorrow = true;
+  await atTheDoor(page);
+  await page.goto(`/jobs/${TOMORROW_JOB_ID}`);
+
+  await expect(page.getByText(/^Tomorrow · 10 am · service · 1 slot$/)).toBeVisible();
+  await expect(page.getByText("This job is tomorrow. Arrive and start it on the day.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);
 });
 
 test("walks the six steps of a service visit and closes it out (boards B1 to B4)", async ({ page }) => {
@@ -122,34 +302,44 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   await page.getByRole("button", { name: "Start job" }).click();
 
   // Step 1: the before set.
-  await expect(page.getByText("Before photos")).toBeVisible();
-  await expect(page.getByText("1 of 5")).toHaveCount(0);
-  await capture(page);
+  await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeVisible();
+  const capture = page.getByRole("button", { name: "Capture" });
+  await expect(capture).toBeEnabled();
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Done" }).click();
 
   // Step 2: the checklist, which will not let the job on until it is finished.
-  await expect(page.getByText("Service checklist")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Finish the list to continue" })).toBeDisabled();
-  const items = page.getByRole("button", { name: /PLACEHOLDER/ });
-  for (const item of await items.all()) await item.click();
+  for (const item of await page.getByRole("button", { name: /PLACEHOLDER/ }).all()) await item.click();
   const wcagOnChecklist = await wcag(page);
   expect(wcagOnChecklist.violations.map((violation) => violation.id)).toEqual([]);
   await page.getByRole("button", { name: "Next" }).click();
 
   // Step 3: the consumables' steppers, no keyboard anywhere.
-  await expect(page.getByText("Consumables used")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Consumables used" })).toBeVisible();
   await expect(page.locator("input")).toHaveCount(0);
   await page.getByRole("button", { name: "One more tape strips" }).click();
   await page.getByRole("button", { name: "One more tape strips" }).click();
   await page.getByRole("button", { name: "Next" }).click();
 
   // Step 5: the after set. A service visit has no piece step; the API leaves it out.
-  await expect(page.getByText("After photos")).toBeVisible();
-  await capture(page);
+  await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+  await expect(capture).toBeEnabled();
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Done" }).click();
 
-  // Step 6: the outcome.
-  await expect(page.getByText("Outcome")).toBeVisible();
+  // Step 6: the outcome, with nothing chosen for him.
+  await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose Done or Partial" })).toBeDisabled();
   await page.getByRole("button", { name: "Partial · pick a reason" }).click();
-  await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Pick a reason to continue" })).toBeDisabled();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
   await page.getByRole("button", { name: "Next" }).click();
 
@@ -161,6 +351,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   const sent = fake.writes.map((write) => write.path.replace(`/api/tech/jobs/${JOB_ID}`, ""));
   expect(sent).toEqual(["/checkin", "/start", "/photos", "/checklist", "/consumables", "/photos", "/outcome"]);
   expect(fake.writes.at(-1)?.body).toEqual({ outcome: "partial", reason: "client_stopped_it" });
+  expect(new Set(fake.writes.map((write) => write.startsAt)).size).toBe(1);
 
   const results = await wcag(page);
   expect(results.violations.map((violation) => violation.id)).toEqual([]);

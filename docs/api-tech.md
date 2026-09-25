@@ -191,6 +191,28 @@ One of the technician's jobs, with the day-before unlock enforced
 }
 ```
 
+### GET /api/tech/jobs/{id}/last-visit-photo
+
+The client's last visit, after: one photograph, under the card's own unlock, never cached
+
+**200**: The image
+
+**401**: session_required; device_revoked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/tech/jobs/{id}/checkin
 
 I have arrived: the time and the phone's position, inside the geofence
@@ -1140,6 +1162,17 @@ The piece a label names
       ],
       "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
     },
+    "slots": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type."
+    },
     "unlocked": {
       "type": "boolean"
     },
@@ -1159,6 +1192,7 @@ The piece a label names
     "sector",
     "status",
     "badge",
+    "slots",
     "unlocked",
     "unlocks_at"
   ],
@@ -1345,6 +1379,90 @@ The piece a label names
         "progress": {
           "$ref": "#/components/schemas/TechnicianJobProgress"
         },
+        "no_show_wait_min": {
+          "type": "integer",
+          "description": "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it."
+        },
+        "pieces": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Piece"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The client's pieces, newest fit first. Null until the day before the visit."
+        },
+        "last_visit": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "technician": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The first name of who did it."
+                },
+                "photo_url": {
+                  "type": "string",
+                  "description": "Its after photograph, never to be kept on the phone."
+                }
+              },
+              "required": [
+                "date",
+                "technician",
+                "photo_url"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The client's latest earlier visit with after photographs; null for a first visit."
+        },
+        "reminder": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "delivered_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "delivered_at"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The day-before or arrival WhatsApp to the client, and when it was delivered."
+        },
         "steps": {
           "type": "array",
           "items": {
@@ -1399,6 +1517,10 @@ The piece a label names
         "access_notes",
         "client",
         "progress",
+        "no_show_wait_min",
+        "pieces",
+        "last_visit",
+        "reminder",
         "steps",
         "checklist",
         "partial_reasons"
@@ -1494,6 +1616,92 @@ The piece a label names
     "started_at",
     "steps_done",
     "outcome"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Piece
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "piece_code": {
+      "type": "string"
+    },
+    "base": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "supplier_lot": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fitted_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "replacement_due_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failure_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "piece_code",
+    "base",
+    "supplier_lot",
+    "fitted_at",
+    "replacement_due_at",
+    "failed_at",
+    "failure_reason"
   ],
   "additionalProperties": false
 }
@@ -1952,91 +2160,5 @@ The piece a label names
   ],
   "additionalProperties": false,
   "description": "Whether the label is one of the job's client's pieces."
-}
-```
-
-### Piece
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "piece_code": {
-      "type": "string"
-    },
-    "base": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "supplier_lot": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "fitted_at": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "date"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "replacement_due_at": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "date"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "failed_at": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "failure_reason": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    }
-  },
-  "required": [
-    "piece_code",
-    "base",
-    "supplier_lot",
-    "fitted_at",
-    "replacement_due_at",
-    "failed_at",
-    "failure_reason"
-  ],
-  "additionalProperties": false
 }
 ```

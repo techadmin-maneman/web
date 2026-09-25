@@ -60,6 +60,12 @@ export async function keptClosed(jobId: string): Promise<number | null> {
   return kept !== null && kept.kind === "closed" ? kept.at : null;
 }
 
+/** Every job the technician closed out on this phone, so the day's list can say so before FSM does. */
+export async function keptClosedJobs(): Promise<Set<string>> {
+  const kept = await all<Kept>("jobs");
+  return new Set(kept.flatMap((record) => (record.kind === "closed" ? [record.job_id] : [])));
+}
+
 /** Every day the phone holds, for the screens that say what it is working from. */
 export async function keptDays(): Promise<string[]> {
   return (await all<Kept>("jobs")).filter((kept) => kept.kind === "day").map((kept) => kept.date);

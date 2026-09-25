@@ -82,10 +82,14 @@ describe("the account of what has not reached us", () => {
    * a sentence (docs/api-tech.md). The outbox keeps both, so the screen can say
    * which field changed rather than a generic error.
    */
-  it("keeps the code and the fields that changed, so no screen says a generic error", () => {
+  it("keeps the code, the fields that changed and the write it stopped at, so no screen says a generic error", () => {
     const queue = [event(1, "a", { state: "superseded", note: "superseded", fields: ["technician"] }), event(2, "a")];
     expect(account(queue)).toEqual([
-      { job_id: "a", waiting: 1, stopped: { state: "superseded", note: "superseded", fields: ["technician"] } },
+      {
+        job_id: "a",
+        waiting: 1,
+        stopped: { kind: "checklist", state: "superseded", note: "superseded", fields: ["technician"] },
+      },
     ]);
   });
 });

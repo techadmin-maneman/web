@@ -18,6 +18,8 @@
     "test/node/tech-api.test.ts",
     "test/node/tech-kept.test.ts",
     "test/node/tech-outbox-replay.test.ts",
+    "test/node/tech-piece-label.test.ts",
+    "test/node/tech-progress.test.ts",
     "test/node/tech-store.test.ts",
     "playwright.config.ts",
     "playwright.staging.config.ts",

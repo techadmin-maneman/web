@@ -42,7 +42,7 @@ button {
   touch-action: manipulation;
 }
 
-/* The steps slide on the house curve; under prefers-reduced-motion nothing moves. */
+/* The steps slide on the house curve (../steps/steps.module.css); under prefers-reduced-motion nothing moves. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

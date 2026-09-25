@@ -176,9 +176,10 @@
   cursor: pointer;
 }
 
+/* Lighter than the board's #A8B2C2, which is 5.34:1 on this ground; this is 7.13:1 (ADR 0025, "The technician boards"). */
 .action:disabled {
   background: var(--ink-disabled);
-  color: var(--ink-soft);
+  color: var(--ink-tag);
   cursor: default;
 }
 

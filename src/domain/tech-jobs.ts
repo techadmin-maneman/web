@@ -10,7 +10,14 @@
 // "No money anywhere in the technician app": a job carries a Prepaid, Credit or
 // Free badge, and no amount leaves the database. Whether the price book charges
 // nothing for the visit is asked in SQL, as a yes or a no.
+//
+// An unlocked card also carries what the technician needs at the door and no
+// route gave him before: the client's pieces (board A3's piece card, and the
+// piece step's "Pick from the list"), the last visit's after photograph, the
+// no-show wait, and whether the day-before WhatsApp reached the client (board
+// B5). The photograph itself is served on its own, and never cached.
 
+import { VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import type { JobEventKind } from "../policy/in-job-steps.ts";
@@ -18,8 +25,8 @@ import { jobDay, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
 import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
+import { piecesOf, type Piece } from "./pieces.ts";
 import { windowAt } from "./scheduling.ts";
-import type { BookingWindow } from "../config/scheduling.ts";
 
 /** The statuses a job the technician still has work on can be in. */
 const LIVE = ["scheduled", "dispatched", "in_progress"] as const;
@@ -36,6 +43,8 @@ export interface JobSummary {
   readonly sector: string | null;
   readonly status: AppointmentStatus;
   readonly badge: PaymentBadge;
+  /** How much of the day the visit takes, as board A1 writes it beneath the time: 1, 1.5 or 2 slots. */
+  readonly slots: number | null;
   readonly unlocked: boolean;
   readonly unlocks_at: string;
 }
@@ -77,12 +86,41 @@ export interface JobProgress {
   readonly outcome: string | null;
 }
 
+/** One of the client's pieces, as board A3's piece card and the piece step's list show it. */
+export interface CardPiece {
+  readonly piece_code: string;
+  readonly base: string | null;
+  readonly supplier_lot: string | null;
+  /** YYYY-MM-DD. */
+  readonly fitted_at: string | null;
+  /** YYYY-MM-DD. */
+  readonly replacement_due_at: string | null;
+  readonly failed_at: string | null;
+  readonly failure_reason: string | null;
+}
+
+/** The client's visit before this one that has after photographs: board A3's "Last visit, after. 22 Aug, Imran." */
+export interface LastVisit {
+  /** YYYY-MM-DD, in India. */
+  readonly date: string;
+  /** The first name of the technician who did it. */
+  readonly technician: string | null;
+  readonly photo_url: string;
+}
+
 export interface JobDetail extends JobSummary {
   /** Null while the job is locked, whatever the mirror holds. */
   readonly address: JobAddress | null;
   readonly access_notes: string | null;
   readonly client: JobClient | null;
   readonly progress: JobProgress;
+  /** How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it. */
+  readonly no_show_wait_min: number;
+  /** The client's pieces, newest fit first; null while the job is locked. */
+  readonly pieces: CardPiece[] | null;
+  readonly last_visit: LastVisit | null;
+  /** The day-before WhatsApp, or the arrival one, and when it reached the client's phone. */
+  readonly reminder: { readonly delivered_at: string | null } | null;
 }
 
 interface JobRow {
@@ -155,20 +193,115 @@ export async function jobDetail(
   const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
   if (row === null) return null;
   const summary = summaryOf(row, options.now, options.unlockHour);
-  const progress = await progressOf(db, { id: row.id, type: row.type ?? "service" }, options.waits);
-  if (!summary.unlocked) {
-    return { ...summary, address: null, access_notes: null, client: null, progress };
-  }
-  return {
+  const type = row.type ?? "service";
+  const locked = {
     ...summary,
+    address: null,
+    access_notes: null,
+    client: null,
+    progress: await progressOf(db, { id: row.id, type }, options.waits),
+    no_show_wait_min: options.waits[type],
+    pieces: null,
+    last_visit: null,
+    reminder: null,
+  };
+  if (!summary.unlocked) return locked;
+  return {
+    ...locked,
     address: addressOf(row),
     access_notes: row.access_notes,
     client:
       row.client_name === null || row.client_mobile === null
         ? null
         : { name: row.client_name, mobile: row.client_mobile, note: null },
-    progress,
+    pieces: row.person_id === null ? [] : (await piecesOf(db, row.person_id)).map(cardPiece),
+    last_visit: await lastVisitOf(db, row),
+    reminder: await reminderOf(db, row.id),
   };
+}
+
+/** Dates as the piece lookup names them: the fitted and due dates are days, the failure an instant. */
+function cardPiece(piece: Piece): CardPiece {
+  return {
+    piece_code: piece.piece_code,
+    base: piece.base,
+    supplier_lot: piece.supplier_lot,
+    fitted_at: piece.fitted_at === null ? null : piece.fitted_at.slice(0, 10),
+    replacement_due_at: piece.replacement_due_at === null ? null : piece.replacement_due_at.slice(0, 10),
+    failed_at: piece.failed_at,
+    failure_reason: piece.failure_reason,
+  };
+}
+
+interface EarlierVisit {
+  id: string;
+  window_start: string;
+  technician: string | null;
+}
+
+/** The client's latest visit before this one that has an after set, and who did it. */
+async function lastVisit(db: D1Database, job: JobRow): Promise<EarlierVisit | null> {
+  if (job.person_id === null) return null;
+  return db
+    .prepare(
+      `SELECT a.id, a.window_start, t.name AS technician FROM appointments a
+       JOIN photo_sets s ON s.appointment_id = a.id AND s.phase = 'after'
+       LEFT JOIN technicians t ON t.id = a.technician_id
+       WHERE a.person_id = ?1 AND a.id <> ?2 AND a.deleted_at IS NULL AND a.window_start < ?3
+       ORDER BY a.window_start DESC LIMIT 1`,
+    )
+    .bind(job.person_id, job.id, job.window_start)
+    .first<EarlierVisit>();
+}
+
+const firstName = (name: string): string => name.trim().split(/\s+/)[0] ?? name;
+
+async function lastVisitOf(db: D1Database, row: JobRow): Promise<LastVisit | null> {
+  const visit = await lastVisit(db, row);
+  if (visit === null) return null;
+  return {
+    date: indiaDate(new Date(visit.window_start)),
+    technician: visit.technician === null ? null : firstName(visit.technician),
+    photo_url: `/api/tech/jobs/${row.id}/last-visit-photo`,
+  };
+}
+
+/** The front first, as board A3 draws it, then the other angles in the order they are taken. */
+const ANGLE_ORDER =
+  "CASE p.angle WHEN 'front' THEN 0 WHEN 'top' THEN 1 WHEN 'left' THEN 2 WHEN 'right' THEN 3 ELSE 4 END";
+
+/**
+ * The last visit's after photograph, for this technician's unlocked job only:
+ * the rule the card it sits on keeps. Null when there is none to show.
+ */
+export async function lastVisitPhoto(
+  db: D1Database,
+  options: { technicianId: string; jobId: string; now: Date; unlockHour: number },
+): Promise<{ key: string; contentType: string } | null> {
+  const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
+  if (row === null || !summaryOf(row, options.now, options.unlockHour).unlocked) return null;
+  const visit = await lastVisit(db, row);
+  if (visit === null) return null;
+  const photo = await db
+    .prepare(
+      `SELECT p.r2_key, p.content_type FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id
+       WHERE s.appointment_id = ?1 AND s.phase = 'after' ORDER BY ${ANGLE_ORDER} LIMIT 1`,
+    )
+    .bind(visit.id)
+    .first<{ r2_key: string; content_type: string }>();
+  return photo === null ? null : { key: photo.r2_key, contentType: photo.content_type };
+}
+
+/** The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows.ts): the day-before one, else the arrival one. */
+function reminderOf(db: D1Database, appointmentId: string): Promise<{ delivered_at: string | null } | null> {
+  return db
+    .prepare(
+      `SELECT delivered_at FROM outbound_messages
+       WHERE subject_kind = 'appointment' AND subject_id = ?1 AND kind IN ('visit_reminder', 'arrival_notice')
+       ORDER BY created_at DESC LIMIT 1`,
+    )
+    .bind(appointmentId)
+    .first<{ delivered_at: string | null }>();
 }
 
 function addressOf(row: JobRow): JobAddress | null {
@@ -249,6 +382,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
     sector: row.locality ?? row.service_city,
     status: row.status,
     badge: badgeOf(row),
+    slots: row.type === null ? null : VISIT_BLOCKS[row.type].units / 2,
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
   };
