@@ -126,12 +126,12 @@ async function askedWindowsJob({ env, deps, log, budget }: CronContext): Promise
   if (done.resolved > 0) log.info("asked_windows_resolved", done);
 }
 
-async function booksJob({ env, deps, config, log }: CronContext): Promise<void> {
+async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const options = {
     refundAccountId: config.settings.zohoFsm?.booksRefundAccountId ?? null,
     labelAsTest: config.environment !== "production",
   };
-  const done = await syncBooks(env.DB, deps.fsm, deps.books, options, deps.now(), log);
+  const done = await syncBooks(env.DB, deps, options, deps.now(), log, budget);
   if (done.recorded + done.applied + done.refunded > 0) log.info("books_synced", done);
 }
 

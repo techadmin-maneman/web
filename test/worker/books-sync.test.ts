@@ -2,7 +2,9 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { RECHECK_AFTER_MS, syncBooks, type BooksSyncOptions } from "../../src/domain/books-sync.ts";
+import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
+import { CALLS_PER_RECORD, RECHECK_AFTER_MS, syncBooks, type BooksSyncOptions } from "../../src/domain/books-sync.ts";
+import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubBooks, type BooksInvoice, type StubBooks } from "../../src/providers/books.ts";
 import { createStubFsm, EMPTY_FSM, type FsmContact } from "../../src/providers/fsm.ts";
@@ -41,20 +43,50 @@ function booksWith(invoice: BooksInvoice | null): StubBooks {
   return { ...createStubBooks(), invoice: () => Promise.resolve(invoice) };
 }
 
-function pass(books: StubBooks, booksCustomerId: string | null, now = NOW, options = STAGING) {
+/** What the pass told ops. */
+let told: string[];
+
+function pass(
+  books: StubBooks,
+  booksCustomerId: string | null,
+  now = NOW,
+  options = STAGING,
+  budget: CallBudget = createCallBudget(Infinity),
+) {
   const fsm = createStubFsm({ ...EMPTY_FSM, contacts: [contact(booksCustomerId)] });
-  return syncBooks(env.DB, fsm, books, options, now, createLogger());
+  const alert = (message: string) => {
+    told.push(message);
+    return Promise.resolve();
+  };
+  const alertOnce = createAlertOnce({ db: env.DB, alert, now: () => now, environment: "local", log: createLogger() });
+  const resolveAlert = createResolveAlert({ db: env.DB, now: () => now });
+  return syncBooks(env.DB, { fsm, books, alertOnce, resolveAlert }, options, now, createLogger(), budget);
 }
 
-async function payment(status = "captured") {
+const CLIENT_LINK = `http://ops.localhost:4323/clients/${PERSON}`;
+
+async function payment(status = "captured", id = PAYMENT, capturedAt = TAKEN) {
   await env.DB.prepare(
     `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
        status, captured_at, created_at, updated_at)
-     VALUES (?1, 'MM-2026-0841', ?2, ?3, 'pay_test41', 3000000, 'INR', 'upi', ?4, ?5, ?6, ?6)`,
+     VALUES (?1, ?7, ?2, ?3, ?8, 3000000, 'INR', 'upi', ?4, ?5, ?6, ?6)`,
   )
-    .bind(PAYMENT, PERSON, VISIT, status, status === "authorized" ? null : TAKEN, TAKEN)
+    .bind(
+      id,
+      PERSON,
+      VISIT,
+      status,
+      status === "authorized" ? null : capturedAt,
+      capturedAt,
+      id === PAYMENT ? "MM-2026-0841" : "MM-2026-0842",
+      id === PAYMENT ? "pay_test41" : "pay_test42",
+    )
     .run();
 }
+
+/** A second payment, taken an hour after the first. */
+const SECOND = "66666666-6666-4666-8666-666666666666";
+const secondPayment = () => payment("captured", SECOND, "2026-09-20T21:00:00.000Z");
 
 async function invoiced(invoiceId: string | null) {
   await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = ?1 WHERE id = ?2").bind(invoiceId, VISIT).run();
@@ -68,6 +100,7 @@ const paymentRow = () =>
 const later = (ms: number) => new Date(NOW.getTime() + ms);
 
 beforeEach(async () => {
+  told = [];
   await env.DB.prepare(
     `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
      VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'fsm-contact-1')`,
@@ -132,7 +165,7 @@ describe("recording payments", () => {
     expect(books.made.payments).toEqual([]);
   });
 
-  it("logs a payment Books refuses, and waits an hour to try again", async () => {
+  it("logs a payment Books refuses, tells ops once, and waits an hour to try again", async () => {
     await payment();
     const books = {
       ...createStubBooks(),
@@ -142,16 +175,93 @@ describe("recording payments", () => {
     await pass(books, "books-customer-9");
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "books_payment_refused", status: 400 }));
     expect(await paymentRow()).toMatchObject({ books_payment_id: null, books_checked_at: NOW.toISOString() });
+    expect(told).toEqual([
+      `Books refused payment ${PAYMENT} (Razorpay pay_test41): 400 1002. It is asked again every hour. ${CLIENT_LINK}`,
+    ]);
+
+    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS + 1000));
+    expect(told).toHaveLength(1);
   });
 
-  it("lets any other failure through, for the cron to log, and changes nothing", async () => {
+  it("logs any other failure, leaves that payment an hour, and carries on with the next", async () => {
     await payment();
+    await secondPayment();
+    const stub = createStubBooks();
     const books = {
-      ...createStubBooks(),
-      recordPayment: () => Promise.reject(new ZohoError(503, "UNAVAILABLE", "try later")),
+      ...stub,
+      recordPayment: (details: Parameters<StubBooks["recordPayment"]>[0]) =>
+        details.reference === "MM-2026-0841"
+          ? Promise.reject(new ZohoError(503, "UNAVAILABLE", "try later"))
+          : stub.recordPayment(details),
     };
-    await expect(pass(books, "books-customer-9")).rejects.toThrow(/503/);
-    expect(await paymentRow()).toMatchObject({ books_payment_id: null, books_checked_at: null });
+    const logs = captureLogs();
+
+    expect(await pass(books, "books-customer-9")).toEqual({ recorded: 1, applied: 0, refunded: 0 });
+    expect(await paymentRow()).toMatchObject({ books_payment_id: null, books_checked_at: NOW.toISOString() });
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "books_payment_failed", payment_id: PAYMENT }),
+    );
+    expect(told).toEqual([]);
+  });
+
+  it("carries on past a client FSM would not read", async () => {
+    await payment();
+    const books = createStubBooks();
+    const fsm = { ...createStubFsm(EMPTY_FSM), contact: () => Promise.reject(new Error("FSM timed out")) };
+    const alertOnce = createAlertOnce({
+      db: env.DB,
+      alert: () => Promise.resolve(),
+      now: () => NOW,
+      environment: "local",
+      log: createLogger(),
+    });
+    const resolveAlert = createResolveAlert({ db: env.DB, now: () => NOW });
+    const deps = { fsm, books, alertOnce, resolveAlert };
+
+    expect(await syncBooks(env.DB, deps, STAGING, NOW, createLogger(), createCallBudget(Infinity))).toEqual({
+      recorded: 0,
+      applied: 0,
+      refunded: 0,
+    });
+    expect((await paymentRow())?.books_checked_at).toBe(NOW.toISOString());
+  });
+
+  it("tells ops once a failure has lasted three passes, and closes it when the payment is recorded", async () => {
+    await payment();
+    let failing = true;
+    const stub = createStubBooks();
+    const books = {
+      ...stub,
+      recordPayment: (details: Parameters<StubBooks["recordPayment"]>[0]) =>
+        failing ? Promise.reject(new ZohoError(503, "UNAVAILABLE", "try later")) : stub.recordPayment(details),
+    };
+    for (const hours of [0, 1, 2]) await pass(books, "books-customer-9", later(hours * (RECHECK_AFTER_MS + 1000)));
+    expect(told).toEqual([
+      expect.stringContaining(`Books has failed 3 times on payment ${PAYMENT} (Razorpay pay_test41)`) as string,
+    ]);
+
+    failing = false;
+    await pass(books, "books-customer-9", later(3 * (RECHECK_AFTER_MS + 1000)));
+    const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
+    expect(open).toEqual({ n: 0 });
+  });
+});
+
+describe("the pass's outside calls", () => {
+  it("handles only the records the cron run can pay for; the rest are the next run's", async () => {
+    await payment();
+    await secondPayment();
+    const books = createStubBooks();
+
+    expect(await pass(books, "books-customer-9", NOW, STAGING, createCallBudget(CALLS_PER_RECORD))).toEqual({
+      recorded: 1,
+      applied: 0,
+      refunded: 0,
+    });
+    const second = await env.DB.prepare("SELECT books_payment_id, books_checked_at FROM payments WHERE id = ?1")
+      .bind(SECOND)
+      .first();
+    expect(second).toEqual({ books_payment_id: null, books_checked_at: null });
   });
 });
 
@@ -207,7 +317,22 @@ describe("applying a payment to its invoice", () => {
     }
   });
 
-  it("logs a payment Books will not apply, and does not try again", async () => {
+  it("tells ops, once, of a payment with nothing to set it against: it stays in Books as the client's credit", async () => {
+    await payment();
+    await invoiced("inv-41");
+    const books = booksWith(sent({ balance: 0, status: "paid" }));
+    await pass(books, "books-customer-9");
+    expect(told).toEqual([
+      expect.stringMatching(
+        new RegExp(
+          `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) has nothing to be set against: invoice inv-41 is paid\\.`,
+        ),
+      ) as string,
+    ]);
+    expect(told[0]).toContain(CLIENT_LINK);
+  });
+
+  it("logs a payment Books will not apply, tells ops, and does not try again", async () => {
     await payment();
     await invoiced("inv-41");
     const books = {
@@ -218,6 +343,20 @@ describe("applying a payment to its invoice", () => {
     await pass(books, "books-customer-9");
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "books_apply_refused", code: "24016" }));
     expect((await paymentRow())?.books_applied_at).toBe(NOW.toISOString());
+    expect(told).toEqual([
+      `Books refused payment ${PAYMENT} against invoice inv-41: 400 24016. Set it against the invoice in Books by hand. ${CLIENT_LINK}`,
+    ]);
+  });
+
+  it("tries again in an hour when Books fails to apply a payment for any other reason", async () => {
+    await payment();
+    await invoiced("inv-41");
+    const books = {
+      ...booksWith(sent()),
+      applyToInvoice: () => Promise.reject(new ZohoError(502, "BAD_GATEWAY", "try later")),
+    };
+    await pass(books, "books-customer-9");
+    expect(await paymentRow()).toMatchObject({ books_applied_at: null, books_checked_at: NOW.toISOString() });
   });
 
   it("waits for the invoice", async () => {
@@ -226,6 +365,45 @@ describe("applying a payment to its invoice", () => {
     await pass(books, "books-customer-9");
     expect(books.made.applied).toEqual([]);
     expect((await paymentRow())?.books_applied_at).toBeNull();
+  });
+});
+
+describe("a kept charge", () => {
+  async function cancelled(kind: "cancelled" | "replaced", kept: number) {
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(VISIT).run();
+    await env.DB.prepare(
+      `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, kept_amount,
+         payment_id, created_at)
+       VALUES (?1, ?2, ?3, ?4, 'late', '2026-09-25T04:30:00.000Z', ?5, ?6, ?7, ?8)`,
+    )
+      .bind(crypto.randomUUID(), VISIT, PERSON, kind, 3000000 - kept, kept, PAYMENT, NOW.toISOString())
+      .run();
+  }
+
+  it("of a visit cancelled late is told to ops once: no invoice will come to set it against", async () => {
+    await payment();
+    await cancelled("cancelled", 400000);
+    const books = createStubBooks();
+
+    await pass(books, "books-customer-9");
+    expect(told).toEqual([
+      expect.stringMatching(
+        new RegExp(
+          `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) has nothing to be set against: visit ${VISIT} was cancelled and Rs\\. 4000 of it kept\\.`,
+        ),
+      ) as string,
+    ]);
+    expect((await paymentRow())?.books_applied_at).toBe(NOW.toISOString());
+
+    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
+    expect(told).toHaveLength(1);
+  });
+
+  it("is not told when the whole payment went back", async () => {
+    await payment();
+    await cancelled("cancelled", 0);
+    await pass(createStubBooks(), "books-customer-9");
+    expect(told).toEqual([]);
   });
 });
 
@@ -293,11 +471,16 @@ describe("recording refunds", () => {
     const logs = captureLogs();
     await pass(books, "books-customer-9");
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "books_refund_refused", status: 400 }));
+    expect(told).toEqual([
+      `Books refused refund ${REFUND} (Razorpay rfnd_test7): 400 1. It is asked again every hour. ${CLIENT_LINK}`,
+    ]);
 
     refusing = false;
     await pass(books, "books-customer-9", later(RECHECK_AFTER_MS / 2));
     expect(books.made.refunds).toEqual([]);
     await pass(books, "books-customer-9", later(RECHECK_AFTER_MS + 1000));
     expect(books.made.refunds).toHaveLength(1);
+    const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
+    expect(open).toEqual({ n: 0 });
   });
 });
