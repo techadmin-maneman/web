@@ -49,6 +49,15 @@ interface AddressRow {
   place_id: string | null;
 }
 
+/** An address's street as FSM's service address holds it: the first line, then the rest of it. */
+export function streetOf(address: { line1: string; line2: string | null; locality: string | null }): {
+  street1: string;
+  street2: string | null;
+} {
+  const rest = [address.line2, address.locality].filter((part) => part !== null && part !== "").join(", ");
+  return { street1: address.line1, street2: rest === "" ? null : rest };
+}
+
 /** An address saved before migration 0028 has nulls in the new columns and reads unchanged. */
 const fromRow = ({ access_notes: accessNotes, place_id: placeId, ...rest }: AddressRow): Address => ({
   ...rest,

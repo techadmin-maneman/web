@@ -1,11 +1,11 @@
 // A person's contact in FSM: the one the mirror or an earlier booking linked,
 // else the one FSM already holds for their number, else a new one. FSM holds
-// the city, and the pincode where the booking gave one; the street is
-// confirmed with the client.
+// the city, and the pincode and street of the address the client saved, if
+// they have; otherwise the street is confirmed with them.
 
 import { createLogger, type Logger } from "../log.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import { currentAddress } from "./profile.ts";
+import { currentAddress, streetOf } from "./profile.ts";
 
 /** The state each served city is in, with its GST code, for the contact's place of supply. */
 const STATES: Readonly<Record<string, { state: string; code: string }>> = {
@@ -92,8 +92,11 @@ async function addContact(
   },
   place: Place | undefined,
 ): Promise<string> {
-  const city = place?.city ?? (await currentAddress(db, personId))?.city ?? person.lead_city ?? person.invited_city;
+  const saved = await currentAddress(db, personId);
+  const city = place?.city ?? saved?.city ?? person.lead_city ?? person.invited_city;
   if (city === null) throw new Error("the person has no city to give FSM");
+  // The saved address is the service address only where it is in the city the visit is in.
+  const address = saved?.city === city ? saved : null;
   const [first, ...rest] = person.name.trim().split(/\s+/);
   const state = STATES[city];
   return fsm.createContact({
@@ -102,7 +105,8 @@ async function addContact(
     mobile: person.mobile_e164,
     email: person.email,
     city,
-    pincode: place?.pincode ?? null,
+    pincode: place?.pincode ?? address?.pincode ?? null,
+    street: address === null ? null : streetOf(address),
     state: state?.state ?? null,
     stateCode: state?.code ?? null,
   });

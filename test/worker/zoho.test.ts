@@ -321,6 +321,28 @@ describe("Zoho record and note contents", () => {
   });
 });
 
+describe("Zoho: a person's changed number or address", () => {
+  it("writes the number and city onto the known record, with workflows off, and adds no note", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [LEADS_URL]: () => updated("zoho-9") });
+    expect(
+      await crm.updateContact({ personId: "person-1", mobileE164: "+919810000003", city: "Gurgaon" }, "zoho-9"),
+    ).toEqual({ crmLeadId: "zoho-9" });
+    expect(calls.map((call) => `${call.method} ${new URL(call.url).pathname}`)).toEqual([
+      "POST /oauth/v2/token",
+      "PUT /crm/v8/Leads/zoho-9",
+    ]);
+    expect(bodyOf(calls[1])).toEqual({ data: [{ Mobile: "+919810000003", City: "Gurgaon" }], trigger: [] });
+  });
+
+  it("writes nothing for a person the CRM never had", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [SEARCH_URL]: noMatch });
+    expect(await crm.updateContact({ personId: "person-1", mobileE164: "+919810000003", city: null }, null)).toEqual({
+      crmLeadId: null,
+    });
+    expect(calls).toHaveLength(2);
+  });
+});
+
 describe("Zoho: erasing a person", () => {
   it("blanks the known record with workflows off and notes why, without searching", async () => {
     const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [LEADS_URL]: () => updated("zoho-9") });

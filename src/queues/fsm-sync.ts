@@ -28,11 +28,13 @@ import {
 } from "../domain/bookings.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
+import { streetOf } from "../domain/profile.ts";
 import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { scrubString, type Logger } from "../log.ts";
+import type { FsmContactUpdate } from "../providers/fsm.ts";
 import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
 import type { MessagingMessage } from "./messaging.ts";
 
@@ -53,6 +55,8 @@ export const FsmSyncMessageSchema = z.union([
   z.object({ erase_person_id: z.string().min(1), request_id: z.string() }),
   /** One write from a technician's outbox, to pass to FSM (docs/decisions/0038-offline-writes.md). */
   z.object({ job_event_id: z.uuid(), request_id: z.string() }),
+  /** A client whose number or address changed, written over their FSM contact (src/http/contact-sync.ts). */
+  z.object({ update_contact_person_id: z.string().min(1), request_id: z.string() }),
 ]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
@@ -83,6 +87,16 @@ export async function handleFsmSyncBatch(
         alertOnce: deps.alertOnce,
         log: bookingLog,
       });
+      continue;
+    }
+    if ("update_contact_person_id" in parsed.data) {
+      await updateContact(
+        message,
+        parsed.data.update_contact_person_id,
+        db,
+        deps,
+        log.child({ request_id: parsed.data.request_id }),
+      );
       continue;
     }
     if ("erase_person_id" in parsed.data) {
@@ -420,6 +434,77 @@ async function eraseContact(
     }
   }
   message.ack();
+}
+
+/**
+ * Writes a client's number and current address over their FSM contact, read
+ * afresh from D1, so FSM's screens and Books show them rather than the old
+ * number and "To be confirmed with the client". Nothing is written for an
+ * erased client or one FSM has no contact for yet: the booking that adds the
+ * contact reads the same row. The fifth failure tells ops.
+ */
+async function updateContact(
+  message: Message,
+  personId: string,
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+): Promise<void> {
+  const person = await db
+    .prepare(
+      `SELECT p.fsm_contact_id, p.mobile_e164, a.line1, a.line2, a.locality, a.city, a.pincode
+       FROM people p
+       LEFT JOIN addresses a ON a.id = (SELECT id FROM addresses WHERE person_id = p.id AND replaced_at IS NULL
+                                        ORDER BY created_at DESC LIMIT 1)
+       WHERE p.id = ?1 AND p.erased_at IS NULL AND p.fsm_contact_id IS NOT NULL`,
+    )
+    .bind(personId)
+    .first<ContactRow>();
+  if (person === null) {
+    message.ack();
+    return;
+  }
+  try {
+    await deps.fsm.updateContact(person.fsm_contact_id, { mobile: person.mobile_e164, address: addressOf(person) });
+    await deps.resolveAlert(`fsm_contact_update:${personId}`);
+    log.info("fsm_contact_updated", { person_id: personId });
+    message.ack();
+  } catch (error) {
+    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    log.warn("fsm_contact_update_failed", { person_id: personId, attempt: message.attempts, reason });
+    if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
+      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      return;
+    }
+    await deps.alertOnce({
+      key: `fsm_contact_update:${personId}`,
+      message:
+        `Client ${personId}'s new number or address did not reach FSM contact ${person.fsm_contact_id} after ` +
+        `${String(message.attempts)} attempts: ${reason}. Update the contact in FSM by hand.`,
+      link: `/clients/${personId}`,
+    });
+    message.ack();
+  }
+}
+
+interface ContactRow {
+  fsm_contact_id: string;
+  mobile_e164: string;
+  line1: string | null;
+  line2: string | null;
+  locality: string | null;
+  city: string | null;
+  pincode: string | null;
+}
+
+/** The client's address as FSM's service address takes it; null while they have given none. */
+function addressOf(row: ContactRow): FsmContactUpdate["address"] {
+  if (row.line1 === null || row.city === null || row.pincode === null) return null;
+  return {
+    ...streetOf({ line1: row.line1, line2: row.line2, locality: row.locality }),
+    city: row.city,
+    pincode: row.pincode,
+  };
 }
 
 async function sendLead(

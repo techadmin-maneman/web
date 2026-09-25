@@ -26,3 +26,8 @@ INSERT INTO zoho_access_tokens (client, access_token, expires_at)
   SELECT 'crm', access_token, expires_at FROM zoho_token WHERE id = 1;
 INSERT INTO zoho_access_tokens (client, access_token, expires_at)
   SELECT 'fsm', access_token, expires_at FROM zoho_tokens WHERE client = 'fsm';
+
+-- The number a confirmed change replaced, so the referral fraud rule can
+-- compare every number a person has held (src/domain/referral-grants.ts).
+-- Null on changes confirmed before this migration, and on any not confirmed.
+ALTER TABLE number_change_requests ADD COLUMN replaced_mobile_e164 TEXT;

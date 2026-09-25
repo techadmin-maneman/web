@@ -224,7 +224,8 @@ export function fakeQueue(): Queue & { sent: unknown[] } {
 }
 
 export function stubCrmThatFails(message: string): CrmProvider {
-  return { syncLead: () => Promise.reject(new Error(message)), erasePerson: () => Promise.reject(new Error(message)) };
+  const fails = () => Promise.reject(new Error(message));
+  return { syncLead: fails, erasePerson: fails, updateContact: fails };
 }
 
 /** Captures every JSON log line written through console.*. */

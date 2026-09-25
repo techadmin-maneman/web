@@ -201,12 +201,15 @@ export type Decision = "confirm" | "reject";
 
 /**
  * Ops' decision. Confirming moves the person to the new number, unless
- * someone else already holds it. Only a change waiting for ops can be decided.
+ * someone else already holds it, and keeps the number it replaced, which the
+ * referral fraud rules compare (src/domain/referral-grants.ts). Only a change
+ * waiting for ops can be decided. The caller sends a confirmed number on to
+ * FSM's contact and the CRM lead.
  */
 export async function decideNumberChange(
   db: D1Database,
   options: { id: string; decision: Decision; staff: string; reason: string | null; audit: AuditEntry; now: Date },
-): Promise<"decided" | "not_waiting" | "number_in_use"> {
+): Promise<{ readonly personId: string } | "not_waiting" | "number_in_use"> {
   const change = await findNumberChange(db, options.id);
   if (change?.state !== "awaiting_ops") return "not_waiting";
 
@@ -219,9 +222,10 @@ export async function decideNumberChange(
     .bind(change.id, options.decision === "confirm" ? "confirmed" : "rejected", at, options.staff, options.reason);
   // The decision's audit entry goes in the same batch as the decision (src/domain/audit.ts).
   const audit = auditStatement(db, options.audit, options.now);
+  const decided = { personId: change.personId };
   if (options.decision === "reject") {
     await db.batch([decide, audit]);
-    return "decided";
+    return decided;
   }
 
   const holder = await db
@@ -231,8 +235,14 @@ export async function decideNumberChange(
   if (holder !== null) return "number_in_use";
   await db.batch([
     decide,
+    // Read before the next statement moves the person off it.
+    db
+      .prepare(
+        "UPDATE number_change_requests SET replaced_mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?2) WHERE id = ?1",
+      )
+      .bind(change.id, change.personId),
     db.prepare("UPDATE people SET mobile_e164 = ?2 WHERE id = ?1").bind(change.personId, change.newMobileE164),
     audit,
   ]);
-  return "decided";
+  return decided;
 }

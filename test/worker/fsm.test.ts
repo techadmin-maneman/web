@@ -353,6 +353,7 @@ describe("FSM: booking a visit, once", () => {
       email: null,
       city: "Gurgaon",
       pincode: "122018",
+      street: { street1: "House 12", street2: "Tower C, Sector 65" },
       state: "Haryana",
       stateCode: "HR",
     });
@@ -367,8 +368,51 @@ describe("FSM: booking a visit, once", () => {
     const posts = calls
       .filter((call) => call.method === "POST" && call.url.startsWith(FSM_API))
       .map((call) => JSON.parse(call.body) as unknown);
-    expect(posts[0]).toMatchObject({ data: [{ Service_Address: { City: "Gurgaon", Zip_Code: "122018" } }] });
+    expect(posts[0]).toMatchObject({
+      data: [
+        {
+          Service_Address: {
+            Street_1: "House 12",
+            Street_2: "Tower C, Sector 65",
+            City: "Gurgaon",
+            Zip_Code: "122018",
+          },
+        },
+      ],
+    });
     expect(posts[1]).toMatchObject({ data: [{ Summary: "Consultation for Rohit Malhotra (lead lead-1)" }] });
+  });
+});
+
+describe("FSM: a client's changed number or address", () => {
+  it("writes the number, and the address through the service address's ID, over the contact", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Contacts/contact-1`]: (call) =>
+        call.method === "GET"
+          ? json({ data: [fsmContactRecord({ Service_Address: { id: "sa-1" }, Billing_Address: { id: "ba-1" } })] })
+          : json({ data: [{ code: "SUCCESS", status: "success" }] }),
+    });
+    await provider.updateContact("contact-1", {
+      mobile: "+919810000003",
+      address: { street1: "House 12", street2: "Tower C, Sector 65", city: "Gurgaon", pincode: "122018" },
+    });
+
+    const put = calls.find((call) => call.method === "PUT");
+    expect(JSON.parse(put?.body ?? "null")).toEqual({
+      data: [
+        {
+          Mobile: "+919810000003",
+          Service_Address: {
+            id: "sa-1",
+            Street_1: "House 12",
+            Street_2: "Tower C, Sector 65",
+            City: "Gurgaon",
+            Zip_Code: "122018",
+          },
+        },
+      ],
+    });
   });
 });
 

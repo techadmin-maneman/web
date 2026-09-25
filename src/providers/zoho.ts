@@ -88,6 +88,23 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
       }
     },
 
+    async updateContact(contact, knownCrmLeadId) {
+      const api = createZohoApi(settings, { ...deps, log: deps.log.child({ person_id: contact.personId }) });
+      const record = { Mobile: contact.mobileE164, ...(contact.city === null ? {} : { City: contact.city }) };
+      const write = async (id: string) => {
+        await api.updateLead(id, record, { runWorkflows: false });
+        return { crmLeadId: id };
+      };
+      const id = knownCrmLeadId ?? (await api.findLeadByPersonId(contact.personId));
+      if (id === null) return { crmLeadId: null };
+      try {
+        return await write(id);
+      } catch (error) {
+        const found = await foundAgain(api, error, contact.personId, knownCrmLeadId);
+        return found === null ? { crmLeadId: null } : write(found);
+      }
+    },
+
     async erasePerson(personId, knownCrmLeadId) {
       const api = createZohoApi(settings, { ...deps, log: deps.log.child({ person_id: personId }) });
       const id = knownCrmLeadId ?? (await api.findLeadByPersonId(personId));

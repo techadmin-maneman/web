@@ -22,6 +22,8 @@ export const CrmSyncMessageSchema = z.union([
   z.object({ lead_id: z.uuid(), request_id: z.string() }),
   /** An erased person's record is blanked (docs/decisions/0019-erasure.md). */
   z.object({ erase_person_id: z.uuid(), request_id: z.string() }),
+  /** A person whose number or address changed, written onto their record (src/http/contact-sync.ts). */
+  z.object({ update_person_id: z.string().min(1), request_id: z.string() }),
 ]);
 export type CrmSyncMessage = z.infer<typeof CrmSyncMessageSchema>;
 
@@ -39,12 +41,73 @@ export async function handleCrmSyncBatch(
       continue;
     }
     const messageLog = log.child({ request_id: parsed.data.request_id });
+    if ("update_person_id" in parsed.data) {
+      await updateContact(message, db, deps, messageLog, parsed.data.update_person_id);
+      continue;
+    }
     const { retrySoon } =
       "erase_person_id" in parsed.data
         ? await eraseInCrm(db, deps, messageLog, parsed.data.erase_person_id)
         : await syncLead(db, deps, messageLog, parsed.data.lead_id);
     if (retrySoon) message.retry({ delaySeconds: QUICK_RETRY_DELAY_SECONDS });
     else message.ack();
+  }
+}
+
+/** Tries of a contact update before ops are told to make it by hand. */
+export const MAX_CONTACT_UPDATE_ATTEMPTS = 5;
+
+/**
+ * Writes a person's number, and the city of their address, onto their CRM
+ * record, read afresh from D1. Nothing is written for an erased person or one
+ * the CRM never had. A failure is tried again on the queue, and the fifth tells ops.
+ */
+async function updateContact(
+  message: Message,
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+  personId: string,
+): Promise<void> {
+  const person = await db
+    .prepare(
+      `SELECT p.mobile_e164, p.zoho_lead_id,
+         (SELECT city FROM addresses a WHERE a.person_id = p.id AND a.replaced_at IS NULL
+          ORDER BY a.created_at DESC LIMIT 1) AS city
+       FROM people p WHERE p.id = ?1 AND p.erased_at IS NULL`,
+    )
+    .bind(personId)
+    .first<{ mobile_e164: string; zoho_lead_id: string | null; city: string | null }>();
+  if (person === null) {
+    message.ack();
+    return;
+  }
+  try {
+    const { crmLeadId } = await deps.crm.updateContact(
+      { personId, mobileE164: person.mobile_e164, city: person.city },
+      person.zoho_lead_id,
+    );
+    if (crmLeadId !== null && crmLeadId !== person.zoho_lead_id) {
+      await db.prepare("UPDATE people SET zoho_lead_id = ?2 WHERE id = ?1").bind(personId, crmLeadId).run();
+    }
+    await deps.resolveAlert(`crm_contact_update:${personId}`);
+    log.info("crm_contact_updated", { person_id: personId, found: crmLeadId !== null });
+    message.ack();
+  } catch (error) {
+    const reason = describe(error);
+    log.warn("crm_contact_update_failed", { person_id: personId, attempt: message.attempts, reason });
+    if (message.attempts < MAX_CONTACT_UPDATE_ATTEMPTS) {
+      message.retry({ delaySeconds: QUICK_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      return;
+    }
+    await deps.alertOnce({
+      key: `crm_contact_update:${personId}`,
+      message:
+        `Client ${personId}'s new number or city did not reach their CRM lead after ` +
+        `${String(message.attempts)} attempts: ${reason}. Update the lead by hand.`,
+      link: `/clients/${personId}`,
+    });
+    message.ack();
   }
 }
 

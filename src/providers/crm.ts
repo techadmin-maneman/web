@@ -39,6 +39,14 @@ export interface CrmSyncResult {
   readonly created: boolean;
 }
 
+/** A person's details as they are now, after a change of number or address. */
+export interface CrmContact {
+  readonly personId: string;
+  readonly mobileE164: string;
+  /** The city of their current address; null where they have given none. */
+  readonly city: string | null;
+}
+
 export interface CrmProvider {
   /** Creates the person's CRM record, or updates it and adds a note. */
   syncLead(lead: CrmLead, knownCrmLeadId: string | null): Promise<CrmSyncResult>;
@@ -47,6 +55,12 @@ export interface CrmProvider {
    * to contact them. `found` is false when the CRM never had them.
    */
   erasePerson(personId: string, knownCrmLeadId: string | null): Promise<{ found: boolean }>;
+  /**
+   * Writes a person's number, and their address's city, onto their record,
+   * with workflows off: nothing chases a client for a change of number. The
+   * record's ID, or null when the CRM never had them.
+   */
+  updateContact(contact: CrmContact, knownCrmLeadId: string | null): Promise<{ crmLeadId: string | null }>;
 }
 
 export function createCrmProvider(zoho: ZohoSettings | null, deps: ZohoRequesterDependencies): CrmProvider {
@@ -66,6 +80,10 @@ export function createStubCrm(log: Logger): CrmProvider {
     erasePerson: (personId, knownCrmLeadId) => {
       log.info("crm_stub_erase", { person_id: personId });
       return Promise.resolve({ found: knownCrmLeadId !== null });
+    },
+    updateContact: (contact, knownCrmLeadId) => {
+      log.info("crm_stub_update_contact", { person_id: contact.personId });
+      return Promise.resolve({ crmLeadId: knownCrmLeadId });
     },
   };
 }

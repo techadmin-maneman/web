@@ -142,7 +142,7 @@ export interface FsmDownload {
   readonly contentType: string;
 }
 
-/** A person to add to FSM as a contact. Their full address is confirmed with them later; FSM holds the city. */
+/** A person to add to FSM as a contact, with the street of their saved address where they have given one. */
 export interface NewFsmContact {
   readonly firstName: string | null;
   readonly lastName: string;
@@ -150,11 +150,26 @@ export interface NewFsmContact {
   readonly mobile: string;
   readonly email: string | null;
   readonly city: string;
-  /** The service address's pincode, where the booking gave one. */
+  /** The service address's pincode, where the booking or the client's saved address gave one. */
   readonly pincode: string | null;
+  /** The street of the client's saved address; null leaves it to be confirmed with them. */
+  readonly street: { readonly street1: string; readonly street2: string | null } | null;
   /** The state, e.g. Haryana, and its GST code, e.g. HR; null where the city is not one we know. */
   readonly state: string | null;
   readonly stateCode: string | null;
+}
+
+/** A client's details as they are now, to write over their contact after a change of number or address. */
+export interface FsmContactUpdate {
+  /** E.164, as the mirror matches it. */
+  readonly mobile: string;
+  /** The address the client gave; null leaves FSM's service address as it is. */
+  readonly address: {
+    readonly street1: string;
+    readonly street2: string | null;
+    readonly city: string;
+    readonly pincode: string;
+  } | null;
 }
 
 /** A visit a client asked for, for ops to schedule in FSM: a Request. */
@@ -235,6 +250,8 @@ export interface FsmProvider {
   findContact(mobile: string): Promise<string | null>;
   /** Adds a contact, with a service address in their city; returns its FSM ID. */
   createContact(contact: NewFsmContact): Promise<string>;
+  /** Writes a client's number, and their address as the service address, over their contact. */
+  updateContact(contactId: string, update: FsmContactUpdate): Promise<void>;
   /** The Request carrying our reference, among the latest FSM holds; null if none does. */
   findRequest(reference: string): Promise<string | null>;
   /** Adds a Request against a contact's service address; returns its FSM ID. */
@@ -362,6 +379,7 @@ export interface StubFsm extends FsmProvider {
     readonly cancelled: { workOrderId: string; note: string }[];
     readonly invoiced: string[];
     readonly erased: string[];
+    readonly contactUpdates: ({ contactId: string } & FsmContactUpdate)[];
     readonly assets: NewFsmAsset[];
     readonly assetUpdates: { assetId: string; status?: string }[];
     readonly assigned: { appointmentId: string; technicianId: string }[];
@@ -396,7 +414,8 @@ export type StubFsmStep =
   | "attachToAppointment"
   | "rescheduleVisit"
   | "invoiceWorkOrder"
-  | "requestPreference";
+  | "requestPreference"
+  | "updateContact";
 
 /**
  * Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it,
@@ -412,6 +431,7 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     cancelled: [] as { workOrderId: string; note: string }[],
     invoiced: [] as string[],
     erased: [] as string[],
+    contactUpdates: [] as ({ contactId: string } & FsmContactUpdate)[],
     assets: [] as NewFsmAsset[],
     assetUpdates: [] as { assetId: string; status?: string }[],
     assigned: [] as { appointmentId: string; technicianId: string }[],
@@ -622,6 +642,11 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       checkFailure("requestPreference");
       return Promise.resolve(world.preferences?.[workOrderId] ?? null);
     },
+    updateContact: (contactId, update) => {
+      checkFailure("updateContact");
+      made.contactUpdates.push({ contactId, ...update });
+      return Promise.resolve();
+    },
     eraseContact: (contactId) => {
       made.erased.push(contactId);
       return Promise.resolve();
@@ -642,6 +667,7 @@ function createUnconnectedFsm(): FsmProvider {
     download: off,
     findContact: off,
     createContact: off,
+    updateContact: off,
     findRequest: off,
     createRequest: off,
     findWorkOrder: off,

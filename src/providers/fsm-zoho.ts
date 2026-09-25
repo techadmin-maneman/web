@@ -54,6 +54,7 @@ import type {
   FsmAsset,
   FsmAttachment,
   FsmContact,
+  FsmContactUpdate,
   FsmInvoice,
   FsmItem,
   FsmProvider,
@@ -409,6 +410,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     },
 
     async createContact(contact: NewFsmContact) {
+      const street = contact.street ?? { street1: ADDRESS_TO_CONFIRM, street2: null };
       return create("create_contact", "Contacts", {
         ...(contact.firstName === null ? {} : { First_Name: contact.firstName }),
         Last_Name: contact.lastName,
@@ -418,7 +420,8 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         ...(contact.stateCode === null ? {} : { Place_of_Supply: contact.stateCode }),
         Service_Address: {
           Address_Name: "Service Address",
-          Street_1: ADDRESS_TO_CONFIRM,
+          Street_1: street.street1,
+          ...(street.street2 === null ? {} : { Street_2: street.street2 }),
           City: contact.city,
           ...(contact.state === null ? {} : { State: contact.state }),
           ...(contact.pincode === null ? {} : { Zip_Code: contact.pincode }),
@@ -683,6 +686,30 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         preferredDate: asked.Preference?.Preferred_Date_1 ?? null,
         preferenceNote: asked.Preference?.Preference_Note ?? null,
       };
+    },
+
+    // The same write as the erasure's, tried on the org: the number, and the street through the
+    // service address's ID. The city and pincode on that address have not yet been written this way.
+    async updateContact(contactId, update: FsmContactUpdate) {
+      const [contact] = records(await json("update_contact_read", `/Contacts/${contactId}`), "data", Addresses);
+      if (contact === undefined) throw new ZohoError(404, "NO_CONTACT", "the contact to update is not in FSM");
+      const { address } = update;
+      const serviceAddress =
+        address === null
+          ? {}
+          : {
+              Service_Address: {
+                id: contact.Service_Address.id,
+                Street_1: address.street1,
+                Street_2: address.street2,
+                City: address.city,
+                Zip_Code: address.pincode,
+              },
+            };
+      await request("update_contact", `/fsm/v1/Contacts/${contactId}`, {
+        method: "PUT",
+        body: { data: [{ Mobile: update.mobile, ...serviceAddress }] },
+      });
     },
 
     // Tried on the real org on 22 September 2026: the name, numbers and e-mail clear, and the street can be
