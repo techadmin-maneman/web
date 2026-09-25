@@ -1,5 +1,6 @@
 // When a referral grant waits for ops (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them, and the owner's ruling on the cap (ADR 0025, item 24).
+// The rules as the prompt states them, and the owner's ruling on the cap (ADR 0025, item 24). Each is checked
+// in fraudSignals (src/domain/referral-grants.ts).
 
 export const RULES = [
   "A grant is held for ops review when any of these is true:",

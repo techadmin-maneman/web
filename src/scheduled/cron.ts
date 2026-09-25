@@ -9,6 +9,7 @@
 
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
+import { requeueUnbookedHolds } from "../domain/bookings.ts";
 import { syncBooks } from "../domain/books-sync.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
@@ -88,6 +89,15 @@ async function sweepJob({ env, deps, config, log, budget }: CronContext): Promis
   });
 }
 
+async function unbookedHoldsJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const requeued = await requeueUnbookedHolds(
+    env.DB,
+    { queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, budget, log },
+    deps.now(),
+  );
+  if (requeued > 0) log.warn("unbooked_holds_requeued", { count: requeued });
+}
+
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
   const finished = await deleteLeftFiles(env, deps.now(), log);
   if (finished > 0) log.info("erased_files_deleted", { people: finished });
@@ -142,6 +152,8 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
 
 export const CRON_JOBS: readonly CronJob[] = [
   { name: "sweeper", needs: "nothing", run: sweepJob },
+  // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md).
+  { name: "unbooked_holds", needs: "fsm", run: unbookedHoldsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).

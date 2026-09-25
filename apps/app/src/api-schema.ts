@@ -2043,7 +2043,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -2466,6 +2466,7 @@ export interface components {
             days: {
                 /** Format: date */
                 date: string;
+                price: components["schemas"]["Price"] & unknown;
                 windows: {
                     /** @enum {string} */
                     window: "morning" | "afternoon" | "evening";
@@ -2474,6 +2475,7 @@ export interface components {
                 }[];
             }[];
         };
+        /** @description The first day's price. */
         Price: {
             /** @description In paise, before GST: the main figure. */
             amount_ex_gst: number;
@@ -2554,7 +2556,7 @@ export interface components {
             free_until: string;
             /** @description In paise: what the visit's payment holds, carried over or kept. */
             paid: number;
-            /** @description For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late). */
+            /** @description For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late, or its grant has been taken back or has expired). */
             credit: ("restored" | "lost") | null;
             /**
              * @description free: the payment carries over; late_fee: the late fee is paid, then the payment carries over; charged: the payment is kept, and the new visit is paid separately.
@@ -2577,7 +2579,7 @@ export interface components {
             free_until: string;
             /** @description In paise: what the visit's payment holds, carried over or kept. */
             paid: number;
-            /** @description For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late). */
+            /** @description For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late, or its grant has been taken back or has expired). */
             credit: ("restored" | "lost") | null;
             /** @description In paise: what goes back to the payment's source. */
             refund: number;

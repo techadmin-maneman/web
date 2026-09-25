@@ -1,17 +1,24 @@
 // When a visit can be booked, and holding it while the client pays
 // (docs/decisions/0034-clash-check.md, 0035-window-slot-map.md).
 //
-// A technician's day is eight half-slots. What takes them: slots held and not
-// yet expired (slot_claims), live visits in the mirror, whether ops booked
-// them in FSM or a hold became one, and leave ops recorded (ADR 0062). A
-// technician holds one live job per window. A hold writes its claims in one
-// batch, and the claims' key stops two holds taking the same time; once a hold
-// is booked, its visit in the mirror takes the time instead. A visit being
-// moved keeps its technician, and its own time does not count against the move
+// A technician's day is eight half-slots. What takes them: slots held
+// (slot_claims), live visits in the mirror, whether ops booked them in FSM or a
+// hold became one, and leave ops recorded (ADR 0062). A technician holds one
+// live job per window. A hold writes its claims in one batch, and the claims'
+// key stops two holds taking the same time; once a hold is booked, its visit in
+// the mirror takes the time instead. A visit being moved keeps its technician,
+// and its own time does not count against the move
 // (docs/decisions/0046-moving-and-cancelling.md).
+//
+// A hold keeps its time while it is waiting for payment, for its ten minutes
+// and the grace after them, and from the moment it is paid for (or booked free)
+// until it is booked or refunded, however long that takes
+// (docs/decisions/0068-a-paid-hold-is-kept.md). Nobody's hold lets a paid one
+// go. The days ops black out (visit_blackouts) are not offered at all.
 
 import {
   BOOKING_WINDOWS,
+  PAYMENT_GRACE_SECONDS,
   UNIT_STARTS,
   UNITS_PER_DAY,
   VISIT_BLOCKS,
@@ -23,6 +30,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { clashes } from "../policy/dispatch.ts";
 import { isFitted } from "./client-visits.ts";
+import { loadBlackouts } from "./leads.ts";
 import type { Price } from "./price-book.ts";
 
 /** What one technician's day already holds. */
@@ -106,6 +114,9 @@ export interface Moving {
   readonly technicianId: string;
 }
 
+/** Until when an unpaid hold made before `now` keeps its time: its ten minutes, then the grace. */
+const graceStart = (now: Date): string => new Date(now.getTime() - PAYMENT_GRACE_SECONDS * 1000).toISOString();
+
 /** What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. */
 export async function occupancy(
   db: D1Database,
@@ -125,9 +136,9 @@ export async function occupancy(
   const claims = await db
     .prepare(
       `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
-       WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND h.expires_at > ?3`,
+       WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR h.expires_at > ?3)`,
     )
-    .bind(from, to, now.toISOString())
+    .bind(from, to, graceStart(now))
     .all<{ technician_id: string; date: string; claim: string }>();
   for (const { technician_id: technicianId, date, claim } of claims.results) {
     const [kind, value = ""] = claim.split(":");
@@ -174,8 +185,19 @@ export async function occupancy(
   return (technicianId, date) => days.get(`${technicianId}/${date}`) ?? emptyDay();
 }
 
-/** The types a client may book: a consultation first, then a first fit, then service visits and replacements. */
+/**
+ * The types a client may book: a consultation first, then a first fit, then service visits and replacements.
+ * A consultation or a first fit is booked once at a time: not while one is still to happen.
+ */
 export async function bookableTypes(db: D1Database, personId: string): Promise<VisitType[]> {
+  const open: VisitType[] = [];
+  for (const type of await typesAtStage(db, personId)) {
+    if ((await liveVisitOf(db, personId, type)) === null) open.push(type);
+  }
+  return open;
+}
+
+async function typesAtStage(db: D1Database, personId: string): Promise<VisitType[]> {
   if (await isFitted(db, personId)) return ["service", "replacement"];
   const consulted = await db
     .prepare(
@@ -185,6 +207,47 @@ export async function bookableTypes(db: D1Database, personId: string): Promise<V
     .bind(personId)
     .first();
   return consulted === null ? ["consultation"] : ["first_fit"];
+}
+
+/** The kinds of visit a client has one of at a time. */
+export const ONE_AT_A_TIME: readonly VisitType[] = ["consultation", "first_fit"];
+
+export interface LiveVisit {
+  readonly date: string;
+  readonly window: BookingWindow;
+}
+
+/**
+ * The client's visit of this kind still to happen: booked, or paid for and on its way to FSM, other than the
+ * hold `exceptHoldId`. Null when there is none, and always for a kind a client may have several of.
+ */
+export async function liveVisitOf(
+  db: D1Database,
+  personId: string,
+  type: VisitType,
+  exceptHoldId: string | null = null,
+): Promise<LiveVisit | null> {
+  if (!ONE_AT_A_TIME.includes(type)) return null;
+  const booked = await db
+    .prepare(
+      `SELECT window_start FROM appointments
+       WHERE person_id = ?1 AND type = ?2 AND deleted_at IS NULL AND status IN ('scheduled', 'dispatched', 'in_progress')
+       ORDER BY window_start LIMIT 1`,
+    )
+    .bind(personId, type)
+    .first<{ window_start: string }>();
+  if (booked !== null) {
+    const starts = new Date(booked.window_start);
+    return { date: indiaDate(starts), window: windowAt(indiaTime(starts)) };
+  }
+  const paid = await db
+    .prepare(
+      `SELECT date, window_label FROM slot_holds
+       WHERE person_id = ?1 AND type = ?2 AND state = 'held' AND confirmed_at IS NOT NULL AND id IS NOT ?3 LIMIT 1`,
+    )
+    .bind(personId, type, exceptHoldId)
+    .first<{ date: string; window_label: BookingWindow }>();
+  return paid === null ? null : { date: paid.date, window: paid.window_label };
 }
 
 export interface WindowOffer {
@@ -204,14 +267,16 @@ export async function availability(
   moving: Moving | null = null,
 ): Promise<{ date: string; windows: WindowOffer[] }[]> {
   const to = addDays(from, days - 1);
-  const [technicians, regular, held] = await Promise.all([
+  const [technicians, regular, held, closed] = await Promise.all([
     techniciansFor(db, moving),
     moving === null ? regularTechnician(db, personId) : moving.technicianId,
     occupancy(db, from, to, now, moving?.visitId ?? null),
+    loadBlackouts(db, from, to),
   ]);
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(from, index);
     const windows = BOOKING_WINDOWS.map((window): WindowOffer => {
+      if (closed.has(date)) return { window, with: null };
       const free = technicians.filter((technician) => placement(held(technician.id, date), window, type) !== null);
       if (free.some((technician) => technician.id === regular)) return { window, with: "regular" };
       return { window, with: free.length > 0 ? "another" : null };
@@ -232,8 +297,15 @@ export interface Hold {
 }
 
 /**
+ * Holds nobody is paying for any more: unpaid, and past their ten minutes and the grace. With ?3 = 1, the
+ * client's own other unpaid holds too: in the app a client has one hold at a time. A paid hold is never here.
+ */
+const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NULL
+  AND (expires_at <= ?1 OR (?3 = 1 AND person_id = ?2))`;
+
+/**
  * Holds a window for the client: their regular technician if free, else whoever has the least that day.
- * Their earlier holds are let go, and so are claims whose holds have expired. Null when nobody is free.
+ * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out.
  */
 export async function holdSlot(
   db: D1Database,
@@ -243,15 +315,27 @@ export async function holdSlot(
     date: string;
     window: BookingWindow;
     price: Price;
+    /** What moving it late would cost as it stands now, kept on the hold for the visit's terms. */
+    lateFee?: Price | null;
+    /** Where the visit is, where the booking says. */
+    pincode?: string | null;
     /** Paid for with a service-visit credit instead of money (ADR 0033). */
     useCredit?: boolean;
     /** A move in place, which keeps the visit's technician; or a new visit replacing it. */
     moves?: { readonly visit: Moving; readonly kind: "move" | "replace" };
+    /**
+     * Where it is held. In the app the client's other unpaid holds are let go. The site lets none of theirs go,
+     * and books its free consultation at once, so its hold is confirmed as it is made.
+     */
+    from?: "app" | "site";
+    /** Written in the same batch, so they stand or fall with the hold: the person and their consent, from the site. */
+    alongside?: readonly D1PreparedStatement[];
   },
   now: Date,
   holdSeconds: number,
 ): Promise<Hold | null> {
-  const { personId, type, date, window, price, moves, useCredit = false } = input;
+  const { personId, type, date, window, price, moves, useCredit = false, from = "app" } = input;
+  if ((await loadBlackouts(db, date, date)).has(date)) return null;
   const moving = moves?.kind === "move" ? moves.visit : null;
   const [technicians, regular, held] = await Promise.all([
     techniciansFor(db, moving),
@@ -269,21 +353,24 @@ export async function holdSlot(
 
   const at = now.toISOString();
   const expiresAt = new Date(now.getTime() + holdSeconds * 1000).toISOString();
+  const confirmedAt = from === "site" ? at : null;
+  const ownToo = from === "app" ? 1 : 0;
   for (const { technician, start } of candidates) {
     const id = crypto.randomUUID();
-    const letGo = `SELECT id FROM slot_holds WHERE state = 'held' AND (expires_at <= ?1 OR person_id = ?2)`;
     try {
       await db.batch([
-        db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${letGo})`).bind(at, personId),
+        ...(input.alongside ?? []),
+        db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${LET_GO})`).bind(graceStart(now), personId, ownToo),
         db
-          .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?1 WHERE id IN (${letGo})`)
-          .bind(at, personId),
+          .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?4 WHERE id IN (${LET_GO})`)
+          .bind(graceStart(now), personId, ownToo, at),
         db
           .prepare(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
                amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
-               use_credit)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15)`,
+               use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
+               ?19, ?19)`,
           )
           .bind(
             id,
@@ -301,6 +388,10 @@ export async function holdSlot(
             moves?.visit.visitId ?? null,
             moves?.kind ?? null,
             useCredit ? 1 : 0,
+            input.pincode ?? null,
+            input.lateFee?.amount_ex_gst ?? null,
+            input.lateFee?.gst_percent ?? null,
+            confirmedAt,
           ),
         ...claimsOf(start, type, window).map((claim) =>
           db

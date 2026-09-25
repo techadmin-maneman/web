@@ -20,6 +20,7 @@ import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-b
 import { liveCard } from "../domain/referral-cards.ts";
 import { inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { takenOrBooked } from "./consultations.ts";
 
 const CodeParams = z.object({ code: z.string().regex(/^[A-Za-z0-9]{4,12}$/) });
 
@@ -42,6 +43,13 @@ const InviteSchema = z
   })
   .strict()
   .openapi("Invite");
+
+/** The invite as it stands for the person who used it. */
+const InviteStateSchema = z.enum(["valid", "expired", "unknown"]).openapi({
+  description:
+    "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so " +
+    "the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have.",
+});
 
 const PincodeAnswerSchema = z
   .object({
@@ -138,6 +146,7 @@ const consultationRoute = createRoute({
               window: z.enum(BOOKING_WINDOWS),
               area: z.string(),
               credits: z.boolean().openapi({ description: "Whether the invite's 3 service visits apply." }),
+              invite: InviteStateSchema,
             })
             .strict()
             .openapi("ReferralConsultation"),
@@ -146,8 +155,10 @@ const consultationRoute = createRoute({
     },
     400: errorResponse("invalid_request"),
     403: errorResponse("turnstile_failed"),
-    409: errorResponse("taken: that window has gone"),
-    422: errorResponse("not_bookable: the pincode is not served, or the day is not open"),
+    409: takenOrBooked,
+    422: errorResponse(
+      "not_bookable: the pincode is not served, the day is not open, or this number is past consultations",
+    ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
   },
@@ -164,7 +175,7 @@ const waitlistRoute = createRoute({
       content: {
         "application/json": {
           schema: z
-            .object({ area: z.union([z.string(), z.null()]), credits: z.boolean() })
+            .object({ area: z.union([z.string(), z.null()]), credits: z.boolean(), invite: InviteStateSchema })
             .strict()
             .openapi("ReferralWaitlist"),
         },
@@ -229,6 +240,9 @@ export function registerReferralLanding(app: App): void {
       invite: await invite(c, code),
     });
     if (!booked.ok) {
+      if (booked.booked !== undefined) {
+        return c.json({ ...errorBody("already_booked", c.var.requestId), booked: booked.booked }, 409);
+      }
       // The landing has said all along whether we come, so a refused pincode reads as not bookable.
       const code422 = booked.status === 422 ? "not_bookable" : booked.code;
       return c.json(errorBody(code422, c.var.requestId), booked.status);
@@ -240,6 +254,7 @@ export function registerReferralLanding(app: App): void {
         window: booked.window,
         area: booked.area,
         credits: booked.credits,
+        invite: booked.invite,
       },
       201,
     );
@@ -262,6 +277,6 @@ export function registerReferralLanding(app: App): void {
       const code422 = listed.status === 422 ? "not_bookable" : listed.code;
       return c.json(errorBody(code422, c.var.requestId), listed.status);
     }
-    return c.json({ area: listed.area, credits: listed.credits }, 201);
+    return c.json({ area: listed.area, credits: listed.credits, invite: listed.invite }, 201);
   });
 }

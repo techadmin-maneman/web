@@ -16,7 +16,7 @@ import type { App } from "../app.ts";
 import { allowed, checkValue, OPS_SETTINGS, settingNamed, PRICE_BOUNDS, PRICE_TIER } from "../config/ops-settings.ts";
 import { actorOf } from "../domain/audit.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
-import { checkPrice, priceBook, setPrice } from "../domain/price-book.ts";
+import { checkPrice, PRICE_ITEMS, priceBook, setPrice } from "../domain/price-book.ts";
 import { serviceArea, setServiceArea } from "../domain/service-area.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -81,7 +81,7 @@ const setSettingRoute = createRoute({
 
 const PriceSchema = z
   .object({
-    item: z.string(),
+    item: z.enum(PRICE_ITEMS),
     tier: z.string(),
     amount_ex_gst: z.number().int().openapi({ description: "In paise, before GST." }),
     gst_percent: z.number().int(),
@@ -123,7 +123,7 @@ const setPriceRoute = createRoute({
       ...json(
         z
           .object({
-            item: z.string().min(1).max(40),
+            item: z.enum(PRICE_ITEMS).openapi({ description: "A kind of visit, or one of the two late fees." }),
             tier: z.string().regex(PRICE_TIER),
             amount_ex_gst: z.number().int().min(PRICE_BOUNDS.minPaise).max(PRICE_BOUNDS.maxPaise),
             gst_percent: z.number().int().min(PRICE_BOUNDS.minGstPercent).max(PRICE_BOUNDS.maxGstPercent),

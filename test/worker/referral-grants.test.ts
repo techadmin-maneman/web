@@ -73,7 +73,8 @@ describe("the grant", () => {
     expect(settled).toMatchObject({ granted: 1, held: 0, expired: 0 });
     expect(settled.messageIds).toHaveLength(1);
     expect(await state()).toEqual({ grant_state: "granted", fraud_signals: null });
-    const expiry = new Date(NOW.getTime() + 365 * DAY).toISOString();
+    // 365 days on, to the end of that day in India: the date the referrer is told (BIZ-14).
+    const expiry = "2027-09-21T18:29:59.999Z";
     expect(await creditBalance(env.DB, FRIEND, NOW)).toEqual({ visits: 3, earliestExpiry: expiry });
     expect(await creditBalance(env.DB, REFERRER, NOW)).toEqual({ visits: 3, earliestExpiry: expiry });
 
@@ -156,6 +157,33 @@ describe("fraud holds", () => {
     await firstFit(FIT, FRIEND);
     expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, held: 1 });
     expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["monthly_cap"]' });
+  });
+
+  // BIZ-13 of the audit, 24 September 2026: numbers are unique, so they can only match through a change of number.
+  it("holds a pair where the friend's number is one the referrer changed to before", async () => {
+    await env.DB.prepare(
+      `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, decided_at)
+       VALUES ('change-1', ?1, ?2, '+919810000002', 'confirmed', ?2)`,
+    )
+      .bind(REFERRER, NOW.toISOString())
+      .run();
+    await firstFit(FIT, FRIEND);
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ held: 1 });
+    expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["same_mobile"]' });
+  });
+});
+
+describe("a friend with two first fits done (BIZ-13)", () => {
+  it("settles the referral once, and tells the referrer once", async () => {
+    await firstFit(FIT, FRIEND);
+    await firstFit("fit-second-0000-4000-8000-000000000000", FRIEND, "done", "2026-09-21T03:30:00.000Z");
+    const settled = await settleReferrals(env.DB, NOW);
+    expect(settled).toMatchObject({ granted: 1 });
+    expect(settled.messageIds).toHaveLength(1);
+    const told = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM outbound_messages WHERE kind = 'friend_fitted'",
+    ).first();
+    expect(told).toEqual({ n: 1 });
   });
 });
 

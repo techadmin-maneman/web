@@ -35,14 +35,14 @@ function Form({
   maxGst,
   onSet,
 }: {
-  items: readonly string[];
+  items: readonly Price["item"][];
   tiers: readonly string[];
   today: string;
   maxAmount: number;
   maxGst: number;
   onSet: (prices: readonly Price[]) => void;
 }) {
-  const [item, setItem] = useState(items[0] ?? "");
+  const [item, setItem] = useState<Price["item"] | "">(items[0] ?? "");
   const [tier, setTier] = useState(tiers[0] ?? "standard");
   const [rupees, setRupees] = useState("");
   const [gst, setGst] = useState("0");
@@ -54,6 +54,7 @@ function Form({
   const ready = item !== "" && tier !== "" && rupees.trim() !== "" && gst.trim() !== "" && from !== "";
 
   const send = async () => {
+    if (item === "") return;
     setSaving({ step: "saving" });
     const answer = await api.setPrice({
       item,
@@ -85,7 +86,8 @@ function Form({
             id="price-item"
             value={item}
             onChange={(event) => {
-              setItem(event.target.value);
+              const chosen = items.find((each) => each === event.target.value);
+              if (chosen !== undefined) setItem(chosen);
             }}
           >
             {items.map((each) => (

@@ -230,6 +230,19 @@ describe("the price book", () => {
     expect(service.map((price) => price.valid_from)).toEqual(["2026-10-01", "2026-09-22", "2026-01-01"]);
   });
 
+  // BIZ-10 of the audit, 24 September 2026: a row nothing reads is a price nobody is charged.
+  it("refuses an item the book does not price", async () => {
+    const answer = await post("/api/prices", {
+      item: "consultaton",
+      tier: "standard",
+      amount_ex_gst: 50_000,
+      gst_percent: 0,
+      valid_from: "2026-09-22",
+    });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { fields: ["item"] } });
+  });
+
   it("refuses a price dated before today, since a visit was invoiced under the old one", async () => {
     const answer = await post("/api/prices", {
       item: "service",

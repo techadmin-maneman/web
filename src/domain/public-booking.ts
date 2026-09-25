@@ -15,7 +15,15 @@
 // While self-serve booking is off, booking goes through WhatsApp. The slot is
 // then a request instead: the day and window the person asked for, waiting for
 // ops in the console's task queue
-// (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+// (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md). So it is
+// too on a day the price book charges for a consultation, which a form with no
+// payment cannot book.
+//
+// These forms need no login, only a number, so they never rename the person
+// the number belongs to, never let go of a hold made in the app, and book no
+// second consultation beside one still to happen. The person, their consent and
+// the slot are written in one batch: a slot that has gone leaves nothing behind
+// (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import type { Context } from "hono";
 import type { AppEnv } from "../app.ts";
@@ -27,8 +35,9 @@ import { addDays, indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { takeOne } from "./rate-limit.ts";
-import { attribute, type Invite } from "./referrals.ts";
-import { holdSlot } from "./scheduling.ts";
+import { priceOf } from "./price-book.ts";
+import { attribute, type Invite, type InviteState } from "./referrals.ts";
+import { bookableTypes, holdSlot, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 
@@ -55,7 +64,16 @@ export function pincodeOf(db: D1Database, pin: string): Promise<Pincode | null> 
 export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 503> {
   readonly ok: false;
   readonly status: Status;
-  readonly code: "invalid_request" | "turnstile_failed" | "rate_limited" | "unavailable" | "taken";
+  readonly code:
+    | "invalid_request"
+    | "turnstile_failed"
+    | "rate_limited"
+    | "unavailable"
+    | "taken"
+    | "not_bookable"
+    | "already_booked";
+  /** For already_booked: the consultation the number already has. */
+  readonly booked?: LiveVisit;
 }
 
 type Checked = { readonly ok: true; readonly mobile: string; readonly ipHash: string } | Refusal<400 | 403 | 429 | 503>;
@@ -83,10 +101,26 @@ export async function checkPerson(c: Context<AppEnv>, mobile: string, token: str
   return { ok: true, mobile: mobileE164, ipHash: visitor.ipHash };
 }
 
-/** The person with this number, made if new, and the consent they gave on the page. */
-export async function personWith(
+/** The person a form is from, and the writes that record them and the consent they gave on the page. */
+interface FormPerson {
+  readonly id: string;
+  /** Run in one batch with what the form books, so a refusal leaves nothing behind. */
+  readonly statements: D1PreparedStatement[];
+}
+
+async function personWithMobile(db: D1Database, mobile: string): Promise<string | null> {
+  const row = await db.prepare("SELECT id FROM people WHERE mobile_e164 = ?1").bind(mobile).first<{ id: string }>();
+  return row?.id ?? null;
+}
+
+/**
+ * The person with this number, new or known, and the consent they gave. A person we know keeps their name: a
+ * form anyone can fill in with a number never renames the one it belongs to.
+ */
+function formPerson(
   db: D1Database,
   input: {
+    knownId: string | null;
     mobile: string;
     name: string;
     purpose: "whatsapp_visits" | "contact";
@@ -94,25 +128,45 @@ export async function personWith(
     ipHash: string;
     now: Date;
   },
-): Promise<string> {
+): FormPerson {
   const at = input.now.toISOString();
-  const person = await db
-    .prepare(
-      `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?1, ?2, ?3, ?4, 1)
-       ON CONFLICT (mobile_e164) DO UPDATE SET name = excluded.name, contactable = 1
-       RETURNING id`,
-    )
-    .bind(crypto.randomUUID(), at, input.mobile, input.name)
-    .first<{ id: string }>();
-  if (person === null) throw new Error("the person was not written");
-  await db
+  const id = input.knownId ?? crypto.randomUUID();
+  const person =
+    input.knownId === null
+      ? db
+          .prepare("INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?1, ?2, ?3, ?4, 1)")
+          .bind(id, at, input.mobile, input.name)
+      : db.prepare("UPDATE people SET contactable = 1 WHERE id = ?1").bind(id);
+  const consent = db
     .prepare(
       `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
        VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6)`,
     )
-    .bind(crypto.randomUUID(), person.id, input.purpose, input.notice, at, input.ipHash)
-    .run();
-  return person.id;
+    .bind(crypto.randomUUID(), id, input.purpose, input.notice, at, input.ipHash);
+  return { id, statements: [person, consent] };
+}
+
+/**
+ * Why a person we know may not book a consultation from a form: they have one still to happen, or they are
+ * past consultations (consulted, or fitted), which the app books instead.
+ */
+async function consultationRefusal(db: D1Database, personId: string): Promise<Refusal | null> {
+  const booked = await liveVisitOf(db, personId, "consultation");
+  if (booked !== null) return { ok: false, status: 409, code: "already_booked", booked };
+  if (!(await bookableTypes(db, personId)).includes("consultation")) {
+    return { ok: false, status: 422, code: "not_bookable" };
+  }
+  return null;
+}
+
+/** Attributes the person to the invite they came with, after what the form booked stands. */
+async function applyInvite(
+  db: D1Database,
+  input: { invite: Invite | null; personId: string; via: "consultation" | "waitlist"; pincode: string; now: Date },
+): Promise<{ readonly credits: boolean; readonly invite: InviteState }> {
+  if (input.invite === null) return { credits: false, invite: "unknown" };
+  const attributed = await attribute(db, { ...input, invite: input.invite });
+  return { credits: attributed.credits, invite: attributed.lapsed ? "expired" : "valid" };
 }
 
 /** The city a lead may name: the pincode's, where we have it as a city of ours. */
@@ -175,7 +229,7 @@ async function recordLead(
  * person asked for, which no slot is held for. It leaves the console's task queue
  * when their consultation is in FSM (src/domain/tasks.ts).
  */
-async function recordRequest(
+function requestStatement(
   db: D1Database,
   input: {
     personId: string;
@@ -185,8 +239,8 @@ async function recordRequest(
     invite: Invite | null;
     now: Date;
   },
-): Promise<void> {
-  await db
+): D1PreparedStatement {
+  return db
     .prepare(
       `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, referral_code,
          created_at)
@@ -201,8 +255,7 @@ async function recordRequest(
       input.window,
       input.invite?.code ?? null,
       input.now.toISOString(),
-    )
-    .run();
+    );
 }
 
 export interface ConsultationRequest {
@@ -231,6 +284,8 @@ export interface Booked {
   readonly area: string;
   /** Whether the invite's three service visits apply. */
   readonly credits: boolean;
+  /** The invite as it stands for this person: expired when theirs lapsed while they waited (src/policy/invites.ts). */
+  readonly invite: InviteState;
 }
 
 /** Books the free consultation: the slot, the lead, and the invite's credits where they apply. */
@@ -238,7 +293,6 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
   const { deps, log, requestId } = c.var;
   const db = c.env.DB;
   const now = deps.now();
-  const selfServe = c.var.config.settings.selfServeBooking;
 
   const first = addDays(indiaDate(now), 1);
   const pincode = await pincodeOf(db, request.pincode);
@@ -248,7 +302,11 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
   const checked = await checkPerson(c, request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
 
-  const personId = await personWith(db, {
+  const knownId = await personWithMobile(db, checked.mobile);
+  const refused = knownId === null ? null : await consultationRefusal(db, knownId);
+  if (refused !== null) return refused;
+  const person = formPerson(db, {
+    knownId,
     mobile: checked.mobile,
     name: request.name,
     purpose: "whatsapp_visits",
@@ -256,24 +314,24 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
     ipHash: checked.ipHash,
     now,
   });
-  const credits =
-    request.invite !== null &&
-    (await attribute(db, {
-      invite: request.invite,
-      personId,
-      via: "consultation",
-      pincode: request.pincode,
-      now,
-    }));
 
-  // While self-serve booking is off, booking goes through WhatsApp: nothing is
-  // held and FSM is not told, and what the person asked for waits for ops.
+  // A slot is held and FSM told only while self-serve booking is on and the consultation is free that day;
+  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
+  const price = await priceOf(db, "consultation", request.date);
   let holdId: string | null = null;
-  if (selfServe) {
-    const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
+  if (c.var.config.settings.selfServeBooking && price?.amount === 0) {
     const hold = await holdSlot(
       db,
-      { personId, type: "consultation", date: request.date, window: request.window, price: free },
+      {
+        personId: person.id,
+        type: "consultation",
+        date: request.date,
+        window: request.window,
+        price,
+        pincode: request.pincode,
+        from: "site",
+        alongside: person.statements,
+      },
       now,
       HOLD_SECONDS,
     );
@@ -281,18 +339,19 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
     holdId = hold.id;
     await c.env.FSM_QUEUE.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
   } else {
-    await recordRequest(db, {
-      personId,
-      pincode: request.pincode,
-      date: request.date,
-      window: request.window,
-      invite: request.invite,
-      now,
-    });
+    const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
+    await db.batch([...person.statements, requestStatement(db, { ...asked, invite: request.invite, now })]);
   }
+  const invited = await applyInvite(db, {
+    invite: request.invite,
+    personId: person.id,
+    via: "consultation",
+    pincode: request.pincode,
+    now,
+  });
 
   const leadId = await recordLead(c, {
-    personId,
+    personId: person.id,
     name: request.name,
     mobile: checked.mobile,
     pincode,
@@ -303,15 +362,23 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
     served: true,
     now,
   });
-  const state = selfServe ? ("booked" as const) : ("requested" as const);
+  const state = holdId === null ? ("requested" as const) : ("booked" as const);
   log.info("consultation_booked", {
     state,
     hold_id: holdId,
     lead_id: leadId,
     invited: request.invite !== null,
-    credits,
+    credits: invited.credits,
   });
-  return { ok: true, state, date: request.date, window: request.window, area: pincode.area, credits };
+  return {
+    ok: true,
+    state,
+    date: request.date,
+    window: request.window,
+    area: pincode.area,
+    credits: invited.credits,
+    invite: invited.invite,
+  };
 }
 
 export interface WaitlistRequest {
@@ -329,6 +396,7 @@ export interface Listed {
   readonly ok: true;
   readonly area: string | null;
   readonly credits: boolean;
+  readonly invite: InviteState;
 }
 
 /** Takes the number for a pincode we do not serve yet, with the launch alert if it was asked for. */
@@ -344,7 +412,8 @@ export async function joinTheWaitlist(
   const checked = await checkPerson(c, request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
 
-  const personId = await personWith(db, {
+  const person = formPerson(db, {
+    knownId: await personWithMobile(db, checked.mobile),
     mobile: checked.mobile,
     name: request.name,
     purpose: "contact",
@@ -352,28 +421,44 @@ export async function joinTheWaitlist(
     ipHash: checked.ipHash,
     now,
   });
+  const personId = person.id;
   const at = now.toISOString();
-  if (request.launchAlert) {
-    await db
+  const launchAlert = request.launchAlert
+    ? [
+        db
+          .prepare(
+            `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
+             VALUES (?1, ?2, 'whatsapp_launches', ?3, 1, ?4, ?5)`,
+          )
+          .bind(crypto.randomUUID(), personId, CURRENT_NOTICE.whatsapp_launches, at, checked.ipHash),
+      ]
+    : [];
+  await db.batch([
+    ...person.statements,
+    ...launchAlert,
+    db
       .prepare(
-        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-         VALUES (?1, ?2, 'whatsapp_launches', ?3, 1, ?4, ?5)`,
+        `INSERT INTO waitlist_entries (id, pincode, person_id, referral_code, contact_consent_at, launch_alert,
+           created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
+         ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
       )
-      .bind(crypto.randomUUID(), personId, CURRENT_NOTICE.whatsapp_launches, at, checked.ipHash)
-      .run();
-  }
-  await db
-    .prepare(
-      `INSERT INTO waitlist_entries (id, pincode, person_id, referral_code, contact_consent_at, launch_alert,
-         created_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
-       ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
-    )
-    .bind(crypto.randomUUID(), request.pincode, personId, request.invite?.code ?? null, at, request.launchAlert ? 1 : 0)
-    .run();
-  const credits =
-    request.invite !== null &&
-    (await attribute(db, { invite: request.invite, personId, via: "waitlist", pincode: request.pincode, now }));
+      .bind(
+        crypto.randomUUID(),
+        request.pincode,
+        personId,
+        request.invite?.code ?? null,
+        at,
+        request.launchAlert ? 1 : 0,
+      ),
+  ]);
+  const invited = await applyInvite(db, {
+    invite: request.invite,
+    personId,
+    via: "waitlist",
+    pincode: request.pincode,
+    now,
+  });
 
   await recordLead(c, {
     personId,
@@ -387,5 +472,5 @@ export async function joinTheWaitlist(
     served: false,
     now,
   });
-  return { ok: true, area: pincode?.area ?? null, credits };
+  return { ok: true, area: pincode?.area ?? null, credits: invited.credits, invite: invited.invite };
 }
