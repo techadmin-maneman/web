@@ -264,6 +264,10 @@ async function download(
   const attempts = attempt?.download_attempts ?? 1;
 
   const result = await deps.image.download(url);
+  if (!result.ok && !result.transient) {
+    // Billed, and never usable: downloading it again would only fetch the same bytes.
+    return fail(env, deps, log, job, { code: "render_failed", transient: false, alert: true, detail: result.detail });
+  }
   if (!result.ok) {
     log.warn("render_download_failed", { attempts, detail: result.detail });
     // The queue tries again soon; after that the sweeper keeps trying until the URL expires.

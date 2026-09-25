@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PRESETS } from "../../src/config/presets.ts";
+import { MAX_RESULT_BYTES } from "../../src/config/tryon.ts";
 import { API_BASE_URL, ENDPOINT_PATHS, createAilabtoolsProvider } from "../../src/providers/ailabtools.ts";
 import { STUB_RENDER_MS, STUB_RESULT_PNG, STUB_STALL_MS } from "../../src/providers/ailabtools-stub.ts";
 import { createImageProvider } from "../../src/providers/image.ts";
@@ -182,6 +183,7 @@ describe("AILabTools: download", () => {
     expect(await stalled.image.download(RESULT_URL)).toEqual({
       ok: false,
       detail: "download failed after 3 tries: TimeoutError",
+      transient: true,
     });
     expect(tries).toBe(3);
 
@@ -191,9 +193,47 @@ describe("AILabTools: download", () => {
     });
     expect(await flaky.image.download(RESULT_URL)).toMatchObject({ ok: true });
 
-    expect(await provider({}).image.download("http://insecure.test/x.png")).toMatchObject({ ok: false });
+    expect(await provider({}).image.download("http://insecure.test/x.png")).toMatchObject({
+      ok: false,
+      transient: false,
+    });
     const html = provider({ [RESULT_URL]: () => new Response("<html>") });
-    expect(await html.image.download(RESULT_URL)).toEqual({ ok: false, detail: "result is not a JPEG or PNG" });
+    expect(await html.image.download(RESULT_URL)).toEqual({
+      ok: false,
+      detail: "result is not a JPEG or PNG",
+      transient: false,
+    });
+  });
+
+  it("refuses a result over WhatsApp's 5 MB at once, by its declared length before reading it", async () => {
+    expect(MAX_RESULT_BYTES).toBe(5 * 1024 * 1024);
+    let read = false;
+    const declared = provider({
+      [RESULT_URL]: () =>
+        new Response(
+          new ReadableStream(
+            {
+              pull() {
+                read = true;
+              },
+            },
+            { highWaterMark: 0 },
+          ),
+          { headers: { "Content-Length": String(MAX_RESULT_BYTES + 1) } },
+        ),
+    });
+    expect(await declared.image.download(RESULT_URL)).toEqual({
+      ok: false,
+      detail: `result is ${String(MAX_RESULT_BYTES + 1)} bytes`,
+      transient: false,
+    });
+    expect(read).toBe(false);
+    expect(declared.calls).toHaveLength(1);
+
+    // A host that declares nothing is measured once the body is in; it is not asked again.
+    const undeclared = provider({ [RESULT_URL]: () => new Response(new Uint8Array(MAX_RESULT_BYTES + 1)) });
+    expect(await undeclared.image.download(RESULT_URL)).toMatchObject({ ok: false, transient: false });
+    expect(undeclared.calls).toHaveLength(1);
   });
 });
 

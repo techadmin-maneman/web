@@ -123,7 +123,7 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
     },
 
     async download(url): Promise<DownloadResult> {
-      if (!url.startsWith("https://")) return { ok: false, detail: "result URL is not https" };
+      if (!url.startsWith("https://")) return unusable("result URL is not https");
 
       let last = "";
       for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
@@ -134,17 +134,26 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
             last = `HTTP ${String(response.status)}`;
             continue;
           }
+          // A result declared too large is refused before a byte of it is read.
+          const declared = Number(response.headers.get("Content-Length") ?? "0");
+          if (declared > MAX_RESULT_BYTES) {
+            await response.body?.cancel();
+            return unusable(`result is ${String(declared)} bytes`);
+          }
           const bytes = new Uint8Array(await response.arrayBuffer());
-          if (bytes.byteLength > MAX_RESULT_BYTES)
-            return { ok: false, detail: `result is ${String(bytes.byteLength)} bytes` };
+          if (bytes.byteLength > MAX_RESULT_BYTES) return unusable(`result is ${String(bytes.byteLength)} bytes`);
           const info = inspectImage(bytes);
-          if (info === null) return { ok: false, detail: "result is not a JPEG or PNG" };
+          if (info === null) return unusable("result is not a JPEG or PNG");
           return { ok: true, bytes, contentType: info.type };
         } catch (error) {
           last = error instanceof Error ? error.name : "error";
         }
       }
-      return { ok: false, detail: scrub(`download failed after ${String(DOWNLOAD_ATTEMPTS)} tries: ${last}`) };
+      return {
+        ok: false,
+        detail: scrub(`download failed after ${String(DOWNLOAD_ATTEMPTS)} tries: ${last}`),
+        transient: true,
+      };
     },
 
     async credits(): Promise<number | null> {
@@ -191,6 +200,9 @@ function submitForm(
   form.append("image", new Blob([image], { type }), `portrait.${fileExtension(type)}`);
   return form;
 }
+
+/** A result no retry will make usable: too large for WhatsApp, or not an image at all. */
+const unusable = (detail: string): DownloadResult => ({ ok: false, detail, transient: false });
 
 async function readBody(response: Response): Promise<ApiBody | null> {
   try {
