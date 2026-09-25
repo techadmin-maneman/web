@@ -1214,6 +1214,7 @@ Razorpay's webhook: payments and refunds
             "on_leave",
             "does_not_fit",
             "fsm_refused",
+            "fsm_partly",
             "too_early_to_close",
             "no_service_area"
           ]
@@ -1560,6 +1561,7 @@ Razorpay's webhook: payments and refunds
             "on_leave",
             "does_not_fit",
             "fsm_refused",
+            "fsm_partly",
             "too_early_to_close",
             "no_service_area"
           ]
@@ -1999,7 +2001,7 @@ Razorpay's webhook: payments and refunds
     },
     "whatsapp_copy": {
       "type": "boolean",
-      "description": "True only if messaging is on: the page may then say a copy is on its way."
+      "description": "True only if messaging is on and may reach this number: the page may then say a copy is on its way."
     }
   },
   "required": [

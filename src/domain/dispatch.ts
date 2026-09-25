@@ -31,7 +31,7 @@ import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { listCities } from "./cities.ts";
-import type { AppointmentStatus } from "./fsm-mirror.ts";
+import { syncAppointment, type AppointmentStatus } from "./fsm-mirror.ts";
 import { leaveBetween } from "./leave.ts";
 import {
   activeTechnicians,
@@ -388,7 +388,9 @@ export type MoveOutcome =
   /** The move names the technician, day and window the job already has. */
   | { readonly kind: "nothing_to_move" }
   /** FSM would not take it: nothing moved, and the refusal is on the record. */
-  | { readonly kind: "fsm_refused"; readonly moveId: string };
+  | { readonly kind: "fsm_refused"; readonly moveId: string }
+  /** FSM took the new technician and not the new time; the mirror now holds what FSM does. */
+  | { readonly kind: "fsm_partly"; readonly moveId: string };
 
 /** Where a move puts a job, and whether it keeps the time it has. */
 interface Target {
@@ -502,9 +504,13 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   if (opened === "moving") return { kind: "superseded", changed: ["moving"] };
   if (opened === "taken") return { kind: "refused", reason: "clash" };
 
+  // FSM takes a move in two writes, the technician and then the time, so one can land without the other.
+  let assigned = false;
   try {
-    if (technicianId !== job.technician_id)
+    if (technicianId !== job.technician_id) {
       await deps.fsm.assignVisit(job.fsm_id, await fsmResourceId(db, technicianId));
+      assigned = true;
+    }
     if (times !== null) {
       await deps.fsm.rescheduleVisit(job.fsm_id, { start: indiaIso(times.start), end: indiaIso(times.end) });
     }
@@ -516,9 +522,12 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
         .prepare(
           "UPDATE dispatch_moves SET fsm_write_state = 'rejected', fsm_error = ?2, updated_at = ?3 WHERE id = ?1",
         )
-        .bind(moveId, reason, now.toISOString()),
+        .bind(moveId, assigned ? `the technician was changed, the time was not: ${reason}` : reason, now.toISOString()),
     ]);
-    return { kind: "fsm_refused", moveId };
+    if (!assigned) return { kind: "fsm_refused", moveId };
+    // Half a move is not a refusal: the job is read again from FSM, so the board shows where it now is.
+    await syncAppointment(db, deps.fsm, job.fsm_id, now).catch(() => null);
+    return { kind: "fsm_partly", moveId };
   }
 
   // FSM took it: the mirror follows, and the client is told his new window, if he has one.
