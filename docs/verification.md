@@ -42,7 +42,7 @@ My network's DNS resolver still cached GoDaddy's old addresses for `maneman.in` 
 
 Checked with `scripts/verify-ci-token.ts` from GitHub Actions (run 35596608538), using the secrets as stored in the GitHub environments. All checks pass in both environments:
 
-- Each Cloudflare token is account-owned and reaches its own two Workers and its own database. It is denied the other environment's Workers, the zone's routes, R2 and Queues. It can read the other environment's database, as accepted in ADR 0008.
+- Each Cloudflare token is account-owned and reaches its own two Workers and its own database. It is denied the other environment's Workers, the zone's routes, R2 and Queues. It can read and write the other environment's database, since D1 Edit is account-wide, as accepted in ADR 0008. (The check read it only until 25 September 2026; it now also reports the write, with an update that matches no row.)
 - The staging Access service token gets through Access (200). Without it, staging redirects to the Access login. Production is public (200) and holds no Access secrets.
 - Getting there took two fixes: turning off Bot Fight Mode, which challenged all traffic from GitHub, and re-copying the Access client ID with its `.access` suffix.
 

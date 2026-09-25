@@ -1,6 +1,8 @@
 // Checks that an environment's CI secrets have exactly the access docs/runbook.md
-// asks for. Everything is read-only apart from one no-op write (re-inserting the
-// database identity row, which already exists), so it is safe on production.
+// asks for. Everything is read-only apart from two writes that change nothing:
+// re-inserting the database identity row, which already exists, and an update
+// that matches no row in the other environment's database, which shows whether
+// the token may write there (scripts/lib/ci-token.ts). It is safe on production.
 //
 //   node --env-file=.env.ci-staging scripts/verify-ci-token.ts staging
 //   node --env-file=.env.ci-production scripts/verify-ci-token.ts production
@@ -19,6 +21,7 @@ import {
   ZONE_ID,
   type RemoteEnvironmentName,
 } from "../src/config/environments.ts";
+import { NO_OP_WRITE, otherDatabaseAccess } from "./lib/ci-token.ts";
 import { readJsonc } from "./lib/jsonc.ts";
 import { WORKERS } from "./lib/workers.ts";
 
@@ -146,13 +149,13 @@ expectAllowed(
   ),
 );
 
-const otherDatabase = await runSql(other.databaseId, "SELECT 1");
+// Read, then a write that matches no row: it proves whether the token may write, and changes nothing.
+const otherRead = await runSql(other.databaseId, "SELECT 1");
+const otherWrite = await runSql(other.databaseId, NO_OP_WRITE);
 report(
   "NOTE",
-  `reads ${EXPECTED_DATABASE_NAME[otherEnvironment]}`,
-  otherDatabase.ok
-    ? "allowed: D1 permissions are account-wide (accepted in docs/decisions/0008)"
-    : "denied (tighter than required)",
+  EXPECTED_DATABASE_NAME[otherEnvironment],
+  otherDatabaseAccess({ read: otherRead.ok, write: otherWrite.ok }, EXPECTED_DATABASE_NAME[otherEnvironment]),
 );
 
 expectDenied(
