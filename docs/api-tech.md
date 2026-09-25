@@ -777,6 +777,7 @@ The piece a label names
             "already_started",
             "clash",
             "on_leave",
+            "does_not_fit",
             "fsm_refused",
             "too_early_to_close",
             "no_service_area"

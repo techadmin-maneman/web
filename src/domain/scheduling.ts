@@ -57,17 +57,18 @@ export function unitAt(time: string): number {
   return unit;
 }
 
+/** Whether every half-slot of a visit of this type starting at `start` is free, and inside the day. */
+export function fitsAt(day: Day, start: number, type: VisitType): boolean {
+  const { units } = VISIT_BLOCKS[type];
+  if (start + units > UNITS_PER_DAY) return false;
+  for (let unit = start; unit < start + units; unit += 1) if (day.units.has(unit)) return false;
+  return true;
+}
+
 /** Where a visit of this type can start in this window, given the day; null if it cannot. */
 export function placement(day: Day, window: BookingWindow, type: VisitType): number | null {
   if (day.onLeave || clashes(day, window)) return null;
-  const { units } = VISIT_BLOCKS[type];
-  for (const start of WINDOW_SLOT_MAP[window]) {
-    if (start + units > UNITS_PER_DAY) continue;
-    let free = true;
-    for (let unit = start; unit < start + units; unit += 1) if (day.units.has(unit)) free = false;
-    if (free) return start;
-  }
-  return null;
+  return WINDOW_SLOT_MAP[window].find((start) => fitsAt(day, start, type)) ?? null;
 }
 
 /** What a visit starting at a half-slot claims: each half-slot it covers, and its window. */

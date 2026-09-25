@@ -69,4 +69,16 @@ describe("dispatch", () => {
     // An empty window on a day off is still leave, not a clash.
     expect(moveRefusal(away("evening"), "morning", "client_asked")).toBe("on_leave");
   });
+
+  // "A visit fits where every half-slot of its block is free" (ADR 0034), and "a
+  // visit may run on past its window's end, but not past the day's last
+  // half-slot, so a first fit cannot start in the evening" (ADR 0035). A window
+  // nobody holds can still have no room, and ops are told that, not that it clashes.
+  it("refuses a job with no room in a free window as not fitting, not as a clash", () => {
+    expect(moveRefusal(day(), "evening", "client_asked", { fits: false })).toBe("does_not_fit");
+    expect(moveRefusal(day(), "evening", "client_asked", { fits: true })).toBeNull();
+    // A window someone holds is still a clash, and a day off still leave, whatever the room.
+    expect(moveRefusal(day("evening"), "evening", "client_asked", { fits: false })).toBe("clash");
+    expect(moveRefusal(away(), "evening", "client_asked", { fits: false })).toBe("on_leave");
+  });
 });

@@ -114,7 +114,10 @@ const MoveRequestSchema = z
 const MovedSchema = z
   .object({
     move_id: z.uuid(),
-    messaged: z.boolean().openapi({ description: "The client was told his new window." }),
+    client_notice: z.enum(["messaged", "unchanged", "no_client"]).openapi({
+      description:
+        "messaged: the new window was queued to go on WhatsApp; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.",
+    }),
   })
   .strict()
   .openapi("DispatchMoved");
@@ -141,7 +144,7 @@ const assignRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
     409: errorResponse(
-      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day",
+      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it",
     ),
     502: errorResponse("fsm_refused: FSM would not take it; nothing moved"),
   },
@@ -154,10 +157,10 @@ const moveRoute = createRoute({
   request: { body: { required: true, ...json(MoveRequestSchema) } },
   responses: {
     200: { description: "Moved, and the client told", ...json(MovedSchema) },
-    400: errorResponse("invalid_request"),
+    400: errorResponse("invalid_request, including a move to the technician, day and window the job already has"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
-    409: errorResponse("clash; on_leave"),
+    409: errorResponse("clash; on_leave; does_not_fit"),
     502: errorResponse("fsm_refused"),
   },
 });
@@ -202,6 +205,9 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   );
 
   if (outcome.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
+  if (outcome.kind === "nothing_to_move") {
+    return c.json(errorBody("invalid_request", requestId, ["technician_id", "date", "window"]), 400);
+  }
   if (outcome.kind === "refused") {
     // "unknown_reason" here means the job has no technician and none was named:
     // the reason itself is already one of the design's list, by the schema.
@@ -215,5 +221,5 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     return c.json(errorBody("fsm_refused", requestId), 502);
   }
   log.info("dispatch_moved", { appointment_id: input.appointmentId, move_id: outcome.moveId, reason: input.reason });
-  return c.json({ move_id: outcome.moveId, messaged: outcome.messageId !== null }, 200);
+  return c.json({ move_id: outcome.moveId, client_notice: outcome.clientNotice }, 200);
 }

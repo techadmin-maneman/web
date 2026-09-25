@@ -938,7 +938,7 @@ Request body:
 }
 ```
 
-**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day
+**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it
 
 ```json
 {
@@ -974,7 +974,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request, including a move to the technician, day and window the job already has
 
 ```json
 {
@@ -998,7 +998,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave
+**409**: clash; on_leave; does_not_fit
 
 ```json
 {
@@ -1636,6 +1636,7 @@ Request body:
             "already_started",
             "clash",
             "on_leave",
+            "does_not_fit",
             "fsm_refused",
             "too_early_to_close",
             "no_service_area"
@@ -3372,14 +3373,19 @@ Request body:
       "type": "string",
       "format": "uuid"
     },
-    "messaged": {
-      "type": "boolean",
-      "description": "The client was told his new window."
+    "client_notice": {
+      "type": "string",
+      "enum": [
+        "messaged",
+        "unchanged",
+        "no_client"
+      ],
+      "description": "messaged: the new window was queued to go on WhatsApp; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records."
     }
   },
   "required": [
     "move_id",
-    "messaged"
+    "client_notice"
   ],
   "additionalProperties": false
 }

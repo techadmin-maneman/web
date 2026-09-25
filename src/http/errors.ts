@@ -61,9 +61,11 @@ export const ERROR_CODES = [
   "not_today",
   "already_started",
   // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
-  // window, is away that day (ADR 0062), or FSM would not take the move.
+  // window, is away that day (ADR 0062), the window is free but the visit has no room in it,
+  // or FSM would not take the move.
   "clash",
   "on_leave",
+  "does_not_fit",
   "fsm_refused",
   // The no-show wait has not run out yet (src/policy/no-show.ts).
   "too_early_to_close",

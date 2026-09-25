@@ -20,7 +20,7 @@ import { moveRefusal, slotsFor, type MoveReason, type MoveRefusal } from "../pol
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { leaveBetween } from "./leave.ts";
-import { occupancy, placement, unitAt, visitTimes, windowAt } from "./scheduling.ts";
+import { fitsAt, occupancy, placement, unitAt, visitTimes, windowAt, type Day } from "./scheduling.ts";
 import { visitMessage } from "./visit-messages.ts";
 
 /** Seven days, as the board shows them. */
@@ -216,12 +216,53 @@ export interface MoveInput {
   readonly actor: string;
 }
 
+/**
+ * What the client was told of a move. Only a new day or window is worth a
+ * message: a change of technician alone leaves the client's window as it was.
+ */
+export type ClientNotice =
+  /** The new window was queued to go on WhatsApp. */
+  | "messaged"
+  /** The day and window did not change, so there was nothing to tell. */
+  | "unchanged"
+  /** The visit has no client on our records to tell. */
+  | "no_client";
+
 export type MoveOutcome =
-  | { readonly kind: "moved"; readonly moveId: string; readonly messageId: string | null }
+  | { readonly kind: "moved"; readonly moveId: string; readonly clientNotice: ClientNotice }
   | { readonly kind: "refused"; readonly reason: MoveRefusal }
   | { readonly kind: "not_found" }
+  /** The move names the technician, day and window the job already has. */
+  | { readonly kind: "nothing_to_move" }
   /** FSM would not take it: nothing moved, and the refusal is on the record. */
   | { readonly kind: "fsm_refused"; readonly moveId: string };
+
+/** Where a move puts a job, and whether it keeps the time it has. */
+interface Target {
+  readonly technicianId: string;
+  readonly date: string;
+  readonly window: BookingWindow;
+  /** Only the technician changes: the visit keeps its own start, and its half-slots are checked there. */
+  readonly keepsTime: boolean;
+}
+
+type Landing =
+  { readonly kind: "lands"; readonly start: number } | { readonly kind: "refused"; readonly reason: MoveRefusal };
+
+/** The half-slot a job would start in on the target's day, or null where it has no room. */
+function startOn(day: Day, job: { type: VisitType; start: Date }, target: Target): number | null {
+  if (!target.keepsTime) return placement(day, target.window, job.type);
+  const start = unitAt(indiaTime(job.start));
+  return fitsAt(day, start, job.type) ? start : null;
+}
+
+/** Where the job lands on the target's day, or why it cannot; `reason` is the move's own. */
+function landingOf(day: Day, job: { type: VisitType; start: Date }, target: Target, reason: string): Landing {
+  const start = startOn(day, job, target);
+  const refusal = moveRefusal(day, target.window, reason, { fits: start !== null });
+  if (refusal !== null) return { kind: "refused", reason: refusal };
+  return start === null ? { kind: "refused", reason: "does_not_fit" } : { kind: "lands", start };
+}
 
 export interface MoveDeps {
   readonly fsm: FsmProvider;
@@ -256,22 +297,20 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
   if (technicianId === null) return { kind: "refused", reason: "unknown_reason" };
-  // What ops asked to change; what they left out keeps the time the job has.
-  const toDate = input.date ?? null;
-  const toWindow = input.window ?? null;
-  const date = toDate ?? indiaDate(wasStart);
-  const window = toWindow ?? windowAt(indiaTime(wasStart));
+  // What ops asked to change; what they left out, or sent as it already is, keeps the time the job has.
+  const was = { date: indiaDate(wasStart), window: windowAt(indiaTime(wasStart)) };
+  const date = input.date ?? was.date;
+  const window = input.window ?? was.window;
+  const target: Target = { technicianId, date, window, keepsTime: date === was.date && window === was.window };
+  if (target.keepsTime && technicianId === job.technician_id) return { kind: "nothing_to_move" };
 
   // The check runs on the server before any write to FSM. The job's own time
   // does not count against its own move.
   const held = await occupancy(db, date, date, now, job.id);
-  const refusal = moveRefusal(held(technicianId, date), window, input.reason);
-  if (refusal !== null) return { kind: "refused", reason: refusal };
+  const landing = landingOf(held(technicianId, date), { type: job.type, start: wasStart }, target, input.reason);
+  if (landing.kind === "refused") return landing;
 
-  const movesTime = toDate !== null || toWindow !== null;
-  const startUnit = movesTime ? placement(held(technicianId, date), window, job.type) : unitAt(indiaTime(wasStart));
-  if (startUnit === null) return { kind: "refused", reason: "clash" };
-  const times = movesTime ? visitTimes(date, startUnit, job.type) : null;
+  const times = target.keepsTime ? null : visitTimes(date, landing.start, job.type);
   const nowStart = times?.start ?? wasStart;
 
   const at = now.toISOString();
@@ -310,11 +349,12 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
     return { kind: "fsm_refused", moveId };
   }
 
-  // FSM took it: the mirror follows, and the client is told his new window.
+  // FSM took it: the mirror follows, and the client is told his new window, if he has one.
+  const clientNotice = noticeFor(job.person_id, target);
   const message =
-    job.person_id === null
-      ? null
-      : visitMessage(db, { personId: job.person_id, appointmentId: job.id, kind: "visit_moved", now });
+    clientNotice === "messaged" && job.person_id !== null
+      ? visitMessage(db, { personId: job.person_id, appointmentId: job.id, kind: "visit_moved", now })
+      : null;
   await db.batch([
     db
       .prepare(
@@ -335,7 +375,12 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
       .bind(moveId, message?.id ?? null, at),
   ]);
   if (message !== null) await deps.notify?.(message.id);
-  return { kind: "moved", moveId, messageId: message?.id ?? null };
+  return { kind: "moved", moveId, clientNotice };
+}
+
+function noticeFor(personId: string | null, target: Target): ClientNotice {
+  if (target.keepsTime) return "unchanged";
+  return personId === null ? "no_client" : "messaged";
 }
 
 /**

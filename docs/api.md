@@ -1212,6 +1212,7 @@ Razorpay's webhook: payments and refunds
             "already_started",
             "clash",
             "on_leave",
+            "does_not_fit",
             "fsm_refused",
             "too_early_to_close",
             "no_service_area"
@@ -1557,6 +1558,7 @@ Razorpay's webhook: payments and refunds
             "already_started",
             "clash",
             "on_leave",
+            "does_not_fit",
             "fsm_refused",
             "too_early_to_close",
             "no_service_area"

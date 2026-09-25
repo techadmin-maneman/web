@@ -979,7 +979,7 @@ describe("dispatch", () => {
     });
 
     expect(answer.status).toBe(200);
-    expect(await answer.json()).toMatchObject({ messaged: true });
+    expect(await answer.json()).toMatchObject({ client_notice: "messaged" });
     expect(fsm.made.assigned).toEqual([{ appointmentId: "ap-today", technicianId: "resource-2" }]);
     expect(fsm.made.rescheduled).toEqual([
       { appointmentId: "ap-today", start: "2026-09-22T09:00:00+05:30", end: "2026-09-22T10:30:00+05:30" },

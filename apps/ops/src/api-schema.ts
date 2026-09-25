@@ -1096,7 +1096,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash: the technician already holds a job in that window on that date; on_leave: they are away that day */
+                /** @description clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1154,7 +1154,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchMoved"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request, including a move to the technician, day and window the job already has */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1181,7 +1181,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash; on_leave */
+                /** @description clash; on_leave; does_not_fit */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -2079,7 +2079,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "fsm_refused" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "too_early_to_close" | "no_service_area";
                 request_id: string;
                 /** @description invalid_request only: the fields that failed validation, never their values. */
                 fields?: string[];
@@ -2468,8 +2468,11 @@ export interface components {
         DispatchMoved: {
             /** Format: uuid */
             move_id: string;
-            /** @description The client was told his new window. */
-            messaged: boolean;
+            /**
+             * @description messaged: the new window was queued to go on WhatsApp; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.
+             * @enum {string}
+             */
+            client_notice: "messaged" | "unchanged" | "no_client";
         };
         DispatchAssignRequest: {
             /** Format: uuid */
