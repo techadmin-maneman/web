@@ -122,6 +122,44 @@ describe("sweeper: leads", () => {
       { id: "recently-revoked" },
     ]);
   });
+
+  // A revoked phone keeps pointing at its last session; deleting that session
+  // under it failed the whole batch, and the cron with it.
+  it("frees a phone from a technician session before deleting the session", async () => {
+    const day = 24 * 60;
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
+         VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)`,
+      ).bind(minutesAgo(40 * day)),
+      env.DB.prepare(
+        `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at, revoked_at)
+         VALUES ('revoked-long-ago', 'technician', 't1', ?1, ?2, ?3, ?2)`,
+      ).bind(minutesAgo(40 * day), minutesAgo(31 * day), minutesAhead(50 * day)),
+      env.DB.prepare(
+        `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
+         VALUES ('expired-long-ago', 'technician', 't1', ?1, ?2, ?2)`,
+      ).bind(minutesAgo(130 * day), minutesAgo(31 * day)),
+      env.DB.prepare(
+        `INSERT INTO technician_devices (id, technician_id, device_id, session_id, label, created_at, last_seen_at, revoked_at)
+         VALUES ('d1', 't1', 'phone-1', 'revoked-long-ago', 'Chrome on Android', ?1, ?2, ?2)`,
+      ).bind(minutesAgo(40 * day), minutesAgo(31 * day)),
+      env.DB.prepare(
+        `INSERT INTO technician_devices (id, technician_id, device_id, session_id, label, created_at, last_seen_at)
+         VALUES ('d2', 't1', 'phone-2', 'expired-long-ago', 'Safari on iPhone', ?1, ?2)`,
+      ).bind(minutesAgo(130 * day), minutesAgo(31 * day)),
+    ]);
+
+    await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect((await env.DB.prepare("SELECT id FROM sessions").all()).results).toEqual([]);
+    expect(
+      (await env.DB.prepare("SELECT id, session_id, revoked_at FROM technician_devices ORDER BY id").all()).results,
+    ).toEqual([
+      { id: "d1", session_id: null, revoked_at: minutesAgo(31 * day) },
+      { id: "d2", session_id: null, revoked_at: null },
+    ]);
+  });
 });
 
 describe("sweeper: try-on", () => {

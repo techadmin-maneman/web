@@ -191,12 +191,24 @@ export async function sweep(
   const jobsExpired = await expireJobs(env, now);
   const photosDeleted = await deletePhotos(env, now);
 
+  const sessionsEnded = before(SESSION_RETENTION_MS);
   await db.batch([
     db.prepare("DELETE FROM idempotency WHERE created_at < ?1").bind(before(IDEMPOTENCY_TTL_MS)),
     db.prepare("DELETE FROM counters WHERE window_start < ?1").bind(addDays(indiaDate(now), -COUNTER_RETENTION_DAYS)),
     db.prepare("DELETE FROM tryon_sessions WHERE expires_at < ?1").bind(now.toISOString()),
     db.prepare("DELETE FROM otp_challenges WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
-    db.prepare("DELETE FROM sessions WHERE expires_at < ?1 OR revoked_at < ?1").bind(before(SESSION_RETENTION_MS)),
+    // A technician's phone keeps pointing at the last session it logged in with,
+    // so it lets go of that session before the session is deleted.
+    db
+      .prepare(
+        `UPDATE technician_devices SET session_id = NULL
+         WHERE session_id IS NOT NULL AND EXISTS (
+           SELECT 1 FROM sessions s WHERE s.id = technician_devices.session_id AND (s.expires_at < ?1 OR s.revoked_at < ?1)
+         )`,
+      )
+      .bind(sessionsEnded),
+    db.prepare("DELETE FROM sessions WHERE expires_at < ?1").bind(sessionsEnded),
+    db.prepare("DELETE FROM sessions WHERE revoked_at < ?1").bind(sessionsEnded),
   ]);
 
   // Once an hour: an exhausted balance would otherwise fail every try-on quietly.
