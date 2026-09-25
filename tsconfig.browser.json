@@ -1,7 +1,8 @@
 {
   // The browser tests (e2e/) and the fidelity harness: Node code whose callbacks
   // run in a page, so they need the DOM's types, which clash with the Workers
-  // types in tsconfig.node.json.
+  // types in tsconfig.node.json. The technician app's store tests are here for
+  // the same reason: they run in Node, on a fake IndexedDB, against DOM code.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
@@ -9,6 +10,10 @@
   },
   "include": [
     "e2e/**/*.ts",
+    "test/node/tech-api.test.ts",
+    "test/node/tech-kept.test.ts",
+    "test/node/tech-outbox-replay.test.ts",
+    "test/node/tech-store.test.ts",
     "playwright.config.ts",
     "playwright.staging.config.ts",
     "scripts/fidelity.ts",

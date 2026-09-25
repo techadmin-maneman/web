@@ -122,6 +122,63 @@
   color: var(--paper);
 }
 
+/*
+ * Sign out, asked about with work still on the phone: the same outlined
+ * caution as below, with its two ways on as the app's outlined buttons. Neither
+ * is gold — there is still no primary action on this screen.
+ */
+.leave {
+  flex-shrink: 0;
+  padding: var(--sp-16) var(--sp-20) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.leaveTitle,
+.stayed {
+  margin: 0;
+  font-size: var(--fs-17);
+  line-height: 1.5;
+  color: var(--paper);
+}
+
+.leaveBody {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-16);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.leaveActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+  margin-top: var(--sp-16);
+}
+
+.leaveButton {
+  display: flex;
+  align-items: center;
+  min-height: var(--tech-min);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-size: var(--fs-17);
+  cursor: pointer;
+}
+
+.leaveButton:focus-visible {
+  outline: var(--rule-strong) solid var(--gilt);
+  outline-offset: var(--focus-offset);
+}
+
+.stayed {
+  flex-shrink: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
 /* A caution, not a failure: an outlined block, with none of the banner's gold. */
 .atRisk {
   flex-shrink: 0;

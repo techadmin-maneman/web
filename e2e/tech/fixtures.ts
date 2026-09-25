@@ -19,6 +19,8 @@ export const ME = {
   },
 };
 
+const CHALLENGE_ID = "c0000000-0000-4000-8000-000000000001";
+
 export const JOB_ID = "a0000000-0000-4000-8000-000000000001";
 export const SECOND_JOB_ID = "a0000000-0000-4000-8000-000000000002";
 export const LOCKED_JOB_ID = "a0000000-0000-4000-8000-000000000003";
@@ -146,6 +148,16 @@ export interface Write {
 export interface Fake {
   /** False stands for a basement: every call fails as it does with no signal. */
   online: boolean;
+  /** False until a code is verified: the API has no session for this phone, and every call but the sign-in's is a 401. */
+  signedIn: boolean;
+  /** True once ops revoke the phone: every call is a 401 `device_revoked`. */
+  revoked: boolean;
+  /** True makes the next code the phone checks one the API has closed, a `410`. */
+  codeClosed: boolean;
+  /** Every mobile number a code was asked for, in order. */
+  readonly codesSent: string[];
+  /** True makes the day's list arrive in a shape the app cannot draw, as a broken release might send it. */
+  malformed: boolean;
   /** Set to make the next write answer `409 superseded` with these fields. */
   supersede: readonly string[] | null;
   /** Set to make the no-show refuse with `425 too_early_to_close`, as it does before the wait runs. */
@@ -184,6 +196,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
   const today = todayInIndia();
   const fake: Fake = {
     online: true,
+    signedIn: true,
+    revoked: false,
+    codeClosed: false,
+    codesSent: [],
+    malformed: false,
     supersede: null,
     tooEarly: false,
     checkIn: { passed: true, distance_m: 40 },
@@ -200,6 +217,26 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     const path = url.pathname;
     const method = route.request().method();
     const eventId = route.request().headers()["x-client-event-id"] ?? null;
+
+    // The sign-in: a code for any number, and any six digits right unless the code was closed.
+    if (method === "POST" && path === "/api/tech/auth/otp") {
+      const body = route.request().postDataJSON() as { mobile: string };
+      fake.codesSent.push(body.mobile);
+      return route.fulfill({ status: 202, json: { challenge_id: CHALLENGE_ID, expires_in_s: 600 } });
+    }
+    if (method === "POST" && path === "/api/tech/auth/verify") {
+      if (fake.codeClosed) {
+        return route.fulfill({ status: 410, json: { error: { code: "code_expired", request_id: "test" } } });
+      }
+      fake.signedIn = true;
+      return route.fulfill({ json: { verified: true, first_name: ME.first_name, device_id: ME.device.device_id } });
+    }
+    if (fake.revoked) {
+      return route.fulfill({ status: 401, json: { error: { code: "device_revoked", request_id: "test" } } });
+    }
+    if (!fake.signedIn) {
+      return route.fulfill({ status: 401, json: { error: { code: "session_required", request_id: "test" } } });
+    }
 
     // The photograph itself: PUT to the link the API handed out.
     if (method === "PUT" && path.startsWith("/api/tech/photos/")) {
@@ -284,6 +321,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (path === "/api/tech/me") return route.fulfill({ json: ME });
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";
+      if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
       const jobs = date === today && !empty ? jobsToday(date) : [];
       return route.fulfill({ json: { date, jobs } });
     }
@@ -343,6 +381,58 @@ export function heldOnPhone(page: Page): Promise<{ outbox: number; frames: numbe
     const frames = await read<{ frame: Blob }>("frames");
     return { outbox: outbox.length, frames: frames.length, frameSizes: frames.map((kept) => kept.frame.size) };
   });
+}
+
+/** Whether the phone still holds its store at all: a wipe deletes the whole database. */
+export async function storeOnPhone(page: Page): Promise<boolean> {
+  const names = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
+  return names.includes("mm-tech");
+}
+
+/** The keys of what the phone keeps of the API, sorted: its days, its cards, and each job's arrival and close-out. */
+export function keptOnPhone(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("mm-tech");
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(new Error("no store"));
+      };
+    });
+    const keys = await new Promise<IDBValidKey[]>((resolve) => {
+      const request = db.transaction("jobs", "readonly").objectStore("jobs").getAllKeys();
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+    });
+    db.close();
+    return keys.map(String).sort();
+  });
+}
+
+/** Puts records straight into what the phone keeps, as an older day's work would have left them. */
+export async function leftOnPhone(page: Page, records: readonly object[]): Promise<void> {
+  await page.evaluate(async (kept) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("mm-tech");
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(new Error("no store"));
+      };
+    });
+    await new Promise<void>((resolve) => {
+      const transaction = db.transaction("jobs", "readwrite");
+      for (const record of kept) transaction.objectStore("jobs").put(record);
+      transaction.oncomplete = () => {
+        resolve();
+      };
+    });
+    db.close();
+  }, records);
 }
 
 /** The phone's position, so board B5's check-in can run without a real fix. */

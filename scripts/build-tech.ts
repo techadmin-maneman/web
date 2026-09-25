@@ -1,6 +1,7 @@
 // Builds the technician app for one environment into apps/tech/dist/<environment>,
 // with its _headers (docs/decisions/0026-hosts-and-surfaces.md), and fails if
-// its JavaScript is over the prompt's 150 KB gzipped, as the client app's is.
+// its JavaScript — the service worker's included, which a first load fetches
+// too — is over the prompt's 150 KB gzipped, as the client app's is.
 //
 //   npm run build:tech -- --env staging
 
@@ -30,9 +31,12 @@ writeFileSync(`apps/tech/dist/${environment}/_headers`, headersFile(TECHNICIAN_A
 /** "Technician app. First load under 150 KB of gzipped JavaScript" (docs/prompts/phase2-frontend.md). */
 const BUDGET_BYTES = 150 * 1024;
 const dist = `apps/tech/dist/${environment}`;
-const scripts = readdirSync(`${dist}/assets`)
-  .filter((file) => file.endsWith(".js"))
-  .map((file) => `assets/${file}`);
+const scripts = [
+  ...readdirSync(`${dist}/assets`)
+    .filter((file) => file.endsWith(".js"))
+    .map((file) => `assets/${file}`),
+  "sw.js",
+];
 const gzipped = scripts.reduce((total, file) => total + gzipSync(readFileSync(`${dist}/${file}`)).length, 0);
 console.log(
   `tech JavaScript: ${(gzipped / 1024).toFixed(1)} KB gzipped, of a ${String(BUDGET_BYTES / 1024)} KB budget`,

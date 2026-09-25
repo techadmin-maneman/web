@@ -10,6 +10,7 @@ import {
   pathFor,
   SUPERSEDED,
   TOO_EARLY_TO_CLOSE,
+  unreachable,
   type Angle,
   type CheckIn,
   type EventKind,
@@ -106,6 +107,12 @@ export function frames(): Promise<Frame[]> {
   return all<Frame>("frames");
 }
 
+/** Every job with a write or a photograph that has not reached us: the phone keeps its card until they have. */
+export async function unsentJobs(): Promise<Set<string>> {
+  const held = [...(await events()), ...(await frames())];
+  return new Set(held.map((each) => each.job_id));
+}
+
 /** After the technician has read what changed: the job's stopped events go, and its queue can run again. */
 export async function forget(jobId: string): Promise<void> {
   for (const event of await events()) {
@@ -164,9 +171,8 @@ async function uploadFrames(event: Queued, phase: Phase): Promise<Stopped | "ref
 
 /** What a failed call on the way to a write means for the round: wait, sign out, or refuse. */
 function failureOf(status: number, code: string): Stopped | "refused" {
-  if (code === "offline") return "offline";
-  if (status === 401) return "signed-out";
-  return status === 429 || status >= 500 ? "offline" : "refused";
+  if (unreachable({ status, code })) return "offline";
+  return status === 401 ? "signed-out" : "refused";
 }
 
 async function run(): Promise<Replayed> {

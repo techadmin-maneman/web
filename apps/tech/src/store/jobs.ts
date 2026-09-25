@@ -9,7 +9,8 @@
 // to.
 
 import type { CheckIn, Job, JobSummary } from "../api.ts";
-import { all, get, put } from "./db.ts";
+import { dayAfter } from "../lib/when.ts";
+import { all, get, put, remove } from "./db.ts";
 
 type Kept =
   | { readonly id: string; readonly kind: "day"; readonly date: string; readonly jobs: readonly JobSummary[] }
@@ -75,4 +76,35 @@ export async function keptNames(): Promise<Map<string, string>> {
     if (kept.kind === "job" && kept.job.client !== null) names.set(kept.job.id, kept.job.client.name);
   }
   return names;
+}
+
+/** Whether a kept record is still needed: its day is today or tomorrow, or its job is one the phone still needs. */
+function stillNeeded(kept: Kept, days: ReadonlySet<string>, jobs: ReadonlySet<string>): boolean {
+  switch (kept.kind) {
+    case "day":
+      return days.has(kept.date);
+    case "job":
+      return jobs.has(kept.id);
+    case "arrival":
+    case "closed":
+      return jobs.has(kept.job_id);
+  }
+}
+
+/**
+ * Lets go of everything but today's and tomorrow's jobs, and any job whose
+ * work has not reached us yet. Run each time a day arrives fresh from the API
+ * (apps/tech/src/lib/useDay.ts), so a client's card stays on the phone while
+ * the job is in those two days, and no longer.
+ */
+export async function forgetOld(today: string, unsent: ReadonlySet<string>): Promise<void> {
+  const kept = await all<Kept>("jobs");
+  const days = new Set([today, dayAfter(today)]);
+  const jobs = new Set(unsent);
+  for (const record of kept) {
+    if (record.kind === "day" && days.has(record.date)) for (const job of record.jobs) jobs.add(job.id);
+  }
+  for (const record of kept) {
+    if (!stillNeeded(record, days, jobs)) await remove("jobs", record.id);
+  }
 }

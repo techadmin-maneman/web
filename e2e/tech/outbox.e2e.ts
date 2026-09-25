@@ -135,3 +135,45 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 0 });
 });
+
+test("asks before a sign-out would lose unsent work, sends it first if asked, and signs nobody out without signal", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("button", { name: "I have arrived" }).click();
+  await expect(page.getByRole("button", { name: "Start job" })).toBeVisible();
+
+  // The signal goes, though the phone still believes it has a network, and the job starts anyway.
+  fake.online = false;
+  await page.getByRole("button", { name: "Start job" }).click();
+  await expect(page.getByText("Before photos")).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("link", { name: /1 action waiting/ })).toBeVisible();
+
+  // One tap on Sign out no longer wipes the phone: it says what would be lost.
+  const account = page.getByRole("button", { name: /Sign out$/ });
+  await account.click();
+  await expect(page.getByText("1 action not sent yet")).toBeVisible();
+  await expect(page.getByText("Signing out deletes them from this phone, and they never reach us.")).toBeVisible();
+  const asking = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(asking.violations.map((violation) => violation.id)).toEqual([]);
+
+  // With no signal the API cannot end the session, so the phone wipes nothing and says so.
+  await page.getByRole("button", { name: "Sign out anyway" }).click();
+  await expect(page.getByText(/^No signal, so you are still signed in and nothing was deleted/)).toBeVisible();
+  expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
+
+  // Signal again: send first, and only then sign out, with nothing left to lose.
+  fake.online = true;
+  await account.click();
+  await page.getByRole("button", { name: "Send first" }).click();
+  await expect(page.getByRole("link", { name: /action waiting/ })).toHaveCount(0);
+  expect(fake.writes.at(-1)?.path).toBe(`/api/tech/jobs/${JOB_ID}/start`);
+  await account.click();
+  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+});

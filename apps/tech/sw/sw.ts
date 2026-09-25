@@ -1,9 +1,9 @@
 // The technician app's service worker (docs/decisions/0053-the-technician-app-offline.md).
-// It keeps two things and refuses everything else:
+// It keeps two things and refuses everything else (./requests.ts):
 //
 //   the shell     every file of the build, with the app itself kept as "/", so a
 //                 phone in a basement can close the app, reopen it, and still see
-//                 the day (docs/open-points.md, item 57);
+//                 the day (docs/open-points.md, item 56);
 //   today's jobs  the one answer to GET /api/tech/jobs?date=<today in India>,
 //                 which carries a time, a type, a badge and an area — no client,
 //                 no address, no number.
@@ -15,6 +15,8 @@
 //
 // The build writes in MM_PRECACHE and MM_VERSION (apps/tech/sw-build.ts).
 
+import { answerFor } from "./requests.ts";
+
 declare const self: ServiceWorkerGlobalScope;
 declare const MM_PRECACHE: readonly string[];
 declare const MM_VERSION: string;
@@ -23,8 +25,7 @@ const SHELL_PREFIX = "mm-tech-shell-";
 const SHELL = `${SHELL_PREFIX}${MM_VERSION}`;
 /** Named the same in apps/tech/src/store/db.ts, which deletes it at sign-out and on revocation. */
 const DAY = "mm-tech-day";
-const DAY_PATH = "/api/tech/jobs";
-/** Marks a day answered from the cache, so the app knows it is working offline. */
+/** Marks a day answered from the cache, so the app knows it is working offline (apps/tech/src/api.ts). */
 const SERVED_FROM = "Mm-Served-From";
 
 self.addEventListener("install", (event) => {
@@ -50,11 +51,19 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin || request.method !== "GET") return;
-  if (url.pathname === DAY_PATH) event.respondWith(day(request, url));
-  else if (request.mode === "navigate") event.respondWith(page(request));
-  else if (!url.pathname.startsWith("/api/")) event.respondWith(file(request));
+  switch (answerFor(request, self.location.origin)) {
+    case "shell":
+      event.respondWith(page(request));
+      return;
+    case "file":
+      event.respondWith(file(request));
+      return;
+    case "day":
+      event.respondWith(day(request, new URL(request.url)));
+      return;
+    case null:
+      return;
+  }
 });
 
 /** India is five and a half hours ahead of UTC, all year, and a working day is India's. */
@@ -68,9 +77,10 @@ function isToday(url: URL, now: number = Date.now()): boolean {
 }
 
 /**
- * The day from the network, kept when it is today's; with no network, the kept
- * copy, marked as such. A day we never cached simply fails, and the app falls
- * back to what its own store holds (apps/tech/src/lib/useDay.ts).
+ * The day from the network, kept when it is today's in place of any earlier
+ * day's; with no network, the kept copy, marked as such. A day we never cached
+ * simply fails, and the app falls back to what its own store holds
+ * (apps/tech/src/lib/useDay.ts).
  */
 async function day(request: Request, url: URL): Promise<Response> {
   let response: Response;
@@ -85,18 +95,22 @@ async function day(request: Request, url: URL): Promise<Response> {
   }
   if (response.status === 200 && isToday(url)) {
     const cache = await caches.open(DAY);
+    for (const earlier of await cache.keys()) await cache.delete(earlier);
     await cache.put(url.href, response.clone());
   }
   return response;
 }
 
-/** Any page is the app itself (the Worker answers every path with it), from the network or the kept copy. */
+/**
+ * Any page is the app itself (the Worker answers every path with it), and it
+ * comes from the kept copy first, without waiting on the network. A weak signal
+ * that never answers would otherwise hold the app closed for as long as the
+ * browser waits. A new build still arrives: the browser checks for a new sw.js
+ * each time the app opens, the new worker keeps its own shell and drops this
+ * one, and the next open is the new app.
+ */
 async function page(request: Request): Promise<Response> {
-  try {
-    return await fetch(request);
-  } catch {
-    return (await caches.match("/", { cacheName: SHELL })) ?? Response.error();
-  }
+  return (await caches.match("/", { cacheName: SHELL })) ?? fetch(request);
 }
 
 /** The app's scripts, styles, fonts and icons: hashed or fixed, so the kept copy is the right one. */
