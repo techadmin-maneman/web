@@ -1,9 +1,10 @@
 // The client's profile, on the client surface (docs/decisions/0042-client-profile.md):
 //   GET   /api/profile
-//   GET   /api/address/suggestions     buildings matching what is typed so far
+//   POST  /api/address/suggestions     buildings matching what is typed so far
 //   PATCH /api/profile/address
 //   PATCH /api/consents/:purpose
 //   POST  /api/number-change          a code to each number
+//   DELETE /api/number-change         the client withdraws it, before ops decide
 //   POST  /api/number-change/verify   one number's code; with both, the change waits for ops
 //   POST  /api/deletion-request
 // Each consent switch is audited in the same batch as the switch, and a switch
@@ -17,7 +18,13 @@ import type { App, AppEnv } from "../app.ts";
 import { auditStatement, type AuditEntry } from "../domain/audit.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { openDeletion, requestDeletion } from "../domain/deletion.ts";
-import { openNumberChange, startNumberChange, verifyNumberChange, type NumberChange } from "../domain/number-change.ts";
+import {
+  openNumberChange,
+  startNumberChange,
+  verifyNumberChange,
+  withdrawNumberChange,
+  type NumberChange,
+} from "../domain/number-change.ts";
 import {
   consentsOf,
   currentAddress,
@@ -153,20 +160,30 @@ export const profileRoute = createRoute({
   responses: { 200: { description: "The profile", ...json(ProfileSchema) }, ...signedIn },
 });
 
+// A POST, not a GET: each answer spends from Google's budget, and a GET goes with the cookie from any
+// page that links to it. A POST is held to the app's own Origin, as every write is.
 export const addressSuggestionsRoute = createRoute({
-  method: "get",
+  method: "post",
   path: "/api/address/suggestions",
   summary: "Buildings matching what the client has typed, for the address form",
   request: {
-    query: z.object({
-      q: z.string().trim().min(1).max(200).openapi({ description: "What the client has typed so far." }),
-      session: z
-        .string()
-        .trim()
-        .min(1)
-        .max(100)
-        .openapi({ description: "One token for the whole search, sent again when the address is saved." }),
-    }),
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            q: z.string().trim().min(1).max(200).openapi({ description: "What the client has typed so far." }),
+            session: z
+              .string()
+              .trim()
+              .min(1)
+              .max(100)
+              .openapi({ description: "One token for the whole search, sent again when the address is saved." }),
+          })
+          .strict()
+          .openapi("AddressSuggestionsAsk"),
+      ),
+    },
   },
   responses: {
     200: { description: "The suggestions, which may be empty", ...json(SuggestionsSchema) },
@@ -233,6 +250,13 @@ export const numberChangeRoute = createRoute({
     503: errorResponse("busy"),
     ...signedIn,
   },
+});
+
+export const numberChangeWithdrawRoute = createRoute({
+  method: "delete",
+  path: "/api/number-change",
+  summary: "Withdraw the number change under way, before ops decide it. With none under way, nothing happens",
+  responses: { 204: { description: "Withdrawn, or there was none" }, ...signedIn },
 });
 
 export const numberChangeVerifyRoute = createRoute({
@@ -351,7 +375,7 @@ export function registerClientProfile(app: App): void {
 
   app.openapi(addressSuggestionsRoute, async (c) => {
     const personId = c.var.clientSession?.subjectId ?? "";
-    const { q, session } = c.req.valid("query");
+    const { q, session } = c.req.valid("json");
     const now = c.var.deps.now();
 
     // Per client first, so one client cannot spend the day's ceiling on their own.
@@ -496,6 +520,16 @@ export function registerClientProfile(app: App): void {
     await sendCodeAfterResponse(c, newMobile, "whatsapp", started.codes.new.code);
     const expiresIn = Math.round((started.codes.new.challenge.expiresAt.getTime() - now.getTime()) / 1000);
     return c.json({ request_id: started.change.id, expires_in_s: expiresIn }, 202);
+  });
+
+  app.openapi(numberChangeWithdrawRoute, async (c) => {
+    const personId = c.var.clientSession?.subjectId ?? "";
+    await withdrawNumberChange(c.env.DB, {
+      personId,
+      audit: audit(personId, c.var.requestId, { action: "number_change.withdraw" }),
+      now: c.var.deps.now(),
+    });
+    return c.body(null, 204);
   });
 
   app.openapi(numberChangeVerifyRoute, async (c) => {

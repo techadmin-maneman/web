@@ -448,20 +448,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /** Buildings matching what the client has typed, for the address form */
-        get: {
+        post: {
             parameters: {
-                query: {
-                    /** @description What the client has typed so far. */
-                    q: string;
-                    /** @description One token for the whole search, sent again when the address is saved. */
-                    session: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddressSuggestionsAsk"];
+                };
+            };
             responses: {
                 /** @description The suggestions, which may be empty */
                 200: {
@@ -501,8 +502,6 @@ export interface paths {
                 };
             };
         };
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -707,7 +706,34 @@ export interface paths {
                 };
             };
         };
-        delete?: never;
+        /** Withdraw the number change under way, before ops decide it. With none under way, nothing happens */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Withdrawn, or there was none */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2129,8 +2155,26 @@ export interface components {
             next_visit: components["schemas"]["VisitSummary"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
-            /** @description The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4). */
-            prompt: null;
+            /** @description Board B1's one contextual prompt, the first that applies: no address given while something is booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight. Null when none applies. */
+            prompt: {
+                /** @enum {string} */
+                kind: "address";
+            } | {
+                /** @enum {string} */
+                kind: "replacement_due";
+                month: string;
+            } | {
+                /** @enum {string} */
+                kind: "invoice_ready";
+                /** Format: uuid */
+                visit_id: string;
+                /**
+                 * Format: date
+                 * @description India's date of the visit.
+                 */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
             booking: {
                 /** @description Booking in the app is on; off, the app opens WhatsApp. */
                 self_serve: boolean;
@@ -2156,6 +2200,10 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /** @description For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it. */
+            stage: ("booked" | "in_progress" | "closing") | null;
+            /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
+            prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
             place: string;
@@ -2228,6 +2276,12 @@ export interface components {
             /** @enum {string} */
             attribution: "Google Maps";
         };
+        AddressSuggestionsAsk: {
+            /** @description What the client has typed so far. */
+            q: string;
+            /** @description One token for the whole search, sent again when the address is saved. */
+            session: string;
+        };
         AddressSave: {
             line1: string;
             line2: string | null;
@@ -2285,8 +2339,8 @@ export interface components {
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
             outcome: ("done" | "partial") | null;
-            /** @description What the technician did, from the job sheet (P2-M4). */
-            what_was_done: null;
+            /** @description The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded, as for a visit closed in FSM's own screens. */
+            what_was_done: string[] | null;
             photos: components["schemas"]["PhotoSet"];
             /** @description The visit's invoice, for GET /api/documents/{id}, once Books has issued it. */
             document_id: string | null;
@@ -2592,11 +2646,15 @@ export interface components {
             code: string;
             /** @description The invite link to share: maneman.in/r/<code>. */
             link: string;
+            /** @description Whether the invite's preview names the client, as GET /api/r/{code} will: they agreed to the cards' current lines, and naming is on (REFERRER_NAME_ON_INVITE). */
+            named: boolean;
             credits: components["schemas"]["Credits"];
             card: {
                 /** @enum {string} */
                 state: "house" | "personal";
                 version: number;
+                /** @description Whether the client has agreed to photographs on referral cards, on the notice's current lines. */
+                consented: boolean;
             };
             /** @description Friends whose first fit closed as done, most recent first. */
             fitted: {

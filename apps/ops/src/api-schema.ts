@@ -2100,6 +2100,10 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /** @description For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it. */
+            stage: ("booked" | "in_progress" | "closing") | null;
+            /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
+            prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
             place: string;

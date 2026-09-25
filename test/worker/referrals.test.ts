@@ -85,10 +85,29 @@ describe("referral codes", () => {
     expect(again).toEqual({
       code: first.code,
       link: `http://localhost:8787/r/${first.code}`,
+      named: false,
       credits: { visits: 0, earliest_expiry: null },
-      card: { state: "house", version: 1 },
+      card: { state: "house", version: 1, consented: false },
       fitted: [],
     });
+  });
+
+  // The app's preview (board F4) says what the friend will see, so it names the client exactly when the landing
+  // does; and its card sheet asks for the consent (F3) exactly when the current lines have not been agreed to.
+  it("say whether the invite names the client, and whether they agreed to the cards' current lines", async () => {
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
+    const read = async (settings = {}) =>
+      (
+        await request(appFor("local", fakeDependencies(), settings, "client"), "/api/refer", {
+          headers: { Cookie: cookie },
+        })
+      ).json<{ named: boolean; card: { consented: boolean } }>();
+
+    await cardConsent("photos-referral-cards-v1");
+    expect(await read()).toMatchObject({ named: false, card: { consented: false } });
+    await cardConsent("photos-referral-cards-v2");
+    expect(await read()).toMatchObject({ named: true, card: { consented: true } });
+    expect(await read({ referrerNameOnInvite: false })).toMatchObject({ named: false, card: { consented: true } });
   });
 });
 
