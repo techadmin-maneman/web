@@ -84,6 +84,97 @@ test("uploads each frame to the link the API hands out, then lands the set", asy
   await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
 });
 
+/** The state of each track the viewfinder is showing: "live", or "ended" once the camera is let go. */
+const viewfinder = (page: Page) =>
+  page.evaluate(() => {
+    const stream = document.querySelector("video")?.srcObject;
+    return stream instanceof MediaStream ? stream.getVideoTracks().map((track) => track.readyState) : [];
+  });
+
+/** The app going to the background, or coming back, as a phone switching apps sends it. */
+const shown = (page: Page, visible: boolean) =>
+  page.evaluate(
+    (state) => {
+      Object.defineProperty(document, "visibilityState", { value: state, configurable: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+    },
+    visible ? "visible" : "hidden",
+  );
+
+test("lets go of the camera while the app is hidden, and opens it again on the way back", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(BEFORE);
+  const capture = page.getByRole("button", { name: "Capture" });
+  await expect(capture).toBeEnabled();
+  expect(await viewfinder(page)).toEqual(["live"]);
+
+  await shown(page, false);
+  await expect.poll(() => viewfinder(page)).toEqual(["ended"]);
+  await expect(capture).toBeDisabled();
+
+  await shown(page, true);
+  await expect.poll(() => viewfinder(page)).toEqual(["live"]);
+  await expect(capture).toBeEnabled();
+  await capture.click();
+  await expect(page.getByText("1 of 5")).toBeVisible();
+});
+
+test("a frame the phone has no room for can be taken again, and the phone says it is full", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(BEFORE);
+  const capture = page.getByRole("button", { name: "Capture" });
+  await expect(capture).toBeEnabled();
+
+  // The phone runs out of room.
+  await page.evaluate(() => {
+    const put = Object.getOwnPropertyDescriptor(IDBObjectStore.prototype, "put") ?? {};
+    Object.assign(window, {
+      roomAgain: () => {
+        Object.defineProperty(IDBObjectStore.prototype, "put", put);
+      },
+    });
+    Object.defineProperty(IDBObjectStore.prototype, "put", {
+      value: () => {
+        throw new DOMException("no room", "QuotaExceededError");
+      },
+      configurable: true,
+      writable: true,
+    });
+  });
+  await capture.click();
+  await expect(page.getByText("That photograph did not keep. Capture it again.")).toBeVisible();
+  await expect(page.getByText("This phone's storage is full")).toBeVisible();
+  await expect(page.getByText(/will not open its camera/)).toHaveCount(0);
+  const results = await wcag(page);
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  // Room again: the same angle is taken, and the warning goes.
+  await page.evaluate(() => {
+    (window as unknown as { roomAgain: () => void }).roomAgain();
+  });
+  await capture.click();
+  await expect(page.getByText("1 of 5")).toBeVisible();
+  await expect(page.getByText("This phone's storage is full")).toHaveCount(0);
+});
+
+test("a camera the phone refused can be asked for again", async ({ page }) => {
+  await page.addInitScript(() => {
+    const devices = navigator.mediaDevices;
+    const open = devices.getUserMedia.bind(devices);
+    let refusals = 1;
+    devices.getUserMedia = (constraints) => {
+      refusals -= 1;
+      return refusals >= 0 ? Promise.reject(new DOMException("not now", "NotReadableError")) : open(constraints);
+    };
+  });
+  await fakeTech(page);
+  await page.goto(BEFORE);
+
+  await expect(page.getByText(/will not open its camera/)).toBeVisible();
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("button", { name: "Capture" })).toBeEnabled();
+});
+
 test("the frames waiting show on the waiting screen, with the design's line about the gallery", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
