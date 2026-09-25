@@ -69,25 +69,25 @@ If you get **That code did not match**, you have four more tries before the code
 
 Work through this on **today's** job. It is a service visit, so it has five steps: before photos, the checklist, consumables, after photos and the outcome. (A replacement or a first fit has a sixth, for the piece's label; a service visit skips it.)
 
-1. Tap the job. You should see the client's name, **10:00 am · service**, a **Prepaid** badge, the address in Sector 45, the access note, and a **Navigate** button. There is no price anywhere, and there should not be: the app never shows a technician an amount.
+1. Tap the job. You should see the client's name, **10 am · service · 1 slot**, a **Prepaid** badge, the address in Sector 45, the access note, a **Navigate** button, and **Call** and **WhatsApp** buttons for the client. There is no price anywhere, and there should not be: the app never shows a technician an amount.
 2. Under the card you should see **1 · Arrived** and the line "Tap at the door. We record the time and check you are within 200 m."
 3. Tap **I have arrived**. Android will ask to use your location — allow it.
-4. The screen changes. You should now see **2 · Waiting** with a countdown running down from 15:00, and **Close as no-show** greyed out until the countdown reaches zero. Below that, **He appears**, "Staging is at the door", and a **Start job** button.
+4. The screen changes. You should now see **2 · Waiting** with a countdown running down from 15:00, and **Close as no-show** greyed out until the countdown reaches zero; once it opens it asks before it closes anything, because ops may charge the client. Below that, **He appears** and "Staging is at the door", and at the foot of the screen the one gold button, **Start job**.
 
    > The check-in passed because the test address has no coordinates, as explained above. At a real address it would have measured the distance and refused if you were more than 200 m away.
 
 5. Tap **Start job**.
-6. **Before photos.** You should see a live picture, **0 of 5**, and the word **Front**. Tap **Capture** five times, following the label each time — Front, Top, Left, Right, Hair. After the fifth you should see **All five are on the phone.** Point the camera at a wall; nobody needs to be photographed. Tap **Done**.
+6. **Before photos.** You should see a live picture, **0 of 5**, and the word **Front**. Tap **Capture** five times, following the label each time — Front, Top, Left, Right, Hair. After the fifth you should see **All five are on the phone.**, and **Capture** becomes **Done** in the same place. Point the camera at a wall; nobody needs to be photographed. Tap **Done**.
 7. **Service checklist.** Six lines, each beginning "PLACEHOLDER" — that is correct, because the real checklist has to be built in FSM and has not been (open point 13). Tick all six. The bar at the bottom stays dim and says "Finish the list to continue" until every line is ticked. Tap **Next**.
 8. **Consumables used.** Four items with a plus and a minus each. Add one or two of anything, or tap **None used**. Tap **Next**.
 9. **After photos.** The same five as before. Tap **Capture** five times, then **Done**.
-10. **Outcome.** Tap **Done**. (**Partial · pick a reason** is the other path; try it on tomorrow's job if you want to see it.)
+10. **Outcome.** Nothing is chosen for you: tap **Done**, then **Next**. (**Partial · pick a reason** is the other path; try it on tomorrow's job if you want to see it.)
 11. You should reach the close-out: **Closed out**, a tick, "Staging test · done", how long the job took, and how many photographs are queued or sent.
-12. Tap **Back to today**. The job should now read as finished.
+12. Tap **Back to today**. The job's row should now read **Closed out**.
 
 ### The three things worth checking while you are there
 
-- **Tomorrow's job.** At the foot of the day's list, tap the line that says **Tomorrow · 1 job**. It opens out; tap the job inside it. It should carry the address and the client's name, because a job opens the day before.
+- **Tomorrow's job.** At the foot of the day's list, tap the line that says **Tomorrow · 1 job**. It opens out; tap the job inside it. It should carry the address and the client's name, because a job opens the day before, and **Tomorrow** before its time. It offers no **I have arrived**: a job is arrived at on its own day.
 - **Sunday's job, which is still locked.** The day's list only ever shows today and tomorrow, so there is no way to tap through to a job further out — that is by design. Open it by its own address instead:
 
   **`https://tech-staging.maneman.in/jobs/ce586246-3666-4371-aef8-4badd4375fc2`**
