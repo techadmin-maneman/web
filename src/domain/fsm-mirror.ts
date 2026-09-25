@@ -209,12 +209,18 @@ async function technicianFor(db: D1Database, fsm: FsmProvider, fsmId: string, at
  * Writes FSM's service resources over our copy: name, whether FSM still lists
  * each as active, the number he logs in with and the territory the board groups
  * him by. The technician login and the dispatch board both read this copy.
+ *
+ * FSM's list leaves out a user whose service resource was removed, so a
+ * technician missing from it is one FSM no longer lists at all, and is made
+ * inactive here too (ADR 0052). An empty list is taken as a failed read, never
+ * as an org with nobody in it, and changes nothing.
  */
 export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: string): Promise<number> {
   const technicians = await fsm.technicians();
   if (technicians.length === 0) return 0;
-  await db.batch(
-    technicians.map((technician) =>
+  const listed = JSON.stringify(technicians.map((technician) => technician.id));
+  await db.batch([
+    ...technicians.map((technician) =>
       db
         .prepare(
           `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
@@ -234,7 +240,13 @@ export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: stri
           at,
         ),
     ),
-  );
+    db
+      .prepare(
+        `UPDATE technicians SET active = 0, updated_at = ?2
+         WHERE active = 1 AND fsm_id NOT IN (SELECT value FROM json_each(?1))`,
+      )
+      .bind(listed, at),
+  ]);
   return technicians.length;
 }
 

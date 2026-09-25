@@ -13,7 +13,7 @@ Two things were missing. `technicians` held no mobile number, so nothing could m
 
 ## Decision
 
-**The number comes from FSM's user record.** `technicians` gains `mobile_e164` and `zone` (migration 0027), written by the mirror from FSM's `/users` answer, along with `active`. A technician whose FSM user carries no number cannot log in — which is the same sentence as "a technician is recognised only if FSM lists him", read strictly. The list refreshes nightly with the reconciliation, and once more on a login attempt the mirror does not recognise, so a technician added today does not wait until tomorrow.
+**The number comes from FSM's user record.** `technicians` gains `mobile_e164` and `zone` (migration 0027), written by the mirror from FSM's `/users` answer, along with `active`. A technician whose FSM user carries no number cannot log in — which is the same sentence as "a technician is recognised only if FSM lists him", read strictly. The list refreshes nightly with the reconciliation, and once more on a login attempt the mirror does not recognise, so a technician added today does not wait until tomorrow. **From 25 September 2026** (ADR 0065) a technician the refreshed list leaves out altogether — FSM drops a user whose service resource was removed — is made inactive too, and a session whose technician is inactive ends on its next call, so one who has left keeps neither his login nor the cards on his phone.
 
 **The challenge is the client's, with a different subject.** `otp_challenges` gains `technician_id` (a new column, not a widened `CHECK`). A row carries a person or a technician, never both; the client's login reads only the rows where `technician_id IS NULL`, and the technician's only the rows where it is not. Same ten minutes, same five wrong attempts, same silence about whether the number is known.
 
@@ -23,7 +23,7 @@ Two things were missing. `technicians` held no mobile number, so nothing could m
 
 **The unlock is enforced where the answer is built.** A locked job's detail is constructed without an address, access notes or client card — not merely without them rendered. The sector (the address's area) is the one place-fact a locked job carries, because the prompt lists it among "time, type and sector".
 
-**No amount is read.** A job carries a `prepaid` or `credit` badge, computed from whether a credit was redeemed against it. No query in the technician surface selects an amount, so none can leak into a response.
+**No amount is read.** A job carries a `prepaid` or `credit` badge, computed from whether a credit was redeemed against it. No query in the technician surface selects an amount, so none can leak into a response. **From 25 September 2026** a third badge, `free`, marks a visit the price book charges nothing for; SQL asks the book for a yes or a no, and no figure is selected (ADR 0065).
 
 ## Consequences
 

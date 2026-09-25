@@ -52,6 +52,11 @@ The audit of 24 September 2026 found that no job worked in the technician app co
 - **A no-show is refused once the job has started** (409 `already_started`). The close now lands before its case is opened, so a close the server refuses — started, superseded or out of order — opens no case.
 - **The card carries what a phone can lose.** A job's `progress` gives the no-show wait's end and the check-in's distance, from the check-in the server holds, so a phone that lost its own copy can still close a no-show. The unlocked card gives the address whole — building, tower, floor, flat and landmark, which the client saved separately (ADR 0054) — and a visit the price book charges nothing for carries a Free badge (ADR 0025, item 32).
 
+### Who may still work
+
+- **A session ends when its technician is no longer active** (`src/http/technician-session.ts`). `active` was read only at login and a session lives 90 days from last use, so a technician who had left kept his phone's cards — clients' addresses and mobiles — for up to three months. Now his next call answers 401 `session_required`, the session is revoked, and the app wipes what it holds, as it does on any 401 (ADR 0053).
+- **A technician FSM no longer lists at all is made inactive** (`syncTechnicians`). FSM's list leaves out a user whose service resource was removed, and the mirror only updated the rows it was given, so such a technician stayed active: able to log in, offered to clients and drawn on the board. The list is read nightly and on a login the mirror does not recognise. An empty list is taken as a failed read and changes nothing.
+
 ### A distance that says "not measured"
 
 `checkins.distance_m` was NOT NULL, so a check-in at an address with no coordinate stored a filler 0 that every reader had to know to ignore, and the field test's own query did not. Migration 0035 makes it nullable by swapping the column in place — `no_show_cases` points at `checkins`, so the table is never rebuilt (migration 0031) — and clears the old fillers, which are exactly the rows that name no address. A check-in that measured nothing now holds no distance.
