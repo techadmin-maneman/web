@@ -1,6 +1,6 @@
 # 0046. Moving and cancelling a visit
 
-- Status: accepted
+- Status: accepted; the late fee kept, and a credit given back only to a grant that can take it, in ADR 0067
 - Date: 2026-09-22
 
 ## Context
@@ -31,7 +31,7 @@ FSM, tried on the real org on 22 September 2026 (`docs/decisions/fsm-trial.md`):
 | Service visit          | free; the payment carries over | charged: the payment is kept, and the new visit is paid separately | refunded in full | charged: the payment is kept              |
 | First fit, replacement | free; the payment carries over | the late fee is paid now, and the payment carries over             | refunded in full | the payment less the late fee is refunded |
 
-The late fees are the price book's `late_fee_first_fit` and `late_fee_replacement`. When ops move a visit, the client is never charged (`moveCost(..., "ops")`, for dispatch in P2-M4). A credit booking's rule arrives with the credits (P2-M3).
+The late fees are the price book's `late_fee_first_fit` and `late_fee_replacement`, as they stood when the visit was booked: the hold that booked it keeps its late fee (ADR 0067). When ops move a visit, the client is never charged (`moveCost(..., "ops")`, for dispatch in P2-M4). A visit paid with a credit gets it back when changed more than 24 hours out and loses it inside them (`creditOnChange`); a grant clawed back or expired takes nothing back (ADR 0067).
 
 **The routes** (`src/routes/client-changes.ts`):
 
@@ -49,7 +49,7 @@ The late fees are the price book's `late_fee_first_fit` and `late_fee_replacemen
 - The hold is priced at what the move costs now: nothing, the late fee, or the new visit's price on its day.
 - `POST /api/appointments/{id}/reschedule` with the hold starts it, exactly as `POST /api/bookings` does: Checkout when there is something to pay, or the queue at once when free.
 - **A move in place** (free, or once its late fee is paid) keeps the visit's technician. The FSM appointment keeps its ID and is rescheduled; the mirror moves its times, and its payment stays with it. A late fee is a payment of kind `late_fee` on the same visit. Availability for a move offers only that technician, and leaves the visit's own time out of the day. Moving to another technician is dispatch's (P2-M4).
-- **A charged move** (a service visit inside 24 hours) is a new booking, with any technician. Once it is booked, the old work order is cancelled in FSM with a note, and the old visit's payment is kept as the charge. If FSM fails to cancel it, the queue's next try does it.
+- **A charged move** (a service visit inside 24 hours) is a new booking, with any technician. Once it is booked, the old work order is cancelled in FSM with a note, and the old visit's payment is kept as the charge. If FSM fails to cancel it, the queue's next try does it; if FSM refuses, the old visit is left as FSM has it and ops are told to cancel it by hand (ADR 0067).
 - If the visit has started or gone by the time the move is confirmed, what was paid for the move is refunded in full, as for a lapsed hold (ADR 0045).
 
 **A cancel** (`src/domain/visit-changes.ts`):

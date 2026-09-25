@@ -1356,6 +1356,7 @@ Request body:
             "taken",
             "not_bookable",
             "hold_expired",
+            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -3191,6 +3192,16 @@ Request body:
             "type": "string",
             "format": "date"
           },
+          "price": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "description": "What a visit on this day costs: a price changes from its date."
+              }
+            ]
+          },
           "windows": {
             "type": "array",
             "items": {
@@ -3230,6 +3241,7 @@ Request body:
         },
         "required": [
           "date",
+          "price",
           "windows"
         ],
         "additionalProperties": false
@@ -3269,7 +3281,8 @@ Request body:
     "amount",
     "gst_percent"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "The first day's price."
 }
 ```
 
@@ -3559,7 +3572,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late)."
+      "description": "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late, or its grant has been taken back or has expired)."
     },
     "cost": {
       "type": "string",
@@ -3643,7 +3656,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late)."
+      "description": "For a visit paid with a credit: whether cancelling gives it back (free) or loses it (late, or its grant has been taken back or has expired)."
     },
     "refund": {
       "type": "integer",

@@ -36,7 +36,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 
 - `POST /api/r/:code/consultation` books a free consultation straight into the schedule: a hold, then the queue, as a free booking in the app.
   - The page's line "You may contact me on WhatsApp about this consultation." is recorded as consent to WhatsApp about visits, on its own notice (`referral-consultation-v1`), so the confirmation and reminder reach them (ADR 0047).
-  - It answers whether the invite's credits apply.
+  - It answers whether the invite's credits apply, and the invite's state for this friend: `expired` once the one held for them on a waitlist has lapsed, 12 months after their area launched (ADR 0067).
   - While self-serve booking is off, it answers `409 ops_assisted` (open point 41).
 - `POST /api/r/:code/waitlist` records the person on the pincode's list.
   - It takes their required consent to be contacted about the request (`waitlist-v1`), and the optional launch alert (consent to WhatsApp about launches).

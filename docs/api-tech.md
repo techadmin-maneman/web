@@ -744,6 +744,7 @@ The piece a label names
             "taken",
             "not_bookable",
             "hold_expired",
+            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",

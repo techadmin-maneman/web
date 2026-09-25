@@ -55,6 +55,7 @@
                   "taken",
                   "not_bookable",
                   "hold_expired",
+                  "already_booked",
                   "not_changeable",
                   "terms_changed",
                   "consent_required",
@@ -1095,6 +1096,54 @@
         "required": [
           "consents",
           "deletion"
+        ],
+        "additionalProperties": false
+      },
+      "CreditBalance": {
+        "type": "object",
+        "properties": {
+          "visits": {
+            "type": "integer"
+          },
+          "earliest_expiry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "visits",
+          "earliest_expiry"
+        ],
+        "additionalProperties": false
+      },
+      "CreditAdjustment": {
+        "type": "object",
+        "properties": {
+          "visits": {
+            "type": "integer",
+            "minimum": -12,
+            "maximum": 12,
+            "description": "Visits to add, or, below nought, to take away."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "correction",
+              "goodwill"
+            ],
+            "description": "correction: given or taken in error; goodwill: given to make up for something."
+          }
+        },
+        "required": [
+          "visits",
+          "reason"
         ],
         "additionalProperties": false
       },
@@ -2704,8 +2753,15 @@
         "properties": {
           "item": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 40
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement",
+              "late_fee_first_fit",
+              "late_fee_replacement"
+            ],
+            "description": "A kind of visit, or one of the two late fees."
           },
           "tier": {
             "type": "string",
@@ -3075,6 +3131,74 @@
           },
           "404": {
             "description": "not_found: no such client, or the client has been erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/{id}/credits": {
+      "post": {
+        "summary": "Add service-visit credits to a client, or take them away, with the reason",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreditAdjustment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The client's balance now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditBalance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: visits takes away more than the client has",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such client, or one who has been erased",
             "content": {
               "application/json": {
                 "schema": {

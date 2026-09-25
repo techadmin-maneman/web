@@ -1,6 +1,6 @@
 # 0045. Self-serve booking and prepayment
 
-- Status: accepted; moving and cancelling in ADR 0046
+- Status: accepted; moving and cancelling in ADR 0046; a paid hold kept, and FSM written once, in ADR 0067
 - Date: 2026-09-22
 
 ## Context
@@ -17,16 +17,16 @@ The prompt's P2-M5: "availability, holds, Razorpay checkout, credit redemption, 
 
 **Availability** (`GET /api/availability?type=&from=`): 14 days from tomorrow, three windows each, and for each window whether the client's regular technician (whoever did their latest visit) could come, another could, or nobody (full). It uses the clash check (ADR 0034) and the window-to-slot map (ADR 0035).
 
-**A hold** (`POST /api/holds`) takes the window for ten minutes: the regular technician if free, else whoever has least that day. It carries the price at that moment, the late fee a first fit or replacement would cost to move inside 24 hours, and when moving stops being free (24 hours before the window opens). A client has one hold at a time; a new one lets the old go.
+**A hold** (`POST /api/holds`) takes the window for ten minutes: the regular technician if free, else whoever has least that day. It carries the price at that moment, the late fee a first fit or replacement would cost to move inside 24 hours, and when moving stops being free (24 hours before the window opens). A client has one hold at a time in the app; a new one lets the old go, unless it is paid for (ADR 0067).
 
 **Paying** (`POST /api/bookings`, `src/domain/bookings.ts`): the hold's Razorpay order, made once, whose notes carry the hold and the person, and what Checkout opens with. A free visit, a consultation, skips payment and goes straight to the queue.
 
-**Razorpay's webhook is the authority** (ADR 0044). On a capture whose notes name a hold, the hook puts the hold on the fsm-sync queue. The consumer then:
+**Razorpay's webhook is the authority** (ADR 0044). On `payment.captured` whose notes name a hold, the hook confirms the hold and puts it on the fsm-sync queue. The consumer then:
 
-- books the visit in FSM: the person's contact (added if they have none), a work order for the service, and its appointment with the hold's technician, from its half-slot for its length;
+- books the visit in FSM: the person's contact (added if they have none), a work order for the service, and its appointment with the hold's technician, from its half-slot for its length; each ID is kept as FSM gives it, so a retry makes nothing twice (ADR 0067);
 - then, in one batch, the visit in the mirror, the hold booked, its claims let go, and the payment linked to the visit;
-- refunds the payment in full instead, if it was captured after the hold had lapsed. The refund is claimed on the hold first (`refunded_at`, migration 0017), so a repeated message cannot refund twice;
-- retries a failure four times over seven minutes, then refunds the payment and alerts ops.
+- refunds the payment in full instead, if Razorpay made it after the hold had lapsed and the two minutes' grace after it (ADR 0067). The refund is claimed on the hold first (`refunded_at`, migration 0017), so a repeated message cannot refund twice;
+- retries a failure four times over seven minutes, then cancels what FSM holds for it, refunds the payment, and tells ops what happened to each (ADR 0067). A hold neither booked nor refunded half an hour on is put back on the queue by the cron.
 
 The app polls `GET /api/holds/:id`, which says when the hold is paid and which visit it became.
 
