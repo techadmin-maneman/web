@@ -67,9 +67,17 @@ export function manifest(ink: string) {
   };
 }
 
+/**
+ * Fonts the app never draws with, which a phone need not keep: the extended
+ * Latin subsets, fetched only for a character outside Latin, and the rupee,
+ * since the app writes amounts as "Rs.". A name that needs one is drawn from
+ * the network, or offline in the phone's own font.
+ */
+const NEVER_DRAWN = /-(latin-ext|rupee)-/;
+
 /** The files the service worker keeps: every file of the build, with the app itself kept as "/". */
 export function precacheList(fileNames: readonly string[]): string[] {
-  const files = fileNames.filter((name) => name !== "index.html" && name !== "sw.js");
+  const files = fileNames.filter((name) => name !== "index.html" && name !== "sw.js" && !NEVER_DRAWN.test(name));
   return ["/", ...[...new Set(files)].sort().map((name) => `/${name}`)];
 }
 

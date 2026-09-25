@@ -77,6 +77,16 @@ test("opens offline on the last Home, with board B3's banner, and Reschedule wai
   await expect(page.getByRole("link", { name: "Reschedule" })).toBeVisible();
 });
 
+test("opens in seconds on a signal that never answers, on the last Home", async ({ page, request }) => {
+  await signIn(page, request);
+  await keepHome(page);
+  // A signal that shows a bar and never answers: every request that reaches the network waits for ever.
+  await page.context().route("**/*", () => new Promise<void>(() => undefined));
+  await page.reload({ timeout: 5_000 });
+  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
+});
+
 test("says the visit is still booked when the API fails and the phone kept Home", async ({ page, request }) => {
   await signIn(page, request);
   await keepHome(page);

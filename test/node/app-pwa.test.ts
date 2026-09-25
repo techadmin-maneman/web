@@ -52,6 +52,17 @@ describe("the service worker's files", () => {
     ]);
   });
 
+  it("keeps no font the app never draws with: the extended Latin subsets and the rupee", () => {
+    const built = [
+      "index.html",
+      "assets/eb-garamond-latin-400-normal-a1.woff2",
+      "assets/eb-garamond-latin-ext-400-normal-b2.woff2",
+      "assets/eb-garamond-rupee-400-c3.woff2",
+      "assets/instrument-sans-latin-ext-500-normal-d4.woff2",
+    ];
+    expect(precacheList(built)).toEqual(["/", "/assets/eb-garamond-latin-400-normal-a1.woff2"]);
+  });
+
   it("has a version that changes with any file, and not with their order", () => {
     const files = [
       { name: "assets/index-a1.js", content: "one" },
