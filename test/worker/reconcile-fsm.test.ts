@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmAppointment } from "../../src/providers/fsm.ts";
-import { PAGE_SIZE, reconcileFsm } from "../../src/scheduled/reconcile-fsm.ts";
+import { PAGE_SIZE, reconcileFsm, UPCOMING_PER_RUN } from "../../src/scheduled/reconcile-fsm.ts";
 import { fakeDependencies, fakeQueue } from "./helpers.ts";
 
 /** 11:30 am in India: no nightly pass. */
@@ -61,6 +61,30 @@ describe("the reconciliation, by day", () => {
     expect(await summary).toEqual({ queued: 2 });
     expect(queuedIds(queue).sort()).toEqual(["ap-behind", "ap-new"]);
     expect(queue.sent[0]).toMatchObject({ request_id: "reconcile" });
+  });
+
+  it("reads a few upcoming visits again each run, the longest unread first, so a deletion FSM sent no hint for is found", async () => {
+    const upcoming = async (fsmId: string, day: string) => {
+      await env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, status, fsm_status, window_start, window_end, fsm_modified_at, synced_at)
+         VALUES (?1, ?2, 'scheduled', 'Scheduled', ?3, ?3, ?4, ?4)`,
+      )
+        .bind(crypto.randomUUID(), fsmId, `${day}T04:30:00.000Z`, DAY.toISOString())
+        .run();
+    };
+    await upcoming("ap-soon", "2026-09-23");
+    await upcoming("ap-later", "2026-09-25");
+    await upcoming("ap-last", "2026-09-28");
+    await copy("ap-past", "2026-09-20T10:00:00+05:30");
+
+    const first = run([], DAY);
+    await first.summary;
+    expect(queuedIds(first.queue)).toEqual(["ap-soon", "ap-later"].slice(0, UPCOMING_PER_RUN));
+
+    const second = run([], new Date(DAY.getTime() + 5 * 60_000));
+    await second.summary;
+    expect(queuedIds(second.queue)[0]).toBe("ap-last");
+    expect(queuedIds(second.queue)).not.toContain("ap-past");
   });
 
   it("reads only the first page, and keeps no place, outside the night", async () => {

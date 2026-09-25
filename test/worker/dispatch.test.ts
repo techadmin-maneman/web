@@ -394,6 +394,31 @@ describe("a move and the time it goes to", () => {
     expect(await shown(A)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["09:00"] });
   });
 
+  // INT-25: the technician went through and the time did not, and ops were told nothing had moved.
+  it("reads the job again from FSM when FSM took the technician and not the time, and says so", async () => {
+    // FSM as it stands after the half: the job on Sameer, at its old time.
+    const halfway: FsmProvider = {
+      ...fsm,
+      appointment: (id) =>
+        Promise.resolve({
+          ...fsmAppointment(id),
+          technicianIds: ["resource-2"],
+          scheduledStart: "2026-09-22T09:00:00+05:30",
+          scheduledEnd: "2026-09-22T10:30:00+05:30",
+        }),
+    };
+    fsm.failNext("rescheduleVisit", "FSM said 400");
+    const app = appFor("local", fakeDependencies({ fsm: halfway }), {}, "ops");
+
+    const answer = await move(toSameerWednesdayMorning(A), app);
+
+    expect(answer.status).toBe(502);
+    expect(await answer.json()).toMatchObject({ error: { code: "fsm_partly" } });
+    expect(fsm.made.assigned).toHaveLength(1);
+    expect(await shown(A)).toEqual({ technician_id: SAMEER, window_start: TUESDAY["09:00"] });
+    expect((await claims()).results).toEqual([]);
+  });
+
   // ADR 0068: a paid hold keeps its time until it is booked or refunded, whatever else happens.
   it("never lets go of a paid hold's time, nor writes over it", async () => {
     const hold = await holdOnWednesday({ paid: true, expiresAt: minutesBeforeNow(60) });

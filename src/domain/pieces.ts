@@ -137,7 +137,9 @@ export interface FittedPiece {
 
 /**
  * Records a piece the technician fitted: an asset in FSM first, then our copy.
- * A replay writes the same asset only once, because the code is looked up first.
+ * A replay writes the same asset only once, because the code is looked up first:
+ * in our copy, then among the client's assets in FSM, where a create whose
+ * answer never reached us left it.
  */
 export async function recordFittedPiece(db: D1Database, fsm: FsmProvider, piece: FittedPiece): Promise<string> {
   const held = await db
@@ -146,14 +148,16 @@ export async function recordFittedPiece(db: D1Database, fsm: FsmProvider, piece:
     .first<{ fsm_id: string }>();
   if (held !== null) return held.fsm_id;
 
-  const productId = await partItemId(db, fsm, piece.base, piece.now);
-  const fsmId = await fsm.createAsset({
-    contactId: piece.fsmContactId,
-    assetNumber: piece.pieceCode,
-    productId,
-    serialNumber: piece.supplierLot,
-    installedAt: piece.fittedOn,
-  });
+  const inFsm = (await fsm.assets(piece.fsmContactId)).find((asset) => asset.assetNumber === piece.pieceCode);
+  const fsmId =
+    inFsm?.id ??
+    (await fsm.createAsset({
+      contactId: piece.fsmContactId,
+      assetNumber: piece.pieceCode,
+      productId: await partItemId(db, fsm, piece.base, piece.now),
+      serialNumber: piece.supplierLot,
+      installedAt: piece.fittedOn,
+    }));
   await db
     .prepare(
       `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, supplier_lot, fitted_at, replacement_due_at,

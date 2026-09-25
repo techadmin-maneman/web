@@ -149,13 +149,14 @@ function placeOn(board: Board, job: Job): { readonly words: string; readonly unc
 function staleWords(job: Job, code: string, now: Board | null): string {
   const copy = dispatch.landing;
   if (code === "not_found") return copy.errors.not_found;
+  if (code === "fsm_partly") return copy.errors.fsm_partly;
   const place = now === null ? null : placeOn(now, job);
   if (place?.unchanged === true) return copy.beingMoved(nameOf(job));
   return copy.superseded(nameOf(job), place?.words ?? copy.supersededGone);
 }
 
 /** Refusals that mean the job is no longer as the board had it: it is let go, and the board read again. */
-const STALE = new Set(["superseded", "not_found"]);
+const STALE = new Set(["superseded", "not_found", "fsm_partly"]);
 
 export function DispatchScreen() {
   const [query, setQuery] = useState<BoardQuery>({ from: null, city: null });

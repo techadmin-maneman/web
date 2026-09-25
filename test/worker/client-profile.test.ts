@@ -10,7 +10,7 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { checkIn } from "../../src/policy/check-in.ts";
 import { RULES as CONSENT_RULES } from "../../src/policy/consents.ts";
 import { RULES as NUMBER_CHANGE_RULES } from "../../src/policy/number-change.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
 
 const ORIGIN = "https://maneman.test";
 const OLD = "+919810000001";
@@ -34,13 +34,30 @@ beforeEach(async () => {
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p1", deviceLabel: null, now: NOW })}`;
 });
 
+/** The queues a change of number or address goes out on, to FSM's contact and the CRM lead. */
+let queues: { CRM_QUEUE: ReturnType<typeof fakeQueue>; FSM_QUEUE: ReturnType<typeof fakeQueue> };
+beforeEach(() => {
+  queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+});
+
 function send(app: App, method: string, path: string, body?: unknown) {
-  return request(app, path, {
-    method,
-    headers: { Origin: ORIGIN, "Content-Type": "application/json", Cookie: cookie },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
+  return request(
+    app,
+    path,
+    {
+      method,
+      headers: { Origin: ORIGIN, "Content-Type": "application/json", Cookie: cookie },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    },
+    queues,
+  );
 }
+
+/** What went out on each queue about the person's contact details. */
+const contactSyncs = () => ({
+  crm: queues.CRM_QUEUE.sent.filter((body) => "update_person_id" in (body as object)),
+  fsm: queues.FSM_QUEUE.sent.filter((body) => "update_contact_person_id" in (body as object)),
+});
 
 const profile = async () => (await send(client, "GET", "/api/profile")).json<Record<string, unknown>>();
 
@@ -118,6 +135,17 @@ describe("PATCH /api/profile/address", () => {
 
   it("refuses a pincode that is not six digits", async () => {
     expect((await send(client, "PATCH", "/api/profile/address", { ...address, pincode: "12201" })).status).toBe(400);
+    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+  });
+
+  // REQ-S5-03: FSM's screens and Books showed "To be confirmed with the client" whatever the client saved.
+  it("sends the new address on to FSM's contact and the CRM lead", async () => {
+    await send(client, "PATCH", "/api/profile/address", address);
+    const request = { request_id: expect.any(String) as string };
+    expect(contactSyncs()).toEqual({
+      crm: [{ update_person_id: "p1", ...request }],
+      fsm: [{ update_contact_person_id: "p1", ...request }],
+    });
   });
 });
 
@@ -406,6 +434,13 @@ describe("a number change", () => {
     });
     expect(await decided.json()).toEqual({ state: "confirmed" });
     expect(await mobile()).toBe(NEW);
+    // LIFE-12: the new number reaches FSM's contact and the CRM lead, and the old one is kept for the fraud rules.
+    expect(contactSyncs()).toEqual({
+      crm: [{ update_person_id: "p1", request_id: expect.any(String) as string }],
+      fsm: [{ update_contact_person_id: "p1", request_id: expect.any(String) as string }],
+    });
+    const replaced = await env.DB.prepare("SELECT replaced_mobile_e164 FROM number_change_requests").first();
+    expect(replaced).toEqual({ replaced_mobile_e164: OLD });
     expect(await auditActions()).toEqual(["number_change.request", "number_change.decide"]);
     const staff = await env.DB.prepare("SELECT actor FROM audit_log WHERE action = 'number_change.decide'").first(
       "actor",
@@ -479,6 +514,10 @@ describe("a number change", () => {
     ).toEqual({
       state: "rejected",
     });
+    // A change rejected, like one withdrawn, never happened: nothing goes out and no number is kept.
+    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+    const replaced = await env.DB.prepare("SELECT replaced_mobile_e164 FROM number_change_requests").first();
+    expect(replaced).toEqual({ replaced_mobile_e164: null });
   });
 });
 

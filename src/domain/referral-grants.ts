@@ -54,20 +54,29 @@ export async function fraudSignals(db: D1Database, attribution: Attribution): Pr
   const thisMonth = results.filter((fit) => indiaDate(new Date(fit.window_start)).slice(0, 7) === month).length;
   if (thisMonth >= REFERRAL_MONTHLY_CAP) met.add("monthly_cap");
   // A number belongs to one person at a time, and nobody is attributed to their own invite
-  // (src/domain/referrals.ts), so the two can only share a number one of them has changed to since.
-  const sharedNumber = await db
-    .prepare(
-      `SELECT 1 FROM people r JOIN people f ON f.id = ?2
-       WHERE r.id = ?1 AND (
-         EXISTS (SELECT 1 FROM number_change_requests n
-                 WHERE n.person_id = r.id AND n.state = 'confirmed' AND n.new_mobile_e164 = f.mobile_e164)
-         OR EXISTS (SELECT 1 FROM number_change_requests n
-                    WHERE n.person_id = f.id AND n.state = 'confirmed' AND n.new_mobile_e164 = r.mobile_e164))`,
-    )
-    .bind(referrerId, referredId)
-    .first();
-  if (sharedNumber !== null) met.add("same_mobile");
+  // (src/domain/referrals.ts), so the two can only share a number through a change of number:
+  // one of them holds, or once held, a number the other holds or once held.
+  const referrerNumbers = await numbersHeld(db, referrerId);
+  const friendNumbers = await numbersHeld(db, referredId);
+  if (referrerNumbers.some((number) => friendNumbers.includes(number))) met.add("same_mobile");
   return FRAUD_SIGNALS.filter((signal) => met.has(signal));
+}
+
+/**
+ * Every number a person holds or has held: their own now, and each a change ops
+ * confirmed moved them to or from. A change withdrawn or rejected never happened.
+ */
+async function numbersHeld(db: D1Database, personId: string): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT mobile_e164 AS mobile FROM people WHERE id = ?1
+       UNION SELECT new_mobile_e164 FROM number_change_requests WHERE person_id = ?1 AND state = 'confirmed'
+       UNION SELECT replaced_mobile_e164 FROM number_change_requests
+         WHERE person_id = ?1 AND state = 'confirmed' AND replaced_mobile_e164 IS NOT NULL`,
+    )
+    .bind(personId)
+    .all<{ mobile: string }>();
+  return results.map((row) => row.mobile);
 }
 
 /** The credits both sides get, and the referrer's message; the attribution's new state goes with them. */

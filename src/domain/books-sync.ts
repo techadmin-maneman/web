@@ -12,6 +12,9 @@
 //   - records each processed refund of a recorded payment, from the account
 //     Razorpay settles into, when that account is set.
 //
+// A payment or a refund is looked for in Books by our reference before it is
+// recorded, so a try whose answer never came is not recorded a second time.
+//
 // Each record is handled on its own (docs/decisions/0067-alerts-and-silent-failures.md).
 // One found not ready, or that fails, waits an hour before Books is asked again,
 // as Books allows a few thousand calls a day, and the pass carries on with the
@@ -24,14 +27,14 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import { ZohoError } from "../providers/zoho-http.ts";
+import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 
 /** How many of each a pass handles at most. */
 export const PER_PASS = 5;
 export const RECHECK_AFTER_MS = 60 * 60 * 1000;
-/** Outside calls one record may cost: FSM or Books, then Books, then the alert it may send. */
-export const CALLS_PER_RECORD = 3;
+/** Outside calls one record may cost: FSM or Books, Books' look for it, Books' record, and the alert it may send. */
+export const CALLS_PER_RECORD = 4;
 /** A failure other than a refusal is told once it has happened this many times, an hour apart. */
 const FAILURES_BEFORE_ALERT = 3;
 
@@ -48,10 +51,6 @@ export interface BooksSyncDeps {
 }
 
 export type BooksSyncSummary = { recorded: number; applied: number; refunded: number };
-
-/** Books refuses it: a 4xx, which asking again at once will not change. */
-const refused = (error: unknown): error is ZohoError =>
-  error instanceof ZohoError && error.status >= 400 && error.status < 500;
 
 const describe = (error: unknown): string =>
   scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 200);
@@ -146,13 +145,17 @@ async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<bool
       await checkPaymentLater(pass, payment.id);
       return false;
     }
-    const booksPaymentId = await deps.books.recordPayment({
-      customerId,
-      amount: payment.amount,
-      date: indiaDate(new Date(payment.captured_at)),
-      reference: payment.reference ?? payment.razorpay_payment_id,
-      description: `${pass.label}Razorpay payment ${payment.razorpay_payment_id}`,
-    });
+    const reference = payment.reference ?? payment.razorpay_payment_id;
+    // An earlier try whose answer never came may have recorded it already.
+    const booksPaymentId =
+      (await deps.books.findPayment(customerId, reference)) ??
+      (await deps.books.recordPayment({
+        customerId,
+        amount: payment.amount,
+        date: indiaDate(new Date(payment.captured_at)),
+        reference,
+        description: `${pass.label}Razorpay payment ${payment.razorpay_payment_id}`,
+      }));
     await db
       .prepare("UPDATE payments SET books_payment_id = ?1, books_checked_at = NULL WHERE id = ?2")
       .bind(booksPaymentId, payment.id)
@@ -228,7 +231,7 @@ async function applyPayment(pass: Pass, payment: PaymentToApply): Promise<boolea
   } catch (error) {
     await tellFailure(pass, failed, error);
     // A refusal is not asked again, and ops set it by hand; anything else is, in an hour.
-    if (refused(error)) await markApplied(pass, payment.id);
+    if (isRefusal(error)) await markApplied(pass, payment.id);
     else await checkPaymentLater(pass, payment.id);
     return false;
   }
@@ -326,13 +329,15 @@ async function recordRefund(pass: Pass, refund: RefundToRecord, fromAccountId: s
     then: "It is asked again every hour.",
   } as const;
   try {
-    const booksRefundId = await deps.books.recordRefund(refund.books_payment_id, {
-      amount: refund.amount,
-      date: indiaDate(new Date(refund.processed_at ?? refund.created_at)),
-      reference: refund.razorpay_refund_id,
-      description: `${pass.label}Razorpay refund ${refund.razorpay_refund_id}`,
-      fromAccountId,
-    });
+    const booksRefundId =
+      (await deps.books.findRefund(refund.books_payment_id, refund.razorpay_refund_id)) ??
+      (await deps.books.recordRefund(refund.books_payment_id, {
+        amount: refund.amount,
+        date: indiaDate(new Date(refund.processed_at ?? refund.created_at)),
+        reference: refund.razorpay_refund_id,
+        description: `${pass.label}Razorpay refund ${refund.razorpay_refund_id}`,
+        fromAccountId,
+      }));
     await db.prepare("UPDATE refunds SET books_refund_id = ?1 WHERE id = ?2").bind(booksRefundId, refund.id).run();
   } catch (error) {
     await db.prepare("UPDATE refunds SET books_checked_at = ?1 WHERE id = ?2").bind(pass.at, refund.id).run();
@@ -362,7 +367,7 @@ interface FailedRecord {
 async function tellFailure(pass: Pass, record: FailedRecord, error: unknown): Promise<void> {
   const idField = `${record.kind === "refund" ? "refund" : "payment"}_id`;
   const link = `/clients/${record.personId}`;
-  if (refused(error)) {
+  if (isRefusal(error)) {
     pass.log.warn(`books_${record.kind}_refused`, { [idField]: record.id, status: error.status, code: error.code });
     await pass.deps.alertOnce({
       key: `books_${record.kind}_refused:${record.id}`,

@@ -3,7 +3,9 @@
 // five minutes, and only ever puts appointments on the fsm-sync queue; the
 // consumer reads them afresh, as it does for a webhook.
 //
-//   every run   the first page of FSM's appointments, latest change first
+//   every run   the first page of FSM's appointments, latest change first; and
+//               a few upcoming visits, the longest unread first, since FSM
+//               may delete one without a webhook the mirror can tell apart
 //   overnight   1 to 5 am India time, the whole list a page a run; then every
 //               copy the pass did not see, which FSM may have deleted; then
 //               one alert if the pass repaired anything the webhook missed
@@ -33,6 +35,11 @@ const UNSEEN_LIMIT = 50;
 /** How long after a visit its photographs are looked for again, and how many visits an hour. */
 const PHOTO_RETRY_MS = 3 * 24 * 60 * 60 * 1000;
 const PHOTO_RETRY_LIMIT = 20;
+/**
+ * Upcoming visits read again each run: 24 an hour, so each of a hundred upcoming
+ * visits is looked at every four hours or so, rather than once a night.
+ */
+export const UPCOMING_PER_RUN = 2;
 
 export type ReconcileEnv = Pick<Env, "DB" | "FSM_QUEUE">;
 
@@ -55,6 +62,7 @@ export async function reconcileFsm(
   if (!budget.spend(1)) return { queued: 0 };
   const latest = await deps.fsm.appointments(1, PAGE_SIZE);
   const queue = new Set(await staleOf(db, latest.appointments));
+  for (const fsmId of await upcomingToReread(db, now)) queue.add(fsmId);
 
   if (now.getUTCMinutes() < 5) {
     for (const fsmId of await shortOfPhotos(db, now)) queue.add(fsmId);
@@ -203,6 +211,25 @@ async function markReconciled(db: D1Database, fsmIds: readonly string[], at: str
     .prepare(`UPDATE appointments SET reconciled_at = ?1 WHERE fsm_id IN (${placeholders})`)
     .bind(at, ...fsmIds)
     .run();
+}
+
+/**
+ * A few upcoming visits, the longest unread first, marked read now so the next
+ * run takes the next ones. The fsm-sync consumer reads each afresh, and marks
+ * one FSM no longer has as deleted.
+ */
+async function upcomingToReread(db: D1Database, now: Date): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT fsm_id FROM appointments
+       WHERE deleted_at IS NULL AND status IN ('scheduled', 'dispatched') AND window_start >= ?1
+       ORDER BY reconciled_at, window_start LIMIT ?2`,
+    )
+    .bind(now.toISOString(), UPCOMING_PER_RUN)
+    .all<{ fsm_id: string }>();
+  const fsmIds = results.map((row) => row.fsm_id);
+  await markReconciled(db, fsmIds, now.toISOString());
+  return fsmIds;
 }
 
 /** Visits closed in the last three days with fewer than ten photographs. Consultations take none. */

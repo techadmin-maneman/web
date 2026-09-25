@@ -125,6 +125,9 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 
     Every word the boards do not draw is a placeholder in `apps/ops/src/content.ts`, approved with the rest of the console's copy (`docs/open-points.md`, item 20).
 
+46. **A tax invoice that does not total what the visit was sold for.** The owner ruled on 23 September 2026 that an invoice is marked sent as it is raised (ADR 0056). FSM prices it from its own catalogue, which staging's showed at twice the price book's replacement. **Taken 25 September 2026, for the owner to confirm** (ADR 0070): an invoice is sent only when FSM's total equals what the client paid for the visit, or the price book's price on the day for a visit no payment names; otherwise it stays a draft, which can still be corrected, ops are told once, and it waits as a Draft invoice task. The push of the price book to FSM's catalogue, which would make the two agree, is still to come (`docs/open-points.md`, item 44).
+47. **The invoice of a visit a referral credit paid for.** Neither prompt says how one is invoiced, and FSM raised and sent one at the catalogue price, with a balance due. **Taken 25 September 2026, interim until the CA rules** (ADR 0070; `docs/open-points.md`, item 97): it is never sent from here. It stays a draft, ops are told once, and the client sees no tax invoice for the visit meanwhile: the visit's screen still says the invoice is being made, which for these visits it is not.
+
 ## Inputs still owed
 
 The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`. The FSM trial and licensing are in `docs/decisions/fsm-trial.md` and `docs/decisions/fsm-licensing.md`, both pending.

@@ -3,11 +3,10 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { CALLS_PER_VISIT, resolveAskedWindows } from "../../src/domain/asked-windows.ts";
+import { CALLS_PER_VISIT, RECHECK_AFTER_MS, resolveAskedWindows } from "../../src/domain/asked-windows.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type StubFsm, type StubFsmWorld } from "../../src/providers/fsm.ts";
-import { ZohoError } from "../../src/providers/zoho-http.ts";
 import { captureLogs, NOW } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -19,11 +18,7 @@ const world = (overrides: Partial<StubFsmWorld>): StubFsmWorld => ({ ...EMPTY_FS
 const pass = (fsm: StubFsm, budget: CallBudget = createCallBudget(Infinity)) =>
   resolveAskedWindows(env.DB, fsm, NOW, createLogger(), budget);
 
-/** A stub whose one call FSM turns down, with the status it turned it down under. */
-const refuses = (error: ZohoError): StubFsm => ({
-  ...createStubFsm(EMPTY_FSM),
-  requestPreference: () => Promise.reject(error),
-});
+const later = (ms: number) => new Date(NOW.getTime() + ms);
 
 /** An unassigned visit as the mirror writes one: ops have not put it on anybody yet. */
 async function visit(id = VISIT, workOrderId: string | null = "fsm-wo-1") {
@@ -165,19 +160,56 @@ describe("the window the client asked for", () => {
     expect(await asked()).toEqual({ asked_window: null, asked_checked_at: null });
   });
 
-  it("logs a visit FSM refuses and leaves it to be asked about again", async () => {
+  /*
+   * These two replace tests that held the pass to leaving a refused visit
+   * unstamped and to failing whole when FSM failed once. Five refused visits
+   * then blocked the pass for good, since each came back first on every run.
+   */
+  it("marks a visit FSM refuses as looked at, with no window, and goes on to the next", async () => {
+    const next = "44444444-4444-4444-8444-444444444444";
     await visit();
-    const refusing = refuses(new ZohoError(404, "NO_WORK_ORDER", "gone"));
+    await visit(next, "fsm-wo-2");
+    await lead("weekday_am");
+    const fsm = createStubFsm(
+      world({
+        preferences: { "fsm-wo-2": { requestId: "fsm-req-1", preferredDate: null, preferenceNote: null } },
+      }),
+    );
+    fsm.refuseNext("requestPreference", "NO_WORK_ORDER");
 
-    expect(await pass(refusing)).toEqual({ resolved: 0 });
-    // Nothing is stamped, so nothing is decided from an answer FSM never gave.
-    expect(await asked()).toEqual({ asked_window: null, asked_checked_at: null });
-    expect(logs.lines().map((line) => line.event)).toContain("asked_window_refused");
+    expect(await pass(fsm)).toEqual({ resolved: 1 });
+    // A refusal will not change on asking again: the tray says the window was not recorded.
+    expect(await asked()).toEqual({ asked_window: null, asked_checked_at: NOW.toISOString() });
+    expect((await asked(next))?.asked_window).toBe("morning");
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "asked_window_refused", code: "NO_WORK_ORDER" }),
+    );
   });
 
-  it("gives up the pass when FSM itself is down, rather than marking visits looked at", async () => {
+  it("leaves a visit FSM failed on for an hour, and goes on to the next", async () => {
+    const next = "44444444-4444-4444-8444-444444444444";
     await visit();
-    await expect(pass(refuses(new ZohoError(500, "INTERNAL_ERROR", "down")))).rejects.toThrow();
-    expect((await asked())?.asked_checked_at).toBeNull();
+    await visit(next, "fsm-wo-2");
+    const fsm = createStubFsm(EMPTY_FSM);
+    fsm.failNext("requestPreference", "FSM answered 500");
+
+    await pass(fsm);
+    expect(await asked()).toEqual({ asked_window: null, asked_checked_at: null });
+    expect((await asked(next))?.asked_checked_at).toBe(NOW.toISOString());
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "asked_window_failed" }));
+
+    let reads = 0;
+    const counted: StubFsm = {
+      ...fsm,
+      requestPreference: (workOrderId) => {
+        reads += 1;
+        return fsm.requestPreference(workOrderId);
+      },
+    };
+    await resolveAskedWindows(env.DB, counted, later(RECHECK_AFTER_MS / 2), createLogger(), createCallBudget(Infinity));
+    expect(reads).toBe(0);
+    await resolveAskedWindows(env.DB, counted, later(RECHECK_AFTER_MS + 1), createLogger(), createCallBudget(Infinity));
+    expect(reads).toBe(1);
+    expect((await asked())?.asked_checked_at).not.toBeNull();
   });
 });

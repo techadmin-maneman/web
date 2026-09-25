@@ -123,6 +123,10 @@ export async function anglesHeld(db: D1Database, appointmentId: string, phase: P
  * holds the complete record. The file name carries the phase and angle, which
  * is what the mirror's own export reads back, so a photograph attached here is
  * never exported again as a new one.
+ *
+ * An attach whose answer never reached us left the file in FSM: a retry finds
+ * it by its name and size and keeps its ID, rather than attaching it twice. A
+ * photograph taken again at the same angle has other bytes, and is attached.
  */
 export async function attachPhotosToFsm(
   db: D1Database,
@@ -139,17 +143,18 @@ export async function attachPhotosToFsm(
     .bind(job.id, phase)
     .all<{ id: string; angle: Angle; r2_key: string; content_type: string }>();
 
+  if (results.length === 0) return 0;
+  const inFsm = await fsm.attachments(job.fsmId);
+
   let attached = 0;
   for (const photo of results) {
     const object = await bucket.get(photo.r2_key);
     if (object === null) continue;
     const bytes = new Uint8Array(await object.arrayBuffer());
     const name = `${phase}-${photo.angle}.${photo.content_type === "image/png" ? "png" : "jpg"}`;
-    const attachmentId = await fsm.attachToAppointment(job.fsmId, {
-      name,
-      bytes,
-      contentType: photo.content_type,
-    });
+    const found = inFsm.find((file) => file.name === name && file.size === bytes.byteLength);
+    const attachmentId =
+      found?.id ?? (await fsm.attachToAppointment(job.fsmId, { name, bytes, contentType: photo.content_type }));
     await db.prepare("UPDATE photos SET fsm_attachment_id = ?2 WHERE id = ?1").bind(photo.id, attachmentId).run();
     attached += 1;
   }

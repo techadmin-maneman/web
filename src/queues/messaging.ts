@@ -10,6 +10,7 @@
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
+import { onAllowlist } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
@@ -147,9 +148,7 @@ export async function sendMessage(
 
   if (row.erased_at !== null) return skip("person erased");
   if (!messaging.enabled) return skip("messaging is off");
-  if (messaging.allowlist.length > 0 && !messaging.allowlist.includes(row.mobile_e164)) {
-    return skip("number not on the allowlist");
-  }
+  if (!onAllowlist(messaging, row.mobile_e164)) return skip("number not on the allowlist");
   const content: Content =
     row.kind === "tryon_result"
       ? await resultContent(db, config, row, now)

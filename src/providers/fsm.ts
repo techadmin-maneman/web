@@ -7,8 +7,9 @@
 
 import type { ZohoFsmSettings } from "../config/settings.ts";
 import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES } from "../config/visit-types.ts";
-import type { Logger } from "../log.ts";
+import type { ZohoRequesterDependencies } from "./zoho-http.ts";
 import { createZohoFsm } from "./fsm-zoho.ts";
+import { ProviderError } from "./provider-error.ts";
 
 /** An appointment as FSM holds it, in our words. Times are ISO 8601 with India's offset. */
 export interface FsmAppointment {
@@ -59,6 +60,8 @@ export interface FsmInvoice {
    * raised is ever marked sent (ADR 0056).
    */
   readonly created: boolean;
+  /** What it bills: the work order's total, in paise with GST, from FSM's catalogue prices. */
+  readonly total: number;
 }
 
 export interface FsmContact {
@@ -139,7 +142,7 @@ export interface FsmDownload {
   readonly contentType: string;
 }
 
-/** A person to add to FSM as a contact. Their full address is confirmed with them later; FSM holds the city. */
+/** A person to add to FSM as a contact, with the street of their saved address where they have given one. */
 export interface NewFsmContact {
   readonly firstName: string | null;
   readonly lastName: string;
@@ -147,11 +150,26 @@ export interface NewFsmContact {
   readonly mobile: string;
   readonly email: string | null;
   readonly city: string;
-  /** The service address's pincode, where the booking gave one. */
+  /** The service address's pincode, where the booking or the client's saved address gave one. */
   readonly pincode: string | null;
+  /** The street of the client's saved address; null leaves it to be confirmed with them. */
+  readonly street: { readonly street1: string; readonly street2: string | null } | null;
   /** The state, e.g. Haryana, and its GST code, e.g. HR; null where the city is not one we know. */
   readonly state: string | null;
   readonly stateCode: string | null;
+}
+
+/** A client's details as they are now, to write over their contact after a change of number or address. */
+export interface FsmContactUpdate {
+  /** E.164, as the mirror matches it. */
+  readonly mobile: string;
+  /** The address the client gave; null leaves FSM's service address as it is. */
+  readonly address: {
+    readonly street1: string;
+    readonly street2: string | null;
+    readonly city: string;
+    readonly pincode: string;
+  } | null;
 }
 
 /** A visit a client asked for, for ops to schedule in FSM: a Request. */
@@ -232,6 +250,8 @@ export interface FsmProvider {
   findContact(mobile: string): Promise<string | null>;
   /** Adds a contact, with a service address in their city; returns its FSM ID. */
   createContact(contact: NewFsmContact): Promise<string>;
+  /** Writes a client's number, and their address as the service address, over their contact. */
+  updateContact(contactId: string, update: FsmContactUpdate): Promise<void>;
   /** The Request carrying our reference, among the latest FSM holds; null if none does. */
   findRequest(reference: string): Promise<string | null>;
   /** Adds a Request against a contact's service address; returns its FSM ID. */
@@ -287,7 +307,7 @@ export interface FsmProvider {
 export function createFsmProvider(
   provider: string | undefined,
   settings: ZohoFsmSettings | null,
-  deps: { db: D1Database; fetch: typeof fetch; now: () => Date; log: Logger },
+  deps: ZohoRequesterDependencies,
 ): FsmProvider {
   if (provider === "zoho" && settings !== null) return createZohoFsm(settings, deps);
   if (provider === "stub") return createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
@@ -306,8 +326,11 @@ export interface StubFsmWorld {
   readonly assets?: Record<string, FsmAsset[]>;
   /** What the Request behind each work order asked for, by work order ID; a work order not here names no Request. */
   readonly preferences?: Record<string, FsmRequestPreference>;
-  /** Work orders with nothing to bill, as a free consultation has. */
-  readonly unbillable?: string[];
+  /**
+   * What each work order bills, in paise, from FSM's catalogue. One not named
+   * here has nothing on it to bill, as a free consultation has.
+   */
+  readonly totals?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -356,6 +379,7 @@ export interface StubFsm extends FsmProvider {
     readonly cancelled: { workOrderId: string; note: string }[];
     readonly invoiced: string[];
     readonly erased: string[];
+    readonly contactUpdates: ({ contactId: string } & FsmContactUpdate)[];
     readonly assets: NewFsmAsset[];
     readonly assetUpdates: { assetId: string; status?: string }[];
     readonly assigned: { appointmentId: string; technicianId: string }[];
@@ -365,6 +389,8 @@ export interface StubFsm extends FsmProvider {
   };
   /** Makes the next call of this kind throw, so a test can prove the retry. */
   failNext(step: StubFsmStep, message?: string): void;
+  /** Makes the next call of this kind refused, as FSM refuses: a 4xx with its own code. */
+  refuseNext(step: StubFsmStep, code?: string): void;
   /**
    * Makes the next call of this kind take effect and then throw, as a call does
    * whose answer never reaches us: FSM has the record, and we do not know it.
@@ -373,7 +399,8 @@ export interface StubFsm extends FsmProvider {
 }
 
 /** The creates whose answer a test can lose. */
-export type StubFsmCreate = "createContact" | "createRequest" | "createWorkOrder" | "createAppointment";
+export type StubFsmCreate =
+  "createContact" | "createRequest" | "createWorkOrder" | "createAppointment" | "createAsset" | "attachToAppointment";
 
 /** The writes a test can make fail. */
 export type StubFsmStep =
@@ -387,7 +414,8 @@ export type StubFsmStep =
   | "attachToAppointment"
   | "rescheduleVisit"
   | "invoiceWorkOrder"
-  | "requestPreference";
+  | "requestPreference"
+  | "updateContact";
 
 /**
  * Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it,
@@ -403,6 +431,7 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     cancelled: [] as { workOrderId: string; note: string }[],
     invoiced: [] as string[],
     erased: [] as string[],
+    contactUpdates: [] as ({ contactId: string } & FsmContactUpdate)[],
     assets: [] as NewFsmAsset[],
     assetUpdates: [] as { assetId: string; status?: string }[],
     assigned: [] as { appointmentId: string; technicianId: string }[],
@@ -410,13 +439,13 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     appointmentUpdates: [] as { appointmentId: string; fields: Record<string, string> }[],
     attached: [] as { appointmentId: string; name: string; contentType: string; bytes: number }[],
   };
-  const failures = new Map<StubFsmStep, string>();
+  const failures = new Map<StubFsmStep, Error>();
   /** Throws once if the test asked this step to fail; a retry then succeeds. */
   function checkFailure(step: StubFsmStep): void {
-    const message = failures.get(step);
-    if (message === undefined) return;
+    const failure = failures.get(step);
+    if (failure === undefined) return;
     failures.delete(step);
-    throw new Error(message);
+    throw failure;
   }
 
   const lostAnswers = new Set<StubFsmCreate>();
@@ -434,6 +463,9 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   const appointmentOfWorkOrder = new Map<string, string>();
 
   const stubAssets = world.assets ?? {};
+  /** Pieces and files the stub was given since, by contact and by appointment, as FSM lists them back. */
+  const madeAssets = new Map<string, FsmAsset[]>();
+  const madeAttachments = new Map<string, FsmAttachment[]>();
   const invoices = new Map<string, FsmInvoice>();
 
   /** Where each appointment's transitions have moved it, over the status the world gave it. */
@@ -452,7 +484,10 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   return {
     made,
     failNext: (step, message = `the stub FSM refused ${step}`) => {
-      failures.set(step, message);
+      failures.set(step, new Error(message));
+    },
+    refuseNext: (step, code = "INVALID_DATA") => {
+      failures.set(step, new ProviderError(400, code, `the stub FSM refused ${step}`));
     },
     loseAnswer: (step) => {
       lostAnswers.add(step);
@@ -471,7 +506,8 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     contact: (id) => Promise.resolve(world.contacts.find((contact) => contact.id === id) ?? null),
     technicians: () => Promise.resolve([...world.technicians]),
     items: () => Promise.resolve([...world.items]),
-    attachments: (appointmentId) => Promise.resolve([...(world.attachments[appointmentId] ?? [])]),
+    attachments: (appointmentId) =>
+      Promise.resolve([...(world.attachments[appointmentId] ?? []), ...(madeAttachments.get(appointmentId) ?? [])]),
     download: (fileId) => {
       const file = world.files[fileId];
       if (file === undefined) return Promise.reject(new Error("the stub FSM has no such file"));
@@ -529,12 +565,25 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     },
     assets: (contactId) => {
       checkFailure("assets");
-      return Promise.resolve([...(stubAssets[contactId] ?? [])]);
+      return Promise.resolve([...(stubAssets[contactId] ?? []), ...(madeAssets.get(contactId) ?? [])]);
     },
     createAsset: (asset) => {
       checkFailure("createAsset");
       made.assets.push(asset);
-      return Promise.resolve(`stub-asset-${crypto.randomUUID()}`);
+      const id = `stub-asset-${crypto.randomUUID()}`;
+      const held: FsmAsset = {
+        id,
+        assetNumber: asset.assetNumber,
+        contactId: asset.contactId,
+        productId: asset.productId,
+        productName: null,
+        serialNumber: asset.serialNumber,
+        installedAt: asset.installedAt,
+        status: "Active",
+        modifiedAt: "",
+      };
+      madeAssets.set(asset.contactId, [...(madeAssets.get(asset.contactId) ?? []), held]);
+      return answer("createAsset", id);
     },
     updateAsset: (assetId, fields) => {
       checkFailure("updateAsset");
@@ -567,7 +616,10 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
         contentType: file.contentType,
         bytes: file.bytes.byteLength,
       });
-      return Promise.resolve(`stub-attachment-${crypto.randomUUID()}`);
+      const id = `stub-attachment-${crypto.randomUUID()}`;
+      const held: FsmAttachment = { id, fileId: id, name: file.name, size: file.bytes.byteLength, createdAt: "" };
+      madeAttachments.set(appointmentId, [...(madeAttachments.get(appointmentId) ?? []), held]);
+      return answer("attachToAppointment", id);
     },
     cancelVisit: (workOrderId, note) => {
       made.cancelled.push({ workOrderId, note });
@@ -575,12 +627,13 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     },
     invoiceWorkOrder: (workOrderId) => {
       checkFailure("invoiceWorkOrder");
-      if (world.unbillable?.includes(workOrderId) === true) return Promise.resolve(null);
+      const total = world.totals?.[workOrderId] ?? 0;
+      if (total <= 0) return Promise.resolve(null);
       // One invoice per work order, as FSM gives, however often it is asked for.
       const raised = invoices.get(workOrderId);
       if (raised !== undefined) return Promise.resolve({ ...raised, created: false });
       const id = crypto.randomUUID();
-      const invoice = { id: `stub-fsm-invoice-${id}`, booksInvoiceId: `stub-invoice-${id}`, created: true };
+      const invoice = { id: `stub-fsm-invoice-${id}`, booksInvoiceId: `stub-invoice-${id}`, created: true, total };
       invoices.set(workOrderId, invoice);
       made.invoiced.push(workOrderId);
       return Promise.resolve(invoice);
@@ -588,6 +641,11 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     requestPreference: (workOrderId) => {
       checkFailure("requestPreference");
       return Promise.resolve(world.preferences?.[workOrderId] ?? null);
+    },
+    updateContact: (contactId, update) => {
+      checkFailure("updateContact");
+      made.contactUpdates.push({ contactId, ...update });
+      return Promise.resolve();
     },
     eraseContact: (contactId) => {
       made.erased.push(contactId);
@@ -609,6 +667,7 @@ function createUnconnectedFsm(): FsmProvider {
     download: off,
     findContact: off,
     createContact: off,
+    updateContact: off,
     findRequest: off,
     createRequest: off,
     findWorkOrder: off,
