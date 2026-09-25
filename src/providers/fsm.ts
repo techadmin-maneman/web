@@ -147,6 +147,8 @@ export interface NewFsmContact {
   readonly mobile: string;
   readonly email: string | null;
   readonly city: string;
+  /** The service address's pincode, where the booking gave one. */
+  readonly pincode: string | null;
   /** The state, e.g. Haryana, and its GST code, e.g. HR; null where the city is not one we know. */
   readonly state: string | null;
   readonly stateCode: string | null;
@@ -162,6 +164,8 @@ export interface NewFsmRequest {
   readonly preferredDate: string | null;
   /** The window they asked for, in words. */
   readonly preferenceNote: string;
+  /** Ours, the lead's ID, written on the Request so a retry can find one whose answer never reached us. */
+  readonly reference: string;
 }
 
 /**
@@ -182,14 +186,34 @@ export const STATUS_AFTER: Readonly<Record<Exclude<AppointmentTransition, "Resch
   Cancel: "Cancelled",
 };
 
-/** A visit to book in FSM: a work order for the service, and its appointment with the technician. */
+/**
+ * A visit is booked in FSM in two writes: a work order for the service, then
+ * its appointment with the technician. Each ID is kept as soon as FSM answers,
+ * so a retry never makes either twice (docs/decisions/0067-a-paid-hold-is-kept.md).
+ */
+export interface NewFsmWorkOrder {
+  readonly contactId: string;
+  readonly summary: string;
+  readonly serviceId: string;
+  /** Ours, the hold's ID, written on the work order so a retry can find one whose answer never reached us. */
+  readonly reference: string;
+}
+
+export interface NewFsmAppointment {
+  readonly summary: string;
+  /** The technician's service resource in FSM. */
+  readonly technicianId: string;
+  /** ISO 8601 with India's offset, as FSM takes it. */
+  readonly start: string;
+  readonly end: string;
+}
+
+/** A visit as the stub records it once it has both halves: what a test reads back. */
 export interface NewFsmVisit {
   readonly contactId: string;
   readonly summary: string;
   readonly serviceId: string;
-  /** The technician's service resource in FSM. */
   readonly technicianId: string;
-  /** ISO 8601 with India's offset, as FSM takes it. */
   readonly start: string;
   readonly end: string;
 }
@@ -204,12 +228,22 @@ export interface FsmProvider {
   /** The files attached to an appointment, such as its photographs. */
   attachments(appointmentId: string): Promise<FsmAttachment[]>;
   download(fileId: string): Promise<FsmDownload>;
+  /** The contact FSM holds for this mobile number (E.164), if it holds one. */
+  findContact(mobile: string): Promise<string | null>;
   /** Adds a contact, with a service address in their city; returns its FSM ID. */
   createContact(contact: NewFsmContact): Promise<string>;
+  /** The Request carrying our reference, among the latest FSM holds; null if none does. */
+  findRequest(reference: string): Promise<string | null>;
   /** Adds a Request against a contact's service address; returns its FSM ID. */
   createRequest(request: NewFsmRequest): Promise<string>;
-  /** Books a visit: a work order and its appointment, assigned to the technician. */
-  createVisit(visit: NewFsmVisit): Promise<{ workOrderId: string; appointmentId: string }>;
+  /** The work order carrying our reference, among the latest FSM holds; null if none does. */
+  findWorkOrder(reference: string): Promise<string | null>;
+  /** Adds a work order for one service against the contact's service address; returns its FSM ID. */
+  createWorkOrder(order: NewFsmWorkOrder): Promise<string>;
+  /** The appointment a work order's service line is already on; null while it has none. */
+  workOrderAppointment(workOrderId: string): Promise<string | null>;
+  /** Puts a work order's service line on an appointment with the technician; returns its FSM ID. */
+  createAppointment(workOrderId: string, appointment: NewFsmAppointment): Promise<string>;
   /** Moves an appointment to new times, with the same technician. ISO 8601 with India's offset. */
   rescheduleVisit(appointmentId: string, times: { start: string; end: string }): Promise<void>;
   /** The pieces FSM holds against a contact, newest first. */
@@ -315,6 +349,8 @@ export interface StubFsm extends FsmProvider {
   readonly made: {
     readonly contacts: NewFsmContact[];
     readonly requests: NewFsmRequest[];
+    readonly workOrders: NewFsmWorkOrder[];
+    /** Each work order that has its appointment, as one visit. */
     readonly visits: NewFsmVisit[];
     readonly rescheduled: { appointmentId: string; start: string; end: string }[];
     readonly cancelled: { workOrderId: string; note: string }[];
@@ -329,10 +365,19 @@ export interface StubFsm extends FsmProvider {
   };
   /** Makes the next call of this kind throw, so a test can prove the retry. */
   failNext(step: StubFsmStep, message?: string): void;
+  /**
+   * Makes the next call of this kind take effect and then throw, as a call does
+   * whose answer never reaches us: FSM has the record, and we do not know it.
+   */
+  loseAnswer(step: StubFsmCreate): void;
 }
+
+/** The creates whose answer a test can lose. */
+export type StubFsmCreate = "createContact" | "createRequest" | "createWorkOrder" | "createAppointment";
 
 /** The writes a test can make fail. */
 export type StubFsmStep =
+  | StubFsmCreate
   | "assets"
   | "createAsset"
   | "updateAsset"
@@ -352,6 +397,7 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   const made = {
     contacts: [] as NewFsmContact[],
     requests: [] as NewFsmRequest[],
+    workOrders: [] as NewFsmWorkOrder[],
     visits: [] as NewFsmVisit[],
     rescheduled: [] as { appointmentId: string; start: string; end: string }[],
     cancelled: [] as { workOrderId: string; note: string }[],
@@ -373,6 +419,20 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     throw new Error(message);
   }
 
+  const lostAnswers = new Set<StubFsmCreate>();
+  /** A create that took effect answers with its ID, unless the test asked for its answer to be lost. */
+  function answer(step: StubFsmCreate, id: string): Promise<string> {
+    if (!lostAnswers.delete(step)) return Promise.resolve(id);
+    return Promise.reject(new Error(`the stub FSM made ${id}, and its answer never came`));
+  }
+
+  // What the stub made, by the keys a retry looks it up by.
+  const contactIds = new Map<string, string>();
+  const requestIds = new Map<string, string>();
+  const workOrderIds = new Map<string, string>();
+  const workOrdersById = new Map<string, NewFsmWorkOrder>();
+  const appointmentOfWorkOrder = new Map<string, string>();
+
   const stubAssets = world.assets ?? {};
   const invoices = new Map<string, FsmInvoice>();
 
@@ -393,6 +453,9 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     made,
     failNext: (step, message = `the stub FSM refused ${step}`) => {
       failures.set(step, message);
+    },
+    loseAnswer: (step) => {
+      lostAnswers.add(step);
     },
     appointment: (id) => Promise.resolve(appointmentNow(id)),
     appointments: (page, perPage) => {
@@ -417,18 +480,47 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
         contentType: file.contentType,
       });
     },
+    findContact: (mobile) => {
+      const held = world.contacts.find((contact) => contact.mobile === mobile);
+      return Promise.resolve(held?.id ?? contactIds.get(mobile) ?? null);
+    },
     createContact: (contact) => {
+      checkFailure("createContact");
       made.contacts.push(contact);
-      return Promise.resolve(`stub-contact-${crypto.randomUUID()}`);
+      const id = `stub-contact-${crypto.randomUUID()}`;
+      contactIds.set(contact.mobile, id);
+      return answer("createContact", id);
     },
+    findRequest: (reference) => Promise.resolve(requestIds.get(reference) ?? null),
     createRequest: (request) => {
+      checkFailure("createRequest");
       made.requests.push(request);
-      return Promise.resolve(`stub-request-${crypto.randomUUID()}`);
+      const id = `stub-request-${crypto.randomUUID()}`;
+      requestIds.set(request.reference, id);
+      return answer("createRequest", id);
     },
-    createVisit: (visit) => {
-      made.visits.push(visit);
-      const id = crypto.randomUUID();
-      return Promise.resolve({ workOrderId: `stub-work-order-${id}`, appointmentId: `stub-appointment-${id}` });
+    findWorkOrder: (reference) => Promise.resolve(workOrderIds.get(reference) ?? null),
+    createWorkOrder: (order) => {
+      checkFailure("createWorkOrder");
+      made.workOrders.push(order);
+      const id = `stub-work-order-${crypto.randomUUID()}`;
+      workOrderIds.set(order.reference, id);
+      workOrdersById.set(id, order);
+      return answer("createWorkOrder", id);
+    },
+    workOrderAppointment: (workOrderId) => Promise.resolve(appointmentOfWorkOrder.get(workOrderId) ?? null),
+    createAppointment: (workOrderId, appointment) => {
+      checkFailure("createAppointment");
+      const order = workOrdersById.get(workOrderId);
+      if (order === undefined) return Promise.reject(new Error("the stub FSM has no such work order"));
+      // FSM's rule: a work order's service line is on one appointment only (docs/decisions/fsm-trial.md).
+      if (appointmentOfWorkOrder.has(workOrderId)) {
+        return Promise.reject(new Error("the stub FSM's service line is already on an appointment"));
+      }
+      made.visits.push({ contactId: order.contactId, serviceId: order.serviceId, ...appointment });
+      const id = `stub-appointment-${crypto.randomUUID()}`;
+      appointmentOfWorkOrder.set(workOrderId, id);
+      return answer("createAppointment", id);
     },
     rescheduleVisit: (appointmentId, times) => {
       checkFailure("rescheduleVisit");
@@ -515,9 +607,14 @@ function createUnconnectedFsm(): FsmProvider {
     items: off,
     attachments: off,
     download: off,
+    findContact: off,
     createContact: off,
+    findRequest: off,
     createRequest: off,
-    createVisit: off,
+    findWorkOrder: off,
+    createWorkOrder: off,
+    workOrderAppointment: off,
+    createAppointment: off,
     rescheduleVisit: off,
     cancelVisit: off,
     invoiceWorkOrder: off,

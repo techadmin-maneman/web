@@ -11,12 +11,20 @@
 //
 // A failure is retried after 30 s, 1, 2 and 4 minutes. The fifth alerts and
 // gives up; the reconciliation picks an appointment up again, ops can enter a
-// lead in FSM by hand, and a booking FSM would not take is refunded.
+// lead in FSM by hand, and a booking FSM would not take is refunded, with ops
+// told what happened to the money (docs/decisions/0067-a-paid-hold-is-kept.md).
 
+import { rupees } from "@maneman/web-kit/money";
 import { z } from "zod";
 import type { VisitType } from "../config/visit-types.ts";
 import type { Dependencies } from "../dependencies.ts";
-import { confirmBooking, giveBack, type ConfirmOptions } from "../domain/bookings.ts";
+import {
+  confirmBooking,
+  giveUpOnBooking,
+  type ConfirmOptions,
+  type GaveUp,
+  type LeftInFsm,
+} from "../domain/bookings.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
 import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
@@ -65,10 +73,13 @@ export async function handleFsmSyncBatch(
     }
     if ("hold_id" in parsed.data) {
       const requestId = parsed.data.request_id;
-      await bookHold(message, parsed.data.hold_id, db, deps, log.child({ request_id: requestId }), {
+      const bookingLog = log.child({ request_id: requestId });
+      await bookHold(message, parsed.data.hold_id, db, deps, bookingLog, {
         labelAsTest,
         notify: (messageId) =>
           env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
+        alert: deps.alert,
+        log: bookingLog,
       });
       continue;
     }
@@ -133,6 +144,11 @@ export async function handleFsmSyncBatch(
   }
 }
 
+/**
+ * Books a paid (or free) hold. A failure is retried on the usual schedule; the fifth gives up, cancels what FSM
+ * holds for it and refunds the client, and tells ops exactly what happened to each. Nothing here throws out of
+ * the batch: a refund Razorpay refuses keeps the hold, which the cron puts back on the queue half an hour on.
+ */
 async function bookHold(
   message: Message,
   holdId: string,
@@ -141,23 +157,75 @@ async function bookHold(
   log: Logger,
   options: ConfirmOptions,
 ): Promise<void> {
+  const retryLater = () => {
+    message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+  };
   try {
     const outcome = await confirmBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options);
     log.info("booking", { hold_id: holdId, outcome });
+    // Another consumer is writing it: this one looks again later, which never counts toward giving up.
+    if (outcome === "being_booked" && message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
+      retryLater();
+      return;
+    }
     message.ack();
   } catch (error) {
     const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
     log.warn("booking_failed", { hold_id: holdId, attempt: message.attempts, reason });
     if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
-      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      retryLater();
       return;
     }
-    await giveBack(db, deps.payments, holdId, deps.now(), "FSM would not take the booking");
-    await deps.alert(
-      `Booking ${holdId} could not be written to FSM after ${String(message.attempts)} attempts: ${reason}. ` +
-        "The client's payment has been refunded.",
-    );
+    try {
+      const gaveUp = await giveUpOnBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options.labelAsTest);
+      log.warn("booking_given_up", { hold_id: holdId, money: gaveUp.money.kind, fsm: gaveUp.fsm.kind });
+      await deps.alert(givenUpAlert(holdId, message.attempts, reason, gaveUp));
+    } catch (giveUpError) {
+      log.error("booking_give_up_failed", { hold_id: holdId, error: giveUpError });
+      await deps.alert(
+        `Booking ${holdId} could not be written to FSM after ${String(message.attempts)} attempts: ${reason}. ` +
+          "Giving it up failed too, so nothing has been refunded yet; it is tried again in half an hour.",
+      );
+    }
     message.ack();
+  }
+}
+
+/** What ops are told when a booking is given up on: why, what happened to the money, and what is left in FSM. */
+function givenUpAlert(holdId: string, attempts: number, reason: string, gaveUp: GaveUp): string {
+  const failed = `Booking ${holdId} could not be written to FSM after ${String(attempts)} attempts: ${reason}.`;
+  return [failed, moneyLine(gaveUp.money), fsmLine(holdId, gaveUp.fsm)].filter((line) => line !== "").join(" ");
+}
+
+function moneyLine(money: GaveUp["money"]): string {
+  switch (money.kind) {
+    case "refunded":
+      return `Razorpay payment ${money.paymentId} (${rupees(money.amount)}) is refunded in full.`;
+    case "refunded_before":
+      return `Razorpay payment ${money.paymentId} had already been refunded.`;
+    case "nothing_paid":
+      return "Nothing was paid for it, so nothing is refunded; its time is free again.";
+    case "booked":
+      return "It is booked, so nothing is refunded: a step after the booking failed.";
+    case "refund_refused":
+      return (
+        `Razorpay refused to refund payment ${money.paymentId} (${rupees(money.amount)}), so nothing has gone back ` +
+        "to the client. It is tried again in half an hour; if this alert comes again, refund it by hand in " +
+        "Razorpay's dashboard."
+      );
+  }
+}
+
+function fsmLine(holdId: string, left: LeftInFsm): string {
+  switch (left.kind) {
+    case "nothing":
+      return "";
+    case "cancelled":
+      return `Its work order ${left.workOrderId} is cancelled in FSM.`;
+    case "not_cancelled":
+      return `FSM would not cancel its work order ${left.workOrderId}: cancel it by hand, so no technician goes.`;
+    case "unknown":
+      return `FSM may hold a work order for it whose answer never came: look for "(booking ${holdId})" in FSM's work orders and cancel it.`;
   }
 }
 
@@ -325,7 +393,7 @@ async function sendLead(
   options: { labelAsTest: boolean },
 ): Promise<void> {
   try {
-    const outcome = await sendLeadToFsm(db, deps.fsm, leadId, options);
+    const outcome = await sendLeadToFsm(db, deps.fsm, leadId, { ...options, log, now: deps.now() });
     log.info("fsm_lead", { lead_id: leadId, outcome });
     message.ack();
   } catch (error) {

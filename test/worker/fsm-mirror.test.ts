@@ -71,6 +71,17 @@ async function person(mobile: string, name = "Existing Person") {
 }
 
 describe("the mirror: one appointment", () => {
+  // LIFE-04 of the audit, 24 September 2026: a visit booked from the site knows its pincode before FSM does.
+  it("keeps the place a booking gave the visit while FSM's appointment has none", async () => {
+    await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
+    const noPlace = world({ appointments: [appointment({ serviceCity: null, servicePincode: null })] });
+    await syncAppointment(env.DB, createStubFsm(noPlace), "ap-1", NOW);
+    expect(await mirrored()).toMatchObject({ service_city: "Gurgaon", service_pincode: "122018" });
+    const moved = world({ appointments: [appointment({ serviceCity: "Delhi", servicePincode: "110001" })] });
+    await syncAppointment(env.DB, createStubFsm(moved), "ap-1", NOW);
+    expect(await mirrored()).toMatchObject({ service_city: "Delhi", service_pincode: "110001" });
+  });
+
   it("writes an appointment with its visit type, technician, window in UTC and place", async () => {
     await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
     expect(await mirrored()).toMatchObject({

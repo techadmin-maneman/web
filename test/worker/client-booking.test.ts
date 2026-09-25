@@ -102,6 +102,7 @@ describe("GET /api/availability", () => {
     expect(body.days).toHaveLength(14);
     expect(body.days[0]).toEqual({
       date: "2026-09-22",
+      price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
       windows: [
         { window: "morning", with: "regular" },
         { window: "afternoon", with: "regular" },
@@ -176,8 +177,9 @@ describe("POST /api/holds", () => {
     const [first, second, third] = [await client(), await client(), await client()];
     await hold(first, TUESDAY_AFTERNOON);
     await hold(second, TUESDAY_AFTERNOON);
-    // Eleven minutes on, the first two holds have lapsed, and the window is free again.
-    const afterwards = await hold(third, TUESDAY_AFTERNOON, later(11));
+    // Thirteen minutes on, past the ten and the two minutes' grace a payment may still land in, the first two
+    // holds have lapsed, and the window is free again.
+    const afterwards = await hold(third, TUESDAY_AFTERNOON, later(13));
     expect(afterwards.status).toBe(201);
     // The first client now holds Wednesday instead, which lets Tuesday's claim go even before it lapses.
     const moved = await (await hold(first, { ...TUESDAY_AFTERNOON, date: "2026-09-23" })).json<{ id: string }>();
@@ -209,5 +211,52 @@ describe("POST /api/holds", () => {
     expect(release.status).toBe(204);
     const released = await request(app, `/api/holds/${id}`, { headers: { Cookie: rohit.cookie } });
     expect(await released.json()).toMatchObject({ state: "released" });
+  });
+});
+
+describe("what a client may book, and when (docs/decisions/0067-a-paid-hold-is-kept.md)", () => {
+  const availability = async (who: { cookie: string }, type = "service") =>
+    (await request(app, `/api/availability?type=${type}`, { headers: { Cookie: who.cookie } })).json<{
+      days: { date: string; price: { amount: number }; windows: { with: string | null }[] }[];
+    }>();
+
+  it("offers no second first fit while one is still to happen, nor starts paying for one (LIFE-09)", async () => {
+    const lead = await client(true);
+    const first = await (
+      await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" })
+    ).json<{
+      id: string;
+    }>();
+    // Ops booked the first fit in FSM meanwhile.
+    await visit(lead.id, "first_fit", "scheduled", "2026-09-25T03:30:00.000Z", SANDEEP);
+    const second = await hold(lead, { type: "first_fit", date: "2026-09-26", window: "morning" });
+    expect(second.status).toBe(422);
+    const paying = await request(app, "/api/bookings", {
+      method: "POST",
+      headers: { Cookie: lead.cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ hold_id: first.id }),
+    });
+    expect(paying.status).toBe(409);
+  });
+
+  it("offers nothing, and holds nothing, on a day ops blacked out (BIZ-25)", async () => {
+    await env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES ('2026-09-23', 'Dussehra')").run();
+    const rohit = await client();
+    const { days } = await availability(rohit);
+    expect(days.find((day) => day.date === "2026-09-23")?.windows.map((window) => window.with)).toEqual([
+      null,
+      null,
+      null,
+    ]);
+    expect((await hold(rohit, { type: "service", date: "2026-09-23", window: "afternoon" })).status).toBe(409);
+  });
+
+  it("prices each day at the price in force on it (OPS-14)", async () => {
+    await env.DB.prepare(
+      "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'standard', 210000, 0, '2026-09-25')",
+    ).run();
+    const { days } = await availability(await client());
+    expect(days.find((day) => day.date === "2026-09-24")?.price.amount).toBe(200000);
+    expect(days.find((day) => day.date === "2026-09-25")?.price.amount).toBe(210000);
   });
 });

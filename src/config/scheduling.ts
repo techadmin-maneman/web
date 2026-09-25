@@ -48,3 +48,10 @@ export const BOOKING_DAYS = 14;
 
 /** How long a held slot waits for payment (board C4's countdown from 10:00). */
 export const HOLD_SECONDS = 600;
+
+/**
+ * How long after the countdown a payment still counts as made in time, by
+ * Razorpay's own clock for it, and how long an unpaid hold with an order keeps
+ * its time before anyone else may take it (docs/decisions/0067-a-paid-hold-is-kept.md).
+ */
+export const PAYMENT_GRACE_SECONDS = 120;

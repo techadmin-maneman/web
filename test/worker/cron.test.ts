@@ -78,6 +78,7 @@ describe("CRON_JOBS", () => {
   it("sweeps first and settles Books last, after the invoices it applies advances to", () => {
     expect(CRON_JOBS.map((job) => job.name)).toEqual([
       "sweeper",
+      "unbooked_holds",
       "erased_files",
       "fsm_reconcile",
       "deletion_alerts",
