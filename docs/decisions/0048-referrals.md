@@ -18,7 +18,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 
 **Pincodes decide where we go.** `serviceable_pincodes` (migration 0021) is loaded from `data/pincodes/ncr-pincodes.csv` by `scripts/import-pincodes.ts`.
 
-- Each pincode's area is the shortest name among its sub and head post offices, until ops give better ones.
+- Each pincode's area is the shortest name among its sub and head post offices, until ops give better ones. **Amended 26 September 2026:** ops name an area in Settings · Service area, and the import keeps a name they gave (ADR 0071, migration 0041).
 - Staging runs with every pincode served (`--all-served-from`, open point 21).
 - `GET /api/pincodes/:pin` says served or not, with the area, and refuses what is not an Indian pincode.
 
