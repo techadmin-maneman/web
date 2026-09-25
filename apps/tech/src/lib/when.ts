@@ -2,7 +2,7 @@
 // counts board B5 and board B4 show: what is left of the wait, and how long the
 // job took.
 
-import { indiaClock } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock } from "@maneman/web-kit/dates";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -13,6 +13,12 @@ export function todayInIndia(now: Date = new Date()): string {
 
 export function dayAfter(isoDate: string): string {
   return new Date(new Date(`${isoDate}T00:00:00Z`).getTime() + DAY_MS).toISOString().slice(0, 10);
+}
+
+/** "22 Aug", as board A3 dates the last visit. */
+export function dayMonth(isoDate: string): string {
+  const written = fullDate(isoDate);
+  return written.slice(0, written.lastIndexOf(" "));
 }
 
 /** "9:30 am", as the head of Today and a job's card write it. */

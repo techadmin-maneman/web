@@ -1,4 +1,5 @@
-// The way to the door (docs/decisions/0054-address-capture.md).
+// The way to the door (docs/decisions/0054-address-capture.md), and to the
+// client once there.
 //
 // The card linked `geo:0,0?q=<the typed address>` until the owner ruled open
 // point 27 on 24 September 2026: any phone, including iPhones. Android hands a
@@ -16,11 +17,24 @@ import type { components } from "../api-schema.ts";
 
 type Address = NonNullable<components["schemas"]["TechnicianJobDetail"]["address"]>;
 
-/** The address as one line, from the parts the API keeps it in. */
+/** A part the client filled in. */
+const given = (part: string | null): part is string => part !== null && part.trim() !== "";
+
+/**
+ * The address on one line, narrowest part first, as the client app writes it
+ * (apps/app/src/profile/AddressSection.tsx): the flat, the floor, the tower and
+ * the building, then the street, the area and the city. A building chosen from
+ * the search is also the first line, and is written once.
+ */
 export function addressLine(parts: Address): string {
-  return [parts.line1, parts.line2, parts.locality, `${parts.city} ${parts.pincode}`]
-    .filter((part) => part !== null && part.trim() !== "")
-    .join(", ");
+  const house = [parts.flat, parts.floor, parts.tower, parts.building, parts.line1, parts.line2].filter(given);
+  return [...new Set(house), parts.locality, `${parts.city} ${parts.pincode}`].filter(given).join(", ");
+}
+
+/** What a map is asked for when there is no pin: the building and the area. A flat number only confuses it. */
+function placeOf(parts: Address): string {
+  const building = given(parts.building) ? parts.building : parts.line1;
+  return [building, parts.line2, parts.locality, `${parts.city} ${parts.pincode}`].filter(given).join(", ");
 }
 
 /**
@@ -31,6 +45,12 @@ export function addressLine(parts: Address): string {
  */
 export function wayTo(address: Address): string {
   const pin = address.lat !== null && address.lng !== null ? `${String(address.lat)},${String(address.lng)}` : null;
-  const destination = pin ?? addressLine(address);
+  const destination = pin ?? placeOf(address);
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
 }
+
+/** A call to the client, from the number on the card (E.164). */
+export const callLink = (mobile: string): string => `tel:${mobile}`;
+
+/** WhatsApp's own link to a number, which takes the digits alone. */
+export const whatsAppLink = (mobile: string): string => `https://wa.me/${mobile.replace(/\D/g, "")}`;

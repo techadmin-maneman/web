@@ -24,6 +24,7 @@ const CHALLENGE_ID = "c0000000-0000-4000-8000-000000000001";
 export const JOB_ID = "a0000000-0000-4000-8000-000000000001";
 export const SECOND_JOB_ID = "a0000000-0000-4000-8000-000000000002";
 export const LOCKED_JOB_ID = "a0000000-0000-4000-8000-000000000003";
+export const TOMORROW_JOB_ID = "a0000000-0000-4000-8000-000000000004";
 
 /** Today's calendar date in India, as the app asks the backend for it. */
 export function todayInIndia(now: Date = new Date()): string {
@@ -34,12 +35,19 @@ export function dayBefore(date: string): string {
   return new Date(new Date(`${date}T00:00:00Z`).getTime() - 86_400_000).toISOString().slice(0, 10);
 }
 
+export function dayAfter(date: string): string {
+  return new Date(new Date(`${date}T00:00:00Z`).getTime() + 86_400_000).toISOString().slice(0, 10);
+}
+
 const at = (date: string, time: string) => `${date}T${time}:00.000Z`;
 
 /** 6 pm in India on the day before the visit, when its address unlocks (src/policy/job-visibility.ts). */
 const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 
-export function jobsToday(date: string) {
+/** The slots each type takes (src/config/scheduling.ts). */
+const SLOTS: Readonly<Record<string, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
+
+export function jobsToday(date: string, type = "service") {
   return [
     {
       id: JOB_ID,
@@ -48,10 +56,11 @@ export function jobsToday(date: string) {
       starts_at: at(date, "04:00"),
       ends_at: at(date, "05:30"),
       window_label: "morning",
-      type: "service",
+      type,
       sector: "Sector 65",
       status: "scheduled",
       badge: "prepaid",
+      slots: SLOTS[type] ?? 1,
       unlocked: true,
       unlocks_at: unlocksAt(date),
     },
@@ -66,6 +75,7 @@ export function jobsToday(date: string) {
       sector: "DLF Phase 4",
       status: "scheduled",
       badge: "credit",
+      slots: 1,
       unlocked: true,
       unlocks_at: unlocksAt(date),
     },
@@ -80,7 +90,30 @@ export function jobsToday(date: string) {
       sector: "Sector 43",
       status: "scheduled",
       badge: "prepaid",
+      slots: 2,
       unlocked: false,
+      unlocks_at: unlocksAt(date),
+    },
+  ];
+}
+
+/** Tomorrow's one job, unlocked since 6 pm today: its card is open, and its door is not. */
+export function jobsTomorrow(today: string) {
+  const date = dayAfter(today);
+  return [
+    {
+      id: TOMORROW_JOB_ID,
+      day: "tomorrow",
+      date,
+      starts_at: at(date, "04:30"),
+      ends_at: at(date, "06:00"),
+      window_label: "morning",
+      type: "service",
+      sector: "Sector 50",
+      status: "scheduled",
+      badge: "free",
+      slots: 1,
+      unlocked: true,
       unlocks_at: unlocksAt(date),
     },
   ];
@@ -94,31 +127,96 @@ const CHECKLIST = [
 
 const PARTIAL_REASONS = ["client_stopped_it", "piece_not_ready", "client_unwell", "more_time_needed"];
 
+/** The API's piece label (src/config/pieces.ts), which it refuses a write for. */
+const PIECE_LABEL = /^MM-[A-Z0-9]{2,6}-\d{2,8}-[A-Z]$/;
+
 export interface Progress {
   checked_in_at: string | null;
+  wait_ends_at: string | null;
+  distance_m: number | null;
   started_at: string | null;
   steps_done: string[];
   outcome: string | null;
 }
 
-export function card(date: string, progress: Progress, pin = true) {
-  const [first] = jobsToday(date);
+export const NOTHING_DONE: Progress = {
+  checked_in_at: null,
+  wait_ends_at: null,
+  distance_m: null,
+  started_at: null,
+  steps_done: [],
+  outcome: null,
+};
+
+export interface Piece {
+  readonly piece_code: string;
+  readonly base: string | null;
+  readonly supplier_lot: string | null;
+  readonly fitted_at: string | null;
+  readonly replacement_due_at: string | null;
+  readonly failed_at: string | null;
+  readonly failure_reason: string | null;
+}
+
+/** Rohit's piece on his head today, fitted in July. */
+export const ROHITS_PIECE: Piece = {
+  piece_code: "MM-STD-4417-B",
+  base: "PLACEHOLDER_STANDARD",
+  supplier_lot: "LOT-4417",
+  fitted_at: "2030-07-02",
+  replacement_due_at: "2030-12-29",
+  failed_at: null,
+  failure_reason: null,
+};
+
+const stepsFor = (type: string) =>
+  type === "replacement" || type === "first_fit"
+    ? ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"]
+    : ["before_photos", "checklist", "consumables", "after_photos", "outcome"];
+
+export interface CardOptions {
+  readonly pin?: boolean;
+  readonly type?: string;
+  readonly waitMinutes?: number;
+  readonly pieces?: readonly Piece[];
+  readonly lastVisit?: boolean;
+  readonly reminderDelivered?: string | null;
+  /** Parts of the address the client filled in beyond the fixture's two lines: flat, floor, tower, building, landmark. */
+  readonly address?: Readonly<Record<string, string | null>>;
+}
+
+export function card(date: string, progress: Progress, options: CardOptions = {}) {
+  const type = options.type ?? "service";
+  const [first] = jobsToday(date, type);
   return {
     ...first,
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
+      building: null,
+      tower: null,
+      floor: null,
+      flat: null,
+      landmark: null,
       locality: "Sector 65",
       city: "Gurgaon",
       pincode: "122018",
       // An address the client typed rather than chose carries no coordinate (ADR 0054).
-      lat: pin ? 28.39 : null,
-      lng: pin ? 77.07 : null,
+      lat: options.pin === false ? null : 28.39,
+      lng: options.pin === false ? null : 77.07,
+      ...options.address,
     },
     access_notes: "Gate code 4417 · visitor bay B",
     client: { name: "Rohit M.", mobile: "+919810000000", note: null },
     progress,
-    steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
+    no_show_wait_min: options.waitMinutes ?? 15,
+    pieces: [...(options.pieces ?? [])],
+    last_visit:
+      options.lastVisit === true
+        ? { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${JOB_ID}/last-visit-photo` }
+        : null,
+    reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
+    steps: stepsFor(type),
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
   };
@@ -132,16 +230,28 @@ export function lockedCard(date: string) {
     address: null,
     access_notes: null,
     client: null,
-    progress: { checked_in_at: null, started_at: null, steps_done: [], outcome: null },
-    steps: ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"],
+    progress: NOTHING_DONE,
+    no_show_wait_min: 15,
+    pieces: null,
+    last_visit: null,
+    reminder: null,
+    steps: stepsFor("first_fit"),
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
   };
 }
 
+/** Tomorrow's card: unlocked, so the address is there, and on a day that is not today. */
+function tomorrowCard(today: string) {
+  const [job] = jobsTomorrow(today);
+  return { ...card(today, NOTHING_DONE), ...job };
+}
+
 export interface Write {
   readonly path: string;
   readonly eventId: string | null;
+  /** The job's start as the phone held it when it queued the write. */
+  readonly startsAt: string | null;
   readonly body: unknown;
 }
 
@@ -160,6 +270,18 @@ export interface Fake {
   malformed: boolean;
   /** Set to make the next write answer `409 superseded` with these fields. */
   supersede: readonly string[] | null;
+  /**
+   * True once ops have given the job to someone else: its card and its upload
+   * links answer 404, as the API answers for a job that is not this
+   * technician's, and a write answers `409 superseded` naming the technician.
+   */
+  moved: boolean;
+  /**
+   * Set to move the job to another time: a write that holds any other answers
+   * `409 superseded`, field time. The card goes on answering the old time, as
+   * the copy the phone holds does until it asks again.
+   */
+  movedTo: string | null;
   /** Set to make the no-show refuse with `425 too_early_to_close`, as it does before the wait runs. */
   tooEarly: boolean;
   /** What the check-in answers: pass, or a distance outside the radius. */
@@ -168,6 +290,18 @@ export interface Fake {
   waitMinutes: number;
   /** False for an address saved by typing, which has no coordinate for Navigate to take. */
   pin: boolean;
+  /** The first job's type: a replacement or a first fit has the piece step. */
+  type: string;
+  /** The client's pieces on the card. */
+  pieces: Piece[];
+  /** Parts of the address beyond the fixture's two lines. */
+  address: Record<string, string | null>;
+  /** Whether the client has a last visit with an after photograph. */
+  lastVisit: boolean;
+  /** The day-before WhatsApp: undefined when none was sent, null when it never arrived. */
+  reminderDelivered: string | null | undefined;
+  /** True puts one unlocked job on tomorrow's list. */
+  tomorrow: boolean;
   /** Every write that reached the API, in the order it arrived. */
   readonly writes: Write[];
   /** Every photograph PUT to an upload link, by its angle. */
@@ -182,6 +316,17 @@ const accepted = (fake: Fake, eventId: string | null) => ({
   fsm_write_state: "pending",
   progress: fake.progress,
 });
+
+const refusal = (status: number, code: string, fields: readonly string[] = []) => ({
+  status,
+  json: { error: { code, request_id: "test", fields: [...fields] } },
+});
+
+/** A 1×1 grey PNG: the last visit's photograph, which is nobody's. */
+const LAST_VISIT_PHOTO = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==",
+  "base64",
+);
 
 /**
  * Answers the technician API for one page. Anything not named here is a 404, so
@@ -202,21 +347,42 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     codesSent: [],
     malformed: false,
     supersede: null,
+    moved: false,
+    movedTo: null,
     tooEarly: false,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
     pin: true,
+    type: "service",
+    pieces: [],
+    address: {},
+    lastVisit: false,
+    reminderDelivered: undefined,
+    tomorrow: false,
     writes: [],
     photos: [],
-    progress: { checked_in_at: null, started_at: null, steps_done: [], outcome: null },
+    progress: NOTHING_DONE,
   };
+
+  const jobCard = () =>
+    card(today, fake.progress, {
+      pin: fake.pin,
+      type: fake.type,
+      waitMinutes: fake.waitMinutes,
+      pieces: fake.pieces,
+      lastVisit: fake.lastVisit,
+      reminderDelivered: fake.reminderDelivered,
+      address: fake.address,
+    });
 
   await on.route("**/api/tech/**", async (route: Route) => {
     if (!fake.online) return route.abort();
     const url = new URL(route.request().url());
     const path = url.pathname;
     const method = route.request().method();
-    const eventId = route.request().headers()["x-client-event-id"] ?? null;
+    const headers = route.request().headers();
+    const eventId = headers["x-client-event-id"] ?? null;
+    const startsAt = headers["x-job-starts-at"] ?? null;
 
     // The sign-in: a code for any number, and any six digits right unless the code was closed.
     if (method === "POST" && path === "/api/tech/auth/otp") {
@@ -225,21 +391,16 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return route.fulfill({ status: 202, json: { challenge_id: CHALLENGE_ID, expires_in_s: 600 } });
     }
     if (method === "POST" && path === "/api/tech/auth/verify") {
-      if (fake.codeClosed) {
-        return route.fulfill({ status: 410, json: { error: { code: "code_expired", request_id: "test" } } });
-      }
+      if (fake.codeClosed) return route.fulfill(refusal(410, "code_expired"));
       fake.signedIn = true;
       return route.fulfill({ json: { verified: true, first_name: ME.first_name, device_id: ME.device.device_id } });
     }
-    if (fake.revoked) {
-      return route.fulfill({ status: 401, json: { error: { code: "device_revoked", request_id: "test" } } });
-    }
-    if (!fake.signedIn) {
-      return route.fulfill({ status: 401, json: { error: { code: "session_required", request_id: "test" } } });
-    }
+    if (fake.revoked) return route.fulfill(refusal(401, "device_revoked"));
+    if (!fake.signedIn) return route.fulfill(refusal(401, "session_required"));
 
     // The photograph itself: PUT to the link the API handed out.
     if (method === "PUT" && path.startsWith("/api/tech/photos/")) {
+      if (fake.moved) return route.fulfill(refusal(404, "not_found"));
       fake.photos.push(path.slice("/api/tech/photos/".length));
       return route.fulfill({ status: 204 });
     }
@@ -247,6 +408,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (method === "POST") {
       if (path === "/api/tech/auth/logout") return route.fulfill({ status: 204 });
       if (path.endsWith("/photos/upload-url")) {
+        if (fake.moved) return route.fulfill(refusal(404, "not_found"));
         const body = route.request().postDataJSON() as { phase: string; angle: string };
         return route.fulfill({
           status: 201,
@@ -257,25 +419,31 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         });
       }
 
+      if (fake.moved) return route.fulfill(refusal(409, "superseded", ["technician"]));
+      if (fake.movedTo !== null && startsAt !== null && startsAt !== fake.movedTo) {
+        return route.fulfill(refusal(409, "superseded", ["time"]));
+      }
       const changed = fake.supersede;
-      if (changed !== null) {
-        return route.fulfill({
-          status: 409,
-          json: { error: { code: "superseded", request_id: "test", fields: [...changed] } },
-        });
-      }
-      if (path.endsWith("/no-show") && fake.tooEarly) {
-        return route.fulfill({
-          status: 425,
-          json: { error: { code: "too_early_to_close", request_id: "test" } },
-        });
-      }
+      if (changed !== null) return route.fulfill(refusal(409, "superseded", changed));
+      if (path.endsWith("/no-show") && fake.tooEarly) return route.fulfill(refusal(425, "too_early_to_close"));
 
-      fake.writes.push({ path, eventId, body: route.request().postDataJSON() as unknown });
+      const body = route.request().postDataJSON() as { piece_code?: string } | null;
+      if (path.endsWith("/piece") && !PIECE_LABEL.test(body?.piece_code ?? "")) {
+        return route.fulfill(refusal(400, "invalid_request", ["piece_code"]));
+      }
+      fake.writes.push({ path, eventId, startsAt, body });
 
       if (path.endsWith("/checkin")) {
         const now = new Date();
-        fake.progress = fake.checkIn.passed ? { ...fake.progress, checked_in_at: now.toISOString() } : fake.progress;
+        const waitEnds = new Date(now.getTime() + fake.waitMinutes * 60_000).toISOString();
+        if (fake.checkIn.passed) {
+          fake.progress = {
+            ...fake.progress,
+            checked_in_at: now.toISOString(),
+            wait_ends_at: waitEnds,
+            distance_m: fake.checkIn.distance_m,
+          };
+        }
         return route.fulfill({
           status: 200,
           json: {
@@ -283,9 +451,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
             distance_m: fake.checkIn.distance_m,
             radius_m: 200,
             checked_in_at: now.toISOString(),
-            wait_ends_at: fake.checkIn.passed
-              ? new Date(now.getTime() + fake.waitMinutes * 60_000).toISOString()
-              : null,
+            wait_ends_at: fake.checkIn.passed ? waitEnds : null,
             accepted: fake.checkIn.passed ? accepted(fake, eventId) : null,
           },
         });
@@ -306,44 +472,49 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
           },
         });
       }
-      const step = stepOf(path, route.request().postDataJSON() as { phase?: string } | null);
+      const step = stepOf(path, body as { phase?: string } | null);
       if (step !== null) {
         fake.progress = { ...fake.progress, steps_done: [...fake.progress.steps_done, step] };
         if (step === "outcome") {
-          const body = route.request().postDataJSON() as { outcome?: string };
-          fake.progress = { ...fake.progress, outcome: body.outcome ?? "done" };
+          const outcome = (body as { outcome?: string } | null)?.outcome ?? "done";
+          fake.progress = { ...fake.progress, outcome };
         }
         return route.fulfill({ status: 202, json: accepted(fake, eventId) });
       }
-      return route.fulfill({ status: 404, json: { error: { code: "not_found", request_id: "test" } } });
+      return route.fulfill(refusal(404, "not_found"));
     }
 
     if (path === "/api/tech/me") return route.fulfill({ json: ME });
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";
       if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
-      const jobs = date === today && !empty ? jobsToday(date) : [];
-      return route.fulfill({ json: { date, jobs } });
+      if (date === today) return route.fulfill({ json: { date, jobs: empty ? [] : jobsToday(date, fake.type) } });
+      if (date === dayAfter(today) && fake.tomorrow)
+        return route.fulfill({ json: { date, jobs: jobsTomorrow(today) } });
+      return route.fulfill({ json: { date, jobs: [] } });
     }
     if (path === "/api/tech/pieces/lookup") {
+      const code = url.searchParams.get("code") ?? "";
+      if (!PIECE_LABEL.test(code)) return route.fulfill(refusal(404, "not_found"));
       return route.fulfill({
         json: {
-          piece: {
-            piece_code: url.searchParams.get("code") ?? "",
-            base: "PLACEHOLDER_STANDARD",
-            supplier_lot: "LOT-4417",
-            fitted_at: null,
-            replacement_due_at: null,
-            failed_at: null,
-            failure_reason: null,
-          },
-          belongs_to_this_job: true,
+          piece: { ...ROHITS_PIECE, piece_code: code },
+          belongs_to_this_job: code === ROHITS_PIECE.piece_code,
         },
       });
     }
-    if (path === `/api/tech/jobs/${JOB_ID}`) return route.fulfill({ json: card(today, fake.progress, fake.pin) });
+    if (path === `/api/tech/jobs/${JOB_ID}/last-visit-photo`) {
+      if (fake.moved || !fake.lastVisit) return route.fulfill(refusal(404, "not_found"));
+      return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
+    }
+    if (path === `/api/tech/jobs/${JOB_ID}`) {
+      return fake.moved ? route.fulfill(refusal(404, "not_found")) : route.fulfill({ json: jobCard() });
+    }
     if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return route.fulfill({ json: lockedCard(today) });
-    return route.fulfill({ status: 404, json: { error: { code: "not_found", request_id: "test" } } });
+    if (path === `/api/tech/jobs/${TOMORROW_JOB_ID}` && fake.tomorrow) {
+      return route.fulfill({ json: tomorrowCard(today) });
+    }
+    return route.fulfill(refusal(404, "not_found"));
   });
 
   return fake;
@@ -380,6 +551,31 @@ export function heldOnPhone(page: Page): Promise<{ outbox: number; frames: numbe
     const outbox = await read<unknown>("outbox");
     const frames = await read<{ frame: Blob }>("frames");
     return { outbox: outbox.length, frames: frames.length, frameSizes: frames.map((kept) => kept.frame.size) };
+  });
+}
+
+/** The angles of the frames the phone holds, in the order the store keeps them. */
+export function anglesOnPhone(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("mm-tech");
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(new Error("no store"));
+      };
+    });
+    const frames = await new Promise<{ angle: string }[]>((resolve) => {
+      const request = db.transaction("frames", "readonly").objectStore("frames").getAll() as IDBRequest<
+        { angle: string }[]
+      >;
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+    });
+    db.close();
+    return frames.map((frame) => frame.angle);
   });
 }
 

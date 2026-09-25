@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, DEVICE_REVOKED, onSessionEnded, type Me } from "./api.ts";
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
+import { Stopped } from "./components/Banners.tsx";
 import { storage } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { SignIn } from "./login/SignIn.tsx";
@@ -201,6 +202,8 @@ export function App() {
               <p className={styles.fullBody}>{storage.body}</p>
             </div>
           )}
+          {/* A job's work stopped reaching us, said above every screen; the waiting screen says it job by job. */}
+          {routeOf(path).page !== "waiting" && <Stopped />}
           {/* Keyed by the path, so each screen opens at its top with its own data, and one that failed stays behind. */}
           <ErrorBoundary key={path}>{pageFor(routeOf(path))}</ErrorBoundary>
         </SessionContext>

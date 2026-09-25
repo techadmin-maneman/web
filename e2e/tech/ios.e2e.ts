@@ -71,6 +71,34 @@ test("tells a technician why the app on his home screen is signed out", async ({
   await expect(page.getByText(/This is the app on your home screen/)).toBeVisible();
 });
 
+test("draws its screens without one refusal from its own security policy", async ({ page }) => {
+  const refused: string[] = [];
+  page.on("console", (message) => {
+    if (/Content Security Policy|Refused to/i.test(message.text())) refused.push(message.text());
+  });
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (event) => {
+      console.error(`Refused to load: ${event.violatedDirective} ${event.blockedURI}`);
+    });
+  });
+  await fakeTech(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await page.goto(`/jobs/${JOB_ID}`);
+  await expect(page.getByRole("link", { name: "Navigate" })).toBeVisible();
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await page.goto("/waiting");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  // The sign-in, as a phone whose session ended sees it.
+  await page.route("**/api/tech/me", (route) => route.fulfill(noSession));
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+
+  expect(refused).toEqual([]);
+});
+
 test("opens on an engine that offers no StorageManager at all", async ({ page }) => {
   // Older WebKit has none, and a browser that cannot be asked has made no promise either.
   await page.addInitScript(() => {

@@ -1,10 +1,14 @@
-/* Board A3: the job card, with the one primary action at the bottom. */
+/*
+ * Board A3: the job card, and board B5's evidence chain beneath it. The screen
+ * is the phone's height: the head at the top, the one action fixed at the
+ * foot, and the card scrolling between them.
+ */
 
 .screen {
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
   background: var(--ink-deep);
 }
 
@@ -20,10 +24,11 @@
 
 .back {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: var(--tap);
-  height: var(--tap);
+  width: var(--tech-min);
+  height: var(--tech-min);
   margin-left: calc(-1 * var(--sp-12));
   border: 0;
   background: transparent;
@@ -40,6 +45,10 @@
   font-size: var(--fs-18);
   font-weight: 400;
   color: var(--paper);
+}
+
+.name:focus {
+  outline: none;
 }
 
 .when {
@@ -59,6 +68,7 @@
 
 .body {
   flex: 1;
+  overflow-y: auto;
 }
 
 .address {
@@ -80,17 +90,29 @@
   color: var(--ink-soft);
 }
 
-.navigate {
+.navigate,
+.reachLink {
   display: flex;
   gap: var(--sp-12);
   align-items: center;
   justify-content: center;
   min-height: var(--tech-stepper);
-  margin-top: var(--sp-16);
   border: var(--hairline) solid var(--ink-line);
   font-size: var(--fs-17);
   color: var(--paper);
   text-decoration: none;
+}
+
+.navigate {
+  margin-top: var(--sp-16);
+}
+
+/* Call and WhatsApp, side by side beneath Navigate: outlined, since the gold is the stage's. */
+.reach {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-12);
+  margin-top: var(--sp-12);
 }
 
 .locked {
@@ -120,6 +142,111 @@
   color: var(--paper);
 }
 
+/* ---- Board A3: the piece, and the last visit ------------------------------- */
+
+.piece {
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.pieceTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-15);
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.pieceNone {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-16);
+  color: var(--ink-soft);
+}
+
+.rows {
+  margin: var(--sp-10) 0 0;
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+.row {
+  display: flex;
+  gap: var(--sp-16);
+  justify-content: space-between;
+  padding: var(--sp-11) 0;
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.rowKey {
+  font-size: var(--fs-16);
+  color: var(--ink-muted);
+}
+
+.rowValue {
+  margin: 0;
+  font-size: var(--fs-17);
+  text-align: right;
+  color: var(--paper);
+}
+
+.lastVisit {
+  display: flex;
+  gap: var(--sp-14);
+  align-items: center;
+  margin-top: var(--sp-14);
+}
+
+.lastVisitPhoto {
+  flex-shrink: 0;
+  width: var(--tech-stepper);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: var(--ink-frame);
+}
+
+.lastVisitLine {
+  margin: 0;
+  font-size: var(--fs-15);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+/* ---- Where the job stands -------------------------------------------------- */
+
+.state {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+  font-size: var(--fs-17);
+  line-height: 1.5;
+  color: var(--paper);
+}
+
+/* Ops changed the job under the phone: board B5's failure, across the card. */
+.changed {
+  padding: var(--sp-22) var(--sp-20);
+  border-top: var(--rule-strong) solid var(--error-on-ink);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.changedTitle {
+  margin: 0 0 var(--sp-14);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-15);
+  font-weight: 400;
+  color: var(--error-on-ink);
+}
+
+.changedLine {
+  margin: 0 0 var(--sp-12);
+  font-size: var(--fs-19);
+  line-height: 1.45;
+  color: var(--paper);
+}
+
 /* Gloved use: the one action, same place on every screen, 64 px and full width. */
 .foot {
   flex-shrink: 0;
@@ -139,8 +266,15 @@
   cursor: pointer;
 }
 
+.action:disabled {
+  background: var(--ink-disabled);
+  color: var(--ink-tag);
+  cursor: default;
+}
+
 .action:focus-visible,
 .navigate:focus-visible,
+.reachLink:focus-visible,
 .back:focus-visible {
   outline: var(--rule-strong) solid var(--gilt);
   outline-offset: var(--focus-offset);
@@ -183,17 +317,19 @@
   color: var(--paper);
 }
 
+/* The quieter line: board B5 writes it 17 px in the soft ink. */
+.stageNote {
+  margin: 0;
+  font-size: var(--fs-17);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
 .failedLine {
   margin: 0 0 var(--sp-12);
   font-size: var(--fs-19);
   line-height: 1.45;
   color: var(--paper);
-}
-
-.failed .stageBody {
-  font-size: var(--fs-17);
-  line-height: 1.55;
-  color: var(--ink-soft);
 }
 
 .stageWarn {
@@ -205,18 +341,12 @@
 
 /* The wait, in whole seconds: the board's one large number. */
 .timer {
-  margin: 0;
+  margin: 0 0 var(--sp-10);
   font-family: var(--font-serif);
   font-size: var(--fs-timer);
   font-variant-numeric: lining-nums tabular-nums;
   line-height: 1;
   color: var(--paper);
-}
-
-.timer + .stageBody {
-  margin-top: var(--sp-10);
-  font-size: var(--fs-17);
-  color: var(--ink-soft);
 }
 
 .evidence {
@@ -237,43 +367,46 @@
   color: var(--gilt);
 }
 
-.stage .action {
-  margin-top: var(--sp-18);
-}
-
-/* Not usable yet: the board keeps it in place and dims it, never hides it. */
-.dim {
-  width: 100%;
-  height: var(--tech-primary);
-  margin-top: var(--sp-18);
-  border: 0;
-  background: var(--gilt);
-  font: inherit;
-  font-size: var(--fs-18);
-  font-weight: 500;
-  color: var(--ink-deep);
-  cursor: pointer;
-}
-
-.dim:disabled {
-  background: var(--ink-disabled);
-  color: var(--ink-soft);
-  cursor: default;
-}
-
+/*
+ * Close as no-show: outlined, never gold, so it can never be taken for the
+ * Start job at the foot. Dim until the wait has run, as the board keeps it in
+ * place and dims it rather than hiding it.
+ */
+.outline,
 .second {
   width: 100%;
-  min-height: var(--tech-stepper);
   margin-top: var(--sp-18);
   border: var(--hairline) solid var(--ink-line);
   background: transparent;
   font: inherit;
-  font-size: var(--fs-17);
   color: var(--paper);
   cursor: pointer;
 }
 
-.dim:focus-visible,
+.outline {
+  height: var(--tech-primary);
+  font-size: var(--fs-18);
+}
+
+.second {
+  min-height: var(--tech-stepper);
+  font-size: var(--fs-17);
+}
+
+.foot .second {
+  height: var(--tech-primary);
+  margin-top: 0;
+}
+
+.outline:disabled,
+.second:disabled {
+  border-color: var(--ink-disabled);
+  background: var(--ink-disabled);
+  color: var(--ink-tag);
+  cursor: default;
+}
+
+.outline:focus-visible,
 .second:focus-visible {
   outline: var(--rule-strong) solid var(--paper);
   outline-offset: var(--focus-offset);
