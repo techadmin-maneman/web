@@ -43,6 +43,27 @@ export function NumberChangeCard({ change, onChanged }: { change: NumberChange |
       }
     });
 
+  /** Until ops decide it, the client can take the change back. */
+  const withdraw = () =>
+    once(async () => {
+      const answer = await api.withdrawNumberChange();
+      setProblem(answer.ok ? null : copy.failed);
+      if (answer.ok) onChanged();
+    });
+
+  const withdrawal = (
+    <>
+      {problem !== null && (
+        <p className={styles.error} role="alert">
+          {problem}
+        </p>
+      )}
+      <button className={styles.withdraw} type="button" disabled={busy} onClick={() => void withdraw()}>
+        {copy.withdraw}
+      </button>
+    </>
+  );
+
   const check = (requestId: string, pending: readonly Which[]) =>
     once(async () => {
       const next = { ...notes };
@@ -65,7 +86,10 @@ export function NumberChangeCard({ change, onChanged }: { change: NumberChange |
         {copy.label}
       </h2>
       {change?.state === "awaiting_ops" ? (
-        <p className={styles.cardBody}>{copy.waiting(change.new_mobile)}</p>
+        <div aria-busy={busy}>
+          <p className={styles.cardBody}>{copy.waiting(change.new_mobile)}</p>
+          {withdrawal}
+        </div>
       ) : change?.state === "verifying" ? (
         <form
           noValidate
@@ -110,6 +134,7 @@ export function NumberChangeCard({ change, onChanged }: { change: NumberChange |
           <button className={styles.primary} type="submit" disabled={busy}>
             {copy.check}
           </button>
+          {withdrawal}
         </form>
       ) : (
         <form
@@ -258,12 +283,18 @@ export function DataCard() {
 export function DeletionCard({ deletion, onRequested }: { deletion: Profile["deletion"]; onRequested: () => void }) {
   const copy = profile.deletion;
   const [confirming, setConfirming] = useState(false);
+  const [failed, setFailed] = useState(false);
+  // One request per intent; and one that did not go through says so, rather than closing as if it had.
+  const [busy, once] = useOneAtATime();
 
-  async function request() {
-    const answer = await api.requestDeletion();
-    setConfirming(false);
-    if (answer.ok) onRequested();
-  }
+  const request = () =>
+    once(async () => {
+      const answer = await api.requestDeletion();
+      setFailed(!answer.ok);
+      if (!answer.ok) return;
+      setConfirming(false);
+      onRequested();
+    });
 
   return (
     <section className={styles.card} aria-labelledby="deletion">
@@ -276,17 +307,24 @@ export function DeletionCard({ deletion, onRequested }: { deletion: Profile["del
           {copy.requested(longDate(deletion.requested_at))}
         </p>
       ) : confirming ? (
-        <div className={styles.confirm}>
+        <div className={styles.confirm} aria-busy={busy}>
           <p className={styles.cardBody}>{copy.confirm}</p>
+          {failed && (
+            <p className={styles.error} role="alert">
+              {copy.failed}
+            </p>
+          )}
           <div className={styles.row}>
-            <button className={styles.danger} type="button" onClick={() => void request()}>
+            <button className={styles.danger} type="button" disabled={busy} onClick={() => void request()}>
               {copy.yes}
             </button>
             <button
               className={styles.secondary}
               type="button"
+              disabled={busy}
               onClick={() => {
                 setConfirming(false);
+                setFailed(false);
               }}
             >
               {copy.no}
