@@ -1,6 +1,6 @@
 # 0059. A client's history, and where a customer lives in the CRM
 
-- Status: accepted for the derivation, the ops console and the client app; the CRM half waits on the owner
+- Status: accepted for the derivation, the ops console and the client app; the CRM half waits on the owner. Amended 25 September 2026: Home carries the prompt (section 4)
 - Date: 2026-09-24
 - Amends [0050](0050-crm-in-the-real-org.md), which moved the CRM to the real org and left every person in Leads
 
@@ -75,6 +75,8 @@ The record sits **beneath** board C1's two lists rather than above them, so the 
 
 Board B1's Home prompt — the design's own place for the due line — is **not** built here. Filling it would put the history read on `/api/me`, the route the app calls every time it opens, for a line the client can also see one tap away on Visits. It stays with the credit tile as a known B1 departure.
 
+**Amended 25 September 2026.** The departure was challenged: the front-end prompt's B1 requires "the credit tile with its expiry; one contextual prompt", and the audit found Home and Visits telling a newly fitted client different things. Both are built. The credit tile reads the balance `/api/me` already carried. The prompt is not the history read: `src/domain/home-prompt.ts` answers it in one statement of its own — whether an address is given, the earliest piece in wear's due date, the latest invoice issued in a fortnight — and hands the client the month alone, as Visits does. `/api/me` gains that one statement and nothing else. The order of the three, and the fortnight, are ADR 0025, item 39.
+
 ### 5. The CRM is not changed, and this is what it is waiting for
 
 Nothing in this change writes to Zoho, creates a Zoho field or adds a lead status. Guessing at the shape to keep the pull request whole would mean building on a record we cannot write to.
@@ -104,7 +106,7 @@ What the contact consent _would_ permit, and the only CRM change this ADR would 
 ## Consequences
 
 - **Three surfaces, one set of numbers.** A worker test reads both routes and asserts the shared figures are equal, so a client cannot be told one thing while ops are told another.
-- **A client's page still costs what it cost.** The history is one more statement on `GET /api/clients/{id}`, and the History tab adds no request at all. `GET /api/visits` gains one statement. `/api/me`, the hottest route, is untouched.
+- **A client's page still costs what it cost.** The history is one more statement on `GET /api/clients/{id}`, and the History tab adds no request at all. `GET /api/visits` gains one statement. `/api/me`, the hottest route, was untouched by this change; Home's prompt has since added one small statement of its own (amended above, 25 September 2026).
 - **A date that can move is never shown as a day to the person it is a promise to**, and the design agreed before it was asked.
 - **The CRM is no worse than it was**, and now has a written account of why it is as it is. Erasure needs no extension in this change, and the reason it needs none is that nothing new was written to Zoho.
 - **The Leads sync is unchanged**: the three statuses, the try-on rule and its tests all stand.

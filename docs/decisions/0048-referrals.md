@@ -66,7 +66,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 - `POST /api/referrals/:id/decision` approves, and the credits and message follow, or rejects with a reason.
 - Each decision is audited (`referral.decide`).
 
-**The card** (`src/domain/referral-cards.ts`) is a 1200 x 630 JPEG under 300 KB, composed on the client's phone from their first fit's photographs.
+**The card** (`src/domain/referral-cards.ts`) is a 1200 x 630 JPEG under 300 KB, composed on the client's phone from their first fit's photographs, in a Worker, with board A1's 2 px gilt rule and its lockup (since 25 September 2026: `apps/app/src/refer/card-layout.ts`, from which the house card is drawn too). The app composes it before it records the consent, so nothing is agreed to for a card the phone could not make.
 
 - `PUT /api/refer/card` stores it, only with their consent to photographs on referral cards, as the code's next version; `DELETE /api/refer/card` takes it down.
 - **Every upload or revoke is a new version,** because WhatsApp caches a link's preview by its URL: a revoke reaches new shares only.
