@@ -23,7 +23,7 @@ Deploys: a merge to `main` deploys staging (`.github/workflows/deploy-staging.ym
 
 ## Working locally
 
-Node 24 (`.nvmrc`).
+Node 24.11 or later (`.nvmrc`, and `engines` in package.json).
 
 ```sh
 npm ci
@@ -37,7 +37,8 @@ Locally every provider is a stub and Turnstile uses Cloudflare's test keys: send
 ## Checks (each is a CI job)
 
 ```sh
-npm run typecheck && npm run types:check
+npm run verify              # all of these in one, the tests without coverage; browser tests: npm run test:e2e
+npm run typecheck && npm run check:types
 npm run lint
 npm run format:check
 npm run test:coverage       # Worker tests in workerd, script tests in Node; 85% lines on src/
