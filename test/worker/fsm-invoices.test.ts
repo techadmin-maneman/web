@@ -21,6 +21,9 @@ import { captureLogs, NOW } from "./helpers.ts";
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
 
+/** A service visit on 20 September, as the price book sold it: Rs. 2,000 with the 5% GST it had then. */
+const SERVICE = 210_000;
+
 const later = (ms: number) => new Date(NOW.getTime() + ms);
 
 /** What the pass told ops, so a failure that leaves a job unbilled is never silent. */
@@ -43,11 +46,15 @@ function invoicePass(
   return raiseInvoices(env.DB, { fsm, books, alertOnce, resolveAlert }, now, createLogger(), budget);
 }
 
-function pass(fsm: StubFsm = createStubFsm(EMPTY_FSM), books: StubBooks = createStubBooks(), now = NOW) {
+const world = (overrides: Partial<StubFsmWorld>): StubFsmWorld => ({ ...EMPTY_FSM, ...overrides });
+
+/** FSM with these work orders, each billing what the price book sold a service visit for. */
+const billing = (...workOrders: string[]): StubFsm =>
+  createStubFsm(world({ totals: Object.fromEntries(workOrders.map((workOrder) => [workOrder, SERVICE])) }));
+
+function pass(fsm: StubFsm = billing("fsm-wo-1"), books: StubBooks = createStubBooks(), now = NOW) {
   return { fsm, books, done: invoicePass(fsm, books, now) };
 }
-
-const world = (overrides: Partial<StubFsmWorld>): StubFsmWorld => ({ ...EMPTY_FSM, ...overrides });
 
 /** A visit as the mirror writes it, with the status FSM gave the appointment. It ended the day before NOW. */
 async function visit(
@@ -96,7 +103,7 @@ describe("the invoice a finished job gets", () => {
 
   it("asks FSM once: a visit already billed is left alone by the next pass", async () => {
     await visit(VISIT, "completed");
-    const fsm = createStubFsm(EMPTY_FSM);
+    const fsm = billing("fsm-wo-1");
     const books = createStubBooks();
 
     await invoicePass(fsm, books, NOW);
@@ -116,7 +123,7 @@ describe("the invoice a finished job gets", () => {
 
   it("waits an hour before offering a job FSM has nothing to bill for, such as a free consultation", async () => {
     await visit(VISIT, "completed");
-    const fsm = createStubFsm(world({ unbillable: ["fsm-wo-1"] }));
+    const fsm = createStubFsm(EMPTY_FSM); // its work order has nothing on it
 
     expect(await invoicePass(fsm, createStubBooks(), NOW)).toEqual({
       raised: 0,
@@ -128,7 +135,7 @@ describe("the invoice a finished job gets", () => {
     await invoicePass(fsm, createStubBooks(), later(RECHECK_AFTER_MS / 2));
     expect(fsm.made.invoiced).toEqual([]);
     const after = later(RECHECK_AFTER_MS * 2);
-    await invoicePass(createStubFsm(EMPTY_FSM), createStubBooks(), after);
+    await invoicePass(billing("fsm-wo-1"), createStubBooks(), after);
     expect((await row())?.fsm_invoice_id).toMatch(/^stub-invoice-/);
   });
 
@@ -158,7 +165,7 @@ describe("the invoice a finished job gets", () => {
     const next = "33333333-3333-4333-8333-333333333333";
     await visit(VISIT, "completed");
     await visit(next, "completed", "fsm-wo-2");
-    const fsm = createStubFsm(EMPTY_FSM);
+    const fsm = billing("fsm-wo-1", "fsm-wo-2");
     fsm.failNext("invoiceWorkOrder", "FSM answered 500");
 
     expect(await invoicePass(fsm, createStubBooks(), NOW)).toEqual({ raised: 1, issued: 1 });
@@ -184,7 +191,7 @@ describe("the invoice a finished job gets", () => {
     await visit(VISIT, "completed");
     await visit("33333333-3333-4333-8333-333333333333", "completed", "fsm-wo-2");
 
-    const fsm = createStubFsm(EMPTY_FSM);
+    const fsm = billing("fsm-wo-1", "fsm-wo-2");
     expect(await invoicePass(fsm, createStubBooks(), NOW, createCallBudget(CALLS_PER_VISIT))).toEqual({
       raised: 1,
       issued: 1,
@@ -196,7 +203,7 @@ describe("the invoice a finished job gets", () => {
 describe("issuing it", () => {
   /** FSM answers with an invoice the work order already had: what the backlog's drafts look like to the pass. */
   function alreadyInvoiced(): FsmProvider {
-    const fsm = createStubFsm(EMPTY_FSM);
+    const fsm = billing("fsm-wo-1");
     return {
       ...fsm,
       invoiceWorkOrder: async (workOrderId) => {
@@ -273,7 +280,7 @@ describe("issuing it", () => {
       issueInvoice: () => Promise.reject(new ZohoError(400, "4000", "customer has no billing address")),
     };
 
-    expect(await invoicePass(createStubFsm(EMPTY_FSM), books, NOW)).toEqual({
+    expect(await invoicePass(billing("fsm-wo-1"), books, NOW)).toEqual({
       raised: 1,
       issued: 0,
     });
@@ -287,7 +294,7 @@ describe("issuing it", () => {
 
   it("does not try the failed send again, since by then the draft is one that already exists", async () => {
     await visit(VISIT, "completed");
-    const fsm = createStubFsm(EMPTY_FSM);
+    const fsm = billing("fsm-wo-1");
     let refusals = 0;
     const books = {
       ...createStubBooks(),
@@ -303,5 +310,87 @@ describe("issuing it", () => {
     expect((await row())?.invoice_issued_at).toBeNull();
     // The draft it left is the one ops were told of; they are not told again an hour later.
     expect(alerted).toHaveLength(1);
+  });
+});
+
+describe("what the invoice totals, before it is issued", () => {
+  /** A replacement on 20 September, paid for in the app: Rs. 15,000, the price book's figure. */
+  const PAID = 1_500_000;
+
+  async function paidReplacement(amount = PAID): Promise<void> {
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status,
+         window_start, window_end, fsm_modified_at, synced_at)
+       VALUES (?1, 'fsm-visit', 'fsm-wo-1', ?2, 'replacement', 'completed', 'Completed',
+         '2026-09-20T04:30:00.000Z', '2026-09-20T06:45:00.000Z', ?3, ?3)`,
+    )
+      .bind(VISIT, PERSON, NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status, kind,
+         captured_at, created_at, updated_at)
+       VALUES ('payment-1', ?1, ?2, 'pay_test_1', ?3, 'INR', 'captured', 'visit', ?4, ?4, ?4)`,
+    )
+      .bind(PERSON, VISIT, amount, NOW.toISOString())
+      .run();
+  }
+
+  const fsmBilling = (total: number) => createStubFsm(world({ totals: { "fsm-wo-1": total } }));
+
+  it("issues an invoice that totals what the client paid for the visit", async () => {
+    await paidReplacement();
+    const { books, done } = pass(fsmBilling(PAID));
+    expect(await done).toEqual({ raised: 1, issued: 1 });
+    expect(books.made.issued).toHaveLength(1);
+  });
+
+  it("holds as a draft, and tells ops once, an invoice FSM priced above what the client paid", async () => {
+    await paidReplacement();
+    const fsm = fsmBilling(2 * PAID);
+    const books = createStubBooks();
+
+    expect(await invoicePass(fsm, books, NOW)).toEqual({ raised: 1, issued: 0 });
+    expect(books.made.issued).toEqual([]);
+    const held = await row();
+    expect(held?.invoice_issued_at).toBeNull();
+    expect(alerted).toEqual([
+      `Invoice ${held?.fsm_invoice_id ?? ""} of visit ${VISIT} is held as a draft in Books: FSM's work order totals ` +
+        "Rs. 30,000, and the visit was sold for Rs. 15,000. Correct the draft in Books and send it there, and set " +
+        `FSM's price right for the next one: nothing here sends it. ${CLIENT_LINK}`,
+    ]);
+
+    // Held, it is never sent from here, and ops are not told again.
+    await invoicePass(fsm, books, later(RECHECK_AFTER_MS * 2));
+    await invoicePass(fsm, books, later(RECHECK_AFTER_MS * 4));
+    expect(books.made.issued).toEqual([]);
+    expect(alerted).toHaveLength(1);
+  });
+
+  it("checks a visit with no payment against the price book on the day it happened", async () => {
+    await visit(VISIT, "completed");
+    const { books, done } = pass(fsmBilling(200_000)); // Rs. 2,000 without the 5% the book had that day
+    expect(await done).toEqual({ raised: 1, issued: 0 });
+    expect(books.made.issued).toEqual([]);
+    expect(alerted[0]).toContain("the visit was sold for Rs. 2,100");
+  });
+
+  it("never issues the invoice of a visit a referral credit paid for, until the CA rules how", async () => {
+    await visit(VISIT, "completed");
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+         VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-20T00:00:00.000Z', ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+         VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
+      ).bind(PERSON, VISIT, NOW.toISOString()),
+    ]);
+
+    const { books, done } = pass(fsmBilling(SERVICE));
+    expect(await done).toEqual({ raised: 1, issued: 0 });
+    expect(books.made.issued).toEqual([]);
+    expect(alerted[0]).toContain("was paid with a referral credit");
+    expect(alerted[0]).toContain("open point 97");
   });
 });

@@ -505,11 +505,13 @@ describe("FSM: billing a finished job", () => {
         ),
     });
 
-    // `created` is what lets the pass send only an invoice it has just raised (ADR 0056).
+    // `created` is what lets the pass send only an invoice it has just raised (ADR 0056), and `total`,
+    // the work order's Rs. 2,000 in paise, what it checks against the sale first (ADR 0069).
     expect(await provider.invoiceWorkOrder("wo-1")).toEqual({
       id: "fsm-invoice-1",
       booksInvoiceId: "books-invoice-1",
       created: true,
+      total: 200_000,
     });
     expect(calls[2]?.method).toBe("POST");
     // Without the line IDs FSM answers a bare 500, whatever else the body carries.
@@ -549,6 +551,7 @@ describe("FSM: billing a finished job", () => {
       id: "fsm-invoice-1",
       booksInvoiceId: "books-invoice-1",
       created: false,
+      total: 200_000,
     });
     expect(calls.map((call) => call.method)).toEqual(["POST", "GET", "GET"]); // the token, then two reads: nothing raised
   });

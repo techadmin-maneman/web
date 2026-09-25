@@ -60,6 +60,8 @@ export interface FsmInvoice {
    * raised is ever marked sent (ADR 0056).
    */
   readonly created: boolean;
+  /** What it bills: the work order's total, in paise with GST, from FSM's catalogue prices. */
+  readonly total: number;
 }
 
 export interface FsmContact {
@@ -307,8 +309,11 @@ export interface StubFsmWorld {
   readonly assets?: Record<string, FsmAsset[]>;
   /** What the Request behind each work order asked for, by work order ID; a work order not here names no Request. */
   readonly preferences?: Record<string, FsmRequestPreference>;
-  /** Work orders with nothing to bill, as a free consultation has. */
-  readonly unbillable?: string[];
+  /**
+   * What each work order bills, in paise, from FSM's catalogue. One not named
+   * here has nothing on it to bill, as a free consultation has.
+   */
+  readonly totals?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -602,12 +607,13 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     },
     invoiceWorkOrder: (workOrderId) => {
       checkFailure("invoiceWorkOrder");
-      if (world.unbillable?.includes(workOrderId) === true) return Promise.resolve(null);
+      const total = world.totals?.[workOrderId] ?? 0;
+      if (total <= 0) return Promise.resolve(null);
       // One invoice per work order, as FSM gives, however often it is asked for.
       const raised = invoices.get(workOrderId);
       if (raised !== undefined) return Promise.resolve({ ...raised, created: false });
       const id = crypto.randomUUID();
-      const invoice = { id: `stub-fsm-invoice-${id}`, booksInvoiceId: `stub-invoice-${id}`, created: true };
+      const invoice = { id: `stub-fsm-invoice-${id}`, booksInvoiceId: `stub-invoice-${id}`, created: true, total };
       invoices.set(workOrderId, invoice);
       made.invoiced.push(workOrderId);
       return Promise.resolve(invoice);

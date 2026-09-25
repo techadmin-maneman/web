@@ -338,11 +338,11 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
   }
 
   /** An invoice FSM already holds, with Books' ID for it; null while Books has not been given it. */
-  async function invoiceById(id: string): Promise<FsmInvoice | null> {
+  async function invoiceById(id: string, total: number): Promise<FsmInvoice | null> {
     const [invoice] = records(await json("invoice", `/Invoices/${id}`), "data", Invoice);
     const booksInvoiceId = invoice?.ZBilling_InvoiceId;
     if (invoice === undefined || booksInvoiceId === null || booksInvoiceId === undefined) return null;
-    return { id: invoice.id, booksInvoiceId, created: false };
+    return { id: invoice.id, booksInvoiceId, created: false, total };
   }
 
   /** The latest records of a module, most recently changed first, as the reconciliation reads appointments. */
@@ -683,15 +683,17 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
         WorkOrderBilling,
       );
       if (order === undefined) throw new ZohoError(404, "NO_WORK_ORDER", "the work order to invoice is not in FSM");
+      // FSM's total is in rupees; ours are paise.
+      const total = Math.round((order.Grand_Total ?? 0) * 100);
 
       // Already invoiced, here or by hand in FSM's own screen: each line then names it.
       const [existing] = order.Service_Line_Items.flatMap((line) =>
         typeof line.Invoice_Id === "string" ? [line.Invoice_Id] : [],
       );
-      if (existing !== undefined) return invoiceById(existing);
+      if (existing !== undefined) return invoiceById(existing, total);
 
       const lines = order.Service_Line_Items.map((line) => line.id);
-      if (lines.length === 0 || (order.Grand_Total ?? 0) <= 0) return null;
+      if (lines.length === 0 || total <= 0) return null;
 
       // Clients pay before the visit, so nothing is ever owed on terms.
       const date = indiaDate(deps.now());
@@ -718,7 +720,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       if ((answer as { status?: unknown }).status === "error") throw zohoErrorFrom(400, answer);
       const raised = Raised.parse(answer).data.Invoices[0];
       if (raised === undefined) throw new ZohoError(response.status, "NO_ID", "the invoice answered without its ID");
-      return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id, created: true };
+      return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id, created: true, total };
     },
 
     // Two reads, no write. The work order names the Request it was converted
