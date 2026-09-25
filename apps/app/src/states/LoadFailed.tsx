@@ -2,11 +2,16 @@
 // a way to reach us. When the phone kept a Home with a visit on it, the visit
 // is still booked, and the screen says so.
 
+import { useEffect } from "react";
 import { states, whatsapp } from "../content.ts";
+import { nameInTitle } from "../lib/arrival.ts";
 import styles from "./states.module.css";
 
 export function LoadFailed({ booked, onRetry }: { booked: boolean; onRetry: () => void }) {
   const copy = states.error;
+  useEffect(() => {
+    nameInTitle(copy.title);
+  }, [copy.title]);
   return (
     <main className={styles.failed}>
       <div role="alert">

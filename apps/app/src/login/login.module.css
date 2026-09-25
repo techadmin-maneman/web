@@ -78,13 +78,15 @@
   flex-direction: column;
 }
 
+/* Edged at 3:1 against the ink (WCAG 1.4.11), where the design's --ink-line is 1.75:1 (ADR 0025, item 36). */
 .field {
   display: flex;
   height: var(--btn-lg);
   margin-top: var(--sp-36);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
 }
 
+/* The field's own edge turns gilt as it takes focus, as the design draws it, so the input needs no ring of its own. */
 .field:focus-within {
   border-color: var(--gilt);
 }
@@ -110,7 +112,27 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--tracking-number);
   color: var(--paper);
+}
+
+.input:focus-visible {
   outline: none;
+}
+
+/* Why the login is showing: the session ended while the app was open. */
+.notice {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-16);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.hidden {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .error {
@@ -206,14 +228,6 @@
   border: var(--hairline) solid var(--ink-line);
   background: none;
   color: var(--paper);
-}
-
-.primary:focus-visible,
-.secondary:focus-visible,
-.link:focus-visible,
-.back:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--sp-3);
 }
 
 .hint {

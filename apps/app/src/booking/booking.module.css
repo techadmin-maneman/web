@@ -1,20 +1,32 @@
-/* Boards C2 to C6: the booking sheet, on paper over the ink-night ground. */
+/*
+ * Boards C2 to C8: the booking and change sheets, on paper over the ink-night
+ * ground. The dialog fills the screen and is clear; the sheet sits at its foot,
+ * as the boards draw it, and Close stands on the ground above it, where anyone
+ * can see it and reach it (the boards draw none). A tap on the ground closes
+ * the sheet too.
+ */
 
-.sheet {
-  position: relative;
+.dialog {
   width: 100%;
   max-width: var(--app-column);
+  height: 100dvh;
   max-height: 100dvh;
-  margin: auto auto 0;
-  padding: var(--sp-22) var(--sp-20) var(--sp-24);
-  overflow-y: auto;
+  margin: 0 auto;
+  padding: 0;
   border: 0;
-  background: var(--paper);
-  color: var(--text);
+  background: none;
+  --focus-colour: var(--paper);
+}
+
+/* Only while open: a closed dialog stays hidden as the browser hides it. */
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   animation: rise var(--ease-progress);
 }
 
-.sheet::backdrop {
+.dialog::backdrop {
   background: var(--ink-night);
 }
 
@@ -24,27 +36,42 @@
   }
 }
 
-.sheet p {
-  margin: 0;
-}
-
-/* Out of sight until focused, so the sheet always has a way out by keyboard. */
 .close {
-  position: absolute;
-  top: var(--sp-4);
-  right: var(--sp-20);
+  flex-shrink: 0;
+  align-self: flex-end;
+  min-width: var(--tap);
   min-height: var(--tap);
-  padding: 0;
+  margin-right: var(--sp-8);
+  padding: 0 var(--sp-12);
   border: 0;
   background: none;
   font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  opacity: 0;
+  font-size: var(--fs-15);
+  color: var(--paper);
+  cursor: pointer;
 }
 
-.close:focus-visible {
-  opacity: 1;
+.sheet {
+  min-height: 0;
+  padding: var(--sp-22) var(--sp-20) var(--sp-24);
+  overflow-y: auto;
+  background: var(--paper);
+  color: var(--text);
+  --focus-colour: var(--ink);
+}
+
+.sheet p,
+.sheet h2 {
+  margin: 0;
+}
+
+.hidden {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .loading {
@@ -83,11 +110,40 @@
   color: var(--text-muted);
 }
 
-/* Board C2. */
+/* Board C2. Each column may shrink below its content, so all seven days fit a 320 px screen. */
 .strip {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--sp-6);
+}
+
+/*
+ * A day, a window and a way to pay are each a native radio button laid over
+ * the whole of the design's drawing, unseen: one tab stop for the group, and
+ * the arrow keys between its choices. The drawing shows which is checked,
+ * which is full, and which has keyboard focus.
+ */
+.radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.day,
+.window,
+.method {
+  position: relative;
+}
+
+.day:has(.radio:focus-visible),
+.window:has(.radio:focus-visible),
+.method:has(.radio:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-colour);
+  outline-offset: var(--focus-offset);
 }
 
 .day {
@@ -116,30 +172,30 @@
   font-variant-numeric: lining-nums;
 }
 
-.day.chosen,
-.window.chosen {
+.day:has(.radio:checked),
+.window:has(.radio:checked) {
   border-color: var(--ink);
   background: var(--ink);
   color: var(--paper);
 }
 
-.day.chosen .weekday,
-.window.chosen .windowTime,
-.window.chosen .windowNote {
+.day:has(.radio:checked) .weekday,
+.window:has(.radio:checked) .windowTime,
+.window:has(.radio:checked) .windowNote {
   color: var(--ink-soft);
 }
 
-.day.full,
-.window.full {
+.day:has(.radio:disabled),
+.window:has(.radio:disabled) {
   border-color: var(--paper-shade);
   background: var(--paper-shade);
   color: var(--paper-placeholder);
   cursor: default;
 }
 
-.day.full .weekday,
-.window.full .windowTime,
-.window.full .windowNote {
+.day:has(.radio:disabled) .weekday,
+.window:has(.radio:disabled) .windowTime,
+.window:has(.radio:disabled) .windowNote {
   color: var(--paper-placeholder);
 }
 
@@ -334,6 +390,29 @@
   color: var(--text-soft);
 }
 
+/* A late fee's figure with GST, muted beside the ex-GST one. */
+.inclusive {
+  color: var(--text-muted);
+}
+
+/* "Remind me on WhatsApp the day before": the whole line is the target. */
+.remind {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  min-height: var(--tap);
+  margin-top: var(--sp-16);
+  font-size: var(--fs-15);
+  cursor: pointer;
+}
+
+.remind input {
+  width: var(--sp-20);
+  height: var(--sp-20);
+  margin: 0;
+  accent-color: var(--ink);
+}
+
 .label {
   margin: var(--sp-20) 0 0;
   font-family: var(--font-serif);
@@ -355,7 +434,7 @@
   font-size: var(--fs-16);
 }
 
-.method.picked {
+.method:has(.radio:checked) {
   border-color: var(--ink);
 }
 
@@ -369,7 +448,7 @@
   color: var(--paper);
 }
 
-.picked .tick {
+.method:has(.radio:checked) .tick {
   border-color: var(--ink);
   background: var(--ink);
 }
@@ -440,11 +519,15 @@
   border-left: var(--rule-strong) solid var(--error-on-paper);
 }
 
-/* Board C7's way to C8. */
+/* Board C7's way to C8, and a first fit's way to ask for premium: quiet, and still a full target. */
 .quiet {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: var(--tap);
   margin: var(--sp-18) auto 0;
-  padding: var(--sp-10);
+  padding: 0 var(--sp-10);
   border: 0;
   background: none;
   font: inherit;
@@ -516,6 +599,7 @@
   padding: var(--sp-26) var(--sp-20);
   background: var(--ink);
   color: var(--paper);
+  --focus-colour: var(--paper);
 }
 
 .confirmedLabel {
@@ -586,26 +670,4 @@
   margin-top: var(--sp-10);
   border-color: transparent;
   color: var(--ink-soft);
-}
-
-.day:focus-visible,
-.window:focus-visible,
-.method:focus-visible,
-.primary:focus-visible,
-.secondary:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
-.note:focus-visible,
-.done:focus-visible,
-.close:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sheet {
-    animation: none;
-  }
 }

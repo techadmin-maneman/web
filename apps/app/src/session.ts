@@ -1,6 +1,6 @@
 // What every signed-in page needs from App: who is signed in, whether what it
-// shows is the last update the phone kept (board B3's offline state), and a
-// way to fetch Home again after a change, such as a booking.
+// shows is the last update the phone kept (board B3's offline state), a way to
+// fetch Home again after a change, such as a booking, and a way to log out.
 
 import { createContext, useContext } from "react";
 import type { Me } from "./api.ts";
@@ -9,6 +9,8 @@ export interface Session {
   readonly me: Me;
   readonly offline: boolean;
   readonly refresh: () => void;
+  /** Ends the session with the API's word for it: false when the API did not answer, and the client is still in. */
+  readonly logOut: () => Promise<boolean>;
 }
 
 export const SessionContext = createContext<Session | null>(null);

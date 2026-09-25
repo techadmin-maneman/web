@@ -1,5 +1,5 @@
 // Razorpay Checkout (docs/decisions/0045-self-serve-booking.md): its script,
-// loaded when a client first pays, and its payment window, opened on the order
+// loaded as the pay step opens, and its payment window, opened on the order
 // our API made. Checkout tells the page whether the client paid; the booking
 // itself waits for Razorpay's webhook, which the page then polls for.
 
@@ -8,6 +8,11 @@ import type { Booking } from "../api.ts";
 const SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
 /** The brand's ink (tokens.css --ink), for Checkout's own buttons. */
 const INK = "#16233a";
+/**
+ * How long the script may take before the payment counts as failed (board C6):
+ * a script that never arrives would otherwise hold the sheet busy for ever.
+ */
+const PATIENCE_MS = 15_000;
 
 interface RazorpayWindow {
   open(): void;
@@ -22,18 +27,24 @@ declare global {
 
 let loading: Promise<void> | null = null;
 
-function loadCheckout(): Promise<void> {
+/** Loads Checkout's script once; a load that fails or takes too long is tried afresh the next time. */
+export function loadCheckout(): Promise<void> {
   if (window.Razorpay !== undefined) return Promise.resolve();
   loading ??= new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = SCRIPT;
-    script.onload = () => {
-      resolve();
-    };
-    script.onerror = () => {
+    const fail = () => {
+      window.clearTimeout(giveUp);
+      script.remove();
       loading = null;
       reject(new Error("Checkout did not load"));
     };
+    const giveUp = window.setTimeout(fail, PATIENCE_MS);
+    script.src = SCRIPT;
+    script.onload = () => {
+      window.clearTimeout(giveUp);
+      resolve();
+    };
+    script.onerror = fail;
     document.head.append(script);
   });
   return loading;
@@ -42,11 +53,10 @@ function loadCheckout(): Promise<void> {
 export type PayMethod = "upi" | "card";
 export type Paid = "paid" | "failed" | "dismissed";
 
-/** Opens Checkout on the order, with the method the client picked first. */
-export async function pay(checkout: NonNullable<Booking["checkout"]>, method: PayMethod): Promise<Paid> {
-  await loadCheckout();
+/** Opens Checkout on the order, with the method the client picked first. Its script must have loaded. */
+export function pay(checkout: NonNullable<Booking["checkout"]>, method: PayMethod): Promise<Paid> {
   const Razorpay = window.Razorpay;
-  if (Razorpay === undefined) return "failed";
+  if (Razorpay === undefined) return Promise.resolve("failed");
   return new Promise<Paid>((resolve) => {
     const razorpay = new Razorpay({
       key: checkout.key_id,

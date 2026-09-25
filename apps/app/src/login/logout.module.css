@@ -1,0 +1,8 @@
+/* A logout the API did not answer, beneath the button, on the profile's paper. */
+
+.problem {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-15);
+  line-height: 1.5;
+  color: var(--error-on-paper);
+}

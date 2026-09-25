@@ -1,12 +1,13 @@
 // A2: the code (design/phase2/Client App, board A2).
 
 import { ICONS } from "@maneman/brand/icons";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { LoginChallenge } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { login } from "../content.ts";
 import { BUBBLE } from "../icons.ts";
-import { useCountdown } from "../lib/useCountdown.ts";
+import { apiNow } from "../lib/clock.ts";
+import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
 import { CodeField } from "./CodeField.tsx";
 import styles from "./login.module.css";
 import { masked } from "./mobile.ts";
@@ -50,14 +51,23 @@ export function CodeScreen(props: Props) {
   const copy = login.code;
   const { challenge, problem } = props;
   const [code, setCode] = useState("");
-  const resendIn = useCountdown(challenge.resend_in_s, challenge);
-  const smsIn = useCountdown(challenge.sms_in_s ?? 0, challenge);
+  const field = useRef<HTMLInputElement>(null);
+  // Counted from when this code was sent: a new code, a new count.
+  const resendAt = useMemo(() => apiNow() + challenge.resend_in_s * 1000, [challenge]);
+  const smsAt = useMemo(() => apiNow() + (challenge.sms_in_s ?? 0) * 1000, [challenge]);
+  const resendIn = useSecondsLeft(resendAt);
+  const smsIn = useSecondsLeft(smsAt);
   const closed = problem?.kind === "closed" || (problem?.kind === "mismatch" && problem.left === 0);
   useSmsCode(challenge.channel === "sms", setCode);
 
   useEffect(() => {
     setCode("");
   }, [challenge]);
+
+  // After a wrong code, focus goes back to the field for the next try: the tap on Continue left it on nothing.
+  useEffect(() => {
+    if (problem !== null) field.current?.focus();
+  }, [problem]);
 
   const message =
     problem === null
@@ -87,7 +97,7 @@ export function CodeScreen(props: Props) {
       >
         <h1 className={styles.title}>{copy.title}</h1>
         <p className={styles.lead}>{sent(masked(props.mobile))}</p>
-        <CodeField value={code} label={copy.label} invalid={problem !== null} onChange={setCode} />
+        <CodeField ref={field} value={code} label={copy.label} invalid={problem !== null} onChange={setCode} />
         {message !== null && (
           // Busy while a code is on its way, so a screen reader is told the screen is working
           // rather than re-reading the problem the client has already acted on.
@@ -95,10 +105,12 @@ export function CodeScreen(props: Props) {
             {message}
           </p>
         )}
-        <div className={styles.automatic}>
-          <Icon d={BUBBLE} size={17} />
-          {copy.automatic}
-        </div>
+        {challenge.channel === "sms" && (
+          <div className={styles.automatic}>
+            <Icon d={BUBBLE} size={17} />
+            {copy.automatic}
+          </div>
+        )}
         <div className={styles.links}>
           {offerSms && (
             <button className={styles.link} type="button" onClick={props.onSms} disabled={props.busy}>
@@ -123,6 +135,10 @@ export function CodeScreen(props: Props) {
             <span>{copy.noBooking}</span>
           </button>
         </div>
+        {/* Said once, as the countdown runs out; the count itself is shown and not spoken. */}
+        <p className={styles.hidden} role="status">
+          {resendIn === 0 && !closed ? copy.canResend : ""}
+        </p>
         <div className={styles.foot}>
           <button className={styles.primary} type="submit" disabled={code.length < 6 || props.busy || closed}>
             {copy.submit}

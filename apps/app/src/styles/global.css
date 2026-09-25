@@ -1,7 +1,8 @@
 /*
  * The client app's base: the brand tokens, the Phase 2 layer and the fonts
- * (packages/brand), and the one column the design is drawn at. Components
- * style themselves in their own .module.css, with tokens only.
+ * (packages/brand), the one column the design is drawn at, and the few rules
+ * every screen shares. Components style themselves in their own .module.css,
+ * with tokens only.
  */
 
 @import "@maneman/brand/tokens.css";
@@ -38,4 +39,44 @@ body[data-ground="paper"] {
   max-width: var(--app-column);
   min-height: 100dvh;
   margin: 0 auto;
+}
+
+/* Only the serif's 400 is loaded, so a browser's bold heading would be a made-up one. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+th {
+  font-weight: 400;
+}
+
+/*
+ * Keyboard focus. The design draws none, so it follows the ground, as the
+ * public site's does: ink on paper, paper on ink. A block on ink says so by
+ * setting --focus-colour; a control drawn inside another sets its own offset.
+ */
+:focus-visible {
+  outline: var(--focus-width) solid var(--focus-colour, var(--ink));
+  outline-offset: var(--focus-offset);
+}
+
+body[data-ground="ink"] {
+  --focus-colour: var(--paper);
+}
+
+/* A heading takes focus as its screen opens, so a screen reader starts there; it is not a control, and has no ring. */
+[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
+/* Nothing moves for someone who has asked for less motion (docs/prompts/phase2-frontend.md, "Motion"). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

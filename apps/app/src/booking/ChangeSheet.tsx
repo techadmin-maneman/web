@@ -5,13 +5,15 @@
 
 import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
-import { booking, change } from "../content.ts";
+import { booking, change, states } from "../content.ts";
+import { focusIfLost } from "../lib/arrival.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { methodName } from "../payments/entry.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet } from "./BookingSheet.tsx";
+import { LateFee } from "./steps.tsx";
 import styles from "./booking.module.css";
 
 export interface ChangingVisit {
@@ -35,11 +37,11 @@ type Step =
 /** Board C8's "One left": the credits the client still has, in words. */
 const COUNTS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
-/** What moving costs, in the design's words. */
-function moveLine(terms: MoveTerms): string {
+/** What moving costs, in the design's words; a late fee in the pay step's own line. */
+function moveLine(terms: MoveTerms): ReactNode {
   if (terms.cost === "charged" && terms.credit !== null) return change.move.creditCharged;
   if (terms.cost === "charged") return change.move.charged(rupees(terms.paid));
-  if (terms.cost === "late_fee") return change.move.lateFee(rupees(terms.price.amount));
+  if (terms.cost === "late_fee") return <LateFee fee={terms.price} />;
   return terms.paid > 0 ? change.move.free(rupees(terms.paid)) : change.move.freeNothingPaid;
 }
 
@@ -99,6 +101,11 @@ export function ChangeSheet(props: {
     void show(props.start);
   }, [show, props.start]);
 
+  // Each step's heading takes the focus the last step's button took with it: C7 to C8, and to what came of it.
+  useEffect(() => {
+    focusIfLost(dialog.current?.querySelector<HTMLElement>("#change-title") ?? null);
+  }, [step.kind]);
+
   const close = () => dialog.current?.close();
 
   const cancel = async (terms: CancelTerms) => {
@@ -125,7 +132,7 @@ export function ChangeSheet(props: {
   return (
     <dialog
       ref={dialog}
-      className={styles.sheet}
+      className={styles.dialog}
       aria-labelledby="change-title"
       onClose={() => {
         onClose(changed.current);
@@ -137,96 +144,105 @@ export function ChangeSheet(props: {
       <button className={styles.close} type="button" onClick={close}>
         {booking.close}
       </button>
-      {step.kind === "loading" && <div className={styles.loading} aria-busy="true" />}
-      {step.kind === "move" && (
-        <>
-          <h2 className={styles.changeTitle} id="change-title">
-            {change.move.title(name)}
-          </h2>
-          <p className={termsClass(step.terms.cost !== "free")}>{moveLine(step.terms)}</p>
-          <div className={styles.pair}>
-            <button
-              className={styles.primary}
-              type="button"
-              onClick={() => {
-                setStep({ kind: "picking", terms: step.terms });
-              }}
-            >
-              {step.terms.notice === "free" ? change.move.pick : change.move.accept}
+      <div className={styles.sheet}>
+        {step.kind === "loading" && (
+          <>
+            <h2 className={styles.hidden} id="change-title">
+              {states.loading}
+            </h2>
+            <div className={styles.loading} aria-busy="true" />
+          </>
+        )}
+        {step.kind === "move" && (
+          <>
+            <h2 className={styles.changeTitle} id="change-title">
+              {change.move.title(name)}
+            </h2>
+            <p className={termsClass(step.terms.cost !== "free")}>{moveLine(step.terms)}</p>
+            <div className={styles.pair}>
+              <button
+                className={styles.primary}
+                type="button"
+                onClick={() => {
+                  setStep({ kind: "picking", terms: step.terms });
+                }}
+              >
+                {step.terms.notice === "free" ? change.move.pick : change.move.accept}
+              </button>
+              <button className={styles.secondary} type="button" onClick={close}>
+                {change.move.keep}
+              </button>
+            </div>
+            <button className={styles.quiet} type="button" onClick={() => void show("cancel")}>
+              {change.move.cancelInstead}
             </button>
+          </>
+        )}
+        {step.kind === "cancel" && (
+          <>
+            <h2 className={styles.changeTitle} id="change-title">
+              {change.cancel.title(name)}
+            </h2>
+            {step.changed && (
+              <p className={styles.problem} role="alert">
+                {change.termsChanged}
+              </p>
+            )}
+            <p className={termsClass(step.terms.kept > 0 || step.terms.credit === "lost")}>
+              {cancelLine(step.terms, me.credits)}
+            </p>
+            {problem !== null && (
+              <p className={styles.problem} role="alert">
+                {problem}
+              </p>
+            )}
+            <div className={styles.pair}>
+              <button className={styles.primary} type="button" disabled={busy} onClick={() => void cancel(step.terms)}>
+                {step.terms.credit === "lost"
+                  ? change.cancel.acceptCredit
+                  : step.terms.kept > 0
+                    ? change.cancel.accept
+                    : change.cancel.confirm}
+              </button>
+              <button className={styles.secondary} type="button" onClick={close}>
+                {change.cancel.keep}
+              </button>
+            </div>
+          </>
+        )}
+        {step.kind === "cancelled" && (
+          <div role="status">
+            <p className={styles.caption}>{change.cancel.done}</p>
+            <h2 className={styles.outcome} id="change-title">
+              {change.cancel.doneLine(name)}
+            </h2>
+            <p className={styles.outcomeLine}>{cancelLine(step.terms, me.credits)}</p>
             <button className={styles.secondary} type="button" onClick={close}>
-              {change.move.keep}
+              {change.cancel.close}
             </button>
           </div>
-          <button className={styles.quiet} type="button" onClick={() => void show("cancel")}>
-            {change.move.cancelInstead}
-          </button>
-        </>
-      )}
-      {step.kind === "cancel" && (
-        <>
-          <h2 className={styles.changeTitle} id="change-title">
-            {change.cancel.title(name)}
-          </h2>
-          {step.changed && (
-            <p className={styles.problem} role="alert">
-              {change.termsChanged}
-            </p>
-          )}
-          <p className={termsClass(step.terms.kept > 0 || step.terms.credit === "lost")}>
-            {cancelLine(step.terms, me.credits)}
-          </p>
-          {problem !== null && (
-            <p className={styles.problem} role="alert">
-              {problem}
-            </p>
-          )}
-          <div className={styles.pair}>
-            <button className={styles.primary} type="button" disabled={busy} onClick={() => void cancel(step.terms)}>
-              {step.terms.credit === "lost"
-                ? change.cancel.acceptCredit
-                : step.terms.kept > 0
-                  ? change.cancel.accept
-                  : change.cancel.confirm}
-            </button>
+        )}
+        {step.kind === "unchangeable" && (
+          <div role="alert">
+            <h2 className={styles.outcome} id="change-title">
+              {change.notChangeable}
+            </h2>
+            <a className={styles.secondary} href={whatsappWith(visit.message)} rel="noopener">
+              {change.message}
+            </a>
+          </div>
+        )}
+        {step.kind === "broken" && (
+          <div role="alert">
+            <h2 className={styles.outcome} id="change-title">
+              {change.failed}
+            </h2>
             <button className={styles.secondary} type="button" onClick={close}>
-              {change.cancel.keep}
+              {booking.close}
             </button>
           </div>
-        </>
-      )}
-      {step.kind === "cancelled" && (
-        <div role="status">
-          <p className={styles.caption}>{change.cancel.done}</p>
-          <h2 className={styles.outcome} id="change-title">
-            {change.cancel.doneLine(name)}
-          </h2>
-          <p className={styles.outcomeLine}>{cancelLine(step.terms, me.credits)}</p>
-          <button className={styles.secondary} type="button" onClick={close}>
-            {change.cancel.close}
-          </button>
-        </div>
-      )}
-      {step.kind === "unchangeable" && (
-        <div role="alert">
-          <h2 className={styles.outcome} id="change-title">
-            {change.notChangeable}
-          </h2>
-          <a className={styles.secondary} href={whatsappWith(visit.message)} rel="noopener">
-            {change.message}
-          </a>
-        </div>
-      )}
-      {step.kind === "broken" && (
-        <div role="alert">
-          <h2 className={styles.outcome} id="change-title">
-            {change.failed}
-          </h2>
-          <button className={styles.secondary} type="button" onClick={close}>
-            {booking.close}
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </dialog>
   );
 }

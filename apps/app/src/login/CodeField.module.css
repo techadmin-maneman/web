@@ -1,4 +1,8 @@
-/* Board A2's six boxes: ink lines, the next box in gilt while the field has focus, oxblood when wrong. */
+/*
+ * Board A2's six boxes: lines on ink, the next box in gilt while the field has focus, the error colour when
+ * wrong. The lines are --ink-line-strong, 3:1 against the ink (WCAG 1.4.11), where the design's --ink-line is
+ * 1.75:1 (ADR 0025, item 36).
+ */
 
 .field {
   position: relative;
@@ -28,7 +32,7 @@
   align-items: center;
   justify-content: center;
   height: var(--tap-row);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
   font-size: var(--fs-24);
   font-variant-numeric: tabular-nums;
   color: var(--paper);

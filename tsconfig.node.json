@@ -28,6 +28,9 @@
   // technician app's store tests, which run in Node on a fake IndexedDB but
   // import code written against the DOM.
   "exclude": [
+    "test/node/app-api.test.ts",
+    "test/node/app-money.test.ts",
+    "test/node/app-route.test.ts",
     "test/node/tech-api.test.ts",
     "test/node/tech-kept.test.ts",
     "test/node/tech-outbox-replay.test.ts",

@@ -556,6 +556,8 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
 async function bookingPairs(browser: Browser, design: Page): Promise<void> {
   const api = (holdAnswer: object, polled: object = holdAnswer): Api => ({
     "/api/me": json(ME_BOOKING),
+    // WhatsApp about visits is on, as the board's confirmation promises, so the sheet does not ask.
+    "/api/profile": json(PROFILE),
     "/api/visits": json({ upcoming: [], past: PAST, history: HISTORY }),
     "/api/availability": json(AVAILABILITY),
     "/api/holds": json(holdAnswer),

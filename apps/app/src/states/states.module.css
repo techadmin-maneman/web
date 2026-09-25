@@ -86,12 +86,6 @@
   text-decoration: none;
 }
 
-.retry:focus-visible,
-.message:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
-}
-
 .pageFailed {
   display: flex;
   flex-direction: column;
