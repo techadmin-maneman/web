@@ -6,6 +6,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
+import { recordUtilisation } from "../../src/domain/dispatch.ts";
 import { occupancy, type Day } from "../../src/domain/scheduling.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
@@ -65,12 +66,20 @@ const fsmAppointment = (id: string): FsmAppointment => ({
 
 async function insertJob(
   id: string,
-  options: { type: Kind; start: string; technician: string | null; person?: string | null },
+  options: {
+    type: Kind;
+    start: string;
+    technician: string | null;
+    person?: string | null;
+    status?: string;
+    city?: string;
+    pincode?: string;
+  },
 ): Promise<void> {
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
        window_end, technician_id, service_city, service_pincode, fsm_modified_at, synced_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, 'scheduled', 'Scheduled', ?6, ?7, ?8, 'Gurgaon', '122018', ?9, ?9)`,
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12)`,
   )
     .bind(
       id,
@@ -78,9 +87,12 @@ async function insertJob(
       `wo-${id}`,
       options.person === undefined ? ROHIT : options.person,
       options.type,
+      options.status ?? "scheduled",
       options.start,
       new Date(Date.parse(options.start) + MINUTES[options.type] * 60_000).toISOString(),
       options.technician,
+      options.city ?? "Gurgaon",
+      options.pincode ?? "122018",
       NOW.toISOString(),
     )
     .run();
@@ -512,5 +524,67 @@ describe("a move made from a board that has gone stale", () => {
     expect(again.status).toBe(409);
     expect(await again.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
     expect(await shown(B)).toEqual({ technician_id: SAMEER, window_start: TUESDAY["12:00"] });
+  });
+});
+
+interface BoardBody {
+  from: string;
+  technicians: {
+    technician_id: string;
+    days: { date: string; blocks: Record<string, unknown>[] }[];
+  }[];
+  unassigned: Record<string, unknown>[];
+  utilisation: { date: string; percent: number }[];
+  city: string | null;
+  cities: string[];
+}
+
+const board = async (query: string): Promise<BoardBody> =>
+  (await request(ops, `/api/dispatch?${query}`, {}, bindings())).json<BoardBody>();
+
+// BIZ-20: "the operating figure for the model's weekend-share assumption, so it
+// is also written to events daily". Finished jobs fell out of it, a technician
+// on leave still counted as a day's capacity, and the city asked for was ignored.
+describe("the utilisation at each column's head", () => {
+  it("counts the jobs worked and in hand, over the technicians working that day, in the city asked for", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN, status: "completed" });
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN, status: "in_progress" });
+    await insertJob(B, {
+      type: "service",
+      start: "2026-09-22T10:30:00.000Z",
+      technician: IMRAN,
+      city: "Delhi",
+      pincode: "110017",
+    });
+    await insertJob(REPLACEMENT, {
+      type: "replacement",
+      start: TUESDAY["10:30"],
+      technician: SAMEER,
+      status: "cancelled",
+    });
+    expect((await opsPost(`/api/technicians/${SAMEER}/leave`, { from: "2026-09-22", to: "2026-09-22" })).status).toBe(
+      200,
+    );
+
+    const gurgaon = await board("from=2026-09-22&city=Gurgaon");
+    const everywhere = await board("from=2026-09-22");
+
+    // Imran alone works on Tuesday, four slots. Gurgaon's jobs take three of them; the Delhi visit is the fourth.
+    expect(gurgaon.utilisation[0]).toEqual({ date: "2026-09-22", percent: 75 });
+    expect(everywhere.utilisation[0]).toEqual({ date: "2026-09-22", percent: 100 });
+  });
+
+  it("draws a finished job where it was worked, and writes the day's figure as it was worked", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN, status: "completed" });
+
+    const tuesday = (await board("from=2026-09-22")).technicians[0]?.days[0]?.blocks;
+    expect(tuesday).toMatchObject([{ appointment_id: A, status: "completed" }]);
+
+    // Written the day after: one slot of the eight two technicians have.
+    expect(await recordUtilisation(env.DB, new Date("2026-09-23T06:30:00.000Z"))).toBe("2026-09-22");
+    const event = await env.DB.prepare("SELECT payload_json FROM events WHERE name = 'dispatch_utilisation'").first<{
+      payload_json: string;
+    }>();
+    expect(JSON.parse(event?.payload_json ?? "{}")).toMatchObject({ percent: 13, technicians: 2 });
   });
 });

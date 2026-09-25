@@ -86,7 +86,10 @@ export interface Board {
   readonly leave: { technician_id: string; from: string; to: string; note: string | null }[];
 }
 
+/** The statuses a job can still be moved in. */
 const LIVE = "('scheduled', 'dispatched', 'in_progress')";
+/** What a day on the board holds: its live jobs, and the ones already done, so a past day reads as it was worked. */
+const ON_THE_BOARD = "('scheduled', 'dispatched', 'in_progress', 'completed')";
 
 /** The board for seven days from `from`, optionally narrowed to one city. */
 export async function dispatchBoard(db: D1Database, options: { from: string; city: string | null }): Promise<Board> {
@@ -106,7 +109,7 @@ export async function dispatchBoard(db: D1Database, options: { from: string; cit
        FROM appointments a
        LEFT JOIN people p ON p.id = a.person_id
        LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
-       WHERE a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.window_start >= ?1 AND a.window_start < ?2
+       WHERE a.deleted_at IS NULL AND a.status IN ${ON_THE_BOARD} AND a.window_start >= ?1 AND a.window_start < ?2
          AND (?3 IS NULL OR a.service_city = ?3)
        ORDER BY a.window_start`,
     )
@@ -129,21 +132,23 @@ export async function dispatchBoard(db: D1Database, options: { from: string; cit
     };
   });
 
-  const unassigned = scheduled.results.filter((job) => job.technician_id === null).map(unassignedOf);
-  const leave = await leaveBetween(db, options.from, last);
+  const unassigned = scheduled.results
+    .filter((job) => job.technician_id === null && job.status !== "completed")
+    .map(unassignedOf);
+  const leave = (await leaveBetween(db, options.from, last)).map((period) => ({
+    technician_id: period.technician_id,
+    // Clipped to the week, so the board draws the days it has columns for and no others.
+    from: period.from < options.from ? options.from : period.from,
+    to: period.to > last ? last : period.to,
+    note: period.note,
+  }));
   return {
     from: options.from,
     dates,
     technicians: rows,
     unassigned,
-    utilisation: utilisationOf(rows, dates),
-    leave: leave.map((period) => ({
-      technician_id: period.technician_id,
-      // Clipped to the week, so the board draws the days it has columns for and no others.
-      from: period.from < options.from ? options.from : period.from,
-      to: period.to > last ? last : period.to,
-      note: period.note,
-    })),
+    utilisation: utilisationOf(rows, dates, leave),
+    leave,
   };
 }
 
@@ -196,21 +201,29 @@ function shortName(name: string | null): string | null {
   return last === undefined ? (first ?? null) : `${first ?? ""} ${last.slice(0, 1)}.`;
 }
 
+/** Whether a technician is away on a date, by the leave the board holds; both ends are inclusive. */
+const isAway = (leave: Board["leave"], technicianId: string, date: string): boolean =>
+  leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
+
 /**
- * "Each column head shows its utilisation, in per cent." The day's slots taken
- * out of the slots the board's technicians have that day.
+ * "Each column head shows its utilisation, in per cent." The slots the day's
+ * jobs take, done or still to do, out of the slots of the technicians working
+ * that day. A technician on leave has no slots that day, and a job still on him
+ * counts for nothing until it is moved. The board's rows are already narrowed to
+ * its city's jobs; the technicians are not, since none carries a city and any
+ * may be sent anywhere (docs/decisions/0069-dispatch-under-concurrency.md).
  */
 export function utilisationOf(
   rows: readonly BoardRow[],
   dates: readonly string[],
+  leave: Board["leave"],
 ): { date: string; percent: number }[] {
   return dates.map((date) => {
-    const capacity = rows.length * SLOTS_PER_DAY;
-    const taken = rows.reduce(
-      (total, row) =>
-        total + (row.days.find((day) => day.date === date)?.blocks ?? []).reduce((n, b) => n + b.slots, 0),
-      0,
-    );
+    const working = rows.filter((row) => !isAway(leave, row.technician_id, date));
+    const capacity = working.length * SLOTS_PER_DAY;
+    const taken = working
+      .flatMap((row) => row.days.find((day) => day.date === date)?.blocks ?? [])
+      .reduce((slots, block) => slots + block.slots, 0);
     return { date, percent: capacity === 0 ? 0 : Math.round((taken / capacity) * 100) };
   });
 }
