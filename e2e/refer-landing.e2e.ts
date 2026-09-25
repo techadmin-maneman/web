@@ -133,13 +133,44 @@ test("a code we do not know still books, without the invite's visits", async ({ 
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  await expect(page.getByText("Whoever invited you is told when you are fitted.", { exact: false })).toBeVisible();
+  // The API books this one with no invite, so nobody is told and no visits land (REQ-S8-01).
+  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
+  await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 
   await fillPerson(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Consultation booked")).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
+});
+
+test("a code we do not know promises nothing to hold on the waitlist either", async ({ page }) => {
+  await mockApi(page, {
+    invite: { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } },
+  });
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByRole("button", { name: "Add me to the list" })).toBeVisible();
+  await expect(page.getByText(/invite stays valid/)).toHaveCount(0);
+});
+
+// FEO-18: the invite could not be fetched, which says nothing about the code. The page neither calls it unknown
+// nor promises its visits, and it books as ever.
+test("an invite that cannot be fetched is neither refused nor promised", async ({ page }) => {
+  await mockApi(page);
+  await page.route(`**/api/r/${CODE}`, (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
+  );
+  await visit(page, `/r/${CODE}`);
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home in Gurgaon.");
+  await expect(page.getByText("You have an invite")).toBeVisible();
+  await expect(page.getByText("We do not recognise this invite")).toBeHidden();
+  await expect(page.getByText(/3 service visits/)).toHaveCount(0);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 });
 
 // With self-serve booking off, the API records the day asked for and answers

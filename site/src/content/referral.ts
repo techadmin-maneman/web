@@ -6,6 +6,7 @@
 // name is filled in where {name} appears; without a name the page says "You
 // have an invite" instead.
 
+import type { Invite } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 
 export const referral = {
@@ -140,13 +141,24 @@ export const referral = {
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
   },
-  page: {
-    title: "Your Mane Man invite",
-    description: "Home-fitted hair systems in Gurgaon. 3 service visits free when you are fitted.",
+  /**
+   * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a
+   * valid invite promises the visits: any other books without them.
+   */
+  preview: {
+    title: "{name} sent you a Mane Man invite",
+    titleUnnamed: "You have a Mane Man invite",
+    description: "Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.",
+    descriptionWithout: "Home-fitted hair systems in Gurgaon.",
   },
 };
 
-/** The title a shared invite carries, which the mm-site Worker writes into the preview. */
+/** The title a shared invite carries. */
 export function inviteTitle(name: string | null): string {
-  return name === null ? "You have a Mane Man invite" : fill("{name} sent you a Mane Man invite", { name });
+  return name === null ? referral.preview.titleUnnamed : fill(referral.preview.title, { name });
+}
+
+/** The preview's description: the visits only for an invite that carries them, never for one we could not read. */
+export function inviteDescription(invite: Invite | null): string {
+  return invite?.state === "valid" ? referral.preview.description : referral.preview.descriptionWithout;
 }

@@ -29,6 +29,7 @@ import {
   type ReferralConsultation,
 } from "../lib/api.ts";
 import { bookedHeadline, dayStrip, indiaTomorrow } from "../lib/dates.ts";
+import { cardPath, HOUSE_CARD, isInvite } from "../lib/invite.ts";
 import { formatMobile, isCompleteMobile, mobileDigits } from "../lib/phone.ts";
 import { fill } from "../lib/text.ts";
 import { turnstileWidget } from "../lib/turnstile.ts";
@@ -57,12 +58,6 @@ type PreviewState = (typeof PREVIEW_STATES)[number];
 /** How far ahead the date strip reaches, from tomorrow: src/config/scheduling.ts, BOOKING_DAYS. */
 const DAYS = 14;
 
-const UNKNOWN_INVITE: InviteAnswer = {
-  state: "unknown",
-  referrer_first_name: null,
-  card: { state: "house", version: 1 },
-};
-
 /** The stand-ins ?state= uses, with the design's own pincodes. */
 const SAMPLE = {
   served: { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" },
@@ -80,19 +75,14 @@ function codeInPath(): string {
 
 /** The card the page shows: the referrer's own while it is live, else our house one. */
 export const CARD = { width: 1200, height: 630 };
-const HOUSE_CARD = "/images/invite-house.jpg";
 
-function cardImage(invite: InviteAnswer, code: string): string {
-  if (invite.card.state !== "personal" || code === "") return HOUSE_CARD;
-  return `/api/og/${code}.jpg?v=${String(invite.card.version)}`;
-}
-
-/** The invite the Worker wrote into the page, if it did. */
+/** The invite the Worker wrote into the page, if it did and it reads as one. */
 function inviteInPage(): InviteAnswer | null {
   const written = document.getElementById("invite")?.dataset.invite;
   if (written === undefined || written === "") return null;
   try {
-    return JSON.parse(written) as InviteAnswer;
+    const parsed: unknown = JSON.parse(written);
+    return isInvite(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -108,7 +98,8 @@ function refusal(code: ErrorCode | "network"): string {
 }
 
 export default function Invite(props: Props) {
-  const [invite, setInvite] = useState<InviteAnswer>(UNKNOWN_INVITE);
+  // Null until the invite is known: the page then says only what is true of every invite.
+  const [invite, setInvite] = useState<InviteAnswer | null>(null);
   const [state, setState] = useState<State>("arrival");
   const [pincode, setPincode] = useState("");
   const [answer, setAnswer] = useState<PincodeAnswer | null>(null);
@@ -120,7 +111,9 @@ export default function Invite(props: Props) {
   const form = useRef<HTMLDivElement>(null);
 
   const invited = (props.mode ?? "invited") === "invited";
-  const name = invited ? invite.referrer_first_name : null;
+  const name = invited ? (invite?.referrer_first_name ?? null) : null;
+  // Only a valid invite carries the 3 visits; the API books any other without them.
+  const credits = invited && invite?.state === "valid";
 
   // The invite: from the page where the Worker wrote it, otherwise from the API.
   useEffect(() => {
@@ -133,7 +126,7 @@ export default function Invite(props: Props) {
     const code = codeInPath();
     if (code === "") return;
     void fetchInvite(code).then((found) => {
-      if (found.ok) setInvite(found.body);
+      if (found.ok && isInvite(found.body)) setInvite(found.body);
     });
   }, [invited]);
 
@@ -197,7 +190,7 @@ export default function Invite(props: Props) {
                   </div>
                   <img
                     class={styles.inviteCard}
-                    src={cardImage(invite, codeInPath())}
+                    src={invite === null ? HOUSE_CARD : cardPath(invite, codeInPath())}
                     width={CARD.width}
                     height={CARD.height}
                     alt=""
@@ -211,15 +204,13 @@ export default function Invite(props: Props) {
                 {invited ? referral.arrival.title : booking.title}
               </h1>
               {!invited && <p class={styles.offer}>{booking.intro}</p>}
-              {invited &&
-                (invite.state === "valid" ? (
-                  <p class={styles.offer}>{referral.arrival.offer}</p>
-                ) : (
-                  <p class={styles.offer}>
-                    <span class={styles.unknownTitle}>{referral.arrival.unknown.title}</span>
-                    <span class={styles.unknownBody}>{referral.arrival.unknown.body}</span>
-                  </p>
-                ))}
+              {credits && <p class={styles.offer}>{referral.arrival.offer}</p>}
+              {invited && invite !== null && !credits && (
+                <p class={styles.offer}>
+                  <span class={styles.unknownTitle}>{referral.arrival.unknown.title}</span>
+                  <span class={styles.unknownBody}>{referral.arrival.unknown.body}</span>
+                </p>
+              )}
             </div>
           </section>
 
@@ -320,6 +311,7 @@ export default function Invite(props: Props) {
                 answer={answer}
                 name={name}
                 invited={invited}
+                credits={credits}
                 turnstileSiteKey={props.turnstileSiteKey}
                 onBooked={(result) => {
                   setBooked(result);
@@ -332,6 +324,7 @@ export default function Invite(props: Props) {
                 answer={answer}
                 name={name}
                 invited={invited}
+                credits={credits}
                 turnstileSiteKey={props.turnstileSiteKey}
                 onListed={(result) => {
                   setListed(result);
@@ -390,6 +383,8 @@ interface FormProps {
   name: string | null;
   /** The invited page carries someone's invite; the site's own does not. */
   invited: boolean;
+  /** The invite is valid, so its 3 visits apply and its referrer is told. */
+  credits: boolean;
   turnstileSiteKey: string;
 }
 
@@ -629,7 +624,7 @@ function Consultation(props: FormProps & { onBooked: (result: ReferralConsultati
             {sending && <Icon path={ICONS.sending} size={15} stroke={1.7} />}
             {sending ? consultation.sending : consultation.submit}
           </button>
-          {props.invited && (
+          {props.credits && (
             <p class={styles.told}>
               {props.name === null ? consultation.toldUnnamed : fill(consultation.told, { name: props.name })}
             </p>
@@ -742,7 +737,7 @@ function Waitlist(props: FormProps & { onListed: (result: { area: string | null;
             {sending && <Icon path={ICONS.sending} size={15} stroke={1.7} />}
             {sending ? waitlist.sending : waitlist.submit}
           </button>
-          {props.invited && (
+          {props.credits && (
             <p class={styles.told}>
               {props.name === null ? waitlist.holdsUnnamed : fill(waitlist.holds, { name: props.name })}
             </p>

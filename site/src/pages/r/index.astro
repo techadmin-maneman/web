@@ -5,15 +5,15 @@
 // invite onto #invite before the browser, or WhatsApp's crawler, sees it.
 //
 // It is never indexed: an invite is one person's, and its address holds a code.
-import { referral, inviteTitle } from "../../content/referral.ts";
+import { inviteDescription, inviteTitle } from "../../content/referral.ts";
 import Invite from "../../islands/Invite.tsx";
 import Site from "../../layouts/Site.astro";
 import { ENVIRONMENT, IS_PRODUCTION } from "../../lib/build.ts";
 import { TURNSTILE_SITE_KEYS } from "../../lib/turnstile.ts";
 ---
 
-<Site title={inviteTitle(null)} description={referral.page.description} noindex>
-  <!-- data-invite carries the invite the Worker looked up; empty where it did not. -->
+<Site title={inviteTitle(null)} description={inviteDescription(null)} noindex>
+  <!-- data-invite carries the invite the Worker looked up; empty where it could not, so the island asks. -->
   <div id="invite" data-invite="">
     <Invite client:load turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
   </div>

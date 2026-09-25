@@ -6,34 +6,45 @@
 // name if they agreed to be named, and the card's versioned image, which is what makes a revoke reach new shares.
 // It also writes the invite into the page, so the island shows it without a second request.
 //
+// When mm-api cannot say what the invite is, the page is served as built and the island asks for it itself: a
+// failure is never shown as a code we do not know.
+//
 // Everything else falls through to the assets, as before.
 
-interface SiteEnv {
+import { inviteDescription, inviteTitle } from "./content/referral.ts";
+import type { Invite } from "./lib/api.ts";
+import { cardPath, HOUSE_CARD, isInvite } from "./lib/invite.ts";
+
+export interface SiteEnv {
   readonly ASSETS: Fetcher;
   /** mm-api, bound directly: on staging its host is behind Access, which a request over the internet fails. */
   readonly API: Fetcher;
 }
 
-interface Invite {
-  state: "valid" | "unknown";
-  referrer_first_name: string | null;
-  card: { state: "house" | "personal"; version: number };
+const CODE = /^\/r\/([A-Za-z0-9]{4,12})\/?$/;
+
+/** The invite, or null when mm-api could not say: down, refusing, or answering a shape we do not know. */
+async function lookUp(env: SiteEnv, visit: Request, origin: string, code: string): Promise<Invite | null> {
+  // The visitor's user agent goes along, so mm-api does not count a link preview's fetch as an open.
+  const headers = new Headers();
+  const agent = visit.headers.get("User-Agent");
+  if (agent !== null) headers.set("User-Agent", agent);
+  try {
+    const answer = await env.API.fetch(new Request(`${origin}/api/r/${code}`, { headers }));
+    if (!answer.ok) return null;
+    const body: unknown = await answer.json();
+    return isInvite(body) ? body : null;
+  } catch {
+    return null;
+  }
 }
 
-const CODE = /^\/r\/([A-Za-z0-9]{4,12})\/?$/;
-const HOUSE_CARD = "/images/invite-house.jpg";
-
-/** What the preview says, in the design's words (Referral and Waitlist, B1 and B2). */
-const TITLE = (name: string | null) =>
-  name === null ? "You have a Mane Man invite" : `${name} sent you a Mane Man invite`;
-const DESCRIPTION = "Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.";
-
 class Meta {
-  readonly invite: Invite;
+  readonly invite: Invite | null;
   readonly origin: string;
   readonly code: string;
 
-  constructor(invite: Invite, origin: string, code: string) {
+  constructor(invite: Invite | null, origin: string, code: string) {
     this.invite = invite;
     this.origin = origin;
     this.code = code;
@@ -41,18 +52,13 @@ class Meta {
 
   element(element: Element): void {
     const property = element.getAttribute("property") ?? element.getAttribute("name");
-    const card = this.invite.card;
-    const image =
-      card.state === "personal"
-        ? `${this.origin}/api/og/${this.code}.jpg?v=${String(card.version)}`
-        : `${this.origin}${HOUSE_CARD}`;
-    if (property === "og:title" || property === "twitter:title") {
-      element.setAttribute("content", TITLE(this.invite.referrer_first_name));
-    }
+    const name = this.invite?.referrer_first_name ?? null;
+    const image = this.invite === null ? HOUSE_CARD : cardPath(this.invite, this.code);
+    if (property === "og:title" || property === "twitter:title") element.setAttribute("content", inviteTitle(name));
     if (property === "og:description" || property === "twitter:description") {
-      element.setAttribute("content", DESCRIPTION);
+      element.setAttribute("content", inviteDescription(this.invite));
     }
-    if (property === "og:image" || property === "twitter:image") element.setAttribute("content", image);
+    if (property === "og:image" || property === "twitter:image") element.setAttribute("content", this.origin + image);
     if (property === "og:url") element.setAttribute("content", `${this.origin}/r/${this.code}`);
   }
 }
@@ -79,14 +85,10 @@ export default {
     // The built page is r.html, which the assets serve at /r (site/astro.config.ts builds files, not folders).
     const page = await env.ASSETS.fetch(new Request(`${url.origin}/r`, request));
     if (!page.ok || request.method !== "GET") return page;
-    const answer = await env.API.fetch(new Request(`${url.origin}/api/r/${code}`));
-    const invite: Invite = answer.ok
-      ? await answer.json()
-      : { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } };
+    const invite = await lookUp(env, request, url.origin, code);
 
-    return new HTMLRewriter()
-      .on("meta", new Meta(invite, url.origin, code))
-      .on("#invite", new State(JSON.stringify({ ...invite, code })))
-      .transform(new Response(page.body, page));
+    const rewriter = new HTMLRewriter().on("meta", new Meta(invite, url.origin, code));
+    if (invite !== null) rewriter.on("#invite", new State(JSON.stringify({ ...invite, code })));
+    return rewriter.transform(new Response(page.body, page));
   },
 } satisfies ExportedHandler<SiteEnv>;

@@ -1,11 +1,13 @@
 // The site's content file and the publish gate that guards production.
 
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../site/src/content/design-placeholders.ts";
 import * as site from "../../site/src/content/site.ts";
 import { bookedHeadline } from "../../site/src/lib/dates.ts";
 import { siteEnvironment } from "../../site/src/lib/environment.ts";
+import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../site/src/lib/invite.ts";
 import { formatMobile, isCompleteMobile, mobileDigits } from "../../site/src/lib/phone.ts";
 import { publishProblems } from "../../site/src/lib/publish-gate.ts";
 import { headersFile, robotsFile } from "../../site/src/lib/static-files.ts";
@@ -160,5 +162,17 @@ describe("site helpers", () => {
     const home = readFileSync("site/src/pages/index.astro", "utf8");
     expect(home).toContain('location.hash === "#tryon"');
     expect(home).toContain('location.hash === "#book"');
+  });
+
+  // REQ-S8-03: chats cache a preview by its address, so the house card replaced at the same path needs a new version.
+  it("gives the house card a new version whenever its file changes", () => {
+    const CARDS: Record<number, string> = {
+      1: "3becedf10d96f13d6bb0c144ed904f4d81b5ffb835523e5c9e7f43609a2d6302",
+    };
+    const file = createHash("sha256").update(readFileSync("site/public/images/invite-house.jpg")).digest("hex");
+    expect(file, "invite-house.jpg changed: raise HOUSE_CARD_VERSION and record the new file here").toBe(
+      CARDS[HOUSE_CARD_VERSION],
+    );
+    expect(HOUSE_CARD).toBe(`/images/invite-house.jpg?v=${String(HOUSE_CARD_VERSION)}`);
   });
 });
