@@ -258,8 +258,12 @@ async function clientWithEverything(): Promise<string> {
        VALUES (?1, 'fsm-1', ?2, 'service', 'completed', 'Completed', '2026-09-01T06:30:00.000Z', 't1', ?3, ?3)`,
     ).bind(VISIT, personId, at),
     env.DB.prepare(
-      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, lat, lng)
-       VALUES ('address-1', ?1, ?2, 'House 7', 'Sector 65', 'Gurgaon', '122018', 28.39, 77.06)`,
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, lat, lng, access_notes, flat)
+       VALUES ('address-1', ?1, ?2, 'House 7', 'Sector 65', 'Gurgaon', '122018', 28.39, 77.06, 'Gate code 4417', '7B')`,
+    ).bind(personId, at),
+    env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, replaced_at)
+       VALUES ('address-0', ?1, ?2, 'Old house', 'Sector 56', 'Gurgaon', '122011', ?2)`,
     ).bind(personId, at),
     env.DB.prepare(
       `INSERT INTO checkins (id, appointment_id, technician_id, address_id, at, lat, lng, distance_m, radius_m, passed,
@@ -328,14 +332,30 @@ describe("erasure, all or nothing", () => {
     expect(response.status).toBe(200);
     expect(await filesLeft()).toEqual({ upload: false, result: false, visitPhoto: false, card: false });
     const left = await env.DB.prepare(
-      `SELECT (SELECT COUNT(*) FROM addresses) AS addresses, (SELECT COUNT(*) FROM number_change_requests) AS changes,
-         (SELECT COUNT(*) FROM otp_challenges) AS codes, (SELECT COUNT(*) FROM photos) AS photos,
-         (SELECT COUNT(*) FROM photo_sets) AS sets, (SELECT COUNT(*) FROM waitlist_entries) AS waiting`,
+      `SELECT (SELECT COUNT(*) FROM number_change_requests) AS changes, (SELECT COUNT(*) FROM otp_challenges) AS codes,
+         (SELECT COUNT(*) FROM photos) AS photos, (SELECT COUNT(*) FROM photo_sets) AS sets,
+         (SELECT COUNT(*) FROM waitlist_entries) AS waiting`,
     ).first();
-    expect(left).toEqual({ addresses: 0, changes: 0, codes: 0, photos: 0, sets: 0, waiting: 0 });
-    // The check-in stays as the technician's record; the address it was measured against goes.
+    expect(left).toEqual({ changes: 0, codes: 0, photos: 0, sets: 0, waiting: 0 });
+    // The check-in keeps its evidence; the address it was measured against keeps only its city and pincode.
     const checkin = await env.DB.prepare("SELECT address_id, distance_m, passed FROM checkins").first();
-    expect(checkin).toEqual({ address_id: null, distance_m: 12, passed: 1 });
+    expect(checkin).toEqual({ address_id: "address-1", distance_m: 12, passed: 1 });
+    const addresses = await env.DB.prepare(
+      "SELECT id, line1, locality, city, pincode, lat, lng, access_notes, flat FROM addresses",
+    ).all();
+    expect(addresses.results).toEqual([
+      {
+        id: "address-1",
+        line1: "Erased",
+        locality: "Erased",
+        city: "Gurgaon",
+        pincode: "122018",
+        lat: null,
+        lng: null,
+        access_notes: null,
+        flat: null,
+      },
+    ]);
     const card = await env.DB.prepare("SELECT card_state, card_version, card_key FROM referral_codes").first();
     expect(card).toEqual({ card_state: "house", card_version: 3, card_key: null });
     const person = await env.DB.prepare("SELECT name, files_erased_at FROM people WHERE id = ?1")

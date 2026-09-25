@@ -133,6 +133,9 @@ export async function erasePerson(
   };
 }
 
+/** Of the person's addresses, one a technician's check-in was measured against. */
+const MEASURED_AGAINST = "EXISTS (SELECT 1 FROM checkins c WHERE c.address_id = addresses.id)";
+
 /** Everything the batch changes besides the messages: each statement before any that a foreign key needs gone. */
 async function personalDataStatements(db: D1Database, personId: string, at: string): Promise<D1PreparedStatement[]> {
   // One withdrawal row for each purpose the person had agreed to. Consents are append-only.
@@ -176,14 +179,18 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
       )
       .bind(personId, at),
     // Phase 2's own personal data (docs/decisions/0049-dpdp.md): where they live, the numbers they changed
-    // between, and the words of any grievance. Visits, payments and credits stay, as records. A check-in
-    // stays as the technician's record, without the address it was measured against.
+    // between, and the words of any grievance. Visits, payments and credits stay, as records. An address a
+    // technician's check-in was measured against is blanked to its city and pincode rather than deleted: the
+    // check-in points at it, and its distance is the no-show evidence ops rule on.
     db
       .prepare(
-        "UPDATE checkins SET address_id = NULL WHERE address_id IN (SELECT id FROM addresses WHERE person_id = ?1)",
+        `UPDATE addresses SET line1 = 'Erased', line2 = NULL, locality = 'Erased', access_notes = NULL, lat = NULL,
+           lng = NULL, geocoded_at = NULL, building = NULL, flat = NULL, floor = NULL, tower = NULL, landmark = NULL,
+           place_id = NULL, geocode_source = NULL
+         WHERE person_id = ?1 AND ${MEASURED_AGAINST}`,
       )
       .bind(personId),
-    db.prepare("DELETE FROM addresses WHERE person_id = ?1").bind(personId),
+    db.prepare(`DELETE FROM addresses WHERE person_id = ?1 AND NOT ${MEASURED_AGAINST}`).bind(personId),
     db
       .prepare(
         "DELETE FROM otp_challenges WHERE number_change_id IN (SELECT id FROM number_change_requests WHERE person_id = ?1)",
