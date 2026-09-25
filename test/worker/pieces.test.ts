@@ -130,6 +130,28 @@ describe("a piece the technician fitted", () => {
     expect(await piecesOf(env.DB, PERSON)).toHaveLength(1);
   });
 
+  it("finds by its label an asset FSM made whose answer never came, rather than making a second", async () => {
+    const fitted = {
+      personId: PERSON,
+      fsmContactId: "contact-1",
+      appointmentId: JOB,
+      pieceCode: "MM-STD-9001-A",
+      base: "Standard base",
+      supplierLot: "LOT-2026-09",
+      fittedOn: "2026-09-21",
+      replacementDue: "2027-03-20",
+      now: NOW,
+    };
+    fsm.loseAnswer("createAsset");
+    await expect(recordFittedPiece(env.DB, fsm, fitted)).rejects.toThrow();
+
+    const retried = await recordFittedPiece(env.DB, fsm, fitted);
+    expect(fsm.made.assets).toHaveLength(1);
+    const held = (await fsm.assets("contact-1")).find((each) => each.assetNumber === "MM-STD-9001-A");
+    expect(retried).toBe(held?.id);
+    expect(await piecesOf(env.DB, PERSON)).toHaveLength(1);
+  });
+
   it("marks a failed piece in FSM and keeps the reason on our side", async () => {
     await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
 

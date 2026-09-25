@@ -376,7 +376,8 @@ export interface StubFsm extends FsmProvider {
 }
 
 /** The creates whose answer a test can lose. */
-export type StubFsmCreate = "createContact" | "createRequest" | "createWorkOrder" | "createAppointment";
+export type StubFsmCreate =
+  "createContact" | "createRequest" | "createWorkOrder" | "createAppointment" | "createAsset" | "attachToAppointment";
 
 /** The writes a test can make fail. */
 export type StubFsmStep =
@@ -437,6 +438,9 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   const appointmentOfWorkOrder = new Map<string, string>();
 
   const stubAssets = world.assets ?? {};
+  /** Pieces and files the stub was given since, by contact and by appointment, as FSM lists them back. */
+  const madeAssets = new Map<string, FsmAsset[]>();
+  const madeAttachments = new Map<string, FsmAttachment[]>();
   const invoices = new Map<string, FsmInvoice>();
 
   /** Where each appointment's transitions have moved it, over the status the world gave it. */
@@ -477,7 +481,8 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     contact: (id) => Promise.resolve(world.contacts.find((contact) => contact.id === id) ?? null),
     technicians: () => Promise.resolve([...world.technicians]),
     items: () => Promise.resolve([...world.items]),
-    attachments: (appointmentId) => Promise.resolve([...(world.attachments[appointmentId] ?? [])]),
+    attachments: (appointmentId) =>
+      Promise.resolve([...(world.attachments[appointmentId] ?? []), ...(madeAttachments.get(appointmentId) ?? [])]),
     download: (fileId) => {
       const file = world.files[fileId];
       if (file === undefined) return Promise.reject(new Error("the stub FSM has no such file"));
@@ -535,12 +540,25 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     },
     assets: (contactId) => {
       checkFailure("assets");
-      return Promise.resolve([...(stubAssets[contactId] ?? [])]);
+      return Promise.resolve([...(stubAssets[contactId] ?? []), ...(madeAssets.get(contactId) ?? [])]);
     },
     createAsset: (asset) => {
       checkFailure("createAsset");
       made.assets.push(asset);
-      return Promise.resolve(`stub-asset-${crypto.randomUUID()}`);
+      const id = `stub-asset-${crypto.randomUUID()}`;
+      const held: FsmAsset = {
+        id,
+        assetNumber: asset.assetNumber,
+        contactId: asset.contactId,
+        productId: asset.productId,
+        productName: null,
+        serialNumber: asset.serialNumber,
+        installedAt: asset.installedAt,
+        status: "Active",
+        modifiedAt: "",
+      };
+      madeAssets.set(asset.contactId, [...(madeAssets.get(asset.contactId) ?? []), held]);
+      return answer("createAsset", id);
     },
     updateAsset: (assetId, fields) => {
       checkFailure("updateAsset");
@@ -573,7 +591,10 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
         contentType: file.contentType,
         bytes: file.bytes.byteLength,
       });
-      return Promise.resolve(`stub-attachment-${crypto.randomUUID()}`);
+      const id = `stub-attachment-${crypto.randomUUID()}`;
+      const held: FsmAttachment = { id, fileId: id, name: file.name, size: file.bytes.byteLength, createdAt: "" };
+      madeAttachments.set(appointmentId, [...(madeAttachments.get(appointmentId) ?? []), held]);
+      return answer("attachToAppointment", id);
     },
     cancelVisit: (workOrderId, note) => {
       made.cancelled.push({ workOrderId, note });
