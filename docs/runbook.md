@@ -814,7 +814,7 @@ The DPDP Act and its Rules require us to tell the Data Protection Board and each
 
 ## Cities and visit days
 
-Opening a city is a data change, not a deploy. The booking form reads `GET /api/cities`, which may be cached for five minutes.
+Opening a city is a data change, not a deploy. These are Phase 1's cities, which `POST /api/lead` and `GET /api/cities` still read; no page of the site calls either since the booking form asks for a pincode (ADR 0051), and the pincodes it checks are opened from the ops console (Settings · Service area, ADR 0061).
 
 ```sql
 -- Open a waitlisted city: new leads get a proposed visit day and go to the technicians.

@@ -427,6 +427,8 @@ export const tryOnTeaser = {
   before: "Before",
   after: "After",
   sliderLabel: "Compare before and after",
+  /** What a screen reader hears as the handle moves. */
+  sliderValue: "{before}% before, {after}% after",
   start_percent: 46,
 };
 
@@ -715,6 +717,9 @@ export const tryOn = {
     preview: "Preview",
     choose: "Choose one to continue",
     generate: "Generate the simulation",
+    // Not in v2: back here once the render has started, when the look can no longer change. Placeholder words.
+    fixed: "Your simulation is being made with this look. Each visitor gets one.",
+    continue: "Continue",
   },
   processing: {
     title: "Working on it.",
@@ -753,6 +758,7 @@ export const tryOn = {
     beforeAlt: "Your photograph",
     afterAlt: "Simulated result",
     sliderLabel: "Compare your photograph with the simulation",
+    sliderValue: "{before}% your photograph, {after}% the simulation",
     pending: "Still working on it",
     disclaimer:
       "This is an illustrative simulation, not a photograph of a result. A fitted piece is matched to your own hair colour, density and growth pattern, and will differ.",

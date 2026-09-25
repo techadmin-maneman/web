@@ -10,8 +10,7 @@
 //
 // Writes docs/fidelity/<width>/<nn>-<name>.jpg: the design on the left, the
 // build on the right. Differences in type, spacing, colour or order are defects.
-
-import { rmSync, writeFileSync } from "node:fs";
+// Each pair it makes is replaced; nothing else in docs/fidelity is touched.
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
@@ -24,17 +23,6 @@ const DESIGN_DIR = resolve("design");
 const SITE = "http://127.0.0.1:4311";
 const DESIGN = "http://127.0.0.1:4312/Mane%20Man%20Site%20v2.dc.html";
 const OUT = resolve("docs/fidelity");
-
-/** v2's city list, as GET /api/cities answers it. */
-const CITIES = [
-  { name: "Gurgaon", served: true },
-  { name: "Delhi", served: true },
-  { name: "Noida", served: true },
-  { name: "Faridabad", served: true },
-  { name: "Ghaziabad", served: true },
-  { name: "Mumbai", served: false },
-  { name: "Bengaluru", served: false },
-];
 
 /** The home page's sections, in order: v2's top-level blocks pair with these. */
 const HOME_SECTIONS = [
@@ -58,8 +46,7 @@ async function preparePage(browser: Browser, width: number): Promise<Page> {
   // The site's content security policy would refuse the style that stills the page; screenshots set it aside.
   const page = await browser.newPage({ viewport: { width, height: 900 }, bypassCSP: true });
   await page.route("**/*.mp4", (route) => route.abort());
-  // The build's pages call the API; here they get v2's cities and a Turnstile that passes.
-  await page.route("**/api/cities", (route) => route.fulfill({ json: CITIES }));
+  // The try-on readies Turnstile as it opens; here it gets one that passes.
   await page.route("https://challenges.cloudflare.com/turnstile/**", (route) =>
     route.fulfill({ contentType: "text/javascript", body: 'window.turnstile = { render: () => "fake", reset() {} };' }),
   );
@@ -250,15 +237,10 @@ async function run(browser: Browser, width: number): Promise<void> {
 const servers: Server[] = [await serveDirectory(SITE_DIR, 4311), await serveDirectory(DESIGN_DIR, 4312)];
 const browser = await chromium.launch();
 try {
-  for (const width of WIDTHS) rmSync(`${OUT}/${String(width)}`, { recursive: true, force: true });
   for (const width of WIDTHS) {
     console.log(`fidelity: ${String(width)} px`);
     await run(browser, width);
   }
-  writeFileSync(
-    `${OUT}/README.md`,
-    "# Fidelity screenshots\n\nThe design on the left, the build on the right. `npm run fidelity` makes the public site's, at 390 and 1440 px; `npm run fidelity:app` makes the client app's, in `client-app/`; `npm run fidelity:refer` makes the referral landing's, in `referral/`. The method, including Phase 2's boards, is in `docs/fidelity-method.md`.\n",
-  );
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();

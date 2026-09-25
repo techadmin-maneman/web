@@ -88,7 +88,7 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 
 23. **Download and WhatsApp.** _Download_ saves the result as a file. _WhatsApp_ shares the image through the phone's share sheet where the browser can share files. Elsewhere it opens WhatsApp with one line of text and no image: the result's link is private and expires, so it never goes in a URL.
 
-24. **Back after Generate.** v2's back control from processing leads to the looks. With one look per visitor, Generate for the same look returns the render already running, and a different look is refused as `look_limit_reached`.
+24. **Back after Generate.** v2's back control from processing leads to the looks. With one look per visitor, Generate for the same look returns the render already running, and a different look is refused as `look_limit_reached`. **Since 25 September 2026** the looks screen, reached back from processing or the gate, shows the chosen look fixed and the others unavailable, with a line saying why and Continue in place of Generate, which returns to the gate: a visitor who picked another look used to land on "The look you had." with the gate, and their number, lost. A new photograph unfixes it, and asks for the photograph's agreement afresh.
 
 25. **The photograph.** It is prepared as the AILabTools harness prepares it:
     - fitted within 4090 px;
@@ -107,7 +107,7 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 
 29. **The address is tidied on arrival.** A link carrying query parameters other than campaign tags loses them from the address bar before any analytics tag reads it. The campaign tags stay, as do the preview switches outside production.
 
-30. **The try-on countdown's contrast.** v2 draws the countdown in `#2A3A56` on `#0E1728`, a contrast of 1.6:1. That is under the 3:1 WCAG 2.2 AA asks of large text. The countdown is hidden from screen readers, which hear each finished step instead, but a sighted visitor with low vision may not read it. **Raised, not changed:** `#56678A` would reach 3.2:1. It is the one element the axe checks skip.
+30. **The try-on countdown's contrast.** v2 draws the countdown in `#2A3A56` on `#0E1728`, a contrast of 1.6:1. That is under the 3:1 WCAG 2.2 AA asks of large text. The countdown is hidden from screen readers, which hear each finished step instead, but a sighted visitor with low vision may not read it. **Raised, not changed:** `#56678A` would reach 3.2:1. It is the one element the axe checks skip. **Changed 25 September 2026:** the countdown is drawn in `--ink-line-strong` (#6B7B95), 4.2:1, a colour the site already has rather than a new one, and axe no longer skips it (ADR 0022, item 37).
 
 31. **The hair-colour detector reads some portraits as `unknown`.** The owner's own straight-on photograph, dark hair on a white background above a black suit, reads as `unknown`, and so is rendered black, which suits it. The detector is the harness's, unchanged:
     - thinning hair over the scalp reads as skin, so the head box starts too high;
@@ -137,3 +137,5 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
     - **Placeholders** are `--paper-hint` (#756D60, 5.1:1 on white), where v2's `--paper-placeholder` (#9A9284) is 3.1:1, under the 4.5:1 WCAG 1.4.3 asks of text.
     - **Keyboard focus on the drawn controls.** The booking form's dates, windows, extents and checkboxes are hidden inputs drawn as cells and boxes, so the ring is drawn on the cell or the box, as the try-on's choices already were (WCAG 2.4.7). A heading the page focuses to say where a step has moved to draws no ring: it is not a control.
     - **Nothing the keyboard reaches sits under a fixed bar.** The page scrolls a focused control clear of the header, and on the home page clear of the sticky bar (WCAG 2.4.11).
+
+38. **The try-on's result frame takes the photograph's shape at every width.** v2 draws the result in a frame as wide as its column. Since the frame took the photograph's own shape (23 September 2026), a portrait photograph taller than the frame's cap was letterboxed at 1440, with bands either side. The frame now narrows to keep the photograph's shape once it reaches the cap, so it is never letterboxed and never cropped; it is narrower than v2's column for a portrait photograph. The home page's teaser, which shows the design's own pair in a fixed band, fills it as v2 does.

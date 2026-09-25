@@ -154,7 +154,7 @@ test("the whole try-on: uploaded during the choices, the gate before the render 
 
   await page.clock.runFor(3_000);
   await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
-  await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after thirty days.")).toBeVisible();
+  await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after fourteen days.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Download" })).toHaveAttribute("aria-disabled", "false");
 
   // No name, number or image link in any address the page asked for, or in analytics.
@@ -303,4 +303,99 @@ test("the gate says when a number has had too many results today", async ({ page
   await page.getByRole("button", { name: "Show me the result" }).click();
   await expect(page.getByText("This number has had several results today. Please try again tomorrow.")).toBeVisible();
   await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
+});
+
+// FEO-21: pressing again after the answer was lost is the same claim, so it carries the same key.
+test("the gate pressed again after a lost answer sends the same request key", async ({ page }) => {
+  const seen = await mockApi(page, {
+    claim: [refusal(500, "internal_error"), { status: 201, json: { lead_id: LEAD } }],
+  });
+  await visit(page, "/try");
+  await throughToGenerate(page);
+  await page.clock.runFor(20_000);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill(MOBILE);
+  await page.getByRole("button", { name: "Show me the result" }).click();
+  await expect(page.getByText("That did not go through. Please try again in a minute.")).toBeVisible();
+  await page.getByRole("button", { name: "Show me the result" }).click();
+  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "result");
+  const keys = await Promise.all(named(seen, "claim").map((claim) => claim.headerValue("idempotency-key")));
+  expect(keys).toHaveLength(2);
+  expect(keys[1]).toBe(keys[0]);
+});
+
+// CLI-11: Back from the gate after the render has started used to offer every look, and a second look was refused
+// as look_limit_reached, losing the gate. The look now stays fixed, and Continue goes back to the gate.
+test("Back from the gate shows the chosen look fixed, and Continue returns to the gate", async ({ page }) => {
+  const seen = await mockApi(page);
+  await visit(page, "/try");
+  await throughToGenerate(page);
+  await page.clock.runFor(20_000);
+  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "looks");
+  await expect(page.getByRole("radio", { name: /^Preview Light density Natural/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: /^Preview Full density Natural/ })).toBeDisabled();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
+  expect(named(seen, "generate")).toHaveLength(1);
+});
+
+// FEO-19: the agreement is to one photograph's use; a second photograph is asked for afresh.
+test("a new photograph asks for the agreement again", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, "/try");
+  const reach = (screen: string) => page.locator(`[data-screen="${screen}"]`).waitFor();
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles(await drawnHeadPhoto());
+  await reach("consent");
+  await page.getByText("I understand, and I agree to my photograph being used this way.").click();
+  await expect(page.getByRole("checkbox")).toBeChecked();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await reach("upload");
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles(await drawnHeadPhoto([90, 70, 50]));
+  await reach("consent");
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+});
+
+// REQ-S4-05: the photograph is fitted within 4090 px, kept under 5 MB and stripped of its EXIF, the location
+// included, before it leaves the browser.
+test("a large photograph with a location in it is uploaded smaller and without it", async ({ page }) => {
+  const seen = await mockApi(page);
+  // Noise, so the JPEG is large enough that the page has to shrink it below 5 MB too.
+  const noise = { type: "gaussian", mean: 128, sigma: 60 } as const;
+  const large = await sharp({
+    create: { width: 4600, height: 6100, channels: 3, background: "#808080", noise },
+  })
+    .jpeg({ quality: 98 })
+    .withExif({
+      IFD0: { Make: "TestCamera" },
+      IFD3: { GPSLatitudeRef: "N", GPSLatitude: "28/1 28/1 0/1", GPSLongitudeRef: "E", GPSLongitude: "77/1 1/1 0/1" },
+    })
+    .toBuffer();
+  expect((await sharp(large).metadata()).exif).toBeDefined();
+
+  await visit(page, "/try");
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles({ name: "big.jpg", mimeType: "image/jpeg", buffer: large });
+  await page.locator('[data-screen="consent"]').waitFor();
+  await page.getByText("I understand, and I agree to my photograph being used this way.").click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect.poll(() => named(seen, "upload").length, { timeout: 30_000 }).toBe(1);
+
+  const sent = named(seen, "upload")[0]?.postDataBuffer() ?? Buffer.alloc(0);
+  const meta = await sharp(sent).metadata();
+  expect(meta.format).toBe("jpeg");
+  expect(Math.max(meta.width, meta.height)).toBeLessThanOrEqual(4090);
+  expect(sent.length).toBeLessThanOrEqual(5 * 1024 * 1024);
+  expect(meta.exif).toBeUndefined();
+  expect(sent.includes("TestCamera")).toBe(false);
 });

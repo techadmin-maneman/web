@@ -51,14 +51,13 @@ class Meta {
   }
 
   element(element: Element): void {
-    const property = element.getAttribute("property") ?? element.getAttribute("name");
+    // The page's X card reads these Open Graph tags; it carries none of its own (site/src/layouts/Site.astro).
+    const property = element.getAttribute("property");
     const name = this.invite?.referrer_first_name ?? null;
     const image = this.invite === null ? HOUSE_CARD : cardPath(this.invite, this.code);
-    if (property === "og:title" || property === "twitter:title") element.setAttribute("content", inviteTitle(name));
-    if (property === "og:description" || property === "twitter:description") {
-      element.setAttribute("content", inviteDescription(this.invite));
-    }
-    if (property === "og:image" || property === "twitter:image") element.setAttribute("content", this.origin + image);
+    if (property === "og:title") element.setAttribute("content", inviteTitle(name));
+    if (property === "og:description") element.setAttribute("content", inviteDescription(this.invite));
+    if (property === "og:image") element.setAttribute("content", this.origin + image);
     if (property === "og:url") element.setAttribute("content", `${this.origin}/r/${this.code}`);
   }
 }
