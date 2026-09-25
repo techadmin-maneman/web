@@ -35,18 +35,22 @@ declare global {
 
 let loading: Promise<TurnstileApi> | undefined;
 
+/** Loads the script once. A load that fails is forgotten, so the next attempt fetches it again. */
 function load(): Promise<TurnstileApi> {
-  loading ??= new Promise((resolve, reject) => {
+  loading ??= new Promise<TurnstileApi>((resolve, reject) => {
     const script = document.createElement("script");
     script.src = SCRIPT;
     script.async = true;
-    script.onload = () => {
-      if (window.turnstile === undefined) reject(new Error("Turnstile did not load"));
-      else resolve(window.turnstile);
-    };
-    script.onerror = () => {
+    const fail = () => {
+      script.remove();
+      loading = undefined;
       reject(new Error("Turnstile did not load"));
     };
+    script.onload = () => {
+      if (window.turnstile === undefined) fail();
+      else resolve(window.turnstile);
+    };
+    script.onerror = fail;
     document.head.append(script);
   });
   return loading;
@@ -54,13 +58,14 @@ function load(): Promise<TurnstileApi> {
 
 /**
  * A widget in `container` that keeps one fresh token. `token()` waits for it,
- * up to `waitMs`; `renew()` asks for another once a token has been used.
+ * up to `waitMs`, and first tries the script again if it had failed to load;
+ * `renew()` asks for another once a token has been used.
  */
 export function turnstileWidget(container: HTMLElement, siteKey: string) {
   let current: string | null = null;
   let waiting: ((token: string | null) => void)[] = [];
   let widget: string | undefined;
-  const api = load();
+  let api: Promise<TurnstileApi | undefined> | undefined;
 
   const settle = (token: string | null) => {
     current = token;
@@ -69,25 +74,34 @@ export function turnstileWidget(container: HTMLElement, siteKey: string) {
     waiting = [];
   };
 
-  void api
-    .then((turnstile) => {
-      widget = turnstile.render(container, {
-        sitekey: siteKey,
-        appearance: "interaction-only",
-        callback: settle,
-        "expired-callback": () => {
-          settle(null);
-        },
-        "error-callback": () => {
-          settle(null);
-        },
+  /** Renders the widget, unless it already has or is on its way to. */
+  const render = () => {
+    api ??= load()
+      .then((turnstile) => {
+        widget = turnstile.render(container, {
+          sitekey: siteKey,
+          appearance: "interaction-only",
+          callback: settle,
+          "expired-callback": () => {
+            settle(null);
+          },
+          "error-callback": () => {
+            settle(null);
+          },
+        });
+        return turnstile;
+      })
+      .catch(() => {
+        api = undefined;
+        return undefined;
       });
-    })
-    .catch(() => undefined);
+  };
+  render();
 
   return {
     token(waitMs = 15_000): Promise<string | null> {
       if (current !== null) return Promise.resolve(current);
+      render();
       return new Promise((resolve) => {
         waiting.push(resolve);
         setTimeout(() => {
@@ -97,7 +111,7 @@ export function turnstileWidget(container: HTMLElement, siteKey: string) {
     },
     async renew(): Promise<void> {
       current = null;
-      const turnstile = await api.catch(() => undefined);
+      const turnstile = await api;
       if (turnstile !== undefined && widget !== undefined) turnstile.reset(widget);
     },
   };

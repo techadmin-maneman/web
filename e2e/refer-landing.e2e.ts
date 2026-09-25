@@ -406,6 +406,22 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   expect(keys[1]).toBe(keys[0]);
 });
 
+// FEO-35: Turnstile's script failing to load once used to fail every booking until the page was reloaded.
+test("Turnstile that failed to load is tried again when the form is sent", async ({ page }) => {
+  const requests = await mockApi(page);
+  let failed = false;
+  await page.route("https://challenges.cloudflare.com/turnstile/**", (route) => {
+    if (failed) return route.fallback();
+    failed = true;
+    return route.abort("internetdisconnected");
+  });
+  await visit(page, `/r/${CODE}`);
+  await bookThrough(page);
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect(failed).toBe(true);
+  expect(requests).toHaveLength(1);
+});
+
 async function bookThrough(page: Page): Promise<void> {
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
