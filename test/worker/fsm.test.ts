@@ -272,6 +272,33 @@ describe("FSM: moving and cancelling a visit", () => {
     });
   });
 
+  it("puts an appointment on another technician, and reads it back to be sure FSM did", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/ap-1`]: (call) =>
+        call.method === "PUT"
+          ? json({ data: [{ code: "SUCCESS", message: "record updated" }] })
+          : json({ data: [fsmAppointmentRecord({ $Service_Resources: [{ id: "sr-2" }] })] }),
+    });
+    await provider.assignVisit("ap-1", "sr-2");
+    expect(JSON.parse(calls[1]?.body ?? "null")).toEqual({ data: [{ $Service_Resources: ["sr-2"] }] });
+    expect(calls[2]?.method).toBe("GET");
+  });
+
+  // A plain edit of an appointment's times answers "record updated" and changes
+  // nothing (docs/decisions/fsm-trial.md, question 7); the technician is a plain
+  // edit too, and has never been tried with a second technician.
+  it("refuses a reassignment FSM answered but did not make", async () => {
+    const { fsm: provider } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_Appointments/ap-1`]: (call) =>
+        call.method === "PUT"
+          ? json({ data: [{ code: "SUCCESS", message: "record updated" }] })
+          : json({ data: [fsmAppointmentRecord()] }),
+    });
+    await expect(provider.assignVisit("ap-1", "sr-2")).rejects.toThrow(/kept the appointment's technician/);
+  });
+
   it("starts a job by the appointment's own Start Work, by its ID, with the note FSM requires", async () => {
     const { fsm: provider, calls } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),

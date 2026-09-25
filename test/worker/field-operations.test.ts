@@ -816,6 +816,34 @@ describe("the no-show", () => {
   });
 });
 
+describe("dispatch, when FSM keeps its own technician", () => {
+  it("moves nothing, tells the client nothing, and records why", async () => {
+    // What the provider throws when its read-back finds the old technician still on the job.
+    fsm.failNext("assignVisit", "FSM answered the reassignment and kept the appointment's technician");
+
+    const answer = await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      technician_id: SAMEER,
+      reason: "zone_rebalance",
+    });
+
+    expect(answer.status).toBe(502);
+    const job = await env.DB.prepare("SELECT technician_id FROM appointments WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .first<{ technician_id: string }>();
+    expect(job?.technician_id).toBe(IMRAN);
+    expect(messageQueue.sent).toEqual([]);
+    const move = await env.DB.prepare("SELECT fsm_write_state, fsm_error FROM dispatch_moves").first<{
+      fsm_write_state: string;
+      fsm_error: string;
+    }>();
+    expect(move).toEqual({
+      fsm_write_state: "rejected",
+      fsm_error: "FSM answered the reassignment and kept the appointment's technician",
+    });
+  });
+});
+
 describe("dispatch", () => {
   it("refuses a move that would give one technician two jobs in one window", async () => {
     // Sameer already has a job in Monday's afternoon window.
