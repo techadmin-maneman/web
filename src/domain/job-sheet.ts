@@ -169,8 +169,8 @@ async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, n
     return;
   }
   if (job.personId === null || job.fsmContactId === null) return;
-  const base = typeof event.body.base === "string" ? event.body.base : null;
-  const lot = typeof event.body.supplier_lot === "string" ? event.body.supplier_lot : null;
+  const base = asText(event.body.base);
+  const lot = asText(event.body.supplier_lot);
   // The day in India the phone fitted it, not the day the write reached us.
   const fittedOn = indiaDate(new Date(event.occurredAt));
   await recordFittedPiece(deps.db, deps.fsm, {
