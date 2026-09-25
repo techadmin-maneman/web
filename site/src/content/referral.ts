@@ -1,5 +1,6 @@
 // The referral landing at /r/:code, word for word from the design
-// (design/phase2/Referral and Waitlist, boards C1 to C5).
+// (design/phase2/Referral and Waitlist, boards C1 to C5), except where we go
+// and how long each visit takes, which are the site's own (service.ts).
 //
 // The prices repeat the site's own (site.ts), because the design's open
 // question rules that a referred friend sees the same figures. The referrer's
@@ -8,14 +9,14 @@
 
 import type { Invite } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
+import { capitalised, serviceArea, visitLength } from "./service.ts";
 
 export const referral = {
-  city: "Gurgaon",
-  /** The navy block at the top, before the pincode is known (C1). */
+  /** The navy block at the top, before the pincode is known (C1). The design's "in Gurgaon" is the site's area. */
   arrival: {
     invited: "{name} sent you this",
     unnamed: "You have an invite",
-    title: "Hair, fitted at your home in Gurgaon.",
+    title: `Hair, fitted at your home across ${serviceArea}.`,
     offer: "Get fitted and you both get 3 service visits free.",
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
@@ -45,10 +46,23 @@ export const referral = {
   },
   howItWorks: {
     title: "How it works",
+    // The lengths are the backend's (service.ts), where the design wrote forty minutes and an hour.
     steps: [
-      { n: "1", title: "A free consultation at home", body: "Forty minutes. A scalp template and a colour match." },
-      { n: "2", title: "The fit, also at home", body: "Three hours. You leave the house wearing it." },
-      { n: "3", title: "A service visit every four weeks", body: "Lifted, cleaned, re-bonded, trimmed. An hour." },
+      {
+        n: "1",
+        title: "A free consultation at home",
+        body: `${capitalised(visitLength.consultation)}. A scalp template and a colour match.`,
+      },
+      {
+        n: "2",
+        title: "The fit, also at home",
+        body: `${capitalised(visitLength.firstFit)}. You leave the house wearing it.`,
+      },
+      {
+        n: "3",
+        title: "A service visit every four weeks",
+        body: `Lifted, cleaned, re-bonded, trimmed. ${capitalised(visitLength.service)}.`,
+      },
     ],
   },
   /** The pincode check, which decides whether the page books or takes a number (C1, C2, C3). */
@@ -65,7 +79,7 @@ export const referral = {
   consultation: {
     served: "We come to {area}",
     title: "Book a free consultation",
-    body: "Forty minutes. Nothing fitted, nothing to pay.",
+    body: `${capitalised(visitLength.consultation)}. Nothing fitted, nothing to pay.`,
     date: "Pick a date",
     window: "Window",
     windows: [
@@ -84,7 +98,7 @@ export const referral = {
   waitlist: {
     title: "We are not in {area} yet",
     titleUnknown: "We are not there yet",
-    body: "Gurgaon only, for now.",
+    body: `${serviceArea} only, for now.`,
     leave: "Leave us your number",
     forPincode: "For {pincode}{area}.",
     contactConsent: "You may contact me about this request.",
@@ -148,8 +162,8 @@ export const referral = {
   preview: {
     title: "{name} sent you a Mane Man invite",
     titleUnnamed: "You have a Mane Man invite",
-    description: "Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.",
-    descriptionWithout: "Home-fitted hair systems in Gurgaon.",
+    description: `Home-fitted hair systems across ${serviceArea}. 3 service visits free when you're fitted.`,
+    descriptionWithout: `Home-fitted hair systems across ${serviceArea}.`,
   },
 };
 

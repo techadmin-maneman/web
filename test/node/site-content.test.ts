@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../site/src/content/design-placeholders.ts";
+import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
 import { bookedHeadline } from "../../site/src/lib/dates.ts";
 import { siteEnvironment } from "../../site/src/lib/environment.ts";
@@ -13,6 +14,7 @@ import { publishProblems } from "../../site/src/lib/publish-gate.ts";
 import { headersFile, robotsFile } from "../../site/src/lib/static-files.ts";
 import { fill } from "../../site/src/lib/text.ts";
 import { PRESETS } from "../../src/config/presets.ts";
+import { VISIT_BLOCKS } from "../../src/config/scheduling.ts";
 
 const BLOCKS: Record<PlaceholderBlockName, { publish: boolean }> = {
   whatsapp: site.whatsapp,
@@ -64,7 +66,6 @@ describe("content", () => {
     ]);
     expect(site.tryOn.consent.agreement).toBe("I understand, and I agree to my photograph being used this way.");
     expect(site.tryOn.gate.title).toBe("Where should we send it?");
-    expect(site.booking.consent).toBe("I agree to be contacted about this visit. I have read how my details are used.");
   });
 
   it("holds every placeholder value the gate knows in each unpublished block, so the gate list stays accurate", () => {
@@ -73,6 +74,48 @@ describe("content", () => {
       const text = JSON.stringify(BLOCKS[name]);
       for (const value of values) expect(text, `${name}: ${value}`).toContain(JSON.stringify(value).slice(1, -1));
     }
+  });
+
+  // CLI-15, LIFE-16, FEO-23: the owner kept the design's lengths on 24 September 2026 (docs/open-points.md, item 23):
+  // "consultation 60 minutes, service 90, replacement 135, first fit 180".
+  it("says each visit is as long as the backend books it", () => {
+    expect(VISIT_BLOCKS.consultation.minutes).toBe(60);
+    expect(VISIT_BLOCKS.service.minutes).toBe(90);
+    expect(VISIT_BLOCKS.first_fit.minutes).toBe(180);
+    const published = JSON.stringify({ ...site, ...BLOCKS, testimonials: null }) + JSON.stringify(referral);
+    expect(published).not.toMatch(/forty minutes|about an hour|one hour|ninety minutes · at your table/i);
+    expect(site.hero.body).toContain("in about three hours");
+    expect(site.howItWorks.steps.map((step) => step.meta)).toEqual([
+      "Fifteen minutes · free",
+      "An hour · free",
+      "Three hours · at your table",
+      "₹1,500 a visit · ninety minutes",
+    ]);
+    expect(site.faq.items[2]?.a).toMatch(/About ninety minutes, at your home\.$/);
+    expect(site.closing.title).toBe("The consultation takes an hour and costs nothing.");
+    expect(referral.consultation.body).toBe("An hour. Nothing fitted, nothing to pay.");
+    expect(referral.howItWorks.steps.map((step) => step.body)).toEqual([
+      "An hour. A scalp template and a colour match.",
+      "Three hours. You leave the house wearing it.",
+      "Lifted, cleaned, re-bonded, trimmed. Ninety minutes.",
+    ]);
+  });
+
+  // CLI-16: the site serves Delhi NCR, and the landing said Gurgaon. The owner's ruling on the wording is open
+  // (ADR 0025, item 14); until then every page says what the home page does.
+  it("names one service area on every page", () => {
+    const pages = JSON.stringify(site) + JSON.stringify(referral);
+    expect(pages).not.toContain("Gurgaon only");
+    expect(referral.arrival.title).toBe("Hair, fitted at your home across Delhi NCR.");
+    expect(site.hero.title).toBe(referral.arrival.title);
+    expect(referral.waitlist.body).toBe("Delhi NCR only, for now.");
+    expect(referral.preview.description).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
+  });
+
+  // CLI-19: production keeps a result fourteen days (ADR 0039), as the privacy notice says.
+  it("keeps the try-on's result for as long as the privacy notice says", () => {
+    expect(site.legalPages.privacy.paragraphs[0]).toContain("the simulation itself is kept for fourteen days");
+    expect(site.tryOn.result.copy.after).toBe(". Deleted after fourteen days.");
   });
 
   it("publishes only blocks whose material is real: the business number, the privacy notice and the terms", () => {

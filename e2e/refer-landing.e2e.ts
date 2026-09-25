@@ -61,7 +61,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await visit(page, `/r/${CODE}`);
 
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home in Gurgaon.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home across Delhi NCR.");
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeVisible();
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
@@ -190,7 +190,7 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   );
   await visit(page, `/r/${CODE}`);
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home in Gurgaon.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home across Delhi NCR.");
   await expect(page.getByText("You have an invite")).toBeVisible();
   await expect(page.getByText("We do not recognise this invite")).toBeHidden();
   await expect(page.getByText(/3 service visits/)).toHaveCount(0);

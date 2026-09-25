@@ -78,7 +78,7 @@ test("says nothing about an invite to someone who came here directly", async ({ 
   await page.getByRole("button", { name: "Check" }).click();
   // The page is headed once, not twice: the form beneath it repeats nothing.
   await expect(page.getByRole("heading", { name: "Book a free consultation" })).toHaveCount(1);
-  await expect(page.getByText("Forty minutes. Nothing fitted, nothing to pay.")).toBeVisible();
+  await expect(page.getByText("An hour. Nothing fitted, nothing to pay.")).toBeVisible();
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 
   await visit(page, "/book");

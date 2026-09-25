@@ -208,7 +208,7 @@ test.describe("home sections", () => {
   test("the closing band books a free consultation", async ({ page }) => {
     await page.goto("/");
     const closing = page.locator('[data-section="closing"]');
-    await expect(closing).toContainText("The consultation takes forty minutes and costs nothing.");
+    await expect(closing).toContainText("The consultation takes an hour and costs nothing.");
     await expect(closing.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
   });
 });

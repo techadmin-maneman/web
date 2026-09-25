@@ -59,7 +59,7 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 
 15. **The Norwood fallback drawings.** Content can switch the Norwood cards to v2's line drawings (`_nwOld`) when the photographs are not cleared. v2 keeps each stage's bald region, but not the head drawing it was clipped to, so the fallback shows the regions alone. It needs a design pass before it is used.
 
-16. **"Your photograph is deleted after thirty days."** v2 says this in three places. The backend keeps a photograph for an hour and a result for thirty days (staging: three), so the promise holds. The words are v2's.
+16. **"Your photograph is deleted after thirty days."** v2 says this in three places. The backend keeps a photograph for an hour and a result for fourteen days in production (ADR 0039; staging: three), so the promise holds. The words are v2's. The result screen's "A copy is on its way to … Deleted after thirty days." spoke of the simulation, which the privacy notice keeps for fourteen days, so it reads "Deleted after fourteen days." (25 September 2026).
 
 ## Tooling
 
