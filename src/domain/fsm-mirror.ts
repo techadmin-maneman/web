@@ -93,16 +93,28 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
   ];
   const visit = visitOf(appointment, status);
   if (visit !== null) {
+    const partialReason = visit.outcome === "partial" ? await partialReasonOf(db, id) : null;
     statements.push(
       db
         .prepare(
-          `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at)
-           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+          `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, partial_reason,
+             updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
            ON CONFLICT (appointment_id) DO UPDATE SET
              started_at = excluded.started_at, ended_at = excluded.ended_at,
-             duration_minutes = excluded.duration_minutes, outcome = excluded.outcome, updated_at = excluded.updated_at`,
+             duration_minutes = excluded.duration_minutes, outcome = excluded.outcome,
+             partial_reason = excluded.partial_reason, updated_at = excluded.updated_at`,
         )
-        .bind(crypto.randomUUID(), id, visit.startedAt, visit.endedAt, visit.durationMinutes, visit.outcome, at),
+        .bind(
+          crypto.randomUUID(),
+          id,
+          visit.startedAt,
+          visit.endedAt,
+          visit.durationMinutes,
+          visit.outcome,
+          partialReason,
+          at,
+        ),
     );
   }
   await db.batch(statements);
@@ -122,6 +134,24 @@ function visitOf(appointment: FsmAppointment, status: AppointmentStatus) {
   const durationMinutes =
     startedAt !== null && endedAt !== null ? Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / 60_000) : null;
   return { startedAt, endedAt, durationMinutes, outcome: status === "completed" ? "done" : "partial" };
+}
+
+/**
+ * Why a visit ended partial: the reason the technician chose from the app's
+ * list (src/config/job-sheet.ts), or `no_show` for a client who was not home.
+ * FSM holds it only as prose in the closing note, so it comes from the job's
+ * own outcome event. Null for a visit closed in FSM's own screen.
+ */
+async function partialReasonOf(db: D1Database, appointmentId: string): Promise<string | null> {
+  const row = await db
+    .prepare(
+      `SELECT json_extract(body, '$.outcome') AS outcome, json_extract(body, '$.reason') AS reason FROM job_events
+       WHERE appointment_id = ?1 AND kind = 'outcome' AND superseded = 0 ORDER BY received_at DESC LIMIT 1`,
+    )
+    .bind(appointmentId)
+    .first<{ outcome: unknown; reason: unknown }>();
+  if (row?.outcome === "no_show") return "no_show";
+  return typeof row?.reason === "string" ? row.reason : null;
 }
 
 /**
