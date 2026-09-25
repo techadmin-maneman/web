@@ -9,7 +9,7 @@ D1 runs each file in `migrations/` once, in order, in one transaction, with fore
 3. **Number it after merging `main`.** Take the next free number, contiguous with the rest, and renumber if `main` takes it first.
 4. **Never rebuild a table another table points at.** SQLite's recipe (create a copy, move the rows, drop the old one, rename) needs foreign keys switched off, and D1 ignores that pragma inside its transaction. Dropping the parent is a violation that re-creating it does not undo. Migration 0025 tried it on `leads`, which `tryon_jobs` points at, and staging refused it.
 5. **Change a column on such a table by swapping it in place**, as migration 0031 does: add the new column, copy the values across, drop the old column, rename the new one. The table and every reference into it stay put. SQLite will not drop a column that is indexed, unique, a key, or named in a view, trigger or `CHECK` elsewhere: drop what depends on it first, and put it back after.
-6. **No filler in place of "not known".** A `NOT NULL` column needs a real value for every row, old and new. `checkins.distance_m` is `NOT NULL`, so a check-in with no address to measure against stores 0, and the console showed "0 m" until its read learnt to tell the two apart. Where a value can be missing, the column is nullable.
+6. **No filler in place of "not known".** A `NOT NULL` column needs a real value for every row, old and new. `checkins.distance_m` began as `NOT NULL`, so a check-in with no address to measure against stored 0, the console showed "0 m" for it until its read learnt to tell the two apart, and the column then had to be swapped for a nullable one. Where a value can be missing, make the column nullable from the start.
 
 ## Deleting rows
 

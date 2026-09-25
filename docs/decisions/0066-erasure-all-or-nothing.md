@@ -16,7 +16,7 @@ The audit of 24 September 2026 (findings LIFE-01, ARCH-02, OPS-02) found three w
 **One D1 batch, then the files.**
 
 - The batch blanks the person and everything personal they left, ends their sessions, voids their codes, cancels their unsent messages and expires their try-on jobs. Before deleting a row, it first clears or deletes every row that points at it:
-  - an address a technician's check-in was measured against is blanked to its city and pincode instead of deleted. The check-in points at it, and the no-show evidence reads a check-in with no address as "not measured", so detaching it would change what ops rule a charge on;
+  - an address a technician's check-in was measured against is blanked to its city and pincode instead of deleted. The check-in points at it, and stays whole as the evidence ops rule a no-show on: until migration 0035, the no-show evidence read a check-in with no address as "not measured", so detaching the address would have changed what ops charge on;
   - the codes of a number change are deleted with the change.
 - The caller's own statements go in the same batch: the ops decision's audit entry and the request's new state. So a decision is recorded only if the erasure happened, and a failed erasure changes nothing and can simply be asked for again.
 - Then the files are deleted from R2, each before the row that names it. If R2 fails part-way, the person stays erased, and `people.files_erased_at` stays empty (migration 0036). The cron's `erased_files` job deletes what is left, a few people a run, and sets it.

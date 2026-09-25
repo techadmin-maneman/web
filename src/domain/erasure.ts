@@ -181,7 +181,7 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
     // Phase 2's own personal data (docs/decisions/0049-dpdp.md): where they live, the numbers they changed
     // between, and the words of any grievance. Visits, payments and credits stay, as records. An address a
     // technician's check-in was measured against is blanked to its city and pincode rather than deleted: the
-    // check-in points at it, and its distance is the no-show evidence ops rule on.
+    // check-in points at it, and stays whole as the evidence ops rule a no-show on.
     db
       .prepare(
         `UPDATE addresses SET line1 = 'Erased', line2 = NULL, locality = 'Erased', access_notes = NULL, lat = NULL,
