@@ -1,6 +1,6 @@
 // "Book your next visit" and its kin: the booking sheet where self-serve
 // booking is on, WhatsApp to ops with a message ready where it is off (ADR
-// 0043), and nothing offline. Booked, Home is fetched again.
+// 0043), and nothing offline. Once money has moved, Home is fetched again.
 
 import { useState } from "react";
 import { whatsappWith } from "../lib/whatsapp.ts";
@@ -39,9 +39,9 @@ export function BookButton({ label, message, className }: { label: string; messa
       {open && (
         <BookingSheet
           type={type}
-          onClose={(booked) => {
+          onClose={(changed) => {
             setOpen(false);
-            if (booked) refresh();
+            if (changed) refresh();
           }}
         />
       )}

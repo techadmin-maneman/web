@@ -71,6 +71,58 @@ test("the session survives a reload, and logging out ends it", async ({ page, re
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
+test("a session that ends mid-use goes back to the login, says why, and returns to the page", async ({
+  page,
+  request,
+}) => {
+  const mobile = await booked(request);
+  await sendCode(page, mobile);
+  await enter(page, CODE);
+  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  // Home as the service worker keeps it, which the tests otherwise block.
+  await page.evaluate(async () => {
+    await (await caches.open("mm-app-home")).put("/api/me", new Response("{}"));
+  });
+
+  // The session ends while the app is open: it ran out, or was ended on another phone.
+  await page.context().clearCookies();
+  await page.getByRole("navigation").getByRole("link", { name: "Payments" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await expect(page.getByText("Your session has ended. Log in again to carry on.")).toBeVisible();
+  expect(await page.evaluate(() => caches.has("mm-app-home"))).toBe(false);
+  await expect(page).toHaveURL(/\/payments$/);
+
+  await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
+  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await enter(page, CODE);
+  await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
+});
+
+test("logging out takes the API's word for it: offline it waits, and a refusal keeps the client in", async ({
+  page,
+  request,
+}) => {
+  await sendCode(page, await booked(request));
+  await enter(page, CODE);
+  await page.getByRole("link", { name: "Your profile" }).click();
+  await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
+  const logOut = page.getByRole("button", { name: "Log out" });
+
+  await page.context().setOffline(true);
+  await expect(logOut).toBeDisabled();
+  await page.context().setOffline(false);
+  await expect(logOut).toBeEnabled();
+
+  await page.route("**/api/auth/logout", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "e2e" } } }),
+  );
+  await logOut.click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "That did not go through, so you are still logged in here. Please try again.",
+  );
+  await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
+});
+
 test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ page, request }) => {
   await sendCode(page, await booked(request));
   await enter(page, CODE);
@@ -160,6 +212,58 @@ test("the WhatsApp resend counts down from 30 seconds, and SMS is offered after 
   await expect(page.getByRole("button", { name: "Resend on WhatsApp" })).toBeVisible();
   // The local API has the stub SMS provider, so SMS is available here.
   await expect(page.getByRole("button", { name: "Send by SMS instead" })).toBeVisible();
+  // The count is shown and not spoken; that it has run out is said once.
+  await expect(page.getByRole("status")).toHaveText("You can ask for a new code now.");
+});
+
+test("says the code is read automatically only when it comes by SMS, the one a phone can read", async ({
+  page,
+  request,
+}) => {
+  await page.clock.install();
+  await sendCode(page, await booked(request));
+  await expect(page.getByText("Read automatically where your phone allows")).toHaveCount(0);
+  await page.clock.runFor(31_000);
+  // The API counts its 30 seconds on its own clock, which the page's has run ahead of, so it answers here.
+  await page.route("**/api/auth/otp/sms", (route) =>
+    route.fulfill({
+      status: 202,
+      json: {
+        challenge_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        channel: "sms",
+        expires_in_s: 600,
+        resend_in_s: 30,
+        sms_in_s: null,
+      },
+    }),
+  );
+  await page.getByRole("button", { name: "Send by SMS instead" }).click();
+  await expect(page.getByText("a code is on its way by SMS.")).toBeVisible();
+  await expect(page.getByText("Read automatically where your phone allows")).toBeVisible();
+});
+
+test("names each login screen in the browser's title, and puts focus where the client carries on", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page).toHaveTitle("Your mobile number · Mane Man");
+  await sendCode(page, await booked(request));
+  await expect(page).toHaveTitle("Enter the code · Mane Man");
+  const field = page.getByRole("textbox", { name: "The six-digit code" });
+  await expect(field).toBeFocused();
+
+  await enter(page, WRONG);
+  await expect(page.getByRole("alert")).toHaveText("That code did not match. Four attempts left.");
+  await expect(field).toBeFocused();
+
+  await page.getByRole("button", { name: "No booking on this number?" }).click();
+  await expect(page).toHaveTitle("No booking on this number? · Mane Man");
+  await expect(page.getByRole("heading", { level: 1, name: "No booking on this number?" })).toBeFocused();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(field).toBeFocused();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeFocused();
 });
 
 test("offers no SMS where the API has no SMS provider", async ({ page }) => {

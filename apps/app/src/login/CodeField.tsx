@@ -1,6 +1,7 @@
 // The code's six boxes (board A2), as one labelled field: assistive technology
 // sees a single input, and the boxes only draw what is typed into it.
 
+import type { Ref } from "react";
 import styles from "./CodeField.module.css";
 
 interface Props {
@@ -8,12 +9,15 @@ interface Props {
   readonly label: string;
   readonly invalid: boolean;
   readonly onChange: (value: string) => void;
+  /** The input itself, so the screen can put focus back in it after a wrong code. */
+  readonly ref?: Ref<HTMLInputElement>;
 }
 
-export function CodeField({ value, label, invalid, onChange }: Props) {
+export function CodeField({ value, label, invalid, onChange, ref }: Props) {
   return (
     <div className={styles.field} data-invalid={invalid}>
       <input
+        ref={ref}
         className={styles.input}
         value={value}
         onChange={(event) => {

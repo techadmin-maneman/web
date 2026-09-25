@@ -99,11 +99,12 @@
   color: var(--text-muted);
 }
 
+/* A field's edge is --paper-control, 3:1 against paper and white (WCAG 1.4.11; ADR 0025, item 36). */
 .input,
 .numberInput {
   height: var(--btn-lg);
   padding: 0 var(--sp-15);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
   font-size: var(--fs-16);
@@ -120,7 +121,7 @@
   display: flex;
   height: var(--btn-lg);
   margin-top: var(--sp-16);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: var(--white);
 }
 
@@ -269,8 +270,12 @@ textarea.input {
   color: var(--text-muted);
 }
 
-/* The switch, square as the design draws it: ink with a paper knob when on, white with a line knob when off. */
+/*
+ * The switch, square as the design draws it: ink with a paper knob when on, white with a line knob when off,
+ * edged in --paper-control (WCAG 1.4.11). Drawn 26 px tall, it answers a tap 44 px tall, the brief's smallest target.
+ */
 .switch {
+  position: relative;
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -278,9 +283,16 @@ textarea.input {
   width: var(--switch-width);
   height: var(--sp-26);
   padding: var(--sp-2);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   cursor: pointer;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  /* Measured from inside the border, which the 26 px includes. */
+  inset: calc((var(--sp-26) - var(--tap)) / 2 - var(--hairline)) 0;
 }
 
 .knob {

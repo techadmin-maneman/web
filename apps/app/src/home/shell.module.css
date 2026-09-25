@@ -93,24 +93,23 @@
   color: var(--gilt);
 }
 
-/* Each page pads itself, as its board does, and fades in as a tab changes: never sliding. */
+/*
+ * Each page pads itself, as its board does, and fades in as a tab changes:
+ * never sliding. A control the keyboard reaches is scrolled clear of the
+ * page's edges, where its focus ring would otherwise be cut.
+ */
 .page {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scroll-padding-block: var(--sp-8);
   animation: arrive var(--ease);
 }
 
 @keyframes arrive {
   from {
     opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .page {
-    animation: none;
   }
 }
 
@@ -122,12 +121,15 @@
   background: var(--paper);
 }
 
-/* Installed on an iPhone, the app runs to the bottom edge (viewport-fit=cover): the tabs' ground does too, and their row keeps clear of the home indicator. */
+/*
+ * Installed on an iPhone, the app runs to the bottom edge (viewport-fit=cover): the tabs' ground does too, and
+ * their row keeps clear of the home indicator. Each tab is the brief's full 64 px, the bar's rule above it.
+ */
 .tabs {
   display: grid;
   flex-shrink: 0;
   grid-template-columns: repeat(5, 1fr);
-  height: calc(var(--tap-row) + env(safe-area-inset-bottom));
+  height: calc(var(--tap-row) + var(--hairline) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   border-top: var(--hairline) solid var(--paper-line);
   background: var(--paper-light);
@@ -148,9 +150,44 @@
   color: var(--ink);
 }
 
+/* Drawn inside, since each sits against the frame's edge, where a ring outside would be cut. */
 .avatar:focus-visible,
 .back:focus-visible,
 .tab:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+/*
+ * On a phone wider than the design's column (a 414 or 430 px one), the frame's
+ * grounds and rules run on to the screen's edges, where they would otherwise
+ * stop short with a bare strip each side. Each is painted past its own box by
+ * a border image, which never makes the page scroll sideways. Wider screens,
+ * a tablet's or a desk's, keep the column as it is drawn.
+ */
+@media (max-width: 480px) {
+  .header,
+  .offline,
+  .footer,
+  .tabs {
+    border-image-slice: 0 fill;
+    border-image-width: 0;
+    /* Far enough past the column to reach the edge of any screen. */
+    border-image-outset: 0 100vmax;
+  }
+
+  .header {
+    border-image-source: linear-gradient(to top, var(--paper-line) var(--hairline), var(--paper) 0);
+  }
+
+  .offline {
+    border-image-source: linear-gradient(var(--ink-deep), var(--ink-deep));
+  }
+
+  .footer {
+    border-image-source: linear-gradient(var(--paper-line) var(--hairline), var(--paper) 0);
+  }
+
+  .tabs {
+    border-image-source: linear-gradient(var(--paper-line) var(--hairline), var(--paper-light) 0);
+  }
 }

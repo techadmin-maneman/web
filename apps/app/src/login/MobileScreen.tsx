@@ -10,10 +10,12 @@ interface Props {
   readonly initial: string;
   readonly busy: boolean;
   readonly error: string | null;
+  /** The session ended while the app was open, so the client is told why they are here. */
+  readonly ended: boolean;
   readonly onSubmit: (digits: string) => void;
 }
 
-export function MobileScreen({ initial, busy, error, onSubmit }: Props) {
+export function MobileScreen({ initial, busy, error, ended, onSubmit }: Props) {
   const copy = login.mobile;
   const [typed, setTyped] = useState(initial);
   const [invalid, setInvalid] = useState(false);
@@ -24,6 +26,11 @@ export function MobileScreen({ initial, busy, error, onSubmit }: Props) {
       <div className={`${styles.body} ${styles.first}`}>
         <Mark className={styles.mark} />
         <h1 className={styles.title}>{copy.title}</h1>
+        {ended && (
+          <p className={styles.notice} role="alert">
+            {copy.ended}
+          </p>
+        )}
         <form
           className={styles.form}
           noValidate

@@ -2,6 +2,7 @@
 // same-origin, so the session cookie goes with it and the Origin matches.
 
 import type { components } from "./api-schema.ts";
+import { heardFromApi } from "./lib/clock.ts";
 
 type Schemas = components["schemas"];
 export type LoginChallenge = Schemas["LoginChallenge"];
@@ -24,6 +25,7 @@ export type Entry = Schemas["PaymentEntry"] | Schemas["RefundEntry"];
 export type EntryDetail = Schemas["PaymentDetail"] | Schemas["RefundDetail"];
 export type Availability = Schemas["Availability"];
 export type Hold = Schemas["Hold"];
+export type Price = Schemas["Price"];
 export type Booking = Schemas["Booking"];
 export type MoveTerms = Schemas["MoveTerms"];
 export type CancelTerms = Schemas["CancelTerms"];
@@ -56,6 +58,43 @@ export async function keptHome(): Promise<Me | null> {
   return kept === undefined ? null : ((await kept.json()) as Me);
 }
 
+/** A call that never reached the API: no connection, or something else answering in its place. */
+const OFFLINE = { ok: false, status: 0, code: "offline" } as const;
+
+const sessionListeners = new Set<() => void>();
+
+/**
+ * A 401 from any call means the session has ended: it ran out, or the client
+ * logged out on another phone. App forgets the kept Home and shows the login
+ * (apps/app/src/App.tsx), wherever the client was, so no page has to handle it.
+ */
+export function onSessionEnded(listener: () => void): () => void {
+  sessionListeners.add(listener);
+  return () => {
+    sessionListeners.delete(listener);
+  };
+}
+
+async function answerOf<T>(response: Response): Promise<Answer<T>> {
+  if (!response.ok) {
+    const error = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
+    if (response.status === 401) for (const listener of sessionListeners) listener();
+    return { ok: false, status: response.status, code: error?.error?.code ?? "unknown" };
+  }
+  const cached = response.headers.get(SERVED_FROM) === "cache";
+  if (!cached) heardFromApi(response.headers.get("Date"));
+  let value: unknown = null;
+  if (response.status !== 204) {
+    try {
+      value = await response.json();
+    } catch {
+      // An answer that is not JSON is not ours (a Wi-Fi sign-in page, say), so the API was not reached.
+      return OFFLINE;
+    }
+  }
+  return { ok: true, status: response.status, body: value as T, cached };
+}
+
 async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<Answer<T>> {
   let response: Response;
   try {
@@ -66,19 +105,9 @@ async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   } catch {
-    return { ok: false, status: 0, code: "offline" };
+    return OFFLINE;
   }
-  if (response.ok) {
-    const value = response.status === 204 ? null : ((await response.json()) as unknown);
-    return {
-      ok: true,
-      status: response.status,
-      body: value as T,
-      cached: response.headers.get(SERVED_FROM) === "cache",
-    };
-  }
-  const error = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
-  return { ok: false, status: response.status, code: error?.error?.code ?? "unknown" };
+  return answerOf<T>(response);
 }
 
 export const api = {
@@ -140,22 +169,18 @@ export const documentUrl = (id: string) => `/api/documents/${id}`;
 export const receiptUrl = (paymentId: string) => `/api/payments/${paymentId}/receipt`;
 /** The client's own referral card, as the phone composed it. */
 export async function putCard(card: Blob): Promise<Answer<{ version: number }>> {
+  let response: Response;
   try {
-    const response = await fetch("/api/refer/card", {
+    response = await fetch("/api/refer/card", {
       method: "PUT",
       credentials: "same-origin",
       headers: { "Content-Type": "image/jpeg" },
       body: card,
     });
-    if (response.ok) {
-      const body = (await response.json()) as { version: number };
-      return { ok: true, status: response.status, body, cached: false };
-    }
-    const error = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
-    return { ok: false, status: response.status, code: error?.error?.code ?? "unknown" };
   } catch {
-    return { ok: false, status: 0, code: "offline" };
+    return OFFLINE;
   }
+  return answerOf<{ version: number }>(response);
 }
 
 /** Everything held about the client, as a file the browser saves. */

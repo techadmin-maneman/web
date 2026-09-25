@@ -1,11 +1,15 @@
 // The client app: the login until there is a session, then Home and its tabs.
 // Whether there is a session is the API's to say: the cookie is HttpOnly, and
-// the app keeps no token of its own. Offline, Home is the last one the service
-// worker kept (board B3), until the connection is back.
+// the app keeps no token of its own. A 401 from any call means the session has
+// ended, wherever the client is: the kept Home is forgotten and the login
+// shown on the same page, saying why. Offline, Home is the last one the
+// service worker kept (board B3), until the connection is back.
 
-import { Fragment, useCallback, useEffect, useState } from "react";
-import { api, forgetHome, keptHome, type Me } from "./api.ts";
+import { useCallback, useEffect, useState } from "react";
+import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";
+import { titles } from "./content.ts";
 import { HomeScreen } from "./home/HomeScreen.tsx";
+import { focusIfLost, nameInTitle } from "./lib/arrival.ts";
 import { ReferScreen } from "./refer/ReferScreen.tsx";
 import { TrackerScreen } from "./refer/TrackerScreen.tsx";
 import { Login } from "./login/Login.tsx";
@@ -16,6 +20,7 @@ import { PhotosScreen } from "./photos/PhotosScreen.tsx";
 import { ProfileScreen } from "./profile/ProfileScreen.tsx";
 import { go, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
+import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import { LoadFailed } from "./states/LoadFailed.tsx";
 import { VisitScreen } from "./visits/VisitScreen.tsx";
 import { VisitsScreen } from "./visits/VisitsScreen.tsx";
@@ -23,11 +28,12 @@ import styles from "./app.module.css";
 
 type Session =
   | { readonly kind: "checking" }
-  | { readonly kind: "out" }
+  /** `ended`: the session ended while the app was open, rather than never having begun here. */
+  | { readonly kind: "out"; readonly ended: boolean }
   | { readonly kind: "failed"; readonly booked: boolean }
   | { readonly kind: "in"; readonly me: Me; readonly offline: boolean };
 
-function pageFor(route: Route, onLogout: () => void, onChanged: () => void) {
+function pageFor(route: Route, onChanged: () => void) {
   switch (route.page) {
     case "home":
       return <HomeScreen />;
@@ -48,7 +54,7 @@ function pageFor(route: Route, onLogout: () => void, onChanged: () => void) {
     case "fitted":
       return <TrackerScreen />;
     case "profile":
-      return <ProfileScreen onLogout={onLogout} onChanged={onChanged} />;
+      return <ProfileScreen onChanged={onChanged} />;
   }
 }
 
@@ -58,23 +64,15 @@ async function stillBooked(): Promise<boolean> {
   return kept !== null && (kept.next_visit !== null || kept.consultation !== null);
 }
 
+/** Waits `ms` milliseconds. */
+const pause = (ms: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
 export function App() {
   const [session, setSession] = useState<Session>({ kind: "checking" });
   const path = usePath();
-
-  const check = useCallback(async () => {
-    setSession({ kind: "checking" });
-    const answer = await api.me();
-    if (answer.ok) setSession({ kind: "in", me: answer.body, offline: answer.cached });
-    else if (answer.status === 401) {
-      await forgetHome();
-      setSession({ kind: "out" });
-    } else setSession({ kind: "failed", booked: await stillBooked() });
-  }, []);
-
-  useEffect(() => {
-    void check();
-  }, [check]);
 
   /**
    * Home fetched again without the blank wait: after the profile changes it, or when the connection is
@@ -88,36 +86,74 @@ export function App() {
     return answer.ok && !answer.cached;
   }, []);
 
+  /** A connection is often not usable the moment it returns, so Home is tried a few times. */
+  const refreshSoon = useCallback(async () => {
+    for (const wait of [0, 1_000, 3_000, 10_000]) {
+      await pause(wait);
+      if (await refresh()) return;
+    }
+  }, [refresh]);
+
+  const check = useCallback(async () => {
+    setSession({ kind: "checking" });
+    const answer = await api.me();
+    if (answer.ok) {
+      setSession({ kind: "in", me: answer.body, offline: answer.cached });
+      // The kept Home on a phone that says it is online: a signal too weak to answer in time, so try again.
+      if (answer.cached && navigator.onLine) void refreshSoon();
+    } else if (answer.status === 401) {
+      await forgetHome();
+      setSession({ kind: "out", ended: false });
+    } else setSession({ kind: "failed", booked: await stillBooked() });
+  }, [refreshSoon]);
+
+  useEffect(() => {
+    void check();
+  }, [check]);
+
+  // Signed in, a 401 from any call ends the session: the screens go first, then the kept Home.
+  const signedIn = session.kind === "in";
+  useEffect(() => {
+    if (!signedIn) return;
+    return onSessionEnded(() => {
+      setSession({ kind: "out", ended: true });
+      void forgetHome();
+    });
+  }, [signedIn]);
+
   useEffect(() => {
     const lost = () => {
       setSession((now) => (now.kind === "in" ? { ...now, offline: true } : now));
     };
-    // A connection is often not usable the moment it returns, so Home is tried a few times.
-    const back = async () => {
-      for (const wait of [0, 1_000, 3_000, 10_000]) {
-        await new Promise((resolve) => setTimeout(resolve, wait));
-        if (await refresh()) return;
-      }
-    };
+    const back = () => void refreshSoon();
     window.addEventListener("offline", lost);
-    const onBack = () => void back();
-    window.addEventListener("online", onBack);
+    window.addEventListener("online", back);
     return () => {
       window.removeEventListener("offline", lost);
-      window.removeEventListener("online", onBack);
+      window.removeEventListener("online", back);
     };
-  }, [refresh]);
+  }, [refreshSoon]);
 
   // The page's ground follows the screen: ink for the login, paper once in, and for board B3's error.
   useEffect(() => {
     document.body.dataset.ground = session.kind === "in" || session.kind === "failed" ? "paper" : "ink";
   }, [session.kind]);
 
-  const logout = useCallback(async () => {
+  // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind.
+  useEffect(() => {
+    if (!signedIn) return;
+    nameInTitle(titles[routeOf(path).page]);
+    focusIfLost(document.querySelector("h1"));
+  }, [path, signedIn]);
+
+  /** Only the API can end the session: with no answer from it, the client is still logged in, and is told so. */
+  const logOut = useCallback(async () => {
+    const answer = await api.logout();
+    if (!answer.ok && answer.status !== 401) return false;
     await forgetHome();
-    await api.logout();
     go("/");
-    setSession({ kind: "out" });
+    setSession({ kind: "out", ended: false });
+    return true;
   }, []);
 
   switch (session.kind) {
@@ -126,18 +162,12 @@ export function App() {
     case "failed":
       return <LoadFailed booked={session.booked} onRetry={() => void check()} />;
     case "out":
-      return <Login onSignedIn={() => void check()} />;
+      return <Login ended={session.ended} onSignedIn={() => void check()} />;
     case "in":
       return (
-        <SessionContext value={{ me: session.me, offline: session.offline, refresh: () => void refresh() }}>
-          {/* Keyed by the path, so each page opens at its top with its own data. */}
-          <Fragment key={path}>
-            {pageFor(
-              routeOf(path),
-              () => void logout(),
-              () => void refresh(),
-            )}
-          </Fragment>
+        <SessionContext value={{ me: session.me, offline: session.offline, refresh: () => void refresh(), logOut }}>
+          {/* Keyed by the path, so each page opens at its top with its own data, and one that failed stays behind. */}
+          <ErrorBoundary key={path}>{pageFor(routeOf(path), () => void refresh())}</ErrorBoundary>
         </SessionContext>
       );
   }

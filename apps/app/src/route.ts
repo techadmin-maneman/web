@@ -27,18 +27,19 @@ export type Tab = (typeof TABS)[number];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const HOME: Route = { page: "home" };
-const TOP: Readonly<Record<string, Route>> = {
-  visits: { page: "visits" },
-  photos: { page: "photos" },
-  payments: { page: "payments" },
-  refer: { page: "refer" },
-  profile: { page: "profile" },
-};
+// A Map, not an object: a path such as /constructor must not find what every object carries.
+const TOP: ReadonlyMap<string, Route> = new Map([
+  ["visits", { page: "visits" }],
+  ["photos", { page: "photos" }],
+  ["payments", { page: "payments" }],
+  ["refer", { page: "refer" }],
+  ["profile", { page: "profile" }],
+]);
 
 export function routeOf(path: string): Route {
   const [first, second, ...rest] = path.split("/").filter((part) => part !== "");
   if (first === undefined || rest.length > 0) return HOME;
-  if (second === undefined) return TOP[first] ?? HOME;
+  if (second === undefined) return TOP.get(first) ?? HOME;
   if (first === "visits" && UUID.test(second)) return { page: "visit", id: second };
   if (first === "payments" && UUID.test(second)) return { page: "entry", id: second };
   if (first === "photos" && second === "compare") return { page: "compare" };

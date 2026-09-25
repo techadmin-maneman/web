@@ -201,9 +201,7 @@
   text-decoration: none;
 }
 
-.entry:focus-visible,
-.document:focus-visible,
-.notify:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--focus-offset);
+/* The first entry sits against the top of the page, where a ring drawn outside it would be cut. */
+.entry:focus-visible {
+  outline-offset: calc(-1 * var(--focus-width));
 }

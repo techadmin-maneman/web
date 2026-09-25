@@ -40,9 +40,9 @@ const messageFor = (code: string, fallback: string) => MESSAGES[code] ?? fallbac
 const RESEND_AFTER_S = 30;
 
 /**
- * Whole seconds left of `seconds`, counted from when `from` last changed, as
- * the client app counts its own (apps/app/src/lib/useCountdown.ts). It reads
- * the clock rather than counting ticks, so a phone that spent the wait in a
+ * Whole seconds left of `seconds`, counted from when `from` last changed. As
+ * the client app's does (apps/app/src/lib/useSecondsLeft.ts), it reads the
+ * clock rather than counting ticks, so a phone that spent the wait in a
  * pocket, where timers slow down, still offers the new code on time.
  */
 function useCountdown(seconds: number, from: unknown): number {

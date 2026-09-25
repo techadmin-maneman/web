@@ -2,9 +2,10 @@
 // same second screen, so the app never says whether a number has a booking
 // (docs/decisions/0030-one-time-codes.md).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
+import { focusIfLost, nameInTitle } from "../lib/arrival.ts";
 import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
@@ -17,8 +18,18 @@ type Step =
 
 const MOBILE_ERRORS: Readonly<Record<string, string>> = login.mobile.errors;
 
-export function Login({ onSignedIn }: { onSignedIn: () => void }) {
+/** Each screen's name in the browser's title: its heading. */
+const TITLES = { mobile: login.mobile.title, code: login.code.title, help: login.help.title } as const;
+
+/** `ended`: the session ended while the app was open, and the first screen says so. */
+export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () => void }) {
   const [step, setStep] = useState<Step>({ kind: "mobile" });
+
+  // Each screen is named, and its heading takes focus unless the screen put it in a field (the code's).
+  useEffect(() => {
+    nameInTitle(TITLES[step.kind]);
+    focusIfLost(document.querySelector("h1"));
+  }, [step.kind]);
   const [mobile, setMobile] = useState("");
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
@@ -71,6 +82,7 @@ export function Login({ onSignedIn }: { onSignedIn: () => void }) {
         initial={mobile}
         busy={busy}
         error={mobileError}
+        ended={ended}
         onSubmit={(digits) => {
           void send(digits);
         }}

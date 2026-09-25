@@ -2,6 +2,28 @@
 // component holds no copy of its own. Lines the design does not draw are
 // marked PLACEHOLDER, pending the owner's wording.
 
+export const app = {
+  /** Last in the browser's title, after the screen's own name: "Visits · Mane Man". */
+  name: "Mane Man",
+} as const;
+
+/**
+ * Each page's name in the browser's title (WCAG 2.4.2), by the route it is at (apps/app/src/route.ts).
+ * PLACEHOLDER where no board names the page.
+ */
+export const titles = {
+  home: "Home",
+  visits: "Visits",
+  visit: "Visit",
+  photos: "Photos",
+  compare: "Compare",
+  payments: "Payments",
+  entry: "Payment",
+  refer: "Refer",
+  fitted: "Who has been fitted",
+  profile: "Your profile",
+} as const;
+
 export const whatsapp = {
   /** The business WhatsApp number, as the public site's footer and wa.me links use it. */
   number: "919007973247",
@@ -21,6 +43,8 @@ export const login = {
     label: "Mobile number",
     send: "Send code on WhatsApp",
     hint: "A six-digit code, no password.",
+    // PLACEHOLDER: the design draws no session that ended while the app was open.
+    ended: "Your session has ended. Log in again to carry on.",
     // PLACEHOLDER: the design draws no error on A1.
     errors: {
       invalid: "Enter the ten-digit mobile number you booked with.",
@@ -41,10 +65,13 @@ export const login = {
     sentWhatsapp: (number: string) => `If ${number} has a booking with us, a code is on its way on WhatsApp.`,
     sentSms: (number: string) => `If ${number} has a booking with us, a code is on its way by SMS.`,
     label: "The six-digit code",
+    /** Shown only for a code sent by SMS: WebOTP reads an SMS, and never a WhatsApp message. */
     automatic: "Read automatically where your phone allows",
     sms: "Send by SMS instead",
     resendIn: "Resend on WhatsApp in",
     resend: "Resend on WhatsApp",
+    // PLACEHOLDER: said to a screen reader once, when the countdown runs out.
+    canResend: "You can ask for a new code now.",
     submit: "Continue",
     noBooking: "No booking on this number?",
     /** The design's one line, "That code did not match. Two attempts left." */
@@ -112,6 +139,8 @@ export const messages = {
   // PLACEHOLDER
   bookFirstFit: "I would like to book my first fit.",
   document: (what: string, reference: string) => `Please send me the ${what.toLowerCase()} for ${reference}.`,
+  // PLACEHOLDER: the app books the standard tier only, until a client's tier is recorded (docs/open-points.md).
+  premium: (what: string) => `I would like to book a premium ${what.toLowerCase()}.`,
 } as const;
 
 export const home = {
@@ -230,7 +259,8 @@ export const booking = {
     firstFit: "First fit · standard",
     firstFitBlock: "Two slots · 3 hours",
     guarantee: (name: string) => `If the fit is not right, ${name} stops and you are refunded in full.`,
-    lateFee: (amount: string) => `Moving inside 24 hours costs ${amount}. The balance carries over.`,
+    // PLACEHOLDER: the app books the standard tier only, and a client measured for premium asks on WhatsApp.
+    premium: "Premium? Message us",
     // PLACEHOLDER: a free consultation has no payment; the design draws the credit board's button.
     free: "Free",
     confirm: "Confirm visit",
@@ -241,7 +271,23 @@ export const booking = {
       remaining: (left: number) => `${String(left)} remaining`,
       note: "Cancel inside 24 hours and the credit is gone.",
     },
+    /**
+     * PLACEHOLDER: the design never asks. Ticked, it records the client's yes to WhatsApp about their
+     * visits (the purpose the day-before reminder is sent under), on that purpose's own notice.
+     */
+    remind: "Remind me on WhatsApp the day before",
   },
+  /**
+   * Board C5's late-fee line, which C7 repeats word for word: the ex-GST figure, and the inclusive one after it,
+   * muted, once GST applies.
+   */
+  lateFee: {
+    costs: (amount: string) => `Moving inside 24 hours costs ${amount}`,
+    inclusive: (amount: string) => ` (${amount} incl. GST)`,
+    rest: ". The balance carries over.",
+  },
+  // PLACEHOLDER: said to a screen reader, once, a minute before the hold lapses.
+  lastMinute: "One minute left to pay. Then the slot goes back.",
   failed: {
     label: "Payment failed",
     title: "The payment did not go through.",
@@ -282,10 +328,9 @@ export const change = {
     pick: "Pick a new date",
     accept: "Move and accept charge",
     keep: "Keep it",
-    // PLACEHOLDER from here to the end of move: nothing paid, board C5's late-fee line, and the way to C8,
-    // which the design draws but does not reach.
+    // PLACEHOLDER from here to the end of move: nothing paid, and the way to C8, which the design draws but does
+    // not reach. A late fee's line is board C5's (booking.lateFee).
     freeNothingPaid: "Free to move.",
-    lateFee: (fee: string) => `Moving inside 24 hours costs ${fee}. The balance carries over.`,
     cancelInstead: "Cancel the visit instead",
     creditCharged: "Charged. The credit is not returned and the new visit is paid separately.",
   },
@@ -589,6 +634,8 @@ export const profile = {
   },
   // PLACEHOLDER: the design has no logout; it ends the session on this device.
   logout: "Log out",
+  // PLACEHOLDER: only the API can end the session, so a logout it did not answer leaves the client logged in.
+  logoutFailed: "That did not go through, so you are still logged in here. Please try again.",
 } as const;
 
 /** Board B3: loading, offline and error. */
@@ -608,4 +655,12 @@ export const errors = {
   // PLACEHOLDER: the design draws no error for the profile.
   load: "We could not load this. Please try again.",
   retry: "Try again",
+} as const;
+
+/** A page that failed to draw, which React would otherwise leave blank. */
+export const broken = {
+  // PLACEHOLDER: the design draws no page that failed.
+  message: "This page did not open.",
+  reload: "Reload",
+  home: "Home",
 } as const;

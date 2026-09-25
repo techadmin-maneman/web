@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type Profile } from "../api.ts";
 import { errors, profile } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
+import { LogOut } from "../login/LogOut.tsx";
 import { useSession } from "../session.ts";
 import { AddressSection } from "./AddressSection.tsx";
 import { Loading } from "../states/Loading.tsx";
@@ -12,7 +13,7 @@ import { ConsentList } from "./ConsentList.tsx";
 import { DataCard, DeletionCard, NumberChangeCard, SupportCard } from "./AccountCards.tsx";
 import styles from "./profile.module.css";
 
-export function ProfileScreen({ onLogout, onChanged }: { onLogout: () => void; onChanged: () => void }) {
+export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
   const [loaded, setLoaded] = useState<Profile | "failed" | null>(null);
 
   const load = useCallback(async () => {
@@ -50,9 +51,7 @@ export function ProfileScreen({ onLogout, onChanged }: { onLogout: () => void; o
           <SupportCard />
           <DataCard />
           <DeletionCard deletion={loaded.deletion} onRequested={() => void load()} />
-          <button className={styles.logout} type="button" onClick={onLogout}>
-            {profile.logout}
-          </button>
+          <LogOut className={styles.logout} />
         </div>
       )}
     </Shell>
