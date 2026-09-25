@@ -85,6 +85,48 @@ test("names the day and window a consultation was asked for", async ({ page }) =
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon");
 });
 
+// Two more groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
+test("names a draft invoice's visit, and heads an unfinished erasure with the day, never a client", async ({
+  page,
+}) => {
+  await open(page, {
+    overdue: 0,
+    groups: [
+      {
+        group: "draft_invoice",
+        count: 1,
+        tasks: [
+          {
+            id: "96000000-0000-4000-8000-000000000002",
+            person: { id: "22000000-0000-4000-8000-000000000008", name: "Sanjay Arora" },
+            detail: "8229000000411007",
+            since: "2027-09-20T07:30:00.000Z",
+            due: "2027-09-22T07:30:00.000Z",
+          },
+        ],
+      },
+      {
+        group: "erasure_unfinished",
+        count: 1,
+        tasks: [
+          {
+            id: "22000000-0000-4000-8000-000000000009",
+            person: null,
+            detail: "8229000000500123",
+            since: "2027-09-20T06:00:00.000Z",
+            due: "2027-09-22T06:00:00.000Z",
+          },
+        ],
+      },
+    ],
+  });
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Draft invoice", "Erasure left in FSM"]);
+  await expect(row(page, "Sanjay Arora")).toContainText("Visit of Mon 20 Sep, still a draft in Books");
+  const erased = row(page, "FSM contact 8229000000500123 still holds their details");
+  await expect(erased).toContainText("Client erased Mon 20 Sep");
+  await expect(erased.getByRole("link")).toHaveCount(0);
+});
+
 test("heads a no-show with its visit and its technician, and never a client", async ({ page }) => {
   await open(page);
   const noShow = row(page, "Imran Qureshi attended");
