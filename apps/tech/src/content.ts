@@ -14,7 +14,7 @@ export const signIn = {
   // PLACEHOLDER: the Prototype draws one screen and no error but "Ten digits."
   errors: {
     mismatch: "That code did not match.",
-    code_expired: "That code has run out. Ask for another.",
+    code_expired: "That code no longer works. Send the code again.",
     invalid_request: "Check the number and the code.",
     rate_limited: "Too many codes for this number today. Ask ops.",
     busy: "Codes are not going out just now. Try again shortly.",
@@ -25,6 +25,10 @@ export const signIn = {
   sendCode: "Send the code",
   // PLACEHOLDER: the Prototype shows the code field from the start.
   codeSent: "A six-digit code is on its way.",
+  // PLACEHOLDER: the Prototype draws no way back from a code sent to the wrong number, or one that never came.
+  changeNumber: "Change number",
+  resend: "Send a new code",
+  resendIn: (seconds: number) => `New code in ${String(seconds)} s`,
   // PLACEHOLDER: neither file draws the app opened from the home screen. An
   // installed iPhone app has its own cookie jar, so the first sign-in inside it
   // is a second one and looks like the account has gone (ADR 0053's update).
@@ -52,6 +56,41 @@ export const today = {
   // PLACEHOLDER: the board draws no failure for the day's list.
   failed: "The day's jobs did not load.",
   retry: "Try again",
+} as const;
+
+/** "1 photo set", "3 actions": a count and the word for it. */
+const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
+
+/**
+ * Signing out wipes the phone, so it asks first when there is work on it that
+ * has not reached us, and says so when there is no signal to sign out with.
+ */
+export const leaving = {
+  // PLACEHOLDER: neither file draws a sign-out with work still on the phone, or with no signal.
+  unsent: (sets: number, actions: number) => {
+    const held: string[] = [];
+    if (sets > 0) held.push(counted(sets, "photo set", "photo sets"));
+    if (actions > 0) held.push(counted(actions, "action", "actions"));
+    return `${held.join(" and ")} not sent yet`;
+  },
+  body: "Signing out deletes them from this phone, and they never reach us.",
+  send: "Send first",
+  anyway: "Sign out anyway",
+  stayed: "No signal, so you are still signed in and nothing was deleted. Sign out again once there is signal.",
+} as const;
+
+/** When the phone has no room left for what the app must keep: a photograph, a step. */
+export const storage = {
+  // PLACEHOLDER: neither file draws a phone that is full.
+  title: "This phone's storage is full",
+  body: "Nothing more can be kept on it until there is room. Delete photos or apps you do not need, then try again.",
+} as const;
+
+/** A screen that failed to draw, which React would otherwise leave blank. */
+export const broken = {
+  // PLACEHOLDER: neither file draws a screen that failed.
+  message: "This screen did not open. Nothing you recorded is lost.",
+  reload: "Reload",
 } as const;
 
 /**
@@ -161,6 +200,9 @@ export const capture = {
   guide: (angle: string) => `${angle} · line up the hairline`,
   // PLACEHOLDER: the board draws neither a refused camera nor the finished set.
   unavailable: "This phone will not open its camera. Check its permissions, then try again.",
+  retry: "Try again",
+  // PLACEHOLDER: the board draws no capture that failed.
+  missed: "That photograph did not keep. Capture it again.",
   done: "All five are on the phone. They go up when there is signal.",
   finish: "Done",
 } as const;

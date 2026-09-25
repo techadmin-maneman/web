@@ -1,11 +1,15 @@
 // Board A1: the day's jobs in order, tomorrow collapsed below. Board A2's
 // offline banner sits above them when the phone has no signal, and its empty
 // state stands in when nothing is booked.
+//
+// Sign out wipes the phone, so with work on it that has not reached us it asks
+// first, and offers to send it. With no signal the session stays open and
+// nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
 import { useEffect, useState } from "react";
 import { Icon } from "../components/Icon.tsx";
 import { Mark } from "../components/Mark.tsx";
-import { atRisk as atRiskCopy, queue as queueCopy, today as copy } from "../content.ts";
+import { atRisk as atRiskCopy, leaving as leavingCopy, queue as queueCopy, today as copy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { CHEVRON_DOWN } from "../icons.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
@@ -14,8 +18,12 @@ import { clock, dayAfter, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import { replay } from "../store/outbox.ts";
 import { JobRow } from "./JobRow.tsx";
 import styles from "./today.module.css";
+
+/** Where a sign-out has got to: asking about unsent work, waiting on the API, or refused for want of signal. */
+type Leaving = "asking" | "going" | "stayed" | null;
 
 export function TodayScreen() {
   const { me, offline, atRisk, signOut } = useSession();
@@ -24,6 +32,15 @@ export function TodayScreen() {
   const [tomorrow] = useDay(dayAfter(date));
   const [tomorrowOpen, setTomorrowOpen] = useState(false);
   const waiting = useOutbox();
+  const [leaving, setLeaving] = useState<Leaving>(null);
+
+  const unsentSets = new Set(waiting.frames.map((frame) => frame.job_id)).size;
+  const unsentActions = waiting.events.length;
+
+  async function leave(): Promise<void> {
+    setLeaving("going");
+    if ((await signOut()) === "still-signed-in") setLeaving("stayed");
+  }
 
   const jobs = day.state === "loaded" ? day.value : [];
   const first = jobs[0];
@@ -53,7 +70,15 @@ export function TodayScreen() {
       <header className={styles.head}>
         <div className={styles.top}>
           <Mark className={styles.mark} />
-          <button className={styles.account} type="button" onClick={signOut}>
+          <button
+            className={styles.account}
+            type="button"
+            disabled={leaving === "going"}
+            onClick={() => {
+              if (unsentSets + unsentActions > 0) setLeaving("asking");
+              else void leave();
+            }}
+          >
             <span className={styles.initials}>{me.initials}</span>
             <span className={styles.signOut}>{copy.signOut}</span>
           </button>
@@ -67,6 +92,33 @@ export function TodayScreen() {
           </>
         )}
       </header>
+
+      {leaving === "asking" && unsentSets + unsentActions > 0 && (
+        <div className={styles.leave} role="alert">
+          <p className={styles.leaveTitle}>{leavingCopy.unsent(unsentSets, unsentActions)}</p>
+          <p className={styles.leaveBody}>{leavingCopy.body}</p>
+          <div className={styles.leaveActions}>
+            <button
+              className={styles.leaveButton}
+              type="button"
+              onClick={() => {
+                setLeaving(null);
+                void replay();
+              }}
+            >
+              {leavingCopy.send}
+            </button>
+            <button className={styles.leaveButton} type="button" onClick={() => void leave()}>
+              {leavingCopy.anyway}
+            </button>
+          </div>
+        </div>
+      )}
+      {leaving === "stayed" && (
+        <p className={styles.stayed} role="status">
+          {leavingCopy.stayed}
+        </p>
+      )}
 
       {offline && (
         <div className={styles.offline} role="status">

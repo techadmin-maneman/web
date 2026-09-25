@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { fakeTech } from "./fixtures.ts";
+import { fakeTech, heldOnPhone, storeOnPhone } from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -105,4 +105,122 @@ test("wipes the phone and signs out when the session has ended, as a revoked dev
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");
+});
+
+test("a phone revoked while the app is open is wiped at its next call, and shows nothing it held", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await expect(page.getByText("Rohit M.").first()).toBeVisible();
+
+  // Ops revoke the phone. Nothing reloads it: the next card the technician opens asks the API.
+  fake.revoked = true;
+  await page.getByText("Rohit M.").first().click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByText("This phone is no longer signed in. Ask ops, then sign in again.")).toBeVisible();
+  await expect(page.getByText("Rohit M.")).toHaveCount(0);
+  await expect(page.getByText("Gate code 4417 · visitor bay B")).toHaveCount(0);
+  await expect(page.getByText("No signal · working offline")).toHaveCount(0);
+  expect(await storeOnPhone(page)).toBe(false);
+});
+
+test("once a code is sent, the number can be changed, and a new code asked for after half a minute", async ({
+  page,
+}) => {
+  await page.clock.install();
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+
+  const number = page.getByRole("textbox", { name: "Mobile number" });
+  await number.fill("9811000000");
+  await page.getByRole("button", { name: "Send the code" }).click();
+  await expect(page.getByText("A six-digit code is on its way.")).toBeVisible();
+  await expect(number).toBeDisabled();
+
+  // Not at once: WhatsApp has half a minute to deliver the first.
+  await expect(page.getByRole("button", { name: /^New code in \d+ s$/ })).toBeDisabled();
+  await page.clock.runFor(30_000);
+  await page.getByRole("button", { name: "Send a new code" }).click();
+  await expect.poll(() => fake.codesSent).toEqual(["9811000000", "9811000000"]);
+
+  // A number typed wrong is not a dead end: back to it, and the code goes to the right one.
+  await page.getByRole("button", { name: "Change number" }).click();
+  await expect(number).toBeEnabled();
+  await expect(number).toBeFocused();
+  await number.fill("9811000001");
+  await page.getByRole("button", { name: "Send the code" }).click();
+  await expect.poll(() => fake.codesSent.at(-1)).toBe("9811000001");
+});
+
+test("a code the API has closed takes the sign-in back to sending one, not to a dead end", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  fake.codeClosed = true;
+  await page.goto("/");
+
+  await page.getByRole("textbox", { name: "Mobile number" }).fill("9811000000");
+  await page.getByRole("button", { name: "Send the code" }).click();
+  await expect(page.getByRole("button", { name: "Change number" })).toBeVisible();
+  const results = await wcag(page);
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await page.getByRole("textbox", { name: "Code" }).fill("246810");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByRole("alert")).toHaveText("That code no longer works. Send the code again.");
+  await expect(page.getByRole("textbox", { name: "Mobile number" })).toBeEnabled();
+
+  fake.codeClosed = false;
+  await page.getByRole("button", { name: "Send the code" }).click();
+  await page.getByRole("textbox", { name: "Code" }).fill("246810");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+});
+
+test("a screen that fails to draw says so and offers a reload, and the reload loses nothing", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+
+  // A step the API refused, still on the phone for the technician to read.
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve) => {
+      const request = indexedDB.open("mm-tech");
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+    });
+    await new Promise<void>((resolve) => {
+      const transaction = db.transaction("outbox", "readwrite");
+      transaction.objectStore("outbox").add({
+        id: "01000000-0000-7000-8000-000000000009",
+        job_id: "a0000000-0000-4000-8000-000000000001",
+        kind: "checklist",
+        path: "/tech/jobs/a0000000-0000-4000-8000-000000000001/checklist",
+        body: {},
+        queued_at: Date.now(),
+        state: "refused",
+        note: "invalid_request",
+        fields: [],
+      });
+      transaction.oncomplete = () => {
+        resolve();
+      };
+    });
+    db.close();
+  });
+
+  // A release sends the day in a shape the screen cannot draw.
+  fake.malformed = true;
+  await page.reload();
+  await expect(page.getByText("This screen did not open. Nothing you recorded is lost.")).toBeVisible();
+  const results = await wcag(page);
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  fake.malformed = false;
+  await page.getByRole("button", { name: "Reload" }).click();
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
 });
