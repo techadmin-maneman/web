@@ -12,6 +12,7 @@
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
+import label from "../components/label.module.css";
 import styles from "./dispatch.module.css";
 import { isMovable, nameOf, type Job, type Target } from "./job.ts";
 
@@ -106,8 +107,9 @@ function Cell({ technician, date, blocks, away, inHand, onOpen, onTake, onLand }
   return (
     <td className={away ? `${styles.cell ?? ""} ${styles.away ?? ""}` : styles.cell}>
       {away && (
-        <span className={styles.awayMark} aria-label={dispatch.board.awayLabel(technician.name, shortDate(date))}>
-          {dispatch.board.away}
+        <span className={`${styles.awayMark ?? ""} ${label.caps ?? ""}`}>
+          <span aria-hidden="true">{dispatch.board.away}</span>
+          <span className={styles.hidden}>{dispatch.board.awayLabel(technician.name, shortDate(date))}</span>
         </span>
       )}
       {blocks.map((block) => (

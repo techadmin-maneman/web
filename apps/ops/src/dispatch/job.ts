@@ -80,12 +80,6 @@ export const isMovable = (block: Block): boolean => block.status !== "completed"
 /** "Rohit", as the drawer's WhatsApp button names him. */
 export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;
 
-/** "+91 98100 00001", as a mobile number is read out; any other number as it is stored. */
-export function phoneWords(mobile: string): string {
-  const india = /^\+91(\d{5})(\d{5})$/.exec(mobile);
-  return india === null ? mobile : `+91 ${india[1] ?? ""} ${india[2] ?? ""}`;
-}
-
 /** A chat with the client in WhatsApp, opened from the drawer (board A3). */
 export const whatsAppLink = (mobile: string): string => `https://wa.me/${mobile.replace(/\D/g, "")}`;
 

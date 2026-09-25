@@ -18,6 +18,7 @@ import { Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import label from "../components/label.module.css";
 import styles from "./technicians.module.css";
 
 /** The route's period ends the day after the last one counted; the note names that last day. */
@@ -176,7 +177,9 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
 
   return (
     <div className={styles.leave}>
-      <h3 className={styles.leaveTitle}>{copy.title}</h3>
+      <h3 className={`${styles.leaveTitle ?? ""} ${label.caps ?? ""}`} aria-label={copy.titleFor(technician.name)}>
+        {copy.title}
+      </h3>
       {technician.leave.length === 0 ? (
         <p className={styles.none}>{copy.none}</p>
       ) : (

@@ -872,7 +872,7 @@ export const PRICES = {
       item: "service",
       tier: "standard",
       amount_ex_gst: 250_000,
-      gst_percent: 0,
+      gst_percent: 18,
       valid_from: "2027-10-01",
       in_force: false,
     },
@@ -880,7 +880,7 @@ export const PRICES = {
       item: "service",
       tier: "standard",
       amount_ex_gst: 200_000,
-      gst_percent: 0,
+      gst_percent: 18,
       valid_from: "2026-09-22",
       in_force: true,
     },
@@ -889,9 +889,17 @@ export const PRICES = {
 
 export const SERVICE_AREA = {
   pincodes: [
-    { pincode: "110017", area: "Saket", city: "Delhi", served: true, launch_on: "2026-09-01" },
-    { pincode: "110024", area: "Lajpat Nagar", city: "Delhi", served: false, launch_on: null },
-    { pincode: "122018", area: "Sector 65", city: "Gurgaon", served: false, launch_on: null },
+    { pincode: "110017", area: "Saket", city: "Delhi", served: true, launch_on: "2026-09-01", waiting: 0, to_alert: 0 },
+    {
+      pincode: "110024",
+      area: "Lajpat Nagar",
+      city: "Delhi",
+      served: false,
+      launch_on: null,
+      waiting: 5,
+      to_alert: 3,
+    },
+    { pincode: "122018", area: "Sec65", city: "Gurgaon", served: false, launch_on: null, waiting: 0, to_alert: 0 },
   ],
 };
 
@@ -905,8 +913,9 @@ type Answers = Readonly<Record<string, (route: Route) => Promise<void>>>;
 
 export const json = (body: unknown) => (route: Route) => route.fulfill({ json: body });
 export const jpeg = (body: Buffer) => (route: Route) => route.fulfill({ body, contentType: "image/jpeg" });
-export const fails = (status: number, code: string) => (route: Route) =>
-  route.fulfill({ status, json: { error: { code, request_id: "test" } } });
+/** The API's refusal: its code, and for invalid_request the fields it names (src/http/errors.ts). */
+export const fails = (status: number, code: string, fields?: readonly string[]) => (route: Route) =>
+  route.fulfill({ status, json: { error: { code, request_id: "test", ...(fields === undefined ? {} : { fields }) } } });
 
 /** Answers the console's calls from `answers`, by path; anything else goes to the local mm-api. */
 export async function answer(page: Page, answers: Answers): Promise<void> {

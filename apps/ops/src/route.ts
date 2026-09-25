@@ -1,28 +1,41 @@
 // The console's pages, by path. Links change the path without a reload; the
 // Worker answers every path with the console, so a page can be opened directly.
 //
-//   /dispatch               the week's board (A1), its drawer (A3) and its move (A2)
-//   /referrals              the review queue (C1) over the referrers' figures (C2)
-//   /waitlist               who is waiting, and marking a pincode live (C3)
-//   /clients                finding one client by their mobile number
-//   /clients/:id/pieces     the pieces they have been fitted with (B1)
-//   /clients/:id/photos     that client's photographs (B2), locked until the view is logged
-//   /clients/:id/consents   what they have agreed to (B3)
-//   /clients/:id/history    how often they have been served, and what they have bought
-//   /no-shows               the no-show cases and their evidence (D1's queue)
-//   /tasks                  what ops still have to do, by group (D2)
-//   /technicians            who works, the phones they work from, and their leave (D3)
-//   /grievances             the concerns clients have raised, answered here
-//   /deletion-requests      the accounts clients have asked us to erase
-//   /number-changes         the numbers clients are moving to, confirmed here
-//   /settings               the rules ops set (the design's eighth section)
-//   /settings/prices        the price book, each price from the date it applies
-//   /settings/area          the pincodes we go to, and from when
+// SECTIONS below is the one list of them: the navigation draws it, routeOf reads
+// it, and each page is titled from it. Two sections have pages beneath them:
 //
-// The three before Settings are drawn on no board (docs/fidelity-method.md). Anything
-// else, "/" included, is the dispatch board, which is what the design opens on.
+//   /clients/:id/:tab       a client's page, a tab at a time (B1 to B3, and History)
+//   /settings/:tab          the rules, the price book and the service area (ADR 0061)
+//
+// Anything else, "/" included, is the dispatch board, which is what the design opens on.
 
 import { useEffect, useState } from "react";
+import { clients, settings, shell } from "./content.ts";
+
+/**
+ * The console's sections, in the navigation's order: the design's eight, with
+ * No-shows where it draws Payments, and the three a client's rights over their
+ * data put in front of ops before Settings (docs/fidelity-method.md).
+ */
+export const SECTIONS = [
+  { page: "dispatch", path: "/dispatch" },
+  { page: "clients", path: "/clients" },
+  { page: "no-shows", path: "/no-shows" },
+  { page: "referrals", path: "/referrals" },
+  { page: "waitlist", path: "/waitlist" },
+  { page: "tasks", path: "/tasks" },
+  { page: "technicians", path: "/technicians" },
+  { page: "grievances", path: "/grievances" },
+  { page: "deletion-requests", path: "/deletion-requests" },
+  { page: "number-changes", path: "/number-changes" },
+  { page: "settings", path: "/settings" },
+] as const;
+
+export type Page = (typeof SECTIONS)[number]["page"];
+export type SectionPath = (typeof SECTIONS)[number]["path"];
+
+/** A section that is one page, with nothing beneath it. */
+export type PlainPage = Exclude<Page, "clients" | "settings">;
 
 /**
  * The tabs of the design's eight that a client's page carries, in its order,
@@ -32,45 +45,56 @@ import { useEffect, useState } from "react";
 export const CLIENT_TABS = ["pieces", "consents", "photos", "history"] as const;
 export type ClientTab = (typeof CLIENT_TABS)[number];
 
-/** What Settings holds, in the order the section lists it. */
+/** What Settings holds, in the order the section lists it. Rules has the section's own path. */
 export const SETTINGS_TABS = ["rules", "prices", "area"] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 export type Route =
-  | { readonly page: "dispatch" }
-  | { readonly page: "referrals" }
-  | { readonly page: "waitlist" }
-  | { readonly page: "no-shows" }
-  | { readonly page: "tasks" }
-  | { readonly page: "technicians" }
-  | { readonly page: "grievances" }
-  | { readonly page: "deletion-requests" }
-  | { readonly page: "number-changes" }
+  | { readonly page: PlainPage }
   | { readonly page: "settings"; readonly tab: SettingsTab }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
 const DISPATCH: Route = { page: "dispatch" };
-const CLIENT_PATH = /^\/clients\/([0-9a-f-]{36})(?:\/(pieces|photos|consents|history))?$/;
+const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(pieces|photos|consents|history))?)?$/;
 const SETTINGS_PATH = /^\/settings(?:\/(prices|area))?$/;
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
-const tabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? CLIENT_TABS[0];
+const clientTabOf = (named: string | undefined): ClientTab =>
+  CLIENT_TABS.find((tab) => tab === named) ?? CLIENT_TABS[0];
+
+const settingsTabOf = (named: string | undefined): SettingsTab =>
+  SETTINGS_TABS.find((tab) => tab === named) ?? SETTINGS_TABS[0];
+
+const isPlain = (page: Page): page is PlainPage => page !== "clients" && page !== "settings";
 
 export function routeOf(path: string): Route {
-  if (path === "/referrals") return { page: "referrals" };
-  if (path === "/waitlist") return { page: "waitlist" };
-  if (path === "/no-shows") return { page: "no-shows" };
-  if (path === "/tasks") return { page: "tasks" };
-  if (path === "/technicians") return { page: "technicians" };
-  if (path === "/grievances") return { page: "grievances" };
-  if (path === "/deletion-requests") return { page: "deletion-requests" };
-  if (path === "/number-changes") return { page: "number-changes" };
-  const settings = SETTINGS_PATH.exec(path);
-  if (settings !== null) return { page: "settings", tab: SETTINGS_TABS.find((tab) => tab === settings[1]) ?? "rules" };
-  if (path === "/clients") return { page: "clients", clientId: null, tab: tabOf(undefined) };
   const client = CLIENT_PATH.exec(path);
-  if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: tabOf(client[2]) };
-  return DISPATCH;
+  if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: clientTabOf(client[2]) };
+  const setting = SETTINGS_PATH.exec(path);
+  if (setting !== null) return { page: "settings", tab: settingsTabOf(setting[1]) };
+  const section = SECTIONS.find((each) => each.path === path);
+  if (section === undefined || !isPlain(section.page)) return DISPATCH;
+  return { page: section.page };
+}
+
+export const settingsPath = (tab: SettingsTab): string => (tab === "rules" ? "/settings" : `/settings/${tab}`);
+
+/** Each section's name and each Settings tab's, from content.ts; typed here, so one left unnamed fails the build. */
+export const SECTION_NAMES: Readonly<Record<Page, string>> = shell.sections;
+export const SETTINGS_TAB_NAMES: Readonly<Record<SettingsTab, string>> = settings.tabs;
+
+/**
+ * The browser tab's title: the tab within the section, if it has one, then the
+ * section. Never a client's name, which would then sit in the browser's history.
+ */
+export function titleOf(route: Route): string {
+  const section = SECTION_NAMES[route.page];
+  if (route.page === "settings") return shell.documentTitle([SETTINGS_TAB_NAMES[route.tab], section]);
+  if (route.page === "clients" && route.clientId !== null) {
+    const tab = clients.tabs.find((each) => each.tab === route.tab);
+    return shell.documentTitle(tab === undefined ? [section] : [tab.label, section]);
+  }
+  return shell.documentTitle([section]);
 }
 
 /**
@@ -102,3 +126,20 @@ export function go(path: string): void {
   window.history.pushState(null, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
+
+/** The parts of a click that say where the person wants the link opened. */
+export interface Click {
+  readonly button: number;
+  readonly metaKey: boolean;
+  readonly ctrlKey: boolean;
+  readonly shiftKey: boolean;
+  readonly altKey: boolean;
+}
+
+/**
+ * Whether a click on a console link should change the page in place. A click
+ * with Ctrl, Cmd, Shift or Alt held, or with any button but the main one, asks
+ * for a new tab, a new window or a download, and is left to the browser.
+ */
+export const followsHere = (click: Click): boolean =>
+  click.button === 0 && !click.metaKey && !click.ctrlKey && !click.shiftKey && !click.altKey;

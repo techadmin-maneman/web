@@ -6,94 +6,238 @@
 // area, which is one row and a date, and hand over the whole file, which is an
 // upload. A city at a time keeps the table short; the bulk pair fills a city in
 // one press; and only the pincodes that changed are ever sent.
+//
+// Everything goes through the table: a file read is shown pincode by pincode,
+// then put into the table, and the one Save sends it. Serving a pincode is a
+// launch, so a save that would message people waiting there says how many
+// first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { useState } from "react";
-import { api, type ServedPincode } from "../api.ts";
+import { useEffect, useRef, useState } from "react";
+import { api, type AreaChange, type ServedPincode } from "../api.ts";
 import { settings } from "../content.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { readServiceAreaCsv, serviceAreaCsv } from "./csv.ts";
+import { readServiceAreaCsv, serviceAreaCsv, type CsvRead } from "./csv.ts";
 import styles from "./settings.module.css";
 
 const copy = settings.area;
 
-/** The two columns ops own, against the pincode they belong to. */
-type Draft = Readonly<Record<string, { served: boolean; launch_on: string | null }>>;
+/** An area's name as the API takes it: a letter or a digit first, 2 to 40 characters (src/routes/ops-settings.ts). */
+const AREA_NAME = /^[\p{L}\p{N}][\p{L}\p{N} .,'()&-]{1,39}$/u;
 
-type Saving =
-  | { readonly step: "editing" | "saving" }
-  | { readonly step: "saved"; readonly changed: number }
-  | { readonly step: "failed"; readonly code: string };
-
-const draftOf = (pincodes: readonly ServedPincode[]): Draft =>
-  Object.fromEntries(pincodes.map((each) => [each.pincode, { served: each.served, launch_on: each.launch_on }]));
-
-/** Only what has actually moved: the rest is not sent, so the audit log records no change that was not one. */
-function changesIn(pincodes: readonly ServedPincode[], draft: Draft) {
-  return pincodes
-    .filter((each) => {
-      const now = draft[each.pincode];
-      return now !== undefined && (now.served !== each.served || now.launch_on !== each.launch_on);
-    })
-    .map((each) => ({
-      pincode: each.pincode,
-      served: draft[each.pincode]?.served ?? each.served,
-      launch_on: draft[each.pincode]?.launch_on ?? each.launch_on,
-    }));
+/** What ops set for one pincode: the two columns that are theirs, and the area's name as they have typed it. */
+interface Row {
+  readonly served: boolean;
+  readonly launch_on: string | null;
+  readonly area: string;
 }
 
-/** The file ops uploaded, read and held until they confirm it. */
+type Draft = Readonly<Record<string, Row>>;
+
+type Saving =
+  | { readonly step: "editing" | "checking" | "saving" }
+  | { readonly step: "saved"; readonly changed: number; readonly alerted: number }
+  | { readonly step: "failed"; readonly code: string };
+
+/** A file read, before its changes are put into the table. */
 type Upload =
-  | { readonly step: "read"; readonly changes: ReturnType<typeof changesIn> }
+  | { readonly step: "read"; readonly rows: readonly FileChange[] }
+  | { readonly step: "applied" }
   | { readonly step: "failed"; readonly says: string };
 
-function Row({
-  pincode,
-  draft,
-  onChange,
-}: {
-  pincode: ServedPincode;
-  draft: { served: boolean; launch_on: string | null };
-  onChange: (next: { served: boolean; launch_on: string | null }) => void;
-}) {
-  const served = `served-${pincode.pincode}`;
-  const launch = `launch-${pincode.pincode}`;
+/** One pincode the file would change: what the table shows now, and what the file says. */
+interface FileChange {
+  readonly pincode: ServedPincode;
+  readonly now: Row;
+  readonly file: Row;
+}
+
+const rowOf = (pincode: ServedPincode): Row => ({
+  served: pincode.served,
+  launch_on: pincode.launch_on,
+  area: pincode.area,
+});
+
+const draftOf = (pincodes: readonly ServedPincode[]): Draft =>
+  Object.fromEntries(pincodes.map((each) => [each.pincode, rowOf(each)]));
+
+const sameRow = (a: Row, b: Row) => a.served === b.served && a.launch_on === b.launch_on && a.area === b.area;
+
+/** Only what has actually moved: the rest is not sent, so the audit log records no change that was not one. */
+function changesIn(pincodes: readonly ServedPincode[], draft: Draft): AreaChange[] {
+  const changes: AreaChange[] = [];
+  for (const each of pincodes) {
+    const row = draft[each.pincode];
+    if (row === undefined) continue;
+    const area = row.area.trim();
+    if (sameRow({ ...row, area }, rowOf(each))) continue;
+    changes.push({
+      pincode: each.pincode,
+      served: row.served,
+      launch_on: row.launch_on,
+      ...(area === each.area ? {} : { area }),
+    });
+  }
+  return changes;
+}
+
+/** The pincodes a save would begin serving, where somebody waits to be told. */
+function launchesIn(pincodes: readonly ServedPincode[], changes: readonly AreaChange[]): ServedPincode[] {
+  return pincodes.filter((each) => {
+    const change = changes.find((one) => one.pincode === each.pincode);
+    return change !== undefined && change.served && !each.served && each.to_alert > 0;
+  });
+}
+
+/** What a file read says, as the upload's line. */
+function uploadRefusal(read: Extract<CsvRead, { ok: false }>): string {
+  if (read.reason === "header") return copy.upload.badHeader;
+  if (read.reason === "served") return copy.upload.badServed(read.pincode);
+  return copy.upload.badDate(read.pincode);
+}
+
+function PincodeRow({ pincode, row, onChange }: { pincode: ServedPincode; row: Row; onChange: (next: Row) => void }) {
+  const id = pincode.pincode;
   return (
     <tr>
       <th scope="row" className={styles.rowHead}>
-        {pincode.pincode}
+        {id}
       </th>
-      <td>{pincode.area}</td>
       <td>
-        <span className={styles.check}>
-          <input
-            id={served}
-            type="checkbox"
-            checked={draft.served}
-            onChange={(event) => {
-              onChange({ ...draft, served: event.target.checked });
-            }}
-          />
-          <label htmlFor={served}>
-            {copy.served} {pincode.pincode}
-          </label>
-        </span>
-      </td>
-      <td>
-        <label className={styles.rowLabel} htmlFor={launch}>
-          {copy.launchOn} {pincode.pincode}
-        </label>
         <input
-          className={styles.text}
-          id={launch}
-          type="date"
-          value={draft.launch_on ?? ""}
+          className={styles.cellText}
+          id={`area-${id}`}
+          type="text"
+          maxLength={40}
+          aria-label={copy.areaLabel(id)}
+          value={row.area}
           onChange={(event) => {
-            onChange({ ...draft, launch_on: event.target.value === "" ? null : event.target.value });
+            onChange({ ...row, area: event.target.value });
           }}
         />
       </td>
+      <td>
+        <input
+          className={styles.box}
+          type="checkbox"
+          aria-label={copy.served(id)}
+          checked={row.served}
+          onChange={(event) => {
+            onChange({ ...row, served: event.target.checked });
+          }}
+        />
+      </td>
+      <td>
+        <input
+          className={styles.cellDate}
+          type="date"
+          aria-label={copy.launchOn(id)}
+          value={row.launch_on ?? ""}
+          onChange={(event) => {
+            onChange({ ...row, launch_on: event.target.value === "" ? null : event.target.value });
+          }}
+        />
+      </td>
+      <td className={styles.figure}>{pincode.waiting}</td>
     </tr>
+  );
+}
+
+/** Who a save would message, before it is sent: serving a pincode tells its waitlist, once. */
+function LaunchCheck({
+  launching,
+  busy,
+  onSend,
+  onCancel,
+}: {
+  launching: readonly ServedPincode[];
+  busy: boolean;
+  onSend: () => void;
+  onCancel: () => void;
+}) {
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    panel.current?.focus();
+  }, []);
+  const people = launching.reduce((sum, each) => sum + each.to_alert, 0);
+  return (
+    <div className={styles.check} ref={panel} tabIndex={-1} role="group" aria-labelledby="area-launch">
+      <p className={styles.checkTitle} id="area-launch">
+        {copy.launch.title(people)}
+      </p>
+      <ul className={styles.checkList}>
+        {launching.map((each) => (
+          <li key={each.pincode}>{copy.launch.line(each.pincode, each.area, each.to_alert)}</li>
+        ))}
+      </ul>
+      <p className={styles.checkLine}>{copy.launch.note}</p>
+      <div className={styles.actions}>
+        <button className={styles.save} type="button" disabled={busy} onClick={onSend}>
+          {busy ? copy.saving : copy.launch.send(people)}
+        </button>
+        <button className={styles.quiet} type="button" disabled={busy} onClick={onCancel}>
+          {copy.launch.cancel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** A file's changes, pincode by pincode, before they go into the table. */
+function FilePreview({
+  rows,
+  onApply,
+  onCancel,
+}: {
+  rows: readonly FileChange[];
+  onApply: () => void;
+  onCancel: () => void;
+}) {
+  const describe = (row: Row) => copy.upload.state(row.served, row.launch_on);
+  if (rows.length === 0) {
+    return (
+      <p className={styles.saved} role="status">
+        {copy.upload.none}
+      </p>
+    );
+  }
+  return (
+    <div className={styles.uploaded}>
+      <p className={styles.saved} role="status">
+        {copy.upload.read(rows.length)}
+      </p>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            {copy.upload.columns.map((column) => (
+              <th key={column} scope="col">
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.pincode.pincode}>
+              <th scope="row" className={styles.rowHead}>
+                {row.pincode.pincode}
+              </th>
+              <td>{row.pincode.area}</td>
+              <td>{describe(row.now)}</td>
+              <td>{describe(row.file)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className={styles.actions}>
+        <button className={styles.save} type="button" onClick={onApply}>
+          {copy.upload.apply}
+        </button>
+        <button className={styles.quiet} type="button" onClick={onCancel}>
+          {copy.upload.cancel}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -107,43 +251,64 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
 
   const inCity = pincodes.filter((each) => each.city === city);
   const changes = changesIn(pincodes, draft);
+  const badName = changes.find((change) => change.area !== undefined && !AREA_NAME.test(change.area));
+  const launching = launchesIn(pincodes, changes);
   const busy = saving.step === "saving";
 
-  const send = async (sending: ReturnType<typeof changesIn>) => {
+  const edit = (next: Draft) => {
+    setDraft(next);
+    setSaving({ step: "editing" });
+  };
+
+  const send = async () => {
     setSaving({ step: "saving" });
-    const answer = await api.setServiceArea(sending);
+    const answer = await api.setServiceArea(changes);
     if (!answer.ok) {
       setSaving({ step: "failed", code: answer.code });
       return;
     }
-    // The change is made, so what was a draft is now what we hold.
+    // The change is made, so what was a draft is now what we hold, and whoever waited there has been told.
     setPincodes((held) =>
       held.map((each) => {
-        const change = sending.find((one) => one.pincode === each.pincode);
-        return change === undefined ? each : { ...each, served: change.served, launch_on: change.launch_on };
+        const change = changes.find((one) => one.pincode === each.pincode);
+        if (change === undefined) return each;
+        const launched = change.served && !each.served;
+        return {
+          ...each,
+          served: change.served,
+          launch_on: change.launch_on,
+          area: change.area ?? each.area,
+          to_alert: launched ? 0 : each.to_alert,
+        };
       }),
     );
-    setUpload(null);
-    setSaving({ step: "saved", changed: answer.body.changed });
+    setSaving({ step: "saved", changed: answer.body.changed, alerted: answer.body.alerted });
   };
 
   const readFile = async (file: File) => {
     const read = readServiceAreaCsv(await file.text());
     if (!read.ok) {
-      setUpload({
-        step: "failed",
-        says: read.reason === "header" ? copy.upload.badHeader : copy.upload.badDate(read.pincode),
-      });
+      setUpload({ step: "failed", says: uploadRefusal(read) });
       return;
     }
     const held = new Map(pincodes.map((each) => [each.pincode, each]));
-    const changed = read.rows
-      .filter((row) => {
-        const was = held.get(row.pincode);
-        return was !== undefined && (was.served !== row.served || was.launch_on !== row.launch_on);
-      })
-      .map((row) => ({ pincode: row.pincode, served: row.served, launch_on: row.launch_on }));
-    setUpload({ step: "read", changes: changed });
+    const rows: FileChange[] = [];
+    for (const line of read.rows) {
+      const pincode = held.get(line.pincode);
+      const now = draft[line.pincode];
+      if (pincode === undefined || now === undefined) continue;
+      const file = { ...now, served: line.served, launch_on: line.launch_on };
+      if (!sameRow(file, now)) rows.push({ pincode, now, file });
+    }
+    setUpload({ step: "read", rows });
+  };
+
+  /** The file's changes go into the draft, where the table shows them and the one Save sends them. */
+  const applyFile = (rows: readonly FileChange[]) => {
+    const next: Record<string, Row> = { ...draft };
+    for (const row of rows) next[row.pincode.pincode] = row.file;
+    edit(next);
+    setUpload({ step: "applied" });
   };
 
   const download = () => {
@@ -154,6 +319,13 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
     link.click();
     URL.revokeObjectURL(link.href);
   };
+
+  const pressSave = () => {
+    if (launching.length > 0) setSaving({ step: "checking" });
+    else void send();
+  };
+
+  const checking = saving.step === "checking" || (saving.step === "saving" && launching.length > 0);
 
   return (
     <section className={styles.panel} aria-labelledby="area">
@@ -194,12 +366,9 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
             className={styles.quiet}
             type="button"
             onClick={() => {
-              setDraft((held) => {
-                const next = { ...held };
-                for (const each of inCity) next[each.pincode] = { ...(next[each.pincode] ?? each), served };
-                return next;
-              });
-              setSaving({ step: "editing" });
+              const next: Record<string, Row> = { ...draft };
+              for (const each of inCity) next[each.pincode] = { ...(next[each.pincode] ?? rowOf(each)), served };
+              edit(next);
             }}
           >
             {served ? copy.bulk.serve(city) : copy.bulk.stop(city)}
@@ -211,7 +380,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
         <thead>
           <tr>
             {copy.columns.map((column) => (
-              <th key={column} scope="col" className={styles.column}>
+              <th key={column} scope="col">
                 {column}
               </th>
             ))}
@@ -219,34 +388,49 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
         </thead>
         <tbody>
           {inCity.map((each) => (
-            <Row
+            <PincodeRow
               key={each.pincode}
               pincode={each}
-              draft={draft[each.pincode] ?? { served: each.served, launch_on: each.launch_on }}
+              row={draft[each.pincode] ?? rowOf(each)}
               onChange={(next) => {
-                setDraft({ ...draft, [each.pincode]: next });
-                setSaving({ step: "editing" });
+                edit({ ...draft, [each.pincode]: next });
               }}
             />
           ))}
         </tbody>
       </table>
-      <p className={styles.hint}>{copy.launchHint}</p>
+      <p className={styles.hint}>{copy.hint}</p>
 
-      <div className={styles.actions}>
-        <button
-          className={styles.save}
-          type="button"
-          disabled={busy || changes.length === 0}
-          onClick={() => void send(changes)}
-        >
-          {busy ? copy.saving : copy.save}
-        </button>
-      </div>
+      {checking ? (
+        <LaunchCheck
+          launching={launching}
+          busy={busy}
+          onSend={() => void send()}
+          onCancel={() => {
+            setSaving({ step: "editing" });
+          }}
+        />
+      ) : (
+        <div className={styles.actions}>
+          <button
+            className={styles.save}
+            type="button"
+            disabled={busy || changes.length === 0 || badName !== undefined}
+            onClick={pressSave}
+          >
+            {busy ? copy.saving : copy.save}
+          </button>
+        </div>
+      )}
+      {badName !== undefined && (
+        <p className={styles.error} role="alert">
+          {copy.badName(badName.pincode)}
+        </p>
+      )}
       {changes.length === 0 && saving.step === "editing" && <p className={styles.hint}>{copy.nothing}</p>}
       {saving.step === "saved" && (
         <p className={styles.saved} role="status">
-          {copy.saved(saving.changed)}
+          {copy.saved(saving.changed, saving.alerted)}
         </p>
       )}
       {saving.step === "failed" && (
@@ -262,7 +446,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
             {copy.upload.label}
           </label>
           <input
-            className={styles.text}
+            className={styles.file}
             id="area-file"
             type="file"
             accept=".csv,text/csv"
@@ -277,27 +461,20 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
           </p>
         </div>
         {upload?.step === "read" && (
-          <div className={styles.uploaded}>
-            <p className={styles.saved} role="status">
-              {upload.changes.length === 0 ? copy.upload.none : copy.upload.read(upload.changes.length)}
-            </p>
-            {upload.changes.length > 0 && (
-              <div className={styles.actions}>
-                <button className={styles.save} type="button" disabled={busy} onClick={() => void send(upload.changes)}>
-                  {busy ? copy.saving : copy.upload.apply}
-                </button>
-                <button
-                  className={styles.quiet}
-                  type="button"
-                  onClick={() => {
-                    setUpload(null);
-                  }}
-                >
-                  {copy.upload.cancel}
-                </button>
-              </div>
-            )}
-          </div>
+          <FilePreview
+            rows={upload.rows}
+            onApply={() => {
+              applyFile(upload.rows);
+            }}
+            onCancel={() => {
+              setUpload(null);
+            }}
+          />
+        )}
+        {upload?.step === "applied" && (
+          <p className={styles.saved} role="status">
+            {copy.upload.applied}
+          </p>
         )}
         {upload?.step === "failed" && (
           <p className={styles.error} role="alert">

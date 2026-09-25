@@ -7,6 +7,7 @@
 // mm-api records each call under that identity (docs/decisions/0031-access-and-audit.md).
 
 import type { paths } from "./api-schema.ts";
+import { markLapsed } from "./lib/session.ts";
 
 /** The 200 body of one operation, which the ops document mostly writes inline rather than naming. */
 type Body<T> = T extends { responses: { 200: { content: { "application/json": infer B } } } } ? B : never;
@@ -14,6 +15,7 @@ type Body<T> = T extends { responses: { 200: { content: { "application/json": in
 /** What one operation is sent. */
 type Sent<T> = T extends { requestBody: { content: { "application/json": infer B } } } ? B : never;
 
+export type Whoami = Body<paths["/api/whoami"]["get"]>;
 export type Held = Body<paths["/api/referrals/held"]["get"]>["held"][number];
 export type Referrer = Body<paths["/api/referrers"]["get"]>["referrers"][number];
 export type Area = Body<paths["/api/waitlist"]["get"]>["areas"][number];
@@ -43,8 +45,10 @@ export type SettingValue = OpsSetting["value"];
 export type PriceBook = Body<paths["/api/prices"]["get"]>;
 export type Price = PriceBook["prices"][number];
 export type PriceChange = Sent<paths["/api/prices"]["post"]>;
+export type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
+export type AreaChanged = Body<paths["/api/service-area"]["post"]>;
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
@@ -69,39 +73,66 @@ export type MoveReason = MoveRequest["reason"];
 export type BookingWindow = NonNullable<MoveRequest["window"]>;
 export type VisitType = NonNullable<Block["type"]>;
 
-/** A failed call carries the API's error code, or "offline" when it never reached the API. */
+/**
+ * A failed call carries the API's error code, and for invalid_request the
+ * fields it refused, so a form can say which of its boxes was wrong. The code
+ * is "offline" when the call never reached the API, and "signed_out" when
+ * Cloudflare Access sent it to its login page instead (src/lib/session.ts).
+ */
 export type Answer<T> =
-  { readonly ok: true; readonly body: T } | { readonly ok: false; readonly status: number; readonly code: string };
+  | { readonly ok: true; readonly body: T }
+  | { readonly ok: false; readonly status: number; readonly code: string; readonly fields: readonly string[] };
+
+const OFFLINE = { ok: false, status: 0, code: "offline", fields: [] } as const;
+const SIGNED_OUT = { ok: false, status: 0, code: "signed_out", fields: [] } as const;
+
+/**
+ * Whether Access, rather than mm-api, answered. Access redirects a call whose
+ * session has run out to the team's login page; the call does not follow it,
+ * so it arrives as an opaque redirect. mm-api's own refusal of a missing or
+ * spent token is the same thing seen from behind Access.
+ */
+function lapsedIn(response: Response, code: string | undefined): boolean {
+  if (response.type === "opaqueredirect") return true;
+  return response.status === 401 || code === "access_required";
+}
 
 async function refusal(response: Response): Promise<Answer<never>> {
-  const error = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
-  return { ok: false, status: response.status, code: error?.error?.code ?? "unknown" };
+  const failure = (await response.json().catch(() => null)) as {
+    error?: { code?: string; fields?: string[] };
+  } | null;
+  const code = failure?.error?.code;
+  if (lapsedIn(response, code)) {
+    markLapsed();
+    return SIGNED_OUT;
+  }
+  return { ok: false, status: response.status, code: code ?? "unknown", fields: failure?.error?.fields ?? [] };
+}
+
+/** A redirect is never followed: the only one a call meets is Access's, to a login page on another origin. */
+async function reach(path: string, init: RequestInit): Promise<Response | null> {
+  try {
+    return await fetch(path, { ...init, credentials: "same-origin", redirect: "manual" });
+  } catch {
+    return null;
+  }
 }
 
 async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<Answer<T>> {
-  let response: Response;
-  try {
-    response = await fetch(path, {
-      method,
-      credentials: "same-origin",
-      headers: body === undefined ? {} : { "Content-Type": "application/json" },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-  } catch {
-    return { ok: false, status: 0, code: "offline" };
-  }
+  const response = await reach(path, {
+    method,
+    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  if (response === null) return OFFLINE;
   if (response.ok) return { ok: true, body: (await response.json()) as T };
   return refusal(response);
 }
 
 /** A photograph's bytes, which the API audits before it serves them. */
 async function image(path: string): Promise<Answer<Blob>> {
-  let response: Response;
-  try {
-    response = await fetch(path, { credentials: "same-origin" });
-  } catch {
-    return { ok: false, status: 0, code: "offline" };
-  }
+  const response = await reach(path, {});
+  if (response === null) return OFFLINE;
   return response.ok ? { ok: true, body: await response.blob() } : refusal(response);
 }
 
@@ -147,6 +178,8 @@ const moveBody = (appointmentId: string, to: Landing, shown: Shown) => ({
 });
 
 export const api = {
+  /** Who Access let through, and where signing out goes. */
+  whoami: () => call<Whoami>("GET", "/api/whoami"),
   /** Seven days from `from`, or from today, in one city or every one. No name or number is in the query. */
   board: (asked: BoardQuery) => call<Board>("GET", `/api/dispatch${queryOf({ from: asked.from, city: asked.city })}`),
   /** Where a job in hand would land in the week from `from`, by the check a move runs. Writes nothing. */
@@ -171,8 +204,12 @@ export const api = {
     call<Decision>("POST", `/api/referrals/${id}/decision`, { decision, reason }),
   referrers: () => call<{ referrers: Referrer[] }>("GET", "/api/referrers"),
   waitlist: () => call<{ areas: Area[] }>("GET", "/api/waitlist"),
-  /** Without confirm, what a launch would send; with it, the launch itself. */
-  launch: (pincode: string, confirm: boolean) => call<Launch>("POST", `/api/pincodes/${pincode}/launch`, { confirm }),
+  /** Without confirm, what a launch would send; with it, the launch itself, from the day given or today. */
+  launch: (pincode: string, confirm: boolean, launchOn: string | null = null) =>
+    call<Launch>("POST", `/api/pincodes/${pincode}/launch`, {
+      confirm,
+      ...(launchOn === null ? {} : { launch_on: launchOn }),
+    }),
   /** The number goes in the body, never in a path or a query string, so it stays out of logs and referrers. */
   findClient: (mobile: string) => call<ClientFound>("POST", "/api/clients/search", { mobile }),
   client: (id: string) => call<ClientRecord>("GET", `/api/clients/${id}`),
@@ -231,8 +268,14 @@ export const api = {
   prices: () => call<PriceBook>("GET", "/api/prices"),
   /** A price from the day it applies. The book gains a row; nothing already invoiced moves. */
   setPrice: (price: PriceChange) => call<{ prices: Price[] }>("POST", "/api/prices", price),
+  /** A price still to come, taken back. The route refuses the one in force and every spent one. */
+  withdrawPrice: (row: PriceWithdrawal) => call<{ prices: Price[] }>("POST", "/api/prices/withdraw", row),
+  /** Every pincode, with how many wait there and how many serving it would tell. */
   serviceArea: () => call<{ pincodes: ServedPincode[] }>("GET", "/api/service-area"),
-  /** Only the pincodes named change. The route refuses a change that would leave none served. */
-  setServiceArea: (changes: readonly AreaChange[]) =>
-    call<{ changed: number; served: number }>("POST", "/api/service-area", { changes }),
+  /**
+   * Only the pincodes named change. The route refuses a change that would leave
+   * none served, and launches each pincode it begins serving: `alerted` counts
+   * the WhatsApps that queues.
+   */
+  setServiceArea: (changes: readonly AreaChange[]) => call<AreaChanged>("POST", "/api/service-area", { changes }),
 };

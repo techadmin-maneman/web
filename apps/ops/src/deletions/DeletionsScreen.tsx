@@ -23,6 +23,7 @@ import { api, type DeletionRequest } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { deletions, waiting } from "../content.ts";
 import { daysUntil, dueAfter } from "../lib/due.ts";
+import { phoneWords } from "../lib/phone.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./deletions.module.css";
@@ -145,7 +146,7 @@ function Request({ request, now, onDecided }: { request: DeletionRequest; now: D
         </OpsLink>
         <Left requestedAt={request.requested_at} now={now} />
       </div>
-      <p className={styles.who}>{copy.requested(request.mobile, longDate(request.requested_at))}</p>
+      <p className={styles.who}>{copy.requested(phoneWords(request.mobile), longDate(request.requested_at))}</p>
       {asking?.choice === "delete" && (
         <ConfirmDelete request={request} sending={sending} onDelete={() => void decide("delete")} onCancel={listed} />
       )}

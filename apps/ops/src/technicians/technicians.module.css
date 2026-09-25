@@ -220,13 +220,11 @@
   border-top: var(--hairline) solid var(--paper-line);
 }
 
+/* In the boards' label (components/label.module.css), not sans capitals (DS-07). */
 .leaveTitle {
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-13);
   font-weight: 400;
-  letter-spacing: var(--tracking-12);
-  text-transform: uppercase;
-  color: var(--text-muted);
 }
 
 .leaveList {

@@ -14,6 +14,7 @@ import { api, type Grievance } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { grievances, waiting } from "../content.ts";
 import { daysUntil, dueAfter } from "../lib/due.ts";
+import { phoneWords } from "../lib/phone.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./grievances.module.css";
@@ -55,7 +56,7 @@ function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswere
         </OpsLink>
         <Left raisedAt={each.raised_at} now={now} />
       </div>
-      <p className={styles.who}>{copy.raised(each.mobile, longDate(each.raised_at))}</p>
+      <p className={styles.who}>{copy.raised(phoneWords(each.mobile), longDate(each.raised_at))}</p>
       {/* The client's own words, kept apart from ours so nobody answers a paraphrase. */}
       <blockquote className={styles.words}>{each.text}</blockquote>
       <div className={styles.answer}>

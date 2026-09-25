@@ -28,7 +28,7 @@ test("lists every open grievance with the client's own words, number and day", a
   await expect(queue(page).getByRole("listitem")).toHaveCount(2);
 
   const first = row(page, "Rohit Malhotra");
-  await expect(first).toContainText("+919810004417 · raised 14 Sep 2027");
+  await expect(first).toContainText("+91 98100 04417 · raised 14 Sep 2027");
   await expect(first.getByText(FIRST?.text ?? "")).toBeVisible();
 });
 

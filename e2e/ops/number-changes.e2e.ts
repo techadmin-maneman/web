@@ -23,7 +23,7 @@ test("shows both numbers, the day it was asked for, and that each was proven", a
   await open(page);
   const only = queue(page).getByRole("listitem");
   await expect(only).toHaveCount(1);
-  await expect(only).toContainText("+919810004417 → +919810004421");
+  await expect(only).toContainText("+91 98100 04417 → +91 98100 04421");
   await expect(only).toContainText("Requested 21 Sep 2027");
   await expect(only).toContainText("A code went to both numbers, and both were entered.");
 });

@@ -179,6 +179,8 @@ test("lists the leave each technician is down for, and says when there is none",
   await expect(page.getByText("2 Oct 2027 to 6 Oct 2027")).toBeVisible();
   await expect(page.getByText("Family wedding")).toBeVisible();
   await expect(page.getByText("No leave recorded.")).toHaveCount(2);
+  // A11Y-22: every row's heading read "Leave"; each says whose it is.
+  await expect(page.getByRole("heading", { name: "Leave for Imran Qureshi", level: 3 })).toBeVisible();
 });
 
 test("records leave, saying first that nobody can be booked on those days", async ({ page }) => {
