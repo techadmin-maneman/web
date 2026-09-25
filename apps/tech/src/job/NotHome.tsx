@@ -1,28 +1,37 @@
 // Board B5: the evidence chain, beneath the job's card.
 //
-//   1 · Arrived   the phone's position, checked against the address
+//   1 · Arrived       the phone's position, checked against the address
 //   Check-in failed   how far away it was, and no way to close a no-show from there
-//   2 · Waiting   what is left of the wait, and Close as no-show, dim until it runs out
-//   He appears    the timer stops and the job starts
+//   2 · Waiting       what is left of the wait, and Close as no-show, dim until it runs out
+//   He appears        the timer stops and the job starts
+//
+// The stage's one action — I have arrived, then Start job — sits at the foot of
+// the screen where every screen keeps it. Close as no-show is never gold and
+// never beside it: it is outlined in the waiting stage, and it asks first,
+// because it can bring the client a charge.
 //
 // The check-in goes through the outbox like every other write, so an arrival in
-// a basement is not lost; the API's answer — passed, the distance, and when the
-// wait ends — is kept beside the job and shown here (apps/tech/src/store/jobs.ts).
+// a basement is not lost. The wait runs to the end the API gave — in the
+// check-in's answer, kept beside the job (apps/tech/src/store/jobs.ts), or on
+// the card, for a phone that lost its copy — and with no signal it counts from
+// the tap. A no-show can close only once the API holds the check-in, since it
+// runs the wait on its own clock too (ADR 0065).
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { CheckIn, Job } from "../api.ts";
-import { notHome as copy, job as jobCopy } from "../content.ts";
+import { Confirm } from "../components/Confirm.tsx";
 import { Icon } from "../components/Icon.tsx";
+import { notHome as copy, job as jobCopy } from "../content.ts";
 import { TICK } from "../icons.ts";
-import { checkedIn } from "../lib/progress.ts";
-import { countdown, metres } from "../lib/when.ts";
-import { keepClosed, keptArrival } from "../store/jobs.ts";
-import { queue, replay, type Queued } from "../store/outbox.ts";
+import { checkedIn, theWait } from "../lib/progress.ts";
+import { useOneAtATime } from "../lib/useOneAtATime.ts";
+import { clock, countdown, metres } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
+import { keepClosed, keptArrival } from "../store/jobs.ts";
+import { queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
+import { CardFrame } from "./CardFrame.tsx";
+import { firstName } from "./JobCard.tsx";
 import styles from "./job.module.css";
-
-/** "Rohit M." → "Rohit", as the board writes the name on the door. */
-const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
 /** The phone's own fix, which the API measures against the address (src/policy/check-in.ts). */
 function position(): Promise<GeolocationPosition> {
@@ -50,12 +59,19 @@ function useNow(running: boolean): number {
   return now;
 }
 
-export function NotHome({ job, queued }: { job: Job; queued: readonly Queued[] }) {
+/** Board B5's receipt: whether the day-before WhatsApp reached the client, or ops' three facts when none was sent. */
+function evidenceOf(job: Job): string {
+  const who = job.client === null ? "" : firstName(job.client.name);
+  if (job.reminder === null) return copy.waiting.evidence;
+  const delivered = job.reminder.delivered_at;
+  return delivered === null ? copy.waiting.notDelivered(who) : copy.waiting.delivered(who, clock(delivered));
+}
+
+export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queued[]; card: ReactNode }) {
   const [arrival, setArrival] = useState<CheckIn | null>(null);
   const [noPosition, setNoPosition] = useState(false);
-  const [asking, setAsking] = useState(false);
-  // The card says so once it has caught up; until then the phone's own answer does.
-  const here = checkedIn(job, queued) || arrival?.passed === true;
+  const [asking, once] = useOneAtATime();
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     let current = true;
@@ -67,55 +83,73 @@ export function NotHome({ job, queued }: { job: Job; queued: readonly Queued[] }
     };
   }, [job.id, queued]);
 
-  const arrive = useCallback(async () => {
-    setAsking(true);
-    setNoPosition(false);
-    let fix: GeolocationPosition;
-    try {
-      fix = await position();
-    } catch {
-      setAsking(false);
-      setNoPosition(true);
-      return;
-    }
-    await queue("check_in", job.id, {
-      lat: fix.coords.latitude,
-      lng: fix.coords.longitude,
-      accuracy_m: fix.coords.accuracy,
-      at: new Date().toISOString(),
+  // The card says so once it has caught up; until then the phone's own answer does.
+  const here = checkedIn(job, queued) || arrival?.passed === true;
+  const failed = !here && arrival?.passed === false;
+
+  const wait = theWait(job, queued, arrival);
+  const now = useNow(here && wait.endsAt !== null);
+  const left = wait.endsAt === null ? 0 : wait.endsAt - now;
+  const mayClose = wait.confirmed && wait.endsAt !== null && left <= 0;
+
+  const arrive = () =>
+    once(async () => {
+      setNoPosition(false);
+      let fix: GeolocationPosition;
+      try {
+        fix = await position();
+      } catch {
+        setNoPosition(true);
+        return;
+      }
+      const at = new Date().toISOString();
+      const body = { lat: fix.coords.latitude, lng: fix.coords.longitude, accuracy_m: fix.coords.accuracy, at };
+      await queue("check_in", job.id, body, job.starts_at);
+      await replay();
     });
-    await replay();
-    setAsking(false);
-  }, [job.id]);
 
-  const start = useCallback(async () => {
-    await queue("start", job.id, null);
-    void replay();
-    go(stepPath(job.id, "before_photos"));
-  }, [job.id]);
+  const start = () =>
+    once(async () => {
+      await queue("start", job.id, null, job.starts_at);
+      void replay();
+      go(stepPath(job.id, "before_photos"));
+    });
 
-  const close = useCallback(async () => {
-    await queue("no_show", job.id, null);
-    await keepClosed(job.id);
-    void replay();
-    go(`/jobs/${job.id}/done`);
-  }, [job.id]);
+  // The card stands aside for a close-out while the no-show is on its way, so
+  // whether the API refused it as early is the outbox's to remember, not this screen's.
+  const close = () =>
+    once(async () => {
+      setConfirming(false);
+      await queue("no_show", job.id, null, job.starts_at);
+      await replay();
+      // The phone's clock ran ahead of ours: nothing was recorded, and the wait goes on.
+      if (refusedAsEarly(job.id)) return;
+      await keepClosed(job.id);
+      go(`/jobs/${job.id}/done`);
+    });
 
-  const waitEndsAt = arrival?.wait_ends_at ?? null;
-  const now = useNow(here && waitEndsAt !== null);
-  const left = waitEndsAt === null ? 0 : new Date(waitEndsAt).getTime() - now;
-  const waitMinutes =
-    arrival === null || waitEndsAt === null
-      ? 0
-      : Math.round((new Date(waitEndsAt).getTime() - new Date(arrival.checked_in_at).getTime()) / 60_000);
-  const mayClose = here && waitEndsAt !== null && left <= 0;
-
-  // Sent, and the API has not answered yet: the arrival is on the phone either way.
-  const unanswered = here && arrival === null;
+  /** The stage's one action: Start job once he is at the door, I have arrived before, none while a check-in has failed. */
+  function doorAction(): ReactNode {
+    if (here) {
+      return (
+        <button className={styles.action} type="button" disabled={asking} onClick={() => void start()}>
+          {jobCopy.start}
+        </button>
+      );
+    }
+    if (failed) return null;
+    return (
+      <button className={styles.action} type="button" disabled={asking} onClick={() => void arrive()}>
+        {copy.arrived.action}
+      </button>
+    );
+  }
 
   return (
-    <>
-      {!here && (
+    <CardFrame job={job} foot={doorAction()}>
+      {card}
+
+      {!here && !failed && (
         <section className={styles.stage}>
           <p className={styles.stageLabel}>{copy.arrived.step}</p>
           <p className={styles.stageBody}>{copy.arrived.body}</p>
@@ -124,19 +158,17 @@ export function NotHome({ job, queued }: { job: Job; queued: readonly Queued[] }
               {copy.arrived.noPosition}
             </p>
           )}
-          <button className={styles.action} type="button" disabled={asking} onClick={() => void arrive()}>
-            {copy.arrived.action}
-          </button>
         </section>
       )}
 
-      {arrival !== null && !arrival.passed && (
+      {failed && (
         <section className={styles.failed} role="alert">
           <p className={styles.failedLabel}>{copy.failed.title}</p>
           <p className={styles.failedLine}>
             {arrival.distance_m === null ? copy.failed.unmeasured : copy.failed.away(metres(arrival.distance_m))}
           </p>
-          <p className={styles.stageBody}>{copy.failed.body}</p>
+          <p className={styles.stageNote}>{copy.failed.body}</p>
+          {noPosition && <p className={styles.stageWarn}>{copy.arrived.noPosition}</p>}
           <button className={styles.second} type="button" disabled={asking} onClick={() => void arrive()}>
             {copy.failed.action}
           </button>
@@ -146,19 +178,27 @@ export function NotHome({ job, queued }: { job: Job; queued: readonly Queued[] }
       {here && (
         <section className={styles.stage}>
           <p className={styles.stageLabel}>{copy.waiting.step}</p>
-          {unanswered ? (
-            <p className={styles.stageBody}>{copy.arrived.queued}</p>
-          ) : (
-            <>
-              <p className={styles.timer}>{countdown(left)}</p>
-              <p className={styles.stageBody}>{copy.waiting.left(waitMinutes)}</p>
-            </>
-          )}
+          {wait.endsAt !== null && <p className={styles.timer}>{countdown(left)}</p>}
+          <p className={styles.stageNote} role="status">
+            {waitLine(wait.confirmed, mayClose, job.no_show_wait_min)}
+          </p>
           <p className={styles.evidence}>
             <Icon className={styles.evidenceIcon} d={TICK} size={20} />
-            <span>{copy.waiting.evidence}</span>
+            <span>{evidenceOf(job)}</span>
           </p>
-          <button className={styles.dim} type="button" disabled={!mayClose} onClick={() => void close()}>
+          {refusedAsEarly(job.id) && (
+            <p className={styles.stageWarn} role="alert">
+              {copy.waiting.early}
+            </p>
+          )}
+          <button
+            className={styles.outline}
+            type="button"
+            disabled={!mayClose || asking}
+            onClick={() => {
+              setConfirming(true);
+            }}
+          >
             {copy.waiting.close}
           </button>
         </section>
@@ -170,12 +210,28 @@ export function NotHome({ job, queued }: { job: Job; queued: readonly Queued[] }
           {job.client !== null && (
             <p className={styles.failedLine}>{copy.appears.atTheDoor(firstName(job.client.name))}</p>
           )}
-          <p className={styles.stageBody}>{copy.appears.body}</p>
-          <button className={styles.action} type="button" onClick={() => void start()}>
-            {jobCopy.start}
-          </button>
+          <p className={styles.stageNote}>{copy.appears.body}</p>
         </section>
       )}
-    </>
+
+      {confirming && (
+        <Confirm
+          title={copy.confirm.title}
+          body={copy.confirm.body}
+          yes={copy.confirm.yes}
+          no={copy.confirm.no}
+          onYes={() => void close()}
+          onNo={() => {
+            setConfirming(false);
+          }}
+        />
+      )}
+    </CardFrame>
   );
+}
+
+/** What the wait says beneath the timer: how long it runs, that it is over, or that it waits for signal. */
+function waitLine(confirmed: boolean, over: boolean, minutes: number): string {
+  if (!confirmed) return copy.waiting.fromTap;
+  return over ? copy.waiting.over : copy.waiting.left(minutes);
 }

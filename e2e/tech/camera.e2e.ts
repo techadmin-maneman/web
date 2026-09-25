@@ -9,7 +9,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { fakeTech, heldOnPhone, JOB_ID } from "./fixtures.ts";
+import { anglesOnPhone, fakeTech, heldOnPhone, JOB_ID } from "./fixtures.ts";
 
 const TARGET_BYTES = 250 * 1024;
 const BEFORE = `/jobs/${JOB_ID}/before-photos`;
@@ -43,8 +43,52 @@ test("captures the five before angles into the app's own store, never a file inp
   for (const size of held.frameSizes) expect(size).toBeLessThanOrEqual(TARGET_BYTES);
   expect(Math.min(...held.frameSizes)).toBeGreaterThan(0);
 
-  // Once five are taken there is nothing more to capture.
-  await expect(capture).toBeDisabled();
+  // Once five are taken there is nothing more to capture, and the same key finishes the step.
+  await expect(capture).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Done" })).toBeEnabled();
+});
+
+test("a double tap on Capture keeps one frame for one angle, and moves on by one", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(BEFORE);
+  const capture = page.getByRole("button", { name: "Capture" });
+  await expect(capture).toBeEnabled();
+
+  await capture.dblclick();
+  await expect(page.getByText("1 of 5")).toBeVisible();
+  await page.waitForTimeout(600);
+  await expect(page.getByText("1 of 5")).toBeVisible();
+  // One frame per angle: the API keeps one photograph for each, so a second would cost the next angle.
+  expect(await anglesOnPhone(page)).toEqual(["front"]);
+  await expect(page.getByText("Top · line up the hairline")).toBeVisible();
+});
+
+test("Capture is the key at the foot of the screen, Retake beside it, over board B1's framing guide", async ({
+  page,
+}) => {
+  await fakeTech(page);
+  await page.goto(BEFORE);
+  const capture = page.getByRole("button", { name: "Capture" });
+  await expect(capture).toBeEnabled();
+
+  const key = await capture.boundingBox();
+  const viewport = page.viewportSize();
+  // The foot of the screen, 22 px up, where every other screen's primary action is.
+  expect(Math.round((key?.y ?? 0) + (key?.height ?? 0))).toBe((viewport?.height ?? 0) - 22);
+  expect(key?.height).toBe(64);
+  expect((await page.getByRole("button", { name: "Retake" }).boundingBox())?.width).toBe(88);
+  // No second bar beneath it: Capture is the one gold action until the set is done.
+  await expect(page.getByRole("button", { name: "Done" })).toHaveCount(0);
+  // The head's outline, the hairline and the corners, drawn over the camera and not read out.
+  await expect(page.locator('svg[aria-hidden="true"] path[stroke-dasharray]')).toHaveCount(1);
+
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByRole("status").filter({ hasText: `${String(angle)} of 5` })).toBeAttached();
+  }
+  // Once the five are in, the same key finishes the step, in the same place.
+  const done = page.getByRole("button", { name: "Done" });
+  expect(await done.boundingBox()).toEqual(key);
 });
 
 test("Retake drops the last frame from the phone", async ({ page }) => {

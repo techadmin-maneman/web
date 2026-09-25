@@ -1,34 +1,101 @@
 // Boards A3 and B5: one job's card, and beneath it the stage the job is at.
 //
 // A3 is the card — client, time and type, the badge, the address with its
-// access notes and Navigate. B5 is the evidence chain that follows it: arrive,
-// wait, and either start the job or close it as a no-show. They are one screen
-// because they are one moment at the door.
+// access notes and Navigate, the piece and the last visit. B5 is the evidence
+// chain that follows it: arrive, wait, and either start the job or close it as
+// a no-show. They are one screen because they are one moment at the door.
 //
-// A job further out shows time, type and sector only: the API withholds the
-// address and the client card until the day before, so the card simply has none.
+// What the card offers follows the job's stage (../lib/progress.ts): one gold
+// action at the foot at most, and never one the API would refuse. A job ops
+// changed under the phone offers nothing to press on with and says what
+// changed; a started job offers its next step and nothing of the door's; a
+// closed one reads as closed.
 
-import { useCallback } from "react";
-import { Icon } from "../components/Icon.tsx";
-import { badges, job as copy, types, typesLower } from "../content.ts";
-import { BACK, PIN } from "../icons.ts";
-import { addressLine, wayTo } from "../lib/navigate.ts";
-import { closed, nextStep, started } from "../lib/progress.ts";
+import type { ReactNode } from "react";
+import type { Job } from "../api.ts";
+import { closeOut as closeOutCopy, job as copy, whatStopped } from "../content.ts";
+import { nextStep, outcomeOf, stageOf, type Stage } from "../lib/progress.ts";
 import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
-import { clock, where } from "../lib/when.ts";
+import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import type { Queued } from "../store/outbox.ts";
+import { CardFrame } from "./CardFrame.tsx";
+import { JobCard } from "./JobCard.tsx";
 import { NotHome } from "./NotHome.tsx";
 import styles from "./job.module.css";
+
+/** What ops changed, in the app's words: the new time when the card now carries one, else the field that moved. */
+function whatChanged(job: Job, queued: readonly Queued[]): string {
+  const moved = queued.find((event) => event.job_id === job.id && event.state === "superseded");
+  if (moved === undefined) return "";
+  const held = moved.starts_at ?? null;
+  const newTime = moved.fields.includes("time") && held !== null && held !== job.starts_at;
+  return newTime ? copy.changed.movedTo(clock(job.starts_at)) : whatStopped(moved);
+}
+
+function Changed({ job, queued }: { job: Job; queued: readonly Queued[] }) {
+  return (
+    <section className={styles.changed} role="alert" aria-labelledby="changed-title">
+      <h2 className={styles.changedTitle} id="changed-title">
+        {copy.changed.title}
+      </h2>
+      <p className={styles.changedLine}>{whatChanged(job, queued)}</p>
+      <p className={styles.stageNote}>{copy.changed.body}</p>
+    </section>
+  );
+}
+
+/** The line that says where a job stands, for the stages that are not the door. */
+function StateLine({ stage, job, queued }: { stage: Stage; job: Job; queued: readonly Queued[] }) {
+  if (stage === "started") return <p className={styles.state}>{copy.states.inProgress}</p>;
+  if (stage === "closed") {
+    const outcome = outcomeOf(job, queued) ?? "done";
+    return <p className={styles.state}>{copy.closedAs(closeOutCopy.outcomes[outcome])}</p>;
+  }
+  if (stage === "not_today") {
+    const tomorrow = job.date === dayAfter(todayInIndia());
+    return <p className={styles.state}>{tomorrow ? copy.notToday.tomorrow : copy.notToday.other}</p>;
+  }
+  return null;
+}
+
+/** The action at the foot: the next step of a started job, or the way to a closed one's close-out. */
+function footFor(stage: Stage, job: Job, queued: readonly Queued[]): ReactNode {
+  if (stage === "started") {
+    const step = nextStep(job, queued);
+    return (
+      <button
+        className={styles.action}
+        type="button"
+        onClick={() => {
+          go(step === null ? `/jobs/${job.id}/done` : stepPath(job.id, step));
+        }}
+      >
+        {copy.continueJob}
+      </button>
+    );
+  }
+  if (stage === "closed") {
+    return (
+      <button
+        className={styles.second}
+        type="button"
+        onClick={() => {
+          go(`/jobs/${job.id}/done`);
+        }}
+      >
+        {copy.seeCloseOut}
+      </button>
+    );
+  }
+  return null;
+}
 
 export function JobScreen({ id }: { id: string }) {
   const waiting = useOutbox();
   const [loaded, retry] = useJob(id, signatureOf(waiting));
-
-  const onBack = useCallback(() => {
-    go("/");
-  }, []);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
@@ -40,77 +107,16 @@ export function JobScreen({ id }: { id: string }) {
   }
 
   const job = loaded.value;
-  const type = job.type;
-  const step = nextStep(job, waiting.events);
-  const running = started(job, waiting.events);
-  const over = closed(job, waiting.events);
+  const queued = waiting.events;
+  const stage = stageOf(job, queued, todayInIndia());
+
+  if (stage === "door") return <NotHome job={job} queued={queued} card={<JobCard job={job} />} />;
 
   return (
-    <main className={styles.screen}>
-      <header className={styles.head}>
-        <button className={styles.back} type="button" aria-label={copy.back} onClick={onBack}>
-          <Icon d={BACK} size={24} />
-        </button>
-        <div className={styles.headWho}>
-          <h1 className={styles.name}>
-            {job.client === null ? (type === null ? copy.locked.title : types[type]) : job.client.name}
-          </h1>
-          <p className={styles.when}>
-            {copy.when(clock(job.starts_at), type === null ? copy.locked.title : typesLower[type])}
-          </p>
-        </div>
-        <span className={styles.badge}>{badges[job.badge]}</span>
-      </header>
-
-      <div className={styles.body}>
-        {job.address === null ? (
-          <section className={styles.locked}>
-            <p className={styles.lockedTitle}>{copy.locked.title}</p>
-            <p className={styles.lockedBody}>{copy.locked.body}</p>
-            <p className={styles.sector}>{where(job.sector)}</p>
-          </section>
-        ) : (
-          <section className={styles.address}>
-            <p className={styles.line}>{addressLine(job.address)}</p>
-            {job.access_notes !== null && <p className={styles.access}>{job.access_notes}</p>}
-            {/* A new tab, so a technician who has taken the route back still has the app open behind it. */}
-            <a className={styles.navigate} href={wayTo(job.address)} target="_blank" rel="noopener noreferrer">
-              <Icon d={PIN} size={21} />
-              <span>{copy.navigate}</span>
-            </a>
-          </section>
-        )}
-
-        {job.unlocked && !over && <NotHome job={job} queued={waiting.events} />}
-      </div>
-
-      {job.unlocked && !over && running && step !== null && (
-        <div className={styles.foot}>
-          <button
-            className={styles.action}
-            type="button"
-            onClick={() => {
-              go(stepPath(job.id, step));
-            }}
-          >
-            {copy.continueJob}
-          </button>
-        </div>
-      )}
-
-      {over && (
-        <div className={styles.foot}>
-          <button
-            className={styles.action}
-            type="button"
-            onClick={() => {
-              go(`/jobs/${job.id}/done`);
-            }}
-          >
-            {copy.continueJob}
-          </button>
-        </div>
-      )}
-    </main>
+    <CardFrame job={job} foot={footFor(stage, job, queued)}>
+      {stage === "changed" && <Changed job={job} queued={queued} />}
+      <StateLine stage={stage} job={job} queued={queued} />
+      <JobCard job={job} />
+    </CardFrame>
   );
 }
