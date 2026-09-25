@@ -139,6 +139,12 @@ export const messages = {
   // PLACEHOLDER
   bookFirstFit: "I would like to book my first fit.",
   document: (what: string, reference: string) => `Please send me the ${what.toLowerCase()} for ${reference}.`,
+  // PLACEHOLDER: Home's prompt about a replacement, until the app has a page on what one involves.
+  replacement: "I would like to know what my replacement piece involves.",
+  // PLACEHOLDER: a visit's invoice that has not come in the day it should have.
+  lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,
+  // PLACEHOLDER: a refund that has taken longer than Razorpay's working days.
+  lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} has not arrived.`,
   // PLACEHOLDER: the app books the standard tier only, until a client's tier is recorded (docs/open-points.md).
   premium: (what: string) => `I would like to book a premium ${what.toLowerCase()}.`,
 } as const;
@@ -151,6 +157,25 @@ export const home = {
     label: "Your consultation",
     free: "Free · nothing to pay",
   },
+  /** Board B1's credit tile: "2 visit credits", with when the soonest expire. */
+  credits: {
+    count: (visits: number) => (visits === 1 ? "1 visit credit" : `${String(visits)} visit credits`),
+    expire: (date: string) => `Expire ${date}`,
+  },
+  /**
+   * Board B1's one prompt, the first that applies (src/domain/home-prompt.ts). The replacement's line is the
+   * board's own, and Visits' record words it the same way. PLACEHOLDER: everything else here, and where "See what
+   * that involves" goes, since the app has no page on it yet.
+   */
+  prompt: {
+    address: "Add your address, so your technician can find the door.",
+    addAddress: "Add your address",
+    involves: "See what that involves",
+    invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
+    openInvoice: "Open the invoice",
+  },
+  /** A visit FSM has not closed, once it has begun (LIFE-03). PLACEHOLDER: the design draws neither. */
+  stages: { in_progress: "Today · in progress", closing: "Being closed" },
   next: {
     label: "Your next visit",
     length: (what: string, minutes: number) => `${what} · ${String(minutes)} minutes`,
@@ -183,6 +208,10 @@ export const visits = {
   // PLACEHOLDER
   none: "No visits booked.",
   book: "Book your next visit",
+  /** Board C1: a visit paid for ahead, or covered by a credit. */
+  prepaid: "Prepaid",
+  // PLACEHOLDER: a visit that is not this client's, or no longer exists.
+  notFound: "We could not find this visit.",
   /*
    * PLACEHOLDER: the client's own record, derived from their visits and
    * payments (src/domain/client-history.ts). No board draws it. Board B1 writes
@@ -213,11 +242,16 @@ export const visits = {
     duration: "Duration",
     type: "Type",
     done: "What was done",
-    /** The three things a finished visit can say about its invoice (ADR 0056). */
+    /** The checklist the technician ticked, as one line, as board C9 writes it. */
+    doneLine: (items: readonly string[]) => `${items.join(", ")}.`,
+    /** The things a finished visit can say about its invoice (ADR 0056). */
     invoice: {
       open: "Tax invoice",
       newTab: "PDF, opens in a new tab",
       generating: "The invoice is still generating. Usually ready within the hour.",
+      // PLACEHOLDER: a day after the visit, "within the hour" is no longer true.
+      late: "The invoice is taking longer than it should. Message us and we will send it.",
+      message: "Message us",
       // The owner's own words on 23 September 2026: a free visit says "No charge", and never promises a document.
       free: "No charge for this visit, so there is no invoice.",
     },
@@ -296,6 +330,7 @@ export const booking = {
     another: "Another method",
   },
   expired: {
+    label: "Hold expired",
     title: "That slot has gone back.",
     pickAgain: "Pick again",
   },
@@ -308,6 +343,8 @@ export const booking = {
     close: "Done",
   },
   confirming: "Confirming your visit.",
+  // PLACEHOLDER: the hold's time ran out on the phone after Razorpay had taken the payment, which keeps it.
+  paidIn: "Your payment is in. We are booking your visit.",
   slow: "This is taking longer than usual. We will message you on WhatsApp when the visit is booked.",
   refunded: "We could not book that visit, so your payment is being refunded in full.",
   failedToStart: "That did not go through. Please try again.",
@@ -386,23 +423,35 @@ export const refer = {
     allow: "Allow for referral cards",
     instead: "Use the example instead",
   },
+  /**
+   * Board F4: the chat's preview, exactly as the friend receives it. Its heading and line are the landing's own
+   * preview (site/src/content/referral.ts), which test/node/app-invite-preview.test.ts holds them to, so the
+   * client is named only when the invite will name them, and the area is the site's.
+   */
   preview: {
-    title: "Preview — what your friend sees",
-    heading: (name: string) => `${name} sent you a Mane Man invite`,
-    body: "Home-fitted hair systems in Gurgaon. 3 service visits free when you're fitted.",
+    title: "Preview · what your friend sees",
+    heading: (name: string | null) =>
+      name === null ? "You have a Mane Man invite" : `${name} sent you a Mane Man invite`,
+    body: "Home-fitted hair systems across Delhi NCR. 3 service visits free when you're fitted.",
     domain: "maneman.in",
     message: (link: string) => `Had my hair system fitted at home by these people. Worth a look — ${link}`,
-    whatsapp: "Share via WhatsApp",
+    via: "Share via",
+    whatsapp: "WhatsApp",
     other: "Other apps",
     copy: "Copy link",
     copied: "Link copied",
-    // PLACEHOLDER: board F6's share failure.
-    failed: "The link did not generate. Nothing was sent. Try again.",
+    /** Board F6's share failure, and its way on. */
+    failed: {
+      label: "Share failed",
+      line: "The link did not generate. Nothing was sent.",
+      retry: "Try again",
+    },
   },
   fitted: {
     title: "Who has been fitted",
-    earned: (visits: number) => `${String(visits)} visits earned`,
-    remaining: (visits: number) => `${String(visits)} remaining`,
+    /** Board F5's two figures, each above its word. */
+    earned: "visits earned",
+    remaining: "remaining",
     when: (month: string) => `Fitted ${month}`,
     each: (visits: number) => `${String(visits)} visits earned`,
     only: "Completed fits only. Whether an invite was opened is your friend's business.",
@@ -415,10 +464,15 @@ export const refer = {
     body: "New opens show the house example. Cards already sent stay in those chats.",
     yes: "Switch off",
     no: "Keep it on",
+    // PLACEHOLDER: a revoke the API did not answer leaves the card as it was.
+    failed: "That did not go through, and your photographs are still on the card. Please try again.",
   },
-  // PLACEHOLDER: the card is composed on the phone; the design does not draw its waiting or its failure.
+  // PLACEHOLDER: the card is composed on the phone; the design does not draw its waiting or its failures.
   composing: "Making your card.",
   cardFailed: "We could not make your card. The house example is used instead.",
+  /** Consent or the example did not go through: nothing changed, and nothing was shared. */
+  notChanged: "That did not go through, so nothing has changed. Please try again.",
+  close: "Close",
 } as const;
 
 export const photos = {
@@ -432,8 +486,11 @@ export const photos = {
   back: "Back to photos",
   from: "From",
   to: "To",
-  // PLACEHOLDER: the divider's name for a screen reader, and the compare opened with fewer than two visits.
+  // PLACEHOLDER: the divider's name for a screen reader, what its place shows, and the compare opened with fewer
+  // than two visits.
   divider: "Divider between the two photographs",
+  dividerAt: (percent: number, from: string, to: string) =>
+    `${String(percent)}% of ${from} on the left, ${String(100 - percent)}% of ${to} on the right`,
   compareNone: "Compare opens once two visits have photographs.",
   download: "Download",
   downloaded: "Downloaded photographs sit in your gallery, outside the app.",
@@ -471,6 +528,11 @@ export const payments = {
    * normal refunds take 5 to 7, and the owner ruled the app says so (ADR 0025, item 28).
    */
   speed: { normal: "5 to 7 working days" } as Readonly<Record<string, string>>,
+  // PLACEHOLDER: a refund still processing after Razorpay's working days, which the client should hear about.
+  lateRefund: "Refund processing · taking longer than it should",
+  message: "Message us",
+  // PLACEHOLDER: an entry that is not this client's, or no longer exists.
+  notFound: "We could not find this payment.",
   /** A method as a list's meta line writes it ("22 Aug · UPI"), and as the detail's row does ("UPI"). */
   methods: {
     upi: ["UPI", "UPI"],
@@ -491,8 +553,14 @@ export const payments = {
   receipt: "Receipt",
   // PLACEHOLDER
   voucher: "Refund voucher",
+  /**
+   * Board E3's line for a document not yet raised. An invoice is raised once the visit is done, so what it says
+   * depends on when that was (ADR 0056). PLACEHOLDER: every line but the invoice's first.
+   */
   unavailable: {
     invoice: "The invoice is still generating. Usually ready within the hour.",
+    invoiceAfterVisit: "The tax invoice is raised once the visit is done.",
+    invoiceLate: "The invoice is taking longer than it should.",
     // PLACEHOLDER: receipts and vouchers wait for the invoicing route (docs/open-points.md, item 3).
     receipt: "The receipt is not ready yet.",
     voucher: "The refund voucher is not ready yet.",
@@ -549,7 +617,8 @@ export const profile = {
     floor: "Floor (optional)",
     tower: "Tower or block (optional)",
     landmark: "Landmark (optional)",
-    line1: "House, flat or building",
+    // The flat is asked for on its own above, so this line is the building or the street the house is on.
+    line1: "Building, society or street",
     line2: "Street (optional)",
     locality: "Sector or area",
     city: "City",
@@ -558,7 +627,7 @@ export const profile = {
     accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
     save: "Save",
     cancel: "Cancel",
-    invalid: "Fill in the house, the area, the city and a six-digit pincode.",
+    invalid: "Fill in the building or street, the area, the city and a six-digit pincode.",
   },
   agreed: "What you have agreed to",
   purposes: {
@@ -571,6 +640,8 @@ export const profile = {
   },
   given: (date: string) => `Given ${date}`,
   notGiven: "Not given",
+  // PLACEHOLDER: a switch the API did not answer stays as it was.
+  switchFailed: "That did not go through, so nothing has changed. Please try again.",
   /**
    * The four lines the design shows before a card is turned on (F3), and the naming line the owner ruled beside
    * them; the consent's notice carries them all.
@@ -602,6 +673,7 @@ export const profile = {
     check: "Check the codes",
     proven: "Code accepted.",
     waiting: (number: string) => `We will confirm the change to ${number} with you, then it takes effect.`,
+    withdraw: "Withdraw this change",
     failed: "That did not go through. Please try again.",
     limited: "You have started three changes today. Please try again tomorrow.",
   },
@@ -619,7 +691,8 @@ export const profile = {
     field: "Your concern",
     send: "Send",
     cancel: "Not now",
-    sent: "Received. We answer within 30 days, on WhatsApp.",
+    // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
+    sent: "Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest.",
     failed: "That did not go through. Please try again.",
   },
   deletion: {
@@ -631,6 +704,7 @@ export const profile = {
     yes: "Yes, request deletion",
     no: "Keep my account",
     requested: (date: string) => `Deletion requested on ${date}. We will confirm on WhatsApp.`,
+    failed: "That did not go through, so nothing has been requested. Please try again.",
   },
   // PLACEHOLDER: the design has no logout; it ends the session on this device.
   logout: "Log out",

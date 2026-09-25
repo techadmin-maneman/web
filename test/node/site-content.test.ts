@@ -231,6 +231,8 @@ describe("site helpers", () => {
   it("gives the house card a new version whenever its file changes", () => {
     const CARDS: Record<number, string> = {
       1: "3becedf10d96f13d6bb0c144ed904f4d81b5ffb835523e5c9e7f43609a2d6302",
+      // Board A1's gilt rule and lockup (scripts/make-house-card.ts, 25 September 2026).
+      2: "d40596cbd613caf7083f6bee3ecf8f399b932fb3f4088ab4d8a91e485d89aa5a",
     };
     const file = createHash("sha256").update(readFileSync("site/public/images/invite-house.jpg")).digest("hex");
     expect(file, "invite-house.jpg changed: raise HOUSE_CARD_VERSION and record the new file here").toBe(

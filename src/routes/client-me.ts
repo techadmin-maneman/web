@@ -2,7 +2,8 @@
 // "Read endpoints"). A client is fitted once a first fit or a later visit is
 // done (the FSM mirror, docs/decisions/0032-fsm-mirror.md); a lead has a
 // consultation, from the mirror or from their booking on the site before FSM
-// has it; else nothing is booked. The next visit comes from the mirror.
+// has it; else nothing is booked. The next visit comes from the mirror, and
+// the credit tile and board B1's one prompt beneath it (src/domain/home-prompt.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
@@ -12,6 +13,7 @@ import { VISIT_TYPES } from "../config/visit-types.ts";
 import { askedWindowOf } from "../domain/asked-windows.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
+import { homePrompt } from "../domain/home-prompt.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { currentAddress } from "../domain/profile.ts";
 import { requireClientSession } from "../http/client-session.ts";
@@ -57,8 +59,25 @@ export const MeSchema = z
       .union([CreditsSchema, z.null()])
       .openapi({ description: "The credit tile: balance and earliest expiry; null with none left." }),
     prompt: z
-      .null()
-      .openapi({ description: "The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4)." }),
+      .union([
+        z.object({ kind: z.literal("address") }).strict(),
+        z.object({ kind: z.literal("replacement_due"), month: z.string().regex(/^\d{4}-\d{2}$/) }).strict(),
+        z
+          .object({
+            kind: z.literal("invoice_ready"),
+            visit_id: z.uuid(),
+            date: z.iso.date().openapi({ description: "India's date of the visit." }),
+            type: z.union([z.enum(VISIT_TYPES), z.null()]),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "Board B1's one contextual prompt, the first that applies: no address given while something is booked; " +
+          "the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last " +
+          "fortnight. Null when none applies.",
+      }),
     booking: z
       .object({
         self_serve: z.boolean().openapi({ description: "Booking in the app is on; off, the app opens WhatsApp." }),
@@ -144,10 +163,11 @@ export function registerClientMe(app: App): void {
     }
     const address = proposal === null ? null : await currentAddress(db, session.subjectId);
     const place = address === null ? (booking?.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
+    const state = clientStateOf(fitted, upcoming !== null || booking !== null);
 
     return c.json(
       {
-        state: clientStateOf(fitted, upcoming !== null || booking !== null),
+        state,
         name: person.name,
         first_name: person.name.trim().split(/\s+/)[0] ?? "",
         initials: initialsOf(person.name),
@@ -157,7 +177,7 @@ export function registerClientMe(app: App): void {
             : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
         next_visit: upcoming,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
-        prompt: null,
+        prompt: await homePrompt(db, session.subjectId, state, now),
         booking: {
           self_serve: c.var.config.settings.selfServeBooking,
           types: await bookableTypes(db, session.subjectId),

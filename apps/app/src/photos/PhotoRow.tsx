@@ -1,6 +1,10 @@
 // A visit's photographs, five angles in a row at the same crop and without
 // captions (boards C9 and D1). Each fades in as it arrives, over the loading
 // block, with no spinner (board D3); an angle not taken stays a blank block.
+//
+// A thumbnail is the whole photograph, about 65 px wide on the screen: there is
+// no smaller copy to ask for. So each is fetched only as it nears the screen,
+// and says its size, so the page does not move as it arrives.
 
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -21,13 +25,18 @@ export interface OpenPhoto {
 /** The set a row shows: after the visit, or before it when no after was taken. */
 export const shownPhase = (set: PhotoSet) => (set.after.length > 0 ? "after" : "before");
 
-export function Thumb({ link, alt, className }: { link: PhotoLink; alt: string; className?: string }) {
+/** `eager` for the one photograph opened large, which is wanted now; a row's wait until they near the screen. */
+export function Thumb(props: { link: PhotoLink; alt: string; className?: string; eager?: boolean }) {
+  const { link, alt, className } = props;
   const [arrived, setArrived] = useState(false);
   return (
     <img
       className={`${styles.thumb} ${arrived ? styles.arrived : ""} ${className ?? ""}`}
       src={link.url}
       alt={alt}
+      width={link.width ?? undefined}
+      height={link.height ?? undefined}
+      loading={props.eager === true ? "eager" : "lazy"}
       decoding="async"
       onLoad={() => {
         setArrived(true);

@@ -201,6 +201,11 @@
   text-decoration: none;
 }
 
+/* A refund past its working days, and the way to ask about it, beneath its facts. */
+.detail > .notify {
+  margin-top: var(--sp-16);
+}
+
 /* The first entry sits against the top of the page, where a ring drawn outside it would be cut. */
 .entry:focus-visible {
   outline-offset: calc(-1 * var(--focus-width));

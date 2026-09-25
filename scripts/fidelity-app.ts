@@ -68,12 +68,14 @@ const visit = (n: number, date: string, type: string, technician: typeof IMRAN) 
   length_minutes: 90,
   type,
   status: "completed",
+  stage: null,
+  prepaid: false,
   technician,
   place: PLACE,
 });
 
-/** A Thursday, as B1's "Thu 19 Sep" is. */
-const NEXT = { ...visit(1, "2030-09-19", "service", IMRAN), status: "scheduled" };
+/** A Thursday, as B1's "Thu 19 Sep" is; paid ahead, as C1's "Prepaid" says. */
+const NEXT = { ...visit(1, "2030-09-19", "service", IMRAN), status: "scheduled", stage: "booked", prepaid: true };
 const PAST = [
   visit(2, "2027-08-22", "service", IMRAN),
   visit(3, "2027-07-25", "service", IMRAN),
@@ -97,11 +99,14 @@ const HISTORY = {
   replacement_due: { month: "2028-03" },
 };
 
+/** B1's credit tile, two credits expiring 3 Jan 2028, and its one prompt, the replacement due in March. */
 const ME_FITTED = {
   ...ME,
   state: "fitted",
   consultation: null,
   next_visit: NEXT,
+  credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
+  prompt: { kind: "replacement_due", month: "2028-03" },
   booking: { self_serve: false, types: ["service", "replacement"] },
 };
 
@@ -113,12 +118,15 @@ const photoSet = (ink: string) => ({
 });
 const PHOTO_FILES = { ink: "#16233a", frame: "#131c2e", raised: "#1a2740" } as const;
 
-/** The visit's own tax invoice, issued, is drawn beneath its facts; the board has no row for it (ADR 0056). */
+/**
+ * The visit's own tax invoice, issued, is drawn beneath its facts; the board has no row for it (ADR 0056). What
+ * was done is the board's own words, as the checklist items the technician ticked.
+ */
 const VISIT_DETAIL = {
   ...AUGUST,
   duration_minutes: 85,
   outcome: "done",
-  what_was_done: null,
+  what_was_done: ["Removed", "cleaned", "re-taped", "re-bonded", "trimmed"],
   photos: photoSet("ink"),
   document_id: AUGUST.id,
   invoice_expected: true,
@@ -199,12 +207,16 @@ const AVAILABILITY = {
   })),
 };
 /** The clock for booking: Monday 16 September 2030, the strip's first day. */
-/** The design's referrer: two credits left, and two friends fitted (boards F1 and F5). */
+/**
+ * The design's referrer: two credits left, and two friends fitted (boards F1 and F5). They have agreed to the
+ * cards' lines, so their own card can be chosen (F2), and the invite names them (F4).
+ */
 const REFER = {
   code: "RM4417",
   link: "https://maneman.in/r/RM4417",
+  named: true,
   credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
-  card: { state: "house", version: 1 },
+  card: { state: "house", version: 1, consented: true },
   fitted: [
     { first_name: "Karan", month: "2027-08" },
     { first_name: "Vikram", month: "2027-05" },
@@ -459,13 +471,11 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   }
   const me = { "/api/me": json(ME_FITTED), ...files };
 
-  // B1 draws the credit tile and a prompt, which arrive with the credits (P2-M3) and the pieces (P2-M4).
   const home = await openApp(browser, "/", me);
   await home.getByRole("heading", { name: "Your next visit" }).waitFor();
   await pair(OUT, WIDTH, "b1-fitted", await frame(design, "Home · fitted"), await shot(home));
   await home.close();
 
-  // C1 marks the upcoming visit Prepaid, which arrives with prepayment (P2-M5).
   const visits = await openApp(browser, "/visits", {
     ...me,
     "/api/visits": json({ upcoming: [NEXT], past: PAST, history: HISTORY }),
@@ -474,7 +484,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await pair(OUT, WIDTH, "c1-visits", await frame(design, "Visits · list"), await shot(visits));
   await visits.close();
 
-  // C9's "What was done" arrives with the job sheet (P2-M4); its tax invoice is not on the board at all.
+  // C9's tax invoice is not on the board at all.
   const detail = await openApp(browser, `/visits/${AUGUST.id}`, {
     ...me,
     [`/api/visits/${AUGUST.id}`]: json(VISIT_DETAIL),
@@ -686,22 +696,78 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
 
 /** Boards F1 to F6: the invite, which card, the preview, and who has been fitted. */
 async function referPairs(browser: Browser, design: Page): Promise<void> {
-  const api: Api = { "/api/me": json(ME_FITTED), "/api/refer": json(REFER) };
+  // The first fit's two front photographs, as the blocks of ink F2 draws either side of the rule.
+  const firstFit = {
+    visit_id: NOVEMBER.id,
+    date: NOVEMBER.date,
+    type: "first_fit",
+    photos: {
+      before: [{ angle: "front", url: "/api/photos/file/frame", width: 600, height: 800 }],
+      after: [{ angle: "front", url: "/api/photos/file/raised", width: 600, height: 800 }],
+    },
+  };
+  const files: Record<string, (route: Route) => Promise<void>> = {};
+  for (const [name, background] of Object.entries(PHOTO_FILES)) {
+    const body = await sharp({ create: { width: 600, height: 800, channels: 3, background } })
+      .jpeg()
+      .toBuffer();
+    files[`/api/photos/file/${name}`] = (route) => route.fulfill({ body, contentType: "image/jpeg" });
+  }
+  const api: Api = {
+    "/api/me": json(ME_FITTED),
+    "/api/refer": json(REFER),
+    "/api/photos": json({ visits: [firstFit] }),
+    ...files,
+  };
 
   const landing = await openApp(browser, "/refer", api);
   await landing.getByRole("button", { name: "Share an invite" }).waitFor();
   await pair(OUT, WIDTH, "f1-refer", await frame(design, "Refer · landing"), await shot(landing));
 
+  // F2 draws their own card chosen, which an agreement to the cards' lines allows.
   await landing.getByRole("button", { name: "Share an invite" }).click();
   await landing.getByRole("heading", { name: "Which card?" }).waitFor();
+  await landing.getByRole("radio", { name: /My before and after/ }).click();
+  await photographsIn(landing);
   await pair(OUT, WIDTH, "f2-card-choice", await frame(design, "Refer · card choice"), await shot(landing));
 
-  // The example needs no consent: the sheet goes straight to the preview.
+  // The example needs no consent: the sheet goes straight to the preview, the house card in the bubble.
   await landing.getByRole("radio", { name: /A Mane Man example/ }).click();
   await landing.getByRole("button", { name: "Continue to share" }).click();
   await landing.getByRole("heading", { name: /^Preview/ }).waitFor();
+  await photographsIn(landing);
   await pair(OUT, WIDTH, "f4-share", await frame(design, "Refer · share"), await shot(landing));
+
+  // F6's share failure: copying the link refused, beside the board's small frame.
+  await landing.evaluate(() => {
+    navigator.clipboard.writeText = () => Promise.reject(new DOMException("refused", "NotAllowedError"));
+  });
+  await landing.getByRole("button", { name: "Copy link" }).click();
+  await landing.getByText("The link did not generate. Nothing was sent.").waitFor();
+  await pair(
+    OUT,
+    WIDTH,
+    "f6-share-failed",
+    await stateFrame(design, "Share failed", "Refer · empty and revoke"),
+    await shot(landing),
+  );
   await landing.close();
+
+  // F6's revoke, for a client whose own card is on their invite.
+  const revoke = await openApp(browser, "/refer/fitted", {
+    ...api,
+    "/api/refer": json({ ...REFER, card: { state: "personal", version: 2, consented: true } }),
+  });
+  await revoke.getByRole("button", { name: "Revoke the photo card" }).click();
+  await revoke.getByRole("heading", { name: "Switch off your photographs?" }).waitFor();
+  await pair(
+    OUT,
+    WIDTH,
+    "f6-revoke",
+    await stateFrame(design, "Revoke the photo card", "Refer · empty and revoke"),
+    await shot(revoke),
+  );
+  await revoke.close();
 
   const tracker = await openApp(browser, "/refer/fitted", api);
   await tracker.getByText("Karan").waitFor();

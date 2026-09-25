@@ -359,8 +359,90 @@
             "description": "The credit tile: balance and earliest expiry; null with none left."
           },
           "prompt": {
-            "type": "null",
-            "description": "The one contextual prompt, e.g. a replacement due. Arrives with the pieces (P2-M4)."
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "address"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "replacement_due"
+                    ]
+                  },
+                  "month": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "month"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "invoice_ready"
+                    ]
+                  },
+                  "visit_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "India's date of the visit."
+                  },
+                  "type": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "consultation",
+                          "first_fit",
+                          "service",
+                          "replacement"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "visit_id",
+                  "date",
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Board B1's one contextual prompt, the first that applies: no address given while something is booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight. Null when none applies."
           },
           "booking": {
             "type": "object",
@@ -462,6 +544,26 @@
               "other"
             ]
           },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "booked",
+                  "in_progress",
+                  "closing"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+          },
+          "prepaid": {
+            "type": "boolean",
+            "description": "Paid for ahead, or covered by a visit credit: board C1's Prepaid."
+          },
           "technician": {
             "anyOf": [
               {
@@ -486,6 +588,8 @@
           "length_minutes",
           "type",
           "status",
+          "stage",
+          "prepaid",
           "technician",
           "place"
         ],
@@ -798,6 +902,28 @@
         ],
         "additionalProperties": false
       },
+      "AddressSuggestionsAsk": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "What the client has typed so far."
+          },
+          "session": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "One token for the whole search, sent again when the address is saved."
+          }
+        },
+        "required": [
+          "q",
+          "session"
+        ],
+        "additionalProperties": false
+      },
       "AddressSave": {
         "type": "object",
         "properties": {
@@ -1083,8 +1209,18 @@
                 ]
               },
               "what_was_done": {
-                "type": "null",
-                "description": "What the technician did, from the job sheet (P2-M4)."
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded, as for a visit closed in FSM's own screens."
               },
               "photos": {
                 "$ref": "#/components/schemas/PhotoSet"
@@ -2230,6 +2366,10 @@
             "type": "string",
             "description": "The invite link to share: maneman.in/r/<code>."
           },
+          "named": {
+            "type": "boolean",
+            "description": "Whether the invite's preview names the client, as GET /api/r/{code} will: they agreed to the cards' current lines, and naming is on (REFERRER_NAME_ON_INVITE)."
+          },
           "credits": {
             "$ref": "#/components/schemas/Credits"
           },
@@ -2245,11 +2385,16 @@
               },
               "version": {
                 "type": "integer"
+              },
+              "consented": {
+                "type": "boolean",
+                "description": "Whether the client has agreed to photographs on referral cards, on the notice's current lines."
               }
             },
             "required": [
               "state",
-              "version"
+              "version",
+              "consented"
             ],
             "additionalProperties": false
           },
@@ -2277,6 +2422,7 @@
         "required": [
           "code",
           "link",
+          "named",
           "credits",
           "card",
           "fitted"
@@ -2627,34 +2773,18 @@
       }
     },
     "/api/address/suggestions": {
-      "get": {
+      "post": {
         "summary": "Buildings matching what the client has typed, for the address form",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200,
-              "description": "What the client has typed so far."
-            },
-            "required": true,
-            "description": "What the client has typed so far.",
-            "name": "q",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 100,
-              "description": "One token for the whole search, sent again when the address is saved."
-            },
-            "required": true,
-            "description": "One token for the whole search, sent again when the address is saved.",
-            "name": "session",
-            "in": "query"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressSuggestionsAsk"
+              }
+            }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "The suggestions, which may be empty",
@@ -2905,6 +3035,24 @@
           },
           "503": {
             "description": "busy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Withdraw the number change under way, before ops decide it. With none under way, nothing happens",
+        "responses": {
+          "204": {
+            "description": "Withdrawn, or there was none"
+          },
+          "401": {
+            "description": "session_required",
             "content": {
               "application/json": {
                 "schema": {

@@ -9,7 +9,7 @@ import type { Invite } from "./api.ts";
  * (docs/open-points.md, "The house referral card"), and chats cache a preview by its address, so a new card needs a
  * new version here. test/node/site-content.test.ts fails if the file changes and this does not.
  */
-export const HOUSE_CARD_VERSION = 1;
+export const HOUSE_CARD_VERSION = 2;
 export const HOUSE_CARD = `/images/invite-house.jpg?v=${String(HOUSE_CARD_VERSION)}`;
 
 /** Every state the API can answer. Listing them as keys makes a new state in the contract a type error here. */

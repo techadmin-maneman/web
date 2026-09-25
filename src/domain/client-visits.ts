@@ -3,6 +3,7 @@
 // client's own rows are ever read; a visit or photograph of anyone else is
 // "not found".
 
+import { CHECKLIST } from "../config/job-sheet.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
@@ -22,6 +23,13 @@ export function windowOf(startsAt: string): VisitWindowLabel {
   return hour < 12 ? "morning" : hour < 16 ? "afternoon" : "evening";
 }
 
+/**
+ * Where a visit FSM has not closed stands for the client: still to come, under
+ * way in its window, or over and waiting for FSM to close it. A visit stays the
+ * client's until FSM closes it, so it never drops out of both lists.
+ */
+export type VisitStage = "booked" | "in_progress" | "closing";
+
 export interface VisitSummary {
   readonly id: string;
   /** India's calendar date, YYYY-MM-DD. */
@@ -32,6 +40,10 @@ export interface VisitSummary {
   readonly length_minutes: number;
   readonly type: VisitType | null;
   readonly status: AppointmentStatus;
+  /** Null for a visit FSM has closed. */
+  readonly stage: VisitStage | null;
+  /** Paid for ahead, or covered by a credit: board C1's "Prepaid". */
+  readonly prepaid: boolean;
   readonly technician: { readonly name: string; readonly initials: string } | null;
   readonly place: string;
 }
@@ -46,11 +58,23 @@ interface AppointmentRow {
   service_pincode: string | null;
   technician_name: string | null;
   technician_initials: string | null;
+  prepaid: number;
 }
 
+/**
+ * Prepaid: a payment for the visit itself that Razorpay captured and has not
+ * wholly sent back, or a booking a credit covered. Read here, never written.
+ */
+const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id AND p.kind = 'visit'
+    AND p.status IN ('captured', 'partially_refunded'))
+  OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND h.appointment_id = a.id
+    AND h.state = 'booked' AND h.use_credit = 1))`;
+
 const APPOINTMENT_COLUMNS = `a.id, a.type, a.status, a.window_start, a.window_end, a.service_city, a.service_pincode,
-  t.name AS technician_name, t.initials AS technician_initials`;
+  t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
+/** The statuses of a visit FSM has not closed. */
+const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
 const UPCOMING_STATUSES = `('scheduled', 'dispatched', 'in_progress')`;
 const PAST_STATUSES = `('completed', 'terminated')`;
 
@@ -63,7 +87,14 @@ async function placeOf(db: D1Database, personId: string): Promise<(row: Appointm
       : [row.service_city, row.service_pincode].filter((part) => part !== null).join(" ");
 }
 
-function summaryOf(row: AppointmentRow, place: (row: AppointmentRow) => string): VisitSummary {
+/** A visit whose window has ended is being closed, whatever FSM last said of it, until FSM closes it. */
+function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
+  if (!NOT_CLOSED.includes(row.status)) return null;
+  if (Date.parse(row.window_end) < now.getTime()) return "closing";
+  return row.status === "in_progress" ? "in_progress" : "booked";
+}
+
+function summaryOf(row: AppointmentRow, place: (row: AppointmentRow) => string, now: Date): VisitSummary {
   return {
     id: row.id,
     date: indiaDate(new Date(row.window_start)),
@@ -73,6 +104,8 @@ function summaryOf(row: AppointmentRow, place: (row: AppointmentRow) => string):
     length_minutes: Math.round((Date.parse(row.window_end) - Date.parse(row.window_start)) / 60_000),
     type: row.type,
     status: row.status,
+    stage: stageOf(row, now),
+    prepaid: row.prepaid === 1,
     technician:
       row.technician_name === null || row.technician_initials === null
         ? null
@@ -81,17 +114,20 @@ function summaryOf(row: AppointmentRow, place: (row: AppointmentRow) => string):
   };
 }
 
-/** The client's next visit that has not happened yet, if any. */
+/**
+ * The client's next visit FSM has not closed, if any: the soonest still to come
+ * or under way, and only if there is none of those, one being closed.
+ */
 export async function nextVisit(db: D1Database, personId: string, now: Date): Promise<VisitSummary | null> {
   const row = await db
     .prepare(
       `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES} AND a.window_end >= ?2
-       ORDER BY a.window_start LIMIT 1`,
+       WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES}
+       ORDER BY a.window_end < ?2, a.window_start LIMIT 1`,
     )
     .bind(personId, now.toISOString())
     .first<AppointmentRow>();
-  return row === null ? null : summaryOf(row, await placeOf(db, personId));
+  return row === null ? null : summaryOf(row, await placeOf(db, personId), now);
 }
 
 /** The three states the apps show a client in. */
@@ -128,9 +164,9 @@ export async function listVisits(
   const upcoming = await db
     .prepare(
       `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES} AND a.window_end >= ?2 ORDER BY a.window_start`,
+       WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES} ORDER BY a.window_start`,
     )
-    .bind(personId, now.toISOString())
+    .bind(personId)
     .all<AppointmentRow>();
   const past = await db
     .prepare(
@@ -140,8 +176,8 @@ export async function listVisits(
     .bind(personId)
     .all<AppointmentRow>();
   return {
-    upcoming: upcoming.results.map((row) => summaryOf(row, place)),
-    past: past.results.map((row) => summaryOf(row, place)),
+    upcoming: upcoming.results.map((row) => summaryOf(row, place, now)),
+    past: past.results.map((row) => summaryOf(row, place, now)),
   };
 }
 
@@ -162,8 +198,8 @@ export interface VisitDetail extends VisitSummary {
   /** From FSM's actual start to end; null until the visit is done. */
   readonly duration_minutes: number | null;
   readonly outcome: "done" | "partial" | null;
-  /** What the technician did; arrives with the job sheet (P2-M4). */
-  readonly what_was_done: null;
+  /** The checklist the technician ticked, in the job sheet's order; null when none was recorded. */
+  readonly what_was_done: string[] | null;
   readonly photos: PhotoSet;
   /** The visit's invoice, for GET /api/documents/{id}, once Books has issued it. */
   readonly document_id: string | null;
@@ -186,6 +222,26 @@ async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boo
   if (row.type === null) return true;
   const price = await priceOf(db, row.type, indiaDate(new Date(row.window_start)));
   return price === null || price.amount_ex_gst > 0;
+}
+
+/**
+ * What was done: the items of the job sheet's checklist (src/config/job-sheet.ts)
+ * that the technician ticked, from the last checklist his phone sent that FSM
+ * had not moved from under him. A visit closed in FSM's own screens has none.
+ */
+async function whatWasDone(db: D1Database, visitId: string, type: VisitType | null): Promise<string[] | null> {
+  if (type === null) return null;
+  const event = await db
+    .prepare(
+      `SELECT body FROM job_events WHERE appointment_id = ?1 AND kind = 'checklist' AND superseded = 0
+       ORDER BY received_at DESC, rowid DESC LIMIT 1`,
+    )
+    .bind(visitId)
+    .first<{ body: string }>();
+  if (event === null) return null;
+  const { done } = JSON.parse(event.body) as { done?: unknown };
+  const ticked = new Set(Array.isArray(done) ? done : []);
+  return CHECKLIST[type].filter((item) => ticked.has(item.id)).map((item) => item.label);
 }
 
 /** One of the client's visits with its photographs; null for a visit that is not theirs. */
@@ -213,10 +269,10 @@ export async function visitDetail(
   if (row === null) return null;
   const photos = await photoSets(db, [row.id], signingKey, now);
   return {
-    ...summaryOf(row, await placeOf(db, personId)),
+    ...summaryOf(row, await placeOf(db, personId), now),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
-    what_was_done: null,
+    what_was_done: await whatWasDone(db, row.id, row.type),
     photos: photos.get(row.id) ?? { before: [], after: [] },
     document_id: row.invoice_issued_at === null ? null : row.id,
     invoice_expected: await invoiceExpected(db, row),

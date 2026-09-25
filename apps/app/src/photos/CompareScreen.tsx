@@ -198,6 +198,8 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(at)}
+            // What the number means: how much of each visit is showing, and which is which.
+            aria-valuetext={photos.dividerAt(Math.round(at), fullDate(from.date), fullDate(to.date))}
             onKeyDown={step}
           >
             <Icon d={ICONS.handleLeft} size={14} />

@@ -119,6 +119,28 @@ export async function startNumberChange(
 }
 
 /**
+ * The client withdraws the change they have under way, before ops decide it.
+ * Audited only when there was one: a second withdrawal finds nothing and
+ * records nothing.
+ */
+export async function withdrawNumberChange(
+  db: D1Database,
+  options: { personId: string; audit: AuditEntry; now: Date },
+): Promise<void> {
+  const open = await openNumberChange(db, options.personId);
+  if (open === null) return;
+  await db.batch([
+    auditStatement(db, { ...options.audit, subject: { kind: "number_change", id: open.id } }, options.now),
+    db
+      .prepare(
+        `UPDATE number_change_requests SET state = 'withdrawn', decided_at = ?2
+         WHERE id = ?1 AND state IN ('verifying', 'awaiting_ops')`,
+      )
+      .bind(open.id, options.now.toISOString()),
+  ]);
+}
+
+/**
  * Checks one number's code. Once both numbers are proven, the change waits
  * for ops. A code for a change that is no longer being verified is closed.
  */

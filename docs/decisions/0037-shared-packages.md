@@ -38,7 +38,7 @@ The package owns its `@fontsource` dependencies. `fonts.css` finds them in the r
   - `#4A453C` (`--text-quiet`): a window's hours on the referral landing. The boards' captions and notes use it too.
 - **Board canvas (dropped):** `#CFCABE` is the page behind the frames.
 - **Prototype only (dropped):** `#D8D2C4`, `#EFE7D6` and `#C4BFB2`. The spec boards overrule the Prototype.
-- **Not ours:** the WhatsApp greens and greys belong to the chat previews, which draw WhatsApp's interface.
+- **Not ours:** the WhatsApp greens and greys belong to the chat previews, which draw WhatsApp's interface. **Amended 25 September 2026:** where a board draws a message as WhatsApp will show it — the client app's invite preview (F4) and the ops console's launch message (C3) — the colours are WhatsApp's, so they are kept as their own group, `--wa-*` in `tokens-phase2.css`, and used nowhere else. The console's two had been named as inks of ours (`--ink-message`).
 
 The layer only adds names; the site uses none of them.
 

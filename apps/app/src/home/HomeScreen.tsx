@@ -1,23 +1,21 @@
-// Home (boards B1 and B2). The next visit from FSM: a consultation as B2
-// draws it, with what to expect, and any other visit as B1 draws it, with its
-// technician. A booking's consultation, not yet in FSM, shows as B2.
-// While self-serve booking is on, Reschedule opens the move sheet (C7), from
-// which the visit can be cancelled (C8). Until then, Reschedule, Add a note and
-// Book open WhatsApp to ops with a message ready (docs/prompts/phase2-backend.md,
-// "Booking"). Offline, booking and rescheduling wait for the connection (B3).
-// B1's credit tile and contextual prompt arrive with the credits (P2-M3) and
-// the pieces (P2-M4).
+// Home (boards B1 and B2): "One card, one prompt, nothing else." The next visit from FSM: a consultation as B2
+// draws it, with what to expect, and any other visit as B1 draws it, with its technician (VisitCard.tsx). A
+// booking's consultation, not yet in FSM, shows as B2. A visit FSM has not closed stays here until it is, so Home
+// never says nothing is booked, nor offers the booking again, while one is under way.
+//
+// Beneath the card, B1's credit tile while there is a balance, and its one contextual prompt: an address to give,
+// the replacement falling due, an invoice just issued (src/domain/home-prompt.ts).
 
-import { shortDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
-import type { Me, VisitSummary } from "../api.ts";
-import { BOOKING_URL, home, messages, VISIT_TYPES, windowText, type WindowLabel } from "../content.ts";
+import { fullDate, indiaDate, listMonth, shortDate } from "@maneman/web-kit/dates";
+import { documentUrl, type Me } from "../api.ts";
+import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
-import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
-import { firstName, visitName } from "../lib/visit.ts";
+import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
+import { visitName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
-import { Shell } from "./Shell.tsx";
+import { AppLink, Shell } from "./Shell.tsx";
+import { Actions, changingOf, hasBegun, VisitCard, whenText } from "./VisitCard.tsx";
 import styles from "./home.module.css";
 
 export function HomeScreen() {
@@ -26,6 +24,8 @@ export function HomeScreen() {
     <Shell header={{ kind: "home" }} tab="/">
       <div className={styles.home}>
         <HomeBody me={me} offline={offline} />
+        {me.credits !== null && <CreditTile credits={me.credits} />}
+        {me.prompt !== null && <Prompt prompt={me.prompt} />}
       </div>
     </Shell>
   );
@@ -34,95 +34,43 @@ export function HomeScreen() {
 function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   const visit = me.next_visit;
   if (visit?.type === "consultation") {
-    const changing = changingOf(visit, VISIT_TYPES.consultation);
     return (
       <Consultation
         date={visit.date}
-        window={visit.window_label}
+        when={whenText(visit)}
         place={visit.place}
-        offline={offline}
-        changing={changing}
+        changing={changingOf(visit, VISIT_TYPES.consultation)}
+        begun={hasBegun(visit)}
       />
     );
   }
-  if (visit !== null) return <NextVisit visit={visit} offline={offline} />;
+  if (visit !== null) {
+    return (
+      <section aria-labelledby="next">
+        <h1 className={styles.label} id="next">
+          {home.next.label}
+        </h1>
+        <VisitCard visit={visit} />
+      </section>
+    );
+  }
   if (me.consultation !== null) {
     const { date, place } = me.consultation;
-    return <Consultation date={date} window={me.consultation.window} place={place} offline={offline} changing={null} />;
+    return <Consultation date={date} when={windowText(me.consultation.window)} place={place} changing={null} />;
   }
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext me={me} />;
   return <NothingBooked me={me} offline={offline} />;
 }
 
-/** A visit from FSM the client may move or cancel in the app, while self-serve booking is on. */
-function changingOf(visit: VisitSummary, what: string): ChangingVisit | null {
-  if (visit.type === null) return null;
-  return {
-    id: visit.id,
-    type: visit.type,
-    date: visit.date,
-    message: messages.reschedule(what, shortDate(visit.date)),
-  };
-}
-
-function Actions(props: { what: string; date: string; offline: boolean; changing: ChangingVisit | null }) {
-  const { what, date, offline, changing } = props;
-  const { me, refresh } = useSession();
-  const [open, setOpen] = useState(false);
-  let reschedule;
-  if (offline) {
-    reschedule = (
-      <button className={styles.action} type="button" disabled>
-        {home.reschedule}
-      </button>
-    );
-  } else if (!me.booking.self_serve || changing === null) {
-    reschedule = (
-      <a className={styles.action} href={whatsappWith(messages.reschedule(what, date))} rel="noopener">
-        {home.reschedule}
-      </a>
-    );
-  } else {
-    reschedule = (
-      <button
-        className={styles.action}
-        type="button"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {home.reschedule}
-      </button>
-    );
-  }
-  return (
-    <div className={styles.actions}>
-      {reschedule}
-      <a className={styles.action} href={whatsappWith(messages.note(what, date))} rel="noopener">
-        {home.note}
-      </a>
-      {open && changing !== null && (
-        <ChangeSheet
-          visit={changing}
-          start="move"
-          onClose={(changed) => {
-            setOpen(false);
-            if (changed) refresh();
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
 /** Board B2: the consultation card on ink, and what to expect on paper. */
 function Consultation(props: {
   date: string;
-  window: WindowLabel;
+  /** The window, or where a consultation that has begun stands. */
+  when: string;
   place: string;
-  offline: boolean;
   /** Null for a booking's consultation, not yet in FSM: ops move it. */
   changing: ChangingVisit | null;
+  begun?: boolean;
 }) {
   const date = shortDate(props.date);
   return (
@@ -133,10 +81,10 @@ function Consultation(props: {
         </h1>
         <div className={styles.card}>
           <p className={styles.date}>{date}</p>
-          <p className={styles.window}>{windowText(props.window)}</p>
+          <p className={styles.window}>{props.when}</p>
           {props.place !== "" && <p className={styles.place}>{props.place}</p>}
           <p className={styles.free}>{home.consultation.free}</p>
-          <Actions what={VISIT_TYPES.consultation} date={date} offline={props.offline} changing={props.changing} />
+          <Actions what={VISIT_TYPES.consultation} date={date} changing={props.changing} begun={props.begun} />
         </div>
       </section>
       <section className={styles.expect} aria-labelledby="expect">
@@ -158,34 +106,61 @@ function Consultation(props: {
   );
 }
 
-/** Board B1: the next visit, with its technician. */
-function NextVisit({ visit, offline }: { visit: VisitSummary; offline: boolean }) {
-  const date = shortDate(visit.date);
-  const what = visitName(visit.type);
+/** Board B1's credit tile: the balance, and when the soonest of it expires. */
+function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
+  const expiry = credits.earliest_expiry;
   return (
-    <section aria-labelledby="next">
-      <h1 className={styles.label} id="next">
-        {home.next.label}
-      </h1>
-      <div className={styles.card}>
-        <p className={styles.date}>{date}</p>
-        <p className={styles.window}>{windowText(visit.window_label)}</p>
-        <div className={styles.technician}>
-          {visit.technician !== null && (
-            <span className={styles.initials} aria-hidden="true">
-              {visit.technician.initials}
-            </span>
-          )}
-          <div>
-            {visit.technician !== null && <p className={styles.who}>{firstName(visit.technician.name)}</p>}
-            <p className={styles.length}>{home.next.length(what, visit.length_minutes)}</p>
-          </div>
-        </div>
-        {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
-        <Actions what={what} date={date} offline={offline} changing={changingOf(visit, what)} />
+    <div className={styles.credits}>
+      <div>
+        <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
+        {expiry !== null && <p className={styles.creditsExpiry}>{home.credits.expire(fullDate(indiaDate(expiry)))}</p>}
       </div>
-    </section>
+      <p className={styles.creditsCount} aria-hidden="true">
+        {credits.visits}
+      </p>
+    </div>
   );
+}
+
+/** Board B1's one prompt: a line, and the way to act on it. */
+function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
+  const copy = home.prompt;
+  switch (prompt.kind) {
+    case "address":
+      return (
+        <div className={styles.prompt}>
+          <p className={styles.promptLine}>{copy.address}</p>
+          <AppLink className={styles.promptLink} to="/profile">
+            <span>{copy.addAddress}</span>
+          </AppLink>
+        </div>
+      );
+    case "replacement_due": {
+      const now = new Date();
+      const thisMonth = `${String(now.getFullYear())}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const month = listMonth(prompt.month, now.getFullYear());
+      return (
+        <div className={styles.prompt}>
+          <p className={styles.promptLine}>
+            {prompt.month < thisMonth ? visits.record.overdue(month) : visits.record.due(month)}
+          </p>
+          <a className={styles.promptLink} href={whatsappWith(messages.replacement)} rel="noopener">
+            <span>{copy.involves}</span>
+          </a>
+        </div>
+      );
+    }
+    case "invoice_ready":
+      return (
+        <div className={styles.prompt}>
+          <p className={styles.promptLine}>{copy.invoice(visitName(prompt.type), shortDate(prompt.date))}</p>
+          <a className={styles.promptLink} href={documentUrl(prompt.visit_id)} target="_blank" rel="noopener">
+            <span>{copy.openInvoice}</span>
+            <span className={styles.away}>{visits.detail.invoice.newTab}</span>
+          </a>
+        </div>
+      );
+  }
 }
 
 /** A client with no visit booked who may book the next: a service visit, or a first fit after the consultation. */

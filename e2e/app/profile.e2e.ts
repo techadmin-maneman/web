@@ -56,7 +56,7 @@ test("takes an address and its access notes, and shows them", async ({ page, req
   await loggedIn(page, request);
   await expect(page.getByText("No address yet.")).toBeVisible();
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("House, flat or building").fill("House 4417, Tower C");
+  await page.getByLabel("Building, society or street").fill("House 4417, Tower C");
   await page.getByLabel("Sector or area").fill("Sector 65");
   await page.getByLabel("City").fill("Gurgaon");
   await page.getByLabel("Pincode").fill("122018");
@@ -93,7 +93,7 @@ test("finds a building, keeps the flat separately, and shows the address as writ
   await page.getByLabel("Tower or block (optional)").fill("Tower C");
   await page.getByLabel("Landmark (optional)").fill("Opposite the sector market");
   // The chosen building is line one, so the free-text building field is gone.
-  await expect(page.getByLabel("House, flat or building")).toBeHidden();
+  await expect(page.getByLabel("Building, society or street")).toBeHidden();
   await page.getByLabel("Sector or area").fill("Sector 65");
   await page.getByLabel("City").fill("Gurgaon");
   await page.getByLabel("Pincode").fill("122018");
@@ -152,12 +152,37 @@ test("an address can still be typed when the search gives nothing", async ({ pag
 test("refuses an address without a six-digit pincode", async ({ page, request }) => {
   await loggedIn(page, request);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("House, flat or building").fill("House 1");
+  await page.getByLabel("Building, society or street").fill("House 1");
   await page.getByLabel("Sector or area").fill("Sector 65");
   await page.getByLabel("City").fill("Gurgaon");
   await page.getByLabel("Pincode").fill("1220");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Fill in the house, the area, the city and a six-digit pincode.");
+  await expect(page.getByRole("alert")).toHaveText(
+    "Fill in the building or street, the area, the city and a six-digit pincode.",
+  );
+  // The field that is wrong is marked, named by the error, and given the focus (A11Y-16).
+  const pincode = page.getByLabel("Pincode");
+  await expect(pincode).toHaveAttribute("aria-invalid", "true");
+  await expect(pincode).toHaveAccessibleDescription(
+    "Fill in the building or street, the area, the city and a six-digit pincode.",
+  );
+  await expect(pincode).toBeFocused();
+  await expect(page.getByLabel("City")).not.toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("City")).toHaveAttribute("required", "");
+});
+
+// Saved, the form closes on its own heading, so the client lands where they were rather than mid-page (CLI-30).
+test("lands on where we come once the address is saved", async ({ page, request }) => {
+  await loggedIn(page, request);
+  await page.getByRole("button", { name: "Add your address and access notes" }).click();
+  await page.getByLabel("Building, society or street").fill("House 4417");
+  await page.getByLabel("Sector or area").fill("Sector 65");
+  await page.getByLabel("City").fill("Gurgaon");
+  await page.getByLabel("Pincode").fill("122018");
+  await page.getByRole("button", { name: "Save" }).click();
+  const heading = page.getByRole("heading", { name: "Where we come" });
+  await expect(heading).toBeFocused();
+  await expect(heading).toBeInViewport();
 });
 
 test("lists the five consents off, and switches one on with its date and off again", async ({ page, request }) => {
@@ -221,6 +246,38 @@ test("changes the number: a code to each, then it waits for us", async ({ page, 
   await expect(
     page.getByText(/^We will confirm the change to \+91 \d{2}xxx x\d{4} with you, then it takes effect\.$/),
   ).toBeVisible();
+
+  // Until we decide it, the client can take it back, and start afresh.
+  await page.getByRole("button", { name: "Withdraw this change" }).click();
+  await expect(page.getByRole("button", { name: "Start the change" })).toBeVisible();
+  await expect(page.getByText(/^We will confirm the change/)).toHaveCount(0);
+});
+
+// A switch the API did not answer stays as it was, and says so: a switch that looks off while the consent stands
+// would tell the client something untrue about their data (FEA-25).
+test("a consent that did not go through says so, and the switch stays as it was", async ({ page, request }) => {
+  await loggedIn(page, request);
+  await page.route("**/api/consents/*", (route) => route.fulfill({ status: 503, json: { error: { code: "busy" } } }));
+  const visits = page.getByRole("switch", { name: "WhatsApp about your visits" });
+  await visits.click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "That did not go through, so nothing has changed. Please try again.",
+  );
+  await expect(visits).toHaveAttribute("aria-checked", "false");
+});
+
+test("a deletion request that did not go through says so, and asks again", async ({ page, request }) => {
+  await loggedIn(page, request);
+  await page.route("**/api/deletion-request", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "busy" } } }),
+  );
+  await page.getByRole("button", { name: "Request deletion" }).click();
+  await page.getByRole("button", { name: "Yes, request deletion" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "That did not go through, so nothing has been requested. Please try again.",
+  );
+  await expect(page.getByRole("button", { name: "Yes, request deletion" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Deletion requested" })).toHaveCount(0);
 });
 
 test("starts one number change, and checks the codes once, however often each is tapped", async ({ page, request }) => {
@@ -291,7 +348,9 @@ test("raises one grievance when Send is tapped twice", async ({ page, request })
   const liveWhileBusy = await send.isEnabled();
   await send.click({ force: true });
 
-  await expect(page.getByText("Received. We answer within 30 days, on WhatsApp.")).toBeVisible();
+  await expect(
+    page.getByText("Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest."),
+  ).toBeVisible();
   expect({ asked: held.asked(), liveWhileBusy }).toEqual({ asked: 1, liveWhileBusy: false });
 });
 
@@ -317,7 +376,9 @@ test("Your data: a download of everything held, and a concern sent to ops", asyn
   await page.getByRole("button", { name: "Raise a concern" }).click();
   await page.getByRole("textbox", { name: "Your concern" }).fill("Please explain who sees my photographs.");
   await page.getByRole("button", { name: "Send" }).click();
-  await expect(page.getByText("Received. We answer within 30 days, on WhatsApp.")).toBeVisible();
+  await expect(
+    page.getByText("Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest."),
+  ).toBeVisible();
 });
 
 test("asks before requesting deletion, then says it is requested", async ({ page, request }) => {
