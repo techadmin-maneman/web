@@ -2731,7 +2731,8 @@ export interface components {
             } | null;
         };
         Price: {
-            item: string;
+            /** @enum {string} */
+            item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
             tier: string;
             /** @description In paise, before GST. */
             amount_ex_gst: number;

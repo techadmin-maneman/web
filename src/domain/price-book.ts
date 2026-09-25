@@ -44,7 +44,7 @@ export async function priceOf(db: D1Database, item: PriceItem, on: string, tier 
 
 /** One row of the book, as the console lists it. */
 export interface PriceRow {
-  readonly item: string;
+  readonly item: PriceItem;
   readonly tier: string;
   readonly amount_ex_gst: number;
   readonly gst_percent: number;

@@ -81,7 +81,7 @@ const setSettingRoute = createRoute({
 
 const PriceSchema = z
   .object({
-    item: z.string(),
+    item: z.enum(PRICE_ITEMS),
     tier: z.string(),
     amount_ex_gst: z.number().int().openapi({ description: "In paise, before GST." }),
     gst_percent: z.number().int(),

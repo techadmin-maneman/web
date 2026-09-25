@@ -4502,7 +4502,15 @@ Request body:
   "type": "object",
   "properties": {
     "item": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement",
+        "late_fee_first_fit",
+        "late_fee_replacement"
+      ]
     },
     "tier": {
       "type": "string"
