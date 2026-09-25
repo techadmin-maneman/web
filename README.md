@@ -42,7 +42,7 @@ npm run lint
 npm run format:check
 npm run test:coverage       # Worker tests in workerd, script tests in Node; 85% lines on src/
 npm run check:config        # environment isolation in both wrangler configs
-npm run check:migrations    # forward-only, contract steps need an ADR
+npm run check:migrations    # forward-only, contract steps need an ADR (docs/migrations.md)
 npm run build               # both Workers, every environment, dry run
 ```
 
@@ -74,6 +74,7 @@ docs/reference/       AILabTools API notes (verbatim), and where the browser-sid
 
 - `docs/api.md`, `docs/openapi.json`: generated API reference
 - `docs/decisions/`: architecture decisions
+- `docs/migrations.md`: how to write a migration D1 will take, and delete rows other rows point at
 - `docs/runbook.md`: provisioning, Zoho setup, incidents, cities and blackouts, rollback
 - `docs/turnstile.md`: the Turnstile site keys for the front-end
 - `docs/verification.md`: each milestone's definition of done, with evidence
