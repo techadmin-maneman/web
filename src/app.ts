@@ -186,7 +186,7 @@ function requestContext(
     c.set("requestId", requestId);
     c.set("log", log);
     c.set("config", config);
-    c.set("deps", makeDependencies(c.env, log));
+    c.set("deps", makeDependencies(c.env, log, "request"));
     c.set("checkIdentity", checkIdentity);
     c.set("readOpsInputs", readOpsInputs);
     c.set("surface", surface);

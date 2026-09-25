@@ -49,7 +49,6 @@
 import { z } from "zod";
 import type { ZohoFsmSettings } from "../config/settings.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import type { Logger } from "../log.ts";
 import type {
   FsmAppointment,
   FsmAsset,
@@ -66,14 +65,7 @@ import type {
   NewFsmRequest,
   NewFsmWorkOrder,
 } from "./fsm.ts";
-import { createTokenCache, type TokenStore, ZohoError, zohoErrorFrom, zohoSend } from "./zoho-http.ts";
-
-interface Dependencies {
-  readonly db: D1Database;
-  readonly fetch: typeof fetch;
-  readonly now: () => Date;
-  readonly log: Logger;
-}
+import { createZohoRequester, ZohoError, zohoErrorFrom, type ZohoRequesterDependencies } from "./zoho-http.ts";
 
 const Reference = z.object({ id: z.string() }).nullish();
 
@@ -249,60 +241,9 @@ function contactFrom(record: z.infer<typeof Contact>): FsmContact {
   };
 }
 
-/** FSM and Books share one access token (migrations/0010_zoho_tokens.sql). */
-export function fsmTokenStore(db: D1Database): TokenStore {
-  return {
-    async read() {
-      const row = await db
-        .prepare("SELECT access_token, expires_at FROM zoho_tokens WHERE client = 'fsm'")
-        .first<{ access_token: string; expires_at: string }>();
-      return row === null ? null : { accessToken: row.access_token, expiresAt: row.expires_at };
-    },
-    async write(accessToken, expiresAt) {
-      await db
-        .prepare(
-          `INSERT INTO zoho_tokens (client, access_token, expires_at) VALUES ('fsm', ?1, ?2)
-           ON CONFLICT (client) DO UPDATE SET access_token = excluded.access_token, expires_at = excluded.expires_at`,
-        )
-        .bind(accessToken, expiresAt)
-        .run();
-    },
-  };
-}
-
-/** A write: JSON for every module call, or multipart for a file upload. */
-type ZohoWrite = { method: "POST" | "PUT"; body: unknown } | { method: "POST"; form: FormData };
-
-/**
- * One authorised request to a Zoho API on the FSM client's token. On 401 the
- * token is refreshed once and the call repeated. Shared with Books.
- */
-export function createZohoFsmClient(settings: ZohoFsmSettings, deps: Dependencies) {
-  const tokens = createTokenCache(settings, fsmTokenStore(deps.db), deps);
-
-  return async function request(step: string, path: string, write?: ZohoWrite): Promise<Response> {
-    // A multipart upload sets its own Content-Type, with the boundary.
-    const body = write === undefined ? undefined : "form" in write ? write.form : JSON.stringify(write.body);
-    const json = write !== undefined && "body" in write;
-    for (const forceRefresh of [false, true]) {
-      const token = await tokens.get(forceRefresh);
-      const response = await zohoSend(deps, step, `https://${settings.apiHost}${path}`, {
-        headers: {
-          Authorization: `Zoho-oauthtoken ${token}`,
-          ...(json ? { "Content-Type": "application/json" } : {}),
-        },
-        ...(write === undefined ? {} : { method: write.method, body }),
-      });
-      if (response.status === 401 && !forceRefresh) continue;
-      if (!response.ok) throw zohoErrorFrom(response.status, await response.json().catch(() => null));
-      return response;
-    }
-    throw new ZohoError(401, "AUTHENTICATION_FAILURE", "rejected a freshly refreshed token");
-  };
-}
-
-export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): FsmProvider {
-  const request = createZohoFsmClient(settings, deps);
+export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDependencies): FsmProvider {
+  // FSM and Books share the FSM client's token (src/providers/zoho-http.ts).
+  const request = createZohoRequester("fsm", settings, deps);
 
   /** A JSON answer, or null for FSM's empty 204. */
   async function json(step: string, path: string): Promise<unknown> {

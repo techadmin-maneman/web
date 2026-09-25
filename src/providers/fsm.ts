@@ -7,7 +7,7 @@
 
 import type { ZohoFsmSettings } from "../config/settings.ts";
 import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES } from "../config/visit-types.ts";
-import type { Logger } from "../log.ts";
+import type { ZohoRequesterDependencies } from "./zoho-http.ts";
 import { createZohoFsm } from "./fsm-zoho.ts";
 import { ProviderError } from "./provider-error.ts";
 
@@ -290,7 +290,7 @@ export interface FsmProvider {
 export function createFsmProvider(
   provider: string | undefined,
   settings: ZohoFsmSettings | null,
-  deps: { db: D1Database; fetch: typeof fetch; now: () => Date; log: Logger },
+  deps: ZohoRequesterDependencies,
 ): FsmProvider {
   if (provider === "zoho" && settings !== null) return createZohoFsm(settings, deps);
   if (provider === "stub") return createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });

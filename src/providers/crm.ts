@@ -6,6 +6,7 @@ import type { ZohoSettings } from "../config/settings.ts";
 import type { Logger } from "../log.ts";
 import { assertStatusAllowed, statusForNewRecord, statusForUpdate } from "./crm-rules.ts";
 import { createZohoCrm } from "./zoho.ts";
+import type { ZohoRequesterDependencies } from "./zoho-http.ts";
 
 export type LeadSource = "form" | "waitlist" | "tryon";
 
@@ -48,10 +49,7 @@ export interface CrmProvider {
   erasePerson(personId: string, knownCrmLeadId: string | null): Promise<{ found: boolean }>;
 }
 
-export function createCrmProvider(
-  zoho: ZohoSettings | null,
-  deps: { db: D1Database; fetch: typeof fetch; now: () => Date; log: Logger },
-): CrmProvider {
+export function createCrmProvider(zoho: ZohoSettings | null, deps: ZohoRequesterDependencies): CrmProvider {
   return zoho === null ? createStubCrm(deps.log) : createZohoCrm(zoho, deps);
 }
 

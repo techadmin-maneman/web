@@ -13,7 +13,7 @@
 //   POST /books/v3/customerpayments/{id}/refunds?organization_id=     { payment_refund: { payment_refund_id } }
 //
 // Two reads look for a record by our reference before it is made, so a try
-// whose answer was lost is not recorded twice (docs/decisions/0069-vendor-correctness.md).
+// whose answer was lost is not recorded twice (docs/decisions/0070-vendor-correctness.md).
 // They follow Books' API documentation and have not yet been tried on the org:
 //
 //   GET  /books/v3/customerpayments?organization_id=&customer_id=&reference_number=
@@ -22,9 +22,7 @@
 
 import { z } from "zod";
 import type { ZohoFsmSettings } from "../config/settings.ts";
-import type { Logger } from "../log.ts";
-import { createZohoFsmClient } from "./fsm-zoho.ts";
-import { ZohoError } from "./zoho-http.ts";
+import { createZohoRequester, ZohoError, type ZohoRequesterDependencies } from "./zoho-http.ts";
 
 export interface BooksInvoice {
   readonly id: string;
@@ -90,17 +88,10 @@ export interface BooksProvider {
   recordRefund(paymentId: string, refund: NewBooksRefund): Promise<string>;
 }
 
-interface Dependencies {
-  readonly db: D1Database;
-  readonly fetch: typeof fetch;
-  readonly now: () => Date;
-  readonly log: Logger;
-}
-
 export function createBooksProvider(
   provider: string | undefined,
   settings: ZohoFsmSettings | null,
-  deps: Dependencies,
+  deps: ZohoRequesterDependencies,
 ): BooksProvider {
   if (provider === "zoho" && settings !== null && settings.booksOrgId !== null) {
     return createZohoBooks(settings, settings.booksOrgId, deps);
@@ -145,8 +136,9 @@ const RefundsFound = z.object({
 /** Paise as Books takes an amount: rupees. */
 const rupees = (paise: number) => paise / 100;
 
-function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: Dependencies): BooksProvider {
-  const request = createZohoFsmClient(settings, deps);
+function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: ZohoRequesterDependencies): BooksProvider {
+  // Books shares the FSM client, and so its token.
+  const request = createZohoRequester("fsm", settings, deps);
   const org = `organization_id=${encodeURIComponent(orgId)}`;
   const path = (id: string, extra = "") => `/books/v3/invoices/${encodeURIComponent(id)}?${org}${extra}`;
   const payments = (id?: string, tail = "") =>

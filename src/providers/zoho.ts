@@ -9,11 +9,12 @@
 //
 // "trigger": [] turns workflows off; leaving the key out would run them.
 
+import { z } from "zod";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../config/booking.ts";
 import type { ZohoSettings } from "../config/settings.ts";
-import type { Logger } from "../log.ts";
-import type { CrmLead, CrmProvider, LeadSource, LeadStatus } from "./crm.ts";
-import { createTokenCache, type TokenStore, ZohoError, zohoErrorFrom, zohoSend } from "./zoho-http.ts";
+
+import type { CrmLead, CrmProvider, CrmSyncResult, LeadSource, LeadStatus } from "./crm.ts";
+import { createZohoRequester, ZohoError, type ZohoRequesterDependencies, type ZohoWrite } from "./zoho-http.ts";
 import {
   assertStatusAllowed,
   shouldAssign,
@@ -28,44 +29,75 @@ export const LEAD_SOURCE_NAMES: Readonly<Record<LeadSource, string>> = {
   tryon: "Try-on",
 };
 
-interface ZohoDependencies {
-  readonly db: D1Database;
-  readonly fetch: typeof fetch;
-  readonly now: () => Date;
-  readonly log: Logger;
-}
+type ZohoDependencies = ZohoRequesterDependencies;
+
+/** How Zoho answers a write to an ID it no longer has: a Lead deleted, merged away or converted. */
+const GONE_CODES: ReadonlySet<string> = new Set(["INVALID_DATA", "ENTITY_ID_INVALID", "RECORD_NOT_FOUND"]);
+const mayBeGone = (error: unknown): boolean =>
+  error instanceof ZohoError && (error.status === 404 || GONE_CODES.has(error.code));
 
 export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): CrmProvider {
+  async function insert(api: ZohoApi, lead: CrmLead): Promise<CrmSyncResult> {
+    const status = statusForNewRecord(lead);
+    assertStatusAllowed(lead, status);
+    const id = await api.insertLead(recordFor(lead, status, true), {
+      assignmentRuleId: shouldAssign(lead) ? settings.larId : null,
+      runWorkflows: shouldRunWorkflows(lead),
+    });
+    return { crmLeadId: id, created: true };
+  }
+
+  async function update(api: ZohoApi, id: string, lead: CrmLead): Promise<CrmSyncResult> {
+    const status = statusForUpdate(lead);
+    assertStatusAllowed(lead, status);
+    await api.updateLead(id, recordFor(lead, status, false), { runWorkflows: shouldRunWorkflows(lead) });
+    await api.addNote(id, noteFor(lead));
+    return { crmLeadId: id, created: false };
+  }
+
+  async function erase(api: ZohoApi, id: string): Promise<{ found: boolean }> {
+    // Workflows off: nothing should chase, or e-mail about, an erased person.
+    await api.updateLead(id, ERASED_RECORD, { runWorkflows: false });
+    await api.addNote(id, { title: "Personal data erased", content: "Erased at the person's request." });
+    return { found: true };
+  }
+
+  /**
+   * The person's record, found again by their ID when a write to the one D1
+   * kept failed as though the CRM no longer had it (ADR 0050). Throws the
+   * write's error when it is not that, or when the search finds the same record.
+   */
+  async function foundAgain(api: ZohoApi, error: unknown, personId: string, knownId: string | null) {
+    if (knownId === null || !mayBeGone(error)) throw error;
+    const found = await api.findLeadByPersonId(personId);
+    if (found === knownId) throw error;
+    deps.log.warn("crm_lead_id_stale", { person_id: personId, found: found !== null });
+    return found;
+  }
+
   return {
     async syncLead(lead, knownCrmLeadId) {
       const api = createZohoApi(settings, { ...deps, log: deps.log.child({ lead_id: lead.leadId }) });
       const existingId = knownCrmLeadId ?? (await api.findLeadByPersonId(lead.personId));
-
-      if (existingId === null) {
-        const status = statusForNewRecord(lead);
-        assertStatusAllowed(lead, status);
-        const id = await api.insertLead(recordFor(lead, status, true), {
-          assignmentRuleId: shouldAssign(lead) ? settings.larId : null,
-          runWorkflows: shouldRunWorkflows(lead),
-        });
-        return { crmLeadId: id, created: true };
+      if (existingId === null) return insert(api, lead);
+      try {
+        return await update(api, existingId, lead);
+      } catch (error) {
+        const found = await foundAgain(api, error, lead.personId, knownCrmLeadId);
+        return found === null ? insert(api, lead) : update(api, found, lead);
       }
-
-      const status = statusForUpdate(lead);
-      assertStatusAllowed(lead, status);
-      await api.updateLead(existingId, recordFor(lead, status, false), { runWorkflows: shouldRunWorkflows(lead) });
-      await api.addNote(existingId, noteFor(lead));
-      return { crmLeadId: existingId, created: false };
     },
 
     async erasePerson(personId, knownCrmLeadId) {
       const api = createZohoApi(settings, { ...deps, log: deps.log.child({ person_id: personId }) });
       const id = knownCrmLeadId ?? (await api.findLeadByPersonId(personId));
       if (id === null) return { found: false };
-      // Workflows off: nothing should chase, or e-mail about, an erased person.
-      await api.updateLead(id, ERASED_RECORD, { runWorkflows: false });
-      await api.addNote(id, { title: "Personal data erased", content: "Erased at the person's request." });
-      return { found: true };
+      try {
+        return await erase(api, id);
+      } catch (error) {
+        const found = await foundAgain(api, error, personId, knownCrmLeadId);
+        return found === null ? { found: false } : erase(api, found);
+      }
     },
   };
 }
@@ -124,46 +156,52 @@ export function noteFor(lead: CrmLead): { title: string; content: string } {
 // HTTP
 // ---------------------------------------------------------------------------
 
-type Step = "token" | "search" | "insert" | "update" | "note";
+type Step = "search" | "insert" | "update" | "note";
+
+/** Zoho answers per record inside `data`, under a 200 even when the record failed. */
+const RecordOutcomes = z.object({
+  data: z.array(
+    z.object({
+      status: z.string().nullish(),
+      code: z.string().nullish(),
+      message: z.string().nullish(),
+      details: z.object({ id: z.string().nullish() }).nullish(),
+    }),
+  ),
+});
+
+/** What a search answers; nothing at all, a 204, when it finds no one. */
+const SearchAnswer = z.object({ data: z.array(z.object({ id: z.string() })).default([]) });
+
+type ZohoApi = ReturnType<typeof createZohoApi>;
 
 function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
-  const tokens = createTokenCache(settings, crmTokenStore(deps.db), deps);
+  const request = createZohoRequester("crm", settings, deps);
 
-  /** One API call. On 401 the token is refreshed once and the call repeated. */
-  async function call(step: Step, method: string, path: string, body?: unknown): Promise<unknown> {
-    for (const forceRefresh of [false, true]) {
-      const token = await tokens.get(forceRefresh);
-      const response = await zohoSend(deps, step, `https://${settings.apiHost}${path}`, {
-        method,
-        headers: { Authorization: `Zoho-oauthtoken ${token}`, "Content-Type": "application/json" },
-        body: body === undefined ? null : JSON.stringify(body),
-      });
-      if (response.status === 401 && !forceRefresh) continue;
-      if (response.status === 204) return null;
-
-      const json: unknown = await response.json().catch(() => null);
-      if (!response.ok) throw zohoErrorFrom(response.status, json);
-      return json;
-    }
-    throw new ZohoError(401, "AUTHENTICATION_FAILURE", "rejected a freshly refreshed token");
+  /** One API call's answer: its JSON, or null for Zoho's empty 204. */
+  async function call(step: Step, path: string, write?: ZohoWrite): Promise<unknown> {
+    const response = await request(step, path, write);
+    if (response.status === 204) return null;
+    return response.json();
   }
 
-  /** Zoho answers per record inside `data`; the first record's outcome is ours. */
+  /** The first record's outcome is ours. */
   function firstRecord(json: unknown): { id: string } {
-    const record = (json as { data?: unknown[] } | null)?.data?.[0] as
-      { status?: string; code?: string; message?: string; details?: { id?: string } } | undefined;
-    if (record?.status !== "success" || typeof record.details?.id !== "string") {
+    const answer = RecordOutcomes.safeParse(json);
+    const record = answer.success ? answer.data.data[0] : undefined;
+    const id = record?.details?.id;
+    if (record?.status !== "success" || id === null || id === undefined) {
       throw new ZohoError(200, record?.code ?? "UNKNOWN", record?.message ?? "no record in the response");
     }
-    return { id: record.details.id };
+    return { id };
   }
 
   return {
     async findLeadByPersonId(personId: string): Promise<string | null> {
       const criteria = encodeURIComponent(`(D1_Person_ID:equals:${personId})`);
-      const json = await call("search", "GET", `/crm/v8/Leads/search?criteria=${criteria}`);
-      const id = (json as { data?: { id?: unknown }[] } | null)?.data?.[0]?.id;
-      return typeof id === "string" ? id : null;
+      const json = await call("search", `/crm/v8/Leads/search?criteria=${criteria}`);
+      if (json === null) return null;
+      return SearchAnswer.parse(json).data[0]?.id ?? null;
     },
 
     async insertLead(
@@ -172,45 +210,17 @@ function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
     ): Promise<string> {
       const body: Record<string, unknown> = { data: [record], trigger: options.runWorkflows ? ["workflow"] : [] };
       if (options.assignmentRuleId !== null) body.lar_id = options.assignmentRuleId;
-      return firstRecord(await call("insert", "POST", "/crm/v8/Leads", body)).id;
+      return firstRecord(await call("insert", "/crm/v8/Leads", { method: "POST", body })).id;
     },
 
     async updateLead(id: string, record: Record<string, unknown>, options: { runWorkflows: boolean }): Promise<void> {
-      firstRecord(
-        await call("update", "PUT", `/crm/v8/Leads/${id}`, {
-          data: [record],
-          trigger: options.runWorkflows ? ["workflow"] : [],
-        }),
-      );
+      const body = { data: [record], trigger: options.runWorkflows ? ["workflow"] : [] };
+      firstRecord(await call("update", `/crm/v8/Leads/${id}`, { method: "PUT", body }));
     },
 
     async addNote(id: string, note: { title: string; content: string }): Promise<void> {
-      firstRecord(
-        await call("note", "POST", `/crm/v8/Leads/${id}/Notes`, {
-          data: [{ Note_Title: note.title, Note_Content: note.content }],
-        }),
-      );
-    },
-  };
-}
-
-/** The CRM's access token, in its own one-row table (migrations/0002_lead_path.sql). */
-function crmTokenStore(db: D1Database): TokenStore {
-  return {
-    async read() {
-      const row = await db
-        .prepare("SELECT access_token, expires_at FROM zoho_token WHERE id = 1")
-        .first<{ access_token: string; expires_at: string }>();
-      return row === null ? null : { accessToken: row.access_token, expiresAt: row.expires_at };
-    },
-    async write(accessToken, expiresAt) {
-      await db
-        .prepare(
-          `INSERT INTO zoho_token (id, access_token, expires_at) VALUES (1, ?1, ?2)
-           ON CONFLICT (id) DO UPDATE SET access_token = excluded.access_token, expires_at = excluded.expires_at`,
-        )
-        .bind(accessToken, expiresAt)
-        .run();
+      const body = { data: [{ Note_Title: note.title, Note_Content: note.content }] };
+      firstRecord(await call("note", `/crm/v8/Leads/${id}/Notes`, { method: "POST", body }));
     },
   };
 }

@@ -14,6 +14,7 @@ import { createFsmProvider, type FsmProvider } from "./providers/fsm.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
 import { createPaymentsProvider, type PaymentsProvider } from "./providers/razorpay.ts";
+import { BACKGROUND_TIMEOUT_MS, WAITED_TIMEOUT_MS } from "./providers/zoho-http.ts";
 import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode.ts";
 
 export interface Dependencies {
@@ -43,7 +44,14 @@ export interface Dependencies {
   readonly geocode: GeocodeProvider;
 }
 
-export type DependencyFactory = (env: Env, log: Logger) => Dependencies;
+/**
+ * Who the calls are made for: a request someone is waiting on, or a queue
+ * consumer or the cron, which nobody waits on. Zoho's calls in a request give
+ * up sooner (src/providers/zoho-http.ts).
+ */
+export type Caller = "request" | "background";
+
+export type DependencyFactory = (env: Env, log: Logger, caller?: Caller) => Dependencies;
 
 export function productionDependencies(config: StaticConfig): DependencyFactory {
   const { settings } = config;
@@ -52,8 +60,15 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
   const now = (): Date => new Date();
   // Built once per isolate, so Access's signing keys are fetched once, not per request.
   const access = createAccessVerifier(settings.access, { fetch: httpFetch, now });
-  return (env, log) => {
+  return (env, log, caller = "background") => {
     const messaging = createMessagingProvider(settings.messaging.evolution, { fetch: httpFetch, log });
+    const zoho = {
+      db: env.DB,
+      fetch: httpFetch,
+      now,
+      log,
+      timeoutMs: caller === "request" ? WAITED_TIMEOUT_MS : BACKGROUND_TIMEOUT_MS,
+    };
     const alert = createAlert({
       webhookUrl: settings.alertWebhookUrl,
       environment: config.environment,
@@ -63,7 +78,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
     return {
       fetch: httpFetch,
       now,
-      crm: createCrmProvider(settings.zoho, { db: env.DB, fetch: httpFetch, now, log }),
+      crm: createCrmProvider(settings.zoho, zoho),
       image: createImageProvider(settings.tryon.ailabApiKey, { fetch: httpFetch, now }),
       messaging,
       alert,
@@ -77,18 +92,8 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       }),
       access,
       codes: createCodeSender(config.providers.SMS_PROVIDER, { messaging, log }),
-      fsm: createFsmProvider(config.providers.FSM_PROVIDER, settings.zohoFsm, {
-        db: env.DB,
-        fetch: httpFetch,
-        now,
-        log,
-      }),
-      books: createBooksProvider(config.providers.BOOKS_PROVIDER, settings.zohoFsm, {
-        db: env.DB,
-        fetch: httpFetch,
-        now,
-        log,
-      }),
+      fsm: createFsmProvider(config.providers.FSM_PROVIDER, settings.zohoFsm, zoho),
+      books: createBooksProvider(config.providers.BOOKS_PROVIDER, settings.zohoFsm, zoho),
       payments: createPaymentsProvider(config.providers.PAYMENTS_PROVIDER, settings.razorpay, {
         fetch: httpFetch,
         log,
