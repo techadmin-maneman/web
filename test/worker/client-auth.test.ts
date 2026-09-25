@@ -310,7 +310,8 @@ describe("the session", () => {
       consultation: { date: "2026-09-24", window: "evening", window_label: "after four", place: "Gurgaon" },
       next_visit: null,
       credits: null,
-      prompt: null,
+      // A consultation is booked and no address given: board B1's prompt asks for one.
+      prompt: { kind: "address" },
       booking: { self_serve: true, types: ["consultation"] },
     });
   });
