@@ -3,6 +3,7 @@
 // eye, v2's grid. Below 760 px each row's label moves above it and the
 // columns go to three, as v2 does.
 import { comparison, type ComparisonCell } from "../../content/site.ts";
+import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import Icon from "../Icon.astro";
 
 const [firstColumn, secondColumn, thirdColumn] = comparison.columns;
@@ -43,7 +44,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
                   <span class="visually-hidden">{cell ? comparison.yes : comparison.no}</span>
                 </>
               ) : (
-                <span>{cell}</span>
+                <span data-price={priceTemplate(cell)}>{asBuilt(cell)}</span>
               )}
             </div>
           ))}

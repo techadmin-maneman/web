@@ -1,6 +1,9 @@
 ---
 // Published prices: the three-row table, the first-year example and payment.
+// The standard column and the example are the price book's; Premium's are the
+// owner's own (docs/decisions/0073-prices-from-the-price-book.md).
 import { prices } from "../../content/site.ts";
+import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 
 const [standard, premium] = prices.columns;
 ---
@@ -26,17 +29,17 @@ const [standard, premium] = prices.columns;
           <div class="name">{row.label}</div>
           <div class="note">{row.note}</div>
         </div>
-        <div class="amount" role="cell">
-          {row.standard}
+        <div class="amount" role="cell" data-price={priceTemplate(row.standard)}>
+          {asBuilt(row.standard)}
         </div>
-        <div class="amount" role="cell">
-          {row.premium}
+        <div class="amount" role="cell" data-price={priceTemplate(row.premium)}>
+          {asBuilt(row.premium)}
         </div>
       </div>
     ))}
   </div>
   <div class="lines">
-    <span>{prices.example}</span>
+    <span data-price={priceTemplate(prices.example)}>{asBuilt(prices.example)}</span>
     <span>{prices.payment}</span>
   </div>
   <div class="actions">

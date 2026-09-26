@@ -8,6 +8,8 @@
 // preview WhatsApp fetches is the referrer's own card (site/src/worker.ts).
 // Where it is missing — local dev, a page served straight from the assets, or
 // mm-api not answering the Worker — the island fetches it, and any code books.
+// The prices arrive the same way, from the price book, onto <body>, and are
+// fetched where they did not (docs/decisions/0073-prices-from-the-price-book.md).
 //
 // Outside production, ?state=<arrival|served|unserved|booked|requested|expired|listed>
 // opens a state directly, for the fidelity screenshots and the browser tests.
@@ -23,6 +25,7 @@ import {
   bookPublicConsultation,
   checkPincode,
   fetchInvite,
+  fetchPublishedPrices,
   joinPublicWaitlist,
   joinWaitlist,
   type AlreadyBooked,
@@ -35,6 +38,7 @@ import { bookedHeadline, dayStrip, indiaTomorrow } from "../lib/dates.ts";
 import { keyPerRequest } from "../lib/idempotency.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "../lib/invite.ts";
 import { formatMobile, isCompleteMobile, mobileDigits } from "../lib/phone.ts";
+import { BUILT_WORDS, isPublishedPrices, priceWords, standardOf, type PriceWords } from "../lib/prices.ts";
 import { fill } from "../lib/text.ts";
 import { turnstileWidget } from "../lib/turnstile.ts";
 import { readAttribution } from "../lib/visit.ts";
@@ -94,6 +98,22 @@ function inviteInPage(): InviteAnswer | null {
   }
 }
 
+/**
+ * The price book's figures the Worker wrote onto the page, as words, if it did and they read as its answer. Null
+ * where it did not, and while the page is built, which draws the build's own figures.
+ */
+function pricesInPage(): PriceWords | null {
+  if (typeof document === "undefined") return null;
+  const written = document.body.dataset.prices;
+  if (written === undefined || written === "") return null;
+  try {
+    const parsed: unknown = JSON.parse(written);
+    return isPublishedPrices(parsed) ? priceWords(standardOf(parsed)) : null;
+  } catch {
+    return null;
+  }
+}
+
 function refusal(code: ErrorCode | "network", booked: AlreadyBooked | undefined): string {
   const { errors } = referral;
   if (booked !== undefined) {
@@ -122,6 +142,8 @@ function sampleBooking(state: "booked" | "requested" | "expired"): Booking {
 export default function Invite(props: Props) {
   // Null until the invite is known: the page then says only what is true of every invite.
   const [invite, setInvite] = useState<InviteAnswer | null>(null);
+  // Read before the first draw, so hydrating keeps the figures the Worker wrote into the page.
+  const [prices, setPrices] = useState<PriceWords>(() => pricesInPage() ?? BUILT_WORDS);
   const [state, setState] = useState<State>("arrival");
   const [pincode, setPincode] = useState("");
   const [answer, setAnswer] = useState<PincodeAnswer | null>(null);
@@ -155,6 +177,14 @@ export default function Invite(props: Props) {
       if (found.ok && isInvite(found.body)) setInvite(found.body);
     });
   }, [invited]);
+
+  // The prices: from the page where the Worker wrote them, otherwise from the API.
+  useEffect(() => {
+    if (pricesInPage() !== null) return;
+    void fetchPublishedPrices().then((found) => {
+      if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(standardOf(found.body)));
+    });
+  }, []);
 
   useEffect(() => {
     if (!props.allowStateSwitch) return;
@@ -247,7 +277,7 @@ export default function Invite(props: Props) {
               </p>
             )}
           </div>
-          <Prices />
+          <Prices words={prices} />
 
           {/* The navy block, which the answer replaces in place: no new page (board C5). */}
           <section ref={panel} class={`${styles.panel} ${answer === null ? "" : styles.answered} on-ink`}>
@@ -334,7 +364,8 @@ export default function Invite(props: Props) {
   );
 }
 
-function Prices() {
+/** The price book's figures. Each carries its sentence too, so the Worker writes the book's into the built page. */
+function Prices({ words }: { words: PriceWords }) {
   return (
     <dl class={styles.prices}>
       {referral.prices.rows.map((row) => (
@@ -344,7 +375,9 @@ function Prices() {
             <span class={styles.priceNote}>{row.note}</span>
           </dt>
           <dd>
-            <span class={styles.priceAmount}>{row.amount}</span>
+            <span class={styles.priceAmount} data-price={row.amount}>
+              {fill(row.amount, words)}
+            </span>
             <span class={styles.priceIncl}>{row.incl}</span>
           </dd>
         </div>

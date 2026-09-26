@@ -67,8 +67,8 @@ async function booked(type: string, start: string, amount: number) {
 const world = () => ({
   ...EMPTY_FSM,
   items: [
-    { id: "item-service", name: "Service visit", type: "Service" as const },
-    { id: "item-fit", name: "First fit", type: "Service" as const },
+    { id: "item-service", name: "Service visit", type: "Service" as const, price: null },
+    { id: "item-fit", name: "First fit", type: "Service" as const, price: null },
   ],
 });
 

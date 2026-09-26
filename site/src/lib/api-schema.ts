@@ -94,6 +94,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/published-prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The prices the site publishes, from the price book, in force today. Cacheable for a minute. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The prices */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublishedPrices"];
+                    };
+                };
+                /** @description unavailable: the book lacks one of them, so the site shows its own */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lead": {
         parameters: {
             query?: never;
@@ -1593,6 +1638,28 @@ export interface components {
             name: string;
             /** @description false: the booking form offers the waitlist instead. */
             served: boolean;
+        };
+        PublishedPrices: {
+            /**
+             * Format: date
+             * @description The day in India these are in force.
+             */
+            on: string;
+            /**
+             * @description The one tier the price book holds (ADR 0025, item 35).
+             * @enum {string}
+             */
+            tier: "standard";
+            first_fit: components["schemas"]["Price"];
+            service: components["schemas"]["Price"];
+            replacement: components["schemas"]["Price"];
+        };
+        Price: {
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
+            gst_percent: number;
         };
         LeadResponse: {
             /** Format: uuid */

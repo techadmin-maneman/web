@@ -12,7 +12,10 @@ import { fakeDependencies, markDatabase, NOW } from "./helpers.ts";
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
 
-const world = () => ({ ...EMPTY_FSM, items: [{ id: "item-consult", name: "Consultation", type: "Service" as const }] });
+const world = () => ({
+  ...EMPTY_FSM,
+  items: [{ id: "item-consult", name: "Consultation", type: "Service" as const, price: null }],
+});
 
 async function lead(source = "form", window = "weekday_pm", fsmContactId: string | null = null) {
   await env.DB.prepare(
@@ -150,6 +153,7 @@ describe("the fsm-sync queue, for a lead", () => {
     const batch = batchOf();
     await handleFsmSyncBatch(batch as unknown as MessageBatch, env, fakeDependencies({ fsm }), createLogger(), {
       labelAsTest: true,
+      cataloguePush: false,
     });
     expect(batch.messages[0]?.ack).toHaveBeenCalled();
     expect(fsm.made.requests).toHaveLength(1);

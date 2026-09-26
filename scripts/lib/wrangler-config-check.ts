@@ -388,7 +388,8 @@ interface StaticWorker {
   /** The routes each remote environment must have, exactly. */
   readonly routes: (environment: RemoteEnvironmentName) => readonly string[];
   /**
-   * mm-site runs one Worker beside its assets, for the referral landing (docs/decisions/0027-referral-landing.md).
+   * mm-site runs one Worker beside its assets, for the pages that show a price and the referral landing
+   * (docs/decisions/0073-prices-from-the-price-book.md, 0027-referral-landing.md).
    * Its entry, the assets binding it reads them through, the paths it answers before the assets, and the one
    * service it may hold: mm-api, whose name carries the environment.
    */
@@ -447,7 +448,7 @@ export function checkSiteConfig(config: JsonObject): string[] {
     entry: {
       main: "./src/worker.ts",
       assetsBinding: "ASSETS",
-      runWorkerFirst: ["/r/*"],
+      runWorkerFirst: ["/", "/book", "/r/*"],
       service: { binding: "API", worker: "mm-api" },
     },
   });

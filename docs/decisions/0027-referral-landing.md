@@ -20,7 +20,7 @@ A client shares their invite as a link: `maneman.in/r/ABC123`. Two things have t
 
 `mm-site` gains one Worker beside its assets, `site/src/worker.ts`.
 
-- `run_worker_first: ["/r/*"]` sends those paths to the Worker; everything else is served straight from the assets, as before.
+- `run_worker_first: ["/r/*"]` sends those paths to the Worker; everything else is served straight from the assets, as before. **Amended 26 September 2026 ([ADR 0073](0073-prices-from-the-price-book.md)):** it also sends `/` and `/book`, the other pages that show a price, and the Worker writes the price book's figures into all three.
 - The Worker fetches the built page through its `ASSETS` binding and reads the invite through a **service binding** to `mm-api` (`API`), which needs no network hop and so is not subject to Access.
 - `HTMLRewriter` rewrites the `og:*` and `twitter:*` tags from the invite, and writes the invite itself onto `#invite` as `data-invite`, so the island shows the referrer's name without a second request.
 - The page is one Astro page, `site/src/pages/r/index.astro`, built as `r.html`. Every code renders it.

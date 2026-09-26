@@ -74,7 +74,7 @@ const fsmAppointment = (id: string, status = "Scheduled"): FsmAppointment => ({
 const world = () => ({
   ...EMPTY_FSM,
   appointments: [fsmAppointment("ap-today"), fsmAppointment("ap-later"), fsmAppointment("ap-other")],
-  items: [{ id: "part-standard", name: "Standard base", type: "Part" as const }],
+  items: [{ id: "part-standard", name: "Standard base", type: "Part" as const, price: null }],
 });
 
 async function insertJob(

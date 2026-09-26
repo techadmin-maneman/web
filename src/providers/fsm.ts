@@ -6,7 +6,7 @@
 // paid for in the app, as a work order and its appointment.
 
 import type { ZohoFsmSettings } from "../config/settings.ts";
-import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES } from "../config/visit-types.ts";
+import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import type { ZohoRequesterDependencies } from "./zoho-http.ts";
 import { createZohoFsm } from "./fsm-zoho.ts";
 import { ProviderError } from "./provider-error.ts";
@@ -91,6 +91,8 @@ export interface FsmItem {
   readonly id: string;
   readonly name: string;
   readonly type: "Service" | "Part";
+  /** In paise before GST: what FSM prices a visit's invoice at (INT-03). Null where the item has none. */
+  readonly price: number | null;
 }
 
 export interface FsmAttachment {
@@ -243,6 +245,8 @@ export interface FsmProvider {
   contact(id: string): Promise<FsmContact | null>;
   technicians(): Promise<FsmTechnician[]>;
   items(): Promise<FsmItem[]>;
+  /** Writes an item's price, in paise before GST (docs/decisions/0073-prices-from-the-price-book.md). */
+  setItemPrice(itemId: string, amountExGst: number): Promise<void>;
   /** The files attached to an appointment, such as its photographs. */
   attachments(appointmentId: string): Promise<FsmAttachment[]>;
   download(fileId: string): Promise<FsmDownload>;
@@ -348,14 +352,26 @@ export const STUB_TRANSITIONS: Readonly<Record<string, readonly AppointmentTrans
   "In Progress": ["Complete Work", "Terminate"],
 };
 
-/** The catalogue scripts/setup-fsm.ts makes in FSM, which the local stub holds, so local bookings reach it. */
+/** The price book's own figures since 22 September 2026 (migration 0018), in paise before GST. */
+const STUB_PRICES: Readonly<Record<VisitType, number>> = {
+  consultation: 0,
+  first_fit: 3_000_000,
+  service: 200_000,
+  replacement: 1_500_000,
+};
+
+/**
+ * The catalogue scripts/setup-fsm.ts makes in FSM, which the local stub holds, so local bookings reach it. Its
+ * prices are the local price book's, so the local catalogue check agrees with it.
+ */
 const CATALOGUE: FsmItem[] = [
-  ...Object.values(FSM_SERVICE_NAMES).map((name, index) => ({
+  ...VISIT_TYPES.map((type, index) => ({
     id: `stub-service-${String(index + 1)}`,
-    name,
+    name: FSM_SERVICE_NAMES[type],
     type: "Service" as const,
+    price: STUB_PRICES[type],
   })),
-  { id: "stub-part-1", name: FSM_BASE_PART_NAME, type: "Part" },
+  { id: "stub-part-1", name: FSM_BASE_PART_NAME, type: "Part", price: null },
 ];
 
 export const EMPTY_FSM: StubFsmWorld = {
@@ -386,6 +402,8 @@ export interface StubFsm extends FsmProvider {
     readonly transitioned: { appointmentId: string; name: string; note: string }[];
     readonly appointmentUpdates: { appointmentId: string; fields: Record<string, string> }[];
     readonly attached: { appointmentId: string; name: string; contentType: string; bytes: number }[];
+    /** Each catalogue price written, in paise before GST. */
+    readonly itemPrices: { itemId: string; price: number }[];
   };
   /** Makes the next call of this kind throw, so a test can prove the retry. */
   failNext(step: StubFsmStep, message?: string): void;
@@ -405,6 +423,8 @@ export type StubFsmCreate =
 /** The writes a test can make fail. */
 export type StubFsmStep =
   | StubFsmCreate
+  | "items"
+  | "setItemPrice"
   | "assets"
   | "createAsset"
   | "updateAsset"
@@ -438,6 +458,7 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     transitioned: [] as { appointmentId: string; name: string; note: string }[],
     appointmentUpdates: [] as { appointmentId: string; fields: Record<string, string> }[],
     attached: [] as { appointmentId: string; name: string; contentType: string; bytes: number }[],
+    itemPrices: [] as { itemId: string; price: number }[],
   };
   const failures = new Map<StubFsmStep, Error>();
   /** Throws once if the test asked this step to fail; a retry then succeeds. */
@@ -467,6 +488,8 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   const madeAssets = new Map<string, FsmAsset[]>();
   const madeAttachments = new Map<string, FsmAttachment[]>();
   const invoices = new Map<string, FsmInvoice>();
+  /** Catalogue prices written since, over the ones the world gave. */
+  const itemPrices = new Map<string, number>();
 
   /** Where each appointment's transitions have moved it, over the status the world gave it. */
   const statuses = new Map<string, string>();
@@ -505,7 +528,16 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     },
     contact: (id) => Promise.resolve(world.contacts.find((contact) => contact.id === id) ?? null),
     technicians: () => Promise.resolve([...world.technicians]),
-    items: () => Promise.resolve([...world.items]),
+    items: () => {
+      checkFailure("items");
+      return Promise.resolve(world.items.map((item) => ({ ...item, price: itemPrices.get(item.id) ?? item.price })));
+    },
+    setItemPrice: (itemId, price) => {
+      checkFailure("setItemPrice");
+      made.itemPrices.push({ itemId, price });
+      itemPrices.set(itemId, price);
+      return Promise.resolve();
+    },
     attachments: (appointmentId) =>
       Promise.resolve([...(world.attachments[appointmentId] ?? []), ...(madeAttachments.get(appointmentId) ?? [])]),
     download: (fileId) => {
@@ -663,6 +695,7 @@ function createUnconnectedFsm(): FsmProvider {
     contact: off,
     technicians: off,
     items: off,
+    setItemPrice: off,
     attachments: off,
     download: off,
     findContact: off,

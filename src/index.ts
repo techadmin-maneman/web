@@ -56,7 +56,10 @@ export default {
       return;
     }
     if (batch.queue.startsWith("mm-fsm-sync-")) {
-      await handleFsmSyncBatch(batch, workerEnv, deps, log, { labelAsTest: config.environment !== "production" });
+      await handleFsmSyncBatch(batch, workerEnv, deps, log, {
+        labelAsTest: config.environment !== "production",
+        cataloguePush: config.settings.fsmCataloguePush,
+      });
       return;
     }
     if (batch.queue.startsWith("mm-messaging-")) {

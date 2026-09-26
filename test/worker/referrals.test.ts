@@ -265,7 +265,10 @@ describe("POST /api/r/:code/consultation", () => {
     const hold = await env.DB.prepare(
       "SELECT h.id FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE p.mobile_e164 = '+919810000002'",
     ).first<{ id: string }>();
-    const fsm = createStubFsm({ ...EMPTY_FSM, items: [{ id: "item-consult", name: "Consultation", type: "Service" }] });
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-consult", name: "Consultation", type: "Service", price: null }],
+    });
     // The friend has no saved address yet, so the city comes from the invite's pincode.
     expect(await confirmBooking(env.DB, fsm, createStubPayments(), hold?.id ?? "", NOW, { labelAsTest: true })).toBe(
       "booked",

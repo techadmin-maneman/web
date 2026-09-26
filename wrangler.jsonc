@@ -93,6 +93,9 @@
     "GEOCODE_PROVIDER": "stub",
     "SELF_SERVE_BOOKING": "true",
     "REFERRER_NAME_ON_INVITE": "true",
+    // Price changes written to FSM's catalogue (docs/decisions/0073-prices-from-the-price-book.md): off in
+    // every environment until the owner switches it on in production. Never a secret.
+    "FSM_CATALOGUE_PUSH": "off",
     "RAZORPAY_KEY_ID": "",
     // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
     "OTP_MOBILE_DAILY_LIMIT": "5",
@@ -214,6 +217,8 @@
         "GEOCODE_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "true",
         "REFERRER_NAME_ON_INVITE": "true",
+        // Off: staging shares the owner's real FSM org, so the startup guard refuses it on (ADR 0073).
+        "FSM_CATALOGUE_PUSH": "off",
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
@@ -327,6 +332,8 @@
         "GEOCODE_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",
         "REFERRER_NAME_ON_INVITE": "true",
+        // Off until the owner switches it on, once this price book holds the owner's prices (ADR 0073).
+        "FSM_CATALOGUE_PUSH": "off",
         "RAZORPAY_KEY_ID": "",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",

@@ -198,10 +198,26 @@ describe("FSM: clients, technicians, items and files", () => {
           ],
         }),
     });
+    // FSM's price is rupees before GST, the one scripts/setup-fsm.ts wrote; ours are paise.
     expect(await provider.items()).toEqual([
-      { id: "item-1", name: "Service visit", type: "Service" },
-      { id: "item-2", name: "Standard base", type: "Part" },
+      { id: "item-1", name: "Service visit", type: "Service", price: 200_000 },
+      { id: "item-2", name: "Standard base", type: "Part", price: null },
     ]);
+  });
+
+  // INT-03: FSM prices a visit's invoice from its catalogue, so the price book's figure is written there.
+  it("sets an item's price before GST, in rupees, on the item's record", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Products/item-1`]: () => json({ data: [{ code: "SUCCESS", details: { id: "item-1" } }] }),
+    });
+
+    await provider.setItemPrice("item-1", 1_500_000);
+
+    const put = calls.at(-1);
+    expect(put?.method).toBe("PUT");
+    expect(put?.url).toBe(`${FSM_API}/Products/item-1`);
+    expect(JSON.parse(put?.body ?? "null")).toEqual({ data: [{ Unit_Price: 15_000 }] });
   });
 
   it("lists an appointment's attachments and downloads one as FSM sent it", async () => {

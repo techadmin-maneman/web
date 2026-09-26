@@ -28,6 +28,7 @@ export const LOCAL_SETTINGS: Settings = {
   acceptTurnstileTestToken: false,
   selfServeBooking: true,
   referrerNameOnInvite: true,
+  fsmCataloguePush: false,
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
   leadWebhookUrl: null,
