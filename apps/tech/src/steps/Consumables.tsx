@@ -9,11 +9,12 @@
 // Each count is said as it changes, and each stepper names the count it
 // changes, so a screen reader hears "Tape strips: 2" rather than nothing.
 
+import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
-import { Icon } from "../components/Icon.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
-import { MINUS, PLUS, STEPPER_STROKE } from "../icons.ts";
+import { STEPPER_STROKE } from "../icons.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -67,7 +68,7 @@ export function Consumables({ id }: { id: string }) {
                     change(index, -1);
                   }}
                 >
-                  <Icon d={MINUS} size={20} stroke={STEPPER_STROKE} />
+                  <Icon d={ICONS.minus} size={20} stroke={STEPPER_STROKE} />
                 </button>
                 <span className={styles.number} aria-hidden="true">
                   {count}
@@ -81,7 +82,7 @@ export function Consumables({ id }: { id: string }) {
                     change(index, 1);
                   }}
                 >
-                  <Icon d={PLUS} size={20} stroke={STEPPER_STROKE} />
+                  <Icon d={ICONS.plus} size={20} stroke={STEPPER_STROKE} />
                 </button>
                 <VisuallyHidden id={said} role="status">
                   {copy.consumables.count(name, count)}

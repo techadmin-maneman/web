@@ -37,5 +37,17 @@ export const ICONS_P2 = {
   pieceId: "M4 6 V18 M7 7 V17 M10 7 V17 M13.5 7 V17 M17 7 V17 M20 6 V18",
 } as const;
 
+/**
+ * The glyphs the apps draw beyond the two sets, each declared once here
+ * rather than once in each app (DS-24). An app's own icons.ts keeps only
+ * the glyphs no other app draws.
+ */
+export const GLYPHS = {
+  /** A row that opens its detail: a past visit (client board C1), a job (technician board A1). */
+  chevron: "M9 5 L16 12 L9 19",
+  /** A chosen way to pay and a chosen card (client boards C4, F2); inside a ticked checklist box (technician B2). */
+  check: "M5 13 L10 18 L19 6",
+} as const;
+
 /** The head outline behind the stage drawings, in a 64 × 74 box. */
 export const HEAD_OUTLINE = "M32 5 C47 5 55 19 55 39 C55 58 45 69 32 69 C19 69 9 58 9 39 C9 19 17 5 32 5 Z";

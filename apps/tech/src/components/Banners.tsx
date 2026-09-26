@@ -5,12 +5,13 @@
 
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { buttonLook } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
 import { changed as copy, today as todayCopy, whatStopped } from "../content.ts";
+import { STROKE } from "../icons.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { account } from "../store/outbox.ts";
-import { Icon } from "./Icon.tsx";
 import styles from "./banner.module.css";
 
 /** Board A2's banner: a gold strip with the line, and the explanation beneath it on ink. */
@@ -18,7 +19,7 @@ export function Offline() {
   return (
     <div className={styles.offline} role="status">
       <p className={styles.offlineTitle}>
-        <Icon d={ICONS_P2.offline} size={20} />
+        <Icon d={ICONS_P2.offline} size={20} stroke={STROKE} />
         {todayCopy.offline.title}
       </p>
       <p className={styles.offlineBody}>{todayCopy.offline.body}</p>

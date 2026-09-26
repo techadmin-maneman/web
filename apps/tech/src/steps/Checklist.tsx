@@ -5,10 +5,11 @@
 // invents none and sends back the IDs it was given. The title names the visit
 // the list is for: the board titles a service visit's.
 
+import { GLYPHS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
-import { Icon } from "../components/Icon.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
-import { BOX_TICK, BOX_TICK_STROKE } from "../icons.ts";
+import { BOX_TICK_STROKE } from "../icons.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -53,7 +54,7 @@ export function Checklist({ id }: { id: string }) {
                 }}
               >
                 <span className={ticked ? styles.boxDone : styles.box}>
-                  {ticked && <Icon d={BOX_TICK} size={22} stroke={BOX_TICK_STROKE} />}
+                  {ticked && <Icon d={GLYPHS.check} size={22} stroke={BOX_TICK_STROKE} />}
                 </span>
                 <span className={ticked ? styles.checkDone : styles.checkLabel}>{item.label}</span>
               </button>

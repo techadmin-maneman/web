@@ -6,11 +6,12 @@
 // the day before the visit, so the name is the one the phone kept when it
 // fetched the cards (apps/tech/src/lib/useDay.ts).
 
+import { GLYPHS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
 import type { JobSummary } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { badges, job as copy, types } from "../content.ts";
-import { CHEVRON } from "../icons.ts";
+import { STROKE } from "../icons.ts";
 import { clockShort, where } from "../lib/when.ts";
 import styles from "./today.module.css";
 
@@ -39,7 +40,7 @@ export function JobRow({
         <span className={styles.where}>{where(job.sector)}</span>
         {state !== null && <span className={styles.state}>{state}</span>}
       </span>
-      <Icon className={styles.chevron} d={CHEVRON} size={19} />
+      <Icon className={styles.chevron} d={GLYPHS.chevron} size={19} stroke={STROKE} />
     </Link>
   );
 }

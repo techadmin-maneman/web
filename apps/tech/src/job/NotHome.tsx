@@ -17,14 +17,15 @@
 // the tap. A no-show can close only once the API holds the check-in, since it
 // runs the wait on its own clock too (ADR 0065).
 
+import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState, type ReactNode } from "react";
 import type { CheckIn, Job } from "../api.ts";
 import { Confirm } from "../components/Confirm.tsx";
-import { Icon } from "../components/Icon.tsx";
 import { notHome as copy, job as jobCopy } from "../content.ts";
-import { TICK } from "../icons.ts";
+import { STROKE } from "../icons.ts";
 import { checkedIn, theWait } from "../lib/progress.ts";
 import { clock, countdown, metres } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
@@ -205,7 +206,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
             {waitLine(wait.confirmed, mayClose, job.no_show_wait_min)}
           </p>
           <p className={styles.evidence}>
-            <Icon className={styles.evidenceIcon} d={TICK} size={20} />
+            <Icon className={styles.evidenceIcon} d={ICONS.tick} size={20} stroke={STROKE} />
             <span>{evidenceOf(job)}</span>
           </p>
           {refusedAsEarly(job.id) && (

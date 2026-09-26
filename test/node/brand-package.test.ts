@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ICONS, ICONS_P2 } from "../../packages/brand/icons.ts";
+import { GLYPHS, ICONS, ICONS_P2 } from "../../packages/brand/icons.ts";
 import { MARK, WORDMARK, WORDMARK_SMALL, type Drawing } from "../../packages/brand/marks.ts";
 
 const SPEC_BOARDS = ["Client App", "Referral and Waitlist", "Technician App", "Ops Console"].map((board) =>
@@ -36,6 +36,18 @@ describe("icons", () => {
 
   it("ICONS_P2 reuses none of the Phase 1 icon names", () => {
     expect(Object.keys(ICONS_P2).filter((name) => name in ICONS)).toEqual([]);
+  });
+
+  it("GLYPHS, the apps' own, repeats none of the icon sets", () => {
+    const sets = new Set([...Object.values(ICONS), ...Object.values(ICONS_P2)]);
+    expect(Object.values(GLYPHS).filter((path) => sets.has(path))).toEqual([]);
+  });
+
+  // DS-24: the technician app re-declared five of the set's glyphs, and both apps the chevron and the tick.
+  it.each(["apps/app/src/icons.ts", "apps/tech/src/icons.ts"])("%s declares no glyph the brand holds", (file) => {
+    const held = new Set([...Object.values(ICONS), ...Object.values(ICONS_P2), ...Object.values(GLYPHS)]);
+    const declared = [...readFileSync(file, "utf8").matchAll(/"(M[^"]+)"/g)].map((match) => match[1] ?? "");
+    expect(declared.filter((path) => held.has(path))).toEqual([]);
   });
 
   it("ICONS is frozen as the Phase 1 site draws it", () => {

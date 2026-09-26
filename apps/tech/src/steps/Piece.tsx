@@ -13,13 +13,14 @@
 // replacement the piece that came off and why it failed, so the step asks for
 // them: a lookup fills the base and lot in when it knows them.
 
-import { useState } from "react";
-import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
-import { job as jobCopy, steps as copy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { useState } from "react";
+import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
+import { job as jobCopy, steps as copy } from "../content.ts";
+import { STROKE } from "../icons.ts";
 import { dayMonth } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { asLabel, isLabel } from "./label.ts";
@@ -151,7 +152,7 @@ export function Piece({ id }: { id: string }) {
           {copy.piece.label}
         </label>
         <div className={styles.scan}>
-          <Icon className={styles.scanIcon} d={ICONS_P2.pieceId} size={21} />
+          <Icon className={styles.scanIcon} d={ICONS_P2.pieceId} size={21} stroke={STROKE} />
           <input
             className={styles.input}
             id="piece-code"

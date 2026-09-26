@@ -11,12 +11,13 @@
 // to the instant the technician took the outcome, because nothing gives the
 // closing time back (docs/open-points.md, item 57).
 
+import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
 import { useEffect, useState } from "react";
 import type { Job, JobSummary } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { closeOut as copy, job as jobCopy, titles } from "../content.ts";
-import { TICK } from "../icons.ts";
+import { STROKE } from "../icons.ts";
 import { outcomeOf } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
@@ -134,7 +135,7 @@ export function CloseOut({ id }: { id: string }) {
     <main className={styles.screen}>
       <section className={styles.close}>
         <p className={styles.closeLabel}>{copy.label}</p>
-        <Icon className={styles.closeTick} d={TICK} size={28} />
+        <Icon className={styles.closeTick} d={ICONS.tick} size={28} stroke={STROKE} />
         <h1 className={styles.closeWho} ref={heading} tabIndex={-1}>
           {copy.who(who, copy.outcomes[outcome])}
         </h1>

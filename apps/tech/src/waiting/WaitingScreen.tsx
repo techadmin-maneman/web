@@ -8,14 +8,14 @@
 // where it stands; "Got it" lets go of the job's work only once the technician
 // has said so a second time, since what it deletes never reaches us.
 
-import { useState } from "react";
-import { ICONS_P2 } from "@maneman/brand/icons";
+import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { useState } from "react";
 import { Offline } from "../components/Banners.tsx";
 import { Confirm } from "../components/Confirm.tsx";
-import { Icon } from "../components/Icon.tsx";
 import { atRisk as atRiskCopy, queue as copy, whatStopped } from "../content.ts";
-import { BACK } from "../icons.ts";
+import { STROKE } from "../icons.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
@@ -84,7 +84,7 @@ export function WaitingScreen() {
             go("/");
           }}
         >
-          <Icon d={BACK} size={24} />
+          <Icon d={ICONS.back} size={24} stroke={STROKE} />
         </button>
         <h1 className={styles.title} ref={heading} tabIndex={-1}>
           {copy.title}
@@ -104,7 +104,7 @@ export function WaitingScreen() {
             </div>
           )}
           <div className={styles.sets}>
-            <Icon className={styles.setsIcon} d={ICONS_P2.uploadQueue} size={20} />
+            <Icon className={styles.setsIcon} d={ICONS_P2.uploadQueue} size={20} stroke={STROKE} />
             <span className={styles.setsLine}>{copy.waiting(sets.length)}</span>
           </div>
           <ul className={styles.list}>
