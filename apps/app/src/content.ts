@@ -408,6 +408,11 @@ export const refer = {
   title: "Refer",
   promise: "When a friend you refer is fitted, you both get 3 service visits free.",
   credit: { label: "Your credit", expire: (date: string) => `Expire ${date}` },
+  // PLACEHOLDER: the board draws no line for the credits of the invite a client came with while ops review them.
+  inviteCredits: {
+    checking: "The 3 service visits from the invite you came with are being checked. We will message you.",
+    refused: "We could not give the service visits from the invite you came with. Message us to know why.",
+  },
   noOther: "No other discount applies.",
   share: "Share an invite",
   tracker: "See who has been fitted",

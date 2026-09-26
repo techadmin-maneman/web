@@ -46,9 +46,17 @@ const ReferSchema = z
     fitted: z
       .array(z.object({ first_name: z.string(), month: z.string().openapi({ description: "YYYY-MM, in India." }) }))
       .openapi({ description: "Friends whose first fit closed as done, most recent first." }),
+    invite_credits: z.union([z.enum(["checking", "refused"]), z.null()]).openapi({
+      description:
+        "For a client who came through an invite, where its credits stand when they are not simply in the " +
+        "balance: checking while ops review the grant, refused once ops rejected it. Null otherwise.",
+    }),
   })
   .strict()
   .openapi("Refer");
+
+/** The invite a client came through, where its grant waits on ops or was refused by them. */
+const INVITE_CREDITS: Readonly<Record<string, "checking" | "refused">> = { held: "checking", rejected: "refused" };
 
 const referRoute = createRoute({
   method: "get",
@@ -130,7 +138,7 @@ export function registerClientRefer(app: App): void {
       .bind(session.subjectId)
       .first<{ name: string }>();
     const code = await referralCodeOf(db, session.subjectId, person?.name ?? "", now);
-    const [card, invite, balance, fitted] = await Promise.all([
+    const [card, invite, balance, fitted, invited] = await Promise.all([
       db
         .prepare("SELECT card_state, card_version FROM referral_codes WHERE code = ?1")
         .bind(code)
@@ -147,6 +155,10 @@ export function registerClientRefer(app: App): void {
         )
         .bind(code)
         .all<{ name: string; window_start: string }>(),
+      db
+        .prepare("SELECT grant_state FROM referral_attributions WHERE referred_person_id = ?1")
+        .bind(session.subjectId)
+        .first<{ grant_state: string }>(),
     ]);
     const consented = (invite?.referrerFirstName ?? null) !== null;
     return c.json(
@@ -160,6 +172,7 @@ export function registerClientRefer(app: App): void {
           first_name: friend.name.split(" ")[0] ?? friend.name,
           month: indiaDate(new Date(friend.window_start)).slice(0, 7),
         })),
+        invite_credits: INVITE_CREDITS[invited?.grant_state ?? ""] ?? null,
       },
       200,
     );

@@ -18,6 +18,8 @@ export const MESSAGE_KINDS = [
   "visit_moved", // ops moved the visit: the new window
   "arrival_notice", // the technician has arrived
   "friend_fitted", // to the referrer
+  "friend_credited", // to the friend: the invite's credits are theirs
+  "referral_rejected", // to either side: ops refused a held grant
   "launch_alert", // the person's pincode went live
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];

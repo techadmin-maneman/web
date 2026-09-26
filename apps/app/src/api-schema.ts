@@ -2664,6 +2664,8 @@ export interface components {
                 /** @description YYYY-MM, in India. */
                 month: string;
             }[];
+            /** @description For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise. */
+            invite_credits: ("checking" | "refused") | null;
         };
         Grievance: {
             /** Format: uuid */

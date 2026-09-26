@@ -47,6 +47,15 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // {{1}} the referrer's first name, {{2}} the friend's, {{3}} the visits each gets, {{4}} when they expire.
   friend_fitted_v1:
     "Hello {{1}}, {{2}} has been fitted. You each have {{3}} service visits free, until {{4}}. Thank you for the introduction.",
+  // To the friend, when the grant lands, and to both sides when ops reject a held one
+  // (docs/decisions/0073-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} the first name of the one told, and in
+  // the credits {{2}} the visits and {{3}} when they expire, in the referrer's rejection {{2}} the friend's first name.
+  friend_credited_v1:
+    "Hello {{1}}, your first fit is done, so the invite you came with gives you {{2}} service visits free, until {{3}}. They are in the app.",
+  referral_rejected_referrer_v1:
+    "Hello {{1}}, we could not give the service visits for {{2}}'s first fit. Message us if you would like to know why.",
+  referral_rejected_friend_v1:
+    "Hello {{1}}, we could not give the service visits from your invite. Message us if you would like to know why.",
   visit_cancelled_refund_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
 };

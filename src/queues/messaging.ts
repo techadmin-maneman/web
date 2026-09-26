@@ -19,7 +19,7 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
-import { composeFriendFitted } from "../domain/referral-grants.ts";
+import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
 import { scrubString, type Logger } from "../log.ts";
@@ -119,6 +119,8 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (row.kind === "tryon_result") return resultContent(db, config, row, now);
   if (isVisitKind(row.kind)) return composeVisitMessage(db, row.kind, row.subject_id, row.person_id);
   if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
+  if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
+  if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);
   if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
   if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
   return { skip: "unknown kind" };
