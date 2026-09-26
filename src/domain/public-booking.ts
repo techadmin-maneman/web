@@ -34,11 +34,13 @@ import { saltedHash } from "../lib/hash.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import type { MessagingMessage } from "../queues/messaging.ts";
 import { takeOne } from "./rate-limit.ts";
 import { priceOf } from "./price-book.ts";
 import { attribute, type Invite, type InviteState } from "./referrals.ts";
 import { bookableTypes, holdSlot, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
+import { waitlistConfirmation } from "./waitlist.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 
 /** A pincode we know, and whether a technician works there. */
@@ -222,6 +224,15 @@ async function recordLead(
     log.warn("crm_enqueue_failed", { lead_id: leadId, error });
   }
   return leadId;
+}
+
+/** Sends a message written with the form's batch to the messaging queue. One the queue drops, the sweeper sends. */
+async function queueMessage(c: Context<AppEnv>, messageId: string): Promise<void> {
+  try {
+    await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
+  } catch (error) {
+    c.var.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
+  }
 }
 
 /**
@@ -433,7 +444,7 @@ export async function joinTheWaitlist(
           .bind(crypto.randomUUID(), personId, CURRENT_NOTICE.whatsapp_launches, at, checked.ipHash),
       ]
     : [];
-  await db.batch([
+  const written = await db.batch<{ id: string }>([
     ...person.statements,
     ...launchAlert,
     db
@@ -451,7 +462,10 @@ export async function joinTheWaitlist(
         at,
         request.launchAlert ? 1 : 0,
       ),
+    waitlistConfirmation(db, { personId, pincode: request.pincode, now }),
   ]);
+  const confirmation = written.at(-1)?.results[0]?.id;
+  if (confirmation !== undefined) await queueMessage(c, confirmation);
   const invited = await applyInvite(db, {
     invite: request.invite,
     personId,

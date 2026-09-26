@@ -6,6 +6,7 @@ import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
+import { consentGiven } from "./messages.ts";
 
 export interface WaitlistArea {
   readonly pincode: string;
@@ -137,5 +138,53 @@ export async function composeLaunchAlert(
   return {
     template: "launch_alert_v1",
     params: [row.name.split(" ")[0] ?? row.name, row.area ?? row.city ?? pincode, `${PUBLIC_ORIGIN[environment]}/book`],
+  };
+}
+
+/**
+ * The confirmation of a place on a pincode's list (REQ-03; ADR 0041 lists it), about the person's entry there,
+ * once: joining again writes nothing. For the same batch as the entry, which it reads its ID from; the message's
+ * ID comes back from the batch, as `RETURNING id`.
+ */
+export function waitlistConfirmation(
+  db: D1Database,
+  input: { personId: string; pincode: string; now: Date },
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       SELECT ?1, ?2, ?3, 'waitlist_confirmation', 'waitlist_entry', w.id, 'queued', ?2
+       FROM waitlist_entries w WHERE w.pincode = ?4 AND w.person_id = ?3
+         AND NOT EXISTS (
+           SELECT 1 FROM outbound_messages m WHERE m.subject_id = w.id AND m.kind = 'waitlist_confirmation')
+       RETURNING id`,
+    )
+    .bind(crypto.randomUUID(), input.now.toISOString(), input.personId, input.pincode);
+}
+
+/**
+ * What the confirmation says: the area they wait for, and that they will hear of its launch only if they asked
+ * to and still consent to it. Sent only while they consent to being contacted about the request, which joining
+ * the list asks for (the landing's notice `waitlist-v1`).
+ */
+export async function composeWaitlistConfirmation(
+  db: D1Database,
+  entryId: string,
+  personId: string,
+): Promise<{ template: string; params: string[] } | { skip: string }> {
+  if (!(await consentGiven(db, personId, "contact"))) return { skip: "no consent to be contacted about the request" };
+  const row = await db
+    .prepare(
+      `SELECT p.name, w.pincode, w.launch_alert, s.area FROM waitlist_entries w JOIN people p ON p.id = w.person_id
+       LEFT JOIN serviceable_pincodes s ON s.pincode = w.pincode
+       WHERE w.id = ?1 AND w.person_id = ?2`,
+    )
+    .bind(entryId, personId)
+    .first<{ name: string; pincode: string; launch_alert: number; area: string | null }>();
+  if (row === null) return { skip: "no longer on the waitlist" };
+  const told = row.launch_alert === 1 && (await consentGiven(db, personId, "whatsapp_launches"));
+  return {
+    template: told ? "waitlist_listed_alert_v1" : "waitlist_listed_v1",
+    params: [row.name.split(" ")[0] ?? row.name, row.area ?? row.pincode],
   };
 }

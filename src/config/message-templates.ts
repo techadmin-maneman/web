@@ -26,6 +26,12 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   visit_moved_v1: "Hello {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
   visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
+  // To a person who joined a pincode's waitlist, sent with their consent to be contacted about the request
+  // (docs/decisions/0073-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} their first name, {{2}} the area. Only
+  // one who asked to be told of the launch, and still consents to it, is promised word of it.
+  waitlist_listed_v1: "Hello {{1}}, you are on our list for {{2}}. We do not come there yet.",
+  waitlist_listed_alert_v1:
+    "Hello {{1}}, you are on our list for {{2}}. We will message you on WhatsApp when we come there.",
   // When a pincode launches, to those on its waitlist who asked to be told (docs/decisions/0048-referrals.md).
   // PLACEHOLDER COPY: {{1}} their first name, {{2}} the area, {{3}} where to book.
   launch_alert_v1: "Hello {{1}}, we now come to {{2}}. Your free consultation can be booked here: {{3}}",
