@@ -15,6 +15,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { allowed, checkValue, OPS_SETTINGS, settingNamed, PRICE_BOUNDS, PRICE_TIER } from "../config/ops-settings.ts";
 import { actorOf } from "../domain/audit.ts";
+import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
 import { checkPrice, PRICE_ITEMS, priceBook, setPrice } from "../domain/price-book.ts";
 import { serviceArea, setServiceArea } from "../domain/service-area.ts";
@@ -296,6 +297,10 @@ export function registerOpsSettings(app: App): void {
       return c.json(errorBody("invalid_request", c.var.requestId, [refusal.field]), 400);
     }
     await setPrice(c.env.DB, { price, actor: staffOf(c), requestId: c.var.requestId, now });
+    // FSM's catalogue follows only while the owner has the push on (docs/decisions/0073-prices-from-the-price-book.md).
+    if (c.var.config.settings.fsmCataloguePush && changesTheCatalogue(price, today)) {
+      await queueCatalogueSync(c.env.FSM_QUEUE, c.var.requestId);
+    }
     return c.json({ prices: await priceBook(c.env.DB, today) }, 200);
   });
 

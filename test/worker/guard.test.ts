@@ -33,6 +33,7 @@ const SETTINGS = {
   TURNSTILE_ACCEPT_TEST_TOKEN: "false",
   SELF_SERVE_BOOKING: "false",
   REFERRER_NAME_ON_INVITE: "true",
+  FSM_CATALOGUE_PUSH: "off",
   IP_HASH_SALT: "a-salt-of-at-least-thirty-two-characters",
   TRYON_UPLOAD_IP_HOURLY_LIMIT: "5",
   TRYON_GENERATE_IP_HOURLY_LIMIT: "5",
@@ -301,6 +302,25 @@ describe("validateStaticConfig: try-on and messaging", () => {
     expect(problemsOf({ ...staging, MESSAGING_ALLOWLIST: "12345" })).toEqual([
       "MESSAGING_ALLOWLIST has an entry that is not an Indian mobile number",
       "MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging",
+    ]);
+  });
+});
+
+// docs/decisions/0073-prices-from-the-price-book.md: staging's FSM is the owner's real org and its price book holds
+// placeholders, so a price typed into staging's console must never reprice the real catalogue.
+describe("validateStaticConfig: the catalogue push", () => {
+  it("is off unless it is switched on, and needs saying either way", () => {
+    expect(validateStaticConfig(production).settings.fsmCataloguePush).toBe(false);
+    expect(validateStaticConfig({ ...production, FSM_CATALOGUE_PUSH: "on" }).settings.fsmCataloguePush).toBe(true);
+    expect(problemsOf({ ...production, FSM_CATALOGUE_PUSH: "yes" })).toEqual([
+      "FSM_CATALOGUE_PUSH must be one of off, on",
+    ]);
+    expect(problemsOf({ ...production, FSM_CATALOGUE_PUSH: undefined })).toContain("FSM_CATALOGUE_PUSH is not set");
+  });
+
+  it("is refused in staging, which shares the owner's real FSM org", () => {
+    expect(problemsOf({ ...stagingBase, FSM_CATALOGUE_PUSH: "on" })).toEqual([
+      "FSM_CATALOGUE_PUSH is on in staging: its FSM is the owner's real org, and its price book holds placeholders",
     ]);
   });
 });

@@ -6,7 +6,9 @@
 // for in the app to book as a visit (src/domain/bookings.ts), an erased
 // person whose FSM contact is to be anonymised (docs/decisions/0049-dpdp.md),
 // or a client whose new number or address their contact is to take
-// (docs/decisions/0070-vendor-correctness.md).
+// (docs/decisions/0070-vendor-correctness.md). One asks for FSM's catalogue to
+// take the price book's prices, while the owner has that push switched on
+// (docs/decisions/0073-prices-from-the-price-book.md).
 //
 // Once an appointment is closed, its photographs are copied from FSM into the
 // client-photos bucket (src/domain/visit-photos.ts).
@@ -28,6 +30,7 @@ import {
   type GaveUp,
   type LeftInFsm,
 } from "../domain/bookings.ts";
+import { pushCatalogue } from "../domain/fsm-catalogue.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { syncAppointment } from "../domain/fsm-mirror.ts";
 import { streetOf } from "../domain/profile.ts";
@@ -35,6 +38,7 @@ import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefo
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { FsmContactUpdate } from "../providers/fsm.ts";
 import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
@@ -59,17 +63,25 @@ export const FsmSyncMessageSchema = z.union([
   z.object({ job_event_id: z.uuid(), request_id: z.string() }),
   /** A client whose number or address changed, written over their FSM contact (src/http/contact-sync.ts). */
   z.object({ update_contact_person_id: z.string().min(1), request_id: z.string() }),
+  /** FSM's catalogue to take the price book's prices (src/domain/fsm-catalogue.ts). */
+  z.object({ catalogue_sync: z.literal(true), request_id: z.string() }),
 ]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
 export type FsmSyncEnv = Pick<Env, "DB" | "CLIENT_PHOTOS" | "MESSAGE_QUEUE" | "FSM_QUEUE">;
+
+export interface FsmSyncOptions {
+  readonly labelAsTest: boolean;
+  /** FSM_CATALOGUE_PUSH, read as each message is taken: a push queued before it was switched off writes nothing. */
+  readonly cataloguePush: boolean;
+}
 
 export async function handleFsmSyncBatch(
   batch: MessageBatch,
   env: FsmSyncEnv,
   deps: Dependencies,
   log: Logger,
-  { labelAsTest }: { labelAsTest: boolean } = { labelAsTest: false },
+  { labelAsTest, cataloguePush }: FsmSyncOptions = { labelAsTest: false, cataloguePush: false },
 ): Promise<void> {
   const db = env.DB;
   for (const message of batch.messages) {
@@ -89,6 +101,10 @@ export async function handleFsmSyncBatch(
         alertOnce: deps.alertOnce,
         log: bookingLog,
       });
+      continue;
+    }
+    if ("catalogue_sync" in parsed.data) {
+      await syncCatalogue(message, db, deps, log.child({ request_id: parsed.data.request_id }), cataloguePush);
       continue;
     }
     if ("update_contact_person_id" in parsed.data) {
@@ -261,6 +277,32 @@ function fsmLine(holdId: string, left: LeftInFsm): string {
     case "unknown":
       return `FSM may hold a work order for it whose answer never came: look for "(booking ${holdId})" in FSM's work orders and cancel it.`;
   }
+}
+
+/**
+ * Writes the price book's prices over the FSM catalogue items that differ, while the push is on. It is tried once:
+ * the hourly catalogue check is its retry, and tells ops if FSM still differs an hour on.
+ */
+async function syncCatalogue(
+  message: Message,
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+  pushOn: boolean,
+): Promise<void> {
+  if (!pushOn) {
+    log.info("fsm_catalogue_push_off");
+    message.ack();
+    return;
+  }
+  try {
+    const written = await pushCatalogue(db, deps.fsm, indiaDate(deps.now()));
+    log.info("fsm_catalogue_pushed", { written });
+  } catch (error) {
+    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    log.warn("fsm_catalogue_push_failed", { reason });
+  }
+  message.ack();
 }
 
 /**

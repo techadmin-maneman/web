@@ -44,6 +44,12 @@
 //   GET  /fsm/v1/Requests?page=1&per_page=&sort_by=Modified_Time&sort_order=desc
 //   GET  /fsm/v1/Work_Orders?page=1&per_page=&sort_by=Modified_Time&sort_order=desc
 //
+// Nor has the write that sets an item's price from the price book, which runs only once the owner switches the push
+// on (docs/decisions/0073-prices-from-the-price-book.md). The trial deletes an item at /Products/{id}, not at
+// /Service_And_Parts/{id}, so it is written there; the hourly catalogue check reads it back.
+//
+//   PUT  /fsm/v1/Products/{id}                                   { data: [{ Unit_Price }] }, rupees before GST
+//
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
 import { z } from "zod";
@@ -140,7 +146,13 @@ const User = z.object({
     .nullish(),
 });
 
-const Item = z.object({ id: z.string(), Name: z.string(), Type: z.enum(["Service", "Part"]) });
+/** An item's price is rupees before GST, as scripts/setup-fsm.ts wrote it. */
+const Item = z.object({
+  id: z.string(),
+  Name: z.string(),
+  Type: z.enum(["Service", "Part"]),
+  Unit_Price: z.number().nullish(),
+});
 
 const Addresses = z.object({
   Service_Address: z.object({ id: z.string() }),
@@ -377,7 +389,16 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         id: item.id,
         name: item.Name,
         type: item.Type,
+        // FSM's prices are rupees; ours are paise.
+        price: item.Unit_Price === null || item.Unit_Price === undefined ? null : Math.round(item.Unit_Price * 100),
       }));
+    },
+
+    async setItemPrice(itemId, amountExGst) {
+      await request("set_item_price", `/fsm/v1/Products/${itemId}`, {
+        method: "PUT",
+        body: { data: [{ Unit_Price: amountExGst / 100 }] },
+      });
     },
 
     async attachments(appointmentId) {

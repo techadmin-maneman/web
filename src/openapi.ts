@@ -28,6 +28,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     acceptTurnstileTestToken: false,
     selfServeBooking: false,
     referrerNameOnInvite: false,
+    fsmCataloguePush: false,
     ipHashSalt: "",
     alertWebhookUrl: null,
     leadWebhookUrl: null,
