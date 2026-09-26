@@ -44,6 +44,10 @@ CREATE INDEX visits_partial ON visits (appointment_id) WHERE outcome = 'partial'
 -- no-show's evidence reads its receipt (src/domain/visit-messages.ts).
 CREATE UNIQUE INDEX outbound_messages_one_arrival ON outbound_messages (subject_id) WHERE kind = 'arrival_notice';
 
+-- A visit's no-show, which its page and the client's Payments now say
+-- (src/domain/no-shows.ts), found by the visit.
+CREATE INDEX no_show_cases_by_appointment ON no_show_cases (appointment_id, created_at);
+
 -- When a visit first reached our records, from a booking or from FSM, which
 -- the address it still needs waits from on the Tasks board (src/domain/tasks.ts).
 -- Written once, on insert. A visit the Worker already deployed writes has none,

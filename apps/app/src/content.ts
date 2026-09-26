@@ -254,6 +254,21 @@ export const visits = {
       message: "Message us",
       // The owner's own words on 23 September 2026: a free visit says "No charge", and never promises a document.
       free: "No charge for this visit, so there is no invoice.",
+      // PLACEHOLDER: an invoice held back on purpose (ADR 0070): a credit visit's waits on the accountant's ruling
+      // (open point 97), and a draft whose total is not what the visit was sold for is checked before it is sent.
+      credit:
+        "A visit credit paid for this visit. We send its invoice once our accountant has settled how it is written.",
+      checking: "We are checking this invoice before we send it. Message us if you need it sooner.",
+    },
+    // PLACEHOLDER: the design draws no visit the client missed (LIFE-07). The reason ops gave stays with them.
+    noShow: {
+      label: "Not home",
+      line: (minutes: number) => `We came, and waited ${String(minutes)} minutes, but nobody was home.`,
+      decision: {
+        undecided: "We are looking at it. Nothing is charged until we have.",
+        charged: "Charged, as a cancel inside 24 hours would be.",
+        waived: "Not charged.",
+      },
     },
   },
 } as const;

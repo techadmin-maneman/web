@@ -452,6 +452,76 @@ describe("GET /api/visits/:id and the photographs", () => {
     expect(await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json()).toMatchObject({ document_id: null });
   });
 
+  // The visit screen said "The invoice is still generating" of a visit whose invoice was held back as a draft on
+  // purpose: a credit paid for it, or its total was not what the visit was sold for (ADR 0070).
+  it("says an invoice held back is being checked, and one for a credit visit waits on a ruling", async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10"), done("ap-credit", "2026-09-12")]);
+    await signIn();
+    const held = async (fsmId: string) =>
+      (await (await get(`/api/visits/${ids[fsmId] ?? ""}`)).json<{ invoice_held: unknown }>()).invoice_held;
+
+    expect(await held("ap-done")).toBeNull();
+    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-41' WHERE id = ?1")
+      .bind(ids["ap-done"] ?? "")
+      .run();
+    expect(await held("ap-done")).toBe("checking");
+    await env.DB.prepare("UPDATE appointments SET invoice_issued_at = ?1 WHERE id = ?2")
+      .bind(NOW.toISOString(), ids["ap-done"] ?? "")
+      .run();
+    expect(await held("ap-done")).toBeNull();
+
+    // A credit paid for it: never sent until the CA rules how such a visit is invoiced (open point 97).
+    const person = await env.DB.prepare("SELECT person_id FROM appointments WHERE id = ?1")
+      .bind(ids["ap-credit"] ?? "")
+      .first<string>("person_id");
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+         VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
+      ).bind(person, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+         VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
+      ).bind(person, ids["ap-credit"] ?? "", NOW.toISOString()),
+    ]);
+    expect(await held("ap-credit")).toBe("credit");
+  });
+
+  // LIFE-07: a no-show read as an ordinary past visit, with no outcome, no charge and no word.
+  it("says the client was not home, how long we waited, and what ops ruled", async () => {
+    const ids = await mirror([
+      fsmAppointment("ap-missed", {
+        status: "Terminated",
+        scheduledStart: "2026-09-19T10:00:00+05:30",
+        scheduledEnd: "2026-09-19T11:30:00+05:30",
+      }),
+    ]);
+    await signIn();
+    const visit = ids["ap-missed"] ?? "";
+    await env.DB.batch([
+      env.DB.prepare("UPDATE visits SET outcome = 'no_show', partial_reason = NULL"),
+      env.DB.prepare(
+        `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
+         SELECT 'checkin-1', ?1, id, '2026-09-19T04:32:00.000Z', 28.4, 77.0, 200, 1, '2026-09-19T04:32:00.000Z'
+         FROM technicians LIMIT 1`,
+      ).bind(visit),
+      env.DB.prepare(
+        `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at,
+           decision, created_at)
+         VALUES ('case-1', 'checkin-1', ?1, '2026-09-19T04:32:00.000Z', '2026-09-19T04:47:00.000Z',
+           '2026-09-19T04:48:00.000Z', 'undecided', '2026-09-19T04:48:00.000Z')`,
+      ).bind(visit),
+    ]);
+    const detail = async () => (await get(`/api/visits/${visit}`)).json<{ outcome: string | null; no_show: unknown }>();
+
+    expect(await detail()).toMatchObject({
+      outcome: "no_show",
+      no_show: { decision: "undecided", waited_minutes: 16 },
+    });
+    await env.DB.prepare("UPDATE no_show_cases SET decision = 'charged'").run();
+    expect((await detail()).no_show).toEqual({ decision: "charged", waited_minutes: 16 });
+  });
+
   it("refuses a photograph link once its 15 minutes are up", async () => {
     const ids = await mirror([done("ap-done", "2026-09-10")]);
     await signIn();

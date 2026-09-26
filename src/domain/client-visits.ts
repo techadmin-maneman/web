@@ -8,6 +8,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
 import type { AppointmentStatus, VisitOutcome } from "./fsm-mirror.ts";
+import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
@@ -209,7 +210,17 @@ export interface VisitDetail extends VisitSummary {
    * ever about a consultation that will never have an invoice (ADR 0056).
    */
   readonly invoice_expected: boolean;
+  /**
+   * Why a finished visit's invoice is held back rather than still to come
+   * (ADR 0070): a credit paid for the visit, whose invoice waits on the CA's
+   * ruling, or a draft being checked before it is sent. Null otherwise.
+   */
+  readonly invoice_held: InvoiceHeld | null;
+  /** The client was not home: how long we waited, and what ops ruled (LIFE-07). Null for any other visit. */
+  readonly no_show: NoShowNote | null;
 }
+
+export type InvoiceHeld = "credit" | "checking";
 
 /**
  * A visit is billed when the price book charges for its type on the day it
@@ -222,6 +233,29 @@ async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boo
   if (row.type === null) return true;
   const price = await priceOf(db, row.type, indiaDate(new Date(row.window_start)));
   return price === null || price.amount_ex_gst > 0;
+}
+
+/**
+ * Why a finished visit's invoice is held as a draft, as the invoice pass holds
+ * it (src/domain/fsm-invoices.ts): never sent for a visit a credit paid for,
+ * and one raised but not sent is being checked, its total not what the visit
+ * was sold for or Books not sending it. Ops are told of either, and it waits on
+ * their Tasks board as a draft invoice.
+ */
+async function invoiceHeld(
+  db: D1Database,
+  row: AppointmentRow & { invoice_issued_at: string | null; fsm_invoice_id: string | null },
+): Promise<InvoiceHeld | null> {
+  if (row.status !== "completed" || row.invoice_issued_at !== null) return null;
+  const credit = await db
+    .prepare(
+      `SELECT EXISTS (SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_kind = 'appointment' AND source_id = ?1)
+         OR EXISTS (SELECT 1 FROM slot_holds WHERE appointment_id = ?1 AND use_credit = 1) AS paid_with_credit`,
+    )
+    .bind(row.id)
+    .first<{ paid_with_credit: number }>();
+  if (credit?.paid_with_credit === 1) return "credit";
+  return row.fsm_invoice_id === null ? null : "checking";
 }
 
 /**
@@ -254,7 +288,7 @@ export async function visitDetail(
 ): Promise<VisitDetail | null> {
   const row = await db
     .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, v.duration_minutes, v.outcome
+      `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, a.fsm_invoice_id, v.duration_minutes, v.outcome
        FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id LEFT JOIN visits v ON v.appointment_id = a.id
        WHERE ${LIVE} AND a.id = ?2`,
     )
@@ -262,12 +296,14 @@ export async function visitDetail(
     .first<
       AppointmentRow & {
         invoice_issued_at: string | null;
+        fsm_invoice_id: string | null;
         duration_minutes: number | null;
         outcome: VisitOutcome | null;
       }
     >();
   if (row === null) return null;
   const photos = await photoSets(db, [row.id], signingKey, now);
+  const noShows = await noShowNotes(db, [row.id]);
   return {
     ...summaryOf(row, await placeOf(db, personId), now),
     duration_minutes: row.duration_minutes,
@@ -276,6 +312,8 @@ export async function visitDetail(
     photos: photos.get(row.id) ?? { before: [], after: [] },
     document_id: row.invoice_issued_at === null ? null : row.id,
     invoice_expected: await invoiceExpected(db, row),
+    invoice_held: await invoiceHeld(db, row),
+    no_show: noShows.get(row.id) ?? null,
   };
 }
 

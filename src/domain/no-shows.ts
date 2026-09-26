@@ -160,6 +160,39 @@ export async function openNoShowCase(
   return stored.id;
 }
 
+/**
+ * What the client is told of a visit they were not home for (LIFE-07): that we waited, how long, and what ops
+ * ruled. The reason ops gave is theirs, and stays with the ruling.
+ */
+export interface NoShowNote {
+  readonly decision: NoShowDecision;
+  /** From the check-in to the close: how long the technician waited at the door. */
+  readonly waited_minutes: number;
+}
+
+/** The no-show note of each of these visits that has one: its latest case. */
+export async function noShowNotes(db: D1Database, appointmentIds: readonly string[]): Promise<Map<string, NoShowNote>> {
+  if (appointmentIds.length === 0) return new Map();
+  const placeholders = appointmentIds.map((_, index) => `?${String(index + 1)}`).join(", ");
+  const { results } = await db
+    .prepare(
+      `SELECT appointment_id, decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at
+       FROM no_show_cases WHERE appointment_id IN (${placeholders}) ORDER BY created_at`,
+    )
+    .bind(...appointmentIds)
+    .all<{ appointment_id: string; decision: NoShowDecision; wait_started_at: string; ended_at: string }>();
+  // Oldest first, so a later case of the same visit is the one kept.
+  return new Map(
+    results.map((row) => [
+      row.appointment_id,
+      {
+        decision: row.decision,
+        waited_minutes: Math.round((Date.parse(row.ended_at) - Date.parse(row.wait_started_at)) / 60_000),
+      },
+    ]),
+  );
+}
+
 /** The cases ops have still to rule on, oldest first, then the decided ones. */
 export async function listNoShowCases(
   db: D1Database,

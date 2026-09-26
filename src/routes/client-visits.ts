@@ -16,6 +16,7 @@ import { VISIT_TYPES } from "../config/visit-types.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
+import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -67,6 +68,17 @@ const PhotoSetSchema = z
     description: "Each angle in the order front, top, left, right, hair; missing angles left out.",
   });
 
+/** A visit the client was not home for, as their visit page and their Payments say it (LIFE-07). */
+export const NoShowNoteSchema = z
+  .object({
+    decision: z.enum(NO_SHOW_DECISIONS).openapi({
+      description: "What ops ruled: undecided while they look at the evidence, charged, or waived.",
+    }),
+    waited_minutes: z.number().int().openapi({ description: "How long the technician waited at the door." }),
+  })
+  .strict()
+  .openapi("NoShowNote");
+
 const VisitDetailSchema = VisitSummarySchema.extend({
   duration_minutes: z.union([z.number().int(), z.null()]).openapi({ description: "From start to finish, once done." }),
   outcome: z
@@ -85,6 +97,15 @@ const VisitDetailSchema = VisitSummarySchema.extend({
     description:
       "Whether this visit is billed at all: false for a free visit, and for one that is not finished. " +
       "With no document_id and this false, no invoice will ever exist.",
+  }),
+  invoice_held: z.union([z.enum(["credit", "checking"]), z.null()]).openapi({
+    description:
+      "Why a finished visit's invoice is held back rather than still to come (ADR 0070): credit, a visit credit " +
+      "paid for it and its invoice waits on the accountant's ruling; checking, a draft ops are checking before it " +
+      "is sent. Null otherwise.",
+  }),
+  no_show: z.union([NoShowNoteSchema, z.null()]).openapi({
+    description: "The client was not home for this visit: how long we waited, and what ops ruled. Null otherwise.",
   }),
 }).openapi("VisitDetail");
 
