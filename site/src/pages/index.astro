@@ -16,12 +16,18 @@ import WhatItIs from "../components/home/WhatItIs.astro";
 import { pageDescriptions, pageTitles } from "../content/site.ts";
 import Site from "../layouts/Site.astro";
 import { heroPosterUrl } from "../lib/hero.ts";
+import { BUILT_WORDS } from "../lib/prices.ts";
 import { faqPage, localBusiness } from "../lib/structured-data.ts";
 
 const poster = await heroPosterUrl();
+// Named, so the mm-site Worker builds each again with the price book's figures (site/src/worker.ts).
+const structuredData = [
+  { name: "business", data: localBusiness(BUILT_WORDS) },
+  { name: "faq", data: faqPage(BUILT_WORDS) },
+];
 ---
 
-<Site title={pageTitles.home} description={pageDescriptions.home} structuredData={[localBusiness(), faqPage()]} home>
+<Site title={pageTitles.home} description={pageDescriptions.home} structuredData={structuredData} home>
   <Fragment slot="head">
     <script is:inline>
       // v2 routed with #tryon and #book, and ads already link to them.
