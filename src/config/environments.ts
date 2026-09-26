@@ -12,6 +12,18 @@ export function isEnvironmentName(value: unknown): value is EnvironmentName {
   return typeof value === "string" && (ENVIRONMENTS as readonly string[]).includes(value);
 }
 
+/**
+ * Whether a price ops set is written to FSM's catalogue (docs/decisions/0073-prices-from-the-price-book.md).
+ * Off until the owner switches it on in production, and never on in staging, whose FSM is the owner's real org
+ * and whose price book holds placeholders. A constant here rather than a Worker var: mm-api is at the Workers
+ * Free limit of 64 variables and secrets (docs/decisions/0009-stay-inside-cloudflare-free-tier.md).
+ */
+export const FSM_CATALOGUE_PUSH: Readonly<Record<EnvironmentName, boolean>> = {
+  local: false,
+  staging: false,
+  production: false,
+};
+
 /** The D1 database each environment must be bound to. */
 export const EXPECTED_DATABASE_NAME: Readonly<Record<EnvironmentName, string>> = {
   local: "maneman-local",

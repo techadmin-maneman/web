@@ -5,9 +5,9 @@
 
 import { toE164 } from "../lib/mobile.ts";
 import type { EvolutionSettings } from "../providers/evolution.ts";
-import { isKnownTemplate } from "./message-templates.ts";
-import { ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
-import { UNKNOWN_COLOR_ROUTES, type UnknownColorRoute } from "./tryon.ts";
+import { RESULT_TEMPLATE } from "./message-templates.ts";
+import { ENABLED_SURFACES, FSM_CATALOGUE_PUSH, type EnvironmentName, type ProviderVar } from "./environments.ts";
+import { UNKNOWN_COLOR_ROUTE, type UnknownColorRoute } from "./tryon.ts";
 
 export interface TryonSettings {
   /** Per salted IP hash, per India clock hour. */
@@ -150,9 +150,9 @@ export interface Settings {
   /** The referrer's first name on their invite, for those who agreed to it (ADR 0025, item 24). */
   readonly referrerNameOnInvite: boolean;
   /**
-   * FSM_CATALOGUE_PUSH: a price ops set is written to FSM's catalogue, which prices a visit's invoice
-   * (docs/decisions/0073-prices-from-the-price-book.md). Off everywhere until the owner switches it on in
-   * production; off, the hourly catalogue check tells ops what to set by hand.
+   * A price ops set is written to FSM's catalogue, which prices a visit's invoice: FSM_CATALOGUE_PUSH in
+   * ./environments.ts (docs/decisions/0073-prices-from-the-price-book.md). Off everywhere until the owner switches
+   * it on in production; off, the hourly catalogue check tells ops what to set by hand.
    */
   readonly fsmCataloguePush: boolean;
   readonly ipHashSalt: string;
@@ -293,13 +293,8 @@ export function readSettings(
   if (environment === "production" && acceptTurnstileTestToken) {
     read.problems.push("TURNSTILE_ACCEPT_TEST_TOKEN is on in production");
   }
-  const fsmCataloguePush = read.oneOf("FSM_CATALOGUE_PUSH", ["off", "on"]) === "on";
-  // Staging's FSM is the owner's real org (ADR 0025, "The Zoho org"), and its book the placeholders.
-  if (environment === "staging" && fsmCataloguePush) {
-    read.problems.push(
-      "FSM_CATALOGUE_PUSH is on in staging: its FSM is the owner's real org, and its price book holds placeholders",
-    );
-  }
+  // An environment the guard could not name pushes nothing.
+  const fsmCataloguePush = environment !== undefined && FSM_CATALOGUE_PUSH[environment];
 
   const ipHashSalt = read.text("IP_HASH_SALT");
   if (ipHashSalt !== "" && ipHashSalt.length < 32) read.problems.push("IP_HASH_SALT must be at least 32 characters");
@@ -423,7 +418,7 @@ export function readSettings(
     uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
     resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
     resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
-    unknownColorRoute: read.oneOf("UNKNOWN_COLOR_ROUTE", UNKNOWN_COLOR_ROUTES),
+    unknownColorRoute: UNKNOWN_COLOR_ROUTE,
     creditFloor: read.count("AILAB_CREDIT_FLOOR"),
     linkSigningKey: read.key("RESULT_SIGNING_KEY"),
     ailabApiKey: providers.IMAGE_PROVIDER === "ailabtools" ? read.text("AILAB_API_KEY") : null,
@@ -451,13 +446,10 @@ export function readSettings(
 
   const messaging: MessagingSettings = {
     enabled: read.flag("MESSAGING_ENABLED"),
-    resultTemplate: read.text("WA_RESULT_TEMPLATE"),
+    resultTemplate: RESULT_TEMPLATE,
     allowlist: read.mobiles("MESSAGING_ALLOWLIST"),
     evolution,
   };
-  if (messaging.resultTemplate !== "" && !isKnownTemplate(messaging.resultTemplate)) {
-    read.problems.push("WA_RESULT_TEMPLATE names no template in src/config/message-templates.ts");
-  }
   if (environment === "staging" && messaging.enabled && messaging.allowlist.length === 0) {
     read.problems.push("MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging");
   }
