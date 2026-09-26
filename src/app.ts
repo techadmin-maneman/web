@@ -44,6 +44,7 @@ import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
+import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
 import { registerTechAuth } from "./routes/tech-auth.ts";
 import { registerTechJobs } from "./routes/tech-jobs.ts";
@@ -129,6 +130,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,
+    registerOpsWhoami,
   ],
   tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],
 };

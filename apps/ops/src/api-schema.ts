@@ -112,6 +112,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/find": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find clients by part of a name, or four or more digits of a number. A POST, so the words stay out of the URL */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientFind"];
+                };
+            };
+            responses: {
+                /** @description The clients it matches, by name */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientsFound"];
+                    };
+                };
+                /** @description invalid_request: fewer than two letters or four digits */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}": {
         parameters: {
             query?: never;
@@ -206,6 +255,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/photos/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open the client's photographs: one audit entry, written before any image is served */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Logged */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PhotoView"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: the opening could not be logged, so nothing is shown */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/photos/{photo_id}": {
         parameters: {
             query?: never;
@@ -213,7 +318,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One of the client's photographs. The audit entry is written before the image is */
+        /** One of the client's photographs, within an opening logged in the last 30 minutes; asked for outside one, it logs one first */
         get: {
             parameters: {
                 query?: never;
@@ -414,6 +519,11 @@ export interface paths {
                                 new_mobile: string;
                                 /** Format: date-time */
                                 requested_at: string;
+                                /**
+                                 * Format: date-time
+                                 * @description When ops should have decided: the Tasks board's allowance for this queue, which ops set.
+                                 */
+                                due: string;
                             }[];
                         };
                     };
@@ -533,6 +643,11 @@ export interface paths {
                                 mobile: string;
                                 /** Format: date-time */
                                 requested_at: string;
+                                /**
+                                 * Format: date-time
+                                 * @description When ops should have decided: the Tasks board's allowance for this queue, which ops set.
+                                 */
+                                due: string;
                             }[];
                         };
                     };
@@ -659,6 +774,16 @@ export interface paths {
                                 /** Format: date */
                                 fitted_on: string;
                                 signals: ("shared_address" | "shared_upi" | "monthly_cap" | "same_mobile")[];
+                                /**
+                                 * Format: date-time
+                                 * @description When the fraud rules held it for review.
+                                 */
+                                held_since: string;
+                                /**
+                                 * Format: date-time
+                                 * @description When ops should have decided: the Tasks board's allowance for a review.
+                                 */
+                                due: string;
                             }[];
                         };
                     };
@@ -710,7 +835,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description invalid_request: a rejection needs a reason */
+                /** @description invalid_request: a decision needs a reason */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -769,6 +894,11 @@ export interface paths {
                                 text: string;
                                 /** Format: date-time */
                                 raised_at: string;
+                                /**
+                                 * Format: date-time
+                                 * @description When ops should have answered: the Tasks board's allowance for a grievance, the 30 days the app promises until ops set another.
+                                 */
+                                due: string;
                             }[];
                         };
                     };
@@ -873,6 +1003,8 @@ export interface paths {
                                 /** @description How many asked to be told when we launch. */
                                 alerts: number;
                             }[];
+                            /** @description More than 200 pincodes have someone waiting; these are the longest waits. */
+                            more: boolean;
                         };
                     };
                 };
@@ -949,10 +1081,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every referrer's figures, the busiest first */
+        /** The referrers' figures, the busiest first, 50 at a time */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description How many to skip: 0, then 50 on. */
+                    offset?: number | null;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -976,6 +1111,8 @@ export interface paths {
                                 /** @description Credits of theirs spent on visits. */
                                 redeemed: number;
                             }[];
+                            /** @description Another page follows this one. */
+                            more: boolean;
                         };
                     };
                 };
@@ -1406,7 +1543,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: a ruling needs a reason */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2096,6 +2233,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/prices/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take back a price still to come. The one in force and the spent ones stay: an invoice may stand on them */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PriceWithdrawal"];
+                };
+            };
+            responses: {
+                /** @description The book as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            prices: components["schemas"]["Price"][];
+                        };
+                    };
+                };
+                /** @description invalid_request: fields names valid_from when the row applies today or applied before */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the book holds no such row */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/service-area": {
         parameters: {
             query?: never;
@@ -2159,6 +2365,8 @@ export interface paths {
                         "application/json": {
                             changed: number;
                             served: number;
+                            /** @description Launch alerts queued for the pincodes it began serving. */
+                            alerted: number;
                         };
                     };
                 };
@@ -2182,6 +2390,42 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/whoami": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who Access let through, and where signing out goes */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The signed-in identity */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Whoami"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2218,6 +2462,20 @@ export interface components {
         };
         ClientSearch: {
             mobile: string;
+        };
+        ClientsFound: {
+            clients: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                mobile: string;
+            }[];
+            /** @description More than 20 match: narrow the search. */
+            more: boolean;
+        };
+        ClientFind: {
+            /** @description Any part of a name, or of a number typed any of the usual ways. */
+            text: string;
         };
         ClientRecord: {
             /** Format: uuid */
@@ -2436,6 +2694,19 @@ export interface components {
             /** Format: date-time */
             taken_at: string;
         };
+        PhotoView: {
+            /**
+             * Format: date-time
+             * @description When the opening was logged, by our clock.
+             */
+            logged_at: string;
+            /** @description Who opened them before, and when, the latest first. */
+            before: {
+                by: string;
+                /** Format: date-time */
+                at: string;
+            }[];
+        };
         ClientConsents: {
             consents: {
                 /** @enum {string} */
@@ -2477,7 +2748,7 @@ export interface components {
         NumberChangeDecision: {
             /** @enum {string} */
             decision: "confirm" | "reject";
-            /** @description Required to reject; kept with the decision. */
+            /** @description Required to reject; kept with the decision (src/policy/decision-reasons.ts). */
             reason: string | null;
         };
         ErasureRefused: {
@@ -2505,13 +2776,13 @@ export interface components {
         DeletionDecision: {
             /** @enum {string} */
             decision: "delete" | "reject";
-            /** @description Required to reject; kept with the decision. */
+            /** @description Required to reject; kept with the decision (src/policy/decision-reasons.ts). */
             reason: string | null;
         };
         ReferralDecision: {
             /** @enum {string} */
             decision: "approve" | "reject";
-            /** @description Required to reject, and kept with the decision either way. */
+            /** @description Required either way, and kept with the decision (src/policy/decision-reasons.ts). */
             reason: string | null;
         };
         GrievanceAnswer: {
@@ -2703,6 +2974,12 @@ export interface components {
             id: string;
             /** Format: uuid */
             appointment_id: string;
+            /** @description Whose visit it was, so ops can open their page and call them; null once they have been erased. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
             visit_date: string | null;
             technician: string | null;
             /**
@@ -2724,11 +3001,26 @@ export interface components {
             minutes_late: number | null;
             /** @description Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured. */
             distance_m: number | null;
-            /** @description Fact three: when WhatsApp reported the visit message delivered; null if never. */
+            /**
+             * @description Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
+             * @enum {string}
+             */
+            message_state: "delivered" | "sent" | "not_sent" | "no_consent" | "none";
+            /** @description When WhatsApp reported it delivered; null if it never did. */
             message_delivered_at: string | null;
             /** Format: date-time */
             wait_ends_at: string;
             closed_at: string | null;
+            /**
+             * Format: date-time
+             * @description When the case opened, and started waiting for ops.
+             */
+            opened_at: string;
+            /**
+             * Format: date-time
+             * @description When ops should have ruled: the Tasks board's allowance for a no-show, from opened_at.
+             */
+            due: string;
             /** @enum {string} */
             decision: "undecided" | "charged" | "waived";
             decided_at: string | null;
@@ -2736,6 +3028,8 @@ export interface components {
         NoShowDecisionRequest: {
             /** @enum {string} */
             decision: "charged" | "waived";
+            /** @description Required either way, and kept with the ruling (src/policy/decision-reasons.ts). */
+            reason: string | null;
         };
         ClientPieces: {
             pieces: components["schemas"]["Piece"][];
@@ -2791,11 +3085,14 @@ export interface components {
         Tasks: {
             /** @description How many are past their day in India, across every group. */
             overdue: number;
+            /** @description More were waiting than one look reads (2000 a statement), so a count may be short. */
+            truncated: boolean;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                /** @description How many are waiting in the group, all of them. */
                 count: number;
-                /** @description The longest wait first. */
+                /** @description The longest wait first, at most 50. */
                 tasks: components["schemas"]["Task"][];
             }[];
         };
@@ -2805,7 +3102,7 @@ export interface components {
              * @description The queued row's own id, so the task can be reached where it is decided.
              */
             id: string;
-            /** @description Null for a no-show, whose case names the technician and never the client, and for an erased client. */
+            /** @description Null for an erased client, whose record is gone. */
             person: {
                 /** Format: uuid */
                 id: string;
@@ -2952,19 +3249,38 @@ export interface components {
             /** Format: date */
             valid_from: string;
         };
+        PriceWithdrawal: {
+            /** @enum {string} */
+            item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
+            tier: string;
+            /** Format: date */
+            valid_from: string;
+        };
         ServedPincode: {
             pincode: string;
             area: string;
             city: string;
             served: boolean;
             launch_on: string | null;
+            /** @description How many are on its waitlist. */
+            waiting: number;
+            /** @description How many of them serving it would tell now: those who asked, and have not been told yet. */
+            to_alert: number;
         };
         ServiceAreaChange: {
             changes: {
                 pincode: string;
                 served: boolean;
                 launch_on: string | null;
+                /** @description A better name for the area than its post office's. Left out, the name stays. */
+                area?: string;
             }[];
+        };
+        Whoami: {
+            /** @description A member of staff's e-mail, or a service token's ID. */
+            signed_in_as: string;
+            /** @description Access's logout path; null where no Access stands in front, as locally. */
+            sign_out: string | null;
         };
     };
     responses: never;

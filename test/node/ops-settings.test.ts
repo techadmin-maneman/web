@@ -23,6 +23,7 @@ import { NO_SHOW_WAIT_MIN } from "../../src/policy/no-show.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS } from "../../src/config/pieces.ts";
 import { FREE_TIER } from "../../scripts/lib/free-tier-budget.ts";
+import { settings } from "../../apps/ops/src/content.ts";
 
 const named = (name: string): OpsSetting => {
   const setting = settingNamed(name);
@@ -44,6 +45,26 @@ describe("the register", () => {
     expect(COMMITTED.addressUnlockHour).toBe(UNLOCK_HOUR);
     expect(COMMITTED.taskSlaHours).toEqual(TASK_SLA_HOURS);
     expect(COMMITTED.pieceCycleDays[DEFAULT_KEY]).toBe(DEFAULT_PIECE_CYCLE_DAYS);
+  });
+
+  // OPS-19 of the audit, 24 September 2026: ops were shown "no show decision" and "PLACEHOLDER STANDARD".
+  const fixedKeys = (setting: OpsSetting): readonly string[] =>
+    setting.keys === null || setting.keys === "open" ? [] : setting.keys;
+
+  it.each(OPS_SETTINGS.filter((setting) => fixedKeys(setting).length > 0))(
+    "$name's every box is named in the console's words, not its key",
+    (setting) => {
+      const names = settings.rules.keyNames[setting.name] ?? {};
+      for (const key of fixedKeys(setting)) expect(names[key], key).toBeTruthy();
+    },
+  );
+
+  it("offers ops no made-up base: every base falls to the one figure until ops name one", () => {
+    expect(named("piece_cycle_days").fallback).toEqual({ [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS });
+  });
+
+  it.each(OPS_SETTINGS)("$name's note is written for ops, not for whoever reads the code", (setting) => {
+    expect(setting.note).not.toMatch(/\b(he|his|him)\b|src\/|PLACEHOLDER/);
   });
 
   it.each(OPS_SETTINGS)("$name's own default is inside its own bounds", (setting) => {
@@ -72,7 +93,7 @@ describe("what a rule will take", () => {
   it("names metres, minutes, hours and days, so a figure is never read as the wrong unit", () => {
     expect(allowed(named("checkin_radius_m"))).toBe("50 to 1000 metres, a whole number");
     expect(allowed(named("no_show_wait_min"))).toBe("5 to 120 minutes, a whole number");
-    expect(allowed(named("task_sla_hours"))).toBe("1 to 336 hours, a whole number");
+    expect(allowed(named("task_sla_hours"))).toBe("1 to 720 hours, a whole number");
     expect(allowed(named("piece_cycle_days"))).toBe("30 to 1095 days, a whole number");
   });
 

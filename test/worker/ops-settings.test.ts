@@ -11,15 +11,18 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
+import { renderMessage } from "../../src/config/message-templates.ts";
 import { COMMITTED, createCachedOpsInputs, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
+import { pincodeUpsert } from "../../scripts/lib/pincodes.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 let ops: App;
 
 const POST = { "Content-Type": "application/json", Origin: "https://maneman.test" };
 
-const post = (path: string, body: unknown) =>
-  request(ops, path, { method: "POST", headers: POST, body: JSON.stringify(body) });
+const post = (path: string, body: unknown, bindings: Partial<Env> = {}) =>
+  request(ops, path, { method: "POST", headers: POST, body: JSON.stringify(body) }, bindings);
 
 interface Setting {
   name: string;
@@ -319,7 +322,7 @@ describe("the service area", () => {
         { pincode: "110001", served: true, launch_on: "2026-09-01" },
       ],
     });
-    expect(await answer.json()).toEqual({ changed: 1, served: 2 });
+    expect(await answer.json()).toEqual({ changed: 1, served: 2, alerted: 0 });
     expect((await auditFor("pincode.set")).results).toHaveLength(1);
   });
 
@@ -370,5 +373,206 @@ describe("the service area", () => {
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["560001"] } });
     expect((await auditFor("pincode.set")).results).toHaveLength(0);
+  });
+});
+
+// A price set for a day still to come is a decision somebody has to be able to take back before it lands (OPS-15).
+describe("withdrawing a price still to come", () => {
+  const OCTOBER = {
+    item: "service",
+    tier: "standard",
+    amount_ex_gst: 250_000,
+    gst_percent: 18,
+    valid_from: "2026-10-01",
+  };
+  const withdraw = (row: { item: string; tier: string; valid_from: string }) => post("/api/prices/withdraw", row);
+  const serviceRows = async () =>
+    (await (await request(ops, "/api/prices")).json<{ prices: { item: string; valid_from: string }[] }>()).prices
+      .filter((price) => price.item === "service")
+      .map((price) => price.valid_from);
+
+  it("takes the row out of the book, so the price before it goes on applying", async () => {
+    await post("/api/prices", OCTOBER);
+    const answer = await withdraw({ item: "service", tier: "standard", valid_from: "2026-10-01" });
+    expect(answer.status).toBe(200);
+    expect(await serviceRows()).toEqual(["2026-09-22", "2026-01-01"]);
+  });
+
+  it("records who withdrew it, and what it would have been", async () => {
+    await post("/api/prices", OCTOBER);
+    await withdraw({ item: "service", tier: "standard", valid_from: "2026-10-01" });
+    const { results } = await auditFor("price.withdraw");
+    expect(results[0]).toMatchObject({ actor: "ops@localhost", subject_id: "service/standard" });
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({
+      amount_ex_gst: 250_000,
+      gst_percent: 18,
+      valid_from: "2026-10-01",
+    });
+  });
+
+  it("refuses the price in force and a spent one, since a visit may have been invoiced under either", async () => {
+    await post("/api/prices", { ...OCTOBER, valid_from: "2026-09-21" });
+    for (const validFrom of ["2026-01-01", "2026-09-21"]) {
+      const answer = await withdraw({ item: "service", tier: "standard", valid_from: validFrom });
+      expect(answer.status, validFrom).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["valid_from"] } });
+    }
+    expect((await auditFor("price.withdraw")).results).toHaveLength(0);
+  });
+
+  it("answers not_found for a row the book does not hold", async () => {
+    expect((await withdraw({ item: "service", tier: "standard", valid_from: "2026-12-01" })).status).toBe(404);
+  });
+});
+
+/**
+ * Serving a pincode from Settings is a launch, whichever screen does it
+ * (FEO-02): the people waiting there who asked to be told are told, once, as
+ * the waitlist's own launch tells them (docs/decisions/0048-referrals.md).
+ */
+describe("serving a pincode people are waiting for", () => {
+  const ASKED = "33333333-3333-4333-8333-333333333331";
+  const QUIET = "33333333-3333-4333-8333-333333333332";
+
+  async function waiting(personId: string, mobile: string, name: string, alert: boolean) {
+    await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)")
+      .bind(personId, NOW.toISOString(), mobile, name)
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, launch_alert, created_at)
+       VALUES (?1, '122018', ?2, ?3, ?4, ?3)`,
+    )
+      .bind(crypto.randomUUID(), personId, NOW.toISOString(), alert ? 1 : 0)
+      .run();
+    if (!alert) return;
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+       VALUES (?1, ?2, 'whatsapp_launches', 'waitlist-v1', 1, ?3)`,
+    )
+      .bind(crypto.randomUUID(), personId, NOW.toISOString())
+      .run();
+  }
+
+  const area = async (pin: string) =>
+    (
+      await (
+        await request(ops, "/api/service-area")
+      ).json<{ pincodes: { pincode: string; waiting: number; to_alert: number }[] }>()
+    ).pincodes.find((each) => each.pincode === pin);
+
+  beforeEach(async () => {
+    await pincode("110001", "Delhi", "Connaught Place", 1, "2026-08-31T18:30:00.000Z");
+    await pincode("122018", "Gurgaon", "Sector 65", 0, null);
+    await waiting(ASKED, "+919810000011", "Karan Bhatia", true);
+    await waiting(QUIET, "+919810000012", "Dev Malik", false);
+  });
+
+  it("says, before anything is saved, how many are waiting and how many serving it would tell", async () => {
+    expect(await area("122018")).toMatchObject({ waiting: 2, to_alert: 1 });
+    expect(await area("110001")).toMatchObject({ waiting: 0, to_alert: 0 });
+  });
+
+  it("tells those who asked, as a launch does, and says how many in its answer", async () => {
+    const queue = fakeQueue();
+    const answer = await post(
+      "/api/service-area",
+      { changes: [{ pincode: "122018", served: true, launch_on: "2026-10-01" }] },
+      { MESSAGE_QUEUE: queue },
+    );
+    expect(await answer.json()).toEqual({ changed: 1, served: 2, alerted: 1 });
+    expect(queue.sent).toHaveLength(1);
+    const message = await env.DB.prepare("SELECT person_id, kind, subject_id FROM outbound_messages").first();
+    expect(message).toEqual({ person_id: ASKED, kind: "launch_alert", subject_id: "122018" });
+    const { results } = await auditFor("pincode.launch");
+    expect(results.map((row) => [row.subject_id, JSON.parse(row.detail) as unknown])).toEqual([
+      ["122018", { alerts: 1 }],
+    ]);
+    expect(await area("122018")).toMatchObject({ waiting: 2, to_alert: 0 });
+  });
+
+  it("tells nobody twice, however often the pincode is switched off and on", async () => {
+    const queue = fakeQueue();
+    for (const served of [true, false, true]) {
+      await post(
+        "/api/service-area",
+        { changes: [{ pincode: "122018", served, launch_on: null }] },
+        { MESSAGE_QUEUE: queue },
+      );
+    }
+    expect(queue.sent).toHaveLength(1);
+  });
+
+  it("tells nobody when a pincode already served is only given a date", async () => {
+    const queue = fakeQueue();
+    const answer = await post(
+      "/api/service-area",
+      { changes: [{ pincode: "110001", served: true, launch_on: "2026-09-02" }] },
+      { MESSAGE_QUEUE: queue },
+    );
+    expect(await answer.json()).toEqual({ changed: 1, served: 1, alerted: 0 });
+    expect(queue.sent).toEqual([]);
+  });
+});
+
+/**
+ * An area's name, which a launch message, the waitlist and the dispatch board
+ * all read. It starts as the shortest of the pincode's post offices, "until ops
+ * give better ones" (docs/decisions/0048-referrals.md); OPS-13.
+ */
+describe("the name ops give an area", () => {
+  const PERSON = "44444444-4444-4444-8444-444444444441";
+
+  beforeEach(async () => {
+    await pincode("110001", "Delhi", "Connaught Place", 1, null);
+    await pincode("122018", "Gurgaon", "Sec91", 0, null);
+  });
+
+  const rename = (name: string) =>
+    post("/api/service-area", { changes: [{ pincode: "122018", served: false, launch_on: null, area: name }] });
+
+  it("names the area everywhere it is read, the launch message included", async () => {
+    expect((await rename("Sector 91")).status).toBe(200);
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000021', 'Karan Bhatia')",
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    await env.DB.prepare("UPDATE serviceable_pincodes SET served = 1 WHERE pincode = '122018'").run();
+    const composed = await composeLaunchAlert(env.DB, "122018", PERSON, "local");
+    expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toContain(
+      "we now come to Sector 91.",
+    );
+  });
+
+  it("records who renamed it, from what and to what, and counts it as a change", async () => {
+    expect(await (await rename("Sector 91")).json()).toMatchObject({ changed: 1 });
+    const { results } = await auditFor("pincode.rename");
+    expect(results[0]).toMatchObject({ actor: "ops@localhost", subject_id: "122018" });
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: "Sec91", to: "Sector 91" });
+    expect((await auditFor("pincode.set")).results).toHaveLength(0);
+  });
+
+  it("refuses a name that is empty, runs long, or opens as a spreadsheet formula would", async () => {
+    for (const name of ["", " ", "=HYPERLINK(1)", "+91", "@home", "A".repeat(41)]) {
+      const answer = await rename(name);
+      expect(answer.status, name).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["changes.0.area"] } });
+    }
+    expect((await auditFor("pincode.rename")).results).toHaveLength(0);
+  });
+
+  it("keeps the name when the reference file is imported again, and refreshes the ones nobody named", async () => {
+    await rename("Sector 91");
+    await env.DB.prepare(
+      pincodeUpsert([
+        { pincode: "110001", area: "Janpath", city: "Delhi", served: true, launchedAt: null },
+        { pincode: "122018", area: "Sec91", city: "Gurgaon", served: false, launchedAt: null },
+      ]),
+    ).run();
+    const { results } = await env.DB.prepare("SELECT pincode, area FROM serviceable_pincodes ORDER BY pincode").all();
+    expect(results).toEqual([
+      { pincode: "110001", area: "Janpath" },
+      { pincode: "122018", area: "Sector 91" },
+    ]);
   });
 });

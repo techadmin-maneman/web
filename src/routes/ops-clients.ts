@@ -1,13 +1,15 @@
 // One client's record on the ops surface behind Access (Ops Console, B1 to B3;
 // docs/decisions/0031-access-and-audit.md):
-//   POST /api/clients/search               find a client by mobile number
+//   POST /api/clients/search               find a client by their whole mobile number
+//   POST /api/clients/find                 find clients by part of a name or of a number
 //   GET  /api/clients/:id                  who they are, their address, their visits, their payments and their history
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
-//   GET  /api/clients/:id/photos/:photoId  one photograph, audited before its bytes leave
+//   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
+//   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
 //   GET  /api/clients/:id/consents         every consent with its notice version and date, and any deletion request
 //
-// A client is always found by their ID. The number is searched for in a request
-// body, never in a path, so that it stays out of URLs, referrers and logs.
+// A client is always found by their ID. What ops search with goes in a request
+// body, never in a path, so that a number stays out of URLs, referrers and logs.
 //
 // The records are the ones the client reads of themselves, through the same
 // domain functions, so the two surfaces cannot drift apart. An erased person is
@@ -15,9 +17,11 @@
 // and what is kept of them is a record for the deletion queue, not a page to read.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { Context } from "hono";
+import type { App, AppEnv } from "../app.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { actorOf, recordAudit } from "../domain/audit.ts";
+import { actorOf, type AuditActor } from "../domain/audit.ts";
+import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../domain/photo-views.ts";
 import {
   CLIENT_STATES,
   clientStateOf,
@@ -184,6 +188,52 @@ const searchRoute = createRoute({
   },
 });
 
+/** The most clients one search lists; past that, more letters or digits narrow it. */
+export const CLIENTS_FOUND = 20;
+/** A name is searched from two letters, a number from four digits, so no search lists everybody. */
+const NAME_MIN = 2;
+const DIGITS_MIN = 4;
+
+const findRoute = createRoute({
+  method: "post",
+  path: "/api/clients/find",
+  summary:
+    "Find clients by part of a name, or four or more digits of a number. A POST, so the words stay out of the URL",
+  request: {
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            text: z
+              .string()
+              .trim()
+              .max(60)
+              .refine((text) => searchOf(text) !== null, `${String(NAME_MIN)} letters or ${String(DIGITS_MIN)} digits`)
+              .openapi({ description: "Any part of a name, or of a number typed any of the usual ways." }),
+          })
+          .strict()
+          .openapi("ClientFind"),
+      ),
+    },
+  },
+  responses: {
+    200: {
+      description: "The clients it matches, by name",
+      ...json(
+        z
+          .object({
+            clients: z.array(z.object({ id: z.uuid(), name: z.string(), mobile: z.string() }).strict()),
+            more: z.boolean().openapi({ description: `More than ${String(CLIENTS_FOUND)} match: narrow the search.` }),
+          })
+          .strict()
+          .openapi("ClientsFound"),
+      ),
+    },
+    400: errorResponse("invalid_request: fewer than two letters or four digits"),
+  },
+});
+
 const recordRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}",
@@ -200,10 +250,35 @@ const photosRoute = createRoute({
   responses: { 200: { description: "Visits that have photographs", ...json(ClientPhotosSchema) }, 404: unknownClient },
 });
 
+const viewRoute = createRoute({
+  method: "post",
+  path: "/api/clients/{id}/photos/view",
+  summary: "Open the client's photographs: one audit entry, written before any image is served",
+  request: { params: clientId },
+  responses: {
+    200: {
+      description: "Logged",
+      ...json(
+        z
+          .object({
+            logged_at: z.iso.datetime().openapi({ description: "When the opening was logged, by our clock." }),
+            before: z
+              .array(z.object({ by: z.string(), at: z.iso.datetime() }).strict())
+              .openapi({ description: "Who opened them before, and when, the latest first." }),
+          })
+          .strict()
+          .openapi("PhotoView"),
+      ),
+    },
+    404: unknownClient,
+    503: errorResponse("unavailable: the opening could not be logged, so nothing is shown"),
+  },
+});
+
 const photoRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}/photos/{photo_id}",
-  summary: "One of the client's photographs. The audit entry is written before the image is",
+  summary: `One of the client's photographs, within an opening logged in the last ${String(PHOTO_VIEW_MINUTES)} minutes; asked for outside one, it logs one first`,
   request: { params: clientId.extend({ photo_id: z.uuid() }) },
   responses: {
     200: {
@@ -222,6 +297,25 @@ const consentsRoute = createRoute({
   request: { params: clientId },
   responses: { 200: { description: "Consents and data", ...json(ClientConsentsSchema) }, 404: unknownClient },
 });
+
+/** What a search looks in: the number, when it is digits as a number is typed, else the name. */
+type Search = { readonly by: "number" | "name"; readonly text: string };
+
+function searchOf(typed: string): Search | null {
+  const digits = typed.replace(/[\s+-]/g, "");
+  if (/^\d+$/.test(digits)) return digits.length >= DIGITS_MIN ? { by: "number", text: digits } : null;
+  return typed.length >= NAME_MIN ? { by: "name", text: typed } : null;
+}
+
+/** A LIKE pattern for text anywhere in the column, with LIKE's own wildcards taken as themselves. */
+const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
+
+/** The member of staff behind the call; requireAccess has set it on every ops route. */
+function staffOf(c: Context<AppEnv>): AuditActor {
+  const identity = c.var.accessIdentity;
+  if (identity === undefined) throw new Error("ops routes run after requireAccess");
+  return actorOf(identity);
+}
 
 interface PersonRow {
   id: string;
@@ -263,6 +357,27 @@ export function registerOpsClients(app: App): void {
       .first<PersonRow>();
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json({ id: person.id, name: person.name, mobile: person.mobile_e164 }, 200);
+  });
+
+  app.openapi(findRoute, async (c) => {
+    const search = searchOf(c.req.valid("json").text);
+    if (search === null) return c.json(errorBody("invalid_request", c.var.requestId, ["text"]), 400);
+    const column = search.by === "number" ? "mobile_e164" : "name";
+    const { results } = await c.env.DB.prepare(
+      `SELECT id, name, mobile_e164 FROM people
+       WHERE erased_at IS NULL AND ${column} LIKE ?1 ESCAPE '\\' ORDER BY name, id LIMIT ?2`,
+    )
+      .bind(containing(search.text), CLIENTS_FOUND + 1)
+      .all<{ id: string; name: string; mobile_e164: string }>();
+    return c.json(
+      {
+        clients: results
+          .slice(0, CLIENTS_FOUND)
+          .map((row) => ({ id: row.id, name: row.name, mobile: row.mobile_e164 })),
+        more: results.length > CLIENTS_FOUND,
+      },
+      200,
+    );
   });
 
   app.openapi(recordRoute, async (c) => {
@@ -365,6 +480,20 @@ export function registerOpsClients(app: App): void {
     );
   });
 
+  app.openapi(viewRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const db = c.env.DB;
+    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    const now = c.var.deps.now();
+    try {
+      await logPhotoView(db, { personId: id, actor: staffOf(c), requestId: c.var.requestId, now });
+    } catch (error) {
+      c.var.log.error("audit_write_failed", { action: "photo.view", error });
+      return c.json(errorBody("unavailable", c.var.requestId), 503);
+    }
+    return c.json({ logged_at: now.toISOString(), before: await earlierViews(db, id, now) }, 200);
+  });
+
   app.openapi(photoRoute, async (c) => {
     const { id, photo_id: photoId } = c.req.valid("param");
     const db = c.env.DB;
@@ -374,26 +503,17 @@ export function registerOpsClients(app: App): void {
     const photo = await ownPhotoKey(db, id, photoId);
     if (photo === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
-    // Written before the image is read, and a failure serves no photograph:
-    // a locked view that could not be recorded did not happen (ADR 0031).
-    try {
-      await recordAudit(
-        db,
-        {
-          surface: "ops",
-          actor: actorOf(identity),
-          action: "photo.view",
-          subject: { kind: "photo", id: photoId },
-          requestId: c.var.requestId,
-          detail: { person_id: id },
-        },
-        c.var.deps.now(),
-      );
-    } catch (error) {
-      c.var.log.error("audit_write_failed", { action: "photo.view", error });
-      return c.json(errorBody("unavailable", c.var.requestId), 503);
+    // Within an opening already logged, the image goes; outside one, the opening
+    // is logged first, and a failure serves no photograph (ADR 0031).
+    const staff = staffOf(c);
+    const now = c.var.deps.now();
+    if (!(await viewInForce(db, id, staff, now))) {
+      try {
+        await logPhotoView(db, { personId: id, actor: staff, requestId: c.var.requestId, now });
+      } catch (error) {
+        c.var.log.error("audit_write_failed", { action: "photo.view", error });
+        return c.json(errorBody("unavailable", c.var.requestId), 503);
+      }
     }
 
     const object = await c.env.CLIENT_PHOTOS.get(photo.key);

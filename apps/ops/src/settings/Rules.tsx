@@ -3,9 +3,10 @@
 // cycle per base (docs/decisions/0061-ops-editable-inputs.md).
 //
 // Every field says its unit and its bounds before anything is typed, and a
-// refusal names the field it came from. A draft is held as text, never as a
-// number: an empty box would read as nought, and a nought here is a radius no
-// arrival can pass or a cycle due the day it is fitted.
+// refusal names the box it came from, which the API gives as the rule's name
+// or as "rule.key". A draft is held as text, never as a number: an empty box
+// would read as nought, and a nought here is a radius no arrival can pass or a
+// cycle due the day it is fitted.
 
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -18,10 +19,30 @@ import styles from "./settings.module.css";
 const copy = settings.rules;
 
 /** How a rule's form is going. */
-type Saving = { readonly step: "editing" | "saving" | "saved" } | { readonly step: "failed"; readonly code: string };
+type Saving =
+  | { readonly step: "editing" | "saving" | "saved" }
+  | { readonly step: "failed"; readonly code: string; readonly fields: readonly string[] };
 
 /** A rule's draft: the text in each box, keyed as the value is. One number uses the rule's own name. */
 type Draft = Readonly<Record<string, string>>;
+
+function keyLabel(rule: OpsSetting, key: string): string {
+  if (key === "default") return copy.defaultKey;
+  return copy.keyNames[rule.name]?.[key] ?? key;
+}
+
+/** The box a refusal names: "no_show_wait_min.first_fit" is First fit, and the rule's own name the rule. */
+function fieldLabel(rule: OpsSetting, field: string): string {
+  const [, key] = field.split(".");
+  return key === undefined ? rule.title : keyLabel(rule, key);
+}
+
+function refusalOf(rule: OpsSetting, code: string, fields: readonly string[]): string | undefined {
+  const [field] = fields;
+  if (code !== "invalid_request") return copy.errors[code] ?? copy.errors.unknown;
+  if (field === undefined) return copy.errors.invalid_request;
+  return copy.outside(fieldLabel(rule, field));
+}
 
 const draftOf = (rule: OpsSetting): Draft =>
   typeof rule.value === "number"
@@ -37,9 +58,6 @@ const valueOf = (rule: OpsSetting, draft: Draft): SettingValue =>
   typeof rule.value === "number"
     ? Number(draft[rule.name])
     : Object.fromEntries(Object.entries(draft).map(([key, text]) => [key, Number(text)]));
-
-/** What a key is called on the screen: "Every other base" for the open rule's default. */
-const keyLabel = (key: string) => (key === "default" ? copy.defaultKey : key.replace(/_/g, " "));
 
 function Field({
   id,
@@ -140,6 +158,12 @@ function AddKey({ rule, onAdd }: { rule: OpsSetting; onAdd: (key: string, text: 
   );
 }
 
+/** Who set a rule and when, or that nobody has. */
+function setLine(rule: OpsSetting): string {
+  if (rule.set_by === null || rule.set_at === null) return copy.committed;
+  return copy.setBy(rule.set_by, longDate(rule.set_at));
+}
+
 function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting) => void }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(rule));
   const [saving, setSaving] = useState<Saving>({ step: "editing" });
@@ -151,7 +175,7 @@ function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting
     setSaving({ step: "saving" });
     const answer = await api.setSetting(rule.name, value);
     if (!answer.ok) {
-      setSaving({ step: "failed", code: answer.code });
+      setSaving({ step: "failed", code: answer.code, fields: answer.fields });
       return;
     }
     setDraft(draftOf(answer.body));
@@ -169,7 +193,7 @@ function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting
             <Field
               key={key}
               id={`${rule.name}-${key}`}
-              label={typeof rule.value === "number" ? rule.title : keyLabel(key)}
+              label={typeof rule.value === "number" ? rule.title : keyLabel(rule, key)}
               rule={rule}
               text={text}
               onChange={(next) => {
@@ -190,11 +214,7 @@ function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting
         )}
       </fieldset>
 
-      <p className={styles.set}>
-        {rule.set_by === null || rule.set_at === null
-          ? copy.committed(rule.source)
-          : copy.setBy(rule.set_by, longDate(rule.set_at))}
-      </p>
+      <p className={styles.set}>{setLine(rule)}</p>
       <div className={styles.actions}>
         <button
           className={styles.save}
@@ -217,7 +237,7 @@ function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting
       )}
       {saving.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[saving.code] ?? copy.errors.unknown}
+          {refusalOf(rule, saving.code, saving.fields)}
         </p>
       )}
     </li>

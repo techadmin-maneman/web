@@ -4,12 +4,14 @@
 //   POST /api/settings/:name        set one, or send null to put the default back
 //   GET  /api/prices                the price book, with the row in force marked
 //   POST /api/prices                a price from the date it applies
-//   GET  /api/service-area          every pincode, its city and whether we go there
-//   POST /api/service-area          which pincodes we go to, and from when
+//   POST /api/prices/withdraw       a price still to come, taken back
+//   GET  /api/service-area          every pincode, its city, whether we go there and who waits there
+//   POST /api/service-area          which pincodes we go to, from when, and what their areas are called
 //
 // A change here needs no release. Every one records the Access identity behind
 // it, what the value was and what it is now, in the same batch as the change
-// itself (ADR 0031).
+// itself (ADR 0031). Serving a pincode launches it, as the waitlist's launch
+// does (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
@@ -17,10 +19,11 @@ import { allowed, checkValue, OPS_SETTINGS, settingNamed, PRICE_BOUNDS, PRICE_TI
 import { actorOf } from "../domain/audit.ts";
 import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
-import { checkPrice, PRICE_ITEMS, priceBook, setPrice } from "../domain/price-book.ts";
+import { checkPrice, PRICE_ITEMS, priceBook, setPrice, withdrawPrice } from "../domain/price-book.ts";
 import { serviceArea, setServiceArea } from "../domain/service-area.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import type { MessagingMessage } from "../queues/messaging.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
@@ -142,6 +145,36 @@ const setPriceRoute = createRoute({
   },
 });
 
+const withdrawPriceRoute = createRoute({
+  method: "post",
+  path: "/api/prices/withdraw",
+  summary: "Take back a price still to come. The one in force and the spent ones stay: an invoice may stand on them",
+  request: {
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ item: z.enum(PRICE_ITEMS), tier: z.string().regex(PRICE_TIER), valid_from: z.iso.date() })
+          .strict()
+          .openapi("PriceWithdrawal"),
+      ),
+    },
+  },
+  responses: {
+    200: { description: "The book as it now stands", ...json(z.object({ prices: z.array(PriceSchema) }).strict()) },
+    400: errorResponse("invalid_request: fields names valid_from when the row applies today or applied before"),
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: the book holds no such row"),
+  },
+});
+
+/**
+ * An area's name, as a launch message and the waitlist show it: a letter or a
+ * digit first, so a spreadsheet opening the exported list never reads it as a
+ * formula, then letters, digits, spaces and . , ' ( ) & -.
+ */
+const AREA_NAME = /^[\p{L}\p{N}][\p{L}\p{N} .,'()&-]{1,39}$/u;
+
 const AreaSchema = z
   .object({
     pincode: z.string(),
@@ -149,6 +182,10 @@ const AreaSchema = z
     city: z.string(),
     served: z.boolean(),
     launch_on: z.union([z.iso.date(), z.null()]),
+    waiting: z.number().int().openapi({ description: "How many are on its waitlist." }),
+    to_alert: z.number().int().openapi({
+      description: "How many of them serving it would tell now: those who asked, and have not been told yet.",
+    }),
   })
   .strict()
   .openapi("ServedPincode");
@@ -180,6 +217,9 @@ const setServiceAreaRoute = createRoute({
                     pincode: z.string().regex(/^[1-8]\d{5}$/),
                     served: z.boolean(),
                     launch_on: z.union([z.iso.date(), z.null()]),
+                    area: z.string().trim().regex(AREA_NAME).optional().openapi({
+                      description: "A better name for the area than its post office's. Left out, the name stays.",
+                    }),
                   })
                   .strict(),
               )
@@ -194,7 +234,18 @@ const setServiceAreaRoute = createRoute({
   responses: {
     200: {
       description: "What changed",
-      ...json(z.object({ changed: z.number().int(), served: z.number().int() }).strict()),
+      ...json(
+        z
+          .object({
+            changed: z.number().int(),
+            served: z.number().int(),
+            alerted: z
+              .number()
+              .int()
+              .openapi({ description: "Launch alerts queued for the pincodes it began serving." }),
+          })
+          .strict(),
+      ),
     },
     400: errorResponse(
       "invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served",
@@ -304,6 +355,18 @@ export function registerOpsSettings(app: App): void {
     return c.json({ prices: await priceBook(c.env.DB, today) }, 200);
   });
 
+  app.openapi(withdrawPriceRoute, async (c) => {
+    const now = c.var.deps.now();
+    const row = c.req.valid("json");
+    const result = await withdrawPrice(c.env.DB, { row, actor: staffOf(c), requestId: c.var.requestId, now });
+    if (result === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (result === "not_to_come") {
+      c.var.log.warn("price_withdrawal_refused", { item: row.item });
+      return c.json(errorBody("invalid_request", c.var.requestId, ["valid_from"]), 400);
+    }
+    return c.json({ prices: await priceBook(c.env.DB, indiaDate(now)) }, 200);
+  });
+
   app.openapi(serviceAreaRoute, async (c) => {
     return c.json({ pincodes: await serviceArea(c.env.DB) }, 200);
   });
@@ -320,6 +383,14 @@ export function registerOpsSettings(app: App): void {
       if (result.kind === "empty_area") return c.json(errorBody("no_service_area", c.var.requestId), 400);
       return c.json(errorBody("invalid_request", c.var.requestId, result.pincodes), 400);
     }
-    return c.json({ changed: result.changed.length, served: result.served }, 200);
+    if (result.alerts.length > 0) {
+      await c.env.MESSAGE_QUEUE.sendBatch(
+        result.alerts.map((alert) => ({
+          body: { message_id: alert.id, request_id: c.var.requestId } satisfies MessagingMessage,
+          delaySeconds: alert.delaySeconds,
+        })),
+      );
+    }
+    return c.json({ changed: result.changed.length, served: result.served, alerted: result.alerts.length }, 200);
   });
 }

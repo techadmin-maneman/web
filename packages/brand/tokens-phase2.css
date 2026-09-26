@@ -31,7 +31,7 @@
   --fs-26: 26px; /* an upcoming visit's date (board C1) */
   --fs-28: 28px; /* a confirmed booking's day and window (board C6) */
   --fs-25: 25px; /* the empty tracker's line (board F6) */
-  --fs-30: 30px; /* what a referral earns (board F1) */
+  --fs-30: 30px; /* what a referral earns (board F1); the client's name at the head of their ops page (board B1) */
   --fs-34: 34px; /* the credit tile's count (board F1) */
   --fs-40: 40px; /* an entry's amount on its own page (board E2) */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
@@ -43,9 +43,14 @@
   /* The ops console's frame and density (design/phase2/Ops Console.dc.html, its opening note). */
   --ops-nav: 196px; /* the navigation column down the left */
   --ops-row: 34px; /* a table row: dense but not cramped */
+  --ops-control: 28px; /* a box or a button inside a table row, which keeps the row at --ops-row */
+  --ops-box: 16px; /* a square to tick, as board A2 draws the reason picker's */
   --ops-figure: 76px; /* a column of figures, right aligned */
   --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
-  --fs-30: 30px; /* the client's name at the head of their page (board B1) */
+  --ops-wide: 660px; /* a panel drawn wide, as board C1's review queue: Settings, whose tables carry six columns */
+  --ops-area: 200px; /* an area's name, and a tier's, as ops type them */
+  --ops-amount: 120px; /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
+  --ops-date: 150px; /* a date box that shows the whole year beside the picker's button (VIS-21) */
   --ops-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack (board B1) */
   --ops-piece-base: 84px;
   --ops-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
@@ -57,6 +62,9 @@
   --ops-zone: 96px; /* and the zone beside it */
   --ops-jobs: 64px; /* the jobs he has finished, right aligned as every column of figures is */
   --ops-service: 88px; /* and how they ran against the length they were planned for */
+  --ops-waitlist-count: 54px; /* the waitlist's three narrower columns of figures, count, Ref and Alerts (board C3) */
+  --ops-waitlist-ref: 60px;
+  --ops-waitlist-alerts: 62px;
 
   /* The technician app's targets (design/phase2/Technician App.dc.html, "Targets" and "Gloved use"). */
   --tech-primary: 64px; /* the one primary action, bottom of every screen, and the fields beside it */

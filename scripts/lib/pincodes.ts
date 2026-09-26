@@ -28,3 +28,31 @@ export function areaOf(officeNames: string, city: string): string {
     .filter((name) => name !== "");
   return names.sort((a, b) => a.length - b.length)[0] ?? city;
 }
+
+/** One pincode as the import writes it: its launch as an instant, midnight in India on the day. */
+export interface PincodeRow {
+  readonly pincode: string;
+  readonly area: string;
+  readonly city: string;
+  readonly served: boolean;
+  readonly launchedAt: string | null;
+}
+
+const sqlText = (value: string | null) => (value === null ? "NULL" : `'${value.replaceAll("'", "''")}'`);
+
+/**
+ * The statement that loads the rows, replacing each pincode's with the file's.
+ * An area ops have named from the console keeps its name, since area_named_by
+ * says so: the post offices' name is only ever the first guess.
+ */
+export function pincodeUpsert(rows: readonly PincodeRow[]): string {
+  const values = rows.map(
+    (row) =>
+      `(${sqlText(row.pincode)}, ${sqlText(row.area)}, ${sqlText(row.city)}, ${row.served ? "1" : "0"}, ${sqlText(row.launchedAt)})`,
+  );
+  return `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES
+${values.join(",\n")}
+ON CONFLICT (pincode) DO UPDATE SET
+  area = CASE WHEN serviceable_pincodes.area_named_by IS NULL THEN excluded.area ELSE serviceable_pincodes.area END,
+  city = excluded.city, served = excluded.served, launched_at = excluded.launched_at;`;
+}

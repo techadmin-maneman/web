@@ -8,12 +8,17 @@
 // alert goes out against it (ADR 0048). So it is dated and `served` is not.
 //
 // The rows themselves are loaded from data/pincodes/ncr-pincodes.csv by
-// scripts/import-pincodes.ts, which is where a pincode's area and city come
-// from. Ops change only the two columns that are theirs, and never add or
-// remove a pincode: that file is the reference data.
+// scripts/import-pincodes.ts, which is where a pincode's city and first name
+// for its area come from. Ops change the two columns that are theirs, and may
+// give the area a better name; they never add or remove a pincode.
+//
+// Serving a pincode here is a launch, as marking it live on the waitlist is:
+// whoever waits there and asked to be told is told, once
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
+import { launchAlerts, waitingByPincode, type LaunchAlert } from "./waitlist.ts";
 
 export interface AreaPincode {
   readonly pincode: string;
@@ -22,32 +27,37 @@ export interface AreaPincode {
   readonly served: boolean;
   /** India's date it started or starts, or null where nobody has said. */
   readonly launch_on: string | null;
+  /** How many are on its waitlist, and how many serving it would tell now. */
+  readonly waiting: number;
+  readonly to_alert: number;
 }
 
-/** One pincode's two columns, as ops send them. */
+/** One pincode's two columns, as ops send them, and a new name for its area if they gave one. */
 export interface AreaChange {
   readonly pincode: string;
   readonly served: boolean;
   readonly launch_on: string | null;
+  readonly area?: string | undefined;
 }
 
 type Row = { pincode: string; area: string; city: string; served: number; launched_at: string | null };
-
-const pincodeOf = (row: Row): AreaPincode => ({
-  pincode: row.pincode,
-  area: row.area,
-  city: row.city,
-  served: row.served === 1,
-  // Stored as midnight in India, which is the evening before in UTC.
-  launch_on: row.launched_at === null ? null : indiaDate(new Date(row.launched_at)),
-});
 
 /** Every pincode we hold, by city and then by pincode, as the console lists them. */
 export async function serviceArea(db: D1Database): Promise<AreaPincode[]> {
   const { results } = await db
     .prepare("SELECT pincode, area, city, served, launched_at FROM serviceable_pincodes ORDER BY city, pincode")
     .all<Row>();
-  return results.map(pincodeOf);
+  const waiting = await waitingByPincode(db);
+  return results.map((row) => ({
+    pincode: row.pincode,
+    area: row.area,
+    city: row.city,
+    served: row.served === 1,
+    // Stored as midnight in India, which is the evening before in UTC.
+    launch_on: row.launched_at === null ? null : indiaDate(new Date(row.launched_at)),
+    waiting: waiting.get(row.pincode)?.waiting ?? 0,
+    to_alert: waiting.get(row.pincode)?.toAlert ?? 0,
+  }));
 }
 
 /** Why a change cannot be made. */
@@ -55,16 +65,27 @@ export type AreaRefusal =
   { readonly kind: "unknown"; readonly pincodes: readonly string[] } | { readonly kind: "empty_area" };
 
 export interface AreaResult {
-  /** The pincodes whose two columns this actually altered. */
+  /** The pincodes this actually altered: served, launch date or name. */
   readonly changed: readonly AreaChange[];
   readonly served: number;
+  /** The launch alerts queued for the pincodes it began serving. */
+  readonly alerts: readonly LaunchAlert[];
 }
 
+const servingChanged = (was: AreaPincode, change: AreaChange) =>
+  was.served !== change.served || was.launch_on !== change.launch_on;
+
+const renamed = (was: AreaPincode, change: AreaChange) => change.area !== undefined && change.area !== was.area;
+
 /**
- * Sets `served` and `launch_on` on the pincodes named, and nothing else. Every
- * pincode altered gets its own audit entry naming what it was and what it is,
- * and the whole change goes in one batch with them: a change that is not
- * recorded does not happen (ADR 0031).
+ * Sets `served` and `launch_on` on the pincodes named, and the area's name
+ * where ops gave one, and nothing else. Every pincode altered gets its own
+ * audit entry naming what it was and what it is, and the whole change goes in
+ * one batch with them: a change that is not recorded does not happen (ADR 0031).
+ *
+ * A pincode it begins serving is launched in the same batch: the alerts are
+ * queued and counted in a launch's own audit entry, as the waitlist's launch
+ * does, so nobody who asked to be told is left waiting by the screen ops used.
  *
  * Two refusals, both about ops not being able to turn the business off by
  * accident: a pincode we do not hold, and a change that would leave no served
@@ -85,11 +106,6 @@ export async function setServiceArea(
   const unknown = changes.filter((change) => !held.has(change.pincode)).map((change) => change.pincode);
   if (unknown.length > 0) return { kind: "unknown", pincodes: unknown };
 
-  const changed = changes.filter((change) => {
-    const was = held.get(change.pincode);
-    return was !== undefined && (was.served !== change.served || was.launch_on !== change.launch_on);
-  });
-
   const after = new Map(held);
   for (const change of changes) {
     const was = held.get(change.pincode);
@@ -97,24 +113,33 @@ export async function setServiceArea(
   }
   const served = [...after.values()].filter((pincode) => pincode.served).length;
   if (served === 0) return { kind: "empty_area" };
-  if (changed.length === 0) return { changed: [], served };
 
-  await db.batch(
-    changed.flatMap((change) => {
-      const was = held.get(change.pincode);
-      return [
+  const statements: D1PreparedStatement[] = [];
+  const changed: AreaChange[] = [];
+  const alerts: LaunchAlert[] = [];
+  const entry = (action: "pincode.set" | "pincode.rename" | "pincode.launch", pincode: string) => ({
+    surface: "ops" as const,
+    actor,
+    action,
+    subject: { kind: "pincode", id: pincode },
+    requestId,
+  });
+
+  for (const change of changes) {
+    const was = held.get(change.pincode);
+    if (was === undefined || (!servingChanged(was, change) && !renamed(was, change))) continue;
+    changed.push(change);
+
+    if (servingChanged(was, change)) {
+      statements.push(
         auditStatement(
           db,
           {
-            surface: "ops",
-            actor,
-            action: "pincode.set",
-            subject: { kind: "pincode", id: change.pincode },
-            requestId,
+            ...entry("pincode.set", change.pincode),
             detail: {
-              served_from: was?.served ?? false,
+              served_from: was.served,
               served_to: change.served,
-              launch_from: was?.launch_on ?? "",
+              launch_from: was.launch_on ?? "",
               launch_to: change.launch_on ?? "",
             },
           },
@@ -126,8 +151,36 @@ export async function setServiceArea(
           // Midnight in India on the day, as every other time in the database is an instant.
           change.launch_on === null ? null : indiaInstant(change.launch_on, "00:00").toISOString(),
         ),
-      ];
-    }),
-  );
-  return { changed, served };
+      );
+    }
+
+    if (change.area !== undefined && renamed(was, change)) {
+      statements.push(
+        auditStatement(
+          db,
+          { ...entry("pincode.rename", change.pincode), detail: { from: was.area, to: change.area } },
+          now,
+        ),
+        db
+          .prepare("UPDATE serviceable_pincodes SET area = ?2, area_named_by = ?3 WHERE pincode = ?1")
+          .bind(change.pincode, change.area, actor.id),
+      );
+    }
+
+    if (!was.served && change.served) {
+      const launch = await launchAlerts(db, { pincode: change.pincode, now, pacedAfter: alerts.length });
+      alerts.push(...launch.alerts);
+      statements.push(
+        ...launch.statements,
+        auditStatement(
+          db,
+          { ...entry("pincode.launch", change.pincode), detail: { alerts: launch.alerts.length } },
+          now,
+        ),
+      );
+    }
+  }
+
+  if (statements.length > 0) await db.batch(statements);
+  return { changed, served, alerts };
 }

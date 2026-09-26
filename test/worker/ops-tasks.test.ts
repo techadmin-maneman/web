@@ -10,6 +10,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
+import { TASKS_SHOWN } from "../../src/routes/ops-tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -23,11 +24,13 @@ const ERASURE = "33333333-3333-4333-8333-333333333335";
 const CHECK_IN = "44444444-4444-4444-8444-444444444441";
 const REQUEST = "33333333-3333-4333-8333-333333333336";
 const CONSULTATION = "22222222-2222-4222-8222-222222222223";
+const GRIEVANCE = "33333333-3333-4333-8333-333333333337";
 
 let ops: App;
 
 interface Body {
   overdue: number;
+  truncated: boolean;
   groups: { group: string; count: number; tasks: { id: string; person: unknown; detail: string | null }[] }[];
 }
 
@@ -146,6 +149,16 @@ async function draftInvoice() {
     .run();
 }
 
+/** A concern the client raised from their own app, which ops answer in the console. */
+async function grievance(id: string, raisedAt = "2026-09-20T06:00:00.000Z") {
+  await env.DB.prepare(
+    `INSERT INTO grievances (id, person_id, text, state, created_at)
+     VALUES (?1, ?2, 'Why do you keep my photographs?', 'open', ?3)`,
+  )
+    .bind(id, PERSON, raisedAt)
+    .run();
+}
+
 async function erasureRequest(state: string) {
   await env.DB.prepare("INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES (?1, ?2, ?3, ?4)")
     .bind(ERASURE, PERSON, "2026-09-20T06:00:00.000Z", state)
@@ -168,6 +181,7 @@ describe("GET /api/tasks", () => {
     await noShowCase("undecided");
     await numberChange("awaiting_ops");
     await erasureRequest("requested");
+    await grievance(GRIEVANCE);
     await env.DB.prepare(
       `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, fsm_invoice_id, person_id, type, window_end, status,
          fsm_status, fsm_modified_at, synced_at)
@@ -191,10 +205,11 @@ describe("GET /api/tasks", () => {
       "no_show_decision",
       "number_change",
       "erasure_request",
+      "grievance",
       "draft_invoice",
       "erasure_unfinished",
     ]);
-    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("leaves out a group with nothing waiting, as the board draws none", async () => {
@@ -279,11 +294,16 @@ describe("GET /api/tasks", () => {
     ]);
   });
 
-  it("names the technician on a no-show and never the client", async () => {
+  // A no-show once named the technician alone, so its task led nowhere a client could be reached from (OPS-05).
+  it("names the client whose visit it was on a no-show, and the technician who attended", async () => {
     await noShowCase("undecided");
     expect(tasksIn(await tasks(), "no_show_decision")).toMatchObject([
-      { id: CASE, person: null, detail: "Imran Qureshi" },
+      { id: CASE, person: { id: PERSON, name: "Rohit Malhotra" }, detail: "Imran Qureshi" },
     ]);
+
+    // Their record is gone once they are erased, and the case still waits for a ruling.
+    await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), PERSON).run();
+    expect(tasksIn(await tasks(), "no_show_decision")).toMatchObject([{ id: CASE, person: null }]);
   });
 
   it("drops a no-show once it has been ruled on", async () => {
@@ -302,12 +322,55 @@ describe("GET /api/tasks", () => {
     ]);
   });
 
-  it("holds an erasure request until it is decided", async () => {
+  it("holds an erasure request until it is decided, for the seven days the client was promised", async () => {
     await erasureRequest("requested");
-    expect(tasksIn(await tasks(), "erasure_request")).toMatchObject([{ id: ERASURE, detail: null }]);
+    // The Deletion requests section counts down to the same day (OPS-08).
+    expect(tasksIn(await tasks(), "erasure_request")).toMatchObject([
+      { id: ERASURE, detail: null, since: "2026-09-20T06:00:00.000Z", due: "2026-09-27T06:00:00.000Z" },
+    ]);
 
     await env.DB.prepare("UPDATE deletion_requests SET state = 'rejected'").run();
     expect(groupNames(await tasks())).toEqual([]);
+  });
+
+  // A grievance was promised an answer within thirty days and waited on no board at all (OPS-08).
+  it("holds an open grievance until it is answered, for the thirty days the client was promised", async () => {
+    await grievance(GRIEVANCE);
+    expect(tasksIn(await tasks(), "grievance")).toEqual([
+      {
+        id: GRIEVANCE,
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        detail: null,
+        since: "2026-09-20T06:00:00.000Z",
+        due: "2026-10-20T06:00:00.000Z",
+      },
+    ]);
+
+    await env.DB.prepare("UPDATE grievances SET state = 'resolved'").run();
+    expect(groupNames(await tasks())).toEqual([]);
+  });
+
+  // The count was cut at 200 tasks across every group, so a busy queue read as a quiet one (FEO-07).
+  it("counts every task in a group, and lists the longest waits of it", async () => {
+    const hour = 3_600_000;
+    await env.DB.batch(
+      Array.from({ length: TASKS_SHOWN + 10 }, (_, n) =>
+        env.DB.prepare(
+          "INSERT INTO grievances (id, person_id, text, state, created_at) VALUES (?1, ?2, 'Words', 'open', ?3)",
+        ).bind(
+          `55555555-5555-4555-8555-${String(n).padStart(12, "0")}`,
+          PERSON,
+          new Date(Date.parse("2026-09-01T06:00:00.000Z") + n * hour).toISOString(),
+        ),
+      ),
+    );
+
+    const body = await tasks();
+    expect(body.truncated).toBe(false);
+    expect(body.groups[0]?.count).toBe(TASKS_SHOWN + 10);
+    const listed = tasksIn(body, "grievance");
+    expect(listed).toHaveLength(TASKS_SHOWN);
+    expect(listed[0]?.id).toBe("55555555-5555-4555-8555-000000000000");
   });
 
   it("lists a finished visit whose invoice is still a draft in Books, until it is sent", async () => {
@@ -357,14 +420,14 @@ describe("GET /api/tasks", () => {
   });
 
   it("counts the tasks whose day has passed, and no others", async () => {
-    // Held on the 18th, so due on the 20th: yesterday. The erasure came yesterday and is due tomorrow.
+    // Held on the 18th, so due on the 20th: yesterday. The erasure came yesterday and is due on the 27th.
     await heldGrant('["shared_address"]');
     await erasureRequest("requested");
     expect(await tasks()).toMatchObject({ overdue: 1 });
   });
 
   it("says nothing is waiting when no queue holds anything", async () => {
-    expect(await tasks()).toEqual({ overdue: 0, groups: [] });
+    expect(await tasks()).toEqual({ overdue: 0, truncated: false, groups: [] });
   });
 
   it("leaves out an erased person's tasks, whose record is gone", async () => {

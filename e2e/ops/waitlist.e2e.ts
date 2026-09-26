@@ -31,10 +31,31 @@ test("lists the pincodes with their counts, and marks the ones we already come t
   await expect(bandra).toContainText("117");
   await expect(bandra).toContainText("84");
   await expect(bandra).toContainText("4 Feb 2027");
-  // Sector 65 is served, so it offers no launch.
+  // Sector 65 is served, so it offers no launch; it offers to tell whoever there is still untold (e2e/ops/launch.e2e.ts).
   const served = page.getByRole("row").filter({ hasText: "122018" });
   await expect(served).toContainText("Live");
-  await expect(served.getByRole("button")).toHaveCount(0);
+  await expect(served.getByRole("button")).toHaveAccessibleName("Tell those waiting in 122018, Sector 65");
+});
+
+// The area was packed into what the figure columns left, each drawn wider than the board draws it (VIS-23).
+test("gives the area the room the board does, and each figure the board's own width", async ({ page }) => {
+  await open(page);
+  const width = async (name: string) =>
+    (await page.getByRole("columnheader", { name, exact: true }).boundingBox())?.width ?? 0;
+  expect(Math.round(await width("Pincode"))).toBe(76);
+  expect(Math.round(await width("Count"))).toBe(54);
+  expect(Math.round(await width("Oldest"))).toBe(76);
+  expect(Math.round(await width("Ref"))).toBe(60);
+  expect(Math.round(await width("Alerts"))).toBe(62);
+  // What is left of the panel's 442 px within its border and padding, as the board's 1fr is.
+  expect(Math.round(await width("Area"))).toBe(114);
+});
+
+// The waitlist was read whole, however many pincodes had people waiting (FEO-16).
+test("says when more pincodes are waiting than the table lists", async ({ page }) => {
+  await answer(page, { "/api/waitlist": json({ ...AREAS, more: true }) });
+  await page.goto("/waitlist");
+  await expect(page.getByText("More pincodes have people waiting than are listed.")).toBeVisible();
 });
 
 test("asks what a launch would send before anything goes out", async ({ page }) => {

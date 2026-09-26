@@ -65,9 +65,21 @@
   list-style: none;
 }
 
-.grant {
+.grant,
+.targeted {
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* The grant a task on the Tasks board led here, marked as the board marks a selection. */
+.targeted {
+  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
+}
+
+.grant:focus-visible,
+.targeted:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
 }
 
 .grantHead {
@@ -81,10 +93,29 @@
   font-size: var(--fs-15);
 }
 
-.when {
+/* Each name in the pair, a way to that client's page; the board draws them as plain text. */
+.person {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+}
+
+.person:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.when,
+.late {
   font-size: var(--fs-14);
   color: var(--text-muted);
   white-space: nowrap;
+}
+
+/* Held past the Tasks board's allowance, in oxblood, as board D2 marks a task that has run over. */
+.late {
+  color: var(--error-on-paper);
 }
 
 /* The rules the grant met, in oxblood behind one rule, as the board marks them. */

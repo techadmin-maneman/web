@@ -251,6 +251,9 @@ describe("ops' review", () => {
           referred: { person_id: FRIEND, name: "Karan Bhatia" },
           fitted_on: "2026-09-20",
           signals: ["shared_address"],
+          // Held when its row was last written, and due two days on (src/policy/tasks.ts).
+          held_since: "2026-09-01T06:30:00.000Z",
+          due: "2026-09-03T06:30:00.000Z",
         },
       ],
     });
@@ -268,7 +271,22 @@ describe("ops' review", () => {
       .bind(ATTRIBUTION)
       .first<{ review_reason: string | null }>();
     expect(reviewed?.review_reason).toBe("Father and son, two households");
-    expect((await decide({ decision: "approve", reason: null })).status).toBe(404);
+    // The reason is kept with the decision; the log names the decision and stays free of what ops wrote (ADR 0031).
+    const detail = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'referral.decide'").first();
+    expect(detail).toEqual({ detail: JSON.stringify({ decision: "approve" }) });
+    expect((await decide({ decision: "approve", reason: "Again" })).status).toBe(404);
+  });
+
+  // "Both require a reason" (board C1): until now only the browser asked, so credits could be granted with none.
+  it("approves only with a reason, and grants nothing without one", async () => {
+    await held();
+    for (const reason of [null, "", "   "]) {
+      const answer = await decide({ decision: "approve", reason });
+      expect(answer.status, JSON.stringify(reason)).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["reason"] } });
+    }
+    expect((await state())?.grant_state).toBe("held");
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(0);
   });
 
   it("rejects only with a reason, and grants nothing", async () => {

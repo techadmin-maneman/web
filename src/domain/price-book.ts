@@ -97,6 +97,50 @@ export function checkPrice(
   return null;
 }
 
+/** A row of the book, named by what it prices and the day it applies from. */
+export interface PriceRowKey {
+  readonly item: PriceItem;
+  readonly tier: string;
+  readonly valid_from: string;
+}
+
+/**
+ * Takes back a price still to come, with its audit entry in the same batch.
+ * Only a row that applies after today can go: the one in force and every spent
+ * one may already stand on an invoice, and a hold keeps the figure it was
+ * quoted in any case (docs/decisions/0068-a-paid-hold-is-kept.md).
+ */
+export async function withdrawPrice(
+  db: D1Database,
+  input: { readonly row: PriceRowKey; readonly actor: AuditActor; readonly requestId: string; readonly now: Date },
+): Promise<"withdrawn" | "not_found" | "not_to_come"> {
+  const { row, actor, requestId, now } = input;
+  const held = await db
+    .prepare("SELECT amount_ex_gst, gst_percent FROM price_book WHERE item = ?1 AND tier = ?2 AND valid_from = ?3")
+    .bind(row.item, row.tier, row.valid_from)
+    .first<{ amount_ex_gst: number; gst_percent: number }>();
+  if (held === null) return "not_found";
+  if (row.valid_from <= indiaDate(now)) return "not_to_come";
+  await db.batch([
+    auditStatement(
+      db,
+      {
+        surface: "ops",
+        actor,
+        action: "price.withdraw",
+        subject: { kind: "price", id: `${row.item}/${row.tier}` },
+        requestId,
+        detail: { amount_ex_gst: held.amount_ex_gst, gst_percent: held.gst_percent, valid_from: row.valid_from },
+      },
+      now,
+    ),
+    db
+      .prepare("DELETE FROM price_book WHERE item = ?1 AND tier = ?2 AND valid_from = ?3")
+      .bind(row.item, row.tier, row.valid_from),
+  ]);
+  return "withdrawn";
+}
+
 /**
  * Writes a price from a date, with its audit entry in the same batch: a change
  * that is not recorded does not happen (ADR 0031). A second write for the same

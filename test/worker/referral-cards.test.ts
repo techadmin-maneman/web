@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
+import { REFERRERS_PAGE, WAITLIST_AREAS } from "../../src/routes/ops-waitlist.ts";
 import {
   appFor,
   captureLogs,
@@ -174,6 +175,7 @@ describe("the waitlist and a launch", () => {
           alerts: 1,
         },
       ],
+      more: false,
     });
     expect(await (await launch({ confirm: false })).json()).toEqual({
       pincode: "400050",
@@ -201,6 +203,33 @@ describe("the waitlist and a launch", () => {
     const second = fakeQueue();
     expect(await (await launch({ confirm: true }, second)).json()).toMatchObject({ alerts: 0 });
     expect(second.sent).toEqual([]);
+  });
+
+  // The waitlist was read whole, however many pincodes people were waiting in (FEO-16).
+  it("lists the longest-waiting pincodes, a page at most, and says when there are more", async () => {
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000002', 'Karan Bhatia')",
+    )
+      .bind(FRIEND, NOW.toISOString())
+      .run();
+    await env.DB.batch(
+      Array.from({ length: WAITLIST_AREAS + 1 }, (_, n) =>
+        env.DB.prepare(
+          `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, created_at)
+           VALUES (?1, ?2, ?3, ?4, ?4)`,
+        ).bind(
+          `w${String(n)}`,
+          String(400001 + n),
+          FRIEND,
+          new Date(NOW.getTime() - (WAITLIST_AREAS + 1 - n) * 60_000).toISOString(),
+        ),
+      ),
+    );
+
+    const list = await (await request(ops(), "/api/waitlist")).json<{ areas: { pincode: string }[]; more: boolean }>();
+    expect(list.areas).toHaveLength(WAITLIST_AREAS);
+    expect(list.areas[0]?.pincode).toBe("400001");
+    expect(list.more).toBe(true);
   });
 
   it("tells nobody who did not ask, and refuses a pincode we do not know", async () => {
@@ -249,6 +278,36 @@ describe("ops' referrers", () => {
     const answer = await (await request(ops(), "/api/referrers")).json();
     expect(answer).toEqual({
       referrers: [{ code: CODE, name: "Rohit Malhotra", opens: 2, consultations: 1, fits: 0, granted: 1, redeemed: 1 }],
+      more: false,
     });
+  });
+
+  // Every referrer was read at once, with a subquery a figure for every row (FEO-16).
+  it("answers a page of referrers at a time, the busiest first, and says when there are more", async () => {
+    const statements = Array.from({ length: REFERRERS_PAGE }, (_, n) => {
+      const id = `77777777-7777-4777-8777-${String(n).padStart(12, "0")}`;
+      return [
+        env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)").bind(
+          id,
+          NOW.toISOString(),
+          `+9197000${String(n).padStart(5, "0")}`,
+          `Referrer ${String(n).padStart(2, "0")}`,
+        ),
+        env.DB.prepare(
+          "INSERT INTO referral_codes (code, person_id, opens, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)",
+        ).bind(`RC${String(n).padStart(4, "0")}`, id, n + 1, NOW.toISOString()),
+      ];
+    });
+    await env.DB.batch(statements.flat());
+
+    type Page = { referrers: { opens: number }[]; more: boolean };
+    const first = await (await request(ops(), "/api/referrers")).json<Page>();
+    expect(first.referrers).toHaveLength(REFERRERS_PAGE);
+    expect(first.referrers[0]?.opens).toBe(REFERRERS_PAGE);
+    expect(first.more).toBe(true);
+
+    // Rohit, whose code nobody has opened, is the last.
+    const next = await (await request(ops(), `/api/referrers?offset=${String(REFERRERS_PAGE)}`)).json<Page>();
+    expect(next).toEqual({ referrers: [expect.objectContaining({ name: "Rohit Malhotra", opens: 0 })], more: false });
   });
 });

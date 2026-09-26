@@ -84,7 +84,8 @@ describe("ops, when the audit entry cannot be written", () => {
       ).bind(CASE, VISIT, AT),
     ]);
 
-    expect((await send(ops, "POST", `/api/no-shows/${CASE}/decision`, { decision: "charged" })).status).toBe(500);
+    const ruling = { decision: "charged", reason: "Nobody came to the door in 20 minutes" };
+    expect((await send(ops, "POST", `/api/no-shows/${CASE}/decision`, ruling)).status).toBe(500);
     expect(await one("SELECT decision, decided_by FROM no_show_cases")).toEqual({
       decision: "undecided",
       decided_by: null,

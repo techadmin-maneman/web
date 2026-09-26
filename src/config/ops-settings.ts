@@ -52,7 +52,7 @@ export const OPS_SETTINGS = [
   {
     name: "checkin_radius_m",
     title: "Check-in radius",
-    note: "How close to the address a technician must be for I have arrived to pass. Every check-in records the distance it measured and the radius in force, whether it passed or not, so this can be tuned from real arrivals.",
+    note: "How close to the address a technician must be for “I have arrived” to pass. Every check-in records the distance it measured and the radius in force, whether it passed or not, so this can be tuned from real arrivals.",
     unit: "metres",
     min: 50,
     max: 1000,
@@ -63,7 +63,7 @@ export const OPS_SETTINGS = [
   {
     name: "no_show_wait_min",
     title: "No-show wait",
-    note: "How long a technician waits, from check-in, before he may close a job as a no-show. One figure per kind of visit.",
+    note: "How long a technician waits, from check-in, before they may close a job as a no-show. One figure per kind of visit.",
     unit: "minutes",
     min: 5,
     max: 120,
@@ -85,10 +85,11 @@ export const OPS_SETTINGS = [
   {
     name: "task_sla_hours",
     title: "How long a task may wait",
-    note: "How long each queue on the Tasks board has before it counts as overdue.",
+    note: "How long each queue on the Tasks board has before it counts as overdue. Its own section counts down to the same day.",
     unit: "hours",
     min: 1,
-    max: 336,
+    // A month, so the 30 days the app promises a grievance its answer within can stand (src/policy/tasks.ts).
+    max: 720,
     keys: TASK_GROUPS,
     fallback: TASK_SLA_HOURS,
     source: "src/policy/tasks.ts",
@@ -96,7 +97,7 @@ export const OPS_SETTINGS = [
   {
     name: "piece_cycle_days",
     title: "Replacement cycle",
-    note: "How long a piece on each base lasts before it is due for replacement. Name a base exactly as FSM's part item names it; every base without a figure of its own uses default.",
+    note: "How long a piece on each base lasts before it is due for replacement. Name a base exactly as FSM's part item names it; every base without a figure of its own takes the figure for every other base.",
     unit: "days",
     min: 30,
     max: 1095,

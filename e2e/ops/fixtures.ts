@@ -11,6 +11,11 @@
 import type { Page, Route } from "@playwright/test";
 import sharp from "sharp";
 
+/**
+ * Read against 10:30 in India on 22 September 2027 (TASKS_READ_ON), each has
+ * been held as long as board C1 writes: "3 days held", "1 day held", "5 hours
+ * held"; each falls due two days after it was held (src/policy/tasks.ts).
+ */
 export const HELD = {
   held: [
     {
@@ -19,6 +24,8 @@ export const HELD = {
       referred: { person_id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
       fitted_on: "2027-09-19",
       signals: ["shared_address"],
+      held_since: "2027-09-19T05:00:00.000Z",
+      due: "2027-09-21T05:00:00.000Z",
     },
     {
       id: "aa000000-0000-4000-8000-000000000002",
@@ -26,6 +33,8 @@ export const HELD = {
       referred: { person_id: "11000000-0000-4000-8000-000000000004", name: "Manoj Gill" },
       fitted_on: "2027-09-21",
       signals: ["shared_upi"],
+      held_since: "2027-09-21T05:00:00.000Z",
+      due: "2027-09-23T05:00:00.000Z",
     },
     {
       id: "aa000000-0000-4000-8000-000000000003",
@@ -33,6 +42,8 @@ export const HELD = {
       referred: { person_id: "11000000-0000-4000-8000-000000000006", name: "Nikhil Arora" },
       fitted_on: "2027-09-22",
       signals: ["monthly_cap"],
+      held_since: "2027-09-22T00:00:00.000Z",
+      due: "2027-09-24T00:00:00.000Z",
     },
   ],
 };
@@ -44,6 +55,7 @@ export const REFERRERS = {
     { code: "AG2208", name: "Ashish Gill", opens: 4, consultations: 2, fits: 1, granted: 3, redeemed: 3 },
     { code: "VS0916", name: "Vikram Sethi", opens: 1, consultations: 0, fits: 0, granted: 0, redeemed: 0 },
   ],
+  more: false,
 };
 
 export const AREAS = {
@@ -82,6 +94,7 @@ export const AREAS = {
       alerts: 2,
     },
   ],
+  more: false,
 };
 
 export const PREVIEW = { pincode: "400050", waiting: 117, alerts: 84, launched: false };
@@ -318,7 +331,24 @@ export const RECORD = {
   },
   credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
   visits: {
-    upcoming: [],
+    // The Saturday visit he has booked, which the page once showed nowhere (OPS-04).
+    upcoming: [
+      {
+        id: "33000000-0000-4000-8000-000000000002",
+        date: "2027-09-25",
+        window_label: "morning",
+        starts_at: "2027-09-25T03:30:00.000Z",
+        ends_at: "2027-09-25T05:00:00.000Z",
+        length_minutes: 90,
+        type: "service",
+        status: "scheduled",
+        stage: "booked",
+        prepaid: true,
+        technician: TECHNICIAN,
+        place: "Sector 65, Gurgaon 122018",
+        outcome: null,
+      },
+    ],
     past: [
       {
         id: VISIT_ID,
@@ -329,13 +359,31 @@ export const RECORD = {
         length_minutes: 90,
         type: "service",
         status: "completed",
+        stage: null,
+        prepaid: false,
         technician: TECHNICIAN,
         place: "Sector 65, Gurgaon 122018",
         outcome: "done",
       },
     ],
   },
-  payments: [],
+  payments: [
+    {
+      kind: "payment",
+      id: "34000000-0000-4000-8000-000000000001",
+      date: "2027-08-20",
+      amount: 236_000,
+      amount_ex_gst: 200_000,
+      gst_percent: 18,
+      visit: { id: VISIT_ID, date: "2027-08-22", type: "service" },
+      status: "captured",
+      method: "upi",
+      reference: "MM-2027-0841",
+      refunded_amount: 0,
+      purpose: "visit",
+      charge: null,
+    },
+  ],
   /*
    * What the record adds up to (src/domain/client-history.ts): the board's own
    * client, fitted in November 2026 and served since, with the piece B1 draws
@@ -356,7 +404,9 @@ export const RECORD = {
 export const NEW_RECORD = {
   ...RECORD,
   state: "lead",
+  address: null,
   visits: { upcoming: [], past: [] },
+  payments: [],
   history: {
     visits: 0,
     services: 0,
@@ -426,35 +476,55 @@ export const CONSENTS = {
 // ---- Board D1: the no-show the board rules on ---------------------------------
 
 /**
- * The board's own case: the technician checked in at 11:31, 240 m out, the
- * WhatsApp delivered at 11:32, and he closed the job at 11:47 after 15 minutes.
- * The route gives the technician and the date, never the client.
+ * The board's own case: Vikram's visit was booked for 11:30, the technician
+ * checked in at 11:31, 240 m out, the WhatsApp was delivered at 11:32, and he
+ * closed the job at 11:47. The second is a client who never agreed to WhatsApp
+ * about visits, so no reminder went; its check-in reached us twenty minutes
+ * after the phone's own time. Each is due two days after it opened.
  */
 export const NO_SHOWS = {
   cases: [
     {
       id: "66000000-0000-4000-8000-000000000001",
       appointment_id: "77000000-0000-4000-8000-000000000001",
+      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
       visit_date: "2027-09-19",
       technician: "Imran Qureshi",
       checked_in_at: "2027-09-19T06:01:00.000Z",
+      phone_checked_in_at: "2027-09-19T06:01:00.000Z",
+      received_at: "2027-09-19T06:01:00.000Z",
+      window_start: "2027-09-19T06:00:00.000Z",
+      window_end: "2027-09-19T07:30:00.000Z",
+      minutes_late: 1,
       distance_m: 240,
+      message_state: "delivered",
       message_delivered_at: "2027-09-19T06:02:00.000Z",
       wait_ends_at: "2027-09-19T06:16:00.000Z",
       closed_at: "2027-09-19T06:17:00.000Z",
+      opened_at: "2027-09-19T06:17:00.000Z",
+      due: "2027-09-21T06:17:00.000Z",
       decision: "undecided",
       decided_at: null,
     },
     {
       id: "66000000-0000-4000-8000-000000000002",
       appointment_id: "77000000-0000-4000-8000-000000000002",
+      person: { id: CLIENT.id, name: CLIENT.name },
       visit_date: "2027-09-20",
       technician: "Sandeep Yadav",
       checked_in_at: "2027-09-20T04:30:00.000Z",
+      phone_checked_in_at: "2027-09-20T04:30:00.000Z",
+      received_at: "2027-09-20T04:50:00.000Z",
+      window_start: "2027-09-20T03:30:00.000Z",
+      window_end: "2027-09-20T06:30:00.000Z",
+      minutes_late: 60,
       distance_m: 12,
+      message_state: "no_consent",
       message_delivered_at: null,
-      wait_ends_at: "2027-09-20T04:45:00.000Z",
-      closed_at: "2027-09-20T04:46:00.000Z",
+      wait_ends_at: "2027-09-20T05:05:00.000Z",
+      closed_at: "2027-09-20T05:06:00.000Z",
+      opened_at: "2027-09-20T05:06:00.000Z",
+      due: "2027-09-22T05:06:00.000Z",
       decision: "undecided",
       decided_at: null,
     },
@@ -555,6 +625,7 @@ export const PIECES = {
  */
 export const TASKS = {
   overdue: 4,
+  truncated: false,
   groups: [
     {
       group: "replacement_order",
@@ -601,15 +672,15 @@ export const TASKS = {
       count: 2,
       tasks: [
         {
-          id: "93000000-0000-4000-8000-000000000001",
-          person: null,
+          id: "66000000-0000-4000-8000-000000000001",
+          person: { id: "22000000-0000-4000-8000-000000000010", name: "Deepak Rao" },
           detail: "Imran Qureshi",
           since: "2027-09-19T06:17:00.000Z",
           due: "2027-09-21T06:17:00.000Z",
         },
         {
-          id: "93000000-0000-4000-8000-000000000002",
-          person: null,
+          id: "66000000-0000-4000-8000-000000000002",
+          person: { id: "22000000-0000-4000-8000-000000000011", name: "Sanjay Bhatia" },
           detail: "Sandeep Yadav",
           since: "2027-09-20T04:46:00.000Z",
           due: "2027-09-22T04:46:00.000Z",
@@ -662,9 +733,14 @@ const technician = (
 export const TECHNICIANS = {
   technicians: [
     technician(1, "Imran Qureshi", "IQ", "Sec 40–65", [
-      { device_id: "device-1", label: "Chrome on Android", last_seen_at: "2027-09-22T05:00:00.000Z", revoked_at: null },
       {
-        device_id: "device-2",
+        device_id: "a41c09e27f3b",
+        label: "Chrome on Android",
+        last_seen_at: "2027-09-22T05:00:00.000Z",
+        revoked_at: null,
+      },
+      {
+        device_id: "5d20be8c61a9",
         label: "Safari on iPhone",
         last_seen_at: "2027-08-04T05:00:00.000Z",
         revoked_at: "2027-08-05T05:00:00.000Z",
@@ -675,7 +751,7 @@ export const TECHNICIANS = {
       "Sandeep Yadav",
       "SY",
       "Sec 1–39",
-      [{ device_id: "device-3", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null }],
+      [{ device_id: "c7e4f1a8902d", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null }],
       // Leave ops recorded here, which the dispatch board reads from the same rows (ADR 0062).
       [{ id: "89000000-0000-4000-8000-000000000001", from: "2027-10-02", to: "2027-10-06", note: "Family wedding" }],
     ),
@@ -741,6 +817,7 @@ export const GRIEVANCES = {
       mobile: CLIENT.mobile,
       text: "I asked for the WhatsApp messages about launches to stop and they have not stopped.",
       raised_at: "2027-09-14T06:00:00.000Z",
+      due: "2027-10-14T06:00:00.000Z",
     },
     {
       id: "a1000000-0000-4000-8000-000000000002",
@@ -749,6 +826,7 @@ export const GRIEVANCES = {
       mobile: "+919810004418",
       text: "Who saw my photographs, and when?",
       raised_at: "2027-08-01T06:00:00.000Z",
+      due: "2027-08-31T06:00:00.000Z",
     },
   ],
 };
@@ -761,6 +839,7 @@ export const DELETION_REQUESTS = {
       name: CLIENT.name,
       mobile: CLIENT.mobile,
       requested_at: "2027-09-20T06:00:00.000Z",
+      due: "2027-09-27T06:00:00.000Z",
     },
     {
       id: "a2000000-0000-4000-8000-000000000002",
@@ -768,6 +847,7 @@ export const DELETION_REQUESTS = {
       name: "Ashish Gill",
       mobile: "+919810004419",
       requested_at: "2027-09-10T06:00:00.000Z",
+      due: "2027-09-17T06:00:00.000Z",
     },
     {
       id: "a2000000-0000-4000-8000-000000000003",
@@ -775,6 +855,7 @@ export const DELETION_REQUESTS = {
       name: "Karan Bose",
       mobile: "+919810004420",
       requested_at: "2027-09-15T06:00:00.000Z",
+      due: "2027-09-22T06:00:00.000Z",
     },
   ],
 };
@@ -788,6 +869,7 @@ export const NUMBER_CHANGES = {
       old_mobile: CLIENT.mobile,
       new_mobile: "+919810004421",
       requested_at: "2027-09-21T06:00:00.000Z",
+      due: "2027-09-23T06:00:00.000Z",
     },
   ],
 };
@@ -872,7 +954,7 @@ export const PRICES = {
       item: "service",
       tier: "standard",
       amount_ex_gst: 250_000,
-      gst_percent: 0,
+      gst_percent: 18,
       valid_from: "2027-10-01",
       in_force: false,
     },
@@ -880,7 +962,7 @@ export const PRICES = {
       item: "service",
       tier: "standard",
       amount_ex_gst: 200_000,
-      gst_percent: 0,
+      gst_percent: 18,
       valid_from: "2026-09-22",
       in_force: true,
     },
@@ -889,9 +971,17 @@ export const PRICES = {
 
 export const SERVICE_AREA = {
   pincodes: [
-    { pincode: "110017", area: "Saket", city: "Delhi", served: true, launch_on: "2026-09-01" },
-    { pincode: "110024", area: "Lajpat Nagar", city: "Delhi", served: false, launch_on: null },
-    { pincode: "122018", area: "Sector 65", city: "Gurgaon", served: false, launch_on: null },
+    { pincode: "110017", area: "Saket", city: "Delhi", served: true, launch_on: "2026-09-01", waiting: 0, to_alert: 0 },
+    {
+      pincode: "110024",
+      area: "Lajpat Nagar",
+      city: "Delhi",
+      served: false,
+      launch_on: null,
+      waiting: 5,
+      to_alert: 3,
+    },
+    { pincode: "122018", area: "Sec65", city: "Gurgaon", served: false, launch_on: null, waiting: 0, to_alert: 0 },
   ],
 };
 
@@ -905,8 +995,9 @@ type Answers = Readonly<Record<string, (route: Route) => Promise<void>>>;
 
 export const json = (body: unknown) => (route: Route) => route.fulfill({ json: body });
 export const jpeg = (body: Buffer) => (route: Route) => route.fulfill({ body, contentType: "image/jpeg" });
-export const fails = (status: number, code: string) => (route: Route) =>
-  route.fulfill({ status, json: { error: { code, request_id: "test" } } });
+/** The API's refusal: its code, and for invalid_request the fields it names (src/http/errors.ts). */
+export const fails = (status: number, code: string, fields?: readonly string[]) => (route: Route) =>
+  route.fulfill({ status, json: { error: { code, request_id: "test", ...(fields === undefined ? {} : { fields }) } } });
 
 /** Answers the console's calls from `answers`, by path; anything else goes to the local mm-api. */
 export async function answer(page: Page, answers: Answers): Promise<void> {

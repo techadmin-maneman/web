@@ -17,13 +17,15 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { actorOf } from "../domain/audit.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
-import { decideNoShow, listNoShowCases } from "../domain/no-shows.ts";
+import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { devicesOf, revokeDevice } from "../domain/technicians.ts";
+import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
+import { dueAt } from "../policy/tasks.ts";
 import { PieceSchema } from "./tech-pieces.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
@@ -32,6 +34,9 @@ const NoShowCaseSchema = z
   .object({
     id: z.uuid(),
     appointment_id: z.uuid(),
+    person: z.union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()]).openapi({
+      description: "Whose visit it was, so ops can open their page and call them; null once they have been erased.",
+    }),
     visit_date: z.union([z.string(), z.null()]),
     technician: z.union([z.string(), z.null()]),
     checked_in_at: z.iso.datetime().openapi({
@@ -52,11 +57,19 @@ const NoShowCaseSchema = z
       description:
         "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured.",
     }),
+    message_state: z.enum(MESSAGE_STATES).openapi({
+      description:
+        "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.",
+    }),
     message_delivered_at: z
       .union([z.iso.datetime(), z.null()])
-      .openapi({ description: "Fact three: when WhatsApp reported the visit message delivered; null if never." }),
+      .openapi({ description: "When WhatsApp reported it delivered; null if it never did." }),
     wait_ends_at: z.iso.datetime(),
     closed_at: z.union([z.iso.datetime(), z.null()]),
+    opened_at: z.iso.datetime().openapi({ description: "When the case opened, and started waiting for ops." }),
+    due: z.iso.datetime().openapi({
+      description: "When ops should have ruled: the Tasks board's allowance for a no-show, from opened_at.",
+    }),
     decision: z.enum(NO_SHOW_DECISIONS),
     decided_at: z.union([z.iso.datetime(), z.null()]),
   })
@@ -69,7 +82,12 @@ const NoShowsSchema = z
   .openapi("NoShowCases");
 
 const DecisionRequestSchema = z
-  .object({ decision: z.enum(["charged", "waived"]) })
+  .object({
+    decision: z.enum(["charged", "waived"]),
+    reason: z.string().trim().max(REASON_MAX_CHARS).nullable().openapi({
+      description: "Required either way, and kept with the ruling (src/policy/decision-reasons.ts).",
+    }),
+  })
   .strict()
   .openapi("NoShowDecisionRequest");
 
@@ -141,7 +159,7 @@ const decisionRoute = createRoute({
   request: { params: z.object({ id: z.uuid() }), body: { required: true, ...json(DecisionRequestSchema) } },
   responses: {
     200: { description: "Recorded", ...json(z.object({ decided: z.boolean() }).strict()) },
-    400: errorResponse("invalid_request"),
+    400: errorResponse("invalid_request: a ruling needs a reason"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such case, or it was ruled on already"),
   },
@@ -209,19 +227,25 @@ const revokeRoute = createRoute({
 export function registerOpsField(app: App): void {
   app.openapi(noShowsRoute, async (c) => {
     const { decision } = c.req.valid("query");
-    return c.json({ cases: await listNoShowCases(c.env.DB, decision, 200) }, 200);
+    const [cases, inputs] = await Promise.all([listNoShowCases(c.env.DB, decision, 200), opsInputs(c)]);
+    const due = (openedAt: string) => dueAt(new Date(openedAt), "no_show_decision", inputs.taskSlaHours).toISOString();
+    return c.json({ cases: cases.map((each) => ({ ...each, due: due(each.opened_at) })) }, 200);
   });
 
   app.openapi(decisionRoute, async (c) => {
     const identity = c.var.accessIdentity;
     if (identity === undefined) throw new Error("ops routes run after requireAccess");
     const { id } = c.req.valid("param");
-    const { decision } = c.req.valid("json");
+    const { decision, reason } = c.req.valid("json");
+    if (needsReason("no_show", decision) && (reason ?? "") === "") {
+      return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
+    }
     const now = c.var.deps.now();
 
     const decided = await decideNoShow(c.env.DB, {
       caseId: id,
       decision,
+      reason,
       actor: actorOf(identity).id,
       audit: {
         surface: "ops",
@@ -278,17 +302,18 @@ export function registerOpsField(app: App): void {
     const { results } = await c.env.DB.prepare(
       "SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name",
     ).all<{ id: string; name: string; initials: string; zone: string | null }>();
-    // Leave is one read for the whole roster, not one per technician.
-    const leave = await leaveFrom(c.env.DB, indiaDate(c.var.deps.now()));
-    const technicians = await Promise.all(
-      results.map(async (technician) => ({
-        ...technician,
-        devices: await devicesOf(c.env.DB, technician.id),
-        leave: leave
-          .filter((period) => period.technician_id === technician.id)
-          .map(({ id, from, to, note }) => ({ id, from, to, note })),
-      })),
-    );
+    // The phones and the leave are one read each for the whole roster, not one per technician.
+    const [devices, leave] = await Promise.all([
+      devicesByTechnician(c.env.DB),
+      leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
+    ]);
+    const technicians = results.map((technician) => ({
+      ...technician,
+      devices: devices.get(technician.id) ?? [],
+      leave: leave
+        .filter((period) => period.technician_id === technician.id)
+        .map(({ id, from, to, note }) => ({ id, from, to, note })),
+    }));
     return c.json({ technicians }, 200);
   });
 

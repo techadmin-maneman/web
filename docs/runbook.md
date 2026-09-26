@@ -772,9 +772,9 @@ node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging
 node scripts/import-pincodes.ts production                             # the file's own columns
 ```
 
-Run it again whenever the file changes: each pincode's row is replaced.
+Run it again whenever the file changes: each pincode's row is replaced, except an area name ops gave it in the console. **The import tells nobody on a waitlist.** A pincode people are waiting for is served from the console instead — Settings · Service area, or the waitlist's Mark live — which tells those who asked (ADR 0071).
 
-**Launching a pincode** is ops' own, in the console: it says how many are waiting and how many will be told, then marks the pincode served and sends the alerts, ten a minute. Nobody is told twice.
+**Launching a pincode** is ops' own, in the console: it says how many are waiting and how many will be told, then marks the pincode served and sends the alerts, ten a minute. Nobody is told twice. Serving a pincode in Settings · Service area is a launch too, and says who it will message before it saves; a pincode already live whose waitlist was never told is told from its row on the waitlist.
 
 **Ops' log of referrals before January** is imported once, from a CSV in git-ignored `private/`:
 

@@ -7,13 +7,17 @@
 // board C1's review queue is. Confirming moves the client at once, and the
 // decision is written to the audit log as `number_change.decide`, under whoever
 // Access says is signed in (ADR 0031). A rejection needs a reason; a number
-// somebody else already holds is refused by the API, and said so here.
+// somebody else already holds is refused by the API, and said so here. Each
+// change says how long it has left, counted as the Tasks board counts it.
 
 import { longDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api, type NumberChange } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { numberChanges } from "../content.ts";
+import { Left } from "../lib/Left.tsx";
+import { phoneWords } from "../lib/phone.ts";
+import { rowId, useTargetRow } from "../lib/target.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./number-changes.module.css";
@@ -29,9 +33,20 @@ type Deciding =
 
 const copy = numberChanges.queue;
 
-function Change({ change, onDecided }: { change: NumberChange; onDecided: () => void }) {
+function Change({
+  change,
+  now,
+  targeted,
+  onDecided,
+}: {
+  change: NumberChange;
+  now: Date;
+  targeted: boolean;
+  onDecided: () => void;
+}) {
   const [deciding, setDeciding] = useState<Deciding>({ step: "open" });
   const [reason, setReason] = useState("");
+  const rejectButton = useRef<HTMLButtonElement>(null);
 
   const decide = async (choice: Choice) => {
     setDeciding({ step: "sending", choice });
@@ -45,14 +60,15 @@ function Change({ change, onDecided }: { change: NumberChange; onDecided: () => 
   const asking = deciding.step === "asking" || (sending && deciding.choice === "reject");
 
   return (
-    <li className={styles.change}>
+    <li className={targeted ? styles.targeted : styles.change} id={rowId("change", change.id)} tabIndex={-1}>
       <div className={styles.head}>
         <OpsLink className={styles.name} to={`/clients/${change.person_id}`}>
           {change.name}
         </OpsLink>
-        <span className={styles.when}>{copy.requested(longDate(change.requested_at))}</span>
+        <Left due={change.due} now={now} />
       </div>
-      <p className={styles.move}>{copy.move(change.old_mobile, change.new_mobile)}</p>
+      <p className={styles.when}>{copy.requested(longDate(change.requested_at))}</p>
+      <p className={styles.move}>{copy.move(phoneWords(change.old_mobile), phoneWords(change.new_mobile))}</p>
       <p className={styles.proven}>{copy.proven}</p>
       {asking ? (
         <div className={styles.reason}>
@@ -63,12 +79,17 @@ function Change({ change, onDecided }: { change: NumberChange; onDecided: () => 
             id={`reason-${change.id}`}
             className={styles.reasonField}
             maxLength={300}
+            // The field stands where the button that asked for it stood, so the keyboard goes to it.
+            autoFocus
+            aria-describedby={`reason-hint-${change.id}`}
             value={reason}
             onChange={(event) => {
               setReason(event.target.value);
             }}
           />
-          <p className={styles.reasonHint}>{copy.reason.hint}</p>
+          <p className={styles.reasonHint} id={`reason-hint-${change.id}`}>
+            {copy.reason.hint}
+          </p>
           <div className={styles.actions}>
             <button
               className={styles.quiet}
@@ -84,6 +105,8 @@ function Change({ change, onDecided }: { change: NumberChange; onDecided: () => 
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "open" });
+                // Back to the button that asked, rather than to the top of the page.
+                requestAnimationFrame(() => rejectButton.current?.focus());
               }}
             >
               {copy.reason.cancel}
@@ -98,6 +121,7 @@ function Change({ change, onDecided }: { change: NumberChange; onDecided: () => 
               {sending ? copy.deciding : copy.confirm}
             </button>
             <button
+              ref={rejectButton}
               className={styles.quiet}
               type="button"
               disabled={sending}
@@ -121,17 +145,20 @@ function Change({ change, onDecided }: { change: NumberChange; onDecided: () => 
 
 function Queue() {
   const [loaded, retry] = useLoad(api.numberChanges);
-  // A decided change leaves the queue at once; the count follows it.
+  // A decided change leaves the queue at once; the count follows it, and so does the keyboard.
   const [decided, setDecided] = useState<readonly string[]>([]);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const target = useTargetRow(loaded.state === "loaded");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
+  const now = new Date();
   const open = loaded.value.changes.filter((change) => !decided.includes(change.id));
   return (
     <section className={styles.panel} aria-labelledby="number-changes">
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="number-changes">
+        <h2 className={styles.panelTitle} id="number-changes" ref={heading} tabIndex={-1}>
           {copy.title}
         </h2>
         <span className={styles.count}>{open.length}</span>
@@ -144,8 +171,11 @@ function Queue() {
             <Change
               key={change.id}
               change={change}
+              now={now}
+              targeted={target === rowId("change", change.id)}
               onDecided={() => {
                 setDecided((already) => [...already, change.id]);
+                heading.current?.focus();
               }}
             />
           ))}

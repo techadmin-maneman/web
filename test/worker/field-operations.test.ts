@@ -864,7 +864,10 @@ describe("the no-show", () => {
     expect(cases.cases[0]?.distance_m).toBeLessThan(200);
 
     // Nothing is charged automatically: a person rules on it.
-    const ruled = await opsPost(`/api/no-shows/${cases.cases[0]?.id ?? ""}/decision`, { decision: "charged" });
+    const ruled = await opsPost(`/api/no-shows/${cases.cases[0]?.id ?? ""}/decision`, {
+      decision: "charged",
+      reason: "Delivered the evening before, and nobody came to the door",
+    });
     expect(ruled.status).toBe(200);
     const after = await env.DB.prepare("SELECT decision, decided_by FROM no_show_cases").first<{
       decision: string;
@@ -1156,6 +1159,28 @@ describe("leave", () => {
     expect(held(IMRAN, "2026-09-24").onLeave).toBe(true);
     expect(placement(held(IMRAN, "2026-09-24"), "morning", "service")).toBeNull();
     expect(placement(held(IMRAN, "2026-09-25"), "morning", "service")).not.toBeNull();
+  });
+});
+
+describe("the roster", () => {
+  // Read in one query for the whole roster, where it was once a query a technician (OPS-11).
+  it("lists each technician's phones, the latest used first, beside their leave", async () => {
+    await openTechnicianSession(env.DB, {
+      technicianId: SAMEER,
+      deviceId: "phone-def-456",
+      label: null,
+      now: new Date(NOW.getTime() - 60_000),
+    });
+    const roster = await (
+      await request(ops, "/api/technicians", {}, bindings())
+    ).json<{
+      technicians: { id: string; devices: { device_id: string; label: string | null }[]; leave: unknown[] }[];
+    }>();
+
+    expect(roster.technicians.map((each) => [each.id, each.devices, each.leave])).toEqual([
+      [IMRAN, [expect.objectContaining({ device_id: DEVICE, label: "Chrome on Android" })], []],
+      [SAMEER, [expect.objectContaining({ device_id: "phone-def-456", label: null })], []],
+    ]);
   });
 });
 

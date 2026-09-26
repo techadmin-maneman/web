@@ -21,16 +21,17 @@ export interface WaitlistArea {
   readonly alerts: number;
 }
 
-/** Every pincode with someone waiting, the longest wait first. */
-export async function waitlistByPincode(db: D1Database): Promise<WaitlistArea[]> {
+/** The pincodes with someone waiting, the longest wait first, `limit` of them at most. */
+export async function waitlistByPincode(db: D1Database, limit: number): Promise<WaitlistArea[]> {
   const { results } = await db
     .prepare(
       `SELECT w.pincode, p.area, p.city, p.served, p.launched_at, COUNT(*) AS waiting, MIN(w.created_at) AS oldest,
          SUM(CASE WHEN w.referral_code IS NOT NULL THEN 1 ELSE 0 END) AS referred,
          SUM(w.launch_alert) AS alerts
        FROM waitlist_entries w LEFT JOIN serviceable_pincodes p ON p.pincode = w.pincode
-       GROUP BY w.pincode ORDER BY oldest`,
+       GROUP BY w.pincode ORDER BY oldest, w.pincode LIMIT ?1`,
     )
+    .bind(limit)
     .all<{
       pincode: string;
       area: string | null;
@@ -55,14 +56,22 @@ export async function waitlistByPincode(db: D1Database): Promise<WaitlistArea[]>
   }));
 }
 
-/** Those waiting for a pincode who asked to be told, and still consent to launch alerts. */
+/**
+ * Who a launch tells, as a condition on a waitlist entry `w` and its person
+ * `p`: they asked to be told, have not been yet, are not erased, and still
+ * consent to launch alerts. The one rule, for the count ops see before a launch
+ * and for the launch itself.
+ */
+const TOLD_ON_LAUNCH = `w.launch_alert = 1 AND w.alerted_at IS NULL AND p.erased_at IS NULL
+  AND (SELECT c.granted FROM consents c WHERE c.person_id = w.person_id AND c.purpose = 'whatsapp_launches'
+       ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1) = 1`;
+
+/** Those waiting for a pincode whom a launch would tell. */
 async function toAlert(db: D1Database, pincode: string): Promise<{ id: string; person_id: string }[]> {
   const { results } = await db
     .prepare(
       `SELECT w.id, w.person_id FROM waitlist_entries w JOIN people p ON p.id = w.person_id
-       WHERE w.pincode = ?1 AND w.launch_alert = 1 AND w.alerted_at IS NULL AND p.erased_at IS NULL
-         AND (SELECT c.granted FROM consents c WHERE c.person_id = w.person_id AND c.purpose = 'whatsapp_launches'
-              ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1) = 1
+       WHERE w.pincode = ?1 AND ${TOLD_ON_LAUNCH}
        ORDER BY w.created_at`,
     )
     .bind(pincode)
@@ -79,8 +88,58 @@ export async function launchPreview(db: D1Database, pincode: string): Promise<{ 
   return { waiting: waiting?.waiting ?? 0, alerts: (await toAlert(db, pincode)).length };
 }
 
+/** For every pincode anyone waits for: how many wait, and how many a launch would tell now. */
+export async function waitingByPincode(
+  db: D1Database,
+): Promise<ReadonlyMap<string, { readonly waiting: number; readonly toAlert: number }>> {
+  const { results } = await db
+    .prepare(
+      `SELECT w.pincode, COUNT(*) AS waiting, SUM(CASE WHEN ${TOLD_ON_LAUNCH} THEN 1 ELSE 0 END) AS to_alert
+       FROM waitlist_entries w JOIN people p ON p.id = w.person_id
+       GROUP BY w.pincode`,
+    )
+    .all<{ pincode: string; waiting: number; to_alert: number }>();
+  return new Map(results.map((row) => [row.pincode, { waiting: row.waiting, toAlert: row.to_alert }]));
+}
+
 /** How many alerts go out a minute, so a launch does not flood the number. */
 export const ALERTS_PER_MINUTE = 10;
+
+/** A launch alert queued, with the seconds to hold it back so the alerts leave in a paced line. */
+export interface LaunchAlert {
+  readonly id: string;
+  readonly delaySeconds: number;
+}
+
+/**
+ * The launch alerts for one pincode's waitlist, and the statements that queue
+ * them and mark each entry told, for the caller's batch. `pacedAfter` is how
+ * many alerts that batch queues before these, so several pincodes launched
+ * together still leave ALERTS_PER_MINUTE a minute.
+ */
+export async function launchAlerts(
+  db: D1Database,
+  input: { pincode: string; now: Date; pacedAfter: number },
+): Promise<{ alerts: LaunchAlert[]; statements: D1PreparedStatement[] }> {
+  const at = input.now.toISOString();
+  const waiting = await toAlert(db, input.pincode);
+  const alerts = waiting.map((entry, index) => ({
+    id: crypto.randomUUID(),
+    entryId: entry.id,
+    personId: entry.person_id,
+    delaySeconds: Math.floor((input.pacedAfter + index) / ALERTS_PER_MINUTE) * 60,
+  }));
+  const statements = alerts.flatMap((alert) => [
+    db
+      .prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+         VALUES (?1, ?2, ?3, 'launch_alert', 'pincode', ?4, 'queued', ?2)`,
+      )
+      .bind(alert.id, at, alert.personId, input.pincode),
+    db.prepare("UPDATE waitlist_entries SET alerted_at = ?2 WHERE id = ?1").bind(alert.entryId, at),
+  ]);
+  return { alerts: alerts.map(({ id, delaySeconds }) => ({ id, delaySeconds })), statements };
+}
 
 /**
  * Marks the pincode served from the day given, and queues a launch alert for each person who asked for one,
@@ -90,31 +149,16 @@ export const ALERTS_PER_MINUTE = 10;
 export async function launchPincode(
   db: D1Database,
   input: { pincode: string; launchOn: string; audit: AuditEntry; now: Date },
-): Promise<{ alerts: { id: string; delaySeconds: number }[] }> {
-  const at = input.now.toISOString();
-  const waiting = await toAlert(db, input.pincode);
-  const alerts = waiting.map((entry, index) => ({
-    id: crypto.randomUUID(),
-    entryId: entry.id,
-    personId: entry.person_id,
-    delaySeconds: Math.floor(index / ALERTS_PER_MINUTE) * 60,
-  }));
+): Promise<{ alerts: LaunchAlert[] }> {
+  const { alerts, statements } = await launchAlerts(db, { pincode: input.pincode, now: input.now, pacedAfter: 0 });
   await db.batch([
     db
       .prepare(`UPDATE serviceable_pincodes SET served = 1, launched_at = COALESCE(launched_at, ?2) WHERE pincode = ?1`)
       .bind(input.pincode, indiaInstant(input.launchOn, "00:00").toISOString()),
-    ...alerts.flatMap((alert) => [
-      db
-        .prepare(
-          `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-           VALUES (?1, ?2, ?3, 'launch_alert', 'pincode', ?4, 'queued', ?2)`,
-        )
-        .bind(alert.id, at, alert.personId, input.pincode),
-      db.prepare("UPDATE waitlist_entries SET alerted_at = ?2 WHERE id = ?1").bind(alert.entryId, at),
-    ]),
+    ...statements,
     auditStatement(db, { ...input.audit, detail: { alerts: alerts.length } }, input.now),
   ]);
-  return { alerts: alerts.map(({ id, delaySeconds }) => ({ id, delaySeconds })) };
+  return { alerts };
 }
 
 /** What a launch alert says: the area we now come to, and where to book. */
