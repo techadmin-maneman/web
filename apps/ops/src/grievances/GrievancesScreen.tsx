@@ -8,6 +8,7 @@
 // the audit log under whoever Access says is signed in (ADR 0031). It messages
 // nobody: ops answer the client themselves, on the number shown.
 
+import { Field, TextArea } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import { api, type Grievance } from "../api.ts";
@@ -60,19 +61,19 @@ function Open({
       {/* The client's own words, kept apart from ours so nobody answers a paraphrase. */}
       <blockquote className={styles.words}>{each.text}</blockquote>
       <div className={styles.answer}>
-        <label className={styles.answerLabel} htmlFor={`answer-${each.id}`}>
-          {copy.label}
-        </label>
-        <textarea
-          id={`answer-${each.id}`}
-          className={styles.answerField}
-          maxLength={2000}
-          value={response}
-          onChange={(event) => {
-            setResponse(event.target.value);
-          }}
-        />
-        <p className={styles.answerHint}>{copy.hint}</p>
+        <Field label={copy.label} hint={copy.hint}>
+          {(control) => (
+            <TextArea
+              {...control}
+              className={styles.answerField}
+              maxLength={2000}
+              value={response}
+              onChange={(event) => {
+                setResponse(event.target.value);
+              }}
+            />
+          )}
+        </Field>
         <div className={styles.actions}>
           <button
             className={styles.send}

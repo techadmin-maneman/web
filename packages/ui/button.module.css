@@ -8,6 +8,8 @@
  * filled button and an outlined one of the same size line up exactly.
  */
 
+@layer base, ui;
+
 @layer ui {
   .button {
     display: flex;

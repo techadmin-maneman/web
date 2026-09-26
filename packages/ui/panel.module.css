@@ -1,5 +1,7 @@
 /* The console's panel (./Panel.tsx): a hairline box, headed by its title over a rule in the text's own ink. */
 
+@layer base, ui;
+
 @layer ui {
   .panel {
     border: var(--hairline) solid var(--paper-line);

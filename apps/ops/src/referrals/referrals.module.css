@@ -180,35 +180,9 @@
   margin-top: var(--sp-14);
 }
 
-.reasonLabel {
-  display: block;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
+/* Board C1's field, as tall as the board draws it. */
 .reasonField {
-  display: block;
-  width: 100%;
   height: var(--skeleton-card);
-  margin-top: var(--sp-8);
-  padding: var(--sp-12) var(--sp-14);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--text);
-  resize: none;
-}
-
-.reasonField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
-}
-
-.reasonHint {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
 }
 
 .error {

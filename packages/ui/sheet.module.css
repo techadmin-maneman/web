@@ -4,6 +4,8 @@
  * ground, its padding -- is the caller's.
  */
 
+@layer base, ui;
+
 @layer ui {
   .frame {
     width: 100%;

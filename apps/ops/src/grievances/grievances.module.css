@@ -115,35 +115,10 @@
   margin-top: var(--sp-14);
 }
 
-.answerLabel {
-  display: block;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
+/* An answer to a client can run long, so the field grows as ops write. */
 .answerField {
-  display: block;
-  width: 100%;
   min-height: var(--sp-64);
-  margin-top: var(--sp-6);
-  padding: var(--sp-8) var(--sp-10);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--fs-15);
   resize: vertical;
-}
-
-.answerField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
-}
-
-.answerHint {
-  margin: var(--sp-6) 0 0;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }
 
 .actions {

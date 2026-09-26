@@ -3,12 +3,34 @@
 // copy of its own. A copy is how the apps drifted apart before, a fix reaching
 // one app and not the others (the audit of 24 September 2026).
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const APPS = ["apps/app", "apps/ops", "apps/tech"] as const;
 
 const read = (path: string) => readFileSync(path, "utf8");
+
+describe("the shared stylesheets", () => {
+  // The recipe for hiding words must win over any screen's rule, so it stays out of the layers.
+  const layered = readdirSync("packages/ui").filter(
+    (name) => name.endsWith(".css") && name !== "visually-hidden.module.css",
+  );
+
+  it.each(layered)("%s names the layers in their order before anything else", (name) => {
+    const css = read(`packages/ui/${name}`)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .trim();
+    expect(css.startsWith("@layer base, ui;")).toBe(true);
+  });
+
+  it.each(layered)("%s puts every rule in a layer, so an app's own rule wins over it", (name) => {
+    const css = read(`packages/ui/${name}`)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .trim();
+    const outside = css.replace("@layer base, ui;", "").trim();
+    expect(outside).toMatch(/^@layer (base|ui) \{[\s\S]*\}$/);
+  });
+});
 
 describe.each(APPS)("%s", (app) => {
   it("takes the shared layer as a dependency", () => {

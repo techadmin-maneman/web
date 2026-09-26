@@ -13,6 +13,7 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/Sheet`          | A sheet that rises from the foot of the column, as a native modal dialog                           |
 | `@maneman/ui/Dialog`         | A panel opened over the page as a native modal dialog, whose caller decides when it may close      |
 | `@maneman/ui/Panel`          | The ops console's bordered panel, headed by its title and its count                                |
+| `@maneman/ui/Field`          | `Field` (a label, a hint and an error tied to their control), `TextInput`, `TextArea`, `Checkbox`  |
 | `@maneman/ui/classes`        | `classes()`, which joins an element's class names                                                  |
 
 ## Sizes by app
@@ -22,6 +23,6 @@ A button's size is what it is for, and each app says how big that is. `base.css`
 ## Rules
 
 - **Tokens only.** Every colour, size and space comes from `@maneman/brand`, as in the apps; `test/node/app-tokens.test.ts` reads these stylesheets too.
-- **A screen's own class wins.** Each component's stylesheet puts its rules in the `ui` cascade layer, which any rule outside a layer beats. A screen sets a shared component's margin or width with its own class, and nothing else is needed. `base.css` and the visually-hidden recipe stay outside the layer: they are the page's.
+- **A screen's own class wins.** `base.css` is the `base` cascade layer and each component's stylesheet the `ui` layer, above it; an app's own rules are in no layer, so they beat both. A screen sets a shared component's margin or width with its own class, and nothing else is needed. Every stylesheet here names the two layers first (`@layer base, ui;`), so the order holds whichever a browser meets first. The visually-hidden recipe alone stays outside the layers, so no screen can bring its words into view.
 - **Each app brings its own React.** This package imports `react` but does not install it. Each app's `vite.config.ts` dedupes `react` and `react-dom`, since from here Node would find the repository root's React 18, kept for the fidelity runs (`docs/fidelity-method.md`).
 - **Sources, not builds,** as `@maneman/brand`: each app's Vite compiles what it imports. `packages/ui/tsconfig.json` type-checks and lints the package on its own.

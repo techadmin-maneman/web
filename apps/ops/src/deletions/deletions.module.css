@@ -142,30 +142,9 @@
 }
 
 .checkLine {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-10);
   margin-top: var(--sp-14);
   padding-top: var(--sp-12);
   border-top: var(--hairline) solid var(--paper-line);
-}
-
-.check {
-  flex-shrink: 0;
-  width: var(--sp-18);
-  height: var(--sp-18);
-  margin: 0;
-  accent-color: var(--ink);
-}
-
-.check:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
-}
-
-.checkLabel {
-  font-size: var(--fs-14);
-  line-height: 1.4;
 }
 
 /* ---- The reason a rejection carries ---------------------------------------- */
@@ -174,35 +153,9 @@
   margin-top: var(--sp-14);
 }
 
-.reasonLabel {
-  display: block;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
 .reasonField {
-  display: block;
-  width: 100%;
   min-height: var(--sp-48);
-  margin-top: var(--sp-6);
-  padding: var(--sp-8) var(--sp-10);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--fs-15);
   resize: vertical;
-}
-
-.reasonField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
-}
-
-.reasonHint {
-  margin: var(--sp-6) 0 0;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }
 
 /* ---- The two decisions ----------------------------------------------------- */

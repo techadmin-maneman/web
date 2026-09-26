@@ -8,6 +8,7 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
+import { Field, TextArea } from "@maneman/ui/Field";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState } from "react";
 import { api, type Held, type Referrer } from "../api.ts";
@@ -92,24 +93,21 @@ function HeldGrant({
       </ul>
       {asking !== null ? (
         <div className={styles.reason}>
-          <label className={styles.reasonLabel} htmlFor={`reason-${grant.id}`}>
-            {copy.reason.label[asking.choice]}
-          </label>
-          <textarea
-            id={`reason-${grant.id}`}
-            className={styles.reasonField}
-            maxLength={300}
-            // The field stands where the button that asked for it stood, so the keyboard goes to it.
-            autoFocus
-            aria-describedby={`reason-hint-${grant.id}`}
-            value={reason}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
-          <p className={styles.reasonHint} id={`reason-hint-${grant.id}`}>
-            {copy.reason.hint}
-          </p>
+          <Field label={copy.reason.label[asking.choice]} hint={copy.reason.hint}>
+            {(control) => (
+              <TextArea
+                {...control}
+                className={styles.reasonField}
+                maxLength={300}
+                // The field stands where the button that asked for it stood, so the keyboard goes to it.
+                autoFocus
+                value={reason}
+                onChange={(event) => {
+                  setReason(event.target.value);
+                }}
+              />
+            )}
+          </Field>
           <div className={styles.actions}>
             <button
               className={asking.choice === "approve" ? styles.approve : styles.reject}

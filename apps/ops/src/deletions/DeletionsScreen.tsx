@@ -17,6 +17,7 @@
 // The API refuses while the client has a visit booked or a payment held, and
 // the refusal's copy says which.
 
+import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState } from "react";
 import { api, type DeletionRequest } from "../api.ts";
@@ -83,21 +84,15 @@ function ConfirmDelete({
       <p className={styles.warning}>{copy.warning}</p>
       <What title={copy.deleted.title} items={copy.deleted.items} />
       <What title={copy.kept.title} items={copy.kept.items} />
-      <div className={styles.checkLine}>
-        <input
-          id={`checked-${request.id}`}
-          className={styles.check}
-          type="checkbox"
-          checked={checked}
-          disabled={sending}
-          onChange={(event) => {
-            setChecked(event.target.checked);
-          }}
-        />
-        <label className={styles.checkLabel} htmlFor={`checked-${request.id}`}>
-          {copy.checked}
-        </label>
-      </div>
+      <Checkbox
+        className={styles.checkLine}
+        label={copy.checked}
+        checked={checked}
+        disabled={sending}
+        onChange={(event) => {
+          setChecked(event.target.checked);
+        }}
+      />
       <div className={styles.actions}>
         <button className={styles.delete} type="button" disabled={sending || !checked} onClick={onDelete}>
           {sending ? copy.deleting : copy.confirm}
@@ -162,24 +157,21 @@ function Request({
       )}
       {asking?.choice === "reject" && (
         <div className={styles.reason}>
-          <label className={styles.reasonLabel} htmlFor={`reason-${request.id}`}>
-            {copy.reason.label}
-          </label>
-          <textarea
-            id={`reason-${request.id}`}
-            className={styles.reasonField}
-            maxLength={300}
-            // The field stands where the button that asked for it stood, so the keyboard goes to it.
-            autoFocus
-            aria-describedby={`reason-hint-${request.id}`}
-            value={reason}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
-          <p className={styles.reasonHint} id={`reason-hint-${request.id}`}>
-            {copy.reason.hint}
-          </p>
+          <Field label={copy.reason.label} hint={copy.reason.hint}>
+            {(control) => (
+              <TextArea
+                {...control}
+                className={styles.reasonField}
+                maxLength={300}
+                // The field stands where the button that asked for it stood, so the keyboard goes to it.
+                autoFocus
+                value={reason}
+                onChange={(event) => {
+                  setReason(event.target.value);
+                }}
+              />
+            )}
+          </Field>
           <div className={styles.actions}>
             <button
               className={styles.quiet}

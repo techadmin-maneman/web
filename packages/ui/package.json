@@ -10,6 +10,7 @@
     "./Caps": "./Caps.tsx",
     "./classes": "./classes.ts",
     "./Dialog": "./Dialog.tsx",
+    "./Field": "./Field.tsx",
     "./Icon": "./Icon.tsx",
     "./Mark": "./Mark.tsx",
     "./Panel": "./Panel.tsx",
