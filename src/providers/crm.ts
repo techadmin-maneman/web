@@ -2,6 +2,7 @@
 // which implementation runs, and only src/providers/zoho.ts knows Zoho.
 
 import type { LossExtent, VisitWindow } from "../config/booking.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 import type { ZohoSettings } from "../config/settings.ts";
 import type { Logger } from "../log.ts";
 import { assertStatusAllowed, statusForNewRecord, statusForUpdate } from "./crm-rules.ts";
@@ -32,6 +33,10 @@ export interface CrmLead {
   readonly tryOn: boolean;
   readonly utmSource: string | null;
   readonly utmCampaign: string | null;
+  /** The code of the friend's invite the person came through; null for one who came on their own. */
+  readonly inviteCode: string | null;
+  /** The window a Phase 2 booking asked for, where the lead's own Phase 1 choice is absent. */
+  readonly askedWindow: BookingWindow | null;
 }
 
 export interface CrmSyncResult {
