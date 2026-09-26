@@ -214,6 +214,40 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 });
 
+// FEO-22: the landing typed ₹25,000 and ₹1,500 while the price book held others. Nothing writes the book into the
+// page here, so the island asks for it, as it does wherever the Worker could not
+// (docs/decisions/0073-prices-from-the-price-book.md).
+test("the prices are the price book's, asked for where no Worker wrote them", async ({ page }) => {
+  await mockApi(page);
+  const moved = { amount: 0, gst_percent: 0 };
+  await page.route("**/api/published-prices", (route) =>
+    route.fulfill({
+      json: {
+        on: "2026-09-26",
+        tier: "standard",
+        first_fit: { ...moved, amount_ex_gst: 3_500_000 },
+        service: { ...moved, amount_ex_gst: 250_000 },
+        replacement: { ...moved, amount_ex_gst: 1_600_000 },
+      },
+    }),
+  );
+  await visit(page, `/r/${CODE}`);
+
+  await expect(page.getByText("₹35,000", { exact: true })).toBeVisible();
+  await expect(page.getByText("₹2,500", { exact: true })).toBeVisible();
+});
+
+test("the prices stay as the page was built when the book cannot be read", async ({ page }) => {
+  await mockApi(page);
+  await page.route("**/api/published-prices", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
+  );
+  await visit(page, `/r/${CODE}`);
+
+  await expect(page.getByText("₹30,000", { exact: true })).toBeVisible();
+  await expect(page.getByText("₹2,000", { exact: true })).toBeVisible();
+});
+
 // With self-serve booking off, the API records the day asked for and answers
 // "requested" (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
 // The friend sees the same frame, saying ops fix the hour, rather than an error

@@ -5,7 +5,7 @@ Phase 1 (the public site, booking and the try-on) is complete on staging, and it
 Two Cloudflare Workers on one origin:
 
 - **`mm-api`** (repository root): `https://{host}/api/*`. Owns every binding and secret: D1, R2 and Queues.
-- **`mm-site`** (`site/`): everything else. The Astro site, static assets only (`docs/frontend.md`). Production still serves a placeholder page until the owner releases the site; every build keeps the `mm-worker` and `mm-environment` meta tags the smoke suite looks for.
+- **`mm-site`** (`site/`): everything else. The Astro site, static assets with one Worker in front of the pages that show a price and the referral landing (`docs/frontend.md`). Production still serves a placeholder page until the owner releases the site; every build keeps the `mm-worker` and `mm-environment` meta tags the smoke suite looks for.
 
 |           | local                        | staging                                            | production                   |
 | --------- | ---------------------------- | -------------------------------------------------- | ---------------------------- |

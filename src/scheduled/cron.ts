@@ -12,6 +12,7 @@ import { resolveAskedWindows } from "../domain/asked-windows.ts";
 import { requeueUnbookedHolds } from "../domain/bookings.ts";
 import { syncBooks } from "../domain/books-sync.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
+import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
@@ -107,6 +108,15 @@ async function reconcileJob({ env, deps, log, budget }: CronContext): Promise<vo
   await reconcileFsm(env, deps, log, budget);
 }
 
+async function catalogueJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const checked = await checkCatalogue(
+    env.DB,
+    { fsm: deps.fsm, queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert },
+    { push: config.settings.fsmCataloguePush, now: deps.now(), budget },
+  );
+  if (checked !== null && checked.differs.length > 0) log.warn("fsm_catalogue_differs", { ...checked });
+}
+
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
 }
@@ -158,6 +168,9 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
   { name: "fsm_reconcile", needs: "fsm", run: reconcileJob },
+  // Once an hour: FSM's catalogue against the price book, which it prices invoices by
+  // (docs/decisions/0073-prices-from-the-price-book.md).
+  { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", run: whatsAppBridgeJob },

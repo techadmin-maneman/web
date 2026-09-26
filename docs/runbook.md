@@ -365,7 +365,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 
    The Books organisation ID is on Books → Settings → Organisation Profile.
 
-3. **The org.** Check it, then create what is missing: a service item for each visit type and the base part, at placeholder prices until the price book is set (`docs/open-points.md`, item 1).
+3. **The org.** Check it, then create what is missing: a service item for each visit type and the base part. A new visit item takes the price book's own figure of 22 September 2026; from then on the cron's hourly check compares each item with the book (step 8).
 
    ```sh
    node --env-file=.env.fsm-<env> scripts/setup-fsm.ts --check
@@ -412,6 +412,11 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    - In Books: Banking → Add Bank or Credit Card → Bank, named "Razorpay", in INR.
    - Open it; its ID is the number at the end of the address.
    - Set it as `BOOKS_REFUND_ACCOUNT_ID` in the environment's vars in `wrangler.jsonc`, then deploy. It is not a secret.
+
+8. **FSM's catalogue and the price book.** FSM prices a visit's tax invoice from its catalogue item, so each item must hold the price book's price before GST (docs/decisions/0073-prices-from-the-price-book.md).
+   - **The check.** Once an hour the cron's `fsm_catalogue` job reads the catalogue and compares it with the book. An item that differs, or is missing, is an alert `fsm_catalogue:<visit type>` naming the item's ID and both figures, closed when the two agree. Until the push is on, set the item's price in FSM by hand as the alert says (Setup → Service and Parts).
+   - **The push** writes each price ops set in the console to the catalogue, and a price from a later day on its day. `FSM_CATALOGUE_PUSH` is `"off"` in every environment. **Only the owner switches it on, and only in production,** once production's price book holds the owner's prices and production connects FSM: set it to `"on"` in `env.production.vars` in `wrangler.jsonc`, run `npm run types`, and release. Staging's stays off for as long as it shares the owner's real org; its guard refuses it on.
+   - **After switching it on,** set any price in the console and look for `fsm_catalogue_pushed` in the logs; the next hour's check should raise no `fsm_catalogue` alert. The write, `PUT /fsm/v1/Products/{id}`, has never been tried on the org (`docs/open-points.md`, item 98): if FSM refuses it, `fsm_catalogue_push_failed` is logged with FSM's answer, and the check tells ops an hour later.
 
 ### 11c. Razorpay
 

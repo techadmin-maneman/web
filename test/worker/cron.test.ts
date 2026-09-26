@@ -162,6 +162,7 @@ describe("CRON_JOBS", () => {
       "unbooked_holds",
       "erased_files",
       "fsm_reconcile",
+      "fsm_catalogue",
       "deletion_alerts",
       "whatsapp_bridge",
       "dispatch_utilisation",

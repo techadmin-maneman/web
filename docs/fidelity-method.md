@@ -11,7 +11,7 @@ How `npm run fidelity` pairs the design with the build. Its screenshots are in `
 - **Video** is blocked on both sides, so both show the poster.
 - **Fixed bars** are hidden while the sections are shot, then shot on their own.
 
-Any difference in type, spacing, colour or order is a defect.
+Any difference in type, spacing, colour or order is a defect. The prices are not: they are the price book's, which the local build shows as it was on 22 September 2026, where v2 says ₹25,000, ₹1,500 and ₹17,000 (ADR 0022, item 39).
 
 ## Phase 2 boards
 
@@ -133,7 +133,7 @@ These differences are known and stand:
 
 | Pair       | Difference                                                                                                    | Why                                                                                                                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| C1, C5     | The prices are the site's own, ₹25,000 and ₹1,500                                                             | The design's figures are the unset price book's (`docs/open-points.md`, item 1)                                                                                                            |
+| C1, C5     | The prices are the price book's: the design's own ₹30,000 and ₹2,000, until ops change them                   | Prices come from the price book, set in the ops console (ADR 0073)                                                                                                                         |
 | C1 to C5   | "Delhi NCR", where the boards say Gurgaon                                                                     | The site serves NCR pincodes beyond Gurgaon; one area on every page until the owner rules (ADR 0025, item 14)                                                                              |
 | C1, C2, C5 | An hour for the consultation and ninety minutes for a service, where the boards say forty minutes and an hour | The owner's lengths of 24 September 2026, which FSM books (`docs/open-points.md`, item 23)                                                                                                 |
 | C1, C5     | The pincode field has a visible label, "Pincode", and a sample pincode as its placeholder                     | A placeholder is gone once a digit is typed; a field keeps its name                                                                                                                        |

@@ -1,6 +1,6 @@
 # The public site
 
-The site is an Astro build of the design (`design/Mane Man Site v2.dc.html`), served as static assets by the `mm-site` Worker. Why it is built this way: `docs/decisions/0021-public-site.md`. Where it differs from v2: `docs/decisions/0022-site-departures-from-v2.md`.
+The site is an Astro build of the design (`design/Mane Man Site v2.dc.html`), served as static assets by the `mm-site` Worker, which answers first only on the pages that show a price and on the referral landing (`site/src/worker.ts`). Why it is built this way: `docs/decisions/0021-public-site.md`. Where it differs from v2: `docs/decisions/0022-site-departures-from-v2.md`.
 
 ## Running it
 
@@ -19,6 +19,7 @@ npm run check:site                     # type-checks the .astro templates
 | What                                      | Where                                                    |
 | ----------------------------------------- | -------------------------------------------------------- |
 | Every string and image name               | `site/src/content/site.ts`                               |
+| Prices                                    | The price book, set in the ops console (see "Prices")    |
 | The design's placeholder material, frozen | `site/src/content/design-placeholders.ts`                |
 | Colours, sizes, spaces, fonts, icons      | `packages/brand` (shared with the Phase 2 apps)          |
 | Pages                                     | `site/src/pages`                                         |
@@ -45,6 +46,14 @@ To publish one:
 Never edit `design-placeholders.ts` to let a build through.
 
 The referral landing's copy (`referral.ts`) is Phase 2's, and marks a line still waiting for the owner's wording with a `PLACEHOLDER` comment, as the apps' `content.ts` files do. A production build of the site, or of an app, names each marked line and stops (`scripts/lib/content-gate.ts`). Staging builds them as they are (ADR 0025, item 27).
+
+## Prices
+
+Every price on the site and the landing is the price book's, which ops set in the console (`docs/decisions/0073-prices-from-the-price-book.md`). A sentence that gives one holds a hole for each figure, `"{firstFit}, then {service} a month"`, and `site/src/lib/prices.ts` fills it, the totals computed. A page is built with the book's figures of 22 September 2026 (`site/src/content/prices.ts`); the Worker fills the same sentences again from `GET /api/published-prices` on every page it serves, and builds the structured data again. The local build and the browser tests show the built figures on the home page, since no Worker runs there; the booking form's island asks the local API.
+
+- **To change a price,** set it in the ops console. No release.
+- **Premium** is not in the book yet (ADR 0025, "Which tier the app books"): its figures are the owner's, in `site/src/content/prices.ts`, until the owner rules on the tier.
+- **Never type a figure into a sentence.** A production build names any rupee figure in `site.ts` or `referral.ts` and stops; only what a transplant and medication cost elsewhere, in the comparison, is allowed.
 
 ## Approving a notice
 

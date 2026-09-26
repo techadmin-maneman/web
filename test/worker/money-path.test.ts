@@ -36,9 +36,9 @@ const at = (seconds: number) => new Date(NOW.getTime() + seconds * SECOND);
 const world = () => ({
   ...EMPTY_FSM,
   items: [
-    { id: "item-service", name: "Service visit", type: "Service" as const },
-    { id: "item-consult", name: "Consultation", type: "Service" as const },
-    { id: "item-fit", name: "First fit", type: "Service" as const },
+    { id: "item-service", name: "Service visit", type: "Service" as const, price: null },
+    { id: "item-consult", name: "Consultation", type: "Service" as const, price: null },
+    { id: "item-fit", name: "First fit", type: "Service" as const, price: null },
   ],
 });
 
@@ -483,7 +483,7 @@ describe("giving up on a booking FSM would not finish (BIZ-06, INT-02)", () => {
     const payments = createStubPayments();
     const deps = fakeDependencies({ now: () => at(500), fsm, payments });
     const { batch, message } = lastTry(holdId);
-    await handleFsmSyncBatch(batch, env, deps, createLogger(), { labelAsTest: true });
+    await handleFsmSyncBatch(batch, env, deps, createLogger(), { labelAsTest: true, cataloguePush: false });
 
     expect(message.ack).toHaveBeenCalled();
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_g1", amount: 200000 }]);

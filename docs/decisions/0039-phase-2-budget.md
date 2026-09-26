@@ -46,7 +46,7 @@ Before the photographs pass that runway, the owner must decide between the paid 
 **The other allowances have no Phase 2 ceilings yet.** Each is set as the milestone that uses it lands, and added to the budget test:
 
 - **Workers requests (100,000 a day):**
-  - only `mm-api` counts, because static assets are free, so the apps' own files cost nothing;
+  - only `mm-api` counts, because static assets are free, so the apps' own files cost nothing. **Amended 26 September 2026 ([ADR 0073](0073-prices-from-the-price-book.md)):** `mm-site`'s Worker now answers `/`, `/book` and `/r/*` first, so a view of one of those three pages is a request too; it asks `mm-api` for the prices about once a minute;
   - Phase 2's calls and webhooks, including up to three receipts per message sent, are held to half of the allowance.
 - **D1 (100,000 rows written a day; 500 MB per database):**
   - the audit log is one row per ops call (ADR 0031);

@@ -191,6 +191,12 @@ test.describe("home sections", () => {
     const table = page.getByRole("table", { name: "Published prices" });
     await expect(table.getByRole("row")).toHaveCount(4);
     const prices = page.locator('[data-section="prices"]');
+    // FEO-22: the price book's figures, as the page is built, and the first year computed from them. Behind
+    // Cloudflare mm-site's Worker writes the book's figures of the day over these (site/src/worker.ts).
+    await expect(table.getByRole("row", { name: /^First fit/ }).getByRole("cell")).toHaveText(["₹30,000", "₹40,000"]);
+    await expect(prices.getByText("A standard base in the first year: ₹30,000", { exact: false })).toHaveText(
+      "A standard base in the first year: ₹30,000 plus twelve service visits at ₹2,000 — ₹54,000.",
+    );
     await expect(prices.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
     await expect(prices.getByRole("link", { name: "Or see yourself with hair first" })).toHaveAttribute("href", "/try");
   });

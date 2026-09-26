@@ -1,8 +1,11 @@
 // The production build's gate (docs/frontend.md). A production build stops if
-// a published block still holds the design's placeholder material, or if a
-// consent notice has not been approved. Staging builds never run it.
+// a published block still holds the design's placeholder material, if a
+// consent notice has not been approved, or if a price on the site or the
+// landing is typed into its sentence rather than filled from the price book
+// (docs/decisions/0073-prices-from-the-price-book.md). Staging builds never run it.
 
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../content/design-placeholders.ts";
+import { referral } from "../content/referral.ts";
 import * as site from "../content/site.ts";
 
 type Block = { readonly publish: boolean };
@@ -35,9 +38,28 @@ function stringsIn(value: unknown): string[] {
   return [];
 }
 
+/** A rupee sign before a digit: a price written into a sentence, where the price book should fill a hole. */
+const TYPED_PRICE = /₹\s?\d/;
+
+/**
+ * The comparison's first two columns, what a transplant and medication cost elsewhere: the only rupee figures the
+ * site gives that are not our prices.
+ */
+const OTHER_PEOPLES_PRICES: ReadonlySet<string> = new Set(
+  site.comparison.rows
+    .flatMap((row): site.ComparisonCell[] => row.cells.slice(0, 2))
+    .filter((cell): cell is string => typeof cell === "string"),
+);
+
+/** Every price the pages give that is typed by hand. */
+function typedPrices(pages: readonly unknown[]): string[] {
+  return pages.flatMap(stringsIn).filter((text) => TYPED_PRICE.test(text) && !OTHER_PEOPLES_PRICES.has(text));
+}
+
 export function publishProblems(
   blocks: Readonly<Record<PlaceholderBlockName, Block>> = BLOCKS,
   notices: Readonly<Record<string, site.Notice>> = site.notices,
+  pages: readonly unknown[] = [site, referral],
 ): string[] {
   const problems: string[] = [];
   for (const [name, block] of Object.entries(blocks) as [PlaceholderBlockName, Block][]) {
@@ -53,6 +75,12 @@ export function publishProblems(
   }
   for (const [name, notice] of Object.entries(notices)) {
     if (!notice.approved) problems.push(`the ${name} notice (${notice.version}) is not approved`);
+  }
+  for (const price of typedPrices(pages)) {
+    problems.push(
+      `a price is typed by hand, "${price}": every price comes from the price book ` +
+        "(docs/decisions/0073-prices-from-the-price-book.md)",
+    );
   }
   return problems;
 }

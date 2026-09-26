@@ -149,6 +149,12 @@ export interface Settings {
   readonly selfServeBooking: boolean;
   /** The referrer's first name on their invite, for those who agreed to it (ADR 0025, item 24). */
   readonly referrerNameOnInvite: boolean;
+  /**
+   * FSM_CATALOGUE_PUSH: a price ops set is written to FSM's catalogue, which prices a visit's invoice
+   * (docs/decisions/0073-prices-from-the-price-book.md). Off everywhere until the owner switches it on in
+   * production; off, the hourly catalogue check tells ops what to set by hand.
+   */
+  readonly fsmCataloguePush: boolean;
   readonly ipHashSalt: string;
   /** Where alerts are posted. Optional locally only. */
   readonly alertWebhookUrl: string | null;
@@ -286,6 +292,13 @@ export function readSettings(
   }
   if (environment === "production" && acceptTurnstileTestToken) {
     read.problems.push("TURNSTILE_ACCEPT_TEST_TOKEN is on in production");
+  }
+  const fsmCataloguePush = read.oneOf("FSM_CATALOGUE_PUSH", ["off", "on"]) === "on";
+  // Staging's FSM is the owner's real org (ADR 0025, "The Zoho org"), and its book the placeholders.
+  if (environment === "staging" && fsmCataloguePush) {
+    read.problems.push(
+      "FSM_CATALOGUE_PUSH is on in staging: its FSM is the owner's real org, and its price book holds placeholders",
+    );
   }
 
   const ipHashSalt = read.text("IP_HASH_SALT");
@@ -457,6 +470,7 @@ export function readSettings(
     acceptTurnstileTestToken,
     selfServeBooking,
     referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
+    fsmCataloguePush,
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),

@@ -2,6 +2,7 @@
 // Two bases, two prices: a photograph, v2's cross-section drawing, and four rows.
 import { basePhotos, bases, placeholderTag } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import DesignPicture from "../DesignPicture.astro";
 
 const showPhotos = isShown(basePhotos);
@@ -73,7 +74,9 @@ const { rowLabels } = bases;
               <dt>{rowLabels.life}</dt>
               <dd>{kind.life}</dd>
               <dt>{rowLabels.price}</dt>
-              <dd class="price">{kind.price}</dd>
+              <dd class="price" data-price={priceTemplate(kind.price)}>
+                {asBuilt(kind.price)}
+              </dd>
             </dl>
           </div>
         </article>

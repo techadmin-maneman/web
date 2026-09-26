@@ -128,7 +128,7 @@ Test mode works as soon as you sign up, with no KYC and no website check.
 
 ### 5. The price book
 
-The app and the referral page take every price from the price book, never from design strings. Only you can set it.
+The app, the public site and the referral page take every price from the price book, never from design strings, and FSM's catalogue follows it once you switch that on (`docs/open-points.md`, item 44). Only you can set it. The site's Premium column keeps its own figures until you rule on the tier (item 78).
 
 **Fill in this table** and send it back, in chat or as a file. The design's figures and the Phase 1 site's are shown for reference.
 

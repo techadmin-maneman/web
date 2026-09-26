@@ -2,10 +2,10 @@
 // (design/phase2/Referral and Waitlist, boards C1 to C5), except where we go
 // and how long each visit takes, which are the site's own (service.ts).
 //
-// The prices repeat the site's own (site.ts), because the design's open
-// question rules that a referred friend sees the same figures. The referrer's
-// name is filled in where {name} appears; without a name the page says "You
-// have an invite" instead.
+// The prices are the site's own, from the price book (src/lib/prices.ts),
+// because the design's open question rules that a referred friend sees the
+// same figures. The referrer's name is filled in where {name} appears; without
+// a name the page says "You have an invite" instead.
 
 import type { Invite } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
@@ -40,13 +40,13 @@ export const referral = {
       {
         what: "First fit, from",
         note: "Standard base",
-        amount: "₹25,000",
+        amount: "{firstFit}",
         incl: "The piece, the fitting and the cut",
       },
       {
         what: "Service visit",
         note: "Every four weeks, at home",
-        amount: "₹1,500",
+        amount: "{service}",
         incl: "Lifted, cleaned, re-bonded, trimmed",
       },
     ],
