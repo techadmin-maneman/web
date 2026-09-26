@@ -4,8 +4,10 @@
  * The boards draw none of these, so each is the next ink down the ground's
  * own ramp, or a ring where there is no darker ink: gold and oxblood.
  *
- * Every variant carries a hairline edge, transparent where it is filled, so a
- * filled button and an outlined one of the same size line up exactly.
+ * An outlined button's edge is a hairline. A filled one's is each app's own
+ * (--filled-edge, ./base.css): none in the client and technician apps, as
+ * their boards draw it, and a hairline in the console, whose filled and
+ * outlined buttons stand side by side at one width.
  */
 
 @layer base, ui;
@@ -17,7 +19,7 @@
     justify-content: center;
     gap: var(--sp-10);
     padding: 0 var(--sp-18);
-    border: var(--hairline) solid transparent;
+    border: var(--filled-edge) solid transparent;
     background: transparent;
     font: inherit;
     font-weight: 500;
@@ -116,6 +118,7 @@
   .outline,
   .outlineOnInk,
   .danger {
+    border-width: var(--hairline);
     font-weight: var(--control-weight);
   }
 

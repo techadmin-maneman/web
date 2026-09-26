@@ -3,6 +3,7 @@
 // to see why: this says so, and offers a reload and Home. Nothing is lost by
 // either, since the app keeps nothing but Home on the phone.
 
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { ErrorBoundary as SharedBoundary } from "@maneman/ui/ErrorBoundary";
 import type { ReactNode } from "react";
 import { broken } from "../content.ts";
@@ -15,19 +16,20 @@ function Broken() {
         <h1 className={styles.title}>{broken.message}</h1>
       </div>
       <div className={styles.actions}>
-        <button
+        <Button
+          variant="primary"
+          size="small"
           className={styles.retry}
-          type="button"
           onClick={() => {
             window.location.reload();
           }}
         >
           {broken.reload}
-        </button>
+        </Button>
         {/* A whole page load, so a failure round App itself is left behind too. */}
-        <a className={styles.message} href="/">
+        <ButtonLink variant="outline" size="small" className={styles.message} href="/">
           {broken.home}
-        </a>
+        </ButtonLink>
       </div>
     </main>
   );

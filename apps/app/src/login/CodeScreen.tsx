@@ -1,6 +1,7 @@
 // A2: the code (design/phase2/Client App, board A2).
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -141,9 +142,16 @@ export function CodeScreen(props: Props) {
           {resendIn === 0 && !closed ? copy.canResend : ""}
         </VisuallyHidden>
         <div className={styles.foot}>
-          <button className={styles.primary} type="submit" disabled={code.length < 6 || props.busy || closed}>
+          <Button
+            variant="light"
+            size="action"
+            className={styles.primary}
+            type="submit"
+            disabled={code.length < 6 || props.busy || closed}
+            busy={props.busy}
+          >
             {copy.submit}
-          </button>
+          </Button>
         </div>
       </form>
     </main>

@@ -38,6 +38,8 @@
     --control-weight: 500;
     --small-height: var(--tap);
     --small-text: var(--fs-15);
+    /* A filled button's edge: none, unless the app draws its filled buttons edged as its outlined ones are. */
+    --filled-edge: 0;
   }
 
   body {

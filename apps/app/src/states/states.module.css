@@ -32,28 +32,10 @@
   gap: var(--sp-10);
 }
 
+/* Board B3's two ways on (packages/ui/Button.tsx), a little wider than the app's other small buttons. */
 .retry,
 .message {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
   padding: 0 var(--sp-20);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-}
-
-.retry {
-  border: 0;
-  background: var(--ink);
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.message {
-  border: var(--hairline) solid var(--ink);
-  color: var(--text);
-  text-decoration: none;
 }
 
 .pageFailed {
