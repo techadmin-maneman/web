@@ -32,7 +32,12 @@ export type PollResult =
 
 export type DownloadResult =
   | { readonly ok: true; readonly bytes: Uint8Array; readonly contentType: ImageType }
-  | { readonly ok: false; readonly detail: string };
+  | {
+      readonly ok: false;
+      readonly detail: string;
+      /** Worth trying again: the host stalled or failed. A result too large, or not an image, never will be. */
+      readonly transient: boolean;
+    };
 
 export interface ImageProvider {
   submit(image: Uint8Array, preset: Preset, color: ProviderColor, endpoint: Endpoint): Promise<SubmitResult>;

@@ -1,4 +1,4 @@
--- Migration number: 0041
+-- Migration number: 0042
 --
 -- Why ops charged or waived a no-show. "Charge or waive, with a reason"
 -- (docs/prompts/phase2-frontend.md), and the route now refuses a ruling

@@ -172,6 +172,45 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
     expect(deps.sentCodes).toHaveLength(1);
   });
+
+  it("spends none of the day's ceiling on a number FSM does not list", async () => {
+    tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } }, "tech");
+    expect((await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE })).status).toBe(202);
+    expect((await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE })).status).toBe(202);
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);
+  });
+
+  it("reads FSM's technicians for numbers the mirror does not know at most once in ten minutes", async () => {
+    let clock = NOW;
+    const listed: FsmTechnician[] = [];
+    const fsm = createStubFsm({ ...EMPTY_FSM, technicians: listed });
+    let reads = 0;
+    deps = fakeDependencies({
+      now: () => clock,
+      fsm: {
+        ...fsm,
+        technicians: () => {
+          reads += 1;
+          return fsm.technicians();
+        },
+      },
+    });
+    tech = appFor("local", deps, {}, "tech");
+
+    // Naveen tries before ops have added him in FSM, and again straight after.
+    await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE });
+    listed.push(technician());
+    clock = new Date(NOW.getTime() + 60_000);
+    await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE });
+    await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
+    expect(reads).toBe(1);
+    expect(deps.sentCodes).toEqual([]);
+
+    clock = new Date(NOW.getTime() + 10 * 60_000);
+    await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE });
+    expect(reads).toBe(2);
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);
+  });
 });
 
 describe("a signed-in phone", () => {

@@ -47,6 +47,7 @@ describe("sendLeadToFsm", () => {
         email: null,
         city: "Gurgaon",
         pincode: null,
+        street: null,
         state: "Haryana",
         stateCode: "HR",
       },
@@ -70,6 +71,22 @@ describe("sendLeadToFsm", () => {
     ]);
     expect(await sendLeadToFsm(env.DB, fsm, LEAD, { labelAsTest: true })).toBe("already_sent");
     expect(fsm.made.requests).toHaveLength(1);
+  });
+
+  // REQ-S5-03: a contact FSM added took "To be confirmed with the client" whatever the client had saved.
+  it("gives a new contact the street and pincode of the address the client saved", async () => {
+    await lead();
+    await env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode)
+       VALUES ('address-1', ?1, ?2, 'House 12', 'Tower C', 'Sector 65', 'Gurgaon', '122018')`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    const fsm = createStubFsm(world());
+    await sendLeadToFsm(env.DB, fsm, LEAD, { labelAsTest: true });
+    expect(fsm.made.contacts).toMatchObject([
+      { city: "Gurgaon", pincode: "122018", street: { street1: "House 12", street2: "Tower C, Sector 65" } },
+    ]);
   });
 
   it("uses the contact FSM already has, and does not say test in production", async () => {

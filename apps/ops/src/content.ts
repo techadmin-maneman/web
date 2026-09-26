@@ -257,6 +257,9 @@ export const dispatch = {
       invalid_request: "That move is not one we can make. Nothing was moved.",
       not_found: "This visit is no longer live. The board now shows it as it stands.",
       fsm_refused: "Our scheduling system would not take it. Nothing was moved.",
+      /** PLACEHOLDER: FSM took the new technician and not the new time; the board is read again. */
+      fsm_partly:
+        "Our scheduling system took the new technician but not the new time. The board now shows it as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was moved.",
     },
@@ -786,7 +789,7 @@ export const tasks = {
     no_show_decision: "No-show decision",
     number_change: "Number change",
     erasure_request: "Erasure request",
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0071-ops-clients-and-queues.md).
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
     grievance: "Grievance",
     // PLACEHOLDER: two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
     draft_invoice: "Draft invoice",

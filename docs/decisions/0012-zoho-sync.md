@@ -53,6 +53,8 @@ Every implementation calls `assertStatusAllowed` before writing. It throws if a 
 
 **Tokens** are cached in the one-row `zoho_token` table and refreshed a minute before expiry. On a 401 the token is refreshed once and the call repeated.
 
+> **Amended 25 September 2026 ([ADR 0070](0070-vendor-correctness.md)):** the token is in `zoho_access_tokens` with FSM's, and only a 401 that names the token invalid refreshes it; a scope mismatch is thrown as it is. One caller refreshes at a time, and after Zoho refuses a token none is asked for ten minutes. A write to a Lead ID the CRM no longer has is followed by a search by `D1_Person_ID`, and the write goes to the record found, or a new one.
+
 **Failures:**
 
 - The consumer marks the lead `failed` and stores `Zoho {status} {code}: {message}`, scrubbed of numbers and e-mails. It never stores record data. A timeout is `Zoho 0 TIMEOUT: {step} got no answer within 20 s`.

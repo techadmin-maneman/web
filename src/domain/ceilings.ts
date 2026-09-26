@@ -7,7 +7,7 @@
 
 import type { Alert } from "../providers/alerts.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { takeOne } from "./rate-limit.ts";
+import { isSpent, takeOne } from "./rate-limit.ts";
 
 export type Ceiling = "upload" | "render" | "result_read" | "login_code" | "geocode";
 
@@ -23,6 +23,11 @@ const STOPPED: Readonly<Record<Ceiling, string>> = {
 /** Counts one use against today's ceiling; false once the ceiling is reached. */
 export function takeFromCeiling(db: D1Database, ceiling: Ceiling, limit: number, now: Date): Promise<boolean> {
   return takeOne(db, { scope: `ceiling:${ceiling}`, key: "all", window: indiaDate(now), limit });
+}
+
+/** Whether today's ceiling is reached already. Counts nothing. */
+export function ceilingReached(db: D1Database, ceiling: Ceiling, limit: number, now: Date): Promise<boolean> {
+  return isSpent(db, { scope: `ceiling:${ceiling}`, key: "all", window: indiaDate(now), limit });
 }
 
 export async function alertCeilingReached(

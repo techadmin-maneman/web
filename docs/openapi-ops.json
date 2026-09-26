@@ -68,6 +68,7 @@
                   "on_leave",
                   "does_not_fit",
                   "fsm_refused",
+                  "fsm_partly",
                   "too_early_to_close",
                   "no_service_area"
                 ]
@@ -4777,7 +4778,7 @@
             }
           },
           "502": {
-            "description": "fsm_refused: FSM would not take it; nothing moved",
+            "description": "fsm_refused: FSM would not take it; nothing moved. fsm_partly: FSM took the technician and not the time; the job is read again from FSM",
             "content": {
               "application/json": {
                 "schema": {
@@ -4854,7 +4855,7 @@
             }
           },
           "502": {
-            "description": "fsm_refused",
+            "description": "fsm_refused; fsm_partly: FSM took the technician and not the time",
             "content": {
               "application/json": {
                 "schema": {

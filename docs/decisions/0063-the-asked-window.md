@@ -64,6 +64,11 @@ from our own lead rather than parsed back out of FSM.**
   `sendLeadToFsm` writes into the Request's note.
 - Every visit looked at is stamped, whether a window was found or not, so a visit
   with no Request behind it is never asked about twice.
+- A visit FSM refuses (a 4xx) is stamped too, with no window: asking again will
+  not change FSM's answer, and an unstamped one came back first on every run, so
+  five of them blocked the pass for good. One FSM fails on in any other way is
+  asked about again an hour later (`asked_failed_at`, migration 0041), and the
+  pass goes on to the next either way (amended 25 September 2026).
 - The tray shows `Asked · morning` beside `Offered · Sat, evening` where the
   two differ, the offered one in oxblood as the board draws it, and **`Asked · not recorded`** where `asked_window` is null. The
   offered window is never repeated as though it were the asked one.

@@ -405,6 +405,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    - **The workflow rule.** Setup → Automation → Workflow Rules → Service Appointments → New Rule:
      - when a record is created or edited, and when it is deleted;
      - action: the webhook.
+   - **The deletion's own webhook.** A deleted appointment keeps the modified time of its last edit, so its hint reads as a repeat of that edit and is dropped. Make a second webhook like the first, with a fourth parameter `event` of value `delete`, and a second workflow rule that runs it when a record is deleted; take deletion out of the first rule. Until this is done, the reconciliation still finds a deletion: each run reads two upcoming visits afresh, the longest unread first, so an upcoming visit deleted in FSM leaves the mirror within a few hours rather than the next night.
    - **On staging,** the hooks path already has the Access bypass (step 12, point 3).
 
 7. **The refund account.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"). Refunds need the account Books pays them from, which must be a bank account: Books refuses Undeposited Funds.
@@ -632,8 +633,12 @@ Symptoms: every sync fails with `invalid_code` or `INVALID_TOKEN`.
 
 1. Make a new refresh token (Zoho, step 5 of "Provisioning an environment").
 2. `W secret put ZOHO_REFRESH_TOKEN --env <env>`
-3. Drop the cached access token: `DELETE FROM zoho_token;`
+3. Drop the cached access token: `DELETE FROM zoho_access_tokens WHERE client = 'crm';` (`'fsm'` for FSM and Books).
 4. The sweeper delivers the waiting leads within five minutes. Replay any that already gave up.
+
+### Zoho refused a new token ("Access Denied")
+
+Symptoms: calls fail with `Zoho 400 Access Denied: could not refresh the access token`, then with `TOKEN_COOLING_DOWN`. One refresh token mints at most 10 access tokens in 10 minutes, and staging and production share the CRM's (ADR 0050). After Zoho refuses one, nothing asks for another for ten minutes (`zoho_access_tokens.cool_down_until`), and every Zoho call fails at once meanwhile; the queues and the passes try again afterwards on their own. Find what minted the tokens, usually a script run by hand against the same client, and stop it. Do not clear `cool_down_until` to hurry it: asking again inside the ten minutes extends Zoho's refusal.
 
 ### Replaying failed leads
 

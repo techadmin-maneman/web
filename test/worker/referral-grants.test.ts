@@ -171,6 +171,37 @@ describe("fraud holds", () => {
     expect(await settleReferrals(env.DB, NOW)).toMatchObject({ held: 1 });
     expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["same_mobile"]' });
   });
+
+  // The gap ADR 0068 left: the number a confirmed change replaced is kept now, and compared.
+  it("holds a pair where the friend's number is the one the referrer changed from", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, replaced_mobile_e164, state,
+           decided_at)
+         VALUES ('change-1', ?1, ?2, '+919810000001', '+919810000009', 'confirmed', ?2)`,
+      ).bind(REFERRER, NOW.toISOString()),
+      env.DB.prepare("UPDATE people SET mobile_e164 = '+919810000009' WHERE id = ?1").bind(FRIEND),
+    ]);
+    await firstFit(FIT, FRIEND);
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ held: 1 });
+    expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["same_mobile"]' });
+  });
+
+  it("does not count a change the client withdrew, or ops rejected, as a number either held", async () => {
+    for (const [id, state] of [
+      ["change-1", "withdrawn"],
+      ["change-2", "rejected"],
+    ]) {
+      await env.DB.prepare(
+        `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, decided_at)
+         VALUES (?1, ?2, ?3, '+919810000002', ?4, ?3)`,
+      )
+        .bind(id, REFERRER, NOW.toISOString(), state)
+        .run();
+    }
+    await firstFit(FIT, FRIEND);
+    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 1, held: 0 });
+  });
 });
 
 describe("a friend with two first fits done (BIZ-13)", () => {

@@ -1070,7 +1070,7 @@ Request body:
 }
 ```
 
-**502**: fsm_refused: FSM would not take it; nothing moved
+**502**: fsm_refused: FSM would not take it; nothing moved. fsm_partly: FSM took the technician and not the time; the job is read again from FSM
 
 ```json
 {
@@ -1130,7 +1130,7 @@ Request body:
 }
 ```
 
-**502**: fsm_refused
+**502**: fsm_refused; fsm_partly: FSM took the technician and not the time
 
 ```json
 {
@@ -1802,6 +1802,7 @@ Request body:
             "on_leave",
             "does_not_fit",
             "fsm_refused",
+            "fsm_partly",
             "too_early_to_close",
             "no_service_area"
           ]

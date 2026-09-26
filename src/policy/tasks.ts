@@ -18,7 +18,9 @@
 //
 // The last two groups are ours, not the prompt's (docs/decisions/0067-alerts-and-silent-failures.md):
 // a finished visit whose invoice is still a draft in Books, which the client
-// cannot open until somebody sends it; and an erased client whose FSM contact
+// cannot open until somebody sends it, including one held back because it does
+// not total what the visit was sold for, or a credit paid for the visit
+// (docs/decisions/0070-vendor-correctness.md); and an erased client whose FSM contact
 // the sweeper could not anonymise, which somebody must do by hand.
 //
 // So is the first (docs/decisions/0069-dispatch-under-concurrency.md): a visit
@@ -26,7 +28,7 @@
 // not agreed to WhatsApp about his visits, or the message having never gone.
 // Ops call him, and say so on the dispatch board.
 //
-// And so is a grievance (docs/decisions/0071-ops-clients-and-queues.md): the
+// And so is a grievance (docs/decisions/0072-ops-clients-and-queues.md): the
 // client has been promised an answer within a time, as with an erasure, so it
 // is counted down on this board as the other requests about their data are.
 

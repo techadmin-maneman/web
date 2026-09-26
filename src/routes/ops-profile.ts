@@ -14,6 +14,7 @@ import { actorOf, type AuditAction, type AuditEntry } from "../domain/audit.ts";
 import { decideDeletion, deletionsWaiting } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
 import { NUMBER_CHANGE_WAITING_SINCE } from "../domain/tasks.ts";
+import { queueContactSync } from "../http/contact-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
@@ -205,7 +206,9 @@ export function registerOpsProfile(app: App): void {
     });
     if (outcome === "not_waiting") return c.json(errorBody("not_found", c.var.requestId), 404);
     if (outcome === "number_in_use") return c.json(errorBody("number_in_use", c.var.requestId), 409);
-    return c.json({ state: decision === "confirm" ? ("confirmed" as const) : ("rejected" as const) }, 200);
+    if (decision === "reject") return c.json({ state: "rejected" as const }, 200);
+    await queueContactSync(c, outcome.personId);
+    return c.json({ state: "confirmed" as const }, 200);
   });
 
   app.openapi(deletionRequestsRoute, async (c) => {

@@ -24,7 +24,7 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
+import { codeGate, countCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
@@ -165,6 +165,10 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
   const visitor = await visitorOf(c);
+  const gate = await codeGate(c, visitor.ipHash, now);
+  if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+  if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
+
   const withinAddress = await takeOne(db, {
     scope: "login:code:ip",
     key: visitor.ipHash,
@@ -180,12 +184,14 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
       limit: limits.codeMobileDailyLimit,
     }));
   if (!withinNumber) return c.json(errorBody("rate_limited", requestId), 429);
-  if (!(await withinCodeCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
 
   const person = await findEligiblePerson(db, mobileE164);
+  const sendsTo = person?.mobileE164 ?? null;
+  if (!(await countCode(c, sendsTo, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
+
   const code = limits.fixedCode ?? newCode();
   const challenge = await createChallenge(db, { personId: person?.id ?? null, code, pepper: limits.codePepper, now });
-  await sendCodeAfterResponse(c, person?.mobileE164 ?? null, "whatsapp", code);
+  await sendCodeAfterResponse(c, sendsTo, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
 };
 
@@ -200,11 +206,17 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   const allowedAt = channel === "sms" ? smsOfferedAt(challenge.createdAt) : whatsappResendAt(challenge.lastSentAt);
   if (now < allowedAt) return c.json(errorBody("too_early", requestId), 429);
   if (challenge.sends >= MAX_SENDS_PER_CHALLENGE) return c.json(errorBody("rate_limited", requestId), 429);
-  if (!(await withinCodeCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
+  const { ipHash } = await visitorOf(c);
+  const gate = await codeGate(c, ipHash, now);
+  if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+  if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
+
+  const sendsTo = await mobileOf(db, challenge.personId);
+  if (!(await countCode(c, sendsTo, ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
   const code = config.settings.login.fixedCode ?? newCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
-  await sendCodeAfterResponse(c, await mobileOf(db, challenge.personId), channel, code);
+  await sendCodeAfterResponse(c, sendsTo, channel, code);
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };
   return c.json(challengeBody(c, sent, now), 202);
 }

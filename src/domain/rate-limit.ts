@@ -28,6 +28,15 @@ export async function takeOne(db: D1Database, { scope, key, window, limit }: Lim
   return row !== null;
 }
 
+/** Whether `limit` uses have been counted in this window already. Counts nothing. */
+export async function isSpent(db: D1Database, { scope, key, window, limit }: Limit): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT count FROM counters WHERE scope = ?1 AND key = ?2 AND window_start = ?3")
+    .bind(scope, key, window)
+    .first<{ count: number }>();
+  return (row?.count ?? 0) >= limit;
+}
+
 /** Counts one more in the window, with no limit, and says how many there are now. */
 export async function countOne(db: D1Database, { scope, key, window }: Omit<Limit, "limit">): Promise<number> {
   const row = await db

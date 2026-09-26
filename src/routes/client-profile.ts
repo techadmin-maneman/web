@@ -36,6 +36,7 @@ import {
 import { takeOne } from "../domain/rate-limit.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { queueContactSync } from "../http/contact-sync.ts";
 import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -462,6 +463,7 @@ export function registerClientProfile(app: App): void {
       placeId,
     };
     await saveAddress(c.env.DB, personId, address, pin, now);
+    await queueContactSync(c, personId);
     return c.json(
       {
         line1: address.line1,

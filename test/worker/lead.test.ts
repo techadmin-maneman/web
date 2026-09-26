@@ -348,6 +348,30 @@ describe("POST /api/lead: rate limits", () => {
     expect(statuses).toEqual([201, 201, 429]);
   });
 
+  it("counts nothing against a number for a city it cannot book", async () => {
+    const app = appFor();
+    const refused = await request(app, "/api/lead", post({ ...BOOKING, city: "Atlantis" }), { CRM_QUEUE: fakeQueue() });
+    expect(refused.status).toBe(400);
+    const counted = await env.DB.prepare("SELECT COUNT(*) AS n FROM counters").first<{ n: number }>();
+    expect(counted?.n).toBe(0);
+  });
+
+  it("counts nothing against a number when its address has used up the day", async () => {
+    const app = appFor("local", fakeDependencies(), { leadIpDailyLimit: 1 });
+    const first = await request(app, "/api/lead", post({ ...BOOKING, mobile: "9810000011" }), {
+      CRM_QUEUE: fakeQueue(),
+    });
+    expect(first.status).toBe(201);
+    const second = await request(app, "/api/lead", post(BOOKING), { CRM_QUEUE: fakeQueue() });
+    expect(second.status).toBe(429);
+
+    // Only the first number has spent one of its five.
+    const numbers = await env.DB.prepare("SELECT COUNT(*) AS n FROM counters WHERE scope = 'lead:mobile'").first<{
+      n: number;
+    }>();
+    expect(numbers?.n).toBe(1);
+  });
+
   it("keeps no mobile number or IP address in the counters", async () => {
     await request(appFor(), "/api/lead", post(BOOKING), { CRM_QUEUE: fakeQueue() });
     const keys = await env.DB.prepare("SELECT key FROM counters").all<{ key: string }>();
