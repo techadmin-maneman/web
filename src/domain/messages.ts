@@ -17,6 +17,7 @@ export const MESSAGE_KINDS = [
   "cancel_confirmation",
   "visit_moved", // ops moved the visit: the new window
   "arrival_notice", // the technician has arrived
+  "no_show_decided", // ops ruled on a visit the client was not home for
   "friend_fitted", // to the referrer
   "friend_credited", // to the friend: the invite's credits are theirs
   "referral_rejected", // to either side: ops refused a held grant

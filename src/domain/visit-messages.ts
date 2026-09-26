@@ -1,5 +1,6 @@
 // Messages to a client about their visits (docs/decisions/0047-visit-messages.md): a booking, the day-before
-// reminder, a move and a cancel. Each is a row in outbound_messages about the appointment, written with the change
+// reminder, a move and a cancel, and since docs/decisions/0073-hand-offs-and-messages.md the technician's arrival and
+// ops' ruling on a visit the client was not home for. Each is a row in outbound_messages about the appointment, written with the change
 // it tells of, then queued. The messaging consumer writes the text from the visit as it stands when it sends, and
 // sends it only with the client's consent to WhatsApp about visits. The sweeper queues any whose queue message was
 // lost.
@@ -9,6 +10,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { WAIVER_GIVES_BACK, type NoShowDecision } from "../policy/no-show.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import type { MessageKind } from "./messages.ts";
 import { windowAt } from "./scheduling.ts";
@@ -22,6 +24,7 @@ export type VisitMessageKind = Extract<
   | "cancel_confirmation"
   | "visit_moved"
   | "arrival_notice"
+  | "no_show_decided"
 >;
 
 export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
@@ -34,11 +37,13 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
   "visit_moved",
   // The technician checked in at the door: the no-show evidence reads its receipt (ADR 0047).
   "arrival_notice",
+  // Ops ruled on a visit the client was not home for (docs/decisions/0073-hand-offs-and-messages.md).
+  "no_show_decided",
 ];
 
 /**
- * The statuses in which each kind is still true of the visit. Most are about a visit still booked; a cancel is
- * about one that no longer is, and the technician's arrival may already have started the visit in FSM.
+ * The statuses in which each kind is still true of the visit. Most are about a visit still booked; a cancel and a
+ * no-show are about one that no longer is, and the technician's arrival may already have started the visit in FSM.
  */
 const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentStatus[] | "any">> = {
   consultation_confirmation: ["scheduled", "dispatched"],
@@ -48,7 +53,20 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
   visit_moved: ["scheduled", "dispatched"],
   cancel_confirmation: "any",
   arrival_notice: ["scheduled", "dispatched", "in_progress"],
+  no_show_decided: "any",
 };
+
+/**
+ * What the ruling on a no-show says, by the ruling and by what the client paid ahead. A charge keeps it, as a
+ * cancel inside 24 hours does; what a waiver gives back is the owner's to rule (WAIVER_GIVES_BACK), so until then
+ * the client is asked to message us about it rather than promised anything.
+ */
+const NO_SHOW_TEMPLATES = {
+  charged: { payment: "no_show_charged_paid_v1", credit: "no_show_charged_credit_v1", nothing: "no_show_missed_v1" },
+  waived: WAIVER_GIVES_BACK
+    ? { payment: "no_show_waived_refund_v1", credit: "no_show_waived_credit_back_v1", nothing: "no_show_waived_v1" }
+    : { payment: "no_show_waived_paid_v1", credit: "no_show_waived_credit_v1", nothing: "no_show_waived_v1" },
+} as const;
 
 const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean => {
   const statuses = STILL_TRUE_WHILE[kind];
@@ -186,6 +204,7 @@ export async function composeVisitMessage(
   if (kind === "consultation_confirmation") return { template: "consultation_booked_v1", params };
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
   if (kind === "arrival_notice") return { template: "technician_arrived_v1", params };
+  if (kind === "no_show_decided") return noShowRuling(db, appointmentId, params);
   // A move, whether the client made it or ops did: the same words, the visit's new window.
   if (kind === "reschedule_confirmation" || kind === "visit_moved") return { template: "visit_moved_v1", params };
   if (kind === "payment_receipt") {
@@ -231,6 +250,49 @@ export async function composeVisitMessage(
   params[5] = rupees(cancelled.refund_amount);
   params[7] = DESTINATIONS[cancelled.method ?? ""] ?? "payment method";
   return { template: "visit_cancelled_refund_v1", params };
+}
+
+/** What the client paid for a visit ahead of it: a payment, with what is left of it, a credit, or nothing. */
+type PaidAhead =
+  | { readonly kind: "payment"; readonly amount: number; readonly method: string | null }
+  | { readonly kind: "credit" }
+  | { readonly kind: "nothing" };
+
+async function paidAhead(db: D1Database, appointmentId: string): Promise<PaidAhead> {
+  const payment = await db
+    .prepare(
+      `SELECT amount - refunded_amount AS amount, method FROM payments
+       WHERE appointment_id = ?1 AND kind = 'visit' AND status IN ('captured', 'partially_refunded')
+       ORDER BY captured_at LIMIT 1`,
+    )
+    .bind(appointmentId)
+    .first<{ amount: number; method: string | null }>();
+  if (payment !== null) return { kind: "payment", amount: payment.amount, method: payment.method };
+  const credit = await db
+    .prepare("SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_id = ?1")
+    .bind(appointmentId)
+    .first();
+  return credit === null ? { kind: "nothing" } : { kind: "credit" };
+}
+
+/** The ruling on a visit the client was not home for: how long we waited, and what became of what they paid. */
+async function noShowRuling(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
+  const ruling = await db
+    .prepare(
+      `SELECT decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at FROM no_show_cases
+       WHERE appointment_id = ?1 ORDER BY created_at DESC LIMIT 1`,
+    )
+    .bind(appointmentId)
+    .first<{ decision: NoShowDecision; wait_started_at: string; ended_at: string }>();
+  if (ruling === null || ruling.decision === "undecided") return { skip: "ops have not ruled on it" };
+  // The ninth param, which only these templates take.
+  params.push(String(Math.round((Date.parse(ruling.ended_at) - Date.parse(ruling.wait_started_at)) / 60_000)));
+  const paid = await paidAhead(db, appointmentId);
+  if (paid.kind === "payment") {
+    params[5] = rupees(paid.amount);
+    params[7] = DESTINATIONS[paid.method ?? ""] ?? "payment method";
+  }
+  return { template: NO_SHOW_TEMPLATES[ruling.decision][paid.kind], params };
 }
 
 /** What became of the credit a cancelled visit was paid with: back in the balance, kept, or none was used. */

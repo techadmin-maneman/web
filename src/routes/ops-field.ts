@@ -10,22 +10,25 @@
 //
 // "A no-show is charged under the 24-hour policy. The charge is applied by ops
 // from the evidence, never automatically": nothing here charges anybody. The
-// decision is recorded, and the charge itself follows the same terms a client's
-// own late cancel does (src/policy/moving-a-visit.ts), which P2-M5 applies.
+// decision is recorded, and a charge keeps what the visit took, as a client's
+// own late cancel does (src/policy/moving-a-visit.ts). What a waiver gives back
+// is the owner's to rule (src/policy/no-show.ts, WAIVER_GIVES_BACK). Either way
+// the client is told on WhatsApp, with their consent to messages about visits.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { actorOf } from "../domain/audit.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
-import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
+import { decideNoShow, listNoShowCases, MESSAGE_STATES, refundWaivedVisit } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
-import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
+import { NO_SHOW_DECISIONS, WAIVER_GIVES_BACK } from "../policy/no-show.ts";
+import type { MessagingMessage } from "../queues/messaging.ts";
 import { dueAt } from "../policy/tasks.ts";
 import { PieceSchema } from "./tech-pieces.ts";
 
@@ -266,7 +269,7 @@ export function registerOpsField(app: App): void {
     }
     const now = c.var.deps.now();
 
-    const decided = await decideNoShow(c.env.DB, {
+    const ruled = await decideNoShow(c.env.DB, {
       caseId: id,
       decision,
       reason,
@@ -280,8 +283,16 @@ export function registerOpsField(app: App): void {
         detail: { decision },
       },
       now,
+      waiverGivesBack: WAIVER_GIVES_BACK,
     });
-    if (!decided) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (ruled.refund !== null) await refundWaivedVisit(c.env.DB, c.var.deps, ruled.refund);
+    if (ruled.messageId !== null) {
+      await c.env.MESSAGE_QUEUE.send({
+        message_id: ruled.messageId,
+        request_id: c.var.requestId,
+      } satisfies MessagingMessage);
+    }
     return c.json({ decided: true }, 200);
   });
 

@@ -108,6 +108,92 @@ describe("the arrival notice (BIZ-22)", () => {
   });
 });
 
+describe("the no-show ruling (LIFE-07)", () => {
+  /** Karan's service visit, which Imran waited 15 minutes at, closed as a no-show and ruled on. */
+  async function ruled(decision: "undecided" | "charged" | "waived", paid: "payment" | "credit" | "nothing") {
+    await visit("terminated");
+    await consent("whatsapp_visits", true);
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
+         VALUES ('checkin-1', ?1, 't1', '2026-09-21T07:32:00.000Z', 28.4, 77.0, 200, 1, '2026-09-21T07:32:00.000Z')`,
+      ).bind(VISIT),
+      env.DB.prepare(
+        `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at,
+           decision, created_at)
+         VALUES ('case-1', 'checkin-1', ?1, '2026-09-21T07:32:00.000Z', '2026-09-21T07:47:00.000Z',
+           '2026-09-21T07:47:00.000Z', ?2, '2026-09-21T07:47:00.000Z')`,
+      ).bind(VISIT, decision),
+    ]);
+    if (paid === "payment") {
+      await env.DB.prepare(
+        `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
+           status, captured_at, created_at, updated_at)
+         VALUES ('payment-1', 'MM-2026-0841', ?1, ?2, 'pay_visit', 200000, 'INR', 'upi', 'captured', ?3, ?3, ?3)`,
+      )
+        .bind(PERSON, VISIT, NOW.toISOString())
+        .run();
+    }
+    if (paid === "credit") {
+      await env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+           VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
+        ).bind(PERSON, NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+           VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
+        ).bind(PERSON, VISIT, NOW.toISOString()),
+      ]);
+    }
+    return queued("no_show_decided", "appointment", VISIT);
+  }
+
+  const MISSED =
+    "Hello Karan, we came for your service visit on Mon 21 Sep and waited 15 minutes, but nobody was home.";
+
+  it("says a charge keeps what was paid, as a cancel inside 24 hours would", async () => {
+    expect((await send(await ruled("charged", "payment"))).text).toBe(
+      `${MISSED} As with a cancel inside 24 hours, the Rs. 2,000 you paid for it is kept. Message us if this is wrong.`,
+    );
+  });
+
+  it("says a charge on a credit visit keeps the credit", async () => {
+    expect((await send(await ruled("charged", "credit"))).text).toBe(
+      `${MISSED} As with a cancel inside 24 hours, the visit credit it used is gone. Message us if this is wrong.`,
+    );
+  });
+
+  it("says only that nobody was home, of a visit nothing was paid for", async () => {
+    expect((await send(await ruled("charged", "nothing"))).text).toBe(`${MISSED} Message us to book again.`);
+  });
+
+  // What a waiver gives back waits for the owner (BIZ-28): until then the message promises nothing it cannot keep.
+  it("says a waiver charges nothing, and asks the client to message us about what they paid", async () => {
+    expect((await send(await ruled("waived", "payment"))).text).toBe(
+      `${MISSED} We are not charging you for it. Message us about the Rs. 2,000 you paid for it.`,
+    );
+  });
+
+  it("says a waiver of a visit nothing was paid for charges nothing", async () => {
+    expect((await send(await ruled("waived", "nothing"))).text).toBe(
+      `${MISSED} We are not charging you for it. Message us to book again.`,
+    );
+  });
+
+  it("is not sent before ops have ruled, or without the client's consent to WhatsApp about visits", async () => {
+    expect(await send(await ruled("undecided", "nothing"))).toEqual({
+      text: null,
+      skipped: "ops have not ruled on it",
+    });
+    await consent("whatsapp_visits", false, PERSON, "2026-09-21T06:31:00.000Z");
+    expect(await send(await queued("no_show_decided", "appointment", VISIT))).toEqual({
+      text: null,
+      skipped: "no consent to WhatsApp about visits",
+    });
+  });
+});
+
 describe("the waitlist confirmation (REQ-03)", () => {
   async function listed(launchAlert: boolean) {
     await env.DB.batch([

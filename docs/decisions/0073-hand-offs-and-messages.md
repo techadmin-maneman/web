@@ -12,6 +12,14 @@ The audit of 24 September 2026 followed each change through every surface it sho
 
 ## Decision
 
+**A no-show reaches the client** (LIFE-07). A no-show read in the app as an ordinary past visit, and the client heard nothing of it or of ops' ruling. Now:
+
+- the visit's page says the client was not home, how long the technician waited at the door, and the ruling: being looked at, charged, or not charged (`GET /api/visits/{id}`, `no_show`);
+- their Payments say the same beside what the visit took (below);
+- ops' ruling queues a WhatsApp to the client (`no_show_decided`), with their consent to messages about visits, in the batch that records the ruling. It never carries ops' reason, which stays with the ruling (ADR 0072).
+
+**A charge keeps what the visit took; what a waiver gives back waits for the owner** (BIZ-28). The prompt's rule is that "a no-show is charged under the 24-hour policy", so a charge keeps the prepayment, and the credit a credit paid with, as a cancel inside 24 hours does: nothing moves, and the record is the ruling. The prompt says nothing of a waiver. `WAIVER_GIVES_BACK` (`src/policy/no-show.ts`) stands at `false` until the owner rules: a waiver records the ruling and moves no money, the console says so beside the buttons, and the client's message asks them to message us about what they paid rather than promising anything. The code for `true` is written and tested: the credit returns to a grant that can still take it, in the ruling's batch, and the payment is refunded after it, with ops told once if Razorpay refuses.
+
 **A no-show is recorded as one** (BIZ-21). A visit the technician closed as a no-show was stored as a partial visit whose reason said so, and read as partial everywhere. `visits.outcome` now takes `no_show` (migration 0043, which rebuilds `visits`: nothing points at it), the mirror writes it from the job's own outcome event, and the rows already stored as partial no-shows became no-shows.
 
 **Leave over jobs already booked is flagged three ways** (OPS-07). Leave moves no job (ADR 0062), and a technician's Wednesday job sat unmarked on his Away cell, stayed on his phone, and waited for nobody. Now:
