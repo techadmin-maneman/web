@@ -112,24 +112,9 @@
   color: var(--text-muted);
 }
 
+/* Board C1's "Book your next visit" (packages/ui/Button.tsx), the width of the page. */
 .book {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  height: var(--btn-lg);
-  border: 0;
-  background: var(--ink);
-  font: inherit;
-  font-size: var(--fs-16);
-  font-weight: 500;
-  color: var(--paper);
-  text-decoration: none;
-}
-
-.book:disabled {
-  background: var(--paper-shade);
-  color: var(--text-quiet);
 }
 
 /* The client's own record, beneath board C1's lists; the board draws none. */

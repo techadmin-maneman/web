@@ -4,6 +4,7 @@
 // sheet is named whatever it shows.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate, weekdayDate } from "@maneman/web-kit/dates";
@@ -147,9 +148,15 @@ export function DateStep(props: {
           {copy.full}
         </span>
       </div>
-      <button className={styles.primary} type="button" disabled={props.chosen === null} onClick={props.onNext}>
+      <Button
+        variant="primary"
+        size="action"
+        className={styles.primary}
+        disabled={props.chosen === null}
+        onClick={props.onNext}
+      >
         {copy.continue}
-      </button>
+      </Button>
     </>
   );
 }
@@ -212,14 +219,16 @@ export function WindowStep(props: {
           {props.problem}
         </p>
       )}
-      <button
+      <Button
+        variant="primary"
+        size="action"
         className={styles.primary}
-        type="button"
         disabled={props.chosen === null || props.busy}
+        busy={props.busy}
         onClick={props.onNext}
       >
         {copy.continue}
-      </button>
+      </Button>
     </>
   );
 }
@@ -352,9 +361,16 @@ export function PayStep(props: {
           {props.problem}
         </p>
       )}
-      <button className={styles.primary} type="button" disabled={props.busy || left === 0} onClick={props.onPay}>
+      <Button
+        variant="primary"
+        size="action"
+        className={styles.primary}
+        disabled={props.busy || left === 0}
+        busy={props.busy}
+        onClick={props.onPay}
+      >
         {payLabel(hold, moving)}
-      </button>
+      </Button>
       {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
       {covered && <p className={styles.creditNote}>{copy.credit.note}</p>}
     </>
@@ -381,12 +397,19 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
         <LastMinute left={left} />
       </div>
       <div className={styles.pair}>
-        <button className={styles.primary} type="button" disabled={busy} onClick={onRetry}>
+        <Button
+          variant="primary"
+          size="control"
+          className={styles.primary}
+          disabled={busy}
+          busy={busy}
+          onClick={onRetry}
+        >
           {copy.retry}
-        </button>
-        <button className={styles.secondary} type="button" disabled={busy} onClick={onAnother}>
+        </Button>
+        <Button variant="outline" size="control" className={styles.secondary} disabled={busy} onClick={onAnother}>
           {copy.another}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -400,9 +423,9 @@ export function ExpiredStep({ onPickAgain }: { onPickAgain: () => void }) {
       <h2 className={styles.outcome} id={TITLE_ID}>
         {booking.expired.title}
       </h2>
-      <button className={styles.primary} type="button" onClick={onPickAgain}>
+      <Button variant="primary" size="action" className={styles.primary} onClick={onPickAgain}>
         {booking.expired.pickAgain}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -467,9 +490,9 @@ export function WaitStep({ text, onClose }: { text: string; onClose?: () => void
         {text}
       </h2>
       {onClose !== undefined && (
-        <button className={styles.secondary} type="button" onClick={onClose}>
+        <Button variant="outline" size="control" className={styles.secondary} onClick={onClose}>
           {booking.close}
-        </button>
+        </Button>
       )}
     </div>
   );

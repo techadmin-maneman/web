@@ -2,6 +2,7 @@
 // booking is on, WhatsApp to ops with a message ready where it is off (ADR
 // 0043), and nothing offline. Once money has moved, Home is fetched again.
 
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useState } from "react";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
@@ -13,29 +14,30 @@ export function BookButton({ label, message, className }: { label: string; messa
   const type = me.booking.types[0];
   if (offline) {
     return (
-      <button className={className} type="button" disabled>
+      <Button variant="primary" size="action" className={className} disabled>
         {label}
-      </button>
+      </Button>
     );
   }
   if (!me.booking.self_serve || type === undefined) {
     return (
-      <a className={className} href={whatsappWith(message)} rel="noopener">
+      <ButtonLink variant="primary" size="action" className={className} href={whatsappWith(message)} rel="noopener">
         {label}
-      </a>
+      </ButtonLink>
     );
   }
   return (
     <>
-      <button
+      <Button
+        variant="primary"
+        size="action"
         className={className}
-        type="button"
         onClick={() => {
           setOpen(true);
         }}
       >
         {label}
-      </button>
+      </Button>
       {open && (
         <BookingSheet
           type={type}

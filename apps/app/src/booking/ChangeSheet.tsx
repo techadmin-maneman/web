@@ -5,6 +5,7 @@
 
 import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet } from "@maneman/ui/Sheet";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -45,6 +46,12 @@ function moveLine(terms: MoveTerms): ReactNode {
   if (terms.cost === "charged") return change.move.charged(rupees(terms.paid));
   if (terms.cost === "late_fee") return <LateFee fee={terms.price} />;
   return terms.paid > 0 ? change.move.free(rupees(terms.paid)) : change.move.freeNothingPaid;
+}
+
+/** What confirming a cancellation says: that a credit is lost, that a fee is kept, or only that it cancels. */
+function cancelButton(terms: CancelTerms): string {
+  if (terms.credit === "lost") return change.cancel.acceptCredit;
+  return terms.kept > 0 ? change.cancel.accept : change.cancel.confirm;
 }
 
 /** The terms' line: ruled above when the change is free, and marked in red when it costs. */
@@ -158,18 +165,19 @@ export function ChangeSheet(props: {
             </h2>
             <p className={termsClass(step.terms.cost !== "free")}>{moveLine(step.terms)}</p>
             <div className={styles.pair}>
-              <button
+              <Button
+                variant="primary"
+                size="control"
                 className={styles.primary}
-                type="button"
                 onClick={() => {
                   setStep({ kind: "picking", terms: step.terms });
                 }}
               >
                 {step.terms.notice === "free" ? change.move.pick : change.move.accept}
-              </button>
-              <button className={styles.secondary} type="button" onClick={close}>
+              </Button>
+              <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
                 {change.move.keep}
-              </button>
+              </Button>
             </div>
             <button className={styles.quiet} type="button" onClick={() => void show("cancel")}>
               {change.move.cancelInstead}
@@ -195,16 +203,19 @@ export function ChangeSheet(props: {
               </p>
             )}
             <div className={styles.pair}>
-              <button className={styles.primary} type="button" disabled={busy} onClick={() => void cancel(step.terms)}>
-                {step.terms.credit === "lost"
-                  ? change.cancel.acceptCredit
-                  : step.terms.kept > 0
-                    ? change.cancel.accept
-                    : change.cancel.confirm}
-              </button>
-              <button className={styles.secondary} type="button" onClick={close}>
+              <Button
+                variant="primary"
+                size="control"
+                className={styles.primary}
+                disabled={busy}
+                busy={busy}
+                onClick={() => void cancel(step.terms)}
+              >
+                {cancelButton(step.terms)}
+              </Button>
+              <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
                 {change.cancel.keep}
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -215,9 +226,9 @@ export function ChangeSheet(props: {
               {change.cancel.doneLine(name)}
             </h2>
             <p className={styles.outcomeLine}>{cancelLine(step.terms, me.credits)}</p>
-            <button className={styles.secondary} type="button" onClick={close}>
+            <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
               {change.cancel.close}
-            </button>
+            </Button>
           </div>
         )}
         {step.kind === "unchangeable" && (
@@ -225,9 +236,15 @@ export function ChangeSheet(props: {
             <h2 className={styles.outcome} id="change-title">
               {change.notChangeable}
             </h2>
-            <a className={styles.secondary} href={whatsappWith(visit.message)} rel="noopener">
+            <ButtonLink
+              variant="outline"
+              size="control"
+              className={styles.secondary}
+              href={whatsappWith(visit.message)}
+              rel="noopener"
+            >
               {change.message}
-            </a>
+            </ButtonLink>
           </div>
         )}
         {step.kind === "broken" && (
@@ -235,9 +252,9 @@ export function ChangeSheet(props: {
             <h2 className={styles.outcome} id="change-title">
               {change.failed}
             </h2>
-            <button className={styles.secondary} type="button" onClick={close}>
+            <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
               {booking.close}
-            </button>
+            </Button>
           </div>
         )}
       </div>

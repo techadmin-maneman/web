@@ -418,46 +418,19 @@
   background: var(--ink);
 }
 
+/* The sheets' buttons (packages/ui/Button.tsx), the width of the sheet: the action 56 px, any other 48. */
 .primary,
 .secondary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  font: inherit;
-  font-weight: 500;
-  cursor: pointer;
 }
 
 .primary {
-  height: var(--btn-lg);
   margin-top: var(--sp-22);
-  border: 0;
-  background: var(--ink);
-  font-size: var(--fs-16);
   font-variant-numeric: tabular-nums;
-  color: var(--paper);
-}
-
-.primary:disabled {
-  background: var(--paper-shade);
-  color: var(--text-quiet);
-  cursor: default;
 }
 
 .secondary {
-  min-height: var(--btn-md);
   margin-top: var(--sp-18);
-  border: var(--hairline) solid var(--ink);
-  background: none;
-  font-size: var(--fs-15);
-  color: var(--text);
-}
-
-.secondary:disabled {
-  border-color: var(--paper-line);
-  color: var(--text-quiet);
-  cursor: default;
 }
 
 /* Boards C7 and C8: the change, and what it costs. */
@@ -558,13 +531,11 @@
   margin-top: var(--sp-18);
 }
 
+/* Side by side, both 48 px (size="control"). */
 .pair .primary,
 .pair .secondary {
   flex: 1;
-  height: auto;
-  min-height: var(--btn-md);
   margin-top: 0;
-  font-size: var(--fs-15);
 }
 
 .confirmed {

@@ -20,7 +20,7 @@ import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
-import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
+import { pair, rest, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
 const APP_DIR = resolve("apps/app/dist/local");
@@ -385,6 +385,7 @@ async function photographsIn(page: Page): Promise<void> {
 
 async function shot(page: Page): Promise<Buffer> {
   await page.evaluate(() => document.fonts.ready);
+  await rest(page);
   return page.screenshot();
 }
 
@@ -458,6 +459,7 @@ async function profile(browser: Browser, design: Page): Promise<void> {
       .evaluate((element, which) => element.getBoundingClientRect()[which] + window.scrollY, side);
   const top = await edge("Change mobile number", "top");
   const bottom = await edge("Delete your account", "bottom");
+  await rest(app);
   const cards = await app.screenshot({ fullPage: true, clip: { x: 0, y: top, width: WIDTH, height: bottom - top } });
   await pair(OUT, WIDTH, "g2-account", await frame(design, "Profile · account", false), cards);
   await app.close();
