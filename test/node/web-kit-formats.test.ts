@@ -10,7 +10,9 @@ import {
   shortMonth,
   weekdayDate,
 } from "../../packages/web-kit/dates.ts";
-import { rupees } from "../../packages/web-kit/money.ts";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { rupees, rupeeSign } from "../../packages/web-kit/money.ts";
 
 describe("web-kit dates", () => {
   it.each([
@@ -67,5 +69,29 @@ describe("web-kit money", () => {
     [0, "Rs. 0"],
   ])("writes %i paise as the design does: %s", (paise, written) => {
     expect(rupees(paise)).toBe(written);
+  });
+
+  // VIS-24: the public site writes a price with its own sign, as its design does, and the apps with "Rs.", as the
+  // Phase 2 boards do; the figure is grouped and rounded the same way under both.
+  it.each([
+    [3000000, "₹30,000"],
+    [10000000, "₹1,00,000"],
+    [235932, "₹2,359.32"],
+  ])("writes %i paise as the public site does: %s", (paise, written) => {
+    expect(rupeeSign(paise)).toBe(written);
+  });
+
+  it("is the one way any front end writes rupees", () => {
+    const sources = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name).replace(/\\/g, "/");
+        if (name === "node_modules" || name === "dist" || name.endsWith("api-schema.ts")) return [];
+        if (statSync(path).isDirectory()) return sources(path);
+        return /\.(ts|tsx|astro)$/.test(name) ? [path] : [];
+      });
+    const formatting = ["apps", "site/src", "packages/ui"]
+      .flatMap(sources)
+      .filter((path) => readFileSync(path, "utf8").includes("new Intl.NumberFormat("));
+    expect(formatting).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@
 // figures in src/content/prices.ts; mm-site's Worker fills the same sentences again from the price book, and the
 // booking form's island does the same with what the Worker gives it. All three use these words, so they agree.
 
+import { rupeeSign } from "@maneman/web-kit/money";
 import { BUILT_STANDARD, PREMIUM, type TierPrices } from "../content/prices.ts";
 import type { PublishedPrices } from "./api.ts";
 import { fill } from "./text.ts";
@@ -25,15 +26,6 @@ const PRICE_HOLES = [
 
 export type PriceWords = Readonly<Record<(typeof PRICE_HOLES)[number], string>>;
 
-const wholeRupees = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
-const withPaise = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/** 3000000 paise → "₹30,000", grouped as India groups: "₹1,00,000". */
-export function rupeeFigure(paise: number): string {
-  const format = paise % 100 === 0 ? wholeRupees : withPaise;
-  return `₹${format.format(paise / 100)}`;
-}
-
 function firstYear(tier: TierPrices): number {
   return tier.first_fit + FIRST_YEAR_SERVICE_VISITS * tier.service;
 }
@@ -43,15 +35,15 @@ export function priceWords(standard: TierPrices): PriceWords {
   const cheaperFirstFit = Math.min(standard.first_fit, PREMIUM.first_fit);
   const dearerFirstFit = Math.max(standard.first_fit, PREMIUM.first_fit);
   return {
-    firstFit: rupeeFigure(standard.first_fit),
-    service: rupeeFigure(standard.service),
-    replacement: rupeeFigure(standard.replacement),
-    firstYear: rupeeFigure(firstYear(standard)),
-    premiumFirstFit: rupeeFigure(PREMIUM.first_fit),
-    premiumService: rupeeFigure(PREMIUM.service),
-    premiumReplacement: rupeeFigure(PREMIUM.replacement),
-    premiumFirstYear: rupeeFigure(firstYear(PREMIUM)),
-    firstFitRange: `${rupeeFigure(cheaperFirstFit)}–${rupeeFigure(dearerFirstFit)}`,
+    firstFit: rupeeSign(standard.first_fit),
+    service: rupeeSign(standard.service),
+    replacement: rupeeSign(standard.replacement),
+    firstYear: rupeeSign(firstYear(standard)),
+    premiumFirstFit: rupeeSign(PREMIUM.first_fit),
+    premiumService: rupeeSign(PREMIUM.service),
+    premiumReplacement: rupeeSign(PREMIUM.replacement),
+    premiumFirstYear: rupeeSign(firstYear(PREMIUM)),
+    firstFitRange: `${rupeeSign(cheaperFirstFit)}–${rupeeSign(dearerFirstFit)}`,
   };
 }
 
