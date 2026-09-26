@@ -6,6 +6,7 @@
 // first, and offers to send it. With no signal the session stays open and
 // nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
+import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { useEffect, useState } from "react";
 import type { JobSummary } from "../api.ts";
@@ -119,9 +120,10 @@ export function TodayScreen() {
       <header className={styles.head}>
         <div className={styles.top}>
           <Mark className={styles.mark} />
-          <button
+          <Button
+            variant="outlineOnInk"
+            size="small"
             className={styles.account}
-            type="button"
             disabled={leaving === "going"}
             onClick={() => {
               if (unsentSets + unsentActions > 0) setLeaving("asking");
@@ -130,7 +132,7 @@ export function TodayScreen() {
           >
             <span className={styles.initials}>{me.initials}</span>
             <span className={styles.signOut}>{copy.signOut}</span>
-          </button>
+          </Button>
         </div>
         {day.state === "loaded" && jobs.length > 0 && (
           <>
@@ -149,19 +151,19 @@ export function TodayScreen() {
           <p className={styles.leaveTitle}>{leavingCopy.unsent(unsentSets, unsentActions)}</p>
           <p className={styles.leaveBody}>{leavingCopy.body}</p>
           <div className={styles.leaveActions}>
-            <button
-              className={styles.leaveButton}
-              type="button"
+            <Button
+              variant="outlineOnInk"
+              size="small"
               onClick={() => {
                 setLeaving(null);
                 void replay();
               }}
             >
               {leavingCopy.send}
-            </button>
-            <button className={styles.leaveButton} type="button" onClick={() => void leave()}>
+            </Button>
+            <Button variant="outlineOnInk" size="small" onClick={() => void leave()}>
               {leavingCopy.anyway}
-            </button>
+            </Button>
           </div>
         </div>
       )}

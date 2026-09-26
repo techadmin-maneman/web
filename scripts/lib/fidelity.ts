@@ -26,6 +26,15 @@ export async function routeDesignLibraries(page: Page): Promise<void> {
   });
 }
 
+/**
+ * The pointer moved to the page's corner, so a button the harness has just
+ * pressed is shot at rest, as the boards draw it, and not under the pointer
+ * (packages/ui/button.module.css draws a pointer resting on a button).
+ */
+export async function rest(page: Page): Promise<void> {
+  await page.mouse.move(0, 0);
+}
+
 /** No smooth scrolling, transition, animation or caret, so a screenshot shows the settled page. */
 export const STILL =
   "html { scroll-behavior: auto !important; } *, *::before, *::after { transition: none !important; animation: none !important; caret-color: transparent !important; }";

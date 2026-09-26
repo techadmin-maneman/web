@@ -1,6 +1,7 @@
 // A page's data on its way, and a page whose data did not come. The design
 // draws neither for this app, so they follow the client app's shapes on ink.
 
+import { Button } from "@maneman/ui/Button";
 import { session } from "../content.ts";
 import styles from "./states.module.css";
 
@@ -18,9 +19,9 @@ export function Failed({ message, retry, onRetry }: { message: string; retry: st
   return (
     <div className={styles.failed} role="alert">
       <p className={styles.line1}>{message}</p>
-      <button className={styles.retry} type="button" onClick={onRetry}>
+      <Button variant="outlineOnInk" size="small" onClick={onRetry}>
         {retry}
-      </button>
+      </Button>
     </div>
   );
 }

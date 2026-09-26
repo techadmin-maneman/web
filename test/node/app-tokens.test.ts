@@ -28,6 +28,8 @@ const tokenNames = (path: string) =>
 const defined = new Set([
   ...tokenNames("packages/brand/tokens.css"),
   ...tokenNames("packages/brand/tokens-phase2.css"),
+  // The sizes each app gives its buttons, and the focus ring's colour (packages/ui/base.css).
+  ...tokenNames("packages/ui/base.css"),
 ]);
 
 /** Media query conditions cannot use custom properties, so they keep their px. */

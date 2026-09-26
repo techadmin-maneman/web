@@ -18,6 +18,7 @@ import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { dayMonth } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
@@ -171,25 +172,28 @@ export function Piece({ id }: { id: string }) {
             {copy.piece.malformed}
           </p>
         )}
-        <button
+        <Button
+          variant="outlineOnInk"
+          size="control"
           className={styles.second}
-          type="button"
           disabled={!isLabel(code) || looking}
+          busy={looking}
           onClick={() => void look()}
         >
           {copy.piece.look}
-        </button>
+        </Button>
         {newToPick.length > 0 && (
-          <button
+          <Button
+            variant="outlineOnInk"
+            size="control"
             className={styles.second}
-            type="button"
             aria-expanded={picking === "new"}
             onClick={() => {
               setPicking(picking === "new" ? null : "new");
             }}
           >
             {copy.piece.pick}
-          </button>
+          </Button>
         )}
         {picking === "new" && <PieceList pieces={newToPick} onPick={pickNew} />}
       </div>
@@ -261,16 +265,17 @@ export function Piece({ id }: { id: string }) {
             }}
           />
           {oldToPick.length > 0 && (
-            <button
+            <Button
+              variant="outlineOnInk"
+              size="control"
               className={styles.second}
-              type="button"
               aria-expanded={picking === "old"}
               onClick={() => {
                 setPicking(picking === "old" ? null : "old");
               }}
             >
               {copy.piece.pick}
-            </button>
+            </Button>
           )}
           {picking === "old" && <PieceList pieces={oldToPick} onPick={pickOld} />}
           <label className={styles.fieldLabel} htmlFor="old-piece-reason">

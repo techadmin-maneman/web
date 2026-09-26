@@ -287,21 +287,7 @@
 
 .second {
   width: 100%;
-  min-height: var(--tech-stepper);
   margin-top: var(--sp-14);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.second:disabled {
-  border-color: var(--ink-disabled);
-  background: var(--ink-disabled);
-  color: var(--ink-tag);
-  cursor: default;
 }
 
 /* The client's pieces, one 56 px row each, from the card. */
@@ -468,23 +454,8 @@
 
 .action {
   width: 100%;
-  height: var(--tech-primary);
-  border: 0;
-  background: var(--gilt);
-  font: inherit;
-  font-size: var(--fs-18);
-  font-weight: 500;
-  color: var(--ink-deep);
-  cursor: pointer;
 }
 
-.action:disabled {
-  background: var(--ink-disabled);
-  color: var(--ink-tag);
-  cursor: default;
-}
-
-.action:focus-visible,
 .back:focus-visible,
 .step:focus-visible,
 .second:focus-visible,

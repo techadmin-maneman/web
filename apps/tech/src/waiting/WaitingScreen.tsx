@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { ICONS_P2 } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
 import { Offline } from "../components/Banners.tsx";
 import { Confirm } from "../components/Confirm.tsx";
 import { Icon } from "../components/Icon.tsx";
@@ -135,38 +136,41 @@ export function WaitingScreen() {
                       <p className={styles.stoppedLine}>{whatStopped(stopped)}</p>
                       <div className={styles.buttons}>
                         {toCorrect !== null && (
-                          <button
+                          <Button
+                            variant="outlineOnInk"
+                            size="small"
                             className={styles.button}
-                            type="button"
                             onClick={() => {
                               go(stepPath(id, toCorrect));
                             }}
                           >
                             {copy.correct}
-                          </button>
+                          </Button>
                         )}
-                        <button
+                        <Button
+                          variant="outlineOnInk"
+                          size="small"
                           className={styles.button}
-                          type="button"
                           onClick={() => {
                             setForgetting(id);
                           }}
                         >
                           {copy.read}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
                   {stopped === null && !offline && (
-                    <button
+                    <Button
+                      variant="outlineOnInk"
+                      size="small"
                       className={styles.button}
-                      type="button"
                       onClick={() => {
                         void replay();
                       }}
                     >
                       {copy.retry}
-                    </button>
+                    </Button>
                   )}
                 </li>
               );

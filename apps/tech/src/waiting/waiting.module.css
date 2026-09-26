@@ -145,16 +145,7 @@
 
 .button {
   display: inline-flex;
-  align-items: center;
-  min-height: var(--tech-min);
   margin-top: var(--sp-12);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  color: var(--paper);
-  cursor: pointer;
 }
 
 .buttons {
@@ -165,12 +156,6 @@
 
 .stopped .button {
   margin-top: 0;
-}
-
-.button:focus-visible,
-.back:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
 }
 
 .nothing,

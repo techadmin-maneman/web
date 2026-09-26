@@ -7,6 +7,7 @@
 // capturing. A tap that lands while a step is still arriving was aimed at the
 // screen before it, so the action takes none until the slide is done.
 
+import { Button } from "@maneman/ui/Button";
 import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../components/Icon.tsx";
 import { steps as copy } from "../content.ts";
@@ -98,9 +99,10 @@ export function StepFrame({
 
       <div className={styles.foot}>
         {foot ?? (
-          <button
+          <Button
+            variant="gold"
+            size="action"
             className={styles.action}
-            type="button"
             disabled={!ready}
             aria-disabled={!settled}
             onClick={() => {
@@ -108,7 +110,7 @@ export function StepFrame({
             }}
           >
             {ready ? action : (unfinished ?? action)}
-          </button>
+          </Button>
         )}
       </div>
     </main>

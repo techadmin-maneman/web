@@ -45,24 +45,6 @@
   color: var(--paper);
 }
 
-.retry {
-  display: flex;
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-17);
-  cursor: pointer;
-}
-
-.retry:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
-}
-
 /* A screen that failed to draw: the ink ground, filling the column as every screen does. */
 .broken {
   flex: 1;

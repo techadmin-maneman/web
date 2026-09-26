@@ -41,6 +41,7 @@
     "test/node/tech-piece-label.test.ts",
     "test/node/tech-progress.test.ts",
     "test/node/tech-store.test.ts",
+    "test/node/ui-button.test.ts",
     "test/node/static-server.test.ts",
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",

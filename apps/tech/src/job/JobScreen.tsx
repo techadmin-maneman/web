@@ -11,6 +11,7 @@
 // changed; a started job offers its next step and nothing of the door's; a
 // closed one reads as closed.
 
+import { Button } from "@maneman/ui/Button";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { closeOut as closeOutCopy, job as copy, whatStopped } from "../content.ts";
@@ -66,28 +67,30 @@ function footFor(stage: Stage, job: Job, queued: readonly Queued[]): ReactNode {
   if (stage === "started") {
     const step = nextStep(job, queued);
     return (
-      <button
+      <Button
+        variant="gold"
+        size="action"
         className={styles.action}
-        type="button"
         onClick={() => {
           go(step === null ? `/jobs/${job.id}/done` : stepPath(job.id, step));
         }}
       >
         {copy.continueJob}
-      </button>
+      </Button>
     );
   }
   if (stage === "closed") {
     return (
-      <button
+      <Button
+        variant="outlineOnInk"
+        size="control"
         className={styles.second}
-        type="button"
         onClick={() => {
           go(`/jobs/${job.id}/done`);
         }}
       >
         {copy.seeCloseOut}
-      </button>
+      </Button>
     );
   }
   return null;

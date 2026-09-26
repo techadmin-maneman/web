@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     "./base.css": "./base.css",
+    "./Button": "./Button.tsx",
     "./Caps": "./Caps.tsx",
     "./classes": "./classes.ts",
     "./Icon": "./Icon.tsx",

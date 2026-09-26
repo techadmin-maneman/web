@@ -5,6 +5,7 @@
 //
 // Neither answer is gold: the screen's one primary action is behind it.
 
+import { Button } from "@maneman/ui/Button";
 import { useEffect, useId, useRef } from "react";
 import styles from "./sheet.module.css";
 
@@ -49,12 +50,12 @@ export function Confirm({
         {title}
       </h2>
       <p className={styles.body}>{body}</p>
-      <button className={styles.yes} type="button" onClick={onYes}>
+      <Button variant="outlineOnInk" size="action" className={styles.yes} onClick={onYes}>
         {yes}
-      </button>
-      <button className={styles.no} type="button" onClick={onNo}>
+      </Button>
+      <Button variant="outlineOnInk" size="action" className={styles.no} onClick={onNo}>
         {no}
-      </button>
+      </Button>
     </dialog>
   );
 }

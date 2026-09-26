@@ -11,6 +11,7 @@
 // to the instant the technician took the outcome, because nothing gives the
 // closing time back (docs/open-points.md, item 57).
 
+import { Button } from "@maneman/ui/Button";
 import { useEffect, useState } from "react";
 import type { Job, JobSummary } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
@@ -148,9 +149,10 @@ export function CloseOut({ id }: { id: string }) {
       </section>
 
       <div className={styles.foot}>
-        <button
+        <Button
+          variant="gold"
+          size="action"
           className={styles.action}
-          type="button"
           onClick={() => {
             go(later === null ? "/" : `/jobs/${later.id}`);
           }}
@@ -158,7 +160,7 @@ export function CloseOut({ id }: { id: string }) {
           {later === null
             ? copy.lastJob
             : copy.nextJob(clockShort(later.starts_at), names.get(later.id) ?? where(later.sector))}
-        </button>
+        </Button>
       </div>
     </main>
   );

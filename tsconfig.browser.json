@@ -4,11 +4,13 @@
   // types in tsconfig.node.json. The technician app's store tests are here for
   // the same reason: they run in Node, on a fake IndexedDB, against DOM code;
   // the client app's tests of its calls, routes and money, and the ops
-  // console's of its routes, whose code is written against the DOM too.
+  // console's of its routes, whose code is written against the DOM too; and
+  // the tests of the apps' shared components, which are React (packages/ui).
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
-    "types": ["node"]
+    "jsx": "react-jsx",
+    "types": ["node", "vite/client"]
   },
   "include": [
     "e2e/**/*.ts",
@@ -24,6 +26,7 @@
     "test/node/tech-piece-label.test.ts",
     "test/node/tech-progress.test.ts",
     "test/node/tech-store.test.ts",
+    "test/node/ui-button.test.ts",
     "test/node/static-server.test.ts",
     "playwright.config.ts",
     "playwright.staging.config.ts",

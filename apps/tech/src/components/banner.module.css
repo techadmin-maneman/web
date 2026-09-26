@@ -43,16 +43,4 @@
 
 .open {
   display: inline-flex;
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  font-size: var(--fs-17);
-  color: var(--paper);
-  text-decoration: none;
-}
-
-.open:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
 }

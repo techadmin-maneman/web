@@ -256,32 +256,6 @@
 
 .action {
   width: 100%;
-  height: var(--tech-primary);
-  border: 0;
-  background: var(--gilt);
-  font: inherit;
-  font-size: var(--fs-18);
-  font-weight: 500;
-  color: var(--ink-deep);
-  cursor: pointer;
-}
-
-.action:disabled {
-  background: var(--ink-disabled);
-  color: var(--ink-tag);
-  cursor: default;
-}
-
-.action:focus-visible,
-.navigate:focus-visible,
-.reachLink:focus-visible,
-.back:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
-}
-
-.action:focus-visible {
-  outline-color: var(--paper);
 }
 
 /* ---- Board B5: the evidence chain, one card per stage ---------------------- */
@@ -376,34 +350,11 @@
 .second {
   width: 100%;
   margin-top: var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.outline {
-  height: var(--tech-primary);
-  font-size: var(--fs-18);
-}
-
-.second {
-  min-height: var(--tech-stepper);
-  font-size: var(--fs-17);
 }
 
 .foot .second {
   height: var(--tech-primary);
   margin-top: 0;
-}
-
-.outline:disabled,
-.second:disabled {
-  border-color: var(--ink-disabled);
-  background: var(--ink-disabled);
-  color: var(--ink-tag);
-  cursor: default;
 }
 
 .outline:focus-visible,

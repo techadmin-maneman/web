@@ -22,6 +22,7 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -192,9 +193,10 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
       {challenge !== null && (
         <div className={styles.again}>
-          <button
+          <Button
+            variant="outlineOnInk"
+            size="small"
             className={styles.againButton}
-            type="button"
             onClick={() => {
               // Drawn at once, so the number is editable before it is focused.
               flushSync(() => {
@@ -205,15 +207,16 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
             }}
           >
             {copy.changeNumber}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outlineOnInk"
+            size="small"
             className={styles.againButton}
-            type="button"
             disabled={resendIn > 0 || working}
             onClick={() => void send()}
           >
             {resendIn > 0 ? copy.resendIn(resendIn) : copy.resend}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -226,14 +229,16 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       )}
 
       <div className={styles.foot}>
-        <button
+        <Button
+          variant="gold"
+          size="action"
           className={styles.action}
-          type="button"
           disabled={!ready || working}
+          busy={working}
           onClick={() => void (challenge === null ? send() : verify())}
         >
           {challenge === null ? copy.sendCode : copy.submit}
-        </button>
+        </Button>
       </div>
     </main>
   );

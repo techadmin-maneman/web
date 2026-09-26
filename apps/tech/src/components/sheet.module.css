@@ -38,12 +38,6 @@
 .yes,
 .no {
   width: 100%;
-  height: var(--tech-primary);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-18);
-  color: var(--paper);
-  cursor: pointer;
 }
 
 /* The answer that can cost the client, drawn in the error's line and never in gold. */
@@ -53,11 +47,4 @@
 
 .no {
   margin-top: var(--sp-12);
-  border: var(--hairline) solid var(--ink-line);
-}
-
-.yes:focus-visible,
-.no:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
 }

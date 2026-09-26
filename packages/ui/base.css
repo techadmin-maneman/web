@@ -19,6 +19,22 @@ body {
   margin: 0;
 }
 
+/*
+ * Each app's sizes for a button, by what it is for (./Button.tsx): the
+ * screen's primary action, any other, and a small one inline. These are the
+ * client app's and the console's; the technician app sets its own on its body,
+ * larger for a gloved hand in the sun.
+ */
+:root {
+  --action-height: var(--btn-lg);
+  --action-text: var(--fs-16);
+  --control-height: var(--btn-md);
+  --control-text: var(--fs-15);
+  --control-weight: 500;
+  --small-height: var(--tap);
+  --small-text: var(--fs-15);
+}
+
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

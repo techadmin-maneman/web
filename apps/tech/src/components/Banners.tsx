@@ -4,6 +4,7 @@
 // which until now only the waiting screen said.
 
 import { ICONS_P2 } from "@maneman/brand/icons";
+import { ButtonLink } from "@maneman/ui/Button";
 import { changed as copy, today as todayCopy, whatStopped } from "../content.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -41,7 +42,9 @@ export function Stopped() {
           {copy.line(names.get(each.job) ?? each.job.slice(0, 8), whatStopped(each))}
         </p>
       ))}
-      <a
+      <ButtonLink
+        variant="outlineOnInk"
+        size="small"
         className={styles.open}
         href="/waiting"
         onClick={(event) => {
@@ -50,7 +53,7 @@ export function Stopped() {
         }}
       >
         {copy.open}
-      </a>
+      </ButtonLink>
     </div>
   );
 }
