@@ -9,7 +9,15 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/Mark`           | The brand's mark, in the surrounding text colour                                                   |
 | `@maneman/ui/VisuallyHidden` | Words for a screen reader alone                                                                    |
 | `@maneman/ui/Caps`           | The boards' small-caps serif label                                                                 |
+| `@maneman/ui/Button`         | `Button` and `ButtonLink`: a variant (the colours) and a size (what it is for), with every state   |
+| `@maneman/ui/Sheet`          | A sheet that rises from the foot of the column, as a native modal dialog                           |
+| `@maneman/ui/Dialog`         | A panel opened over the page as a native modal dialog, whose caller decides when it may close      |
+| `@maneman/ui/Panel`          | The ops console's bordered panel, headed by its title and its count                                |
 | `@maneman/ui/classes`        | `classes()`, which joins an element's class names                                                  |
+
+## Sizes by app
+
+A button's size is what it is for, and each app says how big that is. `base.css` sets the client app's and the console's (`--action-height` 56 px at 16, `--control-height` 48 at 15, `--small-height` 44 at 15); the technician app sets its own on its body, from its board's "Targets": 64 at 18, 56 at 17 and 48 at 17, its outlined words in the regular weight.
 
 ## Rules
 

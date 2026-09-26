@@ -9,8 +9,11 @@
     "./Button": "./Button.tsx",
     "./Caps": "./Caps.tsx",
     "./classes": "./classes.ts",
+    "./Dialog": "./Dialog.tsx",
     "./Icon": "./Icon.tsx",
     "./Mark": "./Mark.tsx",
+    "./Panel": "./Panel.tsx",
+    "./Sheet": "./Sheet.tsx",
     "./VisuallyHidden": "./VisuallyHidden.tsx"
   },
   "dependencies": {

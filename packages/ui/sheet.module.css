@@ -1,0 +1,39 @@
+/*
+ * A sheet's frame (./Sheet.tsx): the column's width and the screen's height,
+ * clear, with what the caller draws held at its foot. The sheet itself -- its
+ * ground, its padding -- is the caller's.
+ */
+
+@layer ui {
+  .frame {
+    width: 100%;
+    max-width: var(--app-column);
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0 auto;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  /* Only while open: a closed dialog stays hidden as the browser hides it. */
+  .frame[open] {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .frame::backdrop {
+    background: var(--ink-night);
+  }
+
+  .rises[open] {
+    animation: rise var(--ease-progress);
+  }
+
+  @keyframes rise {
+    from {
+      transform: translateY(100%);
+    }
+  }
+}

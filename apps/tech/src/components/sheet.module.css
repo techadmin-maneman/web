@@ -1,22 +1,16 @@
 /*
- * A question before a tap that cannot be taken back, risen from the foot of the
- * column on the ink-night ground. Both answers are outlined, 64 px and full
- * width, the way back last, where the thumb is.
+ * A question before a tap that cannot be taken back, at the foot of the column
+ * on the ink-night ground (packages/ui/Sheet.tsx). Both answers are outlined,
+ * 64 px and full width, the way back last, where the thumb is.
  */
 
 .sheet {
-  width: 100%;
-  max-width: var(--app-column);
-  margin: auto auto 0;
+  min-height: 0;
   padding: var(--sp-22) var(--sp-20);
-  border: 0;
+  overflow-y: auto;
   border-top: var(--hairline) solid var(--ink-line);
   background: var(--ink-deep);
   color: var(--paper);
-}
-
-.sheet::backdrop {
-  background: var(--ink-night);
 }
 
 .title {

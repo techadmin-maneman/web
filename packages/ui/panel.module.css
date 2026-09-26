@@ -1,0 +1,28 @@
+/* The console's panel (./Panel.tsx): a hairline box, headed by its title over a rule in the text's own ink. */
+
+@layer ui {
+  .panel {
+    border: var(--hairline) solid var(--paper-line);
+  }
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: var(--sp-14) var(--sp-20);
+    border-bottom: var(--hairline) solid var(--text);
+  }
+
+  .title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--fs-22);
+  }
+
+  .count {
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+}
