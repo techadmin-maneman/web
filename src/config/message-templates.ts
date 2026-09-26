@@ -28,6 +28,12 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
   visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
+  // A credit-paid visit cancelled inside 24 hours keeps its credit, as the cancel sheet warned; one cancelled in time
+  // whose grant has since expired or been withdrawn cannot take it back (docs/decisions/0068-a-paid-hold-is-kept.md).
+  visit_cancelled_credit_lost_v1:
+    "Hello {{1}}, your {{2}} on {{3}} is cancelled. It was inside 24 hours, so the visit credit it used is gone.",
+  visit_cancelled_credit_gone_v1:
+    "Hello {{1}}, your {{2}} on {{3}} is cancelled. The visit credit it used has expired, so it cannot come back.",
   // To a person who joined a pincode's waitlist, sent with their consent to be contacted about the request
   // (docs/decisions/0073-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} their first name, {{2}} the area. Only
   // one who asked to be told of the launch, and still consents to it, is promised word of it.

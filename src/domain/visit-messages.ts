@@ -212,21 +212,38 @@ export async function composeVisitMessage(
   }
   const cancelled = await db
     .prepare(
-      `SELECT c.refund_amount, p.method FROM visit_changes c LEFT JOIN payments p ON p.id = c.payment_id
+      `SELECT c.refund_amount, c.notice, p.method FROM visit_changes c LEFT JOIN payments p ON p.id = c.payment_id
        WHERE c.appointment_id = ?1 AND c.kind = 'cancelled'`,
     )
     .bind(appointmentId)
-    .first<{ refund_amount: number; method: string | null }>();
+    .first<{ refund_amount: number; notice: "free" | "late"; method: string | null }>();
   if (cancelled === null) return { skip: "the visit was not cancelled by the client" };
-  const restored = await db
-    .prepare("SELECT 1 FROM credit_ledger WHERE kind = 'restore' AND source_id = ?1")
-    .bind(appointmentId)
-    .first();
-  if (restored !== null) return { template: "visit_cancelled_credit_v1", params };
+  const credit = await creditOnCancel(db, appointmentId);
+  if (credit === "restored") return { template: "visit_cancelled_credit_v1", params };
+  // Kept under the 24-hour rule, or drawn on a grant that has since expired or been clawed back.
+  if (credit === "kept") {
+    return {
+      template: cancelled.notice === "late" ? "visit_cancelled_credit_lost_v1" : "visit_cancelled_credit_gone_v1",
+      params,
+    };
+  }
   if (cancelled.refund_amount === 0) return { template: "visit_cancelled_v1", params };
   params[5] = rupees(cancelled.refund_amount);
   params[7] = DESTINATIONS[cancelled.method ?? ""] ?? "payment method";
   return { template: "visit_cancelled_refund_v1", params };
+}
+
+/** What became of the credit a cancelled visit was paid with: back in the balance, kept, or none was used. */
+async function creditOnCancel(db: D1Database, appointmentId: string): Promise<"restored" | "kept" | "none"> {
+  const used = await db
+    .prepare(
+      `SELECT EXISTS (SELECT 1 FROM credit_ledger WHERE kind = 'restore' AND source_id = ?1) AS restored
+       FROM credit_ledger WHERE kind = 'redeem' AND source_id = ?1`,
+    )
+    .bind(appointmentId)
+    .first<{ restored: number }>();
+  if (used === null) return "none";
+  return used.restored === 1 ? "restored" : "kept";
 }
 
 /**
