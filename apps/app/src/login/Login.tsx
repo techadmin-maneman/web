@@ -1,12 +1,17 @@
 // The login (boards A1 to A3): a number, then its code. Every number gets the
 // same second screen, so the app never says whether a number has a booking
 // (docs/decisions/0030-one-time-codes.md).
+//
+// Each step forward is an entry in the browser's history, so a phone's Back
+// steps back from the code to the number, as the screen's own back arrow does,
+// rather than leaving the app (CLI-27). Signing in goes back past them, so Back
+// from Home leaves the app as before.
 
-import { useEffect, useState } from "react";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { useEffect, useRef, useState } from "react";
 import { api, type LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { focusIfLost, nameInTitle } from "../lib/arrival.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
 import { MobileScreen } from "./MobileScreen.tsx";
@@ -21,9 +26,49 @@ const MOBILE_ERRORS: Readonly<Record<string, string>> = login.mobile.errors;
 /** Each screen's name in the browser's title: its heading. */
 const TITLES = { mobile: login.mobile.title, code: login.code.title, help: login.help.title } as const;
 
+/** Where a step's entry is kept in the history's state, and how many entries above the number each step is. */
+const STEP_IN_HISTORY = "loginStep";
+const DEPTH: Readonly<Record<Step["kind"], number>> = { mobile: 0, code: 1, help: 2 };
+
+/** The step the history is at: the number unless one of the login's own entries says otherwise. */
+function stepInHistory(): Step["kind"] {
+  const state: unknown = window.history.state;
+  if (typeof state !== "object" || state === null) return "mobile";
+  const kind = (state as Record<string, unknown>)[STEP_IN_HISTORY];
+  return kind === "code" || kind === "help" ? kind : "mobile";
+}
+
+/** Back through the login's own entries to the number, or to the page the login stood on. */
+function rewind(): void {
+  const depth = DEPTH[stepInHistory()];
+  if (depth > 0) window.history.go(-depth);
+}
+
 /** `ended`: the session ended while the app was open, and the first screen says so. */
 export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () => void }) {
   const [step, setStep] = useState<Step>({ kind: "mobile" });
+  // The last code sent, which a step back and then forward again returns to.
+  const lastChallenge = useRef<LoginChallenge | null>(null);
+
+  /** A step forward, with its own entry in the history. */
+  const forward = (next: Step) => {
+    window.history.pushState({ [STEP_IN_HISTORY]: next.kind }, "");
+    setStep(next);
+  };
+
+  // Back and Forward move between the steps. A reload loses the code, so the login starts again at the number.
+  useEffect(() => {
+    if (stepInHistory() !== "mobile") window.history.replaceState(null, "");
+    const moved = () => {
+      const kind = stepInHistory();
+      const challenge = lastChallenge.current;
+      setStep(kind === "mobile" || challenge === null ? { kind: "mobile" } : { kind, challenge });
+    };
+    window.addEventListener("popstate", moved);
+    return () => {
+      window.removeEventListener("popstate", moved);
+    };
+  }, []);
 
   // Each screen is named, and its heading takes focus unless the screen put it in a field (the code's).
   useEffect(() => {
@@ -43,12 +88,15 @@ export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () =>
       const answer = await api.sendCode(digits);
       if (!answer.ok) {
         setMobileError(MOBILE_ERRORS[answer.code] ?? login.mobile.errors.unknown);
-        setStep({ kind: "mobile" });
+        rewind();
         return;
       }
       setMobileError(null);
       setProblem(null);
-      setStep({ kind: "code", challenge: answer.body });
+      lastChallenge.current = answer.body;
+      // A fresh code from the code screen stays on it; from the number, the code is a step forward.
+      if (stepInHistory() === "mobile") forward({ kind: "code", challenge: answer.body });
+      else setStep({ kind: "code", challenge: answer.body });
     });
 
   const sendAgain = (challenge: LoginChallenge, channel: "whatsapp" | "sms") =>
@@ -58,6 +106,7 @@ export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () =>
         : api.resendCode(challenge.challenge_id));
       if (answer.ok) {
         setProblem(null);
+        lastChallenge.current = answer.body;
         setStep({ kind: "code", challenge: answer.body });
       } else {
         setProblem(answer.status === 410 ? { kind: "closed" } : { kind: "failed" });
@@ -70,6 +119,7 @@ export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () =>
       if (!answer.ok) {
         setProblem(answer.status === 410 ? { kind: "closed" } : { kind: "failed" });
       } else if (answer.body.verified) {
+        rewind();
         onSignedIn();
       } else {
         setProblem({ kind: "mismatch", left: answer.body.attempts_left });
@@ -93,7 +143,7 @@ export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () =>
     return (
       <HelpScreen
         onBack={() => {
-          setStep({ kind: "code", challenge: step.challenge });
+          window.history.back();
         }}
       />
     );
@@ -118,10 +168,10 @@ export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () =>
         void send(mobile);
       }}
       onBack={() => {
-        setStep({ kind: "mobile" });
+        window.history.back();
       }}
       onHelp={() => {
-        setStep({ kind: "help", challenge });
+        forward({ kind: "help", challenge });
       }}
     />
   );

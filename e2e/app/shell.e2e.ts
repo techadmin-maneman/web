@@ -90,6 +90,25 @@ test("says board B3's error when the API cannot be reached, with a way to try ag
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
+test("shows board B3's loading on paper while it asks whether there is a session, not a blank screen", async ({
+  page,
+}) => {
+  let answer: () => void = () => undefined;
+  const asked = new Promise<void>((resolve) => {
+    answer = resolve;
+  });
+  await page.route("**/api/me", async (route) => {
+    await asked;
+    await route.continue();
+  });
+  await page.goto("/");
+  await expect(page.getByRole("status").filter({ hasText: "Loading" })).toBeAttached();
+  expect(await page.evaluate(() => document.body.dataset.ground)).toBe("paper");
+  answer();
+  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  expect(await page.evaluate(() => document.body.dataset.ground)).toBe("ink");
+});
+
 test("keeps the design's column on a wide screen, centred", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");

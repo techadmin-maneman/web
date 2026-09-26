@@ -421,6 +421,8 @@ async function home(browser: Browser, design: Page): Promise<void> {
 
 async function states(browser: Browser, design: Page): Promise<void> {
   const loading = await openApp(browser, "/profile", { "/api/me": json(ME), "/api/profile": never });
+  // Signed in first: a cold start shows the same loading before there is a frame around it.
+  await loading.getByRole("navigation").waitFor();
   await loading.getByRole("status").filter({ hasText: "Loading" }).waitFor({ state: "attached" });
   await pair(OUT, WIDTH, "b3-loading", await stateFrame(design, "Loading"), await shot(loading));
   await loading.close();
