@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { HOUSE_CARD } from "../../src/config/house-card.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
@@ -96,9 +97,10 @@ describe("the referral card", () => {
     expect(revoked.status).toBe(204);
     expect(await card()).toMatchObject({ card_state: "house", card_version: 3, card_key: null });
     expect(await env.REFERRAL_CARDS.get(`cards/${CODE}/v2.jpg`)).toBeNull();
+    // The house card in its own version, so a chat that cached an older one fetches it afresh.
     const house = await request(site(), `/api/og/${CODE}.jpg?v=3`);
     expect(house.status).toBe(302);
-    expect(house.headers.get("Location")).toBe("/images/invite-house.jpg");
+    expect(house.headers.get("Location")).toBe(HOUSE_CARD);
   });
 
   it("refuses anything that is not a 1200 by 630 JPEG", async () => {
