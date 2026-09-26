@@ -6,11 +6,11 @@
 // first, and offers to send it. With no signal the session stays open and
 // nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
+import { Mark } from "@maneman/ui/Mark";
 import { useEffect, useState } from "react";
 import type { JobSummary } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
 import { Icon } from "../components/Icon.tsx";
-import { Mark } from "../components/Mark.tsx";
 import {
   atRisk as atRiskCopy,
   job as jobCopy,

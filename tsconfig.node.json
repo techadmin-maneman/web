@@ -13,7 +13,8 @@
   "include": [
     "scripts/**/*.ts",
     "test/node/**/*.ts",
-    "packages/*/*.ts",
+    "packages/brand/*.ts",
+    "packages/web-kit/*.ts",
     "apps/app/headers.ts",
     "apps/app/pwa.ts",
     "apps/ops/headers.ts",

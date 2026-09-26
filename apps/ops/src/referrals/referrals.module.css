@@ -30,16 +30,6 @@
   font-size: var(--fs-22);
 }
 
-.hiddenTitle {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .count {
   font-size: var(--fs-14);
   color: var(--text-muted);

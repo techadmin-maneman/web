@@ -1,14 +1,5 @@
 /* Boards D1 and D3, and the photographs on C9: rows of five at 3:4, and the sheet. */
 
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .compareLink {
   display: flex;
   align-items: center;

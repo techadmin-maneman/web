@@ -22,10 +22,10 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { Mark } from "@maneman/ui/Mark";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { api, type Challenge } from "../api.ts";
-import { Mark } from "../components/Mark.tsx";
 import { session, signIn as copy } from "../content.ts";
 import { installed } from "../lib/installed.ts";
 import type { Out } from "../session.ts";

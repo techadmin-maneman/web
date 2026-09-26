@@ -12,6 +12,7 @@
 // him, with his number; and a change of technician alone, which leaves his
 // window as it was, tells him nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { MoveReason } from "../api.ts";
@@ -78,7 +79,7 @@ export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
       </h2>
       <p className={styles.pickerWhen}>{stood === null ? copy.to(lands) : copy.fromTo(stood, lands)}</p>
       <fieldset className={styles.reasons} disabled={sending}>
-        <legend className={styles.hidden}>{copy.legend}</legend>
+        <VisuallyHidden as="legend">{copy.legend}</VisuallyHidden>
         {copy.reasons.map((each) => (
           <label className={styles.reason} key={each.reason}>
             <input

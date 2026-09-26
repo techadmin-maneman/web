@@ -9,6 +9,7 @@
 // Each count is said as it changes, and each stepper names the count it
 // changes, so a screen reader hears "Tape strips: 2" rather than nothing.
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import { Icon } from "../components/Icon.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
@@ -82,9 +83,9 @@ export function Consumables({ id }: { id: string }) {
                 >
                   <Icon d={PLUS} size={20} stroke={STEPPER_STROKE} />
                 </button>
-                <span className={styles.hidden} id={said} role="status">
+                <VisuallyHidden id={said} role="status">
                   {copy.consumables.count(name, count)}
-                </span>
+                </VisuallyHidden>
               </span>
             </li>
           );

@@ -1,6 +1,7 @@
 // A2: the code (design/phase2/Client App, board A2).
 
 import { ICONS } from "@maneman/brand/icons";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LoginChallenge } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
@@ -136,9 +137,9 @@ export function CodeScreen(props: Props) {
           </button>
         </div>
         {/* Said once, as the countdown runs out; the count itself is shown and not spoken. */}
-        <p className={styles.hidden} role="status">
+        <VisuallyHidden as="p" role="status">
           {resendIn === 0 && !closed ? copy.canResend : ""}
-        </p>
+        </VisuallyHidden>
         <div className={styles.foot}>
           <button className={styles.primary} type="submit" disabled={code.length < 6 || props.busy || closed}>
             {copy.submit}

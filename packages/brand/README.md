@@ -7,7 +7,7 @@ The design values every Mane Man front end shares: the public site now, and the 
 | `@maneman/brand/tokens.css`        | Every colour, size and space of the Phase 1 site                                                                                                         |
 | `@maneman/brand/tokens-phase2.css` | The colours and sizes Phase 2 adds: the apps' targets, the ops console's frame and density. Load it after `tokens.css`; it adds names and redefines none |
 | `@maneman/brand/fonts.css`         | EB Garamond and Instrument Sans, self-hosted, with ₹ from a one-glyph file (`npm run fonts` rebuilds it)                                                 |
-| `@maneman/brand/icons`             | `ICONS` (Phase 1, frozen), `ICONS_P2` (the nine Phase 2 glyphs) and `HEAD_OUTLINE`                                                                       |
+| `@maneman/brand/icons`             | `ICONS` (Phase 1, frozen), `ICONS_P2` (the nine Phase 2 glyphs), `HEAD_OUTLINE` and `ICON_STROKE`                                                        |
 | `@maneman/brand/marks`             | The mark and both cuts of the wordmark, as path data from `design/brand`                                                                                 |
 
 The brand kit's SVG files stay in `design/brand/`, which is the owner's export.

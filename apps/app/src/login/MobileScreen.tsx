@@ -1,7 +1,7 @@
 // A1: the mobile number (design/phase2/Client App, board A1).
 
+import { Mark } from "@maneman/ui/Mark";
 import { useState } from "react";
-import { Mark } from "../components/Mark.tsx";
 import { login } from "../content.ts";
 import styles from "./login.module.css";
 import { mobileDigits } from "./mobile.ts";

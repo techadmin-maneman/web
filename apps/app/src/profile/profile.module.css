@@ -8,15 +8,6 @@
   padding: var(--sp-24) var(--sp-20);
 }
 
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .label,
 .cardLabel {
   margin: 0;

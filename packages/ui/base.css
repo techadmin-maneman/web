@@ -1,0 +1,68 @@
+/*
+ * The page every Phase 2 app starts from, after the brand's tokens and fonts:
+ * the box model, the serif's one weight, keyboard focus and reduced motion.
+ * Each app's global.css imports it, then sets its own ground and column.
+ *
+ * These rules stand outside any cascade layer, as each app's own did. The
+ * shared components put theirs in the `ui` layer, so a screen's own class --
+ * its margin, its width -- always wins over them.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Only the serif's 400 is loaded, so a browser's bold heading would be a made-up one. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+th {
+  font-weight: 400;
+}
+
+/*
+ * Keyboard focus. The designs draw none, so it follows the ground, as the
+ * public site's does: ink on paper by default. An app on another ground sets
+ * --focus-colour on its body, and a block on a ground of its own sets it there.
+ */
+:root {
+  --focus-colour: var(--ink);
+}
+
+:focus-visible {
+  outline: var(--focus-width) solid var(--focus-colour);
+  outline-offset: var(--focus-offset);
+}
+
+/*
+ * A heading takes focus as its screen opens, so a screen reader starts there;
+ * it is not a control, and has no ring. A panel that takes focus keeps its ring.
+ */
+:is(h1, h2, h3, h4, h5, h6)[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
+/* Nothing moves for someone who has asked for less motion (docs/prompts/phase2-frontend.md, "Motion"). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

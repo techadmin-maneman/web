@@ -8,6 +8,7 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState } from "react";
 import { api, type Held, type Referrer } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
@@ -274,9 +275,9 @@ function ReferrersTable({ version }: { version: number }) {
     <section className={styles.panel} aria-labelledby="referrers">
       <div className={styles.panelBody}>
         {/* The board's frame opens on the column heads; the caption above it is the board's own furniture. */}
-        <h2 className={styles.hiddenTitle} id="referrers">
+        <VisuallyHidden as="h2" id="referrers">
           {copy.title}
-        </h2>
+        </VisuallyHidden>
         {pages.referrers.length === 0 ? (
           <p className={styles.empty}>{copy.empty}</p>
         ) : (

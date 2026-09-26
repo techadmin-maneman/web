@@ -2,6 +2,7 @@
 // there are two visits to compare. Before the first fit, board D3's empty
 // state. A photograph opens in a sheet, to download.
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api } from "../api.ts";
@@ -20,7 +21,7 @@ import styles from "./photos.module.css";
 function PhotosLoading() {
   return (
     <div className={styles.timeline} role="status">
-      <span className={styles.hidden}>{states.loading}</span>
+      <VisuallyHidden>{states.loading}</VisuallyHidden>
       <div className={styles.row}>
         {ANGLES.map((angle) => (
           <div key={angle} className={styles.cell} />

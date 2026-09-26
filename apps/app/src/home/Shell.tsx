@@ -4,8 +4,8 @@
 // with the page's title. Each page pads itself, as its board does.
 
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
+import { Mark } from "@maneman/ui/Mark";
 import type { ReactNode } from "react";
-import { Mark } from "../components/Mark.tsx";
 import { Icon } from "../components/Icon.tsx";
 import { home, states, tabs } from "../content.ts";
 import { TAB_ICONS } from "../icons.ts";

@@ -96,16 +96,6 @@
   list-style: none;
 }
 
-/* Said to a screen reader and not drawn: a count as it changes. */
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* ---- Board B2: the checklist ---------------------------------------------- */
 
 .check {

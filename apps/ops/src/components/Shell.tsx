@@ -3,7 +3,7 @@
 // is signed in at its right, and the section's panels. The sections are
 // apps/ops/src/route.ts's, in its order.
 
-import { MARK } from "@maneman/brand/marks";
+import { Mark } from "@maneman/ui/Mark";
 import type { ReactNode } from "react";
 import { shell } from "../content.ts";
 import { useLapsed } from "../lib/session.ts";
@@ -74,9 +74,7 @@ export function Shell({ section, title, sub, flush, children }: Props) {
     <div className={styles.console}>
       <nav className={styles.nav} aria-label={shell.title}>
         <div className={styles.brand}>
-          <svg className={styles.mark} viewBox={MARK.viewBox} aria-hidden="true" focusable="false">
-            <path fillRule="evenodd" d={MARK.d} />
-          </svg>
+          <Mark className={styles.mark} />
           <span className={styles.brandName}>{shell.title}</span>
         </div>
         <ul className={styles.sections}>

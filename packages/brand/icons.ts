@@ -2,6 +2,9 @@
 // stroke and round caps. They are drawn in currentColor, so a component sets
 // their colour through CSS.
 
+/** The stroke the icon set is drawn at. */
+export const ICON_STROKE = 1.6;
+
 /** The Phase 1 site's icons. Frozen: the site's island bundles carry exactly these. */
 export const ICONS = {
   tick: "M4 12.5 L9.5 18 L20 6",
