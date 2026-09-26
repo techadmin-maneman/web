@@ -12,8 +12,10 @@
 //   /jobs/:id/outcome        step 6 (board B4)
 //   /jobs/:id/done           the close-out (board B4)
 
-import { useEffect, useState } from "react";
 import type { Step } from "./api.ts";
+
+/** The router the apps share (packages/ui/router.tsx), so a screen takes its routes and its way between them from here. */
+export { go, usePath } from "@maneman/ui/router";
 
 /** The URL each step is at, and the step each URL means. The API's names, with hyphens. */
 export const STEP_PATHS = {
@@ -53,24 +55,3 @@ export function routeOf(path: string): Route {
 }
 
 export const stepPath = (id: string, step: InJobStep) => `/jobs/${id}/${STEP_PATHS[step]}`;
-
-/** The path shown, which keys the page so each one opens at its top. */
-export function usePath(): string {
-  const [path, setPath] = useState(() => window.location.pathname);
-  useEffect(() => {
-    const onChange = () => {
-      setPath(window.location.pathname);
-    };
-    window.addEventListener("popstate", onChange);
-    return () => {
-      window.removeEventListener("popstate", onChange);
-    };
-  }, []);
-  return path;
-}
-
-export function go(path: string): void {
-  if (window.location.pathname === path) return;
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-}

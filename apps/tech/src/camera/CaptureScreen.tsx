@@ -22,10 +22,10 @@
 // a camera that failed.
 
 import { Button } from "@maneman/ui/Button";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
 import { capture as copy, job as jobCopy } from "../content.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { StepFrame, useSettled } from "../steps/StepFrame.tsx";
 import { useStep } from "../steps/useStep.ts";

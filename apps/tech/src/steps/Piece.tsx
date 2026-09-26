@@ -19,7 +19,7 @@ import { Icon } from "../components/Icon.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { dayMonth } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { asLabel, isLabel } from "./label.ts";

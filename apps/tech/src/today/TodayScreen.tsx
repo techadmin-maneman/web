@@ -8,6 +8,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
+import { Link } from "@maneman/ui/router";
 import { useEffect, useState } from "react";
 import type { JobSummary } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
@@ -26,7 +27,6 @@ import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia, where } from "../lib/when.ts";
-import { go } from "../route.ts";
 import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { keptClosedJobs } from "../store/jobs.ts";
@@ -176,19 +176,12 @@ export function TodayScreen() {
       {offline && <Offline />}
 
       {(sending > 0 || unsentSets > 0) && (
-        <a
-          className={styles.waiting}
-          href="/waiting"
-          onClick={(event) => {
-            event.preventDefault();
-            go("/waiting");
-          }}
-        >
+        <Link className={styles.waiting} to="/waiting">
           <Icon d={ICONS_P2.uploadQueue} size={20} className={styles.waitingIcon} />
           <span className={styles.waitingLine}>
             {unsentSets > 0 ? queueCopy.waiting(unsentSets) : queueCopy.events(sending)}
           </span>
-        </a>
+        </Link>
       )}
 
       {/*

@@ -8,11 +8,11 @@
 // put right. Finishing it then sends the corrected step in the place the
 // refused one had, and the steps queued behind it follow (../store/outbox.ts).
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import type { Job } from "../api.ts";
 import { done, stepsOf } from "../lib/progress.ts";
 import type { Loaded } from "../lib/useDay.ts";
 import { useJob } from "../lib/useDay.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { go, stepPath, type InJobStep } from "../route.ts";
 import { keepClosed } from "../store/jobs.ts";

@@ -42,6 +42,8 @@
     "test/node/tech-progress.test.ts",
     "test/node/tech-store.test.ts",
     "test/node/ui-*.test.ts",
+    "test/node/web-kit-api.test.ts",
+    "packages/web-kit/api.ts",
     "test/node/static-server.test.ts",
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",

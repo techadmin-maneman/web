@@ -18,6 +18,7 @@
 // runs the wait on its own clock too (ADR 0065).
 
 import { Button } from "@maneman/ui/Button";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState, type ReactNode } from "react";
 import type { CheckIn, Job } from "../api.ts";
 import { Confirm } from "../components/Confirm.tsx";
@@ -25,7 +26,6 @@ import { Icon } from "../components/Icon.tsx";
 import { notHome as copy, job as jobCopy } from "../content.ts";
 import { TICK } from "../icons.ts";
 import { checkedIn, theWait } from "../lib/progress.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { clock, countdown, metres } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import { keepClosed, keptArrival } from "../store/jobs.ts";

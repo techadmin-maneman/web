@@ -4,11 +4,11 @@
 // which until now only the waiting screen said.
 
 import { ICONS_P2 } from "@maneman/brand/icons";
-import { ButtonLink } from "@maneman/ui/Button";
+import { buttonLook } from "@maneman/ui/Button";
+import { Link } from "@maneman/ui/router";
 import { changed as copy, today as todayCopy, whatStopped } from "../content.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
-import { go } from "../route.ts";
 import { account } from "../store/outbox.ts";
 import { Icon } from "./Icon.tsx";
 import styles from "./banner.module.css";
@@ -42,18 +42,9 @@ export function Stopped() {
           {copy.line(names.get(each.job) ?? each.job.slice(0, 8), whatStopped(each))}
         </p>
       ))}
-      <ButtonLink
-        variant="outlineOnInk"
-        size="small"
-        className={styles.open}
-        href="/waiting"
-        onClick={(event) => {
-          event.preventDefault();
-          go("/waiting");
-        }}
-      >
+      <Link to="/waiting" className={buttonLook({ variant: "outlineOnInk", size: "small", className: styles.open })}>
         {copy.open}
-      </ButtonLink>
+      </Link>
     </div>
   );
 }

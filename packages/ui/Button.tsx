@@ -36,7 +36,8 @@ interface Look {
   readonly className?: string;
 }
 
-function lookOf({ variant, size, className }: Look): string {
+/** A button's classes, for a link the app draws with its own link component, as an in-app link drawn as a button. */
+export function buttonLook({ variant, size, className }: Look): string {
   return classes(styles.button, styles[variant], styles[size], className);
 }
 
@@ -52,7 +53,7 @@ export function Button({ variant, size, className, busy = false, type = "button"
     <button
       {...rest}
       type={type}
-      className={lookOf({ variant, size, className })}
+      className={buttonLook({ variant, size, className })}
       aria-busy={busy ? true : undefined}
       onClick={busy ? undefined : onClick}
     />
@@ -64,5 +65,5 @@ type ButtonLinkProps = Look &
 
 /** A link that looks like a button: somewhere to go, such as WhatsApp or a document, rather than something to do. */
 export function ButtonLink({ variant, size, className, ...rest }: ButtonLinkProps) {
-  return <a {...rest} className={lookOf({ variant, size, className })} />;
+  return <a {...rest} className={buttonLook({ variant, size, className })} />;
 }

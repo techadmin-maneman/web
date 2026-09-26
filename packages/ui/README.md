@@ -18,6 +18,9 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/Tabs`           | The ops console's tabs, each a link the app draws with `TAB`'s look                                |
 | `@maneman/ui/States`         | `Loading` (board B3's shape) and `Failed` (a line and a retry), in each app's words                |
 | `@maneman/ui/ErrorBoundary`  | What stands in for a screen that failed to draw: the app's own fallback                            |
+| `@maneman/ui/router`         | `usePath`, `go`, `followsHere` and `Link`: moving between pages without a reload                   |
+| `@maneman/ui/useLoad`        | A page's data, fetched as it opens and again on "Try again"                                        |
+| `@maneman/ui/useOneAtATime`  | One thing at a time, so two taps on one intent start it once                                       |
 | `@maneman/ui/classes`        | `classes()`, which joins an element's class names                                                  |
 
 ## Sizes by app

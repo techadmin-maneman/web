@@ -1,12 +1,13 @@
 import { useRef, useState } from "react";
 
 /**
- * Runs one thing at a time, and says while it is running, so a tap that awaits
- * the phone's store or the API cannot be started twice by a gloved double tap.
+ * Runs one thing at a time, and says while it is running, so a handler that
+ * awaits the API or the phone's store cannot be started twice by two taps on
+ * one intent -- a gloved double tap included.
  *
  * The ref is what holds. `busy` is state and only reaches a button's `disabled`
- * on the next render, so a tap inside that gap would otherwise get through
- * (the client app's own, apps/app/src/lib/useOneAtATime.ts; ADR 0058).
+ * on the next render, so a tap inside that gap would otherwise get through,
+ * which is why disabling alone is not enough (docs/decisions/0058-one-tap-per-intent.md).
  */
 export function useOneAtATime(): readonly [boolean, (work: () => Promise<void>) => Promise<void>] {
   const [busy, setBusy] = useState(false);
