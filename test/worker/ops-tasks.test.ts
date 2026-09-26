@@ -419,6 +419,53 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
+  // The brief: "ops need the full set because these drive the task queue". A visit left partly done made no task
+  // at all (BIZ-21).
+  describe("a visit left partly done", () => {
+    async function closed(outcome: "partial" | "no_show", reason: string | null) {
+      await env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+             fsm_modified_at, synced_at)
+           VALUES (?1, 'fsm-appt-5', ?2, 'service', '2026-09-20T04:30:00.000Z', '2026-09-20T06:00:00.000Z',
+             'terminated', 'Terminated', ?3, ?3)`,
+        ).bind(VISIT, PERSON, NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO visits (id, appointment_id, ended_at, outcome, partial_reason, updated_at)
+           VALUES ('visit-row-1', ?1, '2026-09-20T05:40:00.000Z', ?2, ?3, ?4)`,
+        ).bind(VISIT, outcome, reason, NOW.toISOString()),
+      ]);
+    }
+
+    it("waits with the technician's reason, from when he closed it", async () => {
+      await closed("partial", "piece_not_ready");
+      expect(tasksIn(await tasks(), "partial_visit")).toEqual([
+        {
+          id: VISIT,
+          person: { id: PERSON, name: "Rohit Malhotra" },
+          detail: "piece_not_ready",
+          since: "2026-09-20T05:40:00.000Z",
+          due: "2026-09-22T05:40:00.000Z",
+        },
+      ]);
+    });
+
+    it("leaves once the client has another visit booked after it, to finish what was left", async () => {
+      await closed("partial", "more_time_needed");
+      await consultationFor(PERSON, "cancelled");
+      await env.DB.prepare("UPDATE appointments SET type = 'service' WHERE id = ?1").bind(CONSULTATION).run();
+      expect(groupNames(await tasks())).toEqual(["partial_visit"]);
+
+      await env.DB.prepare("UPDATE appointments SET status = 'scheduled' WHERE id = ?1").bind(CONSULTATION).run();
+      expect(groupNames(await tasks())).not.toContain("partial_visit");
+    });
+
+    it("is not a no-show, which ops rule on in its own group", async () => {
+      await closed("no_show", null);
+      expect(groupNames(await tasks())).toEqual([]);
+    });
+  });
+
   it("counts the tasks whose day has passed, and no others", async () => {
     // Held on the 18th, so due on the 20th: yesterday. The erasure came yesterday and is due on the 27th.
     await heldGrant('["shared_address"]');

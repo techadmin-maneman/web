@@ -2349,7 +2349,8 @@ export interface components {
         VisitDetail: components["schemas"]["VisitSummary"] & {
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
-            outcome: ("done" | "partial") | null;
+            /** @description Done, partly done, or a no-show: the client was not home. Null until FSM closes it. */
+            outcome: ("done" | "partial" | "no_show") | null;
             /** @description The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded, as for a visit closed in FSM's own screens. */
             what_was_done: string[] | null;
             photos: components["schemas"]["PhotoSet"];

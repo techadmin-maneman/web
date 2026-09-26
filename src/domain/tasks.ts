@@ -42,8 +42,8 @@ export const NUMBER_CHANGE_WAITING_SINCE = "COALESCE(nc.new_verified_at, nc.crea
 export const READ_CAP = 2000;
 
 /**
- * Every queue, in two statements sent together. D1 takes at most five arms in one
- * compound SELECT, so the queues are split between two statements; a batch is still
+ * Every queue, in three statements sent together. D1 takes at most five arms in one
+ * compound SELECT, so the queues are split between statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
  * record is gone, and a task about them could not be done. Two things still
  * wait without them: a no-show, which still needs a ruling, and an erasure FSM
@@ -51,7 +51,8 @@ export const READ_CAP = 2000;
  *
  * The first statement is the one that needs today's date, as `?1`: a move is
  * still to be told of while its visit is today or later. The second
- * needs the attempts after which the sweeper stops asking FSM, as `?1`. Both take
+ * needs the attempts after which the sweeper stops asking FSM, as `?1`. The third
+ * holds the visits whose closing or booking left ops something to do. Each takes
  * READ_CAP last, which bounds what one look at the board can cost.
  */
 const OUTSTANDING = [
@@ -115,6 +116,20 @@ const OUTSTANDING = [
    WHERE p.erased_at IS NOT NULL AND p.fsm_contact_id IS NOT NULL AND p.fsm_erased_at IS NULL
      AND p.fsm_erasure_attempts >= ?1
 ) ORDER BY since LIMIT ?2`,
+
+  // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it. A
+  // no-show is its own outcome and group; one the Worker before migration 0043 stored as partial is left out too.
+  `SELECT * FROM (
+  SELECT 'partial_visit' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         v.partial_reason AS detail, COALESCE(v.ended_at, a.window_end, v.updated_at) AS since
+    FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
+   WHERE v.outcome = 'partial' AND COALESCE(v.partial_reason, '') <> 'no_show' AND a.deleted_at IS NULL
+     AND pe.erased_at IS NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM appointments later
+        WHERE later.person_id = a.person_id AND later.deleted_at IS NULL
+          AND later.status NOT IN ('cancelled', 'terminated') AND later.window_start > a.window_start)
+) ORDER BY since LIMIT ?1`,
 ] as const;
 
 interface Row {
@@ -148,6 +163,7 @@ export async function outstandingTasks(db: D1Database, now: Date, sla: Slas): Pr
   const answers = await db.batch<Row>([
     db.prepare(OUTSTANDING[0]).bind(indiaDate(now), READ_CAP),
     db.prepare(OUTSTANDING[1]).bind(MAX_SYNC_ATTEMPTS, READ_CAP),
+    db.prepare(OUTSTANDING[2]).bind(READ_CAP),
   ]);
   const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
   // Each statement sorted its own rows; the board wants one list, so they are merged on the same column.

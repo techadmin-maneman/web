@@ -2168,14 +2168,15 @@ Request body:
               "type": "string",
               "enum": [
                 "done",
-                "partial"
+                "partial",
+                "no_show"
               ]
             },
             {
               "type": "null"
             }
           ],
-          "description": "What FSM closed the visit as; null until it is closed."
+          "description": "What FSM closed the visit as, a no-show being its own; null until it is closed."
         }
       },
       "required": [
@@ -4620,6 +4621,7 @@ Request body:
               "untold_move",
               "consultation_request",
               "replacement_order",
+              "partial_visit",
               "referral_review",
               "no_show_decision",
               "number_change",

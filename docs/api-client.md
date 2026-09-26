@@ -2682,13 +2682,15 @@ Request body:
               "type": "string",
               "enum": [
                 "done",
-                "partial"
+                "partial",
+                "no_show"
               ]
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Done, partly done, or a no-show: the client was not home. Null until FSM closes it."
         },
         "what_was_done": {
           "anyOf": [

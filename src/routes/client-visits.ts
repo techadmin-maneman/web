@@ -15,6 +15,7 @@ import type { App } from "../app.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
+import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -68,7 +69,9 @@ const PhotoSetSchema = z
 
 const VisitDetailSchema = VisitSummarySchema.extend({
   duration_minutes: z.union([z.number().int(), z.null()]).openapi({ description: "From start to finish, once done." }),
-  outcome: z.union([z.enum(["done", "partial"]), z.null()]),
+  outcome: z
+    .union([z.enum(VISIT_OUTCOMES), z.null()])
+    .openapi({ description: "Done, partly done, or a no-show: the client was not home. Null until FSM closes it." }),
   what_was_done: z.union([z.array(z.string()), z.null()]).openapi({
     description:
       "The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was " +

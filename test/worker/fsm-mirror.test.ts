@@ -203,6 +203,27 @@ describe("the mirror: one appointment", () => {
     expect(visit).toEqual({ outcome: "partial", partial_reason: "client_unwell" });
   });
 
+  // A no-show was stored as a partial visit, and read as one everywhere (BIZ-21).
+  it("records a visit the technician closed as a no-show as a no-show, not a partial visit", async () => {
+    const { appointmentId } = await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
+    await env.DB.prepare(
+      `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+         updated_at)
+       SELECT 'e1', ?1, 'event-outcome-01', technician_id, 'outcome', ?2, ?3, ?3, ?3 FROM appointments WHERE id = ?1`,
+    )
+      .bind(appointmentId, JSON.stringify({ outcome: "no_show" }), NOW.toISOString())
+      .run();
+
+    await syncAppointment(
+      env.DB,
+      createStubFsm(world({ appointments: [appointment({ status: "Terminated" })] })),
+      "ap-1",
+      NOW,
+    );
+    const visit = await env.DB.prepare("SELECT outcome, partial_reason FROM visits").first();
+    expect(visit).toEqual({ outcome: "no_show", partial_reason: null });
+  });
+
   it("overwrites its copy with FSM's latest, and marks it gone when FSM no longer has it", async () => {
     await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
     await syncAppointment(

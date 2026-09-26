@@ -28,6 +28,11 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("erasure_request");
   });
 
+  // BIZ-21: a visit left partly done made no task.
+  it(RULES[3], () => {
+    expect(TASK_GROUPS).toContain("partial_visit");
+  });
+
   // Not one of the prompt's rules: the queue is new, and it is here because a
   // consultation asked for while self-serve booking is off is work for ops
   // (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).

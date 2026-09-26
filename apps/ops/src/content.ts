@@ -401,7 +401,8 @@ export const clients = {
     },
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
     stages: { booked: "Booked", in_progress: "Under way", closing: "Being closed" },
-    outcomes: { done: "Done", partial: "Partial" },
+    // PLACEHOLDER: "Not home" is ours; the board draws Done and Partial.
+    outcomes: { done: "Done", partial: "Partial", no_show: "Not home" },
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
     /** Paid ahead, or covered by a credit: board C1 of the client app's own badge. */
     prepaid: "Prepaid",
@@ -785,6 +786,8 @@ export const tasks = {
     untold_move: "Call about a move",
     consultation_request: "Consultation request",
     replacement_order: "Replacement order",
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0073-hand-offs-and-messages.md).
+    partial_visit: "Visit left partly done",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
     number_change: "Number change",
@@ -828,6 +831,16 @@ export const tasks = {
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
     replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
+    /** PLACEHOLDER: "The piece was not ready · 20 Sep": book the visit that finishes it. The technician's words. */
+    partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
+    partialReasons: {
+      client_stopped_it: "Client stopped it partway",
+      piece_not_ready: "The piece was not ready",
+      client_unwell: "Client unwell",
+      more_time_needed: "More time needed",
+    } as Readonly<Record<string, string>>,
+    /** PLACEHOLDER: a visit closed partial in FSM's own screen, with no reason from the technician. */
+    noReason: "No reason recorded",
     no_show_decision: (technician: string) => `${technician} attended`,
     number_change: "Both numbers proven by code",
     erasure_request: "Asked for in the client's own app",

@@ -2410,8 +2410,8 @@ export interface components {
             access_notes: string | null;
         };
         ClientVisit: components["schemas"]["VisitSummary"] & {
-            /** @description What FSM closed the visit as; null until it is closed. */
-            outcome: ("done" | "partial") | null;
+            /** @description What FSM closed the visit as, a no-show being its own; null until it is closed. */
+            outcome: ("done" | "partial" | "no_show") | null;
         };
         /** @description Display name and initials only. */
         Technician: {
@@ -2982,7 +2982,7 @@ export interface components {
             truncated: boolean;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "consultation_request" | "replacement_order" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
                 /** @description The longest wait first, at most 50. */

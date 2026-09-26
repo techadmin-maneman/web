@@ -7,7 +7,7 @@ import { CHECKLIST } from "../config/job-sheet.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
-import type { AppointmentStatus } from "./fsm-mirror.ts";
+import type { AppointmentStatus, VisitOutcome } from "./fsm-mirror.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
@@ -197,7 +197,7 @@ export interface PhotoSet {
 export interface VisitDetail extends VisitSummary {
   /** From FSM's actual start to end; null until the visit is done. */
   readonly duration_minutes: number | null;
-  readonly outcome: "done" | "partial" | null;
+  readonly outcome: VisitOutcome | null;
   /** The checklist the technician ticked, in the job sheet's order; null when none was recorded. */
   readonly what_was_done: string[] | null;
   readonly photos: PhotoSet;
@@ -263,7 +263,7 @@ export async function visitDetail(
       AppointmentRow & {
         invoice_issued_at: string | null;
         duration_minutes: number | null;
-        outcome: "done" | "partial" | null;
+        outcome: VisitOutcome | null;
       }
     >();
   if (row === null) return null;
@@ -278,8 +278,6 @@ export async function visitDetail(
     invoice_expected: await invoiceExpected(db, row),
   };
 }
-
-export type VisitOutcome = "done" | "partial";
 
 /** What FSM closed each of these visits as, for the visits it has closed. */
 export async function visitOutcomes(

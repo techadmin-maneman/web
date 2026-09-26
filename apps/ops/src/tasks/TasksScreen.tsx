@@ -3,7 +3,7 @@
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a number change, an erasure, a grievance, a piece past its
 // replacement date, an invoice still a draft, an erasure FSM would not finish,
-// a moved visit whose client has not heard of it — so it leaves the list when
+// a moved visit whose client has not heard of it, a visit left partly done — so it leaves the list when
 // that row is decided, on the section that decides it (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
@@ -49,6 +49,7 @@ const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   untold_move: "visits",
   consultation_request: "visits",
   replacement_order: "pieces",
+  partial_visit: "visits",
   no_show_decision: "visits",
   draft_invoice: "payments",
 };
@@ -80,6 +81,11 @@ function subOf(group: Group, task: Task): string {
   }
   if (group === "replacement_order") {
     return copy.replacement_order(task.detail ?? tasks.unknown, fullDate(indiaDate(task.since)));
+  }
+  if (group === "partial_visit") {
+    // The technician's reason, and the day he closed the visit.
+    const reason = copy.partialReasons[task.detail ?? ""] ?? copy.noReason;
+    return copy.partial_visit(reason, shortDate(indiaDate(task.since)));
   }
   if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);

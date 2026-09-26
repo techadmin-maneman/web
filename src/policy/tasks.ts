@@ -32,10 +32,17 @@
 // client has been promised an answer within a time, as with an erasure, so it
 // is counted down on this board as the other requests about their data are.
 
+//
+// A visit left partly done is the prompt's own (BIZ-21): "Partial reasons. …
+// ops need the full set because these drive the task queue." It waits with the
+// technician's reason until the client has another visit booked after it to
+// finish what was left. A no-show is its own outcome, and its own group.
+
 export const RULES = [
   "The replacement due date follows the per-base cycle config already defined in this prompt.",
   "GET /no-shows and POST /no-shows/:id/decision, for ops to charge or waive from the evidence.",
   "number-change confirmations and deletion-request processing",
+  "Partial reasons. Four in the design. The design says ops need the full set because these drive the task queue.",
 ] as const;
 
 /** The queues a task is read from, in the order the console lists them. */
@@ -43,6 +50,7 @@ export const TASK_GROUPS = [
   "untold_move",
   "consultation_request",
   "replacement_order",
+  "partial_visit",
   "referral_review",
   "no_show_decision",
   "number_change",
@@ -67,6 +75,7 @@ export const TASK_SLA_HOURS: Slas = {
   untold_move: 4,
   consultation_request: 48,
   replacement_order: 48,
+  partial_visit: 48,
   referral_review: 48,
   no_show_decision: 48,
   number_change: 48,
