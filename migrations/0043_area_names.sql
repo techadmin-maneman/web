@@ -1,4 +1,4 @@
--- Migration number: 0042
+-- Migration number: 0043
 -- Ops name an area themselves (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 -- serviceable_pincodes.area starts as the shortest of a pincode's post offices ("Sec91",
 -- "RAKNPA"), and a launch message, the waitlist and the dispatch board all read it. Ops now

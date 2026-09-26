@@ -39,7 +39,7 @@ ADR 0061 gave ops the console's Settings section. The audit of 24 September 2026
 
 ### An area has the name ops give it
 
-- **Migration 0042** adds `serviceable_pincodes.area_named_by`: who named the area, or null while the name is still the post offices'. `area` itself carries the name, so the launch message, the waitlist, the booking pages and the dispatch board all read the better one with no change of their own.
+- **Migration 0043** adds `serviceable_pincodes.area_named_by`: who named the area, or null while the name is still the post offices'. `area` itself carries the name, so the launch message, the waitlist, the booking pages and the dispatch board all read the better one with no change of their own.
 - **Ops rename an area in its row** of Settings · Service area; the waitlist's launch panel says where the message's name comes from and links there. A name starts with a letter or a digit and runs to 40 characters of letters, digits, spaces and `. , ' ( ) & -`, so it can never open as a formula in the downloaded list. A rename is its own `pincode.rename` audit entry, from and to.
 - **The import keeps a name ops gave.** Its upsert refreshes `area` only where `area_named_by` is null.
 - **Every cell of the download is guarded**: a cell that opens with `=`, `+`, `-`, `@`, a tab or a carriage return starts with an apostrophe, and a cell holding a comma, a quote or a line break is quoted with its quotes doubled.
@@ -54,6 +54,6 @@ ADR 0061 gave ops the console's Settings section. The audit of 24 September 2026
 ## Consequences
 
 - **The contract** gains `GET /api/whoami`, `POST /api/prices/withdraw`, `waiting` and `to_alert` on each pincode of `GET /api/service-area`, an optional `area` on each change and `alerted` in the answer of `POST /api/service-area`. `docs/openapi-ops.json` and `docs/api-ops.md` are regenerated. Two audit actions are added, `price.withdraw` and `pincode.rename`; no migration is needed for them.
-- **Migration 0042** only adds a column, so the Worker already deployed is unaffected. `scripts/import-pincodes.ts` needs it: run migrations before the import, as the runbook already says.
+- **Migration 0043** only adds a column, so the Worker already deployed is unaffected. `scripts/import-pincodes.ts` needs it: run migrations before the import, as the runbook already says.
 - **A save that serves many pincodes writes many statements in one batch**, two for each person told, as the waitlist's launch always has. Serving a whole city with a long waitlist is the largest such batch.
-- **What is still owed the owner**: every word of Settings, the header's identity and the lapsed-session line is a placeholder in `apps/ops/src/content.ts`, as the rest of the console's copy is (`docs/open-points.md`, item 20); the departures from board A1's header are recorded in ADR 0025, item 48.
+- **What is still owed the owner**: every word of Settings, the header's identity and the lapsed-session line is a placeholder in `apps/ops/src/content.ts`, as the rest of the console's copy is (`docs/open-points.md`, item 20); the departures from board A1's header are recorded in ADR 0025, item 49.
