@@ -5,10 +5,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, AREAS, fails, json, LAUNCHED, PREVIEW } from "./fixtures.ts";
+import { answer, AREAS, fails, json, LAUNCHED, PREVIEW, type Call } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const LAUNCH = "/api/pincodes/400050/launch";
+const LAUNCH_IT: Call = `POST ${LAUNCH}`;
 
 /** Answers the launch route with the preview while confirm is false, then `confirmed` once it is true. */
 function launchRoute(confirmed = json(LAUNCHED)) {
@@ -19,7 +20,7 @@ function launchRoute(confirmed = json(LAUNCHED)) {
 }
 
 async function open(page: Page, confirmed?: ReturnType<typeof json>): Promise<void> {
-  await answer(page, { "/api/waitlist": json(AREAS), [LAUNCH]: launchRoute(confirmed) });
+  await answer(page, { "GET /api/waitlist": json(AREAS), [LAUNCH_IT]: launchRoute(confirmed) });
   await page.goto("/waitlist");
   await expect(page.getByRole("heading", { level: 1, name: "Waitlist" })).toBeVisible();
 }
@@ -53,7 +54,7 @@ test("gives the area the room the board does, and each figure the board's own wi
 
 // The waitlist was read whole, however many pincodes had people waiting (FEO-16).
 test("says when more pincodes are waiting than the table lists", async ({ page }) => {
-  await answer(page, { "/api/waitlist": json({ ...AREAS, more: true }) });
+  await answer(page, { "GET /api/waitlist": json({ ...AREAS, more: true }) });
   await page.goto("/waitlist");
   await expect(page.getByText("More pincodes have people waiting than are listed.")).toBeVisible();
 });
@@ -101,7 +102,7 @@ test("says so when the launch is refused, and keeps the panel open", async ({ pa
 });
 
 test("says nobody is waiting when the list is empty", async ({ page }) => {
-  await answer(page, { "/api/waitlist": json({ areas: [] }) });
+  await answer(page, { "GET /api/waitlist": json({ areas: [] }) });
   await page.goto("/waitlist");
   await expect(page.getByText("Nobody is waiting outside the areas we serve.")).toBeVisible();
 });

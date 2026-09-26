@@ -7,15 +7,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, GRIEVANCES, json, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, fails, GRIEVANCES, json, TASKS_READ_ON, type Call } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = GRIEVANCES.grievances[0];
-const RESOLVE = `/api/grievances/${FIRST?.id ?? ""}/resolve`;
+const RESOLVE = `/api/grievances/${FIRST?.id ?? ""}/resolve` as const;
+const ANSWER_IT: Call = `POST ${RESOLVE}`;
 
 async function open(page: Page, resolve = json({ state: "resolved" })): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "/api/grievances": json(GRIEVANCES), [RESOLVE]: resolve });
+  await answer(page, { "GET /api/grievances": json(GRIEVANCES), [ANSWER_IT]: resolve });
   await page.goto("/grievances");
   await expect(page.getByRole("heading", { level: 1, name: "Grievances" })).toBeVisible();
 }
@@ -71,7 +72,7 @@ test("records the answer, and the grievance leaves the queue", async ({ page }) 
 // Grievances are a group on the Tasks board now, which links each to its row here (OPS-08, OPS-05).
 test("brings the grievance a task named into view, and gives it the keyboard", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "/api/grievances": json(GRIEVANCES) });
+  await answer(page, { "GET /api/grievances": json(GRIEVANCES) });
   await page.goto(`/grievances#grievance-${FIRST?.id ?? ""}`);
   await expect(row(page, "Rohit Malhotra")).toBeFocused();
 });
@@ -85,17 +86,17 @@ test("says so when someone has answered it already", async ({ page }) => {
 });
 
 test("says so when no grievance is open", async ({ page }) => {
-  await answer(page, { "/api/grievances": json({ grievances: [] }) });
+  await answer(page, { "GET /api/grievances": json({ grievances: [] }) });
   await page.goto("/grievances");
   await expect(page.getByText("No grievance is open.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
-  await answer(page, { "/api/grievances": fails(503, "unavailable") });
+  await answer(page, { "GET /api/grievances": fails(503, "unavailable") });
   await page.goto("/grievances");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
-  await answer(page, { "/api/grievances": json(GRIEVANCES) });
+  await answer(page, { "GET /api/grievances": json(GRIEVANCES) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });

@@ -9,25 +9,19 @@
 // names (src/http/errors.ts).
 
 import AxeBuilder from "@axe-core/playwright";
-import type { Page, Route } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, PRICES, SERVICE_AREA, SETTINGS } from "./fixtures.ts";
+import { answer, fails, json, PRICES, SERVICE_AREA, SETTINGS, type Answers } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-type Replies = Readonly<Record<string, (route: Route) => Promise<void>>>;
-
-const ROUTES: Replies = {
-  "/api/settings": json(SETTINGS),
-  "/api/prices": json(PRICES),
-  "/api/service-area": json(SERVICE_AREA),
+const ROUTES: Answers = {
+  "GET /api/settings": json(SETTINGS),
+  "GET /api/prices": json(PRICES),
+  "GET /api/service-area": json(SERVICE_AREA),
 };
 
-/** A GET answered with `read`, and a POST with `write`. */
-const readOrWrite = (read: unknown, write: (route: Route) => Promise<void>) => (route: Route) =>
-  route.request().method() === "POST" ? write(route) : json(read)(route);
-
-async function open(page: Page, path = "/settings", extra: Replies = {}): Promise<void> {
+async function open(page: Page, path = "/settings", extra: Answers = {}): Promise<void> {
   await answer(page, { ...ROUTES, ...extra });
   await page.goto(path);
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
@@ -63,7 +57,7 @@ test.describe("the rules", () => {
 
   test("sends the figure ops typed, and says it saved", async ({ page }) => {
     await open(page, "/settings", {
-      "/api/settings/checkin_radius_m": json({
+      "POST /api/settings/checkin_radius_m": json({
         ...SETTINGS.settings[0],
         value: 150,
         set_by: "ops@maneman.in",
@@ -86,7 +80,7 @@ test.describe("the rules", () => {
   // FEO-06: the refusal named its field and the console dropped it, so every refusal read the same.
   test("names the box the API refused", async ({ page }) => {
     await open(page, "/settings", {
-      "/api/settings/no_show_wait_min": fails(400, "invalid_request", ["no_show_wait_min.first_fit"]),
+      "POST /api/settings/no_show_wait_min": fails(400, "invalid_request", ["no_show_wait_min.first_fit"]),
     });
     const wait = page.getByRole("group", { name: "No-show wait" });
     await wait.getByLabel("First fit", { exact: true }).fill("90");
@@ -139,10 +133,10 @@ test.describe("the price book", () => {
   test("shows the old price beside the new, and GST changing, before anything is sent", async ({ page }) => {
     let sent = 0;
     await open(page, "/settings/prices", {
-      "/api/prices": readOrWrite(PRICES, (route) => {
+      "POST /api/prices": (route) => {
         sent += 1;
         return json({ prices: PRICES.prices })(route);
-      }),
+      },
     });
     await page.getByLabel("Item").selectOption({ label: "Service visit" });
     await page.getByLabel("Price before GST, in rupees").fill("2500");
@@ -180,7 +174,7 @@ test.describe("the price book", () => {
 
   test("says a price cannot be back-dated when the API refuses the date", async ({ page }) => {
     await open(page, "/settings/prices", {
-      "/api/prices": readOrWrite(PRICES, fails(400, "invalid_request", ["valid_from"])),
+      "POST /api/prices": fails(400, "invalid_request", ["valid_from"]),
     });
     await page.getByRole("button", { name: "Set this price" }).click();
     await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Set this price" }).click();
@@ -189,7 +183,7 @@ test.describe("the price book", () => {
 
   test("takes back a price still to come, once asked", async ({ page }) => {
     const left = PRICES.prices.filter((price) => price.valid_from !== "2027-10-01");
-    await open(page, "/settings/prices", { "/api/prices/withdraw": json({ prices: left }) });
+    await open(page, "/settings/prices", { "POST /api/prices/withdraw": json({ prices: left }) });
     await page.getByRole("button", { name: "Take back the Service visit price from 1 Oct 2027" }).click();
     const asked = page.getByRole("group", { name: /Take back the price from 1 Oct 2027/ });
     await expect(asked).toBeFocused();
@@ -223,7 +217,7 @@ test.describe("the service area", () => {
 
   test("sends only the pincodes that changed", async ({ page }) => {
     await open(page, "/settings/area", {
-      "/api/service-area": readOrWrite(SERVICE_AREA, json({ changed: 1, served: 1, alerted: 0 })),
+      "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
     await page.getByLabel("Launch date for 110017").fill("2026-09-02");
@@ -239,7 +233,7 @@ test.describe("the service area", () => {
   // OPS-13: launch messages read "we now come to Sec91", with no way to say it better.
   test("sends a better name for an area, and refuses one a spreadsheet would run", async ({ page }) => {
     await open(page, "/settings/area", {
-      "/api/service-area": readOrWrite(SERVICE_AREA, json({ changed: 1, served: 1, alerted: 0 })),
+      "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
     await area(page, "122018").fill("=Sector 65");
@@ -264,7 +258,7 @@ test.describe("the service area", () => {
   // FEO-02: serving a pincode here sent none of the launch alerts the waitlist's launch sends.
   test("says who serving a pincode will message, and messages them only once ops agree", async ({ page }) => {
     await open(page, "/settings/area", {
-      "/api/service-area": readOrWrite(SERVICE_AREA, json({ changed: 1, served: 2, alerted: 3 })),
+      "POST /api/service-area": json({ changed: 1, served: 2, alerted: 3 }),
     });
     await page.getByRole("checkbox", { name: "Served 110024" }).check();
     await page.getByRole("button", { name: "Save these pincodes" }).click();
@@ -283,7 +277,7 @@ test.describe("the service area", () => {
 
   test("says so when a change would leave nowhere served", async ({ page }) => {
     await open(page, "/settings/area", {
-      "/api/service-area": readOrWrite(SERVICE_AREA, fails(400, "no_service_area")),
+      "POST /api/service-area": fails(400, "no_service_area"),
     });
     await page.getByRole("checkbox", { name: "Served 110017" }).uncheck();
     await page.getByRole("button", { name: "Save these pincodes" }).click();
@@ -300,7 +294,7 @@ test.describe("the service area", () => {
   // FEO-01: the table kept the old values after an upload, and the next Save put them back.
   test("puts a file's changes in the table, so the one Save sends the file's values", async ({ page }) => {
     await open(page, "/settings/area", {
-      "/api/service-area": readOrWrite(SERVICE_AREA, json({ changed: 1, served: 2, alerted: 0 })),
+      "POST /api/service-area": json({ changed: 1, served: 2, alerted: 0 }),
     });
     await upload(page, "pincode,served,launch_on\n110017,yes,2026-09-01\n110024,no,2026-11-01\n");
     const preview = page.getByRole("row").filter({ hasText: "110024" }).last();

@@ -17,15 +17,20 @@ import {
   TASKS_READ_ON,
   TECHNICIAN_WORK,
   TECHNICIANS,
+  type Call,
 } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const IMRAN = "88000000-0000-4000-8000-000000000001";
 const SANDEEP = "88000000-0000-4000-8000-000000000002";
-const REVOKE = `/api/technicians/${IMRAN}/devices/a41c09e27f3b/revoke`;
-const LEAVE = `/api/technicians/${IMRAN}/leave`;
-const CANCEL = `/api/technicians/${SANDEEP}/leave/89000000-0000-4000-8000-000000000001/cancel`;
-const WORK = "/api/technicians/work";
+const REVOKE = `/api/technicians/${IMRAN}/devices/a41c09e27f3b/revoke` as const;
+const LEAVE = `/api/technicians/${IMRAN}/leave` as const;
+const CANCEL = `/api/technicians/${SANDEEP}/leave/89000000-0000-4000-8000-000000000001/cancel` as const;
+const READ_ROSTER: Call = "GET /api/technicians";
+const READ_WORK: Call = "GET /api/technicians/work";
+const REVOKE_IT: Call = `POST ${REVOKE}`;
+const RECORD_LEAVE: Call = `POST ${LEAVE}`;
+const CANCEL_LEAVE: Call = `POST ${CANCEL}`;
 const PHONE = "Revoke Chrome on Android · 7f3b of Imran Qureshi";
 
 async function open(
@@ -35,11 +40,11 @@ async function open(
 ): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, {
-    "/api/technicians": json(TECHNICIANS),
-    [WORK]: json(TECHNICIAN_WORK),
-    [REVOKE]: revoke,
-    [LEAVE]: leave,
-    [CANCEL]: json(LEAVE_CANCELLED),
+    [READ_ROSTER]: json(TECHNICIANS),
+    [READ_WORK]: json(TECHNICIAN_WORK),
+    [REVOKE_IT]: revoke,
+    [RECORD_LEAVE]: leave,
+    [CANCEL_LEAVE]: json(LEAVE_CANCELLED),
   });
   await page.goto("/technicians");
   await expect(page.getByRole("heading", { level: 1, name: "Technicians" })).toBeVisible();
@@ -109,8 +114,8 @@ test("reads as a gap, never as a nought, when the phone timed none of the jobs",
     average_planned_minutes: null,
   }));
   await answer(page, {
-    "/api/technicians": json(TECHNICIANS),
-    [WORK]: json({ ...TECHNICIAN_WORK, technicians: untimed }),
+    [READ_ROSTER]: json(TECHNICIANS),
+    [READ_WORK]: json({ ...TECHNICIAN_WORK, technicians: untimed }),
   });
   await page.goto("/technicians");
 
@@ -207,11 +212,11 @@ test("says so when the phone is no longer that technician's", async ({ page }) =
 });
 
 test("says so when the roster cannot be loaded, and loads it on Try again", async ({ page }) => {
-  await answer(page, { "/api/technicians": fails(503, "unavailable"), [WORK]: json(TECHNICIAN_WORK) });
+  await answer(page, { [READ_ROSTER]: fails(503, "unavailable"), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.goto("/technicians");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
-  await answer(page, { "/api/technicians": json(TECHNICIANS), [WORK]: json(TECHNICIAN_WORK) });
+  await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
 });
@@ -219,19 +224,19 @@ test("says so when the roster cannot be loaded, and loads it on Try again", asyn
 // The table is one table, so a figure that did not load takes the roster with
 // it rather than leaving a column of gaps that look like noughts.
 test("says so when the figures cannot be loaded, and loads them on Try again", async ({ page }) => {
-  await answer(page, { "/api/technicians": json(TECHNICIANS), [WORK]: fails(503, "unavailable") });
+  await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: fails(503, "unavailable") });
   await page.goto("/technicians");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
-  await answer(page, { "/api/technicians": json(TECHNICIANS), [WORK]: json(TECHNICIAN_WORK) });
+  await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("1 h 48 m");
 });
 
 test("says so when no technician is active", async ({ page }) => {
   await answer(page, {
-    "/api/technicians": json({ technicians: [] }),
-    [WORK]: json({ ...TECHNICIAN_WORK, technicians: [] }),
+    [READ_ROSTER]: json({ technicians: [] }),
+    [READ_WORK]: json({ ...TECHNICIAN_WORK, technicians: [] }),
   });
   await page.goto("/technicians");
   await expect(page.getByText("No technician is active.")).toBeVisible();
@@ -271,7 +276,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
     ),
   };
   // The newest answers are tried first and pass nothing on, so this one answers the leave as well.
-  await answer(page, { "/api/technicians": json(recorded), [LEAVE]: json(LEAVE_RECORDED) });
+  await answer(page, { [READ_ROSTER]: json(recorded), [RECORD_LEAVE]: json(LEAVE_RECORDED) });
   const sent = page.waitForRequest((request) => request.url().endsWith(LEAVE) && request.method() === "POST");
   await panel.getByRole("button", { name: "Record it" }).click();
   expect((await sent).postDataJSON()).toEqual({ from: "2027-10-12", to: "2027-10-14", note: "Away" });

@@ -1590,6 +1590,16 @@
         "responses": {
           "204": {
             "description": "Logged out"
+          },
+          "401": {
+            "description": "session_required; device_revoked: there was no session here to end",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }

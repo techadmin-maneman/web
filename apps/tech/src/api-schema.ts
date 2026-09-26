@@ -200,6 +200,15 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description session_required; device_revoked: there was no session here to end */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;

@@ -123,6 +123,14 @@ End this session on this phone
 
 **204**: Logged out
 
+**401**: session_required; device_revoked: there was no session here to end
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/tech/me
 
 Who is signed in, and the phone this session is bound to

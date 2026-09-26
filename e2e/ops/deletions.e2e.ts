@@ -11,17 +11,18 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON, type Call } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = DELETION_REQUESTS.requests[0];
-const DECISION = `/api/deletion-requests/${FIRST?.id ?? ""}/decision`;
+const DECISION = `/api/deletion-requests/${FIRST?.id ?? ""}/decision` as const;
+const DECIDE: Call = `POST ${DECISION}`;
 const DELETE = "Delete the account of Rohit Malhotra";
 const CHECKED = "I have confirmed this request with the client, on their own number.";
 
 async function open(page: Page, decision = json({ state: "done" })): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "/api/deletion-requests": json(DELETION_REQUESTS), [DECISION]: decision });
+  await answer(page, { "GET /api/deletion-requests": json(DELETION_REQUESTS), [DECIDE]: decision });
   await page.goto("/deletion-requests");
   await expect(page.getByRole("heading", { level: 1, name: "Deletion requests" })).toBeVisible();
 }
@@ -112,7 +113,7 @@ test("moves the keyboard to the queue's heading once a request is decided", asyn
 // The Tasks board links an erasure request to its row here (OPS-05).
 test("brings the request a task named into view, and gives it the keyboard", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "/api/deletion-requests": json(DELETION_REQUESTS) });
+  await answer(page, { "GET /api/deletion-requests": json(DELETION_REQUESTS) });
   await page.goto(`/deletion-requests#request-${FIRST?.id ?? ""}`);
   await expect(row(page, "Rohit Malhotra")).toBeFocused();
 });
@@ -154,17 +155,17 @@ test("says what to settle first when the client still has a visit booked, and er
 });
 
 test("says so when nothing is waiting", async ({ page }) => {
-  await answer(page, { "/api/deletion-requests": json({ requests: [] }) });
+  await answer(page, { "GET /api/deletion-requests": json({ requests: [] }) });
   await page.goto("/deletion-requests");
   await expect(page.getByText("No deletion request is waiting.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
-  await answer(page, { "/api/deletion-requests": fails(503, "unavailable") });
+  await answer(page, { "GET /api/deletion-requests": fails(503, "unavailable") });
   await page.goto("/deletion-requests");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
-  await answer(page, { "/api/deletion-requests": json(DELETION_REQUESTS) });
+  await answer(page, { "GET /api/deletion-requests": json(DELETION_REQUESTS) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });

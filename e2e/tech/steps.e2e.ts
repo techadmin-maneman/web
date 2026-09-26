@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, JOB_ID, ROHITS_PIECE, type Fake } from "./fixtures.ts";
+import { atTheDoor, fakeTech, JOB_ID, ROHITS_PIECE, type Fake, type Step } from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -13,7 +13,7 @@ const wcag = (page: Page) =>
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
 /** A job checked in, started, and through the steps named. */
-function startedThrough(fake: Fake, ...steps: string[]): void {
+function startedThrough(fake: Fake, ...steps: Step[]): void {
   fake.progress = {
     ...fake.progress,
     checked_in_at: ago(30),

@@ -9,6 +9,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
 import { syncTechnicians } from "../../src/domain/fsm-mirror.ts";
+import { buildOpenApiDocument } from "../../src/openapi.ts";
 import { createStubFsm, EMPTY_FSM, type FsmTechnician } from "../../src/providers/fsm.ts";
 import {
   appFor,
@@ -248,6 +249,16 @@ describe("a signed-in phone", () => {
     const after = await withCookie(cookie, "/api/tech/me");
     expect(after.status).toBe(401);
     expect(await after.json()).toMatchObject({ error: { code: "session_required" } });
+  });
+
+  // TCD-01: the app's browser tests answer as the document says, so the document must say this too.
+  it("refuses a logout from a phone with no session, as its documentation says", async () => {
+    const answer = await withCookie("", "/api/tech/auth/logout", "POST");
+
+    expect(answer.status).toBe(401);
+    expect(await answer.json()).toMatchObject({ error: { code: "session_required" } });
+    const documented = buildOpenApiDocument("tech").paths?.["/api/tech/auth/logout"]?.post?.responses ?? {};
+    expect(Object.keys(documented)).toContain("401");
   });
 
   // A technician who has left keeps his phone, and on it the cards of the day:

@@ -6,18 +6,19 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, HELD, json, REFERRERS, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, fails, HELD, json, REFERRERS, TASKS_READ_ON, type Call } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Rohit Malhotra → Vikram Sethi";
 const GRANT = HELD.held[0]?.id ?? "";
+const DECIDE: Call = `POST /api/referrals/${GRANT}/decision`;
 
 async function open(page: Page, decision = json({ state: "approved" }), path = "/referrals"): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, {
-    "/api/referrals/held": json(HELD),
-    "/api/referrers": json(REFERRERS),
-    [`/api/referrals/${GRANT}/decision`]: decision,
+    "GET /api/referrals/held": json(HELD),
+    "GET /api/referrers": json(REFERRERS),
+    [DECIDE]: decision,
   });
   await page.goto(path);
   await expect(page.getByRole("heading", { name: "Held for review" })).toBeVisible();
@@ -123,10 +124,10 @@ test("reads the referrers a page at a time", async ({ page }) => {
   };
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, {
-    "/api/referrals/held": json(HELD),
-    "/api/referrers": (route) => {
+    "GET /api/referrals/held": json(HELD),
+    "GET /api/referrers": (route) => {
       const offset = new URL(route.request().url()).searchParams.get("offset");
-      return route.fulfill({ json: offset === "0" ? { ...REFERRERS, more: true } : second });
+      return json(offset === "0" ? { ...REFERRERS, more: true } : second)(route);
     },
   });
   await page.goto("/referrals");
@@ -140,18 +141,18 @@ test("reads the referrers a page at a time", async ({ page }) => {
 });
 
 test("says nothing is held when the queue is empty", async ({ page }) => {
-  await answer(page, { "/api/referrals/held": json({ held: [] }), "/api/referrers": json(REFERRERS) });
+  await answer(page, { "GET /api/referrals/held": json({ held: [] }), "GET /api/referrers": json(REFERRERS) });
   await page.goto("/referrals");
   await expect(page.getByText("Nothing is held for review.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "/api/referrals/held": fails(503, "unavailable"), "/api/referrers": json(REFERRERS) });
+  await answer(page, { "GET /api/referrals/held": fails(503, "unavailable"), "GET /api/referrers": json(REFERRERS) });
   await page.goto("/referrals");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
-  await answer(page, { "/api/referrals/held": json(HELD), "/api/referrers": json(REFERRERS) });
+  await answer(page, { "GET /api/referrals/held": json(HELD), "GET /api/referrers": json(REFERRERS) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText(FIRST)).toBeVisible();
 });

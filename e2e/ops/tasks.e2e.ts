@@ -13,7 +13,7 @@ const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 async function open(page: Page, body: unknown = TASKS): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "/api/tasks": json(body) });
+  await answer(page, { "GET /api/tasks": json(body) });
   await page.goto("/tasks");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
 }
@@ -229,11 +229,11 @@ test("says so when no queue holds anything", async ({ page }) => {
 
 test("says so when the list cannot be loaded, and loads it on Try again", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "/api/tasks": fails(503, "unavailable") });
+  await answer(page, { "GET /api/tasks": fails(503, "unavailable") });
   await page.goto("/tasks");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
-  await answer(page, { "/api/tasks": json(TASKS) });
+  await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Kunal Mehta")).toBeVisible();
 });
