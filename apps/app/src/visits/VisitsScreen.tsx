@@ -11,7 +11,7 @@
 // the month their piece falls due (docs/fidelity-method.md).
 
 import { Icon } from "@maneman/ui/Icon";
-import { useLoad } from "@maneman/ui/useLoad";
+import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
@@ -174,13 +174,11 @@ export function VisitsScreen() {
       tab="/visits"
       {...((me.state === "fitted" || firstFit) && !begun ? { footer: book } : {})}
     >
-      {loaded.state === "loading" ? (
-        <Loading />
-      ) : loaded.state === "failed" ? (
-        <PageFailed onRetry={retry} />
-      ) : (
-        <VisitList list={loaded.value} consultation={me.consultation} />
-      )}
+      {whenLoaded(loaded, {
+        loading: <Loading />,
+        failed: <PageFailed onRetry={retry} />,
+        loaded: (list) => <VisitList list={list} consultation={me.consultation} />,
+      })}
     </Shell>
   );
 }

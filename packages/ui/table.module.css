@@ -1,7 +1,8 @@
 /*
  * The console's table (./Table.tsx), at the boards' density: each row
- * --ops-row high, its rule included, so a row measures what the boards draw
- * and not a hairline more (OPS-24).
+ * --ops-row high, its rule included (the apps size boxes border-box), as long
+ * as a cell's padding and its line fit inside it: 8 px above and below a
+ * 14 px line do. A row grows past 34 px only when its words wrap (OPS-24).
  */
 
 @layer base, ui;
@@ -15,7 +16,7 @@
 
   .table th,
   .table td {
-    height: calc(var(--ops-row) - var(--hairline));
+    height: var(--ops-row);
     border-bottom: var(--hairline) solid var(--paper-line);
     font-weight: 400;
     text-align: left;

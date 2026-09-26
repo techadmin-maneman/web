@@ -33,6 +33,12 @@ import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
 import styles from "./login.module.css";
 
+/** What the sign-in says before the code is asked for: that ops revoked the phone, or why an installed app is out. */
+function noteFor(why: Out): string | null {
+  if (why === "revoked") return session.revoked;
+  return why === "fresh" && installed() ? copy.installed : null;
+}
+
 /** The API's error code in the app's words, or the line that fits when the code is one we do not know. */
 const MESSAGES: Readonly<Record<string, string>> = copy.errors;
 const messageFor = (code: string, fallback: string) => MESSAGES[code] ?? fallback;
@@ -161,7 +167,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   // Only worth saying before the code has been asked for, and only in the app
   // that caused it: a first sign-in in a browser needs no explanation.
   const quiet = challenge === null && error === null;
-  const note = why === "revoked" ? session.revoked : why === "fresh" && installed() ? copy.installed : null;
+  const note = noteFor(why);
 
   return (
     <main className={styles.screen}>

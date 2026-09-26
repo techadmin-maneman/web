@@ -248,6 +248,39 @@ function payLabel(hold: Hold, moving: MoveTerms | undefined): string {
 }
 
 /** Board C4, and C5's first fit: the held visit, what it costs, and how to pay. */
+/** The pay step's figure: nothing for a visit a credit covers, "Free" for one that costs nothing, else its price. */
+function amountLine(hold: Hold, covered: boolean, free: boolean): string {
+  if (covered) return booking.pay.credit.zero;
+  return free ? booking.pay.free : rupees(hold.price.amount_ex_gst);
+}
+
+/**
+ * What changing the visit later costs, beneath the pay step's lines: for a visit moved in place, that its
+ * payment carries over; for one booked late, the late fee; for any other, the hour it may be changed free
+ * until. A credit's own note, below, says what cancelling late costs, so a covered visit says nothing here.
+ */
+function ChangeTerms({ hold, moving, covered }: { hold: Hold; moving: MoveTerms | undefined; covered: boolean }) {
+  const line = `${styles.line ?? ""} ${styles.soft ?? ""}`;
+  if (moving !== undefined) {
+    return (
+      <p className={line}>{moving.paid > 0 ? change.move.free(rupees(moving.paid)) : change.move.freeNothingPaid}</p>
+    );
+  }
+  if (hold.late_fee !== null) {
+    return (
+      <p className={line}>
+        <LateFee fee={hold.late_fee} />
+      </p>
+    );
+  }
+  if (covered) return null;
+  return (
+    <p className={line}>
+      {booking.pay.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`)}
+    </p>
+  );
+}
+
 export function PayStep(props: {
   hold: Hold;
   moving?: MoveTerms | undefined;
@@ -285,9 +318,7 @@ export function PayStep(props: {
           </div>
           <div className={styles.money}>
             {covered && <p className={styles.was}>{rupees(hold.price.amount_ex_gst)}</p>}
-            <p className={styles.amount}>
-              {covered ? copy.credit.zero : free ? copy.free : rupees(hold.price.amount_ex_gst)}
-            </p>
+            <p className={styles.amount}>{amountLine(hold, covered, free)}</p>
             {!free && <p className={styles.incl}>{copy.incl(rupees(hold.price.amount))}</p>}
           </div>
         </div>
@@ -298,22 +329,7 @@ export function PayStep(props: {
           </p>
         )}
         {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
-        {inPlace ? (
-          <p className={`${styles.line} ${styles.soft}`}>
-            {moving.paid > 0 ? change.move.free(rupees(moving.paid)) : change.move.freeNothingPaid}
-          </p>
-        ) : hold.late_fee !== null ? (
-          <p className={`${styles.line} ${styles.soft}`}>
-            <LateFee fee={hold.late_fee} />
-          </p>
-        ) : (
-          // A credit's own note, below, says what cancelling late costs.
-          !covered && (
-            <p className={`${styles.line} ${styles.soft}`}>
-              {copy.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`)}
-            </p>
-          )
-        )}
+        <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
       </div>
       {offerPremium && (
         <a className={styles.quiet} href={whatsappWith(messages.premium(VISIT_TYPES[hold.type]))} rel="noopener">

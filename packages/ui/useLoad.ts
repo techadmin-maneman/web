@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 /** A call's answer, as packages/web-kit/api.ts gives it, cut to what a page needs. */
 type Answered<T> = { readonly ok: true; readonly body: T } | { readonly ok: false; readonly status: number };
@@ -36,4 +36,17 @@ export function useLoad<T>(load: () => Promise<Answered<T>>): readonly [Loaded<T
     setAttempt((count) => count + 1);
   }, []);
   return [loaded, retry] as const;
+}
+
+/**
+ * What a page draws of its data: `loading` while it comes, `failed` if it did
+ * not, and `loaded` with it once it has.
+ */
+export function whenLoaded<T>(
+  loaded: Loaded<T>,
+  shown: { readonly loading: ReactNode; readonly failed: ReactNode; readonly loaded: (value: T) => ReactNode },
+): ReactNode {
+  if (loaded.state === "loading") return shown.loading;
+  if (loaded.state === "failed") return shown.failed;
+  return shown.loaded(loaded.value);
 }

@@ -6,7 +6,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
-import { useLoad } from "@maneman/ui/useLoad";
+import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import {
   useCallback,
@@ -46,13 +46,11 @@ export function CompareScreen() {
   }
   return (
     <Shell header={{ kind: "back", title: photos.compare, to: "/photos", label: photos.back }} tab="/photos">
-      {loaded.state === "loading" ? (
-        <Loading />
-      ) : loaded.state === "failed" ? (
-        <PageFailed onRetry={retry} />
-      ) : (
-        <p className={styles.none}>{photos.compareNone}</p>
-      )}
+      {whenLoaded(loaded, {
+        loading: <Loading />,
+        failed: <PageFailed onRetry={retry} />,
+        loaded: () => <p className={styles.none}>{photos.compareNone}</p>,
+      })}
     </Shell>
   );
 }

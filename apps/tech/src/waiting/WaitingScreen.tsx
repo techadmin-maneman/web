@@ -38,6 +38,12 @@ function correctable(stopped: JobAccount["stopped"]): InJobStep | null {
   return isInJobStep(stopped.kind) ? stopped.kind : null;
 }
 
+/** Where a job's work stands: stopped, waiting for signal, or on its way. */
+function stateOf(stopped: boolean, offline: boolean): string {
+  if (stopped) return copy.states.failed;
+  return offline ? copy.states.waiting : copy.states.uploading;
+}
+
 function SetLine({ set }: { set: PhotoSet }) {
   const phase = copy.phases[set.phase];
   const line = set.queued ? copy.sent(phase, sentOf(set), IN_A_SET) : copy.taking(phase, set.held, IN_A_SET);
@@ -118,7 +124,7 @@ export function WaitingScreen() {
                   <div className={styles.jobTop}>
                     <span className={styles.who}>{name(id)}</span>
                     <span className={stopped === null ? styles.state : styles.stateStopped}>
-                      {stopped === null ? (offline ? copy.states.waiting : copy.states.uploading) : copy.states.failed}
+                      {stateOf(stopped !== null, offline)}
                     </span>
                   </div>
                   {sets
