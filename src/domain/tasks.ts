@@ -10,6 +10,7 @@
 
 import { indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { UNTOLD_MOVE } from "./dispatch.ts";
+import { LEAVE_ON_THE_DAY } from "./leave.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
 import { MAX_SYNC_ATTEMPTS } from "../queues/crm-sync.ts";
 
@@ -119,6 +120,9 @@ const OUTSTANDING = [
      AND p.fsm_erasure_attempts >= ?1
 ) ORDER BY since LIMIT ?2`,
 
+  // A job still booked on a day its technician is away: leave moves nothing, so ops move it (OPS-07). It waits from
+  // when the leave was recorded, and falls due by the job. The client is named where there is one on our records.
+  //
   // A visit to come whose client has given no address: the technician cannot find the door without one, and the
   // app tells the client "We confirm it with you before your visit" (LIFE-04). It waits from when the visit first
   // reached us, and falls due by the visit itself.
@@ -126,8 +130,17 @@ const OUTSTANDING = [
   // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it. A
   // no-show is its own outcome and group; one the Worker before migration 0043 stored as partial is left out too.
   `SELECT * FROM (
-  SELECT 'address_to_confirm' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         a.window_start AS detail, COALESCE(a.first_seen_at, a.synced_at) AS since, a.window_start AS due_by
+  SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
+         a.window_start || ' ' || t.name AS detail,
+         (SELECT MIN(l.created_at) FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}) AS since,
+         a.window_start AS due_by
+    FROM appointments a JOIN technicians t ON t.id = a.technician_id
+    LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
+   WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
+     AND EXISTS (SELECT 1 FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY})
+  UNION ALL
+  SELECT 'address_to_confirm', a.id, a.person_id, pe.name, a.window_start,
+         COALESCE(a.first_seen_at, a.synced_at), a.window_start
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND pe.erased_at IS NULL

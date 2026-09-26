@@ -15,6 +15,7 @@ import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } fro
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const REFERRED = "11111111-1111-4111-8111-111111111112";
+const OTHER = "11111111-1111-4111-8111-111111111113";
 const VISIT = "22222222-2222-4222-8222-222222222222";
 const PIECE = "33333333-3333-4333-8333-333333333331";
 const HELD = "33333333-3333-4333-8333-333333333332";
@@ -196,11 +197,41 @@ describe("GET /api/tasks", () => {
     )
       .bind(MAX_SYNC_ATTEMPTS, REFERRED)
       .run();
+    // A visit Rohit was left partly done on, and another client's job, with no address, on Chetan's day off.
+    await person(OTHER, "Karan Bhatia", "+919810000003");
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+           fsm_modified_at, synced_at)
+         VALUES ('partial-visit', 'fsm-appt-10', ?1, 'service', '2026-09-20T04:30:00.000Z',
+           '2026-09-20T06:00:00.000Z', 'terminated', 'Terminated', ?2, ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO visits (id, appointment_id, outcome, partial_reason, updated_at)
+         VALUES ('visit-row-10', 'partial-visit', 'partial', 'client_unwell', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t9', 'fsm-t9', 'Chetan Arora', 'CA', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+           fsm_status, fsm_modified_at, synced_at)
+         VALUES ('leave-job', 'fsm-appt-11', ?1, 'service', '2026-09-23T05:00:00.000Z', '2026-09-23T06:30:00.000Z',
+           't9', 'scheduled', 'Scheduled', ?2, ?2)`,
+      ).bind(OTHER, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+         VALUES ('leave-1', 't9', '2026-09-23', '2026-09-23', 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
 
     const body = await tasks();
     expect(groupNames(body)).toEqual([
+      "leave_conflict",
+      "address_to_confirm",
       "consultation_request",
       "replacement_order",
+      "partial_visit",
       "referral_review",
       "no_show_decision",
       "number_change",
@@ -209,7 +240,7 @@ describe("GET /api/tasks", () => {
       "draft_invoice",
       "erasure_unfinished",
     ]);
-    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("leaves out a group with nothing waiting, as the board draws none", async () => {

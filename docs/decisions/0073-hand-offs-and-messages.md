@@ -14,6 +14,14 @@ The audit of 24 September 2026 followed each change through every surface it sho
 
 **A no-show is recorded as one** (BIZ-21). A visit the technician closed as a no-show was stored as a partial visit whose reason said so, and read as partial everywhere. `visits.outcome` now takes `no_show` (migration 0043, which rebuilds `visits`: nothing points at it), the mirror writes it from the job's own outcome event, and the rows already stored as partial no-shows became no-shows.
 
+**Leave over jobs already booked is flagged three ways** (OPS-07). Leave moves no job (ADR 0062), and a technician's Wednesday job sat unmarked on his Away cell, stayed on his phone, and waited for nobody. Now:
+
+- `POST /api/technicians/{id}/leave` answers the jobs still booked on those days, and the Technicians panel lists them beneath the form, with the way to the dispatch board;
+- the board writes such a day "Away · 1 job to move" in oxblood, where a day off with nothing on it reads "Away";
+- each job waits on the Tasks board as **Job on a day off**, from when the leave was recorded, due by the job's own start, until it is moved to someone else or the leave is taken back.
+
+The job stays on the technician's phone until it is moved: taking it off would be a move by another name, and ops choose where it goes.
+
 **A visit to come with no address is a task** (LIFE-04, its task part). A booking from the site asks for no address, and the app told the client "We confirm it with you before your visit" with nobody to do it. A visit still to come whose client has no address saved now waits on the Tasks board as **Address to confirm**, from when the visit first reached our records (`appointments.first_seen_at`, migration 0043, written by a booking and by the mirror's first sync), and falls due two days on or at the visit's start, whichever is sooner: every task gains the start of the visit it is about, and none falls due after it. Only the client can save an address, in the app, whose Home asks for one while something is booked (ADR 0059); the task goes when they do. Ops cannot record one the client gives them on the phone: that is logged for the owner (`docs/open-points.md`).
 
 **A visit left partly done is a task** (BIZ-21). The prompt: "ops need the full set because these drive the task queue". A partial visit now waits on the Tasks board as **Visit left partly done**, with the technician's reason, from when he closed it, until the client has another visit booked after it to finish what was left. It takes the default two days. There is no "no follow-up needed" mark: like a replacement falling due, the task goes when the thing is done, and a client who wants no follow-up keeps it on the board until the owner says otherwise (`docs/open-points.md`, item 58).

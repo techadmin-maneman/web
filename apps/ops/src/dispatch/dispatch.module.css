@@ -209,6 +209,16 @@
   color: var(--text-muted);
 }
 
+/* A day off with jobs still booked on it, in the oxblood the board gives what needs doing (OPS-07). */
+.stranded {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-13);
+  letter-spacing: var(--tracking-12);
+  text-transform: uppercase;
+  color: var(--error-on-paper);
+}
+
 /* ---- One job on the board ------------------------------------------------ */
 
 .block {

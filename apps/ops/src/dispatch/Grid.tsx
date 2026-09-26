@@ -101,15 +101,29 @@ interface CellProps {
  * leave recorded after a job was assigned must not hide that job — and offers
  * no window to put another one in.
  */
+/** The day's leave, and the jobs still booked on it, which the leave moved nowhere (OPS-07). */
+function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: string; blocks: readonly Block[] }) {
+  const copy = dispatch.board;
+  const stranded = blocks.filter((block) => block.status === "scheduled" || block.status === "dispatched").length;
+  if (stranded === 0) {
+    return (
+      <span className={styles.awayMark} aria-label={copy.awayLabel(technician.name, shortDate(date))}>
+        {copy.away}
+      </span>
+    );
+  }
+  return (
+    <span className={styles.stranded} aria-label={copy.strandedLabel(technician.name, shortDate(date), stranded)}>
+      {copy.stranded(stranded)}
+    </span>
+  );
+}
+
 function Cell({ technician, date, blocks, away, inHand, onOpen, onTake, onLand }: CellProps) {
   const windows = inHand === null || away ? null : inHand.windowsAt(technician.technician_id, date);
   return (
     <td className={away ? `${styles.cell ?? ""} ${styles.away ?? ""}` : styles.cell}>
-      {away && (
-        <span className={styles.awayMark} aria-label={dispatch.board.awayLabel(technician.name, shortDate(date))}>
-          {dispatch.board.away}
-        </span>
-      )}
+      {away && <AwayMark technician={technician} date={date} blocks={blocks} />}
       {blocks.map((block) => (
         <BlockButton
           key={block.appointment_id}

@@ -15,6 +15,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
+import { VISIT_TYPES } from "../config/visit-types.ts";
 import { actorOf } from "../domain/audit.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
@@ -144,6 +145,29 @@ const LeaveRequestSchema = z
   .strict()
   .openapi("TechnicianLeaveRequest");
 
+const LeaveRecordedSchema = z
+  .object({
+    id: z.uuid(),
+    jobs: z
+      .array(
+        z
+          .object({
+            appointment_id: z.uuid(),
+            starts_at: z.iso.datetime(),
+            type: z.union([z.enum(VISIT_TYPES), z.null()]),
+            client: z.union([z.string(), z.null()]),
+          })
+          .strict(),
+      )
+      .openapi({
+        description:
+          "The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch " +
+          "board, and each waits on the Tasks board until they do (OPS-07).",
+      }),
+  })
+  .strict()
+  .openapi("TechnicianLeaveRecorded");
+
 const noShowsRoute = createRoute({
   method: "get",
   path: "/api/no-shows",
@@ -193,7 +217,7 @@ const leaveRoute = createRoute({
   summary: "Record leave. Those days are then refused to booking and to the dispatch board alike",
   request: { params: z.object({ id: z.uuid() }), body: { required: true, ...json(LeaveRequestSchema) } },
   responses: {
-    200: { description: "Recorded", ...json(z.object({ id: z.uuid() }).strict()) },
+    200: { description: "Recorded", ...json(LeaveRecordedSchema) },
     400: errorResponse(`invalid_request: to is before from, or more than ${String(LEAVE_MAX_DAYS)} days ahead`),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such active technician"),
@@ -340,7 +364,7 @@ export function registerOpsField(app: App): void {
     );
     if (outcome.kind === "no_such_technician") return c.json(errorBody("not_found", c.var.requestId), 404);
     if (outcome.kind === "bad_dates") return c.json(errorBody("invalid_request", c.var.requestId, ["to"]), 400);
-    return c.json({ id: outcome.id }, 200);
+    return c.json({ id: outcome.id, jobs: outcome.jobs }, 200);
   });
 
   app.openapi(cancelLeaveRoute, async (c) => {

@@ -114,6 +114,10 @@ export const dispatch = {
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
     away: "Away",
     awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
+    /** PLACEHOLDER: leave recorded over jobs already booked moves none of them; ops do (OPS-07). */
+    stranded: (jobs: number) => `Away · ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} to move`,
+    strandedLabel: (technician: string, date: string, jobs: number) =>
+      `${technician} is away on ${date}, with ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} still to move`,
     /** Beneath the board, saying where leave comes from, since it is ours and not FSM's. */
     leave: "Leave is recorded on the Technicians screen. A day marked Away takes no job.",
   },
@@ -784,7 +788,8 @@ export const tasks = {
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
     untold_move: "Call about a move",
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0073-hand-offs-and-messages.md).
+    // PLACEHOLDER: two groups the board does not draw (docs/decisions/0073-hand-offs-and-messages.md).
+    leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
     consultation_request: "Consultation request",
     replacement_order: "Replacement order",
@@ -815,6 +820,7 @@ export const tasks = {
    */
   decide: {
     untold_move: "Record the call in Dispatch",
+    leave_conflict: "Move it in Dispatch",
     referral_review: "Decide it in Referrals",
     no_show_decision: "Rule on it in No-shows",
     number_change: "Decide it in Number changes",
@@ -829,6 +835,8 @@ export const tasks = {
   subs: {
     /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the dispatch board. */
     untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
+    /** PLACEHOLDER: "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
+    leave_conflict: (when: string, technician: string) => `${when}, and ${technician} is away`,
     /**
      * PLACEHOLDER: "Visit Tue 22 Sep, 10 am; no address yet". Only the client can save one, in the app, whose Home
      * asks for it; the task goes when they do.
@@ -970,6 +978,14 @@ export const technicians = {
     takeLabel: (period: string, technician: string) => `Take back ${technician}'s leave, ${period}`,
     taking: "Taking it back",
     effect: "Nobody can be booked or assigned on these days until the leave is taken back.",
+    // PLACEHOLDER: leave recorded over jobs already booked moves none of them (OPS-07).
+    stranded: {
+      title: (count: number) =>
+        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on this leave. Recording it moved none.`,
+      job: (when: string, client: string) => `${when} · ${client}`,
+      noClient: "No client on our records",
+      move: "Move them on the dispatch board",
+    },
     errors: {
       invalid_request:
         "Those dates do not work: the last day cannot come before the first, and leave runs a year at most.",

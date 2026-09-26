@@ -1,6 +1,6 @@
 # 0062. Leave on the dispatch board
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0073: leave recorded over jobs already booked names them in its answer, marks their day on the board "Away · 1 job to move" in oxblood, and puts each on the Tasks board until it is moved or the leave is taken back.
 - Date: 2026-09-24
 
 ## Context
