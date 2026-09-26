@@ -14,6 +14,10 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/Dialog`         | A panel opened over the page as a native modal dialog, whose caller decides when it may close      |
 | `@maneman/ui/Panel`          | The ops console's bordered panel, headed by its title and its count                                |
 | `@maneman/ui/Field`          | `Field` (a label, a hint and an error tied to their control), `TextInput`, `TextArea`, `Checkbox`  |
+| `@maneman/ui/Table`          | The ops console's table at the boards' density, and `FIGURE` for a column of figures               |
+| `@maneman/ui/Tabs`           | The ops console's tabs, each a link the app draws with `TAB`'s look                                |
+| `@maneman/ui/States`         | `Loading` (board B3's shape) and `Failed` (a line and a retry), in each app's words                |
+| `@maneman/ui/ErrorBoundary`  | What stands in for a screen that failed to draw: the app's own fallback                            |
 | `@maneman/ui/classes`        | `classes()`, which joins an element's class names                                                  |
 
 ## Sizes by app

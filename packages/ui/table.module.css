@@ -1,0 +1,34 @@
+/*
+ * The console's table (./Table.tsx), at the boards' density: each row
+ * --ops-row high, its rule included, so a row measures what the boards draw
+ * and not a hairline more (OPS-24).
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-14);
+  }
+
+  .table th,
+  .table td {
+    height: calc(var(--ops-row) - var(--hairline));
+    border-bottom: var(--hairline) solid var(--paper-line);
+    font-weight: 400;
+    text-align: left;
+  }
+
+  .table thead th {
+    border-bottom-color: var(--text);
+    font-size: var(--fs-13);
+    color: var(--text-muted);
+  }
+
+  .table .figure {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+}

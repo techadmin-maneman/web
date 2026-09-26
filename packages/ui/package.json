@@ -10,11 +10,15 @@
     "./Caps": "./Caps.tsx",
     "./classes": "./classes.ts",
     "./Dialog": "./Dialog.tsx",
+    "./ErrorBoundary": "./ErrorBoundary.tsx",
     "./Field": "./Field.tsx",
     "./Icon": "./Icon.tsx",
     "./Mark": "./Mark.tsx",
     "./Panel": "./Panel.tsx",
     "./Sheet": "./Sheet.tsx",
+    "./States": "./States.tsx",
+    "./Table": "./Table.tsx",
+    "./Tabs": "./Tabs.tsx",
     "./VisuallyHidden": "./VisuallyHidden.tsx"
   },
   "dependencies": {

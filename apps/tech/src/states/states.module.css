@@ -1,45 +1,10 @@
-/* Loading and failure, on ink, at the technician app's sizes. */
-
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-14);
-  padding: var(--sp-28) var(--sp-20);
-}
-
-.line,
-.card {
-  background: var(--ink-frame);
-}
-
-.line {
-  width: var(--skeleton-label);
-  height: var(--sp-15);
-}
-
-.card {
-  height: var(--skeleton-card);
-}
+/* A failure, on ink, at the technician app's sizes (packages/ui/States.tsx draws the rest). */
 
 .failed {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
   gap: var(--sp-18);
-  padding: var(--sp-24) var(--sp-20);
 }
 
-.line1 {
-  margin: 0;
+.message {
   font-size: var(--fs-18);
   line-height: 1.5;
   color: var(--paper);
