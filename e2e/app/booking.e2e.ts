@@ -67,6 +67,7 @@ async function remindersAre(page: Page, granted: boolean): Promise<void> {
         address: null,
         consents,
         number_change: null,
+        number_change_decided: null,
         deletion: null,
       },
     }),

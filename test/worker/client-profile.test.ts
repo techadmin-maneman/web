@@ -80,6 +80,7 @@ describe("GET /api/profile", () => {
         { purpose: "whatsapp_launches", granted: false, since: null },
       ],
       number_change: null,
+      number_change_decided: null,
       deletion: null,
     });
   });
@@ -518,6 +519,56 @@ describe("a number change", () => {
     expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
     const replaced = await env.DB.prepare("SELECT replaced_mobile_e164 FROM number_change_requests").first();
     expect(replaced).toEqual({ replaced_mobile_e164: null });
+  });
+
+  // A rejected change vanished from the app, and its reason stayed in ops (OPS-09).
+  describe("once ops have decided it", () => {
+    async function decided(decision: "confirm" | "reject", reason: string | null) {
+      const { body } = await start();
+      await verify(body.request_id, "old", codeTo(OLD));
+      await verify(body.request_id, "new", codeTo(NEW));
+      await send(ops, "POST", `/api/number-changes/${body.request_id}/decision`, { decision, reason });
+    }
+    const profileAt = async (at: Date) => {
+      const later = appFor("local", fakeDependencies({ now: () => at }), {}, "client");
+      return (await request(later, "/api/profile", { headers: { Cookie: cookie } })).json<Record<string, unknown>>();
+    };
+
+    it("shows the client a rejection, and the reason ops gave them", async () => {
+      await decided("reject", "The new number did not answer our call");
+
+      const shown = await profile();
+      expect(shown.number_change).toBeNull();
+      expect(shown.number_change_decided).toEqual({
+        state: "rejected",
+        new_mobile: "+91 98xxx x0003",
+        decided_at: NOW.toISOString(),
+        reason: "The new number did not answer our call",
+      });
+    });
+
+    it("shows a confirmation too, with no reason, for thirty days", async () => {
+      await decided("confirm", null);
+
+      expect((await profile()).number_change_decided).toEqual({
+        state: "confirmed",
+        new_mobile: "+91 98xxx x0003",
+        decided_at: NOW.toISOString(),
+        reason: null,
+      });
+      const days = (n: number) => new Date(NOW.getTime() + n * 86_400_000);
+      expect((await profileAt(days(29))).number_change_decided).not.toBeNull();
+      expect((await profileAt(days(31))).number_change_decided).toBeNull();
+    });
+
+    it("gives way to a new change under way", async () => {
+      await decided("reject", "The new number did not answer our call");
+      await start();
+
+      const shown = await profile();
+      expect(shown.number_change).not.toBeNull();
+      expect(shown.number_change_decided).toBeNull();
+    });
   });
 });
 

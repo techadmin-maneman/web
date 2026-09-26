@@ -2233,6 +2233,17 @@ export interface components {
                 since: string | null;
             }[];
             number_change: components["schemas"]["NumberChange"] | null;
+            /** @description What ops decided about the client's latest change of number, for 30 days after, while no other change is under way. A rejection once vanished from the app (OPS-09). */
+            number_change_decided: {
+                /** @enum {string} */
+                state: "confirmed" | "rejected";
+                /** @description Masked, as the design shows it: +91 98xxx x4417. */
+                new_mobile: string;
+                /** Format: date-time */
+                decided_at: string;
+                /** @description Ops' reason for a rejection, which they write knowing the client reads it. */
+                reason: string | null;
+            } | null;
             deletion: {
                 /** @enum {string} */
                 state: "requested";

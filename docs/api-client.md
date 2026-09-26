@@ -2083,6 +2083,52 @@ Request body:
         }
       ]
     },
+    "number_change_decided": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "confirmed",
+                "rejected"
+              ]
+            },
+            "new_mobile": {
+              "type": "string",
+              "description": "Masked, as the design shows it: +91 98xxx x4417."
+            },
+            "decided_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ops' reason for a rejection, which they write knowing the client reads it."
+            }
+          },
+          "required": [
+            "state",
+            "new_mobile",
+            "decided_at",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What ops decided about the client's latest change of number, for 30 days after, while no other change is under way. A rejection once vanished from the app (OPS-09)."
+    },
     "deletion": {
       "type": [
         "object",
@@ -2113,6 +2159,7 @@ Request body:
     "address",
     "consents",
     "number_change",
+    "number_change_decided",
     "deletion"
   ],
   "additionalProperties": false
