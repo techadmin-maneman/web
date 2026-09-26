@@ -9,7 +9,7 @@
 // told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { Table } from "@maneman/ui/Table";
-import { useLoad } from "@maneman/ui/useLoad";
+import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Area, type Launch } from "../api.ts";
@@ -166,6 +166,49 @@ function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; o
   );
 }
 
+/** Board C3's table: who waits where, the longest waits first; a line when nobody waits at all. */
+function Pincodes({
+  areas,
+  more,
+  thisYear,
+  onChoose,
+}: {
+  areas: readonly Area[];
+  more: boolean;
+  thisYear: number;
+  onChoose: (area: Area) => void;
+}) {
+  if (areas.length === 0) return <p className={styles.empty}>{waitlist.empty}</p>;
+  return (
+    <section className={styles.panel}>
+      <Table className={styles.table}>
+        <thead>
+          <tr>
+            {waitlist.columns.map((column, index) => (
+              <th key={column} scope="col" className={COLUMNS[index]}>
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {areas.map((area) => (
+            <AreaRow
+              key={area.pincode}
+              area={area}
+              thisYear={thisYear}
+              onChoose={() => {
+                onChoose(area);
+              }}
+            />
+          ))}
+        </tbody>
+      </Table>
+      {more && <p className={styles.more}>{waitlist.more}</p>}
+    </section>
+  );
+}
+
 export function WaitlistScreen() {
   const [loaded, retry] = useLoad(api.waitlist);
   const [launching, setLaunching] = useState<Launching | null>(null);
@@ -208,33 +251,13 @@ export function WaitlistScreen() {
             {waitlist.launch.errors[refused] ?? waitlist.launch.errors.unknown}
           </p>
         )}
-        {loaded.state === "loading" ? (
-          <Loading />
-        ) : loaded.state === "failed" ? (
-          <PanelFailed onRetry={retry} />
-        ) : loaded.value.areas.length === 0 ? (
-          <p className={styles.empty}>{waitlist.empty}</p>
-        ) : (
-          <section className={styles.panel}>
-            <Table className={styles.table}>
-              <thead>
-                <tr>
-                  {waitlist.columns.map((column, index) => (
-                    <th key={column} scope="col" className={COLUMNS[index]}>
-                      {column}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loaded.value.areas.map((area) => (
-                  <AreaRow key={area.pincode} area={area} thisYear={thisYear} onChoose={() => void choose(area)} />
-                ))}
-              </tbody>
-            </Table>
-            {loaded.value.more && <p className={styles.more}>{waitlist.more}</p>}
-          </section>
-        )}
+        {whenLoaded(loaded, {
+          loading: <Loading />,
+          failed: <PanelFailed onRetry={retry} />,
+          loaded: ({ areas, more }) => (
+            <Pincodes areas={areas} more={more} thisYear={thisYear} onChoose={(area) => void choose(area)} />
+          ),
+        })}
         {launching !== null && (
           <LaunchPanel
             launching={launching}
