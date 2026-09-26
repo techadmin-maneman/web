@@ -31,26 +31,10 @@
 
 /* Fixed, so each column keeps the width the board draws it at and the area takes the rest, as its 1fr does. */
 .table {
-  width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
-  font-size: var(--fs-14);
 }
 
-.table th,
-.table td {
-  height: var(--ops-row);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
-}
-
-.table thead th {
-  border-bottom: var(--hairline) solid var(--text);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
-/* The cell's own padding sits on what it holds, so a row stays 34 px whether or not it is a control. */
+/* The pincode is a control, whose own padding makes the row's height (.choose), so the cell has none above or below. */
 .pincode {
   width: var(--ops-figure);
   padding: 0 var(--sp-6) 0 0;
@@ -59,11 +43,11 @@
 }
 
 .table thead .pincode {
-  padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
+  padding-block: var(--sp-7);
 }
 
 .area {
-  padding: var(--sp-8) var(--sp-6);
+  padding-inline: var(--sp-6);
   text-align: left;
 }
 
@@ -71,7 +55,7 @@
 .oldest,
 .referred,
 .alerts {
-  padding: var(--sp-8) var(--sp-4);
+  padding-inline: var(--sp-4);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -119,8 +103,9 @@
  * dense cannot spare a column for one. Its underline is the only sign, quiet
  * enough to leave the table reading as a table.
  */
+/* 7 px above and below, so the row it stands in is the table's 34 px (packages/ui/table.module.css). */
 .choose {
-  padding: var(--sp-8) 0;
+  padding: var(--sp-7) 0;
   border: 0;
   background: transparent;
   font: inherit;

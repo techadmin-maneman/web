@@ -7,6 +7,7 @@
 // the visits and the reason, and the server writes the ledger's entry and its
 // audit entry together; the balance it answers is shown, and heads the page.
 
+import { Table } from "@maneman/ui/Table";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -41,7 +42,7 @@ function stateOf(entry: ClientPayment): string {
 function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
   if (payments.length === 0) return <p className={styles.empty}>{copy.none}</p>;
   return (
-    <table className={styles.table}>
+    <Table className={styles.table}>
       <thead>
         <tr>
           {copy.columns.map((column, index) => (
@@ -61,7 +62,7 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
           </tr>
         ))}
       </tbody>
-    </table>
+    </Table>
   );
 }
 

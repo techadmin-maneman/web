@@ -149,28 +149,13 @@
 
 /* ---- Board C2: every referrer's figures ---------------------------------- */
 
+/* Board C2's figures (packages/ui/Table.tsx), in figures of one width. */
 .table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
 }
 
-.table th,
-.table td {
-  height: var(--ops-row);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
-}
-
-.table thead th {
-  border-bottom: var(--hairline) solid var(--text);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
 .name {
-  padding: var(--sp-8) var(--sp-8) var(--sp-8) 0;
+  padding-inline: 0 var(--sp-8);
   font-variant-numeric: normal;
   text-align: left;
 }
@@ -178,7 +163,7 @@
 .figure,
 .quietFigure {
   width: var(--ops-figure);
-  padding: var(--sp-8) var(--sp-4);
+  padding-inline: var(--sp-4);
   text-align: right;
 }
 

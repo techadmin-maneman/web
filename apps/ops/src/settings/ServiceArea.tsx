@@ -12,6 +12,7 @@
 // launch, so a save that would message people waiting there says how many
 // first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useEffect, useRef, useState } from "react";
 import { api, type AreaChange, type ServedPincode } from "../api.ts";
@@ -206,7 +207,7 @@ function FilePreview({
       <p className={styles.saved} role="status">
         {copy.upload.read(rows.length)}
       </p>
-      <table className={styles.table}>
+      <Table className={styles.table}>
         <thead>
           <tr>
             {copy.upload.columns.map((column) => (
@@ -228,7 +229,7 @@ function FilePreview({
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
       <div className={styles.actions}>
         <button className={styles.save} type="button" onClick={onApply}>
           {copy.upload.apply}
@@ -376,7 +377,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
         ))}
       </div>
 
-      <table className={styles.table}>
+      <Table className={styles.table}>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -398,7 +399,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
             />
           ))}
         </tbody>
-      </table>
+      </Table>
       <p className={styles.hint}>{copy.hint}</p>
 
       {checking ? (

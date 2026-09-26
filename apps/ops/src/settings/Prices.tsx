@@ -10,6 +10,7 @@
 // 18% item GST-free without anyone seeing it
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -444,7 +445,7 @@ export function Prices() {
         </h2>
       </div>
       <p className={styles.note}>{copy.note}</p>
-      <table className={styles.table}>
+      <Table className={styles.table}>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -486,7 +487,7 @@ export function Prices() {
             );
           })}
         </tbody>
-      </table>
+      </Table>
       {(withdrawing?.step === "asking" || withdrawing?.step === "sending") && (
         <Withdraw
           key={`${withdrawing.price.item}/${withdrawing.price.tier}/${withdrawing.price.valid_from}`}

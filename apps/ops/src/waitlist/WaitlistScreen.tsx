@@ -8,6 +8,7 @@
 // launched what it served left its waitlist untold, and this is how they are
 // told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, listDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -215,7 +216,7 @@ export function WaitlistScreen() {
           <p className={styles.empty}>{waitlist.empty}</p>
         ) : (
           <section className={styles.panel}>
-            <table className={styles.table}>
+            <Table className={styles.table}>
               <thead>
                 <tr>
                   {waitlist.columns.map((column, index) => (
@@ -230,7 +231,7 @@ export function WaitlistScreen() {
                   <AreaRow key={area.pincode} area={area} thisYear={thisYear} onChoose={() => void choose(area)} />
                 ))}
               </tbody>
-            </table>
+            </Table>
             {loaded.value.more && <p className={styles.more}>{waitlist.more}</p>}
           </section>
         )}

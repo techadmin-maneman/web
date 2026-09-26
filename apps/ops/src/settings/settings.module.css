@@ -376,20 +376,14 @@
 
 /* ---- The tables: board C2's, 13 px heads over 14 px rows 34 px tall -------- */
 
+/* packages/ui/Table.tsx's rows; its cells hold controls, which make the row's height, so none has padding above or below. */
 .table {
-  width: 100%;
   margin-top: var(--sp-8);
-  border-collapse: collapse;
-  font-size: var(--fs-14);
 }
 
 .table th,
 .table td {
-  height: var(--ops-row);
   padding: 0 var(--sp-10);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
-  text-align: left;
   vertical-align: middle;
 }
 
@@ -404,9 +398,6 @@
 }
 
 .table thead th {
-  border-bottom: var(--hairline) solid var(--text);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
   white-space: nowrap;
 }
 

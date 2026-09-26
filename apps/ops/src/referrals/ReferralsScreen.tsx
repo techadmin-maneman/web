@@ -9,6 +9,7 @@
 // how long it has been held, as the board writes it.
 
 import { Field, TextArea } from "@maneman/ui/Field";
+import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState } from "react";
@@ -249,7 +250,7 @@ function ReferrersTable({ version }: { version: number }) {
         {pages.referrers.length === 0 ? (
           <p className={styles.empty}>{copy.empty}</p>
         ) : (
-          <table className={styles.table}>
+          <Table className={styles.table}>
             <thead>
               <tr>
                 {copy.columns.map((column, index) => (
@@ -273,7 +274,7 @@ function ReferrersTable({ version }: { version: number }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
         {pages.more && (
           <div className={styles.actions}>

@@ -256,7 +256,7 @@
 .cell,
 .quietCell,
 .figureCell {
-  padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
+  padding-inline: 0 var(--sp-10);
 }
 
 .quietCell {
@@ -358,7 +358,7 @@
 /* The board's own column widths; the failure and its reason take the slack. */
 .code {
   width: var(--ops-piece-code);
-  padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
+  padding-inline: 0 var(--sp-10);
   font-variant-numeric: tabular-nums;
 }
 
@@ -380,7 +380,7 @@
 .lot,
 .due,
 .failure {
-  padding: var(--sp-8) var(--sp-10);
+  padding-inline: var(--sp-10);
 }
 
 .lot {
@@ -499,37 +499,20 @@
   padding: var(--sp-22);
 }
 
-/* Fixed, so each column keeps the width the board draws it at and the purpose wraps as it does. */
+/* Fixed, so each column keeps the width the board draws it at and the purpose wraps as it does (packages/ui/Table.tsx). */
 .table {
-  width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
-  font-size: var(--fs-14);
-}
-
-.table th,
-.table td {
-  height: var(--ops-row);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
-  text-align: left;
-}
-
-.table thead th {
-  border-bottom: var(--hairline) solid var(--text);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }
 
 .purpose {
   width: auto;
-  padding: var(--sp-9) var(--sp-10) var(--sp-9) 0;
+  padding-inline: 0 var(--sp-10);
 }
 
 .state,
 .date,
 .notice {
-  padding: var(--sp-9) var(--sp-10);
+  padding-inline: var(--sp-10);
 }
 
 .state {
