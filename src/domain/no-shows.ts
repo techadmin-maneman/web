@@ -87,20 +87,19 @@ function messageStateOf(row: CaseRow): MessageState {
   return "not_sent";
 }
 
-/** The WhatsApp ops read the receipt of: the day-before reminder, else the arrival notice. */
-async function evidenceMessage(
+/**
+ * The WhatsApp ops read the receipt of, as `?1` names the visit: of the day-before reminder and the arrival notice,
+ * one WhatsApp reported delivered, else the latest. The technician's card reads the same (src/domain/tech-jobs.ts).
+ */
+export const EVIDENCE_MESSAGE = `SELECT id, delivered_at FROM outbound_messages
+  WHERE subject_kind = 'appointment' AND subject_id = ?1 AND kind IN ('visit_reminder', 'arrival_notice')
+  ORDER BY delivered_at IS NULL, created_at DESC, rowid DESC LIMIT 1`;
+
+function evidenceMessage(
   db: D1Database,
   appointmentId: string,
 ): Promise<{ id: string; delivered_at: string | null } | null> {
-  const row = await db
-    .prepare(
-      `SELECT id, delivered_at FROM outbound_messages
-       WHERE subject_kind = 'appointment' AND subject_id = ?1 AND kind IN ('visit_reminder', 'arrival_notice')
-       ORDER BY created_at DESC LIMIT 1`,
-    )
-    .bind(appointmentId)
-    .first<{ id: string; delivered_at: string | null }>();
-  return row;
+  return db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<{ id: string; delivered_at: string | null }>();
 }
 
 export type Readiness =

@@ -68,6 +68,46 @@ beforeEach(async () => {
     .run();
 });
 
+const VISIT = "33333333-3333-4333-8333-333333333333";
+
+/** A visit of Karan's with Imran, today at 1 pm in India. */
+async function visit(status = "dispatched", type = "service") {
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    ).bind(NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
+         window_end, technician_id, fsm_modified_at, synced_at)
+       VALUES (?1, 'fsm-visit-1', 'fsm-order-1', ?2, ?3, ?4, 'Dispatched', '2026-09-21T07:30:00.000Z',
+         '2026-09-21T09:00:00.000Z', 't1', ?5, ?5)`,
+    ).bind(VISIT, PERSON, type, status, NOW.toISOString()),
+  ]);
+}
+
+describe("the arrival notice (BIZ-22)", () => {
+  it("tells the client his technician has arrived", async () => {
+    await visit();
+    await consent("whatsapp_visits", true);
+    const sent = await send(await queued("arrival_notice", "appointment", VISIT));
+    expect(sent.text).toBe("Hello Karan, Imran has arrived for your service visit.");
+  });
+
+  it("still goes once the visit is under way, which the check-in itself may have moved it to", async () => {
+    await visit("in_progress");
+    await consent("whatsapp_visits", true);
+    expect((await send(await queued("arrival_notice", "appointment", VISIT))).text).not.toBeNull();
+  });
+
+  it("is not sent to a client who never agreed to WhatsApp about visits, and says so for the no-show evidence", async () => {
+    await visit();
+    expect(await send(await queued("arrival_notice", "appointment", VISIT))).toEqual({
+      text: null,
+      skipped: "no consent to WhatsApp about visits",
+    });
+  });
+});
+
 describe("the waitlist confirmation (REQ-03)", () => {
   async function listed(launchAlert: boolean) {
     await env.DB.batch([

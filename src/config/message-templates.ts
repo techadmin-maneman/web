@@ -24,6 +24,8 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your visit credits covers it.",
   visit_reminder_v1: "Hello {{1}}, a reminder that your {{2}} is tomorrow, {{3}}, {{4}}, with {{5}}.",
   visit_moved_v1: "Hello {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
+  // At the technician's check-in (docs/decisions/0073-hand-offs-and-messages.md), the no-show's evidence.
+  technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
   visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
   // To a person who joined a pincode's waitlist, sent with their consent to be contacted about the request

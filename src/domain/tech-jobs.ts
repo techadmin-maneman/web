@@ -25,6 +25,7 @@ import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBad
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
 import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
+import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { windowAt } from "./scheduling.ts";
 
@@ -292,16 +293,10 @@ export async function lastVisitPhoto(
   return photo === null ? null : { key: photo.r2_key, contentType: photo.content_type };
 }
 
-/** The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows.ts): the day-before one, else the arrival one. */
-function reminderOf(db: D1Database, appointmentId: string): Promise<{ delivered_at: string | null } | null> {
-  return db
-    .prepare(
-      `SELECT delivered_at FROM outbound_messages
-       WHERE subject_kind = 'appointment' AND subject_id = ?1 AND kind IN ('visit_reminder', 'arrival_notice')
-       ORDER BY created_at DESC LIMIT 1`,
-    )
-    .bind(appointmentId)
-    .first<{ delivered_at: string | null }>();
+/** The WhatsApp ops read the receipt of on a no-show, as they read it (src/domain/no-shows.ts). */
+async function reminderOf(db: D1Database, appointmentId: string): Promise<{ delivered_at: string | null } | null> {
+  const message = await db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<{ delivered_at: string | null }>();
+  return message === null ? null : { delivered_at: message.delivered_at };
 }
 
 function addressOf(row: JobRow): JobAddress | null {

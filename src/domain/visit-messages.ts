@@ -9,6 +9,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import type { AppointmentStatus } from "./fsm-mirror.ts";
 import type { MessageKind } from "./messages.ts";
 import { windowAt } from "./scheduling.ts";
 
@@ -20,6 +21,7 @@ export type VisitMessageKind = Extract<
   | "reschedule_confirmation"
   | "cancel_confirmation"
   | "visit_moved"
+  | "arrival_notice"
 >;
 
 export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
@@ -30,7 +32,37 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
   "cancel_confirmation",
   // Ops moved the visit on the dispatch board; the client is told the new window and never charged.
   "visit_moved",
+  // The technician checked in at the door: the no-show evidence reads its receipt (ADR 0047).
+  "arrival_notice",
 ];
+
+/**
+ * The statuses in which each kind is still true of the visit. Most are about a visit still booked; a cancel is
+ * about one that no longer is, and the technician's arrival may already have started the visit in FSM.
+ */
+const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentStatus[] | "any">> = {
+  consultation_confirmation: ["scheduled", "dispatched"],
+  payment_receipt: ["scheduled", "dispatched"],
+  visit_reminder: ["scheduled", "dispatched"],
+  reschedule_confirmation: ["scheduled", "dispatched"],
+  visit_moved: ["scheduled", "dispatched"],
+  cancel_confirmation: "any",
+  arrival_notice: ["scheduled", "dispatched", "in_progress"],
+};
+
+const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean => {
+  const statuses = STILL_TRUE_WHILE[kind];
+  return statuses === "any" || statuses.includes(status);
+};
+
+/**
+ * How long after the technician arrived the client may still be told of it. A check-in that reaches us later, from
+ * a phone that had no signal, is past the point: he has been at the door, or gone.
+ */
+export const ARRIVAL_NOTICE_WITHIN_MINUTES = 10;
+
+/** Why an arrival notice was not sent: the no-show evidence reads it back. */
+export const ARRIVAL_TOO_LATE = "the check-in reached us too late to tell the client";
 
 /** The day before a visit, reminders go from this time in India. */
 export const REMINDERS_FROM = "18:00";
@@ -51,6 +83,38 @@ export function visitMessage(
     )
     .bind(id, at, input.personId, input.kind, input.appointmentId);
   return { id, statement };
+}
+
+/**
+ * Writes the arrival notice for a check-in that passed, once per visit (the index outbound_messages_one_arrival).
+ * A check-in heard of too late to tell the client anything is recorded as not sent, with why, so a no-show's
+ * evidence says so rather than "none". Answers the ID to queue; null when there is nothing to send.
+ */
+export async function arrivalNotice(
+  db: D1Database,
+  input: { personId: string; appointmentId: string; arrivedAt: Date; now: Date },
+): Promise<string | null> {
+  const late = input.now.getTime() - input.arrivedAt.getTime() > ARRIVAL_NOTICE_WITHIN_MINUTES * 60_000;
+  const id = crypto.randomUUID();
+  const at = input.now.toISOString();
+  const written = await db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at,
+         last_error)
+       VALUES (?1, ?2, ?3, 'arrival_notice', 'appointment', ?4, ?5, ?6, ?7)
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(
+      id,
+      at,
+      input.personId,
+      input.appointmentId,
+      late ? "skipped" : "queued",
+      late ? null : at,
+      late ? ARRIVAL_TOO_LATE : null,
+    )
+    .run();
+  return written.meta.changes === 1 && !late ? id : null;
 }
 
 /** "12 to 4 pm", as the app writes a window. */
@@ -99,14 +163,13 @@ export async function composeVisitMessage(
     .first<{
       type: VisitType | null;
       window_start: string | null;
-      status: string;
+      status: AppointmentStatus;
       name: string;
       technician: string | null;
     }>();
   if (visit === null) return { skip: "no such visit" };
   if (visit.type === null || visit.window_start === null) return { skip: "the visit has no type or time" };
-  const booked = visit.status === "scheduled" || visit.status === "dispatched";
-  if (kind !== "cancel_confirmation" && !booked) return { skip: "the visit is no longer booked" };
+  if (!stillTrue(kind, visit.status)) return { skip: "the visit is no longer booked" };
 
   const start = new Date(visit.window_start);
   const params = [
@@ -122,6 +185,7 @@ export async function composeVisitMessage(
 
   if (kind === "consultation_confirmation") return { template: "consultation_booked_v1", params };
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
+  if (kind === "arrival_notice") return { template: "technician_arrived_v1", params };
   // A move, whether the client made it or ops did: the same words, the visit's new window.
   if (kind === "reschedule_confirmation" || kind === "visit_moved") return { template: "visit_moved_v1", params };
   if (kind === "payment_receipt") {
