@@ -62,11 +62,6 @@
   padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
 }
 
-.plain {
-  display: inline-block;
-  padding: var(--sp-8) 0;
-}
-
 .area {
   padding: var(--sp-8) var(--sp-6);
   text-align: left;
@@ -162,6 +157,12 @@
   padding: var(--sp-22);
 }
 
+/* The panel takes focus as it opens, so it is read from its head and scrolled into view. */
+.launch:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
 .launchLabel {
   margin: 0 0 var(--sp-14);
   font-family: var(--font-serif);
@@ -209,6 +210,59 @@
   font-size: var(--fs-14);
   line-height: 1.5;
   color: var(--wa-dark-text);
+}
+
+/* Where the message's name for the area comes from, and the way to a better one (OPS-13). */
+.named {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.named a {
+  color: var(--text);
+}
+
+.named a:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+/* The day a technician starts coming, which the launch's API takes and the board does not draw (OPS-22). */
+.field {
+  margin-top: var(--sp-16);
+}
+
+.fieldLabel {
+  display: block;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.launchDate {
+  display: block;
+  width: var(--ops-date);
+  height: var(--tap);
+  margin-top: var(--sp-6);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-variant-numeric: tabular-nums;
+}
+
+.launchDate:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.fieldHint {
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
 }
 
 .actions {

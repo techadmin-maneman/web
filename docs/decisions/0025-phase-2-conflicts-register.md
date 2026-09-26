@@ -136,6 +136,15 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
     - **Board D1's case** names the client and carries two rows the board does not letter, the booked window and when the check-in reached us, and a third where the phone's own time was not taken; "Waited" is counted from the check-in to the close, so the board's 11:31 to 11:47 reads 16 minutes where it writes 15. Its note field is the board's own "Your note · required", from the dispute card.
     - **Board D3** is one row a technician; the phones and the leave open in a panel over the roster, and Leave stands in the column the board gives Skill, which nothing records (item 59 of `docs/open-points.md`).
     - **Board D2's tasks** each lead to the client's page and to the row they are decided on.
+49. **The ops console's frame and Settings, where the boards draw less than ops need.** **Taken 26 September 2026, for the owner to confirm** (ADR 0071):
+    - **Who is signed in.** Board A1 draws initials in a box at the header's right and no way out. The console draws the box, with "Signed in as" and the e-mail beside it, and "Sign out" where Access stands in front: an e-mail is all Access tells us of a person, and the console's only session is Access's.
+    - **Settings' width.** The design draws the section and nothing inside it. Its panels take board C1's 660 px, the width the boards give a panel of more than one column, where a queue's is 484.
+    - **Tables at 14 px.** The design's opening note says "13 px table type, 34 px rows"; boards B1, C2, C3 and D3 letter their rows at 14 px under 13 px heads. The console follows the boards: rows of 14 px type, 34 px tall, under 13 px heads.
+    - **Old beside new.** A price is shown against the one in force before it is set, and serving a pincode says whom it will message before it saves. A price still to come can be taken back.
+    - **A live pincode's waitlist.** Board C3 draws a launch for a pincode not yet served; the console also lets ops tell whoever is still untold in one already live, and takes the launch date the API always accepted.
+    - **The dispatch board's blocks stay as drawn.** A block's height is drawn from its slots but two lines of text are taller than a one-slot block, so a slot and a slot and a half read the same (OPS-24). Changing that is a departure from board A1 for the owner (`docs/open-points.md`, item 99).
+
+    Every word the boards do not draw is a placeholder in `apps/ops/src/content.ts`, approved with the rest of the console's copy (`docs/open-points.md`, item 20).
 
 ## Inputs still owed
 

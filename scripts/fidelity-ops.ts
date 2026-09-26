@@ -325,6 +325,8 @@ const photoFiles = Object.fromEntries(
 );
 
 const API: Api = {
+  // Board A1's "AK", as Access would name a member of staff whose initials they are.
+  "/api/whoami": json({ signed_in_as: "aditya.kumar@maneman.in", sign_out: "/cdn-cgi/access/logout" }),
   // Boards A1 to A3 are answered with the week the browser tests use, so the
   // board's figures are written once and both read beside it (e2e/ops/fixtures.ts).
   "/api/dispatch": json(BOARD),

@@ -33,6 +33,7 @@
     "test/node/app-money.test.ts",
     "test/node/app-referral-card.test.ts",
     "test/node/app-route.test.ts",
+    "test/node/ops-route.test.ts",
     "test/node/tech-api.test.ts",
     "test/node/tech-kept.test.ts",
     "test/node/tech-outbox-replay.test.ts",

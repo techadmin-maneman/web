@@ -1,19 +1,23 @@
 /*
  * Settings. The design draws the section in the navigation column and letters
  * nothing inside it, so everything here follows the frames it does draw: board
- * B1's tabs, the queues' panel with its head on a rule, and board C1's field
- * and its one ink button.
+ * B1's tabs, the queues' panel with its head on a rule, board C2's table at
+ * 34 px a row, board A2's square boxes, and board C1's one ink button.
+ *
+ * The queues are drawn 484 px wide; Settings' tables carry six columns and a
+ * row of boxes each, so the section takes board C1's wider 660 and never runs past
+ * its panel (FEO-33).
  *
  * A form that sets a business rule is read before it is typed into, so each
  * field's unit stands beside the box and its bounds under it, in the muted
  * grey the boards use for a note.
  */
 
-.column {
+.screen {
   display: flex;
   flex-direction: column;
   gap: var(--sp-20);
-  max-width: var(--ops-panel);
+  max-width: var(--ops-wide);
 }
 
 .tabs {
@@ -41,6 +45,7 @@
 }
 
 .panel {
+  min-width: 0;
   border: var(--hairline) solid var(--paper-line);
   padding-bottom: var(--sp-16);
 }
@@ -84,9 +89,17 @@
 
 /* A rule's fields are one question, so they are grouped and the rule names the group. */
 .group {
-  margin: 0;
-  padding: 0;
+  min-width: 0;
+  margin: var(--sp-20) var(--sp-20) 0;
+  padding: var(--sp-16) 0 0;
   border: 0;
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.rule .group {
+  margin: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .ruleTitle {
@@ -123,14 +136,21 @@
   gap: var(--sp-8);
 }
 
+/*
+ * The form's boxes, edged at 3:1 against paper and white as the client app's
+ * are (ADR 0025, "Where the client app departs from the boards for WCAG 2.2"),
+ * square, and as tall as the buttons beside them.
+ */
 .number,
 .text,
-.select {
+.select,
+.date {
   display: block;
-  height: var(--field-h);
+  height: var(--tap);
   margin-top: var(--sp-6);
   padding: 0 var(--sp-10);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
   background: var(--white);
   color: var(--text);
   font: inherit;
@@ -142,16 +162,44 @@
   font-variant-numeric: tabular-nums;
 }
 
-.text,
+/* A price runs to seven figures, which a rule's box was never drawn for. */
+.amount {
+  width: var(--ops-amount);
+}
+
+.text {
+  width: var(--ops-area);
+}
+
+/* Wide enough for the whole date and the picker's button, so the year is never cut (VIS-21). */
+.date {
+  width: var(--ops-date);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The browser's own arrow is drawn in the system's colours; this one is the text's, in two strokes. */
 .select {
-  width: var(--ops-piece-column);
+  min-width: var(--ops-area);
+  padding-right: var(--sp-30);
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text) 50%), linear-gradient(135deg, var(--text) 50%, transparent 50%);
+  background-position:
+    calc(100% - var(--sp-15)) 50%,
+    calc(100% - var(--sp-10)) 50%;
+  background-size: var(--sp-5) var(--sp-5);
+  background-repeat: no-repeat;
 }
 
 .number:focus-visible,
 .text:focus-visible,
-.select:focus-visible {
+.select:focus-visible,
+.date:focus-visible,
+.cellText:focus-visible,
+.cellDate:focus-visible,
+.box:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline-offset: var(--sp-2);
 }
 
 /* The unit beside the box, so nobody has to guess whether 15 is minutes or hours. */
@@ -162,12 +210,21 @@
 }
 
 .field .hint {
+  max-width: var(--measure-form);
   margin: var(--sp-6) 0 0;
   font-size: var(--fs-13);
 }
 
+/* What the item and tier chosen cost today: the figure the boxes beneath start from. */
+.formNow {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
 .addKey {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--sp-12);
   margin-top: var(--sp-16);
@@ -191,7 +248,8 @@
 }
 
 .rule .actions,
-.group .actions {
+.group .actions,
+.check .actions {
   margin-left: 0;
   margin-right: 0;
 }
@@ -216,22 +274,33 @@
   align-items: center;
   min-height: var(--tap);
   padding: 0 var(--sp-14);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--white);
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: var(--fs-14);
+  font-size: var(--fs-15);
+  font-weight: 500;
   cursor: pointer;
 }
 
-.save:disabled,
-.quiet:disabled {
+/* A button not yet usable is shaded, as the client app's are, rather than faded (VIS-21). */
+.save:disabled {
+  border-color: var(--paper-shade);
+  background: var(--paper-shade);
+  color: var(--text-quiet);
   cursor: default;
-  opacity: 0.5;
+}
+
+.quiet:disabled,
+.inline:disabled {
+  border-color: var(--paper-line);
+  color: var(--text-quiet);
+  cursor: default;
 }
 
 .save:focus-visible,
-.quiet:focus-visible {
+.quiet:focus-visible,
+.inline:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--sp-3);
 }
@@ -256,7 +325,56 @@
   margin-right: 0;
 }
 
-/* ---- The two tables ------------------------------------------------------ */
+/*
+ * A change that cannot be quietly taken back, shown before it is sent: the old
+ * figure beside the new, or who a launch will message. It takes focus as it
+ * opens, so it is read at once and never opens out of sight (FEO-15).
+ */
+.check {
+  margin: var(--sp-14) var(--sp-20) 0;
+  padding: var(--sp-16) var(--sp-20);
+  border: var(--hairline) solid var(--paper-line);
+  border-left: var(--rule-strong) solid var(--ink);
+  background: var(--paper-light);
+}
+
+.group .check {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.check:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.checkTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  line-height: 1.2;
+}
+
+.checkLine,
+.checkWarning {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: 1.6;
+}
+
+.checkWarning {
+  color: var(--error-on-paper);
+}
+
+.checkList {
+  margin: var(--sp-10) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+
+/* ---- The tables: board C2's, 13 px heads over 14 px rows 34 px tall -------- */
 
 .table {
   width: 100%;
@@ -267,7 +385,8 @@
 
 .table th,
 .table td {
-  padding: var(--sp-9) var(--sp-10);
+  height: var(--ops-row);
+  padding: 0 var(--sp-10);
   border-bottom: var(--hairline) solid var(--paper-line);
   font-weight: 400;
   text-align: left;
@@ -288,28 +407,42 @@
   border-bottom: var(--hairline) solid var(--text);
   font-size: var(--fs-13);
   color: var(--text-muted);
-}
-
-.column {
   white-space: nowrap;
 }
 
-.rowHead {
-  font-variant-numeric: tabular-nums;
-}
-
+.rowHead,
 .figure {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
+.state {
+  white-space: nowrap;
+}
+
+/* A spent price, and its state, stand back; the one in force and those to come read at full strength. */
+.spent td,
+.spent th,
 .state {
   color: var(--text-muted);
 }
 
-/* The row that applies today, in brass, as the boards mark the figure that counts. */
-.live .state,
-.live .figure {
-  color: var(--brass-text);
+.inForce .state,
+.scheduled .state {
+  color: var(--text);
+}
+
+/* A button inside a row: as tall as the row allows, so the table keeps its 34 px. */
+.inline {
+  height: var(--ops-control);
+  margin-left: var(--sp-10);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-13);
+  cursor: pointer;
 }
 
 /* ---- The service area ---------------------------------------------------- */
@@ -342,40 +475,78 @@
   outline-offset: var(--sp-2);
 }
 
-/* The box and its label on one line, since the column head already says what it is. */
-.check {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-8);
+/* A row's own boxes, as tall as the row allows. */
+.cellText,
+.cellDate {
+  height: var(--ops-control);
+  padding: 0 var(--sp-6);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-14);
 }
 
-/*
- * Each row's own label. The column head names the column and a screen reader
- * reads it, but a checkbox and a date box still need a name of their own, and
- * naming them "Served 110001" is what tells one row from another.
- */
-.rowLabel,
-.check label {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+.cellText {
+  width: 100%;
+  min-width: var(--ops-area);
+}
+
+.cellDate {
+  width: var(--ops-date);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Served: board A2's square, filled in ink when it is chosen, never the browser's blue (VIS-21). */
+.box {
+  display: block;
+  width: var(--ops-box);
+  height: var(--ops-box);
+  margin: 0;
+  border: var(--hairline) solid var(--paper-control);
+  background: var(--white);
+  appearance: none;
+  cursor: pointer;
+}
+
+.box:checked {
+  border-color: var(--ink);
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--sp-3) var(--white);
 }
 
 .uploaded {
   margin-top: var(--sp-12);
 }
 
-.group {
-  margin: var(--sp-20) var(--sp-20) 0;
-  padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
+.uploaded .table th:first-child,
+.uploaded .table td:first-child {
+  padding-left: 0;
 }
 
-.rule .group {
-  margin: 0;
-  padding-top: 0;
-  border-top: 0;
+.file {
+  display: block;
+  margin-top: var(--sp-6);
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.file::file-selector-button {
+  min-height: var(--tap);
+  margin-right: var(--sp-12);
+  padding: 0 var(--sp-14);
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.file:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
 }

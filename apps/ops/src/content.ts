@@ -13,30 +13,47 @@ export const shell = {
   /** The sidebar's own title, as boards A1 and B1 letter it. */
   title: "Operations",
   /**
-   * The sections the backend has routes for, in the design's order; the design
-   * draws eight. Its third is drawn as "Payments" and built as "No-shows": the
-   * day's money is there, over the queue, but the dispute the board rules on
-   * has no record behind it (docs/open-points.md, item 57). Settings is the
-   * eighth, built from ADR 0061: the prices, the service area and the rules
-   * ops set for themselves, none of which now needs a release.
+   * Each section's name in the navigation, in apps/ops/src/route.ts's order;
+   * the design draws eight. Its third is drawn as "Payments" and built as
+   * "No-shows": the day's money is there, over the queue, but the dispute the
+   * board rules on has no record behind it (docs/open-points.md, item 57).
+   * Settings is the eighth, built from ADR 0061.
    *
-   * The last three are drawn on no board at all. They are what a client asks of
-   * us about their own data, and every one was API-only until the P2-M6 proof
-   * said so (docs/decisions/0049-dpdp.md, docs/fidelity-method.md).
+   * Grievances, Deletion requests and Number changes are drawn on no board at
+   * all. They are what a client asks of us about their own data
+   * (docs/decisions/0049-dpdp.md, docs/fidelity-method.md).
    */
-  sections: [
-    { page: "/dispatch", label: "Dispatch" },
-    { page: "/clients", label: "Clients" },
-    { page: "/no-shows", label: "No-shows" },
-    { page: "/referrals", label: "Referrals" },
-    { page: "/waitlist", label: "Waitlist" },
-    { page: "/tasks", label: "Tasks" },
-    { page: "/technicians", label: "Technicians" },
-    { page: "/grievances", label: "Grievances" },
-    { page: "/deletion-requests", label: "Deletion requests" },
-    { page: "/number-changes", label: "Number changes" },
-    { page: "/settings", label: "Settings" },
-  ],
+  sections: {
+    dispatch: "Dispatch",
+    clients: "Clients",
+    "no-shows": "No-shows",
+    referrals: "Referrals",
+    waitlist: "Waitlist",
+    tasks: "Tasks",
+    technicians: "Technicians",
+    grievances: "Grievances",
+    "deletion-requests": "Deletion requests",
+    "number-changes": "Number changes",
+    settings: "Settings",
+  },
+  /** The browser tab's title: "Prices · Settings · Mane Man operations". */
+  documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
+  /**
+   * PLACEHOLDER: who is signed in, where board A1 draws "AK" in a box at the
+   * header's right, and a way out, which it does not draw. Signing out ends the
+   * Cloudflare Access session, which is the only session the console has.
+   */
+  account: {
+    signedInAs: (who: string) => `Signed in as ${who}`,
+    signOut: "Sign out",
+  },
+  /**
+   * PLACEHOLDER: Cloudflare Access ends a session after the time the team sets,
+   * and from then on every call is sent to its login page instead of reaching
+   * us. Reloading the page is what takes ops there.
+   */
+  lapsed: "Your sign-in to the console has run out, so nothing more can be read or saved. Reload to sign in again.",
+  reload: "Reload",
 } as const;
 
 export const states = {
@@ -565,17 +582,32 @@ export const waitlist = {
   columns: ["Pincode", "Area", "Count", "Oldest", "Ref", "Alerts"],
   /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */
   unknown: "—",
-  /** A pincode we already come to, which cannot be launched again. PLACEHOLDER: the board draws only those waiting. */
+  /** A pincode we already come to. PLACEHOLDER: the board draws only those waiting. */
   live: "Live",
   choose: (pincode: string, area: string) => `Mark ${pincode} live, ${area}`,
+  /**
+   * PLACEHOLDER: a pincode served without its waitlist being told, as the
+   * Settings screen served them until it launched them too (FEO-02). Choosing
+   * it asks who is still to be told.
+   */
+  tell: (pincode: string, area: string) => `Tell those waiting in ${pincode}, ${area}`,
   // PLACEHOLDER: the board draws no empty waitlist.
   empty: "Nobody is waiting outside the areas we serve.",
   // PLACEHOLDER: the table lists the two hundred pincodes that have waited longest.
   more: "More pincodes have people waiting than are listed. These are the ones who have waited longest.",
   launch: {
     label: (pincode: string) => `Mark ${pincode} live`,
-    title: (alerts: number) => `This messages ${String(alerts)} ${alerts === 1 ? "person" : "people"}`,
+    /** PLACEHOLDER: the panel's head for a pincode already live. */
+    tellLabel: (pincode: string) => `Tell those waiting in ${pincode}`,
+    title: (alerts: number) =>
+      alerts === 0 ? "This messages nobody" : `This messages ${String(alerts)} ${alerts === 1 ? "person" : "people"}`,
     rows: { waiting: "On the list", alerts: "Opted in to alerts", referred: "Held referral invites" },
+    /** PLACEHOLDER: the board's launch sends today; the API takes the day a technician starts coming. */
+    date: "Launch date",
+    dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
+    /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
+    named: "The message names the area as Settings has it.",
+    rename: "Change the name",
     /**
      * What each of them gets. The words are launch_alert_v1's in
      * src/config/message-templates.ts, which is what the queue actually sends;
@@ -584,13 +616,20 @@ export const waitlist = {
      */
     message: (area: string, bookingUrl: string) =>
       `Hello {first name}, we now come to ${area}. Your free consultation can be booked here: ${bookingUrl}`,
-    send: (alerts: number) => `Send to ${String(alerts)}`,
+    /** The board's "Send to 84"; with nobody to message, the press only marks the pincode live, and says so. */
+    send: (alerts: number) => (alerts === 0 ? "Mark it live" : `Send to ${String(alerts)}`),
     sending: "Sending",
     cancel: "Not now",
     /** The board's note beneath the panel, with the figures filled in. */
-    note: (quiet: number) =>
-      `The ${String(quiet)} who did not opt in are not messaged. The count shows both so the gap is visible.`,
-    done: (alerts: number) => `Launched. ${String(alerts)} on their way.`,
+    note: (quiet: number) => {
+      if (quiet === 0) return "Everyone on the list asked to be told.";
+      const who = quiet === 1 ? "The 1 who did not opt in is" : `The ${String(quiet)} who did not opt in are`;
+      return `${who} not messaged. The count shows both so the gap is visible.`;
+    },
+    /** PLACEHOLDER: for a pincode already live, those not messaged include whoever was told before. */
+    toldNote: "Nobody who has been told is told again.",
+    done: (alerts: number) =>
+      alerts === 0 ? "Marked live. Nobody was messaged." : `Launched. ${String(alerts)} on their way.`,
     errors: {
       not_found: "We have no such pincode.",
       offline: "You are offline. Connect, then try again.",
@@ -1103,32 +1142,39 @@ export const numberChanges = {
  * Settings: the business inputs ops set for themselves. The design draws this
  * section and letters nothing inside it (docs/decisions/0061-ops-editable-inputs.md,
  * docs/fidelity-method.md), so every line below is ours. Each field says its
- * unit and what the figure may be before it is typed, not after it is refused:
- * a form that sets a business rule has to be readable by whoever owns the rule.
+ * unit and what the figure may be before it is typed, not after it is refused,
+ * and a change that cannot be taken back is shown before it is made
+ * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
  */
 export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
-  tabs: [
-    { tab: "rules", label: "Rules", path: "/settings" },
-    { tab: "prices", label: "Prices", path: "/settings/prices" },
-    { tab: "area", label: "Service area", path: "/settings/area" },
-  ],
+  tabs: { rules: "Rules", prices: "Prices", area: "Service area" },
   rules: {
     title: "Rules",
     allowed: (min: number, max: number, unit: string) => `${String(min)} to ${String(max)} ${unit}, a whole number`,
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
-    committed: (source: string) => `Nobody has set this. The figure in the code stands (${source}).`,
+    committed: "Nobody has set this, so the standard figure stands.",
     save: "Save",
     saving: "Saving",
     saved: "Saved.",
-    reset: "Use the figure in the code",
+    reset: "Go back to the standard figure",
     /** The open-keyed rule's extra row: a base FSM names, and the cycle for it. */
-    addKey: "Add a base",
     keyName: "Base, exactly as FSM names it",
     keyValue: "Days",
     add: "Add",
     defaultKey: "Every other base",
+    /**
+     * The boxes of a rule with one figure per key: the kinds of visit and the
+     * task queues, as the rest of the console names them. A base ops name
+     * themselves shows as they typed it.
+     */
+    keyNames: {
+      no_show_wait_min: dispatch.typeNames,
+      task_sla_hours: tasks.groups,
+    } as Readonly<Record<string, Readonly<Record<string, string>>>>,
+    /** The rule's name, or one of its boxes, and what the API said of it. */
+    outside: (field: string) => `${field} is outside what this rule allows. Nothing was changed.`,
     errors: {
       invalid_request: "That figure is outside what this rule allows. Nothing was changed.",
       offline: "You are offline. Connect, then try again.",
@@ -1139,32 +1185,76 @@ export const settings = {
     title: "Prices",
     note: "A price applies from the day you give it and never before, so nothing already invoiced moves.",
     columns: ["Item", "Tier", "Before GST", "GST", "From", "State"],
+    /** What the book prices, as the rest of the console names the visits. */
+    items: {
+      consultation: "Consultation",
+      first_fit: "First fit",
+      service: "Service visit",
+      replacement: "Replacement",
+      late_fee_first_fit: "Late fee on a first fit",
+      late_fee_replacement: "Late fee on a replacement",
+    } as Readonly<Record<string, string>>,
     inForce: "In force",
     scheduled: "To come",
     spent: "Past",
-    /** Paise as rupees: 3000000 reads "Rs. 30,000". */
-    rupees: (paise: number) => `Rs. ${(paise / 100).toLocaleString("en-IN")}`,
     percent: (value: number) => `${String(value)}%`,
+    /** "Rs. 2,000 + 18% GST": a price as the confirmation compares two. */
+    price: (rupees: string, gst: number) => `${rupees} + ${String(gst)}% GST`,
     form: {
       title: "Set a price",
       item: "Item",
       tier: "Tier",
+      /** The last choice under Tier: pricing a kind of base the book has never held (ADR 0061). */
+      newTier: "A new tier",
+      newTierName: "The new tier's name",
+      newTierHint: "Small letters, digits and _, starting with a letter: lace, or mono_base.",
+      /** Under the item and tier, what they cost today, which the boxes below start from. */
+      now: (price: string, since: string) => `Now ${price}, since ${since}.`,
+      none: "Nothing is priced for this tier yet.",
       amount: "Price before GST, in rupees",
-      amountHint: (maxPaise: number) => `Whole rupees, 0 to ${(maxPaise / 100).toLocaleString("en-IN")}.`,
+      amountHint: (max: string) => `Whole rupees, up to ${max}.`,
       gst: "GST",
       gstHint: (max: number) => `A whole percentage, 0 to ${String(max)}.`,
       from: "Applies from",
-      fromHint: "Today or a day after it. Write it as 2026-10-01.",
+      fromHint: "Today or a day after it.",
       save: "Set this price",
       saving: "Setting",
       saved: "The price is set.",
+      /** The check before anything is sent: what the item costs now, and what it will. */
+      confirm: {
+        title: "Check the change",
+        change: (item: string, tier: string, was: string, now: string, from: string) =>
+          `${item}, ${tier}: ${was} → ${now}, from ${from}.`,
+        nothing: "nothing",
+        gstChanges: (was: number, now: number) => `GST changes from ${String(was)}% to ${String(now)}%.`,
+        sameDay: "A price is already set from that day. This replaces it.",
+        send: "Set this price",
+        back: "Change it",
+      },
     },
+    withdraw: {
+      button: "Take back",
+      label: (item: string, from: string) => `Take back the ${item} price from ${from}`,
+      question: (from: string) => `Take back the price from ${from}? The price before it goes on applying.`,
+      confirm: "Take it back",
+      keep: "Keep it",
+      taking: "Taking it back",
+      done: "The price is taken back.",
+    },
+    /** A refusal names the box it came from (src/routes/ops-settings.ts); these are said of each. */
     errors: {
+      item: "The book does not price that item. Nothing was changed.",
+      tier: "A tier's name is small letters, digits and _, starting with a letter. Nothing was changed.",
       amount_ex_gst: "A price is in whole rupees, inside the range under the field. Nothing was changed.",
       gst_percent: "GST is a whole percentage, inside the range under the field. Nothing was changed.",
       valid_from: "A price applies from today or a day after it. Nothing was changed.",
+      not_found: "That price is no longer in the book. The table now shows it as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+    /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
+    withdrawErrors: {
+      valid_from: "That price applies already, so it stays in the book.",
     } as Readonly<Record<string, string>>,
   },
   area: {
@@ -1172,33 +1262,67 @@ export const settings = {
     /**
      * The file is what the owner already edits (data/pincodes/README.md), so
      * the screen takes it back rather than asking for 198 rows to be retyped.
-     * The toggles are for the one-at-a-time change, which is what a launch is.
+     * The rows are for the one-at-a-time change, which is what a launch is.
      */
-    note: "The pincodes come from data/pincodes/ncr-pincodes.csv. Change a few here, or upload the file you have edited.",
+    note: "Change a pincode here, or download the list, edit it in a spreadsheet and upload it again.",
     city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
-    columns: ["Pincode", "Area", "Served", "Launch date"],
-    served: "Served",
-    launchOn: "Launch date",
-    launchHint: "Write it as 2026-10-01. A held referral invite for that area lapses twelve months from this day.",
+    columns: ["Pincode", "Area, as messages name it", "Served", "Launch date", "Waiting"],
+    areaLabel: (pincode: string) => `Area name for ${pincode}`,
+    served: (pincode: string) => `Served ${pincode}`,
+    launchOn: (pincode: string) => `Launch date for ${pincode}`,
+    /** Beneath the table: what the two boxes of a row mean. */
+    hint:
+      "The area's name is what a launch message, the waitlist and the dispatch board call it. " +
+      "A held referral invite for an area lapses twelve months from its launch date.",
+    /** The name a row's box holds: a letter or a digit first, as the API takes it. */
+    badName: (pincode: string) =>
+      `${pincode}: an area's name starts with a letter or a digit and runs from 2 to 40 characters.`,
     save: "Save these pincodes",
     saving: "Saving",
-    saved: (changed: number) => (changed === 1 ? "One pincode changed." : `${String(changed)} pincodes changed.`),
+    saved: (changed: number, alerted: number) => {
+      const pincodes = changed === 1 ? "One pincode changed." : `${String(changed)} pincodes changed.`;
+      if (alerted === 0) return pincodes;
+      return `${pincodes} ${String(alerted)} ${alerted === 1 ? "person is" : "people are"} being told on WhatsApp.`;
+    },
     nothing: "Nothing to save: no pincode has changed.",
     bulk: {
       serve: (city: string) => `Serve all of ${city}`,
       stop: (city: string) => `Stop serving ${city}`,
     },
+    /**
+     * Serving a pincode is a launch: whoever waits there and asked to be told
+     * is messaged when it is saved, as marking it live on the waitlist does.
+     * So the save that would message anyone says so first.
+     */
+    launch: {
+      title: (people: number) => `This messages ${String(people)} ${people === 1 ? "person" : "people"}`,
+      line: (pincode: string, area: string, people: number) =>
+        `${pincode}, ${area}: ${String(people)} waiting ${people === 1 ? "asks" : "ask"} to be told.`,
+      note: "Serving a pincode tells those on its waitlist who asked to hear from us, on WhatsApp, once.",
+      send: (people: number) => `Save and message ${String(people)}`,
+      cancel: "Not now",
+    },
     upload: {
       title: "Upload the file",
       label: "The CSV you have edited",
-      hint: "It needs a pincode column, and served and launch_on. Every other column is ignored.",
+      hint:
+        "It needs pincode, served and launch_on columns; every other column is ignored. " +
+        "Served is yes or no, and a blank is no. A launch date is written 2026-10-01.",
+      /** What the file would change, pincode by pincode, before any of it is taken. */
       read: (changed: number) =>
-        changed === 1 ? "The file changes one pincode." : `The file changes ${String(changed)} pincodes.`,
+        changed === 1 ? "The file changes one pincode:" : `The file changes ${String(changed)} pincodes:`,
+      columns: ["Pincode", "Area", "Now", "In the file"],
+      state: (served: boolean, launch: string | null) => {
+        const serving = served ? "Served" : "Not served";
+        return launch === null ? serving : `${serving}, launch ${launch}`;
+      },
       none: "The file changes nothing. Every pincode in it already reads that way.",
-      apply: "Apply the file",
+      apply: "Put these in the table",
+      applied: "The file's changes are in the table. Check them, then save.",
       cancel: "Not now",
       badDate: (pincode: string) => `${pincode}: a launch date has to be written as 2026-10-01.`,
-      badHeader: "That file has no pincode column. Save it as CSV, with its header row.",
+      badServed: (pincode: string) => `${pincode}: served has to be yes or no.`,
+      badHeader: "That file needs a pincode, a served and a launch_on column. Save it as CSV, with its header row.",
     },
     download: "Download the current list",
     downloadName: "service-area.csv",

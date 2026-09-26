@@ -1,6 +1,6 @@
 # 0061. The business inputs ops change without a developer
 
-- Status: accepted
+- Status: accepted; amended by [0071](0071-what-ops-see-before-a-setting-changes.md) for the price form, the service-area file and serving a pincode
 - Date: 2026-09-24
 - Follows [0031](0031-access-and-audit.md) for who may change one and how it is recorded, and [0009](0009-stay-inside-cloudflare-free-tier.md) for what reading one may cost
 
@@ -105,6 +105,7 @@ PRs #89 and #100 were both a fabricated nought. Three things here refuse to make
 
 - **Launching one area** is one row and a date. The table shows **one city at a time** — Delhi is 103 of the 198 — with a per-pincode toggle and a date box, and a pair of bulk actions that fill or clear the city shown.
 - **Handing over the whole file** is an upload. The browser reads the CSV, takes **only the three columns that are ops' own** — `pincode`, `served`, `launch_on` — and ignores every other one, so the file they already have works and nothing in it can overwrite the area names or the coordinates. It then shows **how many pincodes the file would change** before anything is sent, as the waitlist's launch does, and only the second press sends them. A pincode the file names that we do not hold is refused: the CSV is reference data, not a way to add one. There is a **Download the current list** beside it, in the same shape, so the file can be round-tripped.
+  **Amended 26 September 2026 (ADR 0071):** the file must carry all three columns, and `served` is read as yes or no; what it would change is shown pincode by pincode and put into the table, which the one Save sends, so the table and what is saved never part. Serving a pincode, from the table or the file, launches it: its waitlist is told.
 - A launch date is only taken as `2026-10-01`. Excel likes to save `01-10-2026`, and the import already refuses to guess which is the month (`data/pincodes/README.md`); the console refuses the same way and names the pincode.
 - **A change that would leave no pincode served is refused** (`no_service_area`). It would put every client on the waitlist, and no single form press should be able to do that.
 

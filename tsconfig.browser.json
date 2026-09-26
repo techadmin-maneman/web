@@ -3,8 +3,8 @@
   // run in a page, so they need the DOM's types, which clash with the Workers
   // types in tsconfig.node.json. The technician app's store tests are here for
   // the same reason: they run in Node, on a fake IndexedDB, against DOM code;
-  // and the client app's tests of its calls, routes and money, whose code is
-  // written against the DOM too.
+  // the client app's tests of its calls, routes and money, and the ops
+  // console's of its routes, whose code is written against the DOM too.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
@@ -17,6 +17,7 @@
     "test/node/app-money.test.ts",
     "test/node/app-referral-card.test.ts",
     "test/node/app-route.test.ts",
+    "test/node/ops-route.test.ts",
     "test/node/tech-api.test.ts",
     "test/node/tech-kept.test.ts",
     "test/node/tech-outbox-replay.test.ts",

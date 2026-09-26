@@ -9,7 +9,7 @@ import { useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
-import { phoneWords } from "../dispatch/job.ts";
+import { phoneWords } from "../lib/phone.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.find;

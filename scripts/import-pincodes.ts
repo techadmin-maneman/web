@@ -1,5 +1,6 @@
 // Loads data/pincodes/ncr-pincodes.csv into serviceable_pincodes (docs/decisions/0048-referrals.md). Safe to run
-// again: each pincode's row is replaced by the file's. Run after migrations.
+// again: each pincode's row is replaced by the file's, except an area name ops gave it in the console. Run after
+// migrations.
 //
 //   node scripts/import-pincodes.ts local
 //   node scripts/import-pincodes.ts staging --all-served-from 2026-09-22    (staging's placeholder, open point 21)
@@ -13,7 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EXPECTED_DATABASE_NAME, isEnvironmentName } from "../src/config/environments.ts";
 import { indiaInstant } from "../src/lib/india-time.ts";
-import { areaOf, fields } from "./lib/pincodes.ts";
+import { areaOf, fields, pincodeUpsert, type PincodeRow } from "./lib/pincodes.ts";
 
 const [environment, flag, allServedFrom] = process.argv.slice(2);
 if (!isEnvironmentName(environment) || (flag !== undefined && flag !== "--all-served-from")) {
@@ -29,8 +30,7 @@ const [header = "", ...lines] = readFileSync("data/pincodes/ncr-pincodes.csv", "
 const columns = fields(header);
 const at = (row: string[], name: string) => row[columns.indexOf(name)] ?? "";
 
-const quote = (value: string | null) => (value === null ? "NULL" : `'${value.replaceAll("'", "''")}'`);
-const values = lines.map((line) => {
+const rows = lines.map((line): PincodeRow => {
   const row = fields(line);
   const pincode = at(row, "pincode");
   if (!/^\d{6}$/.test(pincode)) throw new Error(`not a pincode: ${pincode}`);
@@ -40,13 +40,10 @@ const values = lines.map((line) => {
   // Midnight in India on the day, as an instant, like every other time in the database. It is read
   // back as India's date (src/domain/service-area.ts), never by cutting the UTC string.
   const launchedAt = launchOn === null ? null : indiaInstant(launchOn, "00:00").toISOString();
-  return `(${quote(pincode)}, ${quote(areaOf(at(row, "office_names"), city))}, ${quote(city)}, ${served ? "1" : "0"}, ${quote(launchedAt)})`;
+  return { pincode, area: areaOf(at(row, "office_names"), city), city, served, launchedAt };
 });
 
-const sql = `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES
-${values.join(",\n")}
-ON CONFLICT (pincode) DO UPDATE SET area = excluded.area, city = excluded.city, served = excluded.served,
-  launched_at = excluded.launched_at;`;
+const sql = pincodeUpsert(rows);
 
 const folder = mkdtempSync(join(tmpdir(), "mm-pincodes-"));
 try {
@@ -61,7 +58,7 @@ try {
     ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...target, "--file", file, "--yes"],
     { stdio: "inherit" },
   );
-  console.log(`import-pincodes: ${String(values.length)} pincodes into ${environment}`);
+  console.log(`import-pincodes: ${String(rows.length)} pincodes into ${environment}`);
 } finally {
   rmSync(folder, { recursive: true, force: true });
 }

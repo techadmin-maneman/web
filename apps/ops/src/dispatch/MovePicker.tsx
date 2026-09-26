@@ -18,7 +18,8 @@ import type { MoveReason } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { Dialog } from "./Dialog.tsx";
 import styles from "./dispatch.module.css";
-import { changesTime, nameOf, personOf, phoneWords, whenOf, type Job, type Target } from "./job.ts";
+import { phoneWords } from "../lib/phone.ts";
+import { changesTime, nameOf, personOf, whenOf, type Job, type Target } from "./job.ts";
 
 const A_DAY = 24 * 60 * 60 * 1000;
 

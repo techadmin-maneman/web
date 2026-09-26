@@ -200,13 +200,11 @@
   background: var(--paper-shade);
 }
 
+/* Board A1's "Leave" mark, in the boards' label (components/label.module.css), not sans capitals (DS-07). */
 .awayMark {
   display: block;
   margin-bottom: var(--sp-2);
   font-size: var(--fs-13);
-  letter-spacing: var(--tracking-12);
-  text-transform: uppercase;
-  color: var(--text-muted);
 }
 
 /* ---- One job on the board ------------------------------------------------ */

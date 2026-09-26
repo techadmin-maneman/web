@@ -31,10 +31,10 @@ test("lists the pincodes with their counts, and marks the ones we already come t
   await expect(bandra).toContainText("117");
   await expect(bandra).toContainText("84");
   await expect(bandra).toContainText("4 Feb 2027");
-  // Sector 65 is served, so it offers no launch.
+  // Sector 65 is served, so it offers no launch; it offers to tell whoever there is still untold (e2e/ops/launch.e2e.ts).
   const served = page.getByRole("row").filter({ hasText: "122018" });
   await expect(served).toContainText("Live");
-  await expect(served.getByRole("button")).toHaveCount(0);
+  await expect(served.getByRole("button")).toHaveAccessibleName("Tell those waiting in 122018, Sector 65");
 });
 
 // The area was packed into what the figure columns left, each drawn wider than the board draws it (VIS-23).
