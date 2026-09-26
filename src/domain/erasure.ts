@@ -201,6 +201,22 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
       .bind(personId),
     db.prepare("DELETE FROM number_change_requests WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE grievances SET text = 'Erased', response = NULL WHERE person_id = ?1").bind(personId),
+    // Ops' own words about them, kept with a decision (docs/decisions/0072-ops-clients-and-queues.md): the review
+    // of a grant they were either side of, and the ruling on a visit of theirs they were not home for.
+    db
+      .prepare(
+        `UPDATE referral_attributions SET review_reason = NULL
+         WHERE referred_person_id = ?1 OR code IN (SELECT code FROM referral_codes WHERE person_id = ?1)`,
+      )
+      .bind(personId),
+    // Found through the check-in, which each case is keyed on, so the lookup is indexed.
+    db
+      .prepare(
+        `UPDATE no_show_cases SET decision_reason = NULL
+         WHERE checkin_id IN (
+           SELECT c.id FROM checkins c JOIN appointments a ON a.id = c.appointment_id WHERE a.person_id = ?1)`,
+      )
+      .bind(personId),
     // The number is replaced, not kept: a later booking from it starts afresh, with a new consent.
     db
       .prepare(
