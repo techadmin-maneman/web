@@ -102,6 +102,22 @@ const ENVIRONMENT_TOKENS: readonly string[] = Object.values(RESOURCE_TOKEN);
 export interface CheckOptions {
   /** Used before a deploy: reject placeholder database IDs. */
   readonly requireProvisioned?: boolean;
+  /** The secrets an environment may hold, as .dev.vars.example names them, for the variable limit. */
+  readonly secretNames?: readonly string[];
+}
+
+/**
+ * The Workers Free plan's limit on one Worker's vars and secrets together. A deploy past it is refused
+ * (code 10055) before anything moves: it stopped staging on 26 September 2026 at 65.
+ */
+export const FREE_VARIABLE_LIMIT = 64;
+
+/** The names .dev.vars.example gives a value to: every secret an environment may hold. */
+export function secretNamesIn(devVarsExample: string): string[] {
+  return devVarsExample
+    .split(/\r?\n/)
+    .map((line) => /^([A-Z0-9_]+)=/.exec(line)?.[1])
+    .filter((name): name is string => name !== undefined);
 }
 
 // ---------------------------------------------------------------------------
@@ -313,6 +329,19 @@ function checkFreeTier(block: JsonObject, label: string): string[] {
   return problems;
 }
 
+/** The environment's vars, and every secret it may hold beside them, within the free plan's limit. */
+function checkVariableLimit(block: JsonObject, secretNames: readonly string[], label: string): string[] {
+  const vars = read(block, "vars");
+  const varNames = isObject(vars) ? Object.keys(vars) : [];
+  const secrets = secretNames.filter((name) => !varNames.includes(name));
+  const total = varNames.length + secrets.length;
+  if (total <= FREE_VARIABLE_LIMIT) return [];
+  return [
+    `${label}: ${String(varNames.length)} vars and ${String(secrets.length)} secrets make ${String(total)}, ` +
+      `over the Workers Free limit of ${String(FREE_VARIABLE_LIMIT)} (docs/decisions/0009): put a fixed value in src/config instead`,
+  ];
+}
+
 /** No bucket, queue, database name or database ID appears in two environments. */
 function checkNoSharedResources(config: JsonObject): string[] {
   const blocks: [string, JsonObject][] = [["top level (local)", config]];
@@ -369,6 +398,7 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
     problems.push(...checkRedeclared(config, block, label));
     problems.push(...checkOwnResources(block, environment, label));
     problems.push(...checkFreeTier(block, label));
+    problems.push(...checkVariableLimit(block, options.secretNames ?? [], label));
     if (options.requireProvisioned === true && databaseIds(block).includes(PLACEHOLDER_DATABASE_ID)) {
       problems.push(`${label}: D1 database_id is a placeholder; provision it first`);
     }

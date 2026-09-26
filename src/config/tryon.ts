@@ -8,7 +8,7 @@ export const TRYON_STAGES = LOSS_EXTENTS;
 
 /**
  * What the browser's colour detector reports. Only natural shades; `unknown`
- * when it cannot read the hair, which is routed by UNKNOWN_COLOR_ROUTE.
+ * when it cannot read the hair, which is routed by UNKNOWN_COLOR_ROUTE below.
  */
 export const HAIR_COLORS = ["black", "brown", "lightBrown", "grey", "silver", "white", "unknown"] as const;
 export type HairColor = (typeof HAIR_COLORS)[number];
@@ -16,6 +16,9 @@ export type HairColor = (typeof HAIR_COLORS)[number];
 /** How a job with hair_color `unknown` is rendered. */
 export const UNKNOWN_COLOR_ROUTES = ["premium_original", "pro_black"] as const;
 export type UnknownColorRoute = (typeof UNKNOWN_COLOR_ROUTES)[number];
+
+/** The owner chose Pro only, in every environment (docs/decisions/0018-one-look-pro-only-lead-notices.md). */
+export const UNKNOWN_COLOR_ROUTE: UnknownColorRoute = "pro_black";
 
 export const JOB_STATES = [
   "awaiting_upload",
