@@ -15,11 +15,22 @@ import { indiaDate } from "../lib/india-time.ts";
 import { canCloseAsNoShow, noShowWaitEnds, type NoShowDecision, type Waits } from "../policy/no-show.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import type { LatestArrival } from "./check-ins.ts";
+import { NO_VISITS_CONSENT } from "./visit-messages.ts";
+
+/**
+ * What became of the WhatsApp ops read the receipt of. A reminder that was never
+ * sent is not one that was sent and never arrived, and a client who never agreed
+ * to WhatsApp about visits was never going to get one.
+ */
+export const MESSAGE_STATES = ["delivered", "sent", "not_sent", "no_consent", "none"] as const;
+export type MessageState = (typeof MESSAGE_STATES)[number];
 
 /** The three facts, with what ops need to read the first one by. */
 export interface NoShowCase {
   readonly id: string;
   readonly appointment_id: string;
+  /** Whose visit it was; null once they have been erased. */
+  readonly person: { readonly id: string; readonly name: string } | null;
   readonly visit_date: string | null;
   readonly technician: string | null;
   /** The phone's time for the arrival, held within bounds (src/policy/phone-clock.ts): what the wait ran from. */
@@ -35,11 +46,45 @@ export interface NoShowCase {
   readonly minutes_late: number | null;
   /** Null when there was nothing to measure against. */
   readonly distance_m: number | null;
+  readonly message_state: MessageState;
   readonly message_delivered_at: string | null;
   readonly wait_ends_at: string;
   readonly closed_at: string | null;
+  /** When the case opened, which is when it started waiting for ops. */
+  readonly opened_at: string;
   readonly decision: NoShowDecision;
   readonly decided_at: string | null;
+}
+
+interface CaseRow {
+  id: string;
+  appointment_id: string;
+  person_id: string | null;
+  person_name: string | null;
+  checked_in_at: string;
+  claimed_at: string | null;
+  received_at: string;
+  distance_m: number | null;
+  message_id: string | null;
+  message_status: string | null;
+  message_error: string | null;
+  message_delivered_at: string | null;
+  wait_ends_at: string;
+  closed_at: string | null;
+  created_at: string;
+  decision: NoShowDecision;
+  decided_at: string | null;
+  window_start: string | null;
+  window_end: string | null;
+  technician: string | null;
+}
+
+function messageStateOf(row: CaseRow): MessageState {
+  if (row.message_id === null) return "none";
+  if (row.message_delivered_at !== null) return "delivered";
+  if (row.message_status === "sent") return "sent";
+  if (row.message_status === "skipped" && row.message_error === NO_VISITS_CONSENT) return "no_consent";
+  return "not_sent";
 }
 
 /** The WhatsApp ops read the receipt of: the day-before reminder, else the arrival notice. */
@@ -122,39 +167,32 @@ export async function listNoShowCases(
   decision: NoShowDecision | "all",
   limit: number,
 ): Promise<NoShowCase[]> {
+  // The receipt is read from the message itself as well as from the case, since
+  // it can arrive after the case opened.
   const { results } = await db
     .prepare(
-      `SELECT n.id, n.appointment_id, n.wait_started_at AS checked_in_at, c.claimed_at, c.created_at AS received_at,
-         c.distance_m, n.message_delivered_at, n.wait_ends_at, n.closed_at, n.decision, n.decided_at,
+      `SELECT n.id, n.appointment_id, pe.id AS person_id, pe.name AS person_name,
+         n.wait_started_at AS checked_in_at, c.claimed_at, c.created_at AS received_at, c.distance_m,
+         n.message_id, o.state AS message_status, o.last_error AS message_error,
+         COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at,
+         n.wait_ends_at, n.closed_at, n.created_at, n.decision, n.decided_at,
          a.window_start, a.window_end, t.name AS technician
        FROM no_show_cases n
        JOIN checkins c ON c.id = n.checkin_id
        JOIN appointments a ON a.id = n.appointment_id
+       LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
+       LEFT JOIN outbound_messages o ON o.id = n.message_id
        LEFT JOIN technicians t ON t.id = c.technician_id
        WHERE (?1 = 'all' OR n.decision = ?1)
        ORDER BY n.decision = 'undecided' DESC, n.created_at
        LIMIT ?2`,
     )
     .bind(decision, limit)
-    .all<{
-      id: string;
-      appointment_id: string;
-      checked_in_at: string;
-      claimed_at: string | null;
-      received_at: string;
-      distance_m: number | null;
-      message_delivered_at: string | null;
-      wait_ends_at: string;
-      closed_at: string | null;
-      decision: NoShowDecision;
-      decided_at: string | null;
-      window_start: string | null;
-      window_end: string | null;
-      technician: string | null;
-    }>();
+    .all<CaseRow>();
   return results.map((row) => ({
     id: row.id,
     appointment_id: row.appointment_id,
+    person: row.person_id === null || row.person_name === null ? null : { id: row.person_id, name: row.person_name },
     visit_date: row.window_start === null ? null : indiaDate(new Date(row.window_start)),
     technician: row.technician,
     checked_in_at: row.checked_in_at,
@@ -167,23 +205,26 @@ export async function listNoShowCases(
         ? null
         : Math.round((Date.parse(row.checked_in_at) - Date.parse(row.window_start)) / 60_000),
     distance_m: row.distance_m,
+    message_state: messageStateOf(row),
     message_delivered_at: row.message_delivered_at,
     wait_ends_at: row.wait_ends_at,
     closed_at: row.closed_at,
+    opened_at: row.created_at,
     decision: row.decision,
     decided_at: row.decided_at,
   }));
 }
 
 /**
- * Ops charge or waive the visit. Ruled once: a second ruling on the same case changes nothing. The ruling's
- * audit entry goes in the same batch (src/domain/audit.ts).
+ * Ops charge or waive the visit, with their reason. Ruled once: a second ruling on the same case changes nothing.
+ * The ruling's audit entry goes in the same batch (src/domain/audit.ts); the reason stays with the ruling.
  */
 export async function decideNoShow(
   db: D1Database,
   input: {
     caseId: string;
     decision: Exclude<NoShowDecision, "undecided">;
+    reason: string | null;
     actor: string;
     audit: AuditEntry;
     now: Date;
@@ -197,10 +238,10 @@ export async function decideNoShow(
   await db.batch([
     db
       .prepare(
-        `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4
+        `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4, decision_reason = ?5
          WHERE id = ?1 AND decision = 'undecided'`,
       )
-      .bind(input.caseId, input.decision, input.actor, input.now.toISOString()),
+      .bind(input.caseId, input.decision, input.actor, input.now.toISOString(), input.reason),
     auditStatement(db, input.audit, input.now),
   ]);
   return true;

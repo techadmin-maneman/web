@@ -9,11 +9,12 @@
 // nobody: ops answer the client themselves, on the number shown.
 
 import { longDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api, type Grievance } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
-import { grievances, waiting } from "../content.ts";
-import { daysUntil, dueAfter } from "../lib/due.ts";
+import { grievances } from "../content.ts";
+import { Left } from "../lib/Left.tsx";
+import { rowId, useTargetRow } from "../lib/target.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./grievances.module.css";
@@ -24,18 +25,17 @@ type Answering =
 
 const copy = grievances.queue;
 
-/** How long is left of the days the app promises, against the day it was raised. */
-function Left({ raisedAt, now }: { raisedAt: string; now: Date }) {
-  const days = daysUntil(dueAfter(raisedAt, copy.answerDays), now);
-  const over = days < 0;
-  return (
-    <span className={`${styles.left ?? ""} ${over ? (styles.late ?? "") : ""}`}>
-      {over ? waiting.over(-days) : days === 0 ? waiting.today : waiting.left(days)}
-    </span>
-  );
-}
-
-function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswered: () => void }) {
+function Open({
+  each,
+  now,
+  targeted,
+  onAnswered,
+}: {
+  each: Grievance;
+  now: Date;
+  targeted: boolean;
+  onAnswered: () => void;
+}) {
   const [answering, setAnswering] = useState<Answering>({ step: "open" });
   const [response, setResponse] = useState("");
 
@@ -48,12 +48,12 @@ function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswere
 
   const sending = answering.step === "sending";
   return (
-    <li className={styles.grievance}>
+    <li className={targeted ? styles.targeted : styles.grievance} id={rowId("grievance", each.id)} tabIndex={-1}>
       <div className={styles.head}>
         <OpsLink className={styles.name} to={`/clients/${each.person_id}`}>
           {each.name}
         </OpsLink>
-        <Left raisedAt={each.raised_at} now={now} />
+        <Left due={each.due} now={now} />
       </div>
       <p className={styles.who}>{copy.raised(each.mobile, longDate(each.raised_at))}</p>
       {/* The client's own words, kept apart from ours so nobody answers a paraphrase. */}
@@ -94,8 +94,10 @@ function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswere
 
 function Queue() {
   const [loaded, retry] = useLoad(api.grievances);
-  // An answered grievance leaves the queue at once; the count follows it.
+  // An answered grievance leaves the queue at once; the count follows it, and so does the keyboard.
   const [answered, setAnswered] = useState<readonly string[]>([]);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const target = useTargetRow(loaded.state === "loaded");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
@@ -105,7 +107,7 @@ function Queue() {
   return (
     <section className={styles.panel} aria-labelledby="grievances">
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="grievances">
+        <h2 className={styles.panelTitle} id="grievances" ref={heading} tabIndex={-1}>
           {copy.title}
         </h2>
         <span className={styles.count}>{open.length}</span>
@@ -119,8 +121,10 @@ function Queue() {
               key={each.id}
               each={each}
               now={now}
+              targeted={target === rowId("grievance", each.id)}
               onAnswered={() => {
                 setAnswered((already) => [...already, each.id]);
+                heading.current?.focus();
               }}
             />
           ))}

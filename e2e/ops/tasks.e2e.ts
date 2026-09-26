@@ -127,17 +127,92 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
   await expect(erased.getByRole("link")).toHaveCount(0);
 });
 
-test("heads a no-show with its visit and its technician, and never a client", async ({ page }) => {
+// A no-show once named its technician alone and led nowhere (OPS-05).
+test("names the client of a no-show, and leads to their visits and to the case", async ({ page }) => {
   await open(page);
   const noShow = row(page, "Imran Qureshi attended");
-  await expect(noShow).toContainText("Visit of Sun 19 Sep");
-  await expect(noShow.getByRole("link")).toHaveCount(0);
+  await expect(noShow.getByRole("link", { name: "Deepak Rao", exact: true })).toHaveAttribute(
+    "href",
+    "/clients/22000000-0000-4000-8000-000000000010/visits",
+  );
+  await noShow.getByRole("link", { name: /^Rule on it in No-shows/ }).click();
+  expect(new URL(page.url()).pathname).toBe("/no-shows");
+  expect(new URL(page.url()).hash).toBe("#case-66000000-0000-4000-8000-000000000001");
 });
 
-test("reaches the client's page from the task that is about them", async ({ page }) => {
+test("reaches the client's page from the task that is about them, on the tab it is about", async ({ page }) => {
   await open(page);
   await row(page, "Rohit Malhotra").getByRole("link", { name: "Rohit Malhotra" }).click();
-  expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001");
+  expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/pieces");
+});
+
+// A referral review once led to the referrer's page, where nothing can be decided (OPS-05).
+test("leads each task to the row it is decided on, in the section that decides it", async ({ page }) => {
+  await open(page);
+  const links = [
+    ["Karan Bose", "Decide it in Referrals · Karan Bose", "/referrals#held-92000000-0000-4000-8000-000000000002"],
+    [
+      "Vikram Sethi",
+      "Decide it in Number changes · Vikram Sethi",
+      "/number-changes#change-94000000-0000-4000-8000-000000000001",
+    ],
+    [
+      "Ashish Gill",
+      "Decide it in Deletion requests · Ashish Gill",
+      "/deletion-requests#request-95000000-0000-4000-8000-000000000001",
+    ],
+  ] as const;
+  for (const [heading, name, path] of links) {
+    await expect(row(page, heading).getByRole("link", { name, exact: true })).toHaveAttribute("href", path);
+  }
+  // A replacement is ordered in FSM, so it leads to the client's pieces and nowhere else.
+  await expect(row(page, "Kunal Mehta").getByRole("link")).toHaveCount(1);
+});
+
+// A grievance was promised an answer in thirty days and waited on no board at all (OPS-08).
+test("counts an open grievance down, and leads to it in Grievances", async ({ page }) => {
+  await open(page, {
+    overdue: 0,
+    truncated: false,
+    groups: [
+      {
+        group: "grievance",
+        count: 1,
+        tasks: [
+          {
+            id: "97000000-0000-4000-8000-000000000001",
+            person: { id: "22000000-0000-4000-8000-000000000007", name: "Neha Kapoor" },
+            detail: null,
+            since: "2027-09-14T06:00:00.000Z",
+            due: "2027-10-14T06:00:00.000Z",
+          },
+        ],
+      },
+    ],
+  });
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Grievance"]);
+  const grievance = row(page, "Neha Kapoor");
+  await expect(grievance).toContainText("Raised in the client's own app");
+  await expect(grievance).toContainText("22 days");
+  await expect(grievance.getByRole("link", { name: /^Answer it in Grievances/ })).toHaveAttribute(
+    "href",
+    "/grievances#grievance-97000000-0000-4000-8000-000000000001",
+  );
+});
+
+// The counts were cut at 200 tasks across every group, and said nothing of it (FEO-07).
+test("counts a group whole when it lists only its longest waits, and says when it could not count", async ({
+  page,
+}) => {
+  const [first] = TASKS.groups;
+  await open(page, {
+    ...TASKS,
+    truncated: true,
+    groups: [{ ...first, count: 73 }],
+  });
+  await expect(page.getByText("73", { exact: true })).toBeVisible();
+  await expect(page.getByText("The 2 longest waits of 73.")).toBeVisible();
+  await expect(page.getByText("More are waiting than one look reads, so a count here may be short.")).toBeVisible();
 });
 
 test("says nothing is closed here, since a task leaves when its own row is decided", async ({ page }) => {

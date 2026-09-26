@@ -29,8 +29,10 @@
 
 /* ---- The pincodes -------------------------------------------------------- */
 
+/* Fixed, so each column keeps the width the board draws it at and the area takes the rest, as its 1fr does. */
 .table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--fs-14);
 }
@@ -48,17 +50,16 @@
   color: var(--text-muted);
 }
 
-.text,
-.pincode,
-.area {
-  padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
+/* The cell's own padding sits on what it holds, so a row stays 34 px whether or not it is a control. */
+.pincode {
+  width: var(--ops-figure);
+  padding: 0 var(--sp-6) 0 0;
+  font-variant-numeric: tabular-nums;
   text-align: left;
 }
 
-/* The cell's own padding sits on what it holds, so a row stays 34 px whether or not it is a control. */
-.pincode {
-  padding: 0 var(--sp-6) 0 0;
-  font-variant-numeric: tabular-nums;
+.table thead .pincode {
+  padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
 }
 
 .plain {
@@ -66,27 +67,55 @@
   padding: var(--sp-8) 0;
 }
 
-/* The area takes the slack, as the board's 1fr column does. */
 .area {
-  width: 100%;
+  padding: var(--sp-8) var(--sp-6);
+  text-align: left;
 }
 
-.figure,
-.quietFigure,
-.date {
-  width: var(--ops-figure);
+.count,
+.oldest,
+.referred,
+.alerts {
   padding: var(--sp-8) var(--sp-4);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.figure,
-.quietFigure {
+/* The board's own widths for the four columns of figures and dates. */
+.count {
+  width: var(--ops-waitlist-count);
+}
+
+.oldest {
+  width: var(--ops-figure);
+  text-align: left;
+}
+
+.referred {
+  width: var(--ops-waitlist-ref);
+}
+
+.alerts {
+  width: var(--ops-waitlist-alerts);
+}
+
+.count,
+.referred,
+.alerts {
   text-align: right;
 }
 
-.quietFigure,
-.date {
+.oldest,
+.referred,
+.alerts {
+  color: var(--text-muted);
+}
+
+/* More pincodes are waiting than the table lists: it holds the longest waits. */
+.more {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-13);
+  line-height: 1.6;
   color: var(--text-muted);
 }
 

@@ -272,13 +272,10 @@ export const referrals = {
   title: "Referrals",
   queue: {
     title: "Held for review",
-    /** The design writes "Rohit Malhotra → Vikram Sethi". */
-    pair: (referrer: string, referred: string) => `${referrer} → ${referred}`,
-    /**
-     * PLACEHOLDER: the design writes how long the grant has waited ("3 days held"), which the
-     * route does not give. It gives the day of the first fit that earned the grant.
-     */
-    fitted: (date: string) => `Fitted ${date}`,
+    /** The design writes "Rohit Malhotra → Vikram Sethi"; each name is a way to that client's page. */
+    arrow: "→",
+    /** How long the grant has waited, as the design writes it: "3 days held", "1 day held", "5 hours held". */
+    held: (count: number, unit: "hour" | "day") => `${String(count)} ${unit}${count === 1 ? "" : "s"} held`,
     /** The rule the grant met, in the order docs/prompts/phase2-backend.md states them. */
     signals: {
       shared_address: "Same address",
@@ -295,7 +292,8 @@ export const referrals = {
      */
     reason: {
       label: { approve: "Why you are approving it", reject: "Why you are rejecting it" },
-      hint: "Kept with the decision, in the audit log.",
+      /** The reason stays with the decision; the audit log names the decision and who made it (ADR 0031). */
+      hint: "Kept with the decision, under your name.",
       confirm: { approve: "Approve the grant", reject: "Reject the grant" },
       cancel: "Keep it held",
     },
@@ -315,6 +313,9 @@ export const referrals = {
     note: "Opens and consultations stay here. The client's tracker shows fits only.",
     // PLACEHOLDER: the board draws no empty table.
     empty: "Nobody has a referral code yet.",
+    /** PLACEHOLDER: the table is read fifty referrers at a time, the busiest first. */
+    more: "Show more referrers",
+    loading: "Loading",
   },
 } as const;
 
@@ -324,17 +325,20 @@ export const clients = {
   unknown: "—",
   /**
    * PLACEHOLDER: the board opens on a client page and draws no way of reaching
-   * one. The number is asked for here and sent in the request body, never in a
-   * path or a query string, so it stays out of URLs, referrers and logs.
+   * one. What ops type is sent in the request body, never in a path or a query
+   * string, so a number stays out of URLs, referrers and logs.
    */
   find: {
-    label: "The client's mobile number",
-    hint: "Ten digits, or +91 and ten digits.",
-    submit: "Find the client",
+    label: "Name or number",
+    hint: "Any part of the name, or four digits or more of the number.",
+    submit: "Find",
     finding: "Looking",
+    /** The matches, by name, each a way to the client's page. */
+    found: "Clients",
+    none: (text: string) => `Nobody matches “${text}”. An erased client has no page.`,
+    more: "More clients match than are listed. Add to the name or the number.",
     errors: {
-      invalid_request: "That is not an Indian mobile number.",
-      not_found: "Nobody has that number. An erased client has no page.",
+      invalid_request: "Type two letters of a name, or four digits of a number.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
@@ -343,12 +347,19 @@ export const clients = {
    * The line beneath the name. The board draws five: tier, status, the usual
    * technician, credits and when a replacement is due. Nothing records a tier
    * or a usual technician (docs/fidelity-method.md); the replacement date is
-   * the piece in wear's, as a month, exactly as the board writes it.
+   * the piece in wear's, as a month, exactly as the board writes it. The
+   * mobile is ours: the board draws a WhatsApp button and no number to call.
    */
-  meta: { state: "Status", credits: "Credits", replacement: "Replacement due" },
+  meta: { state: "Status", credits: "Credits", replacement: "Replacement due", mobile: "Mobile" },
+  /** Board B1's button beside the name, which opens a chat with the client. */
+  whatsapp: "WhatsApp",
+  whatsappLabel: (name: string) => `WhatsApp ${name}`,
+  /** The number as a way to call, since a client who never agreed to WhatsApp is called. */
+  callLabel: (name: string, mobile: string) => `Call ${name} on ${mobile}`,
   // PLACEHOLDER: the board writes "Active"; the API's three states are these.
   states: { fitted: "Fitted", lead: "Booked", nothing_booked: "Nothing booked" },
-  credits: (visits: number, expiry: string | null) =>
+  /** The head's credits, as the board writes them: "2 · expire 3 Jan 2028". */
+  creditLine: (visits: number, expiry: string | null) =>
     expiry === null ? String(visits) : `${String(visits)} · expire ${expiry}`,
   /**
    * PLACEHOLDER: the board draws no client without a piece. A client wearing
@@ -358,12 +369,92 @@ export const clients = {
   noPiece: "No piece fitted",
   /** The tabs of the design's eight that the ops routes answer, in its order, and History, which it draws none of. */
   tabs: [
+    { tab: "visits", label: "Visits" },
     { tab: "pieces", label: "Pieces" },
+    { tab: "payments", label: "Payments" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
     { tab: "history", label: "History" },
   ],
   failed: "We could not load this client.",
+  /*
+   * PLACEHOLDER, all of it: the board draws a Visits tab and nothing in it. It
+   * is the record's own address and visits, which the page already holds, so
+   * the tab reads nothing more from the API.
+   */
+  visits: {
+    address: "Visits go to",
+    noAddress: "No address saved yet. The client adds it in their app, or the technician is told on the day.",
+    access: "Access",
+    upcoming: "To come",
+    past: "Done",
+    columns: ["Date", "Time", "Visit", "Technician", "State"],
+    noUpcoming: "Nothing booked.",
+    noPast: "No visit done yet.",
+    /** "9 am to 12", as the dispatch drawer writes a window. */
+    time: (from: string, to: string) => `${from} to ${to}`,
+    types: {
+      consultation: "Consultation",
+      first_fit: "First fit",
+      service: "Service visit",
+      replacement: "Replacement",
+    },
+    /** A visit to come, by where it stands, and one done, by how FSM closed it. */
+    stages: { booked: "Booked", in_progress: "Under way", closing: "Being closed" },
+    outcomes: { done: "Done", partial: "Partial" },
+    statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
+    /** Paid ahead, or covered by a credit: board C1 of the client app's own badge. */
+    prepaid: "Prepaid",
+  },
+  /*
+   * PLACEHOLDER, all of it: the board draws a Payments tab and nothing in it.
+   * It is the record's own payments and refunds, and the credits a client can
+   * be given or have taken away by hand (docs/decisions/0068-a-paid-hold-is-kept.md).
+   */
+  payments: {
+    title: "Payments and refunds",
+    columns: ["Date", "What", "Amount", "State"],
+    none: "Nothing paid yet.",
+    /** "Service visit of 22 Aug 2027", and a late fee named as one. */
+    visit: (type: string, date: string) => `${type} of ${date}`,
+    unlinked: "Payment",
+    lateFee: "Late fee",
+    refund: "Refund",
+    paymentStates: {
+      authorized: "Authorised",
+      captured: "Paid",
+      refunded: "Refunded",
+      partially_refunded: "Part refunded",
+    } as Readonly<Record<string, string>>,
+    refundStates: { created: "Processing", processed: "Back", failed: "Failed" } as Readonly<Record<string, string>>,
+    reference: (reference: string) => `Ref ${reference}`,
+  },
+  /** Putting a client's service-visit credits right by hand (POST /api/clients/{id}/credits). */
+  credits: {
+    title: "Service-visit credits",
+    balance: "They hold",
+    none: "None",
+    visits: (count: number) => `${String(count)} ${Math.abs(count) === 1 ? "visit" : "visits"}`,
+    expiry: (date: string) => `The soonest expires ${date}.`,
+    change: "Visits to add, or to take away with a minus",
+    changeHint: "A whole number from -12 to 12, never 0.",
+    reason: "Why",
+    reasons: [
+      { reason: "correction", label: "Correction: given or taken in error" },
+      { reason: "goodwill", label: "Goodwill: to make up for something" },
+    ],
+    note: "Kept in the credit ledger and the audit log, under your name. The client sees their new balance in their app.",
+    save: "Put the credits right",
+    saving: "Saving",
+    saved: (count: number) => `Done. They now hold ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
+    errors: {
+      invalid_request:
+        "That would take away more visits than they hold, or is not a number from -12 to 12. Nothing was changed.",
+      not_found: "This client is no longer on our records. Nothing was changed.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
   /** Board B1: every piece the client has been fitted with, from FSM's assets. */
   pieces: {
     title: "Pieces",
@@ -381,8 +472,17 @@ export const clients = {
     warning: (firstName: string) =>
       `Opening these records your name, the client and the time. The log is visible to the city head and to ${firstName} on request.`,
     open: "View photos",
-    /** The state the board draws once they are open, with the time the API logged the first one. */
+    /** The state the board draws once they are open, with the time the API logged the opening, by its own clock. */
     opened: (time: string) => `Open · logged ${time}`,
+    /**
+     * PLACEHOLDER: the board writes who opened them last ("AK · 19 Sep"); this
+     * is the log it promises the city head, each opening before this one.
+     */
+    before: "Opened before",
+    beforeRow: (by: string, date: string, time: string) => `${by} · ${date}, ${time}`,
+    neverBefore: "Nobody has opened them before.",
+    /** PLACEHOLDER: the earlier visits' photographs, fetched only when asked for. */
+    earlier: (visits: number) => `Show ${String(visits)} earlier ${visits === 1 ? "visit" : "visits"}`,
     angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
     // PLACEHOLDER: the board draws one visit's five angles; a visit has a set before and a set after.
     phases: { before: "Before", after: "After" },
@@ -400,7 +500,7 @@ export const clients = {
     // PLACEHOLDER: the board draws no client without photographs, and no photograph that would not load.
     empty: "No photographs of this client yet, so nothing was logged.",
     errors: {
-      unavailable: "The view could not be recorded, so the photograph is not shown.",
+      unavailable: "The view could not be recorded, so nothing is shown.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That photograph did not load.",
     } as Readonly<Record<string, string>>,
@@ -470,6 +570,8 @@ export const waitlist = {
   choose: (pincode: string, area: string) => `Mark ${pincode} live, ${area}`,
   // PLACEHOLDER: the board draws no empty waitlist.
   empty: "Nobody is waiting outside the areas we serve.",
+  // PLACEHOLDER: the table lists the two hundred pincodes that have waited longest.
+  more: "More pincodes have people waiting than are listed. These are the ones who have waited longest.",
   launch: {
     label: (pincode: string) => `Mark ${pincode} live`,
     title: (alerts: number) => `This messages ${String(alerts)} ${alerts === 1 ? "person" : "people"}`,
@@ -565,13 +667,41 @@ export const noShows = {
      * C1's "Held for review" is.
      */
     title: "Waiting for a decision",
-    /** The visit the case belongs to. The route gives its date and its technician, never the client. */
+    /** The visit the case belongs to: "Visit of Sat 19 Sep". */
     visit: (date: string) => `Visit of ${date}`,
     /** PLACEHOLDER: a case whose appointment carries no date. */
     undated: "Visit, date unknown",
+    /** PLACEHOLDER: the client of an erased record, who has no name left to show. */
+    erased: "Client erased",
     attended: (technician: string) => `${technician} attended`,
-    /** The four rows the board letters on the evidence, in its own words. */
-    facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
+    /**
+     * The board's four rows, in its own words, and two it does not letter: the
+     * window the visit was booked for, and when the check-in reached us. A phone's
+     * clock is the technician's to set, so ops rule on both clocks
+     * (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
+     */
+    facts: {
+      booked: "Booked",
+      checkIn: "Check-in",
+      // PLACEHOLDER: shown only when the phone gave a time the bounds would not take.
+      claimed: "The phone said",
+      received: "Reached us",
+      distance: "Distance",
+      whatsapp: "WhatsApp",
+      waited: "Waited",
+    },
+    /** "Sat 19 Sep, 9 am to 12". */
+    booked: (date: string, from: string, to: string) => `${date}, ${from} to ${to}`,
+    /** PLACEHOLDER: "2:08 pm · 5 h 8 m after the booked start", or before it, or at it. */
+    checkIn: (time: string, offset: string) => `${time} · ${offset}`,
+    after: (span: string) => `${span} after the booked start`,
+    before: (span: string) => `${span} before the booked start`,
+    onTime: "at the booked start",
+    /** "5 h 8 m", "48 m", "1 h", as board D3 writes a length. */
+    span: (hours: number, minutes: number) => {
+      if (hours === 0) return `${String(minutes)} m`;
+      return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} m`;
+    },
     /** The board writes "240 m · over 200 m fence"; the route gives the distance, not the radius in force. */
     distance: (metres: number) => `${String(metres)} m`,
     /**
@@ -580,11 +710,39 @@ export const noShows = {
      * charge a client on these facts and nothing was measured here at all.
      */
     unmeasured: "Not measured · the address has no location",
-    delivered: (time: string) => `Delivered ${time}`,
-    /** PLACEHOLDER: the board's receipt always arrived; one that never did is this. */
-    notDelivered: "Never delivered",
-    waited: (minutes: number, closed: string | null) =>
-      closed === null ? `${String(minutes)} min` : `${String(minutes)} min · closed ${closed}`,
+    /**
+     * What became of the reminder, dated, since it goes the evening before. A
+     * reminder never sent is not one sent and never delivered.
+     */
+    message: {
+      delivered: (when: string) => `Delivered ${when}`,
+      // PLACEHOLDER: the board's receipt always arrived; the other four are ours.
+      sent: "Sent, and never delivered",
+      no_consent: "No reminder sent · the client has not agreed to WhatsApp about visits",
+      not_sent: "Not sent",
+      none: "No reminder was sent",
+    },
+    /** "Fri 18 Sep, 6:03 pm". */
+    dated: (date: string, time: string) => `${date}, ${time}`,
+    /**
+     * The board's "15 min · closed 11:47", counted from the check-in to the
+     * close, not the wait the rules asked for. When the check-in reached us
+     * late, how long it had been with us is said as well.
+     */
+    waited: (minutes: number, closed: string) => `${String(minutes)} min · closed ${closed}`,
+    waitedBoth: (minutes: number, withUs: number, closed: string) =>
+      `${String(minutes)} min by the phone, ${String(withUs)} since it reached us · closed ${closed}`,
+    notClosed: "Not closed",
+    /**
+     * Board D1's field beneath the evidence, "Your note · required", which the
+     * board draws on the dispute. A ruling needs its reason either way, and the
+     * server refuses one without it (src/policy/decision-reasons.ts).
+     */
+    reason: {
+      label: "Your note · required",
+      placeholder: "Why you are charging or waiving",
+      hint: "Kept with the ruling, under your name.",
+    },
     /**
      * PLACEHOLDER: the board's buttons are Refund and Uphold, which rule on a
      * dispute. The route charges the visit or waives it, and nothing records a
@@ -592,6 +750,12 @@ export const noShows = {
      */
     charge: "Charge",
     waive: "Waive",
+    /** PLACEHOLDER: a charge is asked about once more, since it cannot be taken back here. */
+    confirm: (name: string, day: string) => `Charge ${name} for the visit of ${day}? It cannot be undone here.`,
+    // PLACEHOLDER: a visit that carries no date, as a charge asked about names it.
+    noDay: "a day not recorded",
+    confirmCharge: "Charge the visit",
+    back: "Back",
     deciding: "Deciding",
     /** PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. */
     note: "Charging records the decision. Nothing is taken from the client here.",
@@ -625,11 +789,13 @@ export const tasks = {
     no_show_decision: "No-show decision",
     number_change: "Number change",
     erasure_request: "Erasure request",
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
+    grievance: "Grievance",
     // PLACEHOLDER: two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
     draft_invoice: "Draft invoice",
     erasure_unfinished: "Erasure left in FSM",
   } as Readonly<Record<string, string>>,
-  /** The first line: whose task it is. A no-show names no client, so it names the visit. */
+  /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
   visit: (date: string) => `Visit of ${date}`,
   /** PLACEHOLDER: an erased client has no name left to show, so the line says when they were erased. */
   erased: (date: string) => `Client erased ${date}`,
@@ -637,6 +803,23 @@ export const tasks = {
   unknown: "Client unknown",
   /** The client's page, which the board draws no way to. */
   open: (name: string) => `Open ${name}`,
+  /**
+   * PLACEHOLDER: the section each task is decided in, and a way to its row
+   * there. The board draws no way of acting on a task; the section itself
+   * decides nothing.
+   */
+  decide: {
+    untold_move: "Record the call in Dispatch",
+    referral_review: "Decide it in Referrals",
+    no_show_decision: "Rule on it in No-shows",
+    number_change: "Decide it in Number changes",
+    erasure_request: "Decide it in Deletion requests",
+    grievance: "Answer it in Grievances",
+  } as Readonly<Record<string, string>>,
+  /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
+  shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
+  /** PLACEHOLDER: more were waiting than one look reads. */
+  truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
     /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the dispatch board. */
@@ -648,6 +831,8 @@ export const tasks = {
     no_show_decision: (technician: string) => `${technician} attended`,
     number_change: "Both numbers proven by code",
     erasure_request: "Asked for in the client's own app",
+    // PLACEHOLDER: a concern about their data, which the app promises an answer to within 30 days.
+    grievance: "Raised in the client's own app",
     // PLACEHOLDER: the client cannot open the invoice until somebody sends it in Books.
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
@@ -674,8 +859,20 @@ export const tasks = {
  */
 export const technicians = {
   title: "Technicians",
-  /** Four of board D3's five columns; nothing records a skill, so the fifth is not drawn. */
-  columns: ["Technician", "Zone", "Jobs", "Avg service"],
+  /**
+   * Four of board D3's five columns, and Leave where it draws Skill: nothing
+   * records a skill, and a day off is what ops need to see down the roster.
+   */
+  columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],
+  /**
+   * PLACEHOLDER: the technician's name opens their phones and their leave,
+   * which the board's rows have no room for, in a panel over the roster.
+   */
+  open: (name: string) => `${name}: phones and leave`,
+  close: "Close",
+  /** The Leave column: away today, the first day of leave to come, or nothing. */
+  away: "Away",
+  from: (date: string) => `From ${date}`,
   /** A zone the FSM mirror has nothing for, written as the design's tables write a gap. */
   unknown: "—",
   // PLACEHOLDER: the board draws no console without technicians.
@@ -691,8 +888,8 @@ export const technicians = {
           : `${String(hours)} h ${String(minutes)} m`,
     /**
      * PLACEHOLDER: how far over the planned length reads as running over. The
-     * board letters 1 h 48 m in brass, 18 minutes past the 90 a service visit is
-     * planned for, and leaves 1 h 31 m quiet. It writes no rule, and this is
+     * board letters 1 h 48 m in oxblood, 18 minutes past the 90 a service visit
+     * is planned for, and leaves 1 h 31 m quiet. It writes no rule, and this is
      * where we have drawn it, as the dispatch board's peak is drawn.
      */
     overBy: 15,
@@ -705,8 +902,14 @@ export const technicians = {
     skill: "Nothing records what a technician is trained for, so the board's Skill column is not drawn.",
   },
   phones: {
+    title: "Phones",
     /** PLACEHOLDER: a phone whose browser gave no label at login. */
-    unlabelled: "A phone",
+    unlabelled: "Phone",
+    /**
+     * PLACEHOLDER: "Chrome on Android · 3f9a": the browser, and the end of the
+     * app's own ID for the phone, so two phones alike can be told apart.
+     */
+    label: (label: string, id: string) => `${label} · ${id}`,
     seen: (date: string) => `last used ${date}`,
     none: "No phone logged in.",
     revoke: "Revoke",
@@ -785,7 +988,7 @@ export const grievances = {
     /** Beneath the name: the number to answer on, and the day it was raised. */
     raised: (mobile: string, date: string) => `${mobile} · raised ${date}`,
     label: "Your answer",
-    hint: "Kept with the grievance and in the audit log, under your name.",
+    hint: "Kept with the grievance, under your name. The audit log records that you answered it.",
     send: "Record the answer and close it",
     sending: "Closing",
     empty: "No grievance is open.",
@@ -845,7 +1048,7 @@ export const deletions = {
     deleting: "Deleting",
     reason: {
       label: "Why you are rejecting it",
-      hint: "Kept with the decision, in the audit log.",
+      hint: "Kept with the decision, under your name.",
       confirm: "Reject this request",
       cancel: "Leave it waiting",
     },
@@ -881,7 +1084,7 @@ export const numberChanges = {
     reject: "Reject",
     reason: {
       label: "Why you are rejecting it",
-      hint: "Kept with the decision, in the audit log.",
+      hint: "Kept with the decision, under your name.",
       confirm: "Reject the change",
       cancel: "Leave it waiting",
     },

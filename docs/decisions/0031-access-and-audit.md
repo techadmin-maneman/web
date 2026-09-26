@@ -1,6 +1,6 @@
 # 0031. Access on the ops surface, and the audit log
 
-- Status: accepted. Amended 25 September 2026: an audited action writes its entry in the same batch as its change.
+- Status: accepted. Amended 25 September 2026: an audited action writes its entry in the same batch as its change. Amended 26 September 2026: one opening of a client's photographs is one entry, naming the client, and serves that opening's images for thirty minutes (ADR 0072).
 - Date: 2026-09-22
 
 ## Context

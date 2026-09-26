@@ -170,9 +170,21 @@
   list-style: none;
 }
 
-.case {
+.case,
+.targeted {
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* The case a task on the Tasks board led here, marked as the board marks a selection. */
+.targeted {
+  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
+}
+
+.case:focus-visible,
+.targeted:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
 }
 
 .caseHead {
@@ -186,10 +198,76 @@
   font-size: var(--fs-15);
 }
 
-.technician {
+/* The client, whose page is where their visit and their number are. */
+.client {
+  font-size: var(--fs-15);
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-4);
+}
+
+.client:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.caseSub {
+  margin: var(--sp-3) 0 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
-  white-space: nowrap;
+}
+
+/* ---- The note a ruling needs, as board D1 draws it beneath the evidence ---- */
+
+.reasonLabel {
+  display: block;
+  margin-top: var(--sp-16);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* The 80 px board D1 draws its note at. */
+.reasonField {
+  display: block;
+  width: 100%;
+  height: calc(var(--field-h) + var(--sp-28));
+  margin-top: var(--sp-8);
+  padding: var(--sp-12) var(--sp-14);
+  border: var(--hairline) solid var(--paper-control);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-15);
+  color: var(--text);
+  resize: none;
+}
+
+.reasonField:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+.reasonHint {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* A charge asked about once more, where its buttons stood. */
+.confirm {
+  margin-top: var(--sp-14);
+  padding-left: var(--sp-14);
+  border-left: var(--rule-strong) solid var(--brass);
+}
+
+.confirm:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+.confirmLine {
+  margin: 0;
+  font-size: var(--fs-15);
+  line-height: 1.6;
 }
 
 .facts {

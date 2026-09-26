@@ -368,7 +368,7 @@ describe("what the invoice totals, before it is issued", () => {
     expect(alerted).toHaveLength(1);
 
     // The Tasks board's Draft invoice group lists it until it is sent.
-    const tasks = await outstandingTasks(env.DB, NOW, 50, TASK_SLA_HOURS);
+    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks).toContainEqual(
       expect.objectContaining({ group: "draft_invoice", id: VISIT, detail: held?.fsm_invoice_id }),
     );

@@ -6,6 +6,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
+import { PHOTO_VIEW_MINUTES } from "../../src/domain/photo-views.ts";
+import { CLIENTS_FOUND } from "../../src/routes/ops-clients.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -202,8 +204,85 @@ describe("GET /api/clients/{id}/photos", () => {
   });
 });
 
+/**
+ * One opening of a client's photographs is one entry in the log, whose time is
+ * the server's (OPS-17). It once wrote an entry for every image, ten for one
+ * visit and ten more on every return to the tab, and the console lettered the
+ * browser's own clock as the time it was logged.
+ */
+describe("POST /api/clients/{id}/photos/view", () => {
+  const view = (app = ops) =>
+    request(app, `/api/clients/${PERSON}/photos/view`, {
+      method: "POST",
+      headers: { Origin: "https://maneman.test" },
+    });
+
+  it("writes one entry naming the staff and the client, and answers when it was logged", async () => {
+    await record();
+    const answer = await view();
+
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toEqual({
+      logged_at: NOW.toISOString(),
+      before: [],
+    });
+    expect(await auditRows()).toEqual([
+      { action: "photo.view", actor: "ops@localhost", subject_kind: "person", subject_id: PERSON, detail: null },
+    ]);
+  });
+
+  it("serves every photograph within the view, and writes nothing more for them", async () => {
+    await record();
+    await view();
+    for (const photo of [FRONT, TOP]) {
+      const answer = await request(ops, `/api/clients/${PERSON}/photos/${photo}`);
+      expect(answer.status, photo).toBe(200);
+      expect(answer.headers.get("Cache-Control")).toBe("private, no-store");
+    }
+    expect(await auditRows()).toHaveLength(1);
+  });
+
+  it("says who opened them before, the latest first", async () => {
+    await record();
+    const earlier = (minutes: number) =>
+      appFor("local", fakeDependencies({ now: () => new Date(NOW.getTime() - minutes * 60_000) }), {}, "ops");
+    await view(earlier(24 * 60));
+    await view(earlier(90));
+
+    expect(await (await view()).json()).toEqual({
+      logged_at: NOW.toISOString(),
+      before: [
+        { by: "ops@localhost", at: new Date(NOW.getTime() - 90 * 60_000).toISOString() },
+        { by: "ops@localhost", at: new Date(NOW.getTime() - 24 * 60 * 60_000).toISOString() },
+      ],
+    });
+  });
+
+  it("logs nothing for a client we do not have", async () => {
+    const answer = await request(ops, `/api/clients/${UNKNOWN}/photos/view`, {
+      method: "POST",
+      headers: { Origin: "https://maneman.test" },
+    });
+    expect(answer.status).toBe(404);
+    expect(await auditRows()).toEqual([]);
+  });
+
+  it("opens nothing when the view cannot be logged", async () => {
+    await record();
+    const answer = await request(
+      ops,
+      `/api/clients/${PERSON}/photos/view`,
+      { method: "POST", headers: { Origin: "https://maneman.test" } },
+      { DB: auditFailsFor(env.DB, "photo.view") },
+    );
+    expect(answer.status).toBe(503);
+    expect(await auditRows()).toEqual([]);
+  });
+});
+
 describe("GET /api/clients/{id}/photos/{photo_id}", () => {
-  it("writes the audit entry naming the staff, the client and the photograph before the image", async () => {
+  // The console always opens a view first; a photograph asked for outside one still never leaves unlogged.
+  it("logs a view itself, before the image, when none by this member of staff is open", async () => {
     await record();
     const answer = await request(ops, `/api/clients/${PERSON}/photos/${FRONT}`);
 
@@ -211,15 +290,21 @@ describe("GET /api/clients/{id}/photos/{photo_id}", () => {
     expect(answer.headers.get("Content-Type")).toBe("image/jpeg");
     expect(answer.headers.get("Cache-Control")).toBe("private, no-store");
     expect(new Uint8Array(await answer.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
-    const [entry, ...rest] = await auditRows();
-    expect(rest).toEqual([]);
-    expect(entry).toMatchObject({
-      action: "photo.view",
-      actor: "ops@localhost",
-      subject_kind: "photo",
-      subject_id: FRONT,
-    });
-    expect(JSON.parse(entry?.detail ?? "null")).toEqual({ person_id: PERSON });
+    expect(await auditRows()).toEqual([
+      { action: "photo.view", actor: "ops@localhost", subject_kind: "person", subject_id: PERSON, detail: null },
+    ]);
+
+    // Within the view, the next one adds nothing; once the view has closed, it is logged again.
+    await request(ops, `/api/clients/${PERSON}/photos/${TOP}`);
+    expect(await auditRows()).toHaveLength(1);
+    const later = appFor(
+      "local",
+      fakeDependencies({ now: () => new Date(NOW.getTime() + (PHOTO_VIEW_MINUTES + 1) * 60_000) }),
+      {},
+      "ops",
+    );
+    await request(later, `/api/clients/${PERSON}/photos/${TOP}`);
+    expect(await auditRows()).toHaveLength(2);
   });
 
   it("serves no photograph when the view cannot be audited", async () => {
@@ -304,6 +389,71 @@ describe("POST /api/clients/search", () => {
     const bad = await search("12345");
     expect(bad.status).toBe(400);
     expect(await bad.json()).toMatchObject({ error: { code: "invalid_request", fields: ["mobile"] } });
+  });
+});
+
+// A client could be found only by typing their whole number exactly (OPS-04).
+describe("POST /api/clients/find", () => {
+  const find = (text: string) =>
+    request(ops, "/api/clients/find", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ text }),
+    });
+  const found = async (text: string) =>
+    (await (await find(text)).json<{ clients: { name: string }[]; more: boolean }>()).clients.map((each) => each.name);
+
+  beforeEach(async () => {
+    await person(OTHER, "Vikram Sethi", "+919810000002");
+    await person("11111111-1111-4111-8111-111111111113", "Rohini Sethi", "+919820000003");
+  });
+
+  it("finds clients by any part of their name, whatever its case", async () => {
+    expect(await found("sethi")).toEqual(["Rohini Sethi", "Vikram Sethi"]);
+    expect(await found("ROH")).toEqual(["Rohini Sethi", "Rohit Malhotra"]);
+    expect(await (await find("vikram")).json()).toEqual({
+      clients: [{ id: OTHER, name: "Vikram Sethi", mobile: "+919810000002" }],
+      more: false,
+    });
+  });
+
+  it("finds clients by any four or more digits of their number, typed any of the usual ways", async () => {
+    expect(await found("98100")).toEqual(["Rohit Malhotra", "Vikram Sethi"]);
+    expect(await found("+91 98200-00003")).toEqual(["Rohini Sethi"]);
+  });
+
+  it("treats a percent sign or an underscore as itself, not as a wildcard", async () => {
+    expect(await found("%%")).toEqual([]);
+    expect(await found("R_hit")).toEqual([]);
+  });
+
+  it("leaves out an erased client", async () => {
+    await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), OTHER).run();
+    expect(await found("sethi")).toEqual(["Rohini Sethi"]);
+  });
+
+  it("lists a page at most, and says there are more", async () => {
+    await env.DB.batch(
+      Array.from({ length: CLIENTS_FOUND + 1 }, (_, n) =>
+        env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)").bind(
+          `77777777-7777-4777-8777-${String(n).padStart(12, "0")}`,
+          NOW.toISOString(),
+          `+9197000${String(n).padStart(5, "0")}`,
+          `Kumar ${String(n).padStart(2, "0")}`,
+        ),
+      ),
+    );
+    const body = await (await find("kumar")).json<{ clients: unknown[]; more: boolean }>();
+    expect(body.clients).toHaveLength(CLIENTS_FOUND);
+    expect(body.more).toBe(true);
+  });
+
+  it("asks for two letters or four digits at least", async () => {
+    for (const text of ["r", "981", "  "]) {
+      const answer = await find(text);
+      expect(answer.status, text).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["text"] } });
+    }
   });
 });
 

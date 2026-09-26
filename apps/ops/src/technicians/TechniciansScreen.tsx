@@ -1,21 +1,23 @@
 // Technicians (Ops Console, board D3): who works, their zone, the jobs they
-// have finished and how those ran, and the phones they have logged in on.
+// have finished and how those ran, one 34 px row each, as the board draws them,
+// however many there are. The board's fifth column is Skill, and nothing records
+// what a technician is trained for, so Leave stands there instead and a line
+// beneath the table says why (docs/open-points.md, item 59).
+//
+// A technician's name opens a panel over the roster with the phones they have
+// logged in on and their leave, which the board's rows have no room for.
 // Revoking a phone ends its session and makes it drop its cached jobs, so it
-// asks before it sends (src/domain/technicians.ts).
-//
-// The board's fifth column is Skill, and nothing records what a technician is
-// trained for, so it is not drawn and a line beneath the table says why
-// (docs/open-points.md, item 59).
-//
-// Leave is recorded here because FSM has nowhere to keep it (ADR 0062). It is
-// not a note: the days it covers are refused to self-serve booking and to the
-// dispatch board alike, which is why the form says so before it is sent.
+// asks before it sends (src/domain/technicians.ts). Leave is recorded here
+// because FSM has nowhere to keep it (ADR 0062). It is not a note: the days it
+// covers are refused to self-serve booking and to the dispatch board alike,
+// which is why the form says so before it is sent.
 
-import { fullDate, longDate } from "@maneman/web-kit/dates";
-import { Fragment, useState } from "react";
+import { fullDate, indiaDate, listDate, longDate } from "@maneman/web-kit/dates";
+import { useState } from "react";
 import { api, type Device, type Leave, type Technician, type TechnicianWork } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
+import { Dialog } from "../dispatch/Dialog.tsx";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./technicians.module.css";
@@ -28,7 +30,7 @@ const lastDay = (exclusiveEnd: string) =>
  * How long the technician's visits took, on average. A technician the phone
  * timed none of reads as a gap, never as a nought: the jobs were done and
  * nothing timed them. One who runs over the length their visits were planned
- * for reads in brass, as the board letters its own long average.
+ * for reads in oxblood, as the board letters its own long average.
  */
 function Service({ figures }: { figures: TechnicianWork | undefined }) {
   const copy = technicians.work;
@@ -51,6 +53,18 @@ function Service({ figures }: { figures: TechnicianWork | undefined }) {
   );
 }
 
+/** The Leave column: away today, the first day of leave still to come, or a gap. */
+function LeaveCell({ leave, today }: { leave: readonly Leave[]; today: string }) {
+  const next = leave[0];
+  if (next === undefined) return <span className={styles.none}>{technicians.unknown}</span>;
+  if (next.from <= today) return <span className={styles.away}>{technicians.away}</span>;
+  return <span>{technicians.from(listDate(next.from, Number(today.slice(0, 4))))}</span>;
+}
+
+/** "Chrome on Android · 3f9a": what the browser said, and the end of the phone's own ID. */
+const phoneName = (phone: Device) =>
+  technicians.phones.label(phone.label ?? technicians.phones.unlabelled, phone.device_id.slice(-4));
+
 /** Where a phone is: listed, asked about, sending, revoked here, or refused by the API. */
 type Revoking =
   | { readonly step: "listed" }
@@ -62,7 +76,7 @@ type Revoking =
 function Phone({ phone, technician }: { phone: Device; technician: Technician }) {
   const [revoking, setRevoking] = useState<Revoking>({ step: "listed" });
   const copy = technicians.phones;
-  const name = phone.label ?? copy.unlabelled;
+  const name = phoneName(phone);
 
   const revoke = async () => {
     setRevoking({ step: "sending" });
@@ -134,10 +148,10 @@ const periodOf = (leave: Leave) => technicians.leave.period(fullDate(leave.from)
 
 /**
  * One technician's leave: what is recorded, and the form that records more.
- * Every change reloads the roster, because the dispatch board reads the same
- * rows and the two must not disagree.
+ * Every change reads the roster again, because the dispatch board reads the
+ * same rows and the two must not disagree.
  */
-function LeaveBlock({ technician, onChange }: { technician: Technician; onChange: () => void }) {
+function LeaveBlock({ technician, onChange }: { technician: Technician; onChange: () => Promise<void> }) {
   const copy = technicians.leave;
   const [form, setForm] = useState<{ from: string; to: string; note: string } | null>(null);
   const [sending, setSending] = useState(false);
@@ -156,27 +170,30 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
       to: entry.to,
       note: entry.note.trim() === "" ? null : entry.note.trim(),
     });
-    setSending(false);
     if (!answer.ok) {
+      setSending(false);
       setFailed(refusal(answer.code));
       return;
     }
+    await onChange();
+    setSending(false);
     setForm(null);
-    onChange();
   };
 
   const take = async (leave: Leave) => {
     setSending(true);
     setFailed(null);
     const answer = await api.cancelLeave(technician.id, leave.id);
-    setSending(false);
-    if (answer.ok) onChange();
+    if (answer.ok) await onChange();
     else setFailed(refusal(answer.code));
+    setSending(false);
   };
 
   return (
-    <div className={styles.leave}>
-      <h3 className={styles.leaveTitle}>{copy.title}</h3>
+    <section className={styles.section} aria-labelledby="leave-title">
+      <h3 className={styles.sectionTitle} id="leave-title">
+        {copy.title}
+      </h3>
       {technician.leave.length === 0 ? (
         <p className={styles.none}>{copy.none}</p>
       ) : (
@@ -229,6 +246,8 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
                 className={styles.input}
                 type="date"
                 required
+                // The form opens where the button that asked for it stood, so the keyboard goes to its first field.
+                autoFocus
                 value={form.from}
                 onChange={(event) => {
                   setForm({ ...form, from: event.target.value });
@@ -283,7 +302,53 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
           {failed}
         </p>
       )}
-    </div>
+    </section>
+  );
+}
+
+/**
+ * One technician's phones and leave, in a panel over the roster. It is a modal
+ * dialog, so the roster behind it is inert and the keyboard stays inside, and
+ * it hands the keyboard back to the name that opened it when it closes.
+ */
+function TechnicianPanel({
+  technician,
+  onChange,
+  onClose,
+}: {
+  technician: Technician;
+  onChange: () => Promise<void>;
+  onClose: () => void;
+}) {
+  const copy = technicians.phones;
+  return (
+    <Dialog className={styles.drawer} labelledBy="technician-title" canClose onDismiss={onClose}>
+      <div className={styles.drawerHead}>
+        <h2 className={styles.drawerTitle} id="technician-title">
+          {technician.name}
+        </h2>
+        <button className={styles.quiet} type="button" onClick={onClose}>
+          {technicians.close}
+        </button>
+      </div>
+      <div className={styles.drawerBody}>
+        <section className={styles.section} aria-labelledby="phones-title">
+          <h3 className={styles.sectionTitle} id="phones-title">
+            {copy.title}
+          </h3>
+          {technician.devices.length === 0 ? (
+            <p className={styles.none}>{copy.none}</p>
+          ) : (
+            <ul className={styles.phoneList}>
+              {technician.devices.map((phone) => (
+                <Phone key={phone.device_id} phone={phone} technician={technician} />
+              ))}
+            </ul>
+          )}
+        </section>
+        <LeaveBlock technician={technician} onChange={onChange} />
+      </div>
+    </Dialog>
   );
 }
 
@@ -292,6 +357,9 @@ function Roster() {
   // The roster carries no period, so the figures are a read of their own; the
   // table is one table either way, and waits for both.
   const [work, retryWork] = useLoad(api.technicianWork);
+  // The roster as read again after a change in the panel, which stays open over it meanwhile.
+  const [fresh, setFresh] = useState<readonly Technician[] | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
 
   if (loaded.state === "loading" || work.state === "loading") return <Loading />;
   if (loaded.state === "failed" || work.state === "failed") {
@@ -305,13 +373,21 @@ function Roster() {
     );
   }
 
+  const roster = fresh ?? loaded.value.technicians;
   const figures = new Map(work.value.technicians.map((each) => [each.technician_id, each]));
+  const today = indiaDate(new Date().toISOString());
+  const opened = roster.find((technician) => technician.id === open);
+  const readAgain = async () => {
+    const answer = await api.technicians();
+    if (answer.ok) setFresh(answer.body.technicians);
+  };
+
   return (
     <section className={styles.panel} aria-labelledby="roster">
       <h2 className={styles.hiddenTitle} id="roster">
         {technicians.title}
       </h2>
-      {loaded.value.technicians.length === 0 ? (
+      {roster.length === 0 ? (
         <p className={styles.empty}>{technicians.empty}</p>
       ) : (
         <table className={styles.table}>
@@ -325,34 +401,29 @@ function Roster() {
             </tr>
           </thead>
           <tbody>
-            {loaded.value.technicians.map((technician) => (
-              <Fragment key={technician.id}>
-                <tr>
-                  <th scope="row" className={styles.name}>
+            {roster.map((technician) => (
+              <tr key={technician.id}>
+                <th scope="row" className={styles.name}>
+                  <button
+                    className={styles.choose}
+                    type="button"
+                    aria-label={technicians.open(technician.name)}
+                    onClick={() => {
+                      setOpen(technician.id);
+                    }}
+                  >
                     {technician.name}
-                  </th>
-                  <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
-                  <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
-                  <td className={styles.service}>
-                    <Service figures={figures.get(technician.id)} />
-                  </td>
-                </tr>
-                {/* The board's row has no room for the phones or the leave, so both sit beneath the name. */}
-                <tr>
-                  <td className={styles.phones} colSpan={technicians.columns.length}>
-                    {technician.devices.length === 0 ? (
-                      <span className={styles.none}>{technicians.phones.none}</span>
-                    ) : (
-                      <ul className={styles.phoneList}>
-                        {technician.devices.map((phone) => (
-                          <Phone key={phone.device_id} phone={phone} technician={technician} />
-                        ))}
-                      </ul>
-                    )}
-                    <LeaveBlock technician={technician} onChange={retry} />
-                  </td>
-                </tr>
-              </Fragment>
+                  </button>
+                </th>
+                <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
+                <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
+                <td className={styles.service}>
+                  <Service figures={figures.get(technician.id)} />
+                </td>
+                <td className={styles.leaveCell}>
+                  <LeaveCell leave={technician.leave} today={today} />
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
@@ -361,6 +432,15 @@ function Roster() {
         {technicians.work.period(fullDate(work.value.from), fullDate(lastDay(work.value.to)))}
       </p>
       <p className={styles.note}>{technicians.work.skill}</p>
+      {opened !== undefined && (
+        <TechnicianPanel
+          technician={opened}
+          onChange={readAgain}
+          onClose={() => {
+            setOpen(null);
+          }}
+        />
+      )}
     </section>
   );
 }

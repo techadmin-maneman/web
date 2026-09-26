@@ -13,15 +13,16 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("replacement_order");
   });
 
-  it(RULES[1], () => {
+  // The review's reason is src/policy/decision-reasons.ts's rule; the queue it waits in is this one's.
+  it("queues the grants the fraud rules held for review", () => {
     expect(TASK_GROUPS).toContain("referral_review");
   });
 
-  it(RULES[2], () => {
+  it(RULES[1], () => {
     expect(TASK_GROUPS).toContain("no_show_decision");
   });
 
-  it(RULES[3], () => {
+  it(RULES[2], () => {
     // One rule, two queues: a number change ops confirm, and an erasure they decide.
     expect(TASK_GROUPS).toContain("number_change");
     expect(TASK_GROUPS).toContain("erasure_request");
@@ -34,12 +35,22 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("consultation_request");
   });
 
-  it("gives every group an allowance, the placeholder two days but a call about a move the same day", () => {
-    for (const group of TASK_GROUPS) {
+  it("gives every group an allowance, the placeholder two days but where something else is promised", () => {
+    const promised: Partial<Record<string, number>> = {
       // A client who does not know his visit moved will not be home for it (ADR 0069).
-      expect(TASK_SLA_HOURS[group], group).toBe(group === "untold_move" ? 4 : 48);
-    }
+      untold_move: 4,
+      // "The 7 days run from the client's request to ops' decision" (ADR 0049).
+      erasure_request: 7 * 24,
+      // The client's app: "within 30 days at the latest" (docs/open-points.md, item 42).
+      grievance: 30 * 24,
+    };
+    for (const group of TASK_GROUPS) expect(TASK_SLA_HOURS[group], group).toBe(promised[group] ?? 48);
     expect(Object.keys(TASK_SLA_HOURS).sort()).toEqual([...TASK_GROUPS].sort());
+  });
+
+  // A client's grievance waits for an answer as their erasure waits for a decision (OPS-08).
+  it("counts down an open grievance, as it does the other requests about a client's own data", () => {
+    expect(TASK_GROUPS).toContain("grievance");
   });
 
   it("falls due its group's allowance after it started waiting", () => {

@@ -70,6 +70,9 @@ const DESTINATIONS: Readonly<Record<string, string>> = { upi: "UPI", card: "card
 
 export type Composed = { readonly template: string; readonly params: string[] } | { readonly skip: string };
 
+/** Why a message about a visit was skipped when the client never agreed to them; the no-show queue reads it back. */
+export const NO_VISITS_CONSENT = "no consent to WhatsApp about visits";
+
 /** What a queued message about a visit says, as the visit stands now; or why it is not sent. */
 export async function composeVisitMessage(
   db: D1Database,
@@ -84,7 +87,7 @@ export async function composeVisitMessage(
     )
     .bind(personId)
     .first<{ granted: number }>();
-  if (consent?.granted !== 1) return { skip: "no consent to WhatsApp about visits" };
+  if (consent?.granted !== 1) return { skip: NO_VISITS_CONSENT };
 
   const visit = await db
     .prepare(
