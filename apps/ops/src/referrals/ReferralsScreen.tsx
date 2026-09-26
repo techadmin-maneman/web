@@ -9,14 +9,14 @@
 // how long it has been held, as the board writes it.
 
 import { Field, TextArea } from "@maneman/ui/Field";
+import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState } from "react";
 import { api, type Held, type Referrer } from "../api.ts";
+import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { referrals } from "../content.ts";
 import { daysUntil } from "../lib/due.ts";
-import { rowId, useTargetRow } from "../lib/target.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./referrals.module.css";
 
@@ -37,17 +37,7 @@ function heldFor(since: string, now: Date): string {
   return hours < 24 ? referrals.queue.held(hours, "hour") : referrals.queue.held(Math.floor(hours / 24), "day");
 }
 
-function HeldGrant({
-  grant,
-  now,
-  targeted,
-  onDecided,
-}: {
-  grant: Held;
-  now: Date;
-  targeted: boolean;
-  onDecided: () => void;
-}) {
+function HeldGrant({ grant, now, onDecided }: { grant: Held; now: Date; onDecided: () => void }) {
   const [decision, setDecision] = useState<Decision>({ step: "open" });
   const [reason, setReason] = useState("");
   const openers = { approve: useRef<HTMLButtonElement>(null), reject: useRef<HTMLButtonElement>(null) };
@@ -71,7 +61,7 @@ function HeldGrant({
   const sending = decision.step === "sending";
   const overdue = daysUntil(grant.due, now) < 0;
   return (
-    <li className={targeted ? styles.targeted : styles.grant} id={rowId("held", grant.id)} tabIndex={-1}>
+    <>
       <div className={styles.grantHead}>
         <span className={styles.pair}>
           <OpsLink className={styles.person} to={`/clients/${grant.referrer.person_id}`}>
@@ -158,51 +148,31 @@ function HeldGrant({
           {copy.errors[decision.code] ?? copy.errors.unknown}
         </p>
       )}
-    </li>
+    </>
   );
 }
 
+/** Board C1's queue. A decision can change the referrers' figures beneath, so each one tells the page. */
 function ReviewQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(api.held);
-  // A decided grant leaves the queue at once; the count follows it, and so does the keyboard.
-  const [decided, setDecided] = useState<readonly string[]>([]);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const target = useTargetRow(loaded.state === "loaded");
   const copy = referrals.queue;
-
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
   const now = new Date();
-  const waiting = loaded.value.held.filter((grant) => !decided.includes(grant.id));
   return (
-    <section className={styles.panel} aria-labelledby="held">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="held" ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h2>
-        <span className={styles.count}>{waiting.length}</span>
-      </div>
-      {waiting.length === 0 ? (
-        <p className={styles.empty}>{copy.empty}</p>
-      ) : (
-        <ul className={styles.grants}>
-          {waiting.map((grant) => (
-            <HeldGrant
-              key={grant.id}
-              grant={grant}
-              now={now}
-              targeted={target === rowId("held", grant.id)}
-              onDecided={() => {
-                setDecided((already) => [...already, grant.id]);
-                heading.current?.focus();
-                onDecided();
-              }}
-            />
-          ))}
-        </ul>
+    <DecisionQueue titleId="held" title={copy.title} items={loaded.value.held} rowKind="held" empty={copy.empty}>
+      {(grant, decided) => (
+        <HeldGrant
+          grant={grant}
+          now={now}
+          onDecided={() => {
+            decided();
+            onDecided();
+          }}
+        />
       )}
-    </section>
+    </DecisionQueue>
   );
 }
 

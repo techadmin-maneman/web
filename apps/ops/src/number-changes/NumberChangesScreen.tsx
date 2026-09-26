@@ -10,15 +10,15 @@
 // somebody else already holds is refused by the API, and said so here. Each
 // change says how long it has left, counted as the Tasks board counts it.
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import { api, type NumberChange } from "../api.ts";
+import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { numberChanges } from "../content.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
-import { rowId, useTargetRow } from "../lib/target.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./number-changes.module.css";
 
@@ -33,17 +33,7 @@ type Deciding =
 
 const copy = numberChanges.queue;
 
-function Change({
-  change,
-  now,
-  targeted,
-  onDecided,
-}: {
-  change: NumberChange;
-  now: Date;
-  targeted: boolean;
-  onDecided: () => void;
-}) {
+function Change({ change, now, onDecided }: { change: NumberChange; now: Date; onDecided: () => void }) {
   const [deciding, setDeciding] = useState<Deciding>({ step: "open" });
   const [reason, setReason] = useState("");
   const rejectButton = useRef<HTMLButtonElement>(null);
@@ -60,7 +50,7 @@ function Change({
   const asking = deciding.step === "asking" || (sending && deciding.choice === "reject");
 
   return (
-    <li className={targeted ? styles.targeted : styles.change} id={rowId("change", change.id)} tabIndex={-1}>
+    <>
       <div className={styles.head}>
         <OpsLink className={styles.name} to={`/clients/${change.person_id}`}>
           {change.name}
@@ -139,49 +129,26 @@ function Change({
           {copy.errors[deciding.code] ?? copy.errors.unknown}
         </p>
       )}
-    </li>
+    </>
   );
 }
 
 function Queue() {
   const [loaded, retry] = useLoad(api.numberChanges);
-  // A decided change leaves the queue at once; the count follows it, and so does the keyboard.
-  const [decided, setDecided] = useState<readonly string[]>([]);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const target = useTargetRow(loaded.state === "loaded");
-
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
   const now = new Date();
-  const open = loaded.value.changes.filter((change) => !decided.includes(change.id));
   return (
-    <section className={styles.panel} aria-labelledby="number-changes">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="number-changes" ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h2>
-        <span className={styles.count}>{open.length}</span>
-      </div>
-      {open.length === 0 ? (
-        <p className={styles.empty}>{copy.empty}</p>
-      ) : (
-        <ul className={styles.changes}>
-          {open.map((change) => (
-            <Change
-              key={change.id}
-              change={change}
-              now={now}
-              targeted={target === rowId("change", change.id)}
-              onDecided={() => {
-                setDecided((already) => [...already, change.id]);
-                heading.current?.focus();
-              }}
-            />
-          ))}
-        </ul>
-      )}
-    </section>
+    <DecisionQueue
+      titleId="number-changes"
+      title={copy.title}
+      items={loaded.value.changes}
+      rowKind="change"
+      empty={copy.empty}
+    >
+      {(change, decided) => <Change change={change} now={now} onDecided={decided} />}
+    </DecisionQueue>
   );
 }
 

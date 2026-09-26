@@ -15,27 +15,6 @@
   border: var(--hairline) solid var(--paper-line);
 }
 
-.panelHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--sp-14) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
-.panelTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: var(--fs-22);
-}
-
-.count {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
 .panelBody {
   padding: var(--sp-20);
 }
@@ -48,29 +27,6 @@
 }
 
 /* ---- Board C1: one held grant ------------------------------------------- */
-
-.grants {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.grant,
-.targeted {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-/* The grant a task on the Tasks board led here, marked as the board marks a selection. */
-.targeted {
-  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
-}
-
-.grant:focus-visible,
-.targeted:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
-}
 
 .grantHead {
   display: flex;

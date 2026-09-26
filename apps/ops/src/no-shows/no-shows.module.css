@@ -19,27 +19,6 @@
   border: var(--hairline) solid var(--paper-line);
 }
 
-.panelHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--sp-14) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
-.panelTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: var(--fs-22);
-}
-
-.count {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
 .empty {
   margin: 0;
   padding: var(--sp-16) var(--sp-20);
@@ -163,29 +142,6 @@
 }
 
 /* ---- One case, with its three facts --------------------------------------- */
-
-.cases {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.case,
-.targeted {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-/* The case a task on the Tasks board led here, marked as the board marks a selection. */
-.targeted {
-  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
-}
-
-.case:focus-visible,
-.targeted:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
-}
 
 .caseHead {
   display: flex;
@@ -349,12 +305,4 @@
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
   color: var(--error-on-paper);
-}
-
-.note {
-  margin: 0;
-  padding: var(--sp-14) var(--sp-20);
-  font-size: var(--fs-14);
-  line-height: 1.6;
-  color: var(--text-muted);
 }

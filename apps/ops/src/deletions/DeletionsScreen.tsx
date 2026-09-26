@@ -18,15 +18,15 @@
 // the refusal's copy says which.
 
 import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState } from "react";
 import { api, type DeletionRequest } from "../api.ts";
+import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { deletions } from "../content.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
-import { rowId, useTargetRow } from "../lib/target.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./deletions.module.css";
 
@@ -105,17 +105,7 @@ function ConfirmDelete({
   );
 }
 
-function Request({
-  request,
-  now,
-  targeted,
-  onDecided,
-}: {
-  request: DeletionRequest;
-  now: Date;
-  targeted: boolean;
-  onDecided: () => void;
-}) {
+function Request({ request, now, onDecided }: { request: DeletionRequest; now: Date; onDecided: () => void }) {
   const [deciding, setDeciding] = useState<Deciding>({ step: "listed" });
   const [reason, setReason] = useState("");
   const openers = { delete: useRef<HTMLButtonElement>(null), reject: useRef<HTMLButtonElement>(null) };
@@ -137,7 +127,7 @@ function Request({
   };
 
   return (
-    <li className={targeted ? styles.targeted : styles.request} id={rowId("request", request.id)} tabIndex={-1}>
+    <>
       <div className={styles.head}>
         <OpsLink className={styles.name} to={`/clients/${request.person_id}`}>
           {request.name}
@@ -225,50 +215,27 @@ function Request({
           {copy.errors[deciding.code] ?? copy.errors.unknown}
         </p>
       )}
-    </li>
+    </>
   );
 }
 
 function Queue() {
   const [loaded, retry] = useLoad(api.deletionRequests);
-  // A decided request leaves the queue at once; the count follows it, and so does the keyboard.
-  const [decided, setDecided] = useState<readonly string[]>([]);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const target = useTargetRow(loaded.state === "loaded");
-
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
   const now = new Date();
-  const open = loaded.value.requests.filter((request) => !decided.includes(request.id));
   return (
-    <section className={styles.panel} aria-labelledby="deletions">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="deletions" ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h2>
-        <span className={styles.count}>{open.length}</span>
-      </div>
-      {open.length === 0 ? (
-        <p className={styles.empty}>{copy.empty}</p>
-      ) : (
-        <ul className={styles.requests}>
-          {open.map((request) => (
-            <Request
-              key={request.id}
-              request={request}
-              now={now}
-              targeted={target === rowId("request", request.id)}
-              onDecided={() => {
-                setDecided((already) => [...already, request.id]);
-                heading.current?.focus();
-              }}
-            />
-          ))}
-        </ul>
-      )}
-      <p className={styles.note}>{copy.note(copy.processDays)}</p>
-    </section>
+    <DecisionQueue
+      titleId="deletions"
+      title={copy.title}
+      items={loaded.value.requests}
+      rowKind="request"
+      empty={copy.empty}
+      note={copy.note(copy.processDays)}
+    >
+      {(request, decided) => <Request request={request} now={now} onDecided={decided} />}
+    </DecisionQueue>
   );
 }
 
