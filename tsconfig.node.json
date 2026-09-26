@@ -43,6 +43,7 @@
     "test/node/tech-progress.test.ts",
     "test/node/tech-store.test.ts",
     "test/node/static-server.test.ts",
+    "scripts/seed-local.ts",
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",
     "scripts/fidelity-ops.ts",

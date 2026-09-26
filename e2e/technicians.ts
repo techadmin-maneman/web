@@ -21,9 +21,9 @@ const everyId = Object.values(E2E_TECHNICIANS)
 /**
  * The SQL that gives a seed its technician: added once, whatever number of runs
  * have seeded it before. It also retires what earlier runs left: every other
- * technician an e2e seed ever added, and the visits an earlier run booked with
- * this one that are still ahead, whose tests are long over and which would
- * otherwise fill his days.
+ * technician an e2e seed ever added, and the seeded visits still ahead with
+ * this one or with those, whose tests are long over and which would otherwise
+ * fill his days and every local list of what is coming.
  */
 export function technicianFor(seed: Seed, now: string): string[] {
   const { id, fsmId } = E2E_TECHNICIANS[seed];
@@ -33,6 +33,7 @@ export function technicianFor(seed: Seed, now: string): string[] {
     `UPDATE technicians SET active = 0, updated_at = '${now}'
        WHERE fsm_id LIKE 'e2e-%' AND active = 1 AND id NOT IN (${everyId});`,
     `UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = '${now}'
-       WHERE technician_id = '${id}' AND fsm_id LIKE 'e2e-%' AND status = 'scheduled';`,
+       WHERE fsm_id LIKE 'e2e-%' AND status = 'scheduled'
+         AND (technician_id = '${id}' OR technician_id NOT IN (${everyId}));`,
   ];
 }

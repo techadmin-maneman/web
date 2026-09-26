@@ -10,8 +10,12 @@
 //   npm run build:site -- --env local && npm run build:app -- --env local
 //   npm run build:ops -- --env local && npm run build:tech -- --env local
 //   npm run test:e2e
+//
+// The ports are scripts/lib/local-stack.ts's, which npm run dev:all shares; one
+// another program holds can be moved, e.g. MM_API_PORT=8797 npm run test:e2e.
 
 import { defineConfig, devices } from "@playwright/test";
+import { API_ORIGIN, apiDevArgs, PORTS } from "./scripts/lib/local-stack.ts";
 
 const local = process.env.CI === undefined;
 
@@ -30,51 +34,34 @@ export default defineConfig({
    */
   workers: local ? undefined : 3,
   reporter: local ? "list" : [["list"], ["github"]],
-  use: { baseURL: "http://127.0.0.1:4321", trace: "retain-on-failure" },
+  use: { baseURL: `http://127.0.0.1:${String(PORTS.site)}`, trace: "retain-on-failure" },
   webServer: [
     {
-      // The tests book leads and render try-ons from one address, run after run on one local
-      // database, so the limits per address and the daily ceilings are raised for them.
-      command: [
-        "node node_modules/wrangler/bin/wrangler.js dev --port 8787 --inspector-port 9230",
-        "--var LEAD_IP_DAILY_LIMIT:10000",
-        "--var TRYON_UPLOAD_IP_HOURLY_LIMIT:10000",
-        "--var TRYON_GENERATE_IP_HOURLY_LIMIT:10000",
-        "--var UPLOAD_DAILY_CEILING:10000",
-        "--var RENDER_DAILY_CEILING:10000",
-        "--var RESULT_READ_DAILY_CEILING:10000",
-        // The client app's login: every code is this one locally (docs/decisions/0030), and the limits are raised.
-        "--var OTP_FIXED_CODE:246810",
-        "--var OTP_IP_HOURLY_LIMIT:10000",
-        // The read surfaces' tests share one fitted client (e2e/global-setup.ts), each logging in.
-        "--var OTP_MOBILE_DAILY_LIMIT:10000",
-        "--var OTP_DAILY_CEILING:10000",
-        // Each saved address takes from the address-lookup ceiling too. Its own
-        // cap is GEOCODE_CEILING_MAX, so this is raised to that and no further.
-        "--var GEOCODE_DAILY_CEILING:1800",
-      ].join(" "),
-      url: "http://127.0.0.1:8787/api/health",
+      // mm-api with the local login code, and the limits raised: the tests book, render and log in
+      // run after run from one address on one local database (scripts/lib/local-stack.ts).
+      command: apiDevArgs().join(" "),
+      url: `${API_ORIGIN}/api/health`,
       reuseExistingServer: local,
       timeout: 120_000,
     },
     {
-      command: "node scripts/serve-site.ts --env local --port 4321 --api http://127.0.0.1:8787",
-      url: "http://127.0.0.1:4321/",
+      command: `node scripts/serve-site.ts --env local --port ${String(PORTS.site)} --api ${API_ORIGIN}`,
+      url: `http://127.0.0.1:${String(PORTS.site)}/`,
       reuseExistingServer: local,
     },
     {
-      command: "node scripts/serve-app.ts --env local --port 4322 --api http://127.0.0.1:8787",
-      url: "http://127.0.0.1:4322/",
+      command: `node scripts/serve-app.ts --env local --port ${String(PORTS.app)} --api ${API_ORIGIN}`,
+      url: `http://127.0.0.1:${String(PORTS.app)}/`,
       reuseExistingServer: local,
     },
     {
-      command: "node scripts/serve-ops.ts --env local --port 4323 --api http://127.0.0.1:8787",
-      url: "http://127.0.0.1:4323/",
+      command: `node scripts/serve-ops.ts --env local --port ${String(PORTS.ops)} --api ${API_ORIGIN}`,
+      url: `http://127.0.0.1:${String(PORTS.ops)}/`,
       reuseExistingServer: local,
     },
     {
-      command: "node scripts/serve-tech.ts --env local --port 4324 --api http://127.0.0.1:8787",
-      url: "http://127.0.0.1:4324/",
+      command: `node scripts/serve-tech.ts --env local --port ${String(PORTS.tech)} --api ${API_ORIGIN}`,
+      url: `http://127.0.0.1:${String(PORTS.tech)}/`,
       reuseExistingServer: local,
     },
   ],
@@ -97,7 +84,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 390, height: 844 },
-        baseURL: "http://app.localhost:4322",
+        baseURL: `http://app.localhost:${String(PORTS.app)}`,
         // A service worker would answer requests that page.route() means to fake. The offline
         // tests (e2e/app/pwa.e2e.ts) allow it.
         serviceWorkers: "block",
@@ -112,7 +99,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
-        baseURL: "http://ops.localhost:4323",
+        baseURL: `http://ops.localhost:${String(PORTS.ops)}`,
         // The console registers none, and a stale one would answer what page.route() means to fake.
         serviceWorkers: "block",
         reducedMotion: "reduce",
@@ -127,7 +114,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 390, height: 844 },
-        baseURL: "http://tech.localhost:4324",
+        baseURL: `http://tech.localhost:${String(PORTS.tech)}`,
         // The app registers none, and a stale one would answer what page.route() means to fake.
         serviceWorkers: "block",
         // Board B1's capture: a green test pattern instead of a camera, granted without a prompt.
@@ -156,7 +143,7 @@ export default defineConfig({
       testMatch: "tech/ios.e2e.ts",
       use: {
         ...devices["iPhone 15"],
-        baseURL: "http://tech.localhost:4324",
+        baseURL: `http://tech.localhost:${String(PORTS.tech)}`,
         // A stale worker would answer what page.route() means to fake, as in "tech".
         serviceWorkers: "block",
         reducedMotion: "reduce",
