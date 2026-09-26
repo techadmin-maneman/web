@@ -16,6 +16,7 @@ import { api, type NumberChange } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { numberChanges } from "../content.ts";
 import { Left } from "../lib/Left.tsx";
+import { phoneWords } from "../lib/phone.ts";
 import { rowId, useTargetRow } from "../lib/target.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -67,7 +68,7 @@ function Change({
         <Left due={change.due} now={now} />
       </div>
       <p className={styles.when}>{copy.requested(longDate(change.requested_at))}</p>
-      <p className={styles.move}>{copy.move(change.old_mobile, change.new_mobile)}</p>
+      <p className={styles.move}>{copy.move(phoneWords(change.old_mobile), phoneWords(change.new_mobile))}</p>
       <p className={styles.proven}>{copy.proven}</p>
       {asking ? (
         <div className={styles.reason}>

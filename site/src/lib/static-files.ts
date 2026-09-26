@@ -10,9 +10,7 @@
 import { createHash } from "node:crypto";
 import type { AnalyticsIds } from "./analytics-ids.ts";
 import type { SiteEnvironment } from "./environment.ts";
-
-/** Where production is served; canonical links and the sitemap point here. */
-export const SITE_ORIGIN = "https://maneman.in";
+import { SITE_ORIGIN } from "./site-origin.ts";
 
 /** Cloudflare's own limit on a line of `_headers`. */
 export const HEADER_LINE_LIMIT = 2000;

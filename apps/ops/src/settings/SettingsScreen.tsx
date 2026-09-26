@@ -4,27 +4,32 @@
 // the moment it is set, a price applies from a date and keeps every earlier
 // row, and a pincode's launch date is a promise the waitlist counts from.
 
-import { Shell } from "../components/Shell.tsx";
+import { OpsLink, Shell } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
-import { OpsLink } from "../components/Shell.tsx";
-import type { SettingsTab } from "../route.ts";
+import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
 import { Prices } from "./Prices.tsx";
 import { Rules } from "./Rules.tsx";
 import { ServiceArea } from "./ServiceArea.tsx";
 import styles from "./settings.module.css";
 
+function Panel({ tab }: { tab: SettingsTab }) {
+  if (tab === "prices") return <Prices />;
+  if (tab === "area") return <ServiceArea />;
+  return <Rules />;
+}
+
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {
   return (
     <Shell section="/settings" title={settings.title} sub={settings.sub}>
-      <div className={styles.column}>
+      <div className={styles.screen}>
         <nav className={styles.tabs} aria-label={settings.title}>
-          {settings.tabs.map((each) => (
-            <OpsLink key={each.tab} className={styles.tab} to={each.path} current={each.tab === tab}>
-              {each.label}
+          {SETTINGS_TABS.map((each) => (
+            <OpsLink key={each} className={styles.tab} to={settingsPath(each)} current={each === tab}>
+              {SETTINGS_TAB_NAMES[each]}
             </OpsLink>
           ))}
         </nav>
-        {tab === "rules" ? <Rules /> : tab === "prices" ? <Prices /> : <ServiceArea />}
+        <Panel tab={tab} />
       </div>
     </Shell>
   );

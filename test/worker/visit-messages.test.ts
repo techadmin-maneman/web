@@ -278,7 +278,10 @@ describe("what queues a visit message", () => {
       body: JSON.stringify({ type: "consultation", date: "2026-09-22", window: "morning" }),
     });
     const hold = await answer.json<{ id: string }>();
-    const fsm = createStubFsm({ ...EMPTY_FSM, items: [{ id: "item-consult", name: "Consultation", type: "Service" }] });
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-consult", name: "Consultation", type: "Service", price: null }],
+    });
     const notified: string[] = [];
     const outcome = await confirmBooking(env.DB, fsm, createStubPayments(), hold.id, NOW, {
       labelAsTest: true,

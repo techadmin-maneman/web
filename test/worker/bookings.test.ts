@@ -18,8 +18,8 @@ const PERSON = "11111111-1111-4111-8111-111111111111";
 const world = () => ({
   ...EMPTY_FSM,
   items: [
-    { id: "item-service", name: "Service visit", type: "Service" as const },
-    { id: "item-consult", name: "Consultation", type: "Service" as const },
+    { id: "item-service", name: "Service visit", type: "Service" as const, price: null },
+    { id: "item-consult", name: "Consultation", type: "Service" as const, price: null },
   ],
 });
 

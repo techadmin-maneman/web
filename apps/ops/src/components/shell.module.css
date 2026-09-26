@@ -77,14 +77,23 @@
   min-width: 0;
 }
 
+/* The header centres its two halves in its 56 px, and the title and its line keep one baseline, as board A1 sets them. */
 .header {
   display: flex;
   flex-shrink: 0;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--sp-16);
   height: var(--header-h);
   padding: 0 var(--sp-24);
   border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-16);
+  min-width: 0;
 }
 
 .title {
@@ -97,6 +106,69 @@
 .sub {
   font-size: var(--fs-13);
   color: var(--text-muted);
+}
+
+/* Who is signed in: the board's box of initials, with the name beside it in the header's own muted line. */
+.account {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--sp-14);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sp-30);
+  height: var(--sp-30);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper-light);
+  font-family: var(--font-serif);
+  color: var(--text);
+}
+
+.signOut {
+  color: var(--text);
+}
+
+.signOut:focus-visible,
+.reload:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+/* A spent Access session, said once under the header and over whichever section is open. */
+.lapsed {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-10) var(--sp-24);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  border-left: var(--rule-strong) solid var(--error-on-paper);
+  background: var(--paper-light);
+}
+
+.lapsedLine {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.reload {
+  min-height: var(--tap);
+  padding: 0 var(--sp-18);
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  cursor: pointer;
 }
 
 /* Each section pads itself, as its board does. */

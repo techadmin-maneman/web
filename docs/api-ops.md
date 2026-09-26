@@ -1655,6 +1655,62 @@ Request body:
 }
 ```
 
+### POST /api/prices/withdraw
+
+Take back a price still to come. The one in force and the spent ones stay: an invoice may stand on them
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PriceWithdrawal"
+}
+```
+
+**200**: The book as it now stands
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Price"
+      }
+    }
+  },
+  "required": [
+    "prices"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names valid_from when the row applies today or applied before
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the book holds no such row
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/service-area
 
 Every pincode we hold, its city, and whether a technician goes there
@@ -1710,11 +1766,16 @@ Request body:
     },
     "served": {
       "type": "integer"
+    },
+    "alerted": {
+      "type": "integer",
+      "description": "Launch alerts queued for the pincodes it began serving."
     }
   },
   "required": [
     "changed",
-    "served"
+    "served",
+    "alerted"
   ],
   "additionalProperties": false
 }
@@ -1733,6 +1794,18 @@ Request body:
 ```json
 {
   "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/whoami
+
+Who Access let through, and where signing out goes
+
+**200**: The signed-in identity
+
+```json
+{
+  "$ref": "#/components/schemas/Whoami"
 }
 ```
 
@@ -5334,6 +5407,41 @@ Request body:
 }
 ```
 
+### PriceWithdrawal
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "item": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement",
+        "late_fee_first_fit",
+        "late_fee_replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "item",
+    "tier",
+    "valid_from"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ServedPincode
 
 ```json
@@ -5362,6 +5470,14 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "waiting": {
+      "type": "integer",
+      "description": "How many are on its waitlist."
+    },
+    "to_alert": {
+      "type": "integer",
+      "description": "How many of them serving it would tell now: those who asked, and have not been told yet."
     }
   },
   "required": [
@@ -5369,7 +5485,9 @@ Request body:
     "area",
     "city",
     "served",
-    "launch_on"
+    "launch_on",
+    "waiting",
+    "to_alert"
   ],
   "additionalProperties": false
 }
@@ -5403,6 +5521,11 @@ Request body:
                 "type": "null"
               }
             ]
+          },
+          "area": {
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&-]{1,39}$/u",
+            "description": "A better name for the area than its post office's. Left out, the name stays."
           }
         },
         "required": [
@@ -5418,6 +5541,36 @@ Request body:
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Whoami
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "signed_in_as": {
+      "type": "string",
+      "description": "A member of staff's e-mail, or a service token's ID."
+    },
+    "sign_out": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Access's logout path; null where no Access stands in front, as locally."
+    }
+  },
+  "required": [
+    "signed_in_as",
+    "sign_out"
   ],
   "additionalProperties": false
 }

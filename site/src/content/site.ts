@@ -12,6 +12,9 @@
 //   the consent record can never disagree. The production build stops while
 //   any notice is unapproved, and a new version is unapproved until it is
 //   added to APPROVED_NOTICES.
+// - Prices are holes, "{firstFit}, then {service} a month", which the price
+//   book fills (src/lib/prices.ts, docs/decisions/0073-prices-from-the-price-book.md).
+//   The production build stops on a price typed into a sentence.
 //
 // Images are file names in design/assets; src/lib/images.ts resolves them.
 // `{city}` and similar are filled in by the page.
@@ -413,7 +416,10 @@ export const comparison = {
   yes: "Yes",
   no: "No",
   rows: [
-    { label: "Cost", cells: ["₹1.2–3 lakh, once", "₹800–2,000 a month, for life", "₹25,000, then ₹1,500 a month"] },
+    {
+      label: "Cost",
+      cells: ["₹1.2–3 lakh, once", "₹800–2,000 a month, for life", "{firstFit}, then {service} a month"],
+    },
     { label: "Visible result", cells: ["9–12 months", "4–6 months", "The same day"] },
     { label: "Covers advanced loss", cells: [false, false, true] },
     { label: "Slows the loss itself", cells: [false, true, false] },
@@ -466,7 +472,7 @@ export const howItWorks = {
       number: "04",
       title: "Monthly service",
       body: "He returns each month to lift the base, clean it, re-seat it and trim the hair back to your own growth.",
-      meta: `₹1,500 a visit · ${visitLength.service}`,
+      meta: `{service} a visit · ${visitLength.service}`,
     },
   ],
 };
@@ -494,7 +500,7 @@ export const bases = {
       look: "Soft, forgiving at the parting",
       breath: "High — the mesh is open",
       life: "Six to eight months",
-      price: "₹25,000",
+      price: "{firstFit}",
       drawing: {
         tag: "Hand-tied knots",
         tag2: "Mesh base",
@@ -514,7 +520,7 @@ export const bases = {
       look: "Hair appears to leave the scalp",
       breath: "Lower — the membrane is sealed",
       life: "Four to six months",
-      price: "₹40,000",
+      price: "{premiumFirstFit}",
       drawing: {
         tag: "V-looped, no knots",
         tag2: "Thin skin",
@@ -533,16 +539,26 @@ export const prices = {
   intro: "No consultation fee, no deposit, no package. You pay for the piece and for the visits you take.",
   columns: ["Standard", "Premium"],
   rows: [
-    { label: "First fit", note: "The piece, the fitting and the cut", standard: "₹25,000", premium: "₹40,000" },
+    {
+      label: "First fit",
+      note: "The piece, the fitting and the cut",
+      standard: "{firstFit}",
+      premium: "{premiumFirstFit}",
+    },
     {
       label: "Monthly service visit",
       note: "Refit, clean, trim — at your home",
-      standard: "₹1,500",
-      premium: "₹2,000",
+      standard: "{service}",
+      premium: "{premiumService}",
     },
-    { label: "Replacement piece", note: "Every six months", standard: "₹17,000", premium: "₹30,000" },
+    {
+      label: "Replacement piece",
+      note: "Every six months",
+      standard: "{replacement}",
+      premium: "{premiumReplacement}",
+    },
   ],
-  example: "A standard base in the first year: ₹25,000 plus twelve service visits at ₹1,500 — ₹43,000.",
+  example: "A standard base in the first year: {firstFit} plus twelve service visits at {service} — {firstYear}.",
   payment: "Payment on the day of the fit. Card, UPI or bank transfer.",
   book: "Book a free consultation",
   tryOn: "Or see yourself with hair first",
@@ -591,7 +607,7 @@ export const faq = {
     },
     {
       q: "What does the first year cost in total?",
-      a: "A standard base: ₹25,000 for the first fit plus twelve monthly service visits at ₹1,500, so ₹43,000. Premium: ₹40,000 plus twelve at ₹2,000, so ₹64,000. A replacement piece at six months is separate.",
+      a: "A standard base: {firstFit} for the first fit plus twelve monthly service visits at {service}, so {firstYear}. Premium: {premiumFirstFit} plus twelve at {premiumService}, so {premiumFirstYear}. A replacement piece at six months is separate.",
     },
     {
       q: "Is this the same thing as a wig?",
@@ -862,5 +878,6 @@ export const business = {
   description: hero.body,
   /** The cities the FAQ says are covered. */
   areaServed: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
-  priceRange: "₹25,000–₹40,000",
+  /** A first fit, from the cheaper tier to the dearer. */
+  priceRange: "{firstFitRange}",
 };

@@ -2,6 +2,7 @@
 // How it works: four numbered steps, each with a photograph.
 import { howItWorks, placeholderTag, stepPhotos } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import DesignPicture from "../DesignPicture.astro";
 
 const showPhotos = isShown(stepPhotos);
@@ -20,7 +21,9 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
           <div>
             <h3>{step.title}</h3>
             <p>{step.body}</p>
-            <div class="meta caps">{step.meta}</div>
+            <div class="meta caps" data-price={priceTemplate(step.meta)}>
+              {asBuilt(step.meta)}
+            </div>
           </div>
         </div>
         {showPhotos && step.photo !== undefined && (

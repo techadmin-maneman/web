@@ -1,5 +1,7 @@
 // mm-site: static assets for everything outside /api/*, and one Worker beside
-// them for the referral landing (docs/decisions/0027-referral-landing.md), which
+// them that answers first on the pages that show a price, where it writes in the
+// price book's figures (docs/decisions/0073-prices-from-the-price-book.md), and on
+// the referral landing (docs/decisions/0027-referral-landing.md), where it also
 // writes each invite's preview into the page WhatsApp fetches. Local and staging serve
 // the Astro build (site/dist/<environment>, from npm run build:site). Production
 // keeps its placeholder page until the site goes live there, which the owner
@@ -18,7 +20,7 @@
     "directory": "./dist/local",
     "not_found_handling": "404-page",
     "binding": "ASSETS",
-    "run_worker_first": ["/r/*"]
+    "run_worker_first": ["/", "/book", "/r/*"]
   },
   "services": [{ "binding": "API", "service": "mm-api" }],
   "env": {
@@ -34,7 +36,7 @@
         "directory": "./dist/staging",
         "not_found_handling": "404-page",
         "binding": "ASSETS",
-        "run_worker_first": ["/r/*"]
+        "run_worker_first": ["/", "/book", "/r/*"]
       },
       "services": [{ "binding": "API", "service": "mm-api-staging" }]
     },
@@ -50,7 +52,7 @@
         "directory": "./placeholder/production",
         "not_found_handling": "404-page",
         "binding": "ASSETS",
-        "run_worker_first": ["/r/*"]
+        "run_worker_first": ["/", "/book", "/r/*"]
       },
       "services": [{ "binding": "API", "service": "mm-api-production" }]
     }

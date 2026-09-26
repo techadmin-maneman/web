@@ -11,7 +11,8 @@ import StickyBar from "../components/StickyBar.astro";
 import { business } from "../content/site.ts";
 import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { FAVICON_SIZES, OG_IMAGE, token } from "../lib/brand-images.ts";
-import { SITE_ORIGIN } from "../lib/static-files.ts";
+import { SITE_ORIGIN } from "../lib/site-origin.ts";
+import { jsonLd } from "../lib/structured-data.ts";
 import serif400 from "../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2?url";
 import sans400 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff2?url";
 import sans500 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff2?url";
@@ -23,8 +24,8 @@ interface Props {
   home?: boolean;
   /** Pages that should never be indexed, such as the 404. */
   noindex?: boolean;
-  /** Schema.org objects, written as JSON-LD. */
-  structuredData?: readonly object[];
+  /** Schema.org objects, written as JSON-LD. Each is named, so the mm-site Worker can build it again. */
+  structuredData?: readonly { readonly name: string; readonly data: object }[];
 }
 
 const { title, description, home = false, noindex = false, structuredData = [] } = Astro.props;
@@ -69,8 +70,8 @@ const ogImage = new URL("/og.png", SITE_ORIGIN).href;
     <link rel="preload" href={serif400} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={sans400} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={sans500} as="font" type="font/woff2" crossorigin />
-    {structuredData.map((data) => (
-      <script type="application/ld+json" set:html={JSON.stringify(data).replace(/</g, "\\u003c")}></script>
+    {structuredData.map((block) => (
+      <script type="application/ld+json" data-structured={block.name} set:html={jsonLd(block.data)}></script>
     ))}
     <slot name="head" />
   </head>

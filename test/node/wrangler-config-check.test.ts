@@ -1,11 +1,14 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
 import {
+  FREE_VARIABLE_LIMIT,
   PLACEHOLDER_DATABASE_ID,
   apiRoutePatterns,
   checkAccountsAgree,
   checkApiConfig,
   checkSiteConfig,
+  secretNamesIn,
 } from "../../scripts/lib/wrangler-config-check.ts";
 import { DELETE, edited, type Edit } from "./json-edit.ts";
 
@@ -17,6 +20,32 @@ const site = (...edits: Edit[]) => checkSiteConfig(edited(realSite, ...edits)).j
 describe("mm-api wrangler config", () => {
   it("the committed config passes", () => {
     expect(checkApiConfig(realApi)).toEqual([]);
+  });
+
+  // The Workers Free plan refuses a deploy past 64 vars and secrets together (code 10055): staging, 26 September 2026.
+  describe("the variable limit", () => {
+    const secretNames = secretNamesIn(readFileSync(".dev.vars.example", "utf8"));
+    /** The config with staging holding exactly `count` vars, and only the limit's problems of it. */
+    const limitProblems = (count: number) => {
+      const vars = Object.fromEntries(Array.from({ length: count }, (_, i) => [`VAR_${String(i)}`, "x"]));
+      const problems = checkApiConfig(edited(realApi, ["env.staging.vars", vars]), { secretNames });
+      return problems.filter((problem) => problem.includes("Workers Free limit"));
+    };
+
+    it("reads every secret .dev.vars.example names", () => {
+      expect(secretNames).toContain("ZOHO_FSM_REFRESH_TOKEN");
+      expect(secretNamesIn("# a comment\nA_SECRET=\n\nB_SECRET=value\n")).toEqual(["A_SECRET", "B_SECRET"]);
+    });
+
+    it("passes the committed config with every secret counted", () => {
+      expect(checkApiConfig(realApi, { secretNames })).toEqual([]);
+    });
+
+    it("refuses an environment whose vars and secrets pass 64", () => {
+      const room = FREE_VARIABLE_LIMIT - secretNames.length;
+      expect(limitProblems(room)).toEqual([]);
+      expect(limitProblems(room + 1)).toEqual([expect.stringContaining("over the Workers Free limit of 64")]);
+    });
   });
 
   it("the committed deliberately broken fixture fails", () => {
@@ -220,13 +249,18 @@ describe("mm-site wrangler config", () => {
       ["env.production.vars", { X: "1" }],
       "site env.production: mm-site must not declare vars",
     ],
-    // mm-site runs one Worker beside its assets, for the referral landing, and nothing else
-    // (docs/decisions/0027-referral-landing.md).
+    // mm-site runs one Worker beside its assets, for the pages that show a price and the referral landing, and
+    // nothing else (docs/decisions/0027-referral-landing.md, 0073-prices-from-the-price-book.md).
     ["its entry is another file", ["main", "src/index.ts"], 'site top level: main must be "./src/worker.ts"'],
     [
-      "the Worker answers paths beyond the landing",
-      ["env.staging.assets.run_worker_first", ["/r/*", "/api/*"]],
+      "the Worker answers paths beyond the priced pages and the landing",
+      ["env.staging.assets.run_worker_first", ["/", "/book", "/r/*", "/api/*"]],
       "site env.staging: assets.run_worker_first must be",
+    ],
+    [
+      "the Worker leaves a priced page to the assets",
+      ["env.production.assets.run_worker_first", ["/r/*"]],
+      "site env.production: assets.run_worker_first must be",
     ],
     [
       "it binds a service that is not mm-api",

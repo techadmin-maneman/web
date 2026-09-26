@@ -89,7 +89,7 @@ describe("content", () => {
       "Fifteen minutes · free",
       "An hour · free",
       "Three hours · at your table",
-      "₹1,500 a visit · ninety minutes",
+      "{service} a visit · ninety minutes",
     ]);
     expect(site.faq.items[2]?.a).toMatch(/About ninety minutes, at your home\.$/);
     expect(site.closing.title).toBe("The consultation takes an hour and costs nothing.");

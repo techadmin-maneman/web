@@ -37,7 +37,7 @@ beforeEach(async () => {
   await markDatabase();
   fsm = createStubFsm({
     ...EMPTY_FSM,
-    items: [{ id: "part-standard", name: "Standard base", type: "Part" }],
+    items: [{ id: "part-standard", name: "Standard base", type: "Part", price: null }],
     assets: { "contact-1": [asset()] },
   });
   const deps = fakeDependencies({ fsm });

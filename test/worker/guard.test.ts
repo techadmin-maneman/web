@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, validateStaticConfig } from "../../src/guard.ts";
+import { FSM_CATALOGUE_PUSH } from "../../src/config/environments.ts";
+import { isKnownTemplate } from "../../src/config/message-templates.ts";
 
 const REAL = {
   IMAGE_PROVIDER: "ailabtools",
@@ -43,12 +45,10 @@ const SETTINGS = {
   RESULT_READ_DAILY_CEILING: "400",
   GEOCODE_DAILY_CEILING: "200",
   RESULT_RETENTION_DAYS: "30",
-  UNKNOWN_COLOR_ROUTE: "premium_original",
   AILAB_CREDIT_FLOOR: "200",
   RESULT_SIGNING_KEY: "a-signing-key-of-at-least-thirty-two-characters",
   ERASURE_SECRET: "an-erasure-secret-of-at-least-thirty-two-characters",
   MESSAGING_ENABLED: "false",
-  WA_RESULT_TEMPLATE: "tryon_result_v1",
   ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
   ACCESS_OPS_AUD: "ops-audience-tag",
   OTP_PEPPER: "a-login-code-pepper-of-at-least-thirty-two-chars",
@@ -274,21 +274,17 @@ describe("validateStaticConfig: try-on and messaging", () => {
     ]);
   });
 
-  it("refuses a short signing key, an unknown colour route, template or retention", () => {
-    expect(
-      problemsOf({
-        ...local,
-        RESULT_SIGNING_KEY: "short",
-        UNKNOWN_COLOR_ROUTE: "premium",
-        WA_RESULT_TEMPLATE: "nope",
-        RESULT_RETENTION_DAYS: "45",
-      }),
-    ).toEqual([
-      "UNKNOWN_COLOR_ROUTE must be one of premium_original, pro_black",
+  it("refuses a short signing key or retention", () => {
+    expect(problemsOf({ ...local, RESULT_SIGNING_KEY: "short", RESULT_RETENTION_DAYS: "45" })).toEqual([
       "RESULT_SIGNING_KEY must be at least 32 characters",
       "RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days",
-      "WA_RESULT_TEMPLATE names no template in src/config/message-templates.ts",
     ]);
+  });
+
+  it("sends the try-on result with a template that exists, and routes an unknown colour as the owner chose", () => {
+    const { settings } = validateStaticConfig(production);
+    expect(isKnownTemplate(settings.messaging.resultTemplate)).toBe(true);
+    expect(settings.tryon.unknownColorRoute).toBe("pro_black");
   });
 
   it("insists on an allowlist while staging messaging is on, and reads it as E.164", () => {
@@ -302,6 +298,19 @@ describe("validateStaticConfig: try-on and messaging", () => {
       "MESSAGING_ALLOWLIST has an entry that is not an Indian mobile number",
       "MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging",
     ]);
+  });
+});
+
+// docs/decisions/0073-prices-from-the-price-book.md: staging's FSM is the owner's real org and its price book holds
+// placeholders, so a price typed into staging's console must never reprice the real catalogue.
+describe("the catalogue push", () => {
+  it("is never on in staging, which shares the owner's real FSM org", () => {
+    expect(FSM_CATALOGUE_PUSH.staging).toBe(false);
+  });
+
+  it("is each environment's own, as the settings read it", () => {
+    expect(validateStaticConfig(production).settings.fsmCataloguePush).toBe(FSM_CATALOGUE_PUSH.production);
+    expect(validateStaticConfig(stagingBase).settings.fsmCataloguePush).toBe(false);
   });
 });
 

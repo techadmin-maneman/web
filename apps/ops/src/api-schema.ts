@@ -2230,6 +2230,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/prices/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take back a price still to come. The one in force and the spent ones stay: an invoice may stand on them */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PriceWithdrawal"];
+                };
+            };
+            responses: {
+                /** @description The book as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            prices: components["schemas"]["Price"][];
+                        };
+                    };
+                };
+                /** @description invalid_request: fields names valid_from when the row applies today or applied before */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the book holds no such row */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/service-area": {
         parameters: {
             query?: never;
@@ -2293,6 +2362,8 @@ export interface paths {
                         "application/json": {
                             changed: number;
                             served: number;
+                            /** @description Launch alerts queued for the pincodes it began serving. */
+                            alerted: number;
                         };
                     };
                 };
@@ -2316,6 +2387,42 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/whoami": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who Access let through, and where signing out goes */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The signed-in identity */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Whoami"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3163,19 +3270,38 @@ export interface components {
             /** Format: date */
             valid_from: string;
         };
+        PriceWithdrawal: {
+            /** @enum {string} */
+            item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
+            tier: string;
+            /** Format: date */
+            valid_from: string;
+        };
         ServedPincode: {
             pincode: string;
             area: string;
             city: string;
             served: boolean;
             launch_on: string | null;
+            /** @description How many are on its waitlist. */
+            waiting: number;
+            /** @description How many of them serving it would tell now: those who asked, and have not been told yet. */
+            to_alert: number;
         };
         ServiceAreaChange: {
             changes: {
                 pincode: string;
                 served: boolean;
                 launch_on: string | null;
+                /** @description A better name for the area than its post office's. Left out, the name stays. */
+                area?: string;
             }[];
+        };
+        Whoami: {
+            /** @description A member of staff's e-mail, or a service token's ID. */
+            signed_in_as: string;
+            /** @description Access's logout path; null where no Access stands in front, as locally. */
+            sign_out: string | null;
         };
     };
     responses: never;

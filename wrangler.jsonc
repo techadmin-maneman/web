@@ -113,10 +113,8 @@
     // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
     "GEOCODE_DAILY_CEILING": "200",
     "RESULT_RETENTION_DAYS": "3",
-    "UNKNOWN_COLOR_ROUTE": "pro_black",
     "AILAB_CREDIT_FLOOR": "200",
-    "MESSAGING_ENABLED": "true",
-    "WA_RESULT_TEMPLATE": "tryon_result_v1"
+    "MESSAGING_ENABLED": "true"
   },
   "env": {
     "staging": {
@@ -214,6 +212,7 @@
         "GEOCODE_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "true",
         "REFERRER_NAME_ON_INVITE": "true",
+        // Off: staging shares the owner's real FSM org, so the startup guard refuses it on (ADR 0073).
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
@@ -234,10 +233,8 @@
         // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
         "GEOCODE_DAILY_CEILING": "200",
         "RESULT_RETENTION_DAYS": "3",
-        "UNKNOWN_COLOR_ROUTE": "pro_black",
         "AILAB_CREDIT_FLOOR": "200",
-        "MESSAGING_ENABLED": "true",
-        "WA_RESULT_TEMPLATE": "tryon_result_v1"
+        "MESSAGING_ENABLED": "true"
       }
     },
     "production": {
@@ -327,6 +324,7 @@
         "GEOCODE_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",
         "REFERRER_NAME_ON_INVITE": "true",
+        // Off until the owner switches it on, once this price book holds the owner's prices (ADR 0073).
         "RAZORPAY_KEY_ID": "",
         // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
         "OTP_MOBILE_DAILY_LIMIT": "5",
@@ -348,10 +346,8 @@
         "GEOCODE_DAILY_CEILING": "200",
         // Fourteen days, not thirty, to leave R2 room for Phase 2's photographs (docs/decisions/0039-phase-2-budget.md).
         "RESULT_RETENTION_DAYS": "14",
-        "UNKNOWN_COLOR_ROUTE": "pro_black",
         "AILAB_CREDIT_FLOOR": "200",
-        "MESSAGING_ENABLED": "false",
-        "WA_RESULT_TEMPLATE": "tryon_result_v1"
+        "MESSAGING_ENABLED": "false"
       }
     }
   }

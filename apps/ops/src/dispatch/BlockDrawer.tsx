@@ -16,7 +16,8 @@ import { OpsLink } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { Dialog } from "./Dialog.tsx";
 import styles from "./dispatch.module.css";
-import { firstNameOf, isMovable, nameOf, phoneWords, whatsAppLink, type BlockJob } from "./job.ts";
+import { phoneWords } from "../lib/phone.ts";
+import { firstNameOf, isMovable, nameOf, whatsAppLink, type BlockJob } from "./job.ts";
 
 interface Props {
   readonly job: BlockJob;

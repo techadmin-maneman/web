@@ -84,11 +84,13 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
 test("marks the days a technician is away, and still shows the jobs already on them", async ({ page }) => {
   await open(page);
   // Faizan is away on the Sunday and the Monday, and holds a job on each.
-  await expect(page.getByLabel("Faizan Ali is away on Sun 21 Sep")).toBeVisible();
-  await expect(page.getByLabel("Faizan Ali is away on Mon 22 Sep")).toBeVisible();
+  await expect(page.getByText("Faizan Ali is away on Sun 21 Sep")).toBeAttached();
+  await expect(page.getByText("Faizan Ali is away on Mon 22 Sep")).toBeAttached();
   await expect(page.getByRole("button", { name: "Nitin R., Sun 21 Sep, afternoon" })).toBeVisible();
-  await expect(page.getByLabel("Faizan Ali is away on Tue 23 Sep")).toBeHidden();
+  await expect(page.getByText("Faizan Ali is away on Tue 23 Sep")).toHaveCount(0);
   await expect(page.getByText("Leave is recorded on the Technicians screen")).toBeVisible();
+  // A11Y-22 of the audit, 24 September 2026: the mark was named by an aria-label on a plain span, which ARIA forbids.
+  await expect(page.locator("main span[aria-label]")).toHaveCount(0);
 });
 
 // FEO-10 and REQ-S9-02: "Drop it on a cell with room", with "a hint that shows its slot size".

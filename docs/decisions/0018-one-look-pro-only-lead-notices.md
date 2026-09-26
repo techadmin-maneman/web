@@ -29,7 +29,7 @@ The prompt sends a job whose hair colour the browser could not read to Premium, 
 - cost 15 credits against Pro's 10;
 - once took 6½ minutes.
 
-The owner chose Pro only: `UNKNOWN_COLOR_ROUTE` is `pro_black` in every environment. An unreadable colour is rendered black on Pro. The Premium path stays in the code, and switching back is a config change.
+The owner chose Pro only: `UNKNOWN_COLOR_ROUTE` is `pro_black` in every environment, a constant in `src/config/tryon.ts` since 26 September 2026 (a Worker var before; ADR 0009, rule 6). An unreadable colour is rendered black on Pro. The Premium path stays in the code, and switching back is a one-line change.
 
 ### A chat notice for each new lead
 

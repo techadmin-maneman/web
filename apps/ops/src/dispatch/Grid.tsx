@@ -12,6 +12,7 @@
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
+import label from "../components/label.module.css";
 import styles from "./dispatch.module.css";
 import { isMovable, nameOf, type Job, type Target } from "./job.ts";
 
@@ -95,30 +96,28 @@ interface CellProps {
   readonly onLand: (to: Target) => void;
 }
 
+/** The day's leave, and the jobs still booked on it, which the leave moved nowhere (OPS-07). */
+function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: string; blocks: readonly Block[] }) {
+  const copy = dispatch.board;
+  const stranded = blocks.filter((block) => block.status === "scheduled" || block.status === "dispatched").length;
+  const day = shortDate(date);
+  const marked = stranded === 0 ? styles.awayMark : `${styles.awayMark ?? ""} ${styles.stranded ?? ""}`;
+  return (
+    <span className={`${marked ?? ""} ${label.caps ?? ""}`}>
+      <span aria-hidden="true">{stranded === 0 ? copy.away : copy.stranded(stranded)}</span>
+      <span className={styles.hidden}>
+        {stranded === 0 ? copy.awayLabel(technician.name, day) : copy.strandedLabel(technician.name, day, stranded)}
+      </span>
+    </span>
+  );
+}
+
 /**
  * One technician's day: the blocks on it, and, while a job is in hand, the
  * windows it would land in. A day marked away still draws whatever it holds —
  * leave recorded after a job was assigned must not hide that job — and offers
  * no window to put another one in.
  */
-/** The day's leave, and the jobs still booked on it, which the leave moved nowhere (OPS-07). */
-function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: string; blocks: readonly Block[] }) {
-  const copy = dispatch.board;
-  const stranded = blocks.filter((block) => block.status === "scheduled" || block.status === "dispatched").length;
-  if (stranded === 0) {
-    return (
-      <span className={styles.awayMark} aria-label={copy.awayLabel(technician.name, shortDate(date))}>
-        {copy.away}
-      </span>
-    );
-  }
-  return (
-    <span className={styles.stranded} aria-label={copy.strandedLabel(technician.name, shortDate(date), stranded)}>
-      {copy.stranded(stranded)}
-    </span>
-  );
-}
-
 function Cell({ technician, date, blocks, away, inHand, onOpen, onTake, onLand }: CellProps) {
   const windows = inHand === null || away ? null : inHand.windowsAt(technician.technician_id, date);
   return (

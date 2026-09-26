@@ -22,6 +22,7 @@ export type ClaimResponse = Schemas["ClaimResponse"];
 export type Look = Schemas["Look"];
 export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
+export type PublishedPrices = Schemas["PublishedPrices"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
 export type ReferralWaitlist = Schemas["ReferralWaitlist"];
 export type Consultation = Schemas["Consultation"];
@@ -131,6 +132,11 @@ export async function fetchResult(jobId: string): Promise<ResultAnswer> {
 
 export function fetchInvite(code: string): Promise<Answer<Invite>> {
   return call<Invite>(`/api/r/${code}`);
+}
+
+/** The price book's figures, where the mm-site Worker did not write them into the page (local dev). */
+export function fetchPublishedPrices(): Promise<Answer<PublishedPrices>> {
+  return call<PublishedPrices>("/api/published-prices");
 }
 
 export function checkPincode(pincode: string): Promise<Answer<PincodeAnswer>> {
