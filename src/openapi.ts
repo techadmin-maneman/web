@@ -54,6 +54,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
       ailabApiKey: null,
     },
     messaging: { enabled: false, resultTemplate: "", allowlist: [], evolution: null },
+    devRoutes: false,
   },
 };
 

@@ -37,6 +37,7 @@ import { registerConsultations } from "./routes/consultations.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
+import { registerDevFsm } from "./routes/dev-fsm.ts";
 import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerFsmHook } from "./routes/fsm-hook.ts";
@@ -159,6 +160,8 @@ export function createApp(
 
   app.openAPIRegistry.register("ErrorResponse", ErrorResponseSchema);
   for (const register of SURFACE_ROUTES[surface]) register(app);
+  // Locally only, and only when switched on: what stands in for FSM on a laptop (src/routes/dev-fsm.ts).
+  if (surface === "public" && config.environment === "local" && config.settings.devRoutes) registerDevFsm(app);
 
   app.notFound((c) => c.json(errorBody("not_found", c.var.requestId), 404));
   app.onError((error, c) => {
