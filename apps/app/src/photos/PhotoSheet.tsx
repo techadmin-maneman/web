@@ -5,6 +5,7 @@
 // "Motion").
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { fullDate } from "@maneman/web-kit/dates";
 import { Sheet } from "@maneman/ui/Sheet";
@@ -41,21 +42,22 @@ function Download({ url, name }: { url: string; name: string }) {
   );
   if (file !== null && navigator.canShare({ files: [file] })) {
     return (
-      <button
+      <Button
+        variant="outline"
+        size="small"
         className={styles.download}
-        type="button"
         onClick={() => {
           void navigator.share({ files: [file] }).catch(() => undefined);
         }}
       >
         {content}
-      </button>
+      </Button>
     );
   }
   return (
-    <a className={styles.download} href={url} download={name}>
+    <ButtonLink variant="outline" size="small" className={styles.download} href={url} download={name}>
       {content}
-    </a>
+    </ButtonLink>
   );
 }
 
@@ -75,9 +77,9 @@ export function PhotoSheet({ photo, onClose }: { photo: OpenPhoto; onClose: () =
           <Download url={photo.link.url} name={`mane-man-${photo.date}-${photo.phase}-${photo.link.angle}.jpg`} />
         </div>
         <p className={styles.gallery}>{photos.downloaded}</p>
-        <button className={styles.close} type="button" onClick={() => dialog.current?.close()}>
+        <Button variant="outline" size="control" className={styles.close} onClick={() => dialog.current?.close()}>
           {photos.close}
-        </button>
+        </Button>
       </div>
     </Sheet>
   );

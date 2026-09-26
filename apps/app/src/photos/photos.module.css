@@ -109,20 +109,10 @@ div.cell {
   font-size: var(--fs-16);
 }
 
+/* Board D3's Download (packages/ui/Button.tsx), as wide as its words. */
 .download {
   display: inline-flex;
-  align-items: center;
-  gap: var(--sp-10);
-  min-height: var(--tap);
   padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--text);
-  text-decoration: none;
-  cursor: pointer;
 }
 
 .gallery {
@@ -134,15 +124,9 @@ div.cell {
   color: var(--text-muted);
 }
 
+/* Close, the width of the sheet and quieter than Download: edged in the paper's own line. */
 .close {
   width: 100%;
-  min-height: var(--btn-md);
   margin-top: var(--sp-16);
-  border: var(--hairline) solid var(--paper-line);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
+  border-color: var(--paper-line);
 }
