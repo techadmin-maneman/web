@@ -15,10 +15,7 @@ import { MAX_SYNC_ATTEMPTS } from "../queues/crm-sync.ts";
 export interface Task {
   readonly id: string;
   readonly group: TaskGroup;
-  /**
-   * Whose it is; null for a no-show, whose case names the technician and never
-   * the client, and for an erased client, whose record is gone.
-   */
+  /** Whose it is; null for an erased client, whose record is gone. */
   readonly person: { readonly id: string; readonly name: string } | null;
   /**
    * The one fact the group turns on: the start a visit moved to, the day and
@@ -31,16 +28,31 @@ export interface Task {
 }
 
 /**
+ * When a number change `nc` started waiting for ops: once the second code was
+ * entered, not when it was asked for. The Number changes section counts its
+ * deadline from the same moment.
+ */
+export const NUMBER_CHANGE_WAITING_SINCE = "COALESCE(nc.new_verified_at, nc.created_at)";
+
+/**
+ * The most rows one statement reads. Far past any real day's queues, so every
+ * count is true below it; a look at a board at least this full says so, rather
+ * than counting short in silence.
+ */
+export const READ_CAP = 2000;
+
+/**
  * Every queue, in two statements sent together. D1 takes at most five arms in one
  * compound SELECT, so the queues are split between two statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
- * record is gone, and a task about them could not be done. The one exception is
- * an erasure FSM would not finish, which names FSM's contact and not the person.
+ * record is gone, and a task about them could not be done. Two things still
+ * wait without them: a no-show, which still needs a ruling, and an erasure FSM
+ * would not finish, which names FSM's contact and not the person.
  *
  * The first statement is the one that needs today's date, as `?1`: a move is
  * still to be told of while its visit is today or later. The second
  * needs the attempts after which the sweeper stops asking FSM, as `?1`. Both take
- * the limit last, so neither can answer with more than the board holds.
+ * READ_CAP last, which bounds what one look at the board can cost.
  */
 const OUTSTANDING = [
   `SELECT * FROM (
@@ -71,16 +83,21 @@ const OUTSTANDING = [
   SELECT 'referral_review', r.id, c.person_id, pe.name, r.fraud_signals, r.updated_at
     FROM referral_attributions r JOIN referral_codes c ON c.code = r.code JOIN people pe ON pe.id = c.person_id
    WHERE r.grant_state = 'held' AND pe.erased_at IS NULL
+  UNION ALL
+  SELECT 'grievance', g.id, g.person_id, pe.name, NULL, g.created_at
+    FROM grievances g JOIN people pe ON pe.id = g.person_id
+   WHERE g.state = 'open' AND pe.erased_at IS NULL
 ) ORDER BY since LIMIT ?2`,
 
   `SELECT * FROM (
-  SELECT 'no_show_decision' AS "group", n.id AS id, NULL AS person_id, NULL AS person_name, t.name AS detail,
+  SELECT 'no_show_decision' AS "group", n.id AS id, pe.id AS person_id, pe.name AS person_name, t.name AS detail,
          n.created_at AS since
-    FROM no_show_cases n JOIN checkins ci ON ci.id = n.checkin_id
+    FROM no_show_cases n JOIN checkins ci ON ci.id = n.checkin_id JOIN appointments a ON a.id = n.appointment_id
+    LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
     LEFT JOIN technicians t ON t.id = ci.technician_id
    WHERE n.decision = 'undecided'
   UNION ALL
-  SELECT 'number_change', nc.id, nc.person_id, pe.name, NULL, COALESCE(nc.new_verified_at, nc.created_at)
+  SELECT 'number_change', nc.id, nc.person_id, pe.name, NULL, ${NUMBER_CHANGE_WAITING_SINCE}
     FROM number_change_requests nc JOIN people pe ON pe.id = nc.person_id
    WHERE nc.state = 'awaiting_ops' AND pe.erased_at IS NULL
   UNION ALL
@@ -119,29 +136,35 @@ function firstSignal(signals: string | null): string | null {
 /** A replacement is due on a calendar date; everything else waits from an instant. */
 const instantOf = (since: string) => (since.length === 10 ? indiaInstant(since, "00:00").toISOString() : since);
 
+export interface Outstanding {
+  /** The longest wait first. */
+  readonly tasks: Task[];
+  /** A statement reached READ_CAP, so some task, and every count it belongs to, may be missing. */
+  readonly truncated: boolean;
+}
+
 /** What ops still have to do, the longest wait first. */
-export async function outstandingTasks(db: D1Database, now: Date, limit: number, sla: Slas): Promise<Task[]> {
+export async function outstandingTasks(db: D1Database, now: Date, sla: Slas): Promise<Outstanding> {
   const answers = await db.batch<Row>([
-    db.prepare(OUTSTANDING[0]).bind(indiaDate(now), limit),
-    db.prepare(OUTSTANDING[1]).bind(MAX_SYNC_ATTEMPTS, limit),
+    db.prepare(OUTSTANDING[0]).bind(indiaDate(now), READ_CAP),
+    db.prepare(OUTSTANDING[1]).bind(MAX_SYNC_ATTEMPTS, READ_CAP),
   ]);
-  // Each statement sorted its own rows; the board wants one list, so they are
-  // merged on the same column and cut to the same limit.
-  const results = answers
-    .flatMap((answer) => answer.results)
-    .sort((a, b) => a.since.localeCompare(b.since))
-    .slice(0, limit);
-  return results.map((row) => {
-    const since = instantOf(row.since);
-    return {
-      id: row.id,
-      group: row.group,
-      person: row.person_id === null || row.person_name === null ? null : { id: row.person_id, name: row.person_name },
-      detail: row.group === "referral_review" ? firstSignal(row.detail) : row.detail,
-      since,
-      due: dueAt(new Date(since), row.group, sla).toISOString(),
-    };
-  });
+  const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
+  // Each statement sorted its own rows; the board wants one list, so they are merged on the same column.
+  const results = answers.flatMap((answer) => answer.results).sort((a, b) => a.since.localeCompare(b.since));
+  return { tasks: results.map((row) => taskOf(row, sla)), truncated };
+}
+
+function taskOf(row: Row, sla: Slas): Task {
+  const since = instantOf(row.since);
+  return {
+    id: row.id,
+    group: row.group,
+    person: row.person_id === null || row.person_name === null ? null : { id: row.person_id, name: row.person_name },
+    detail: row.group === "referral_review" ? firstSignal(row.detail) : row.detail,
+    since,
+    due: dueAt(new Date(since), row.group, sla).toISOString(),
+  };
 }
 
 /** How many have waited past their day. The console reads the same day, so both agree. */

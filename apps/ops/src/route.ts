@@ -4,7 +4,7 @@
 // SECTIONS below is the one list of them: the navigation draws it, routeOf reads
 // it, and each page is titled from it. Two sections have pages beneath them:
 //
-//   /clients/:id/:tab       a client's page, a tab at a time (B1 to B3, and History)
+//   /clients/:id/:tab       a client's page, a tab at a time (B1 to B3, and the tabs no board draws)
 //   /settings/:tab          the rules, the price book and the service area (ADR 0061)
 //
 // Anything else, "/" included, is the dispatch board, which is what the design opens on.
@@ -39,11 +39,13 @@ export type PlainPage = Exclude<Page, "clients" | "settings">;
 
 /**
  * The tabs of the design's eight that a client's page carries, in its order,
- * and History last: the board draws no such tab, so it stands after the three
- * it does draw (docs/fidelity-method.md).
+ * and History last: the board draws no such tab, so it stands after the ones
+ * it does draw (docs/fidelity-method.md). The page opens on Pieces, as the
+ * board draws it.
  */
-export const CLIENT_TABS = ["pieces", "consents", "photos", "history"] as const;
+export const CLIENT_TABS = ["visits", "pieces", "payments", "consents", "photos", "history"] as const;
 export type ClientTab = (typeof CLIENT_TABS)[number];
+const OPENING_TAB: ClientTab = "pieces";
 
 /** What Settings holds, in the order the section lists it. Rules has the section's own path. */
 export const SETTINGS_TABS = ["rules", "prices", "area"] as const;
@@ -55,12 +57,11 @@ export type Route =
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
 const DISPATCH: Route = { page: "dispatch" };
-const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(pieces|photos|consents|history))?)?$/;
+const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|photos|consents|history))?)?$/;
 const SETTINGS_PATH = /^\/settings(?:\/(prices|area))?$/;
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
-const clientTabOf = (named: string | undefined): ClientTab =>
-  CLIENT_TABS.find((tab) => tab === named) ?? CLIENT_TABS[0];
+const clientTabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? OPENING_TAB;
 
 const settingsTabOf = (named: string | undefined): SettingsTab =>
   SETTINGS_TABS.find((tab) => tab === named) ?? SETTINGS_TABS[0];

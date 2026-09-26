@@ -63,11 +63,59 @@
   border-bottom: var(--hairline) solid var(--text);
 }
 
+/* The name, and the board's WhatsApp button across from it. */
+.headLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-20);
+}
+
 .name {
   margin: 0;
   font-family: var(--font-serif);
   font-weight: 400;
   font-size: var(--fs-30);
+}
+
+.whatsapp {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--sp-10);
+  min-height: var(--tap);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink);
+  font-size: var(--fs-14);
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.whatsapp:focus-visible,
+.metaLink:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-3);
+}
+
+/* The brand's WhatsApp glyph is a line, drawn as board A3's drawer draws it. */
+.icon {
+  flex-shrink: 0;
+  width: var(--sp-16);
+  height: var(--sp-16);
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The number, which calls the client from a phone and reads as the rest of the line elsewhere. */
+.metaLink {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
 }
 
 .meta {
@@ -119,6 +167,190 @@
 
 .panel {
   padding: var(--sp-20) var(--sp-28);
+}
+
+/* ---- Finding a client: the matches -------------------------------------- */
+
+.found {
+  max-width: var(--measure-form);
+  margin-top: var(--sp-20);
+}
+
+.foundList {
+  margin: 0;
+  padding: 0;
+  border-top: var(--hairline) solid var(--text);
+  list-style: none;
+}
+
+.foundRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  min-height: var(--ops-row);
+  padding: var(--sp-9) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-14);
+}
+
+.foundName {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-4);
+}
+
+.foundName:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.foundMobile {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- Visits and Payments: tables in board B1's style -------------------- */
+
+.visits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-24);
+}
+
+.address {
+  margin: 0;
+}
+
+.addressRow {
+  display: flex;
+  gap: var(--sp-16);
+  padding: var(--sp-6) 0;
+  font-size: var(--fs-14);
+}
+
+.addressRow .metaKey {
+  flex-shrink: 0;
+  width: var(--ops-piece-column);
+}
+
+.addressValue {
+  margin: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 var(--sp-8);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.visitList .table {
+  table-layout: auto;
+}
+
+.cell,
+.quietCell,
+.figureCell {
+  padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
+}
+
+.quietCell {
+  color: var(--text-muted);
+}
+
+.figureCell {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.table th.figureCell {
+  text-align: right;
+}
+
+/* ---- Credits, put right by hand ------------------------------------------ */
+
+.credits {
+  max-width: var(--ops-panel);
+  border: var(--hairline) solid var(--paper-line);
+  padding: var(--sp-22);
+}
+
+.creditForm {
+  margin-top: var(--sp-14);
+}
+
+.fieldLabel {
+  display: block;
+  padding: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.numberField {
+  display: block;
+  width: var(--ops-piece-column);
+  height: var(--field-h);
+  margin-top: var(--sp-8);
+  padding: 0 var(--sp-14);
+  border: var(--hairline) solid var(--paper-control);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.numberField:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+/* The reasons, set as board A2 sets a move's: a square that fills with ink when chosen. */
+.reasons {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.reasonOption {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-14);
+  min-height: var(--tap);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-15);
+  cursor: pointer;
+}
+
+.radio {
+  flex-shrink: 0;
+  width: var(--sp-16);
+  height: var(--sp-16);
+  margin: 0;
+  border: var(--hairline) solid var(--paper-control);
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.radio:checked {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.radio:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+.done {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
 }
 
 /* ---- Board B1: the pieces ------------------------------------------------ */
@@ -240,6 +472,23 @@
   margin: var(--sp-14) 0 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
+}
+
+/* Who opened the photographs before: the log the locked state promises. */
+.before {
+  margin-top: var(--sp-20);
+  padding-top: var(--sp-6);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.beforeList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.beforeList .caption {
+  margin-top: var(--sp-6);
 }
 
 /* ---- Board B3: the consents ---------------------------------------------- */
@@ -376,9 +625,26 @@
   opacity: 0.5;
 }
 
-.primary:focus-visible {
+.primary:focus-visible,
+.secondary:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--sp-3);
+}
+
+/* A second action, outlined, as the board draws every action but the one primary. */
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-top: var(--sp-16);
+  padding: 0 var(--sp-18);
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
 }
 
 .empty {

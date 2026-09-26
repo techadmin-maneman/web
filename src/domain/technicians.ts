@@ -266,19 +266,30 @@ export async function markWiped(db: D1Database, deviceRowId: string, now: Date):
     .run();
 }
 
-/** The phones a technician has logged in on, newest first. */
-export async function devicesOf(
-  db: D1Database,
-  technicianId: string,
-): Promise<{ device_id: string; label: string | null; last_seen_at: string; revoked_at: string | null }[]> {
+export interface Device {
+  readonly device_id: string;
+  readonly label: string | null;
+  readonly last_seen_at: string;
+  readonly revoked_at: string | null;
+}
+
+/**
+ * The phones every active technician has logged in on, by technician, the
+ * latest used first. One read for the whole roster, however many there are.
+ */
+export async function devicesByTechnician(db: D1Database): Promise<Map<string, Device[]>> {
   const { results } = await db
     .prepare(
-      `SELECT device_id, label, last_seen_at, revoked_at FROM technician_devices
-       WHERE technician_id = ?1 ORDER BY last_seen_at DESC`,
+      `SELECT d.technician_id, d.device_id, d.label, d.last_seen_at, d.revoked_at
+       FROM technician_devices d JOIN technicians t ON t.id = d.technician_id
+       WHERE t.active = 1 ORDER BY d.last_seen_at DESC`,
     )
-    .bind(technicianId)
-    .all<{ device_id: string; label: string | null; last_seen_at: string; revoked_at: string | null }>();
-  return results;
+    .all<Device & { technician_id: string }>();
+  const devices = new Map<string, Device[]>();
+  for (const { technician_id: technicianId, ...device } of results) {
+    devices.set(technicianId, [...(devices.get(technicianId) ?? []), device]);
+  }
+  return devices;
 }
 
 /** A 32-byte random cookie token, as src/domain/sessions.ts makes one. */

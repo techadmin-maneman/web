@@ -34,7 +34,7 @@ test("brings the panel into view and reads it from its head, however long the li
     referred: 12,
     alerts: 41,
   }));
-  await open(page, { [BANDRA]: launchRoute(PREVIEW, LAUNCHED) }, { areas: [...many, ...AREAS.areas] });
+  await open(page, { [BANDRA]: launchRoute(PREVIEW, LAUNCHED) }, { ...AREAS, areas: [...many, ...AREAS.areas] });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
   await expect(panel).toBeFocused();

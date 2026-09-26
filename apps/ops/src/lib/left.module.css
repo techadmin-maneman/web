@@ -1,0 +1,16 @@
+/* A queue row's time left, quiet until it has run over, then in oxblood as board D2 marks one. */
+
+.left,
+.late {
+  flex-shrink: 0;
+  font-size: var(--fs-14);
+  white-space: nowrap;
+}
+
+.left {
+  color: var(--text-muted);
+}
+
+.late {
+  color: var(--error-on-paper);
+}

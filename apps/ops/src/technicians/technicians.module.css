@@ -1,9 +1,9 @@
 /*
- * Board D3's roster, on the panel the board draws it on and at its width: the
- * name and the zone in the board's own columns, and each technician's phones
- * on the row beneath, which the board's five columns leave no room for. A
- * revoke stays quiet until it is asked for, since it ends a session and makes
- * the phone drop its cached jobs.
+ * Board D3's roster, on the panel the board draws it on and at its width: one
+ * 34 px row a technician, in the board's own columns, with Leave where it draws
+ * Skill. A technician's phones and leave open in a panel over the roster,
+ * drawn as the dispatch board's drawer is. A revoke stays quiet until it is
+ * asked for, since it ends a session and makes the phone drop its cached jobs.
  */
 
 .column {
@@ -40,10 +40,18 @@
   font-size: var(--fs-14);
 }
 
-.head {
+.table th,
+.table td {
   height: var(--ops-row);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.table thead th {
+  border-bottom-color: var(--text);
+}
+
+.head {
   padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--text);
   font-size: var(--fs-13);
   font-weight: 400;
   color: var(--text-muted);
@@ -52,32 +60,33 @@
 
 .name,
 .zone {
-  height: var(--ops-row);
-  padding: var(--sp-9) var(--sp-6) var(--sp-9) 0;
+  padding: 0 var(--sp-6) 0 0;
   font-weight: 400;
   text-align: left;
 }
 
-/* The board's columns, at the widths it draws them; the zone takes the slack Skill leaves. */
-.name {
-  width: var(--ops-technician);
-}
-
+/* The board's columns, at the widths it draws them; the name takes the slack, as its 1fr does. */
 .zone {
-  min-width: var(--ops-zone);
+  width: var(--ops-zone);
   color: var(--text-muted);
 }
 
 .jobs {
   width: var(--ops-jobs);
-  padding: var(--sp-9) var(--sp-4);
+  padding: 0 var(--sp-4);
   font-variant-numeric: lining-nums tabular-nums;
 }
 
 .service {
   width: var(--ops-service);
-  padding: var(--sp-9) var(--sp-6);
+  padding: 0 var(--sp-6);
   font-variant-numeric: lining-nums tabular-nums;
+}
+
+.leaveCell {
+  width: var(--ops-figure);
+  padding: 0 var(--sp-4);
+  white-space: nowrap;
 }
 
 /* The third column is Jobs: a count, so it and its head read from the right, as the board sets them. */
@@ -87,15 +96,48 @@
   text-align: right;
 }
 
-/* A technician who runs over the length their visits were planned for, in the brass the board's peaks take. */
+/*
+ * The name is the control: the board draws the row with no button, and its
+ * five columns leave no room for one. Its underline is the only sign, quiet
+ * enough to leave the table reading as a table, as board C3's pincodes are.
+ */
+.choose {
+  padding: var(--sp-8) 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text);
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+  cursor: pointer;
+}
+
+.choose:focus-visible {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: var(--sp-2);
+}
+
+/* A technician who runs over the length their visits were planned for, in the oxblood the board letters it in. */
 .over {
-  color: var(--brass-text);
+  color: var(--error-on-paper);
 }
 
 /* What the average is of, when the phone timed fewer jobs than were finished. */
 .base {
   display: block;
   font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* Away today, in the small capitals the board letters its own labels in. */
+.away {
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-15);
   color: var(--text-muted);
 }
 
@@ -106,13 +148,68 @@
   color: var(--text-muted);
 }
 
-.phones {
-  padding: 0 0 var(--sp-14);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
 .none {
   font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* ---- The panel over the roster: one technician's phones and leave -------- */
+
+.drawer {
+  position: fixed;
+  inset: var(--header-h) 0 auto auto;
+  width: var(--ops-panel);
+  max-width: 100%;
+  max-height: calc(100dvh - var(--header-h));
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+  color: var(--text);
+}
+
+/* The roster stays in view behind the panel, and takes no clicks while it is open. */
+.drawer::backdrop {
+  background: transparent;
+}
+
+.drawer:focus {
+  outline: none;
+}
+
+.drawerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-14);
+  padding: var(--sp-12) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.drawerTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-22);
+}
+
+.drawerBody {
+  padding: var(--sp-6) var(--sp-20) var(--sp-20);
+}
+
+.section {
+  margin-top: var(--sp-14);
+}
+
+/* Phones and Leave, in the small capitals the board letters its group names in. */
+.sectionTitle {
+  margin: 0 0 var(--sp-8);
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-15);
+  font-weight: 400;
   color: var(--text-muted);
 }
 
@@ -214,19 +311,6 @@
 
 /* ---- Leave, which the dispatch board and booking both read (ADR 0062) ----- */
 
-.leave {
-  margin-top: var(--sp-14);
-  padding-top: var(--sp-12);
-  border-top: var(--hairline) solid var(--paper-line);
-}
-
-/* In the boards' label (components/label.module.css), not sans capitals (DS-07). */
-.leaveTitle {
-  margin: 0 0 var(--sp-8);
-  font-size: var(--fs-13);
-  font-weight: 400;
-}
-
 .leaveList {
   margin: 0;
   padding: 0;
@@ -275,7 +359,7 @@
 .input {
   min-height: var(--tap);
   padding: 0 var(--sp-10);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: var(--paper);
   font: inherit;
   font-size: var(--fs-14);

@@ -64,6 +64,16 @@ test("records the answer, and the grievance leaves the queue", async ({ page }) 
   await first.getByRole("button", { name: "Record the answer and close it" }).click();
   expect((await sent).postDataJSON()).toEqual({ response: "Taken off the launch list today." });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
+  // The row is gone, so the keyboard goes to the queue's heading and not to the top of the page.
+  await expect(page.getByRole("heading", { name: "Open grievances" })).toBeFocused();
+});
+
+// Grievances are a group on the Tasks board now, which links each to its row here (OPS-08, OPS-05).
+test("brings the grievance a task named into view, and gives it the keyboard", async ({ page }) => {
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, { "/api/grievances": json(GRIEVANCES) });
+  await page.goto(`/grievances#grievance-${FIRST?.id ?? ""}`);
+  await expect(row(page, "Rohit Malhotra")).toBeFocused();
 });
 
 test("says so when someone has answered it already", async ({ page }) => {

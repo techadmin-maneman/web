@@ -21,16 +21,17 @@ export interface WaitlistArea {
   readonly alerts: number;
 }
 
-/** Every pincode with someone waiting, the longest wait first. */
-export async function waitlistByPincode(db: D1Database): Promise<WaitlistArea[]> {
+/** The pincodes with someone waiting, the longest wait first, `limit` of them at most. */
+export async function waitlistByPincode(db: D1Database, limit: number): Promise<WaitlistArea[]> {
   const { results } = await db
     .prepare(
       `SELECT w.pincode, p.area, p.city, p.served, p.launched_at, COUNT(*) AS waiting, MIN(w.created_at) AS oldest,
          SUM(CASE WHEN w.referral_code IS NOT NULL THEN 1 ELSE 0 END) AS referred,
          SUM(w.launch_alert) AS alerts
        FROM waitlist_entries w LEFT JOIN serviceable_pincodes p ON p.pincode = w.pincode
-       GROUP BY w.pincode ORDER BY oldest`,
+       GROUP BY w.pincode ORDER BY oldest, w.pincode LIMIT ?1`,
     )
+    .bind(limit)
     .all<{
       pincode: string;
       area: string | null;

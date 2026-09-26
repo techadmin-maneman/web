@@ -1,14 +1,19 @@
 // Referrals (Ops Console, boards C1 and C2): the grants the fraud rules held,
 // each approved or rejected here, over every referrer's figures. Approving a
 // grant releases its credits. The board asks for a reason on either decision,
-// and both are recorded in the audit log under whoever Access says is signed
-// in (docs/decisions/0048-referrals.md).
+// the server refuses one without it, and it is kept with the decision under
+// whoever Access says is signed in (docs/decisions/0048-referrals.md,
+// src/policy/decision-reasons.ts).
+//
+// Each name in a held pair is a way to that client's page, and each grant says
+// how long it has been held, as the board writes it.
 
-import { shortDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
-import { api, type Held } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
+import { useEffect, useRef, useState } from "react";
+import { api, type Held, type Referrer } from "../api.ts";
+import { OpsLink, Shell } from "../components/Shell.tsx";
 import { referrals } from "../content.ts";
+import { daysUntil } from "../lib/due.ts";
+import { rowId, useTargetRow } from "../lib/target.ts";
 import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./referrals.module.css";
@@ -22,9 +27,28 @@ type Decision =
   | { readonly step: "sending"; readonly choice: Choice }
   | { readonly step: "failed"; readonly code: string };
 
-function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void }) {
+const HOUR = 3_600_000;
+
+/** "3 days held", and "5 hours held" under a day, as board C1 writes how long a grant has waited. */
+function heldFor(since: string, now: Date): string {
+  const hours = Math.max(0, Math.floor((now.getTime() - Date.parse(since)) / HOUR));
+  return hours < 24 ? referrals.queue.held(hours, "hour") : referrals.queue.held(Math.floor(hours / 24), "day");
+}
+
+function HeldGrant({
+  grant,
+  now,
+  targeted,
+  onDecided,
+}: {
+  grant: Held;
+  now: Date;
+  targeted: boolean;
+  onDecided: () => void;
+}) {
   const [decision, setDecision] = useState<Decision>({ step: "open" });
   const [reason, setReason] = useState("");
+  const openers = { approve: useRef<HTMLButtonElement>(null), reject: useRef<HTMLButtonElement>(null) };
   const copy = referrals.queue;
 
   const decide = async (choice: Choice) => {
@@ -34,14 +58,29 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
     else setDecision({ step: "failed", code: answer.code });
   };
 
+  /** Back to the two buttons, and the keyboard back to the one that asked, rather than to the top of the page. */
+  const keepHeld = (from: Choice) => {
+    setDecision({ step: "open" });
+    requestAnimationFrame(() => openers[from].current?.focus());
+  };
+
   // Both decisions are made in the same two steps, so the reason is asked for either way.
   const asking = decision.step === "asking" || decision.step === "sending" ? decision : null;
   const sending = decision.step === "sending";
+  const overdue = daysUntil(grant.due, now) < 0;
   return (
-    <li className={styles.grant}>
+    <li className={targeted ? styles.targeted : styles.grant} id={rowId("held", grant.id)} tabIndex={-1}>
       <div className={styles.grantHead}>
-        <span className={styles.pair}>{copy.pair(grant.referrer.name, grant.referred.name)}</span>
-        <span className={styles.when}>{copy.fitted(shortDate(grant.fitted_on))}</span>
+        <span className={styles.pair}>
+          <OpsLink className={styles.person} to={`/clients/${grant.referrer.person_id}`}>
+            {grant.referrer.name}
+          </OpsLink>{" "}
+          {copy.arrow}{" "}
+          <OpsLink className={styles.person} to={`/clients/${grant.referred.person_id}`}>
+            {grant.referred.name}
+          </OpsLink>
+        </span>
+        <span className={overdue ? styles.late : styles.when}>{heldFor(grant.held_since, now)}</span>
       </div>
       <ul className={styles.signals}>
         {grant.signals.map((signal) => (
@@ -59,12 +98,17 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
             id={`reason-${grant.id}`}
             className={styles.reasonField}
             maxLength={300}
+            // The field stands where the button that asked for it stood, so the keyboard goes to it.
+            autoFocus
+            aria-describedby={`reason-hint-${grant.id}`}
             value={reason}
             onChange={(event) => {
               setReason(event.target.value);
             }}
           />
-          <p className={styles.reasonHint}>{copy.reason.hint}</p>
+          <p className={styles.reasonHint} id={`reason-hint-${grant.id}`}>
+            {copy.reason.hint}
+          </p>
           <div className={styles.actions}>
             <button
               className={asking.choice === "approve" ? styles.approve : styles.reject}
@@ -79,7 +123,7 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
               type="button"
               disabled={sending}
               onClick={() => {
-                setDecision({ step: "open" });
+                keepHeld(asking.choice);
               }}
             >
               {copy.reason.cancel}
@@ -89,6 +133,7 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
       ) : (
         <div className={styles.actions}>
           <button
+            ref={openers.approve}
             className={styles.approve}
             type="button"
             onClick={() => {
@@ -98,6 +143,7 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
             {copy.approve}
           </button>
           <button
+            ref={openers.reject}
             className={styles.reject}
             type="button"
             onClick={() => {
@@ -117,20 +163,23 @@ function HeldGrant({ grant, onDecided }: { grant: Held; onDecided: () => void })
   );
 }
 
-function ReviewQueue() {
+function ReviewQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(api.held);
-  // A decided grant leaves the queue at once; the count follows it.
+  // A decided grant leaves the queue at once; the count follows it, and so does the keyboard.
   const [decided, setDecided] = useState<readonly string[]>([]);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const target = useTargetRow(loaded.state === "loaded");
   const copy = referrals.queue;
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
+  const now = new Date();
   const waiting = loaded.value.held.filter((grant) => !decided.includes(grant.id));
   return (
     <section className={styles.panel} aria-labelledby="held">
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="held">
+        <h2 className={styles.panelTitle} id="held" ref={heading} tabIndex={-1}>
           {copy.title}
         </h2>
         <span className={styles.count}>{waiting.length}</span>
@@ -143,8 +192,12 @@ function ReviewQueue() {
             <HeldGrant
               key={grant.id}
               grant={grant}
+              now={now}
+              targeted={target === rowId("held", grant.id)}
               onDecided={() => {
                 setDecided((already) => [...already, grant.id]);
+                heading.current?.focus();
+                onDecided();
               }}
             />
           ))}
@@ -154,12 +207,68 @@ function ReviewQueue() {
   );
 }
 
-function ReferrersTable() {
-  const [loaded, retry] = useLoad(api.referrers);
+/** The referrers read so far, a page at a time, and whether another follows. */
+type Pages =
+  | { readonly state: "loading" }
+  | { readonly state: "failed" }
+  | {
+      readonly state: "loaded";
+      readonly referrers: readonly Referrer[];
+      readonly more: boolean;
+      readonly fetching: boolean;
+    };
+
+/**
+ * The referrers, the busiest first, a page at a time. The first page is read
+ * again at every new `version`, since a decision above may have moved a figure.
+ */
+function useReferrers(version: number) {
+  const [pages, setPages] = useState<Pages>({ state: "loading" });
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let current = true;
+    void api.referrers(0).then((answer) => {
+      if (!current) return;
+      setPages(
+        answer.ok
+          ? { state: "loaded", referrers: answer.body.referrers, more: answer.body.more, fetching: false }
+          : { state: "failed" },
+      );
+    });
+    return () => {
+      current = false;
+    };
+  }, [version, attempt]);
+
+  const more = async (shown: Extract<Pages, { state: "loaded" }>) => {
+    setPages({ ...shown, fetching: true });
+    const answer = await api.referrers(shown.referrers.length);
+    if (!answer.ok) {
+      setPages({ ...shown, fetching: false });
+      return;
+    }
+    setPages({
+      state: "loaded",
+      referrers: [...shown.referrers, ...answer.body.referrers],
+      more: answer.body.more,
+      fetching: false,
+    });
+  };
+
+  const retry = () => {
+    setPages({ state: "loading" });
+    setAttempt((count) => count + 1);
+  };
+  return { pages, more, retry } as const;
+}
+
+function ReferrersTable({ version }: { version: number }) {
+  const { pages, more, retry } = useReferrers(version);
   const copy = referrals.table;
 
-  if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (pages.state === "loading") return <Loading />;
+  if (pages.state === "failed") return <PanelFailed onRetry={retry} />;
 
   return (
     <section className={styles.panel} aria-labelledby="referrers">
@@ -168,7 +277,7 @@ function ReferrersTable() {
         <h2 className={styles.hiddenTitle} id="referrers">
           {copy.title}
         </h2>
-        {loaded.value.referrers.length === 0 ? (
+        {pages.referrers.length === 0 ? (
           <p className={styles.empty}>{copy.empty}</p>
         ) : (
           <table className={styles.table}>
@@ -182,7 +291,7 @@ function ReferrersTable() {
               </tr>
             </thead>
             <tbody>
-              {loaded.value.referrers.map((referrer) => (
+              {pages.referrers.map((referrer) => (
                 <tr key={referrer.code}>
                   <th scope="row" className={styles.name}>
                     {referrer.name}
@@ -197,6 +306,13 @@ function ReferrersTable() {
             </tbody>
           </table>
         )}
+        {pages.more && (
+          <div className={styles.actions}>
+            <button className={styles.quiet} type="button" disabled={pages.fetching} onClick={() => void more(pages)}>
+              {pages.fetching ? copy.loading : copy.more}
+            </button>
+          </div>
+        )}
         <p className={styles.note}>{copy.note}</p>
       </div>
     </section>
@@ -204,11 +320,17 @@ function ReferrersTable() {
 }
 
 export function ReferralsScreen() {
+  // A decision can change the referrers' figures beneath, so each one reads them again.
+  const [version, setVersion] = useState(0);
   return (
     <Shell section="/referrals" title={referrals.title}>
       <div className={styles.column}>
-        <ReviewQueue />
-        <ReferrersTable />
+        <ReviewQueue
+          onDecided={() => {
+            setVersion((count) => count + 1);
+          }}
+        />
+        <ReferrersTable version={version} />
       </div>
     </Shell>
   );

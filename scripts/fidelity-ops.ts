@@ -53,18 +53,21 @@ const BEFORE_THE_WEEK = new Date("2025-09-17T05:00:00Z");
 // ---- Board C1: the grants the fraud rules held ------------------------------
 
 const person = (n: number, name: string) => ({ person_id: `11000000-0000-4000-8000-00000000000${String(n)}`, name });
-const held = (n: number, referrer: string, referred: string, fittedOn: string, signal: string) => ({
+/** Each held as long before IN_2027 as the board writes: "3 days held", "1 day held", "5 hours held". */
+const held = (n: number, referrer: string, referred: string, heldSince: string, signal: string) => ({
   id: `aa000000-0000-4000-8000-00000000000${String(n)}`,
   referrer: person(n, referrer),
   referred: person(n + 5, referred),
-  fitted_on: fittedOn,
+  fitted_on: heldSince.slice(0, 10),
   signals: [signal],
+  held_since: heldSince,
+  due: new Date(Date.parse(heldSince) + 48 * 3_600_000).toISOString(),
 });
 const HELD = {
   held: [
-    held(1, "Rohit Malhotra", "Vikram Sethi", "2027-09-19", "shared_address"),
-    held(2, "Ashish Gill", "Manoj Gill", "2027-09-21", "shared_upi"),
-    held(3, "Karan Bose", "Nikhil Arora", "2027-09-22", "monthly_cap"),
+    held(1, "Rohit Malhotra", "Vikram Sethi", "2027-09-19T05:00:00.000Z", "shared_address"),
+    held(2, "Ashish Gill", "Manoj Gill", "2027-09-21T05:00:00.000Z", "shared_upi"),
+    held(3, "Karan Bose", "Nikhil Arora", "2027-09-22T00:00:00.000Z", "monthly_cap"),
   ],
 };
 
@@ -87,6 +90,7 @@ const REFERRERS = {
     referrer("NA0731", "Nikhil Arora", [5, 1, 1, 3, 1]),
     referrer("VS0916", "Vikram Sethi", [1, 0, 0, 0, 0]),
   ],
+  more: false,
 };
 
 // ---- Board C3: who is waiting, and the pincode about to launch ---------------
@@ -116,6 +120,7 @@ const AREAS = {
     area("110024", "Lajpat Nagar", "Delhi", "2027-01-28", [46, 18, 30]),
     area("201301", "Noida 18", "Noida", "2027-05-11", [39, 14, 27]),
   ],
+  more: false,
 };
 const PREVIEW = { pincode: "400050", waiting: 117, alerts: 84, launched: false };
 
@@ -173,19 +178,31 @@ const PHOTOS = {
 
 // ---- Board D1: the case the board rules on, with its three facts -------------
 
-/** The board's own: checked in at 11:31, 240 m out, the WhatsApp delivered 11:32, closed at 11:47. */
+/**
+ * The board's own: Vikram's visit booked for 11:30, checked in at 11:31, 240 m
+ * out, the WhatsApp delivered 11:32, closed at 11:47.
+ */
 const NO_SHOWS = {
   cases: [
     {
       id: "66000000-0000-4000-8000-000000000001",
       appointment_id: "77000000-0000-4000-8000-000000000001",
+      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
       visit_date: "2027-09-19",
       technician: "Imran Qureshi",
       checked_in_at: "2027-09-19T06:01:00.000Z",
+      phone_checked_in_at: "2027-09-19T06:01:00.000Z",
+      received_at: "2027-09-19T06:01:00.000Z",
+      window_start: "2027-09-19T06:00:00.000Z",
+      window_end: "2027-09-19T07:30:00.000Z",
+      minutes_late: 1,
       distance_m: 240,
+      message_state: "delivered",
       message_delivered_at: "2027-09-19T06:02:00.000Z",
       wait_ends_at: "2027-09-19T06:16:00.000Z",
       closed_at: "2027-09-19T06:17:00.000Z",
+      opened_at: "2027-09-19T06:17:00.000Z",
+      due: "2027-09-21T06:17:00.000Z",
       decision: "undecided",
       decided_at: null,
     },
@@ -245,8 +262,8 @@ const worker = (n: number, name: string, initials: string, zone: string, seen: s
   name,
   initials,
   zone,
-  devices: [phone(`device-${String(n)}`, "Chrome on Android", seen)],
-  // The board draws no leave; the console's own Leave block then reads "No leave recorded".
+  devices: [phone(`a41c09e27f3${String(n)}`, "Chrome on Android", seen)],
+  // The board draws no leave; the roster's Leave column then reads as a gap.
   leave: [],
 });
 const TECHNICIANS = {
@@ -321,6 +338,11 @@ const API: Api = {
   [`/api/clients/${CLIENT_ID}`]: json(RECORD),
   [`/api/clients/${CLIENT_ID}/pieces`]: json(PIECES),
   [`/api/clients/${CLIENT_ID}/photos`]: json(PHOTOS),
+  // Logged at India's 10:42, the time the board letters, and opened once before, as its "AK · 19 Sep" says.
+  [`/api/clients/${CLIENT_ID}/photos/view`]: json({
+    logged_at: AT_1042.toISOString(),
+    before: [{ by: "ak@maneman.in", at: "2027-09-19T05:30:00.000Z" }],
+  }),
   [`/api/clients/${CLIENT_ID}/consents`]: json(CONSENTS),
   "/api/payments": json(DAY_MONEY),
   "/api/no-shows": json(NO_SHOWS),
@@ -465,7 +487,7 @@ async function noShows(browser: Browser, design: Page): Promise<void> {
   await pair(OUT, PANEL, "d1-day-money", await panelOf(design, "Payments", 0), await money.screenshot());
 
   const panel = page.getByRole("region", { name: "Waiting for a decision" });
-  await panel.getByText("Delivered 11:32 am").waitFor();
+  await panel.getByText("Delivered Sun 19 Sep, 11:32 am").waitFor();
   await pair(OUT, PANEL, "d1-no-shows", await panelOf(design, "Payments", 1), await panel.screenshot());
   await page.close();
 }
@@ -492,7 +514,7 @@ async function tasks(browser: Browser, design: Page): Promise<void> {
   await page.close();
 }
 
-/** Board D3, the roster and its figures, with each technician's phones beneath his name. */
+/** Board D3, the roster and its figures, one row a technician; the phones and the leave open in a panel over it. */
 async function technicians(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/technicians");
   const panel = page.getByRole("region", { name: "Technicians" });

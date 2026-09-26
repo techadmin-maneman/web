@@ -15,6 +15,11 @@ import type { MessagingMessage } from "../queues/messaging.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
+/** The pincodes the waitlist lists at once, the longest waits: far more than a launch is chosen from. */
+export const WAITLIST_AREAS = 200;
+/** The referrers one page holds, the busiest first. */
+export const REFERRERS_PAGE = 50;
+
 const waitlistRoute = createRoute({
   method: "get",
   path: "/api/waitlist",
@@ -40,6 +45,9 @@ const waitlistRoute = createRoute({
                 })
                 .strict(),
             ),
+            more: z.boolean().openapi({
+              description: `More than ${String(WAITLIST_AREAS)} pincodes have someone waiting; these are the longest waits.`,
+            }),
           })
           .strict(),
       ),
@@ -87,7 +95,12 @@ const launchRoute = createRoute({
 const referrersRoute = createRoute({
   method: "get",
   path: "/api/referrers",
-  summary: "Every referrer's figures, the busiest first",
+  summary: `The referrers' figures, the busiest first, ${String(REFERRERS_PAGE)} at a time`,
+  request: {
+    query: z.object({
+      offset: z.coerce.number().int().min(0).default(0).openapi({ description: "How many to skip: 0, then 50 on." }),
+    }),
+  },
   responses: {
     200: {
       description: "Referrers",
@@ -107,6 +120,7 @@ const referrersRoute = createRoute({
                 })
                 .strict(),
             ),
+            more: z.boolean().openapi({ description: "Another page follows this one." }),
           })
           .strict(),
       ),
@@ -116,10 +130,11 @@ const referrersRoute = createRoute({
 
 export function registerOpsWaitlist(app: App): void {
   app.openapi(waitlistRoute, async (c) => {
-    const areas = await waitlistByPincode(c.env.DB);
+    const areas = await waitlistByPincode(c.env.DB, WAITLIST_AREAS + 1);
     return c.json(
       {
-        areas: areas.map((area) => ({
+        more: areas.length > WAITLIST_AREAS,
+        areas: areas.slice(0, WAITLIST_AREAS).map((area) => ({
           pincode: area.pincode,
           area: area.area,
           city: area.city,
@@ -174,25 +189,35 @@ export function registerOpsWaitlist(app: App): void {
   });
 
   app.openapi(referrersRoute, async (c) => {
+    const { offset } = c.req.valid("query");
+    // Each figure is counted once for every code together, then joined on, rather than a query a row.
     const { results } = await c.env.DB.prepare(
-      `SELECT r.code, p.name, r.opens,
-         (SELECT COUNT(*) FROM referral_attributions a WHERE a.code = r.code AND a.via = 'consultation') AS consultations,
-         (SELECT COUNT(*) FROM referral_attributions a WHERE a.code = r.code AND a.first_fit_appointment_id IS NOT NULL) AS fits,
-         (SELECT COUNT(*) FROM referral_attributions a WHERE a.code = r.code AND a.grant_state IN ('granted', 'approved')) AS granted,
-         (SELECT COUNT(*) FROM credit_ledger e JOIN credit_ledger g ON g.id = e.grant_id
-          WHERE e.kind = 'redeem' AND g.source_kind = 'referral'
-            AND g.source_id IN (SELECT a.id FROM referral_attributions a WHERE a.code = r.code)) AS redeemed
+      `WITH funnel AS (
+         SELECT a.code, SUM(a.via = 'consultation') AS consultations,
+           COUNT(a.first_fit_appointment_id) AS fits, SUM(a.grant_state IN ('granted', 'approved')) AS granted
+         FROM referral_attributions a GROUP BY a.code
+       ), spent AS (
+         SELECT a.code, COUNT(*) AS redeemed
+         FROM credit_ledger e JOIN credit_ledger g ON g.id = e.grant_id JOIN referral_attributions a ON a.id = g.source_id
+         WHERE e.kind = 'redeem' AND g.source_kind = 'referral' GROUP BY a.code
+       )
+       SELECT r.code, p.name, r.opens, COALESCE(f.consultations, 0) AS consultations, COALESCE(f.fits, 0) AS fits,
+         COALESCE(f.granted, 0) AS granted, COALESCE(s.redeemed, 0) AS redeemed
        FROM referral_codes r JOIN people p ON p.id = r.person_id
-       ORDER BY fits DESC, r.opens DESC, p.name`,
-    ).all<{
-      code: string;
-      name: string;
-      opens: number;
-      consultations: number;
-      fits: number;
-      granted: number;
-      redeemed: number;
-    }>();
-    return c.json({ referrers: results }, 200);
+       LEFT JOIN funnel f ON f.code = r.code LEFT JOIN spent s ON s.code = r.code
+       ORDER BY fits DESC, r.opens DESC, p.name, r.code
+       LIMIT ?1 OFFSET ?2`,
+    )
+      .bind(REFERRERS_PAGE + 1, offset)
+      .all<{
+        code: string;
+        name: string;
+        opens: number;
+        consultations: number;
+        fits: number;
+        granted: number;
+        redeemed: number;
+      }>();
+    return c.json({ referrers: results.slice(0, REFERRERS_PAGE), more: results.length > REFERRERS_PAGE }, 200);
   });
 }

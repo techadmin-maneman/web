@@ -201,6 +201,8 @@ describe("grievances", () => {
           mobile: MOBILE,
           text: "My photographs were shown to someone else.",
           raised_at: NOW.toISOString(),
+          // The thirty days the app promises (src/policy/tasks.ts).
+          due: new Date(NOW.getTime() + 30 * 86_400_000).toISOString(),
         },
       ],
     });

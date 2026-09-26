@@ -91,6 +91,34 @@ Request body:
 }
 ```
 
+### POST /api/clients/find
+
+Find clients by part of a name, or four or more digits of a number. A POST, so the words stay out of the URL
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientFind"
+}
+```
+
+**200**: The clients it matches, by name
+
+```json
+{
+  "$ref": "#/components/schemas/ClientsFound"
+}
+```
+
+**400**: invalid_request: fewer than two letters or four digits
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/clients/{id}
 
 The client's record: who they are, their address, their visits, their payments and their history
@@ -131,9 +159,37 @@ Which photographs the client has, by visit, newest first. No image is served her
 }
 ```
 
+### POST /api/clients/{id}/photos/view
+
+Open the client's photographs: one audit entry, written before any image is served
+
+**200**: Logged
+
+```json
+{
+  "$ref": "#/components/schemas/PhotoView"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: the opening could not be logged, so nothing is shown
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/clients/{id}/photos/{photo_id}
 
-One of the client's photographs. The audit entry is written before the image is
+One of the client's photographs, within an opening logged in the last 30 minutes; asked for outside one, it logs one first
 
 **200**: The image
 
@@ -252,6 +308,11 @@ Number changes waiting for ops: both numbers proven by code
           "requested_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When ops should have decided: the Tasks board's allowance for this queue, which ops set."
           }
         },
         "required": [
@@ -260,7 +321,8 @@ Number changes waiting for ops: both numbers proven by code
           "name",
           "old_mobile",
           "new_mobile",
-          "requested_at"
+          "requested_at",
+          "due"
         ],
         "additionalProperties": false
       }
@@ -362,6 +424,11 @@ Deletion requests waiting for ops
           "requested_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When ops should have decided: the Tasks board's allowance for this queue, which ops set."
           }
         },
         "required": [
@@ -369,7 +436,8 @@ Deletion requests waiting for ops
           "person_id",
           "name",
           "mobile",
-          "requested_at"
+          "requested_at",
+          "due"
         ],
         "additionalProperties": false
       }
@@ -507,6 +575,16 @@ Referral grants held for review, oldest first
                 "same_mobile"
               ]
             }
+          },
+          "held_since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fraud rules held it for review."
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When ops should have decided: the Tasks board's allowance for a review."
           }
         },
         "required": [
@@ -514,7 +592,9 @@ Referral grants held for review, oldest first
           "referrer",
           "referred",
           "fitted_on",
-          "signals"
+          "signals",
+          "held_since",
+          "due"
         ],
         "additionalProperties": false
       }
@@ -560,7 +640,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: a rejection needs a reason
+**400**: invalid_request: a decision needs a reason
 
 ```json
 {
@@ -610,6 +690,11 @@ Open grievances, oldest first
           "raised_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When ops should have answered: the Tasks board's allowance for a grievance, the 30 days the app promises until ops set another."
           }
         },
         "required": [
@@ -618,7 +703,8 @@ Open grievances, oldest first
           "name",
           "mobile",
           "text",
-          "raised_at"
+          "raised_at",
+          "due"
         ],
         "additionalProperties": false
       }
@@ -758,10 +844,15 @@ Who is waiting, by pincode, the longest wait first
         ],
         "additionalProperties": false
       }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 200 pincodes have someone waiting; these are the longest waits."
     }
   },
   "required": [
-    "areas"
+    "areas",
+    "more"
   ],
   "additionalProperties": false
 }
@@ -818,7 +909,7 @@ Request body:
 
 ### GET /api/referrers
 
-Every referrer's figures, the busiest first
+The referrers' figures, the busiest first, 50 at a time
 
 **200**: Referrers
 
@@ -865,10 +956,15 @@ Every referrer's figures, the busiest first
         ],
         "additionalProperties": false
       }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "Another page follows this one."
     }
   },
   "required": [
-    "referrers"
+    "referrers",
+    "more"
   ],
   "additionalProperties": false
 }
@@ -1131,7 +1227,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: a ruling needs a reason
 
 ```json
 {
@@ -1876,6 +1972,68 @@ Who Access let through, and where signing out goes
   },
   "required": [
     "mobile"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientsFound
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "clients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mobile"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 20 match: narrow the search."
+    }
+  },
+  "required": [
+    "clients",
+    "more"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientFind
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "Any part of a name, or of a number typed any of the usual ways."
+    }
+  },
+  "required": [
+    "text"
   ],
   "additionalProperties": false
 }
@@ -2783,6 +2941,47 @@ Who Access let through, and where signing out goes
 }
 ```
 
+### PhotoView
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "logged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the opening was logged, by our clock."
+    },
+    "before": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "by",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Who opened them before, and when, the latest first."
+    }
+  },
+  "required": [
+    "logged_at",
+    "before"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientConsents
 
 ```json
@@ -2978,7 +3177,7 @@ Who Access let through, and where signing out goes
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision."
+      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -3117,7 +3316,7 @@ Who Access let through, and where signing out goes
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision."
+      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -3147,7 +3346,7 @@ Who Access let through, and where signing out goes
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject, and kept with the decision either way."
+      "description": "Required either way, and kept with the decision (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -3956,6 +4155,31 @@ Who Access let through, and where signing out goes
       "type": "string",
       "format": "uuid"
     },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whose visit it was, so ops can open their page and call them; null once they have been erased."
+    },
     "visit_date": {
       "anyOf": [
         {
@@ -4043,6 +4267,17 @@ Who Access let through, and where signing out goes
       ],
       "description": "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured."
     },
+    "message_state": {
+      "type": "string",
+      "enum": [
+        "delivered",
+        "sent",
+        "not_sent",
+        "no_consent",
+        "none"
+      ],
+      "description": "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+    },
     "message_delivered_at": {
       "anyOf": [
         {
@@ -4053,7 +4288,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "Fact three: when WhatsApp reported the visit message delivered; null if never."
+      "description": "When WhatsApp reported it delivered; null if it never did."
     },
     "wait_ends_at": {
       "type": "string",
@@ -4069,6 +4304,16 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ]
+    },
+    "opened_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the case opened, and started waiting for ops."
+    },
+    "due": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When ops should have ruled: the Tasks board's allowance for a no-show, from opened_at."
     },
     "decision": {
       "type": "string",
@@ -4093,6 +4338,7 @@ Who Access let through, and where signing out goes
   "required": [
     "id",
     "appointment_id",
+    "person",
     "visit_date",
     "technician",
     "checked_in_at",
@@ -4102,9 +4348,12 @@ Who Access let through, and where signing out goes
     "window_end",
     "minutes_late",
     "distance_m",
+    "message_state",
     "message_delivered_at",
     "wait_ends_at",
     "closed_at",
+    "opened_at",
+    "due",
     "decision",
     "decided_at"
   ],
@@ -4125,10 +4374,19 @@ Who Access let through, and where signing out goes
         "charged",
         "waived"
       ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Required either way, and kept with the ruling (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
-    "decision"
+    "decision",
+    "reason"
   ],
   "additionalProperties": false
 }
@@ -4420,6 +4678,10 @@ Who Access let through, and where signing out goes
       "type": "integer",
       "description": "How many are past their day in India, across every group."
     },
+    "truncated": {
+      "type": "boolean",
+      "description": "More were waiting than one look reads (2000 a statement), so a count may be short."
+    },
     "groups": {
       "type": "array",
       "items": {
@@ -4435,19 +4697,21 @@ Who Access let through, and where signing out goes
               "no_show_decision",
               "number_change",
               "erasure_request",
+              "grievance",
               "draft_invoice",
               "erasure_unfinished"
             ]
           },
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How many are waiting in the group, all of them."
           },
           "tasks": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Task"
             },
-            "description": "The longest wait first."
+            "description": "The longest wait first, at most 50."
           }
         },
         "required": [
@@ -4461,6 +4725,7 @@ Who Access let through, and where signing out goes
   },
   "required": [
     "overdue",
+    "truncated",
     "groups"
   ],
   "additionalProperties": false,
@@ -4502,7 +4767,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "Null for a no-show, whose case names the technician and never the client, and for an erased client."
+      "description": "Null for an erased client, whose record is gone."
     },
     "detail": {
       "anyOf": [
