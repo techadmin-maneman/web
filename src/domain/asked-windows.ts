@@ -10,6 +10,12 @@
 // `asked_window`; a visit with no Request behind it is marked looked-at and
 // never asked about again.
 //
+// With self-serve booking off, the site's form leaves no Request of ours: ops
+// put the consultation in FSM themselves, from the day and window the form
+// kept in consultation_requests. So a consultation with no lead behind it takes
+// the client's latest request instead (BIZ-23). That too is ours, not FSM's,
+// and is read even when FSM refuses to say.
+//
 // On the five-minute cron, beside the invoice pass, and never in ops' path: the
 // board reads the column.
 //
@@ -35,6 +41,8 @@ export const RECHECK_AFTER_MS = 60 * 60 * 1000;
 interface Visit {
   id: string;
   fsm_work_order_id: string;
+  person_id: string | null;
+  type: string | null;
 }
 
 /**
@@ -56,7 +64,7 @@ export async function resolveAskedWindows(
   const recheck = new Date(now.getTime() - RECHECK_AFTER_MS).toISOString();
   const { results } = await db
     .prepare(
-      `SELECT id, fsm_work_order_id FROM appointments
+      `SELECT id, fsm_work_order_id, person_id, type FROM appointments
        WHERE asked_checked_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL
          AND status IN ('scheduled', 'dispatched', 'in_progress')
          AND (asked_failed_at IS NULL OR asked_failed_at < ?2)
@@ -86,17 +94,17 @@ async function askedFor(
   try {
     asked = await fsm.requestPreference(visit.fsm_work_order_id);
   } catch (error) {
-    if (isRefusal(error)) {
-      log.warn("asked_window_refused", { appointment_id: visit.id, status: error.status, code: error.code });
-      await markLookedAt(db, visit.id, null, at);
+    if (!isRefusal(error)) {
+      log.warn("asked_window_failed", { appointment_id: visit.id, error });
+      await db.prepare("UPDATE appointments SET asked_failed_at = ?1 WHERE id = ?2").bind(at, visit.id).run();
       return null;
     }
-    log.warn("asked_window_failed", { appointment_id: visit.id, error });
-    await db.prepare("UPDATE appointments SET asked_failed_at = ?1 WHERE id = ?2").bind(at, visit.id).run();
-    return null;
+    log.warn("asked_window_refused", { appointment_id: visit.id, status: error.status, code: error.code });
+    asked = null;
   }
 
-  const window = asked === null ? null : await windowAskedFor(db, asked.requestId);
+  const fromLead = asked === null ? null : await windowAskedFor(db, asked.requestId);
+  const window = fromLead ?? (await windowRequested(db, visit));
   await markLookedAt(db, visit.id, window, at);
   return window;
 }
@@ -119,4 +127,22 @@ async function windowAskedFor(db: D1Database, requestId: string): Promise<Bookin
     .bind(requestId)
     .first<{ first_choice_window: VisitWindow }>();
   return lead === null ? null : askedWindowOf(lead.first_choice_window);
+}
+
+/**
+ * The window the client's latest consultation request asked for, for a
+ * consultation: what the site's form keeps while self-serve booking is off.
+ * The day may not be the one ops gave, which is why the tray writes the
+ * window alone (ADR 0069).
+ */
+async function windowRequested(db: D1Database, visit: Visit): Promise<BookingWindow | null> {
+  if (visit.type !== "consultation" || visit.person_id === null) return null;
+  const request = await db
+    .prepare(
+      `SELECT requested_window FROM consultation_requests WHERE person_id = ?1
+       ORDER BY created_at DESC LIMIT 1`,
+    )
+    .bind(visit.person_id)
+    .first<{ requested_window: BookingWindow }>();
+  return request?.requested_window ?? null;
 }
