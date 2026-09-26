@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-26
-- Amends [0027](0027-referral-landing.md) and [0039](0039-phase-2-budget.md); completes what [0061](0061-ops-editable-inputs.md) and [0070](0070-vendor-correctness.md) left of open point 44
+- Amends [0027](0027-referral-landing.md) and [0039](0039-phase-2-budget.md); adds item 39 to [0022](0022-site-departures-from-v2.md); completes what [0061](0061-ops-editable-inputs.md) and [0070](0070-vendor-correctness.md) left of open point 44
 
 ## Context
 
@@ -32,19 +32,19 @@ Both fit the free plan and the policy. Each costs one Worker request per page vi
 - **How.** Each figure on a page carries its sentence as a template, `data-price="{firstFit}, then {service} a month"`, and the Worker fills it from the book. The two JSON-LD blocks are built again from the same figures. The booking form's island draws its own prices, so the Worker also writes the book's answer onto `<body>` as `data-prices`, and the island starts from it, as it starts from the invite.
 - **A minute, per isolate.** The Worker keeps the book's answer for 60 seconds, the console's own staleness (ADR 0061), so mm-api is asked about once a minute however busy the site is. A rewritten page carries no `ETag`, so a browser never keeps last week's figures by revalidating against the unchanged file.
 - **When mm-api cannot answer**, the Worker keeps the last answer it had, and failing that serves the page as built. The build carries the book's own figures of 22 September 2026 (`site/src/content/prices.ts`); the booking form's island then asks `GET /api/published-prices` itself. The local build and the browser tests serve pages without the Worker (ADR 0027), so they show these figures, and the island there reads the local book.
-- **`GET /api/published-prices`** is on the public host, read-only, cacheable for a minute: the three figures, each with GST and its rate, and the day they are in force. It answers `503` if the book lacks one, and the pages are then served as built.
+- **`GET /api/published-prices`** is on the public host, read-only, cacheable for a minute: the three figures, each with GST and its rate, and the day they are in force. It answers `503` if the book lacks one, and the pages are then served as built. It is not the ops host's `GET /api/prices`, which is the whole book, past and to come.
 - **The production gate** stops a build while any price the site or the landing publishes is a rupee figure typed into its sentence rather than a hole the book fills: `referral.ts` is now covered (FEO-22).
 
 The words "free consultation" are copy, not a price. A consultation the book does not have free is not bookable from the site in any case (ADR 0068).
 
 ### FSM's catalogue follows the price book, behind a switch that is off
 
-**The comparison, always.** A cron job, `fsm_catalogue`, runs once an hour (the run in the first five minutes of the hour) and costs one call from the run's budget: FSM's catalogue list. Each visit type's service item, found by its name (`FSM_SERVICE_NAMES`), is compared with the book's standard price before GST in force today. A difference, or an item FSM does not have, is told once through `alertOnce` under `fsm_catalogue:<type>`, with the item's ID and name and both figures, and never anything about a client. The alert closes when the two agree. It reads only: the base part and the late fees have no catalogue item to compare.
+**The comparison, always.** A cron job, `fsm_catalogue`, runs once an hour (the run in the first five minutes of each hour, UTC) and costs one call from the run's budget: FSM's catalogue list. Each visit type's service item, found by its name (`FSM_SERVICE_NAMES`), is compared with the book's standard price before GST in force today. A difference, or an item FSM does not have, is told once through `alertOnce` under `fsm_catalogue:<type>`, with the item's ID and name and both figures, and never anything about a client. The alert closes when the two agree. It reads only: the base part and the late fees have no catalogue item to compare.
 
 **The push, off.** `FSM_CATALOGUE_PUSH` is a Worker var, `"off"` in every environment in `wrangler.jsonc`, and never a secret.
 
 - **Off:** a price change queues nothing to FSM, and the hourly comparison tells ops the item and the figure to set by hand.
-- **On:** a price the console sets that is in force today (the standard tier, a visit type) queues `{ catalogue_sync: true }` on the fsm-sync queue, and the hourly comparison queues the same when it finds a difference, which is how a price set for a later day reaches FSM on that day. The consumer reads the book and the catalogue afresh and writes only the items that differ, `Unit_Price` in rupees before GST. However often it runs, it writes the same figure, so a repeated or concurrent message changes nothing. It tries once: the next hour's comparison is its retry, and tells ops if FSM still differs an hour after a push was queued (`after: 2`).
+- **On:** a price the console sets that is in force today (the standard tier, a visit type) queues `{ catalogue_sync: true }` on the fsm-sync queue, and the hourly comparison queues the same when it finds a difference, which is how a price set for a later day reaches FSM on that day. The consumer reads the book and the catalogue afresh and writes only the items that differ, `Unit_Price` in rupees before GST. However often it runs, it writes the same figure, so a repeated or concurrent message changes nothing. It tries once: the next hour's comparison is its retry, and tells ops if FSM still differs an hour after a push was queued (`after: 2`). An item FSM does not have is told at once either way: the push only writes prices, and making an item is `scripts/setup-fsm.ts`'s.
 - The item's tax stays as FSM holds it. ADR 0070's check compares the invoice's total with GST, so a tax that differs still holds the invoice as a draft.
 
 **Why off.** A price change on staging must not rewrite the real catalogue by itself. With the push on in staging, a placeholder typed into staging's console would reprice the owner's real items. The startup guard refuses the push in staging for as long as staging shares the org.
@@ -56,7 +56,7 @@ The words "free consultation" are copy, not a price. A consultation the book doe
 ## Consequences
 
 - The site, the landing, the app and FSM's invoices answer to one book. A price ops change reaches the site within a minute and, once the owner switches the push on, FSM's catalogue within seconds, or at the next hour for a price from a later day.
-- **Staging's comparison alerts today**: its "Replacement" is ₹30,000 against the book's ₹15,000. That is true, and it is what ADR 0070 holds those invoices for.
+- **Staging's comparison alerts today**: its "Replacement" is ₹30,000 against the book's ₹15,000. That is true, and it is what ADR 0070 holds those invoices for. `scripts/setup-fsm.ts` now makes a new "Replacement" at the book's ₹15,000; it never changes an item that exists.
 - **mm-site now counts toward the account's requests** on `/`, `/book` and `/r/*` (ADR 0039 said only mm-api did); one request a view, and mm-api's price reads about one a minute. A day at the limit takes those three pages down with the rest (ADR 0009).
 - **ADR 0027's Worker answers three paths.** The config check allows exactly `/`, `/book` and `/r/*` and the one binding to mm-api, as before.
 - **Owed by the owner:** the Premium tier and its prices (open point 78), how the site words GST once it is on, and switching the push on in production (open point 44).
