@@ -8,11 +8,11 @@
 // would read as nought, and a nought here is a radius no arrival can pass or a
 // cycle due the day it is fitted.
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type OpsSetting, type SettingValue } from "../api.ts";
 import { settings } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./settings.module.css";
 

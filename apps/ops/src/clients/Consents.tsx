@@ -3,11 +3,11 @@
 // board's fourth column is the source; nothing records one, so it carries the
 // notice version the client saw instead (docs/fidelity-method.md).
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { api, type Consent } from "../api.ts";
 import { clients } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 

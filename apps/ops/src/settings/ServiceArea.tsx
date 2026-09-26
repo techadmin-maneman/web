@@ -12,10 +12,10 @@
 // launch, so a save that would message people waiting there says how many
 // first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { useEffect, useRef, useState } from "react";
 import { api, type AreaChange, type ServedPincode } from "../api.ts";
 import { settings } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { readServiceAreaCsv, serviceAreaCsv, type CsvRead } from "./csv.ts";
 import styles from "./settings.module.css";

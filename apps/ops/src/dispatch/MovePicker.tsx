@@ -12,12 +12,12 @@
 // him, with his number; and a change of technician alone, which leaves his
 // window as it was, tells him nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
+import { Dialog } from "@maneman/ui/Dialog";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { MoveReason } from "../api.ts";
 import { dispatch } from "../content.ts";
-import { Dialog } from "./Dialog.tsx";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { changesTime, nameOf, personOf, whenOf, type Job, type Target } from "./job.ts";

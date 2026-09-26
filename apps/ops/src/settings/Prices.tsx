@@ -10,12 +10,12 @@
 // 18% item GST-free without anyone seeing it
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useEffect, useRef, useState } from "react";
 import { api, type Price } from "../api.ts";
 import { settings } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./settings.module.css";
 

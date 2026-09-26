@@ -6,11 +6,11 @@
 // quiet. A piece that has failed has been replaced, so the brass falls on the
 // one that has not.
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { api, type Piece } from "../api.ts";
 import { clients } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 

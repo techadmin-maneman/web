@@ -134,8 +134,7 @@
   color: var(--text);
 }
 
-.signOut:focus-visible,
-.reload:focus-visible {
+.signOut:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--sp-2);
 }
@@ -157,18 +156,6 @@
   margin: 0;
   font-size: var(--fs-14);
   color: var(--error-on-paper);
-}
-
-.reload {
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  border: 0;
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
 }
 
 /* Each section pads itself, as its board does. */

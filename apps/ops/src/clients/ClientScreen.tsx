@@ -10,6 +10,7 @@
 // not a second entry in the log.
 
 import { ICONS } from "@maneman/brand/icons";
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, type ClientRecord } from "../api.ts";
@@ -18,7 +19,6 @@ import { clients } from "../content.ts";
 import { whatsAppLink } from "../dispatch/job.ts";
 import { phoneWords } from "../lib/phone.ts";
 import type { ClientTab } from "../route.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";

@@ -11,6 +11,11 @@
 @import "@maneman/brand/fonts.css";
 @import "@maneman/ui/base.css";
 
+/* The console's filled buttons are edged as its outlined ones are, so the two stand side by side at one width. */
+:root {
+  --filled-edge: var(--hairline);
+}
+
 body {
   background: var(--paper);
   color: var(--text);

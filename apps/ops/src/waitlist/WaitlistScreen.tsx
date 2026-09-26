@@ -8,13 +8,13 @@
 // launched what it served left its waitlist untold, and this is how they are
 // told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, listDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Area, type Launch } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { BOOKING_URL, waitlist } from "../content.ts";
 import { settingsPath } from "../route.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./waitlist.module.css";
 

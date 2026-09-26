@@ -9,8 +9,10 @@
 //
 // Anything else, "/" included, is the dispatch board, which is what the design opens on.
 
-import { useEffect, useState } from "react";
 import { clients, settings, shell } from "./content.ts";
+
+/** The router the apps share (packages/ui/router.tsx): the console's pages take it from here. */
+export { followsHere, go, usePath, type Click } from "@maneman/ui/router";
 
 /**
  * The console's sections, in the navigation's order: the design's eight, with
@@ -106,41 +108,3 @@ export function titleOf(route: Route): string {
 export function keyOf(route: Route): string {
   return route.page === "clients" ? `clients/${route.clientId ?? ""}` : route.page;
 }
-
-/** The path shown, which keys the page so each one opens at its top. */
-export function usePath(): string {
-  const [path, setPath] = useState(() => window.location.pathname);
-  useEffect(() => {
-    const onChange = () => {
-      setPath(window.location.pathname);
-    };
-    window.addEventListener("popstate", onChange);
-    return () => {
-      window.removeEventListener("popstate", onChange);
-    };
-  }, []);
-  return path;
-}
-
-export function go(path: string): void {
-  if (window.location.pathname === path) return;
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-}
-
-/** The parts of a click that say where the person wants the link opened. */
-export interface Click {
-  readonly button: number;
-  readonly metaKey: boolean;
-  readonly ctrlKey: boolean;
-  readonly shiftKey: boolean;
-  readonly altKey: boolean;
-}
-
-/**
- * Whether a click on a console link should change the page in place. A click
- * with Ctrl, Cmd, Shift or Alt held, or with any button but the main one, asks
- * for a new tab, a new window or a download, and is left to the browser.
- */
-export const followsHere = (click: Click): boolean =>
-  click.button === 0 && !click.metaKey && !click.ctrlKey && !click.shiftKey && !click.altKey;
