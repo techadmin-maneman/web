@@ -759,7 +759,8 @@ export const TECHNICIANS = {
   ],
 };
 
-export const LEAVE_RECORDED = { id: "89000000-0000-4000-8000-000000000002" };
+/** Leave recorded over no booked job; `jobs` lists those it falls on (OPS-07). */
+export const LEAVE_RECORDED = { id: "89000000-0000-4000-8000-000000000002", jobs: [] };
 export const LEAVE_CANCELLED = { cancelled: true };
 
 /**
