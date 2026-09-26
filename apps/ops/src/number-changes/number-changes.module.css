@@ -111,43 +111,6 @@
   margin-top: var(--sp-12);
 }
 
-.confirm,
-.quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-/* Ink carries the one primary action, as on boards C1 and D1. */
-.confirm {
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.quiet {
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-}
-
-.confirm:disabled,
-.quiet:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.confirm:focus-visible,
-.quiet:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
-}
-
 .error {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);

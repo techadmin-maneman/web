@@ -8,6 +8,7 @@
 // launched what it served left its waitlist untold, and this is how they are
 // told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate } from "@maneman/web-kit/dates";
@@ -115,18 +116,19 @@ function LaunchPanel({
       {step !== "done" && (
         <div className={styles.actions}>
           {!nothingToSend && (
-            <button
+            <Button
+              variant="primary"
+              size="small"
               className={styles.send}
-              type="button"
               disabled={step === "sending" || launchOn === ""}
               onClick={onSend}
             >
               {step === "sending" ? copy.sending : copy.send(preview.alerts)}
-            </button>
+            </Button>
           )}
-          <button className={styles.quiet} type="button" onClick={onCancel}>
+          <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>
             {copy.cancel}
-          </button>
+          </Button>
         </div>
       )}
       {launching.code !== undefined && (

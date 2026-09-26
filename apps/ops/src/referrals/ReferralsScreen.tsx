@@ -8,6 +8,7 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
+import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -100,48 +101,51 @@ function HeldGrant({ grant, now, onDecided }: { grant: Held; now: Date; onDecide
             )}
           </Field>
           <div className={styles.actions}>
-            <button
-              className={asking.choice === "approve" ? styles.approve : styles.reject}
-              type="button"
+            <Button
+              variant={asking.choice === "approve" ? "primary" : "danger"}
+              size="small"
               disabled={sending || reason.trim() === ""}
               onClick={() => void decide(asking.choice)}
             >
               {sending ? copy.deciding : copy.reason.confirm[asking.choice]}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending}
               onClick={() => {
                 keepHeld(asking.choice);
               }}
             >
               {copy.reason.cancel}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="primary"
+            size="small"
             ref={openers.approve}
             className={styles.approve}
-            type="button"
             onClick={() => {
               setDecision({ step: "asking", choice: "approve" });
             }}
           >
             {copy.approve}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="danger"
+            size="small"
             ref={openers.reject}
             className={styles.reject}
-            type="button"
             onClick={() => {
               setDecision({ step: "asking", choice: "reject" });
             }}
           >
             {copy.reject}
-          </button>
+          </Button>
         </div>
       )}
       {decision.step === "failed" && (
@@ -278,9 +282,15 @@ function ReferrersTable({ version }: { version: number }) {
         )}
         {pages.more && (
           <div className={styles.actions}>
-            <button className={styles.quiet} type="button" disabled={pages.fetching} onClick={() => void more(pages)}>
+            <Button
+              variant="outline"
+              size="small"
+              className={styles.quiet}
+              disabled={pages.fetching}
+              onClick={() => void more(pages)}
+            >
               {pages.fetching ? copy.loading : copy.more}
-            </button>
+            </Button>
           </div>
         )}
         <p className={styles.note}>{copy.note}</p>

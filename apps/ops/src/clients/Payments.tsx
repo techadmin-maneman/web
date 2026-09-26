@@ -7,6 +7,7 @@
 // the visits and the reason, and the server writes the ledger's entry and its
 // audit entry together; the balance it answers is shown, and heads the page.
 
+import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -168,9 +169,15 @@ function CreditForm({
           ))}
         </fieldset>
         <p className={styles.note}>{creditCopy.note}</p>
-        <button className={styles.primary} type="submit" disabled={sending || visits === null || reason === ""}>
+        <Button
+          variant="primary"
+          size="small"
+          className={styles.primary}
+          type="submit"
+          disabled={sending || visits === null || reason === ""}
+        >
           {sending ? creditCopy.saving : creditCopy.save}
-        </button>
+        </Button>
         {adjusting.step === "done" && (
           <p className={styles.done} role="status">
             {creditCopy.saved(adjusting.visits)}

@@ -14,6 +14,7 @@
 // records ops' ruling under whoever Access says is signed in
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
+import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -227,12 +228,12 @@ function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge:
         {copy.confirm(each.person?.name ?? copy.erased, day)}
       </p>
       <div className={styles.actions}>
-        <button className={styles.charge} type="button" onClick={onCharge}>
+        <Button variant="primary" size="small" className={styles.charge} onClick={onCharge}>
           {copy.confirmCharge}
-        </button>
-        <button className={styles.waive} type="button" onClick={onBack}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.waive} onClick={onBack}>
           {copy.back}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -293,25 +294,27 @@ function Case({ each, now, onDecided }: { each: NoShowCase; now: Date; onDecided
         />
       ) : (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="primary"
+            size="small"
             ref={chargeButton}
             className={styles.charge}
-            type="button"
             disabled={sending || noReason}
             onClick={() => {
               setRuling({ step: "confirming" });
             }}
           >
             {sending ? copy.deciding : copy.charge}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            size="small"
             className={styles.waive}
-            type="button"
             disabled={sending || noReason}
             onClick={() => void decide("waived")}
           >
             {copy.waive}
-          </button>
+          </Button>
         </div>
       )}
       {ruling.step === "failed" && (

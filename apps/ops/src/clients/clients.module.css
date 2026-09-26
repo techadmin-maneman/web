@@ -569,47 +569,6 @@
 
 /* ---- Shared ------------------------------------------------------------- */
 
-.primary {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-20);
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.primary:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.primary:focus-visible,
-.secondary:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
-}
-
-/* A second action, outlined, as the board draws every action but the one primary. */
-.secondary {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-  margin-top: var(--sp-16);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-}
-
 .empty {
   margin: 0;
   font-size: var(--fs-15);
@@ -620,4 +579,15 @@
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
   color: var(--error-on-paper);
+}
+
+/* The page's buttons (packages/ui/Button.tsx), as wide as their words. */
+.primary {
+  display: inline-flex;
+  padding: 0 var(--sp-20);
+}
+
+.secondary {
+  display: inline-flex;
+  margin-top: var(--sp-16);
 }

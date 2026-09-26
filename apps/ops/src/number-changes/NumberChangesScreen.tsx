@@ -10,6 +10,7 @@
 // somebody else already holds is refused by the API, and said so here. Each
 // change says how long it has left, counted as the Tasks board counts it.
 
+import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
@@ -81,17 +82,19 @@ function Change({ change, now, onDecided }: { change: NumberChange; now: Date; o
             {copy.reason.hint}
           </p>
           <div className={styles.actions}>
-            <button
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending || reason.trim() === ""}
               onClick={() => void decide("reject")}
             >
               {sending ? copy.deciding : copy.reason.confirm}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "open" });
@@ -100,27 +103,34 @@ function Change({ change, now, onDecided }: { change: NumberChange; now: Date; o
               }}
             >
               {copy.reason.cancel}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <div className={styles.decide}>
           <p className={styles.effect}>{copy.effect}</p>
           <div className={styles.actions}>
-            <button className={styles.confirm} type="button" disabled={sending} onClick={() => void decide("confirm")}>
+            <Button
+              variant="primary"
+              size="small"
+              className={styles.confirm}
+              disabled={sending}
+              onClick={() => void decide("confirm")}
+            >
               {sending ? copy.deciding : copy.confirm}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="small"
               ref={rejectButton}
               className={styles.quiet}
-              type="button"
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "asking" });
               }}
             >
               {copy.reject}
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -10,6 +10,7 @@
 // 18% item GST-free without anyone seeing it
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -118,12 +119,12 @@ function Check({
       )}
       {sameDay && <p className={styles.checkLine}>{form.confirm.sameDay}</p>}
       <div className={styles.actions}>
-        <button className={styles.save} type="button" disabled={busy} onClick={onSend}>
+        <Button variant="primary" size="small" className={styles.save} disabled={busy} onClick={onSend}>
           {busy ? form.saving : form.confirm.send}
-        </button>
-        <button className={styles.quiet} type="button" disabled={busy} onClick={onBack}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onBack}>
           {form.confirm.back}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -351,16 +352,17 @@ function Form({
       )}
       {!checking && (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="primary"
+            size="small"
             className={styles.save}
-            type="button"
             disabled={!ready}
             onClick={() => {
               setStep({ step: "checking" });
             }}
           >
             {form.save}
-          </button>
+          </Button>
         </div>
       )}
       {step.step === "saved" && (
@@ -403,12 +405,12 @@ function Withdraw({
         {copy.withdraw.question(longDate(withdrawing.price.valid_from))}
       </p>
       <div className={styles.actions}>
-        <button className={styles.save} type="button" disabled={busy} onClick={onSend}>
+        <Button variant="primary" size="small" className={styles.save} disabled={busy} onClick={onSend}>
           {busy ? copy.withdraw.taking : copy.withdraw.confirm}
-        </button>
-        <button className={styles.quiet} type="button" disabled={busy} onClick={onKeep}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onKeep}>
           {copy.withdraw.keep}
-        </button>
+        </Button>
       </div>
     </div>
   );

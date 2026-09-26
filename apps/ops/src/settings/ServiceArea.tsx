@@ -12,6 +12,7 @@
 // launch, so a save that would message people waiting there says how many
 // first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useEffect, useRef, useState } from "react";
@@ -173,12 +174,12 @@ function LaunchCheck({
       </ul>
       <p className={styles.checkLine}>{copy.launch.note}</p>
       <div className={styles.actions}>
-        <button className={styles.save} type="button" disabled={busy} onClick={onSend}>
+        <Button variant="primary" size="small" className={styles.save} disabled={busy} onClick={onSend}>
           {busy ? copy.saving : copy.launch.send(people)}
-        </button>
-        <button className={styles.quiet} type="button" disabled={busy} onClick={onCancel}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onCancel}>
           {copy.launch.cancel}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -231,12 +232,12 @@ function FilePreview({
         </tbody>
       </Table>
       <div className={styles.actions}>
-        <button className={styles.save} type="button" onClick={onApply}>
+        <Button variant="primary" size="small" className={styles.save} onClick={onApply}>
           {copy.upload.apply}
-        </button>
-        <button className={styles.quiet} type="button" onClick={onCancel}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>
           {copy.upload.cancel}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -334,9 +335,9 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
         <h2 className={styles.panelTitle} id="area">
           {copy.title}
         </h2>
-        <button className={styles.quiet} type="button" onClick={download}>
+        <Button variant="outline" size="small" className={styles.quiet} onClick={download}>
           {copy.download}
-        </button>
+        </Button>
       </div>
       <p className={styles.note}>{copy.note}</p>
 
@@ -362,10 +363,11 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
 
       <div className={styles.actions}>
         {[true, false].map((served) => (
-          <button
+          <Button
+            variant="outline"
+            size="small"
             key={String(served)}
             className={styles.quiet}
-            type="button"
             onClick={() => {
               const next: Record<string, Row> = { ...draft };
               for (const each of inCity) next[each.pincode] = { ...(next[each.pincode] ?? rowOf(each)), served };
@@ -373,7 +375,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
             }}
           >
             {served ? copy.bulk.serve(city) : copy.bulk.stop(city)}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -413,14 +415,15 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
         />
       ) : (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="primary"
+            size="small"
             className={styles.save}
-            type="button"
             disabled={busy || changes.length === 0 || badName !== undefined}
             onClick={pressSave}
           >
             {busy ? copy.saving : copy.save}
-          </button>
+          </Button>
         </div>
       )}
       {badName !== undefined && (

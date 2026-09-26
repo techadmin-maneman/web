@@ -8,6 +8,7 @@
 // the audit log under whoever Access says is signed in (ADR 0031). It messages
 // nobody: ops answer the client themselves, on the number shown.
 
+import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -65,14 +66,15 @@ function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswere
           )}
         </Field>
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="primary"
+            size="small"
             className={styles.send}
-            type="button"
             disabled={sending || response.trim() === ""}
             onClick={() => void send()}
           >
             {sending ? copy.sending : copy.send}
-          </button>
+          </Button>
         </div>
       </div>
       {answering.step === "failed" && (

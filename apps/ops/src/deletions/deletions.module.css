@@ -111,46 +111,6 @@
   margin-top: var(--sp-14);
 }
 
-.delete,
-.quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-/*
- * The one action on the console drawn in oxblood: nothing else here destroys
- * anything. Ink carries the primary action everywhere else.
- */
-.delete {
-  border: var(--hairline) solid var(--error-on-paper);
-  background: var(--error-on-paper);
-  color: var(--paper);
-}
-
-.quiet {
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-}
-
-.delete:disabled,
-.quiet:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.delete:focus-visible,
-.quiet:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
-}
-
 .error {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);

@@ -17,6 +17,7 @@
 // The API refuses while the client has a visit booked or a payment held, and
 // the refusal's copy says which.
 
+import { Button } from "@maneman/ui/Button";
 import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -94,12 +95,18 @@ function ConfirmDelete({
         }}
       />
       <div className={styles.actions}>
-        <button className={styles.delete} type="button" disabled={sending || !checked} onClick={onDelete}>
+        <Button
+          variant="destructive"
+          size="small"
+          className={styles.delete}
+          disabled={sending || !checked}
+          onClick={onDelete}
+        >
           {sending ? copy.deleting : copy.confirm}
-        </button>
-        <button className={styles.quiet} type="button" disabled={sending} onClick={onCancel}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onCancel}>
           {copy.cancel}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -163,51 +170,55 @@ function Request({ request, now, onDecided }: { request: DeletionRequest; now: D
             )}
           </Field>
           <div className={styles.actions}>
-            <button
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending || reason.trim() === ""}
               onClick={() => void decide("reject")}
             >
               {sending ? copy.rejecting : copy.reason.confirm}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending}
               onClick={() => {
                 listed("reject");
               }}
             >
               {copy.reason.cancel}
-            </button>
+            </Button>
           </div>
         </div>
       )}
       {asking === null && (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="destructive"
+            size="small"
             ref={openers.delete}
             className={styles.delete}
-            type="button"
             aria-label={copy.deleteLabel(request.name)}
             onClick={() => {
               setDeciding({ step: "asking", choice: "delete" });
             }}
           >
             {copy.delete}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            size="small"
             ref={openers.reject}
             className={styles.quiet}
-            type="button"
             aria-label={copy.rejectLabel(request.name)}
             onClick={() => {
               setDeciding({ step: "asking", choice: "reject" });
             }}
           >
             {copy.reject}
-          </button>
+          </Button>
         </div>
       )}
       {deciding.step === "failed" && (

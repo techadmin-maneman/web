@@ -230,52 +230,12 @@
   margin-right: 0;
 }
 
-/* Ink carries the one primary action, as on boards C1 and D1. */
-.save {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-14);
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-/* A button not yet usable is shaded, as the client app's are, rather than faded (VIS-21). */
-.save:disabled {
-  border-color: var(--paper-shade);
-  background: var(--paper-shade);
-  color: var(--text-quiet);
-  cursor: default;
-}
-
-.quiet:disabled,
 .inline:disabled {
   border-color: var(--paper-line);
   color: var(--text-quiet);
   cursor: default;
 }
 
-.save:focus-visible,
-.quiet:focus-visible,
 .inline:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--sp-3);
@@ -516,4 +476,9 @@
 .file:focus-visible {
   outline: var(--rule-strong) solid var(--ink);
   outline-offset: var(--sp-2);
+}
+
+/* The rules' and service area's quieter buttons (packages/ui/Button.tsx) sit a little narrower than Save. */
+.quiet {
+  padding: 0 var(--sp-14);
 }
