@@ -274,6 +274,9 @@ export const dispatch = {
       invalid_request: "That move is not one we can make. Nothing was moved.",
       not_found: "This visit is no longer live. The board now shows it as it stands.",
       fsm_refused: "Our scheduling system would not take it. Nothing was moved.",
+      /** PLACEHOLDER: FSM took the new technician and not the new time; the board is read again. */
+      fsm_partly:
+        "Our scheduling system took the new technician but not the new time. The board now shows it as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was moved.",
     },

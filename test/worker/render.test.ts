@@ -202,6 +202,29 @@ describe("render: never billed twice", () => {
   });
 });
 
+describe("render: a result that can never be used", () => {
+  it("fails at once with render_failed and an alert, rather than downloading it again for a day", async () => {
+    const time = clock();
+    const image = createImageProvider(null, { fetch, now: time.now });
+    const tooBig: ImageProvider = {
+      ...image,
+      download: () => Promise.resolve({ ok: false, detail: "result is 5242881 bytes", transient: false }),
+    };
+    const deps = fakeDependencies({ now: time.now, image: tooBig });
+    await queuedJob("too-big");
+    await advanceJob(renderEnv(), deps, log, "too-big", OPTIONS);
+    time.advance(STUB_RENDER_MS.pro);
+
+    expect(await advanceJob(renderEnv(), deps, log, "too-big", OPTIONS)).toEqual({});
+    expect(await job("too-big")).toMatchObject({
+      state: "failed",
+      failure_code: "render_failed",
+      download_attempts: 1,
+    });
+    expect(deps.alerts).toEqual([expect.stringContaining("result is 5242881 bytes") as string]);
+  });
+});
+
 describe("render: a result that arrives after its job moved on", () => {
   /** The stub provider, running `during` while the result downloads. */
   function imageThat(during: () => Promise<unknown>, now: () => Date): ImageProvider {

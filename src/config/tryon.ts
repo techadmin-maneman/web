@@ -40,10 +40,11 @@ export const UPLOAD_CONTENT_TYPES = ["image/jpeg", "image/png"] as const;
 export type UploadContentType = (typeof UPLOAD_CONTENT_TYPES)[number];
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 /**
- * The largest result stored. It sizes the R2 storage budget (docs/decisions/0009),
- * and WhatsApp takes images of 5 MB at most. A larger result fails the job with an alert.
+ * The largest result stored: WhatsApp takes images of 5 MB at most, and the cap
+ * also sizes the R2 storage budget (docs/decisions/0009). A larger result, or one
+ * that is not an image, fails the job at once with an alert (docs/decisions/0015).
  */
-export const MAX_RESULT_BYTES = 6 * 1024 * 1024;
+export const MAX_RESULT_BYTES = 5 * 1024 * 1024;
 /** An upload link lasts 5 minutes and a session 30; a photo is deleted an hour after its last look. */
 export const PHOTO_RETENTION_MS = 60 * 60 * 1000;
 export const MIN_SIDE_PX = 200;

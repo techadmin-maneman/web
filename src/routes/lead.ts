@@ -143,21 +143,23 @@ async function createLead(c: Context<AppEnv>, request: LeadRequest): Promise<Out
   if (turnstile === "rejected") return { ok: false, status: 403, code: "turnstile_failed" };
   if (turnstile === "unavailable") return { ok: false, status: 503, code: "unavailable" };
 
+  // A city the form cannot take costs the number nothing, and neither does a refusal of its address.
+  const city = await findActiveCity(db, request.city);
+  if (city === null) return { ok: false, status: 400, code: "invalid_request", fields: ["city"] };
+
   const today = indiaDate(now);
   const withinLimits =
+    (await takeOne(db, { scope: "lead:ip", key: ipHash, window: today, limit: settings.leadIpDailyLimit })) &&
     (await takeOne(db, {
       scope: "lead:mobile",
       key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
       window: today,
       limit: settings.leadMobileDailyLimit,
-    })) && (await takeOne(db, { scope: "lead:ip", key: ipHash, window: today, limit: settings.leadIpDailyLimit }));
+    }));
   if (!withinLimits) {
     log.warn("lead_rate_limited", { ip_hash: ipHash });
     return { ok: false, status: 429, code: "rate_limited" };
   }
-
-  const city = await findActiveCity(db, request.city);
-  if (city === null) return { ok: false, status: 400, code: "invalid_request", fields: ["city"] };
 
   let proposedVisitDate: string | null = null;
   if (city.served) {

@@ -12,6 +12,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../app.ts";
 import { CURRENT_NOTICE } from "../config/notices.ts";
+import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { SESSION_TTL_MS } from "../config/tryon.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob, loadSession, recordEvent, type JobRow } from "../domain/tryon.ts";
@@ -38,9 +39,10 @@ export const ClaimRequestSchema = z
 export const ClaimResponseSchema = z
   .object({
     lead_id: z.uuid(),
-    whatsapp_copy: z
-      .boolean()
-      .openapi({ description: "True only if messaging is on: the page may then say a copy is on its way." }),
+    whatsapp_copy: z.boolean().openapi({
+      description:
+        "True only if messaging is on and may reach this number: the page may then say a copy is on its way.",
+    }),
   })
   .strict()
   .openapi("ClaimResponse");
@@ -238,8 +240,16 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
     }
   }
 
-  return { ok: true, body: { lead_id: leadId, whatsapp_copy: settings.messaging.enabled }, sessionId };
+  return {
+    ok: true,
+    body: { lead_id: leadId, whatsapp_copy: promisesCopy(settings.messaging, mobileE164) },
+    sessionId,
+  };
 }
+
+/** The page may say a copy is on its way only when the messaging queue will send it, not skip it. */
+const promisesCopy = (messaging: MessagingSettings, mobileE164: string): boolean =>
+  messaging.enabled && onAllowlist(messaging, mobileE164);
 
 /**
  * A job already claimed, claimed again: by the same number it gets a fresh
@@ -264,7 +274,7 @@ async function reclaim(c: Context<AppEnv>, job: JobRow, mobileE164: string): Pro
   ]);
   return {
     ok: true,
-    body: { lead_id: job.lead_id, whatsapp_copy: c.var.config.settings.messaging.enabled },
+    body: { lead_id: job.lead_id, whatsapp_copy: promisesCopy(c.var.config.settings.messaging, mobileE164) },
     sessionId,
   };
 }

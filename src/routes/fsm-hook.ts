@@ -25,6 +25,8 @@ const FsmHintSchema = z.object({
   module: z.string(),
   id: z.string().min(1).max(40),
   modified_time: z.string().max(40).optional(),
+  /** What happened, as the rule names it: "create", "edit" or "delete" (runbook, step 11b). */
+  event: z.string().max(20).optional(),
 });
 
 export const fsmHookRoute = createRoute({
@@ -65,15 +67,17 @@ export function registerFsmHook(app: App): void {
     }
 
     const now = c.var.deps.now();
-    // FSM sends no event ID. A delivery is the same event when it names the same record at the same modified time;
-    // a hint without one counts once a minute.
+    // FSM sends no event ID. A delivery is the same event when it names the same record, the same event and the
+    // same modified time; a hint without a time counts once a minute. A deletion keeps the modified time of the
+    // last edit, so without its event it would read as a repeat of that edit and be dropped.
     const version = hint.modified_time ?? now.toISOString().slice(0, 16);
+    const event = hint.event?.toLowerCase() ?? "change";
     const inboxId = crypto.randomUUID();
     const inserted = await c.env.DB.prepare(
       `INSERT INTO webhook_inbox (id, source, dedupe_key, module, record_id, received_at)
        VALUES (?1, 'fsm', ?2, ?3, ?4, ?5) ON CONFLICT (dedupe_key) DO NOTHING`,
     )
-      .bind(inboxId, `fsm:${hint.module}:${hint.id}:${version}`, hint.module, hint.id, now.toISOString())
+      .bind(inboxId, `fsm:${hint.module}:${hint.id}:${event}:${version}`, hint.module, hint.id, now.toISOString())
       .run();
 
     if (inserted.meta.changes === 0) {

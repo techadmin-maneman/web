@@ -194,7 +194,9 @@ const assignRoute = createRoute({
     409: errorResponse(
       "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)",
     ),
-    502: errorResponse("fsm_refused: FSM would not take it; nothing moved"),
+    502: errorResponse(
+      "fsm_refused: FSM would not take it; nothing moved. fsm_partly: FSM took the technician and not the time; the job is read again from FSM",
+    ),
   },
 });
 
@@ -209,7 +211,7 @@ const moveRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
     409: errorResponse("clash; on_leave; does_not_fit; superseded, with what changed in fields"),
-    502: errorResponse("fsm_refused"),
+    502: errorResponse("fsm_refused; fsm_partly: FSM took the technician and not the time"),
   },
 });
 
@@ -333,9 +335,13 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   }
   if (outcome.kind === "no_technician") return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
   if (outcome.kind === "refused") return c.json(errorBody(outcome.reason, requestId), 409);
-  if (outcome.kind === "fsm_refused") {
-    log.warn("dispatch_move_refused_by_fsm", { appointment_id: input.appointmentId, move_id: outcome.moveId });
-    return c.json(errorBody("fsm_refused", requestId), 502);
+  if (outcome.kind === "fsm_refused" || outcome.kind === "fsm_partly") {
+    log.warn("dispatch_move_refused_by_fsm", {
+      appointment_id: input.appointmentId,
+      move_id: outcome.moveId,
+      partly: outcome.kind === "fsm_partly",
+    });
+    return c.json(errorBody(outcome.kind, requestId), 502);
   }
   log.info("dispatch_moved", { appointment_id: input.appointmentId, move_id: outcome.moveId, reason: input.reason });
   return c.json({ move_id: outcome.moveId, client_notice: outcome.clientNotice }, 200);

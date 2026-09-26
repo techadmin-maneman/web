@@ -159,6 +159,64 @@ describe("Zoho: a person the CRM already has", () => {
     ]);
   });
 
+  // ADR 0050 admits a stored ID the CRM no longer has blocked the person's sync for good (audit INT-18).
+  describe("whose record D1 knows by an ID the CRM no longer has", () => {
+    const invalidId = () =>
+      json({
+        data: [
+          {
+            code: "INVALID_DATA",
+            details: { api_name: "id" },
+            message: "the id given seems to be invalid",
+            status: "error",
+          },
+        ],
+      });
+
+    /** The CRM, where the stored "zoho-gone" is gone and the person's record, if any, is `current`. */
+    function crmWhere(current: string | null) {
+      return zoho({
+        [TOKEN_URL]: () => tokenIssued(),
+        [LEADS_URL]: (call) => {
+          if (call.url.startsWith(SEARCH_URL)) return current === null ? noMatch() : json({ data: [{ id: current }] });
+          if (call.url.includes("zoho-gone")) return invalidId();
+          return call.method === "POST" && call.url === LEADS_URL ? created("zoho-new") : updated(current ?? "");
+        },
+      });
+    }
+
+    it("finds the person's record again by their ID, and writes to that", async () => {
+      const { crm, calls } = crmWhere("zoho-merged");
+      expect(await crm.syncLead(crmLead(), "zoho-gone")).toEqual({ crmLeadId: "zoho-merged", created: false });
+      expect(calls.map((call) => `${call.method} ${new URL(call.url).pathname}`)).toEqual([
+        "POST /oauth/v2/token",
+        "PUT /crm/v8/Leads/zoho-gone",
+        "GET /crm/v8/Leads/search",
+        "PUT /crm/v8/Leads/zoho-merged",
+        "POST /crm/v8/Leads/zoho-merged/Notes",
+      ]);
+    });
+
+    it("makes a new record when the CRM has none for the person", async () => {
+      const { crm } = crmWhere(null);
+      expect(await crm.syncLead(crmLead(), "zoho-gone")).toEqual({ crmLeadId: "zoho-new", created: true });
+    });
+
+    it("erases the record found again, or finds nothing to erase", async () => {
+      expect(await crmWhere("zoho-merged").crm.erasePerson("person-1", "zoho-gone")).toEqual({ found: true });
+      expect(await crmWhere(null).crm.erasePerson("person-1", "zoho-gone")).toEqual({ found: false });
+    });
+
+    it("passes on any other failure unchanged, without searching", async () => {
+      const { crm, calls } = zoho({
+        [TOKEN_URL]: () => tokenIssued(),
+        [LEADS_URL]: () => json({ code: "INTERNAL_ERROR", message: "Internal Server Error" }, 500),
+      });
+      await expect(crm.syncLead(crmLead(), "zoho-9")).rejects.toThrow("Zoho 500 INTERNAL_ERROR");
+      expect(calls.some((call) => call.url.startsWith(SEARCH_URL))).toBe(false);
+    });
+  });
+
   it("leaves the status alone for a waitlist sign-up", async () => {
     const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [LEADS_URL]: () => updated("zoho-9") });
     await crm.syncLead(crmLead({ source: "waitlist" }), "zoho-9");
@@ -260,6 +318,28 @@ describe("Zoho record and note contents", () => {
       const note = JSON.stringify(noteFor(crmLead({ source })));
       expect(note).not.toMatch(/Arjun|9810000001/);
     }
+  });
+});
+
+describe("Zoho: a person's changed number or address", () => {
+  it("writes the number and city onto the known record, with workflows off, and adds no note", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [LEADS_URL]: () => updated("zoho-9") });
+    expect(
+      await crm.updateContact({ personId: "person-1", mobileE164: "+919810000003", city: "Gurgaon" }, "zoho-9"),
+    ).toEqual({ crmLeadId: "zoho-9" });
+    expect(calls.map((call) => `${call.method} ${new URL(call.url).pathname}`)).toEqual([
+      "POST /oauth/v2/token",
+      "PUT /crm/v8/Leads/zoho-9",
+    ]);
+    expect(bodyOf(calls[1])).toEqual({ data: [{ Mobile: "+919810000003", City: "Gurgaon" }], trigger: [] });
+  });
+
+  it("writes nothing for a person the CRM never had", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [SEARCH_URL]: noMatch });
+    expect(await crm.updateContact({ personId: "person-1", mobileE164: "+919810000003", city: null }, null)).toEqual({
+      crmLeadId: null,
+    });
+    expect(calls).toHaveLength(2);
   });
 });
 

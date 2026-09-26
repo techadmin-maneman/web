@@ -45,7 +45,7 @@ function fsm(routes: Parameters<typeof fakeFetch>[0]) {
 let logs: ReturnType<typeof captureLogs>;
 beforeEach(async () => {
   logs = captureLogs();
-  await env.DB.prepare("DELETE FROM zoho_tokens").run();
+  await env.DB.prepare("DELETE FROM zoho_access_tokens").run();
 });
 
 describe("FSM: appointments", () => {
@@ -353,6 +353,7 @@ describe("FSM: booking a visit, once", () => {
       email: null,
       city: "Gurgaon",
       pincode: "122018",
+      street: { street1: "House 12", street2: "Tower C, Sector 65" },
       state: "Haryana",
       stateCode: "HR",
     });
@@ -367,8 +368,51 @@ describe("FSM: booking a visit, once", () => {
     const posts = calls
       .filter((call) => call.method === "POST" && call.url.startsWith(FSM_API))
       .map((call) => JSON.parse(call.body) as unknown);
-    expect(posts[0]).toMatchObject({ data: [{ Service_Address: { City: "Gurgaon", Zip_Code: "122018" } }] });
+    expect(posts[0]).toMatchObject({
+      data: [
+        {
+          Service_Address: {
+            Street_1: "House 12",
+            Street_2: "Tower C, Sector 65",
+            City: "Gurgaon",
+            Zip_Code: "122018",
+          },
+        },
+      ],
+    });
     expect(posts[1]).toMatchObject({ data: [{ Summary: "Consultation for Rohit Malhotra (lead lead-1)" }] });
+  });
+});
+
+describe("FSM: a client's changed number or address", () => {
+  it("writes the number, and the address through the service address's ID, over the contact", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Contacts/contact-1`]: (call) =>
+        call.method === "GET"
+          ? json({ data: [fsmContactRecord({ Service_Address: { id: "sa-1" }, Billing_Address: { id: "ba-1" } })] })
+          : json({ data: [{ code: "SUCCESS", status: "success" }] }),
+    });
+    await provider.updateContact("contact-1", {
+      mobile: "+919810000003",
+      address: { street1: "House 12", street2: "Tower C, Sector 65", city: "Gurgaon", pincode: "122018" },
+    });
+
+    const put = calls.find((call) => call.method === "PUT");
+    expect(JSON.parse(put?.body ?? "null")).toEqual({
+      data: [
+        {
+          Mobile: "+919810000003",
+          Service_Address: {
+            id: "sa-1",
+            Street_1: "House 12",
+            Street_2: "Tower C, Sector 65",
+            City: "Gurgaon",
+            Zip_Code: "122018",
+          },
+        },
+      ],
+    });
   });
 });
 
@@ -505,11 +549,13 @@ describe("FSM: billing a finished job", () => {
         ),
     });
 
-    // `created` is what lets the pass send only an invoice it has just raised (ADR 0056).
+    // `created` is what lets the pass send only an invoice it has just raised (ADR 0056), and `total`,
+    // the work order's Rs. 2,000 in paise, what it checks against the sale first (ADR 0070).
     expect(await provider.invoiceWorkOrder("wo-1")).toEqual({
       id: "fsm-invoice-1",
       booksInvoiceId: "books-invoice-1",
       created: true,
+      total: 200_000,
     });
     expect(calls[2]?.method).toBe("POST");
     // Without the line IDs FSM answers a bare 500, whatever else the body carries.
@@ -549,6 +595,7 @@ describe("FSM: billing a finished job", () => {
       id: "fsm-invoice-1",
       booksInvoiceId: "books-invoice-1",
       created: false,
+      total: 200_000,
     });
     expect(calls.map((call) => call.method)).toEqual(["POST", "GET", "GET"]); // the token, then two reads: nothing raised
   });
@@ -631,7 +678,7 @@ describe("FSM: the access token", () => {
     await provider.contact("contact-1");
     await provider.contact("contact-1");
     expect(calls.filter((call) => call.url.startsWith(ZOHO_TOKEN_URL))).toHaveLength(1);
-    const row = await env.DB.prepare("SELECT client, expires_at FROM zoho_tokens").first();
+    const row = await env.DB.prepare("SELECT client, expires_at FROM zoho_access_tokens").first();
     expect(row).toEqual({ client: "fsm", expires_at: new Date(NOW.getTime() + 3600_000).toISOString() });
   });
 
@@ -782,6 +829,38 @@ describe("Books: payments, receipts and refunds", () => {
       reference_number: "rfnd_test7",
       description: "Staging test: Razorpay refund rfnd_test7",
     });
+  });
+
+  // Books' documented list shapes (ADR 0070); neither search has been tried on the org yet.
+  it("finds a payment by our reference for the customer, matching the reference exactly", async () => {
+    const { books, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/customerpayments`]: () =>
+        json({
+          code: 0,
+          customerpayments: [
+            { payment_id: "bp-2", reference_number: "MM-2026-08410" },
+            { payment_id: "bp-1", reference_number: "MM-2026-0841" },
+          ],
+        }),
+    });
+    expect(await books.findPayment("books-customer-9", "MM-2026-0841")).toBe("bp-1");
+    const searched = new URL(calls[1]?.url ?? "");
+    expect(calls[1]?.method).toBe("GET");
+    expect(searched.searchParams.get("customer_id")).toBe("books-customer-9");
+    expect(searched.searchParams.get("reference_number")).toBe("MM-2026-0841");
+    expect(await books.findPayment("books-customer-9", "MM-2026-0999")).toBeNull();
+  });
+
+  it("finds a refund of a payment by Razorpay's refund ID, and answers null when there is none", async () => {
+    const { books } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/customerpayments/bp-1/refunds`]: () =>
+        json({ code: 0, payment_refunds: [{ payment_refund_id: "br-1", reference_number: "rfnd_test7" }] }),
+      [`${BOOKS_API}/customerpayments/bp-2/refunds`]: () => json({ code: 0, payment_refunds: [] }),
+    });
+    expect(await books.findRefund("bp-1", "rfnd_test7")).toBe("br-1");
+    expect(await books.findRefund("bp-2", "rfnd_test7")).toBeNull();
   });
 
   it("fails loudly when Books refuses a payment", async () => {

@@ -49,12 +49,12 @@
 import { z } from "zod";
 import type { ZohoFsmSettings } from "../config/settings.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import type { Logger } from "../log.ts";
 import type {
   FsmAppointment,
   FsmAsset,
   FsmAttachment,
   FsmContact,
+  FsmContactUpdate,
   FsmInvoice,
   FsmItem,
   FsmProvider,
@@ -66,14 +66,7 @@ import type {
   NewFsmRequest,
   NewFsmWorkOrder,
 } from "./fsm.ts";
-import { createTokenCache, type TokenStore, ZohoError, zohoErrorFrom, zohoSend } from "./zoho-http.ts";
-
-interface Dependencies {
-  readonly db: D1Database;
-  readonly fetch: typeof fetch;
-  readonly now: () => Date;
-  readonly log: Logger;
-}
+import { createZohoRequester, ZohoError, zohoErrorFrom, type ZohoRequesterDependencies } from "./zoho-http.ts";
 
 const Reference = z.object({ id: z.string() }).nullish();
 
@@ -249,60 +242,9 @@ function contactFrom(record: z.infer<typeof Contact>): FsmContact {
   };
 }
 
-/** FSM and Books share one access token (migrations/0010_zoho_tokens.sql). */
-export function fsmTokenStore(db: D1Database): TokenStore {
-  return {
-    async read() {
-      const row = await db
-        .prepare("SELECT access_token, expires_at FROM zoho_tokens WHERE client = 'fsm'")
-        .first<{ access_token: string; expires_at: string }>();
-      return row === null ? null : { accessToken: row.access_token, expiresAt: row.expires_at };
-    },
-    async write(accessToken, expiresAt) {
-      await db
-        .prepare(
-          `INSERT INTO zoho_tokens (client, access_token, expires_at) VALUES ('fsm', ?1, ?2)
-           ON CONFLICT (client) DO UPDATE SET access_token = excluded.access_token, expires_at = excluded.expires_at`,
-        )
-        .bind(accessToken, expiresAt)
-        .run();
-    },
-  };
-}
-
-/** A write: JSON for every module call, or multipart for a file upload. */
-type ZohoWrite = { method: "POST" | "PUT"; body: unknown } | { method: "POST"; form: FormData };
-
-/**
- * One authorised request to a Zoho API on the FSM client's token. On 401 the
- * token is refreshed once and the call repeated. Shared with Books.
- */
-export function createZohoFsmClient(settings: ZohoFsmSettings, deps: Dependencies) {
-  const tokens = createTokenCache(settings, fsmTokenStore(deps.db), deps);
-
-  return async function request(step: string, path: string, write?: ZohoWrite): Promise<Response> {
-    // A multipart upload sets its own Content-Type, with the boundary.
-    const body = write === undefined ? undefined : "form" in write ? write.form : JSON.stringify(write.body);
-    const json = write !== undefined && "body" in write;
-    for (const forceRefresh of [false, true]) {
-      const token = await tokens.get(forceRefresh);
-      const response = await zohoSend(deps, step, `https://${settings.apiHost}${path}`, {
-        headers: {
-          Authorization: `Zoho-oauthtoken ${token}`,
-          ...(json ? { "Content-Type": "application/json" } : {}),
-        },
-        ...(write === undefined ? {} : { method: write.method, body }),
-      });
-      if (response.status === 401 && !forceRefresh) continue;
-      if (!response.ok) throw zohoErrorFrom(response.status, await response.json().catch(() => null));
-      return response;
-    }
-    throw new ZohoError(401, "AUTHENTICATION_FAILURE", "rejected a freshly refreshed token");
-  };
-}
-
-export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): FsmProvider {
-  const request = createZohoFsmClient(settings, deps);
+export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDependencies): FsmProvider {
+  // FSM and Books share the FSM client's token (src/providers/zoho-http.ts).
+  const request = createZohoRequester("fsm", settings, deps);
 
   /** A JSON answer, or null for FSM's empty 204. */
   async function json(step: string, path: string): Promise<unknown> {
@@ -338,11 +280,11 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
   }
 
   /** An invoice FSM already holds, with Books' ID for it; null while Books has not been given it. */
-  async function invoiceById(id: string): Promise<FsmInvoice | null> {
+  async function invoiceById(id: string, total: number): Promise<FsmInvoice | null> {
     const [invoice] = records(await json("invoice", `/Invoices/${id}`), "data", Invoice);
     const booksInvoiceId = invoice?.ZBilling_InvoiceId;
     if (invoice === undefined || booksInvoiceId === null || booksInvoiceId === undefined) return null;
-    return { id: invoice.id, booksInvoiceId, created: false };
+    return { id: invoice.id, booksInvoiceId, created: false, total };
   }
 
   /** The latest records of a module, most recently changed first, as the reconciliation reads appointments. */
@@ -468,6 +410,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
     },
 
     async createContact(contact: NewFsmContact) {
+      const street = contact.street ?? { street1: ADDRESS_TO_CONFIRM, street2: null };
       return create("create_contact", "Contacts", {
         ...(contact.firstName === null ? {} : { First_Name: contact.firstName }),
         Last_Name: contact.lastName,
@@ -477,7 +420,8 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
         ...(contact.stateCode === null ? {} : { Place_of_Supply: contact.stateCode }),
         Service_Address: {
           Address_Name: "Service Address",
-          Street_1: ADDRESS_TO_CONFIRM,
+          Street_1: street.street1,
+          ...(street.street2 === null ? {} : { Street_2: street.street2 }),
           City: contact.city,
           ...(contact.state === null ? {} : { State: contact.state }),
           ...(contact.pincode === null ? {} : { Zip_Code: contact.pincode }),
@@ -683,15 +627,17 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
         WorkOrderBilling,
       );
       if (order === undefined) throw new ZohoError(404, "NO_WORK_ORDER", "the work order to invoice is not in FSM");
+      // FSM's total is in rupees; ours are paise.
+      const total = Math.round((order.Grand_Total ?? 0) * 100);
 
       // Already invoiced, here or by hand in FSM's own screen: each line then names it.
       const [existing] = order.Service_Line_Items.flatMap((line) =>
         typeof line.Invoice_Id === "string" ? [line.Invoice_Id] : [],
       );
-      if (existing !== undefined) return invoiceById(existing);
+      if (existing !== undefined) return invoiceById(existing, total);
 
       const lines = order.Service_Line_Items.map((line) => line.id);
-      if (lines.length === 0 || (order.Grand_Total ?? 0) <= 0) return null;
+      if (lines.length === 0 || total <= 0) return null;
 
       // Clients pay before the visit, so nothing is ever owed on terms.
       const date = indiaDate(deps.now());
@@ -718,7 +664,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
       if ((answer as { status?: unknown }).status === "error") throw zohoErrorFrom(400, answer);
       const raised = Raised.parse(answer).data.Invoices[0];
       if (raised === undefined) throw new ZohoError(response.status, "NO_ID", "the invoice answered without its ID");
-      return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id, created: true };
+      return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id, created: true, total };
     },
 
     // Two reads, no write. The work order names the Request it was converted
@@ -740,6 +686,30 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: Dependencies): Fs
         preferredDate: asked.Preference?.Preferred_Date_1 ?? null,
         preferenceNote: asked.Preference?.Preference_Note ?? null,
       };
+    },
+
+    // The same write as the erasure's, tried on the org: the number, and the street through the
+    // service address's ID. The city and pincode on that address have not yet been written this way.
+    async updateContact(contactId, update: FsmContactUpdate) {
+      const [contact] = records(await json("update_contact_read", `/Contacts/${contactId}`), "data", Addresses);
+      if (contact === undefined) throw new ZohoError(404, "NO_CONTACT", "the contact to update is not in FSM");
+      const { address } = update;
+      const serviceAddress =
+        address === null
+          ? {}
+          : {
+              Service_Address: {
+                id: contact.Service_Address.id,
+                Street_1: address.street1,
+                Street_2: address.street2,
+                City: address.city,
+                Zip_Code: address.pincode,
+              },
+            };
+      await request("update_contact", `/fsm/v1/Contacts/${contactId}`, {
+        method: "PUT",
+        body: { data: [{ Mobile: update.mobile, ...serviceAddress }] },
+      });
     },
 
     // Tried on the real org on 22 September 2026: the name, numbers and e-mail clear, and the street can be

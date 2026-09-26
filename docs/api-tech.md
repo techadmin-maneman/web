@@ -779,6 +779,7 @@ The piece a label names
             "on_leave",
             "does_not_fit",
             "fsm_refused",
+            "fsm_partly",
             "too_early_to_close",
             "no_service_area"
           ]

@@ -27,7 +27,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 - Its ID, secret and refresh token are the Worker secrets `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and `ZOHO_FSM_REFRESH_TOKEN`.
 - Its hosts and the Books organisation are vars (runbook, step 11b).
 
-**The access token is kept in D1,** in `zoho_tokens` (migration 0010), one row per client. Every invocation uses the same token until a minute before it expires. The code that refreshes it is shared with the CRM (`src/providers/zoho-http.ts`); the CRM keeps its own one-row `zoho_token`, unchanged.
+**The access token is kept in D1,** in `zoho_tokens` (migration 0010), one row per client. Every invocation uses the same token until a minute before it expires. The code that refreshes it is shared with the CRM (`src/providers/zoho-http.ts`); the CRM keeps its own one-row `zoho_token`, unchanged. **Since 25 September 2026** one requester serves the CRM, FSM and Books, with both clients' tokens in `zoho_access_tokens` (migration 0041), a lease so one caller refreshes at a time, and a ten-minute cool-down after Zoho refuses a token ([ADR 0070](0070-vendor-correctness.md)).
 
 **Two providers, each with a stub.**
 
@@ -61,7 +61,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 - **Webhooks are hints.**
   - FSM's workflow rule posts the appointment's ID and modified time to `POST /api/hooks/fsm/<token>`, as JSON or a form.
   - FSM does not sign webhooks, so the secret is in the URL, as Evolution's is. Without `FSM_WEBHOOK_TOKEN` the route answers 404.
-  - Each hint is kept once in `webhook_inbox`. FSM sends no event ID, so a repeat is the same record at the same modified time.
+  - Each hint is kept once in `webhook_inbox`. FSM sends no event ID, so a repeat is the same record at the same modified time, for the same event where the rule names one (`event`, amended 25 September 2026: a deletion keeps its last edit's modified time, and was dropped as that edit's repeat; runbook, step 11b).
   - The hint goes on the `fsm-sync` queue, whose consumer reads the appointment afresh.
   - A failed read is retried after 30 s, 1, 2 and 4 minutes; the fifth failure alerts, and the reconciliation picks it up.
 - **The queue fits the Phase 2 budget** (ADR 0039): 2,000 queue operations a day for FSM hints and messages.
@@ -72,6 +72,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcile-fsm.ts`, migration 0012). It runs with the sweeper on the existing five-minute cron, and adds no cron of its own. It only puts appointments on the `fsm-sync` queue: the consumer reads them afresh, as it does for a webhook.
 
 - **Every run** reads the first page of FSM's appointments, the 50 changed most recently, and queues each whose copy is missing or older than FSM's. A missed webhook is repaired within five minutes.
+- **Every run also** queues two upcoming visits, the ones read longest ago, so that an appointment deleted in FSM, which is on no page, leaves the mirror within hours rather than the next night (added 25 September 2026, audit finding INT-09). The consumer's read costs FSM about 580 calls a day.
 - **Overnight,** from 1 am to 5 am India time, it also walks the whole list, one page a run, and marks each copy it sees.
 - **At the end of the pass,** it queues every copy the pass did not see, 50 a run. FSM may have deleted those; the consumer marks them gone if it did.
 - **Then it alerts once** if the pass repaired anything. A copy less than 10 minutes behind FSM does not count, since its webhook may still be on the way.
@@ -100,7 +101,7 @@ The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcil
 A consultation booked on the public site reaches FSM as well as the CRM, so ops schedule it where the field work lives.
 
 - **What goes.** A booking in a served city: not a waitlist entry, and not a try-on. The lead route puts `{ lead_id }` on the fsm-sync queue wherever `FSM_PROVIDER` is not `none`; the consumer sends it (`src/domain/fsm-leads.ts`) with the same retries and final alert as an appointment.
-- **The contact.** The person becomes an FSM contact once, with their mobile number in E.164 (which the mirror matches on), their city and its state as the place of supply, and a street "To be confirmed with the client". Its ID is kept on the person at once, so a retry does not add the contact twice. The territory is the org's first until territories follow pincodes (P2-M4).
+- **The contact.** The person becomes an FSM contact once, with their mobile number in E.164 (which the mirror matches on), their city and its state as the place of supply, and a street "To be confirmed with the client" (since 25 September 2026, the street of the client's saved address where they have one, which a later change of address or number also writes over the contact: ADR 0054). Its ID is kept on the person at once, so a retry does not add the contact twice. The territory is the org's first until territories follow pincodes (P2-M4).
 - **The Request.** A Consultation line, with the day the booking proposed as its preferred date and due date, and the window in words ("Morning, 9 am to 12 pm") as its note. The Request's ID on the lead marks it sent. On staging its summary begins "Staging test:", since staging shares the real org (ADR 0025, item 26).
 - **Then ops.** In FSM, ops convert the Request to a work order, schedule it and assign a technician. The appointment comes back through the webhook and the mirror, matched to the person by mobile number, and the client sees it in the app.
 - **FSM's webhook sends its fields in the query string,** with an empty form body, as the first delivery to staging showed on 22 September 2026. The hook reads them from there, or from a JSON or form body.

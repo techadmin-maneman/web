@@ -26,7 +26,7 @@ import {
 } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { initialsOf } from "../lib/names.ts";
-import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
+import { codeGate, countCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import {
   clearTechnicianCookie,
   setTechnicianCookie,
@@ -40,6 +40,15 @@ import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { newCode } from "../policy/one-time-code.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
+
+/**
+ * FSM's technicians are read for a number the mirror does not know at most once
+ * in ten minutes, however many such numbers are tried: one window per ten UTC
+ * minutes, "2026-09-21T06:3".
+ */
+function mayReadFsm(db: D1Database, now: Date): Promise<boolean> {
+  return takeOne(db, { scope: "tech:fsm_read", key: "all", window: now.toISOString().slice(0, 15), limit: 1 });
+}
 
 /** The phone's own ID for itself, from its storage: never a hardware serial. */
 const DeviceIdSchema = z
@@ -150,6 +159,10 @@ export function registerTechAuth(app: App): void {
     if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
     const visitor = await visitorOf(c);
+    const gate = await codeGate(c, visitor.ipHash, now);
+    if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+    if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
+
     const withinAddress = await takeOne(db, {
       scope: "tech:code:ip",
       key: visitor.ipHash,
@@ -165,17 +178,18 @@ export function registerTechAuth(app: App): void {
         limit: limits.codeMobileDailyLimit,
       }));
     if (!withinNumber) return c.json(errorBody("rate_limited", requestId), 429);
-    if (!(await withinCodeCeiling(c, now))) return c.json(errorBody("busy", requestId), 503);
 
-    // A technician FSM listed since the last sync is unknown to the mirror; read it once, then look again.
+    // A technician FSM listed since the last sync is unknown to the mirror; read it, then look again.
     let technician = await findFieldTechnician(db, mobileE164);
-    if (technician === null && config.providers.FSM_PROVIDER !== "none") {
+    if (technician === null && config.providers.FSM_PROVIDER !== "none" && (await mayReadFsm(db, now))) {
       await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
         c.var.log.warn("technician_sync_failed", { error });
         return 0;
       });
       technician = await findFieldTechnician(db, mobileE164);
     }
+    const sendsTo = technician?.mobileE164 ?? null;
+    if (!(await countCode(c, sendsTo, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
     const code = limits.fixedCode ?? newCode();
     const challenge = await createTechnicianChallenge(db, {
@@ -184,7 +198,7 @@ export function registerTechAuth(app: App): void {
       pepper: limits.codePepper,
       now,
     });
-    await sendCodeAfterResponse(c, technician?.mobileE164 ?? null, "whatsapp", code);
+    await sendCodeAfterResponse(c, sendsTo, "whatsapp", code);
     return c.json(
       { challenge_id: challenge.id, expires_in_s: Math.ceil((challenge.expiresAt.getTime() - now.getTime()) / 1000) },
       202,

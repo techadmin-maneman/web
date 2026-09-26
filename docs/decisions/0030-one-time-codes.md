@@ -49,6 +49,13 @@ The app's second screen then says a code is on its way if the number has a booki
 
 On staging, codes go only to the allowlisted handsets (`MESSAGING_ALLOWLIST`), and every other number is answered the same.
 
+> **Amended 25 September 2026 (audit finding REQ-S6-02).** The ceiling was taken before the number was looked up, so about 30 address-hours of random numbers used up the day's 300 and locked out every client login, every technician on a new phone and every number change until midnight. Now:
+>
+> - **Only a code that is sent counts against the ceiling**, the one clients, technicians and number changes share. A number nobody here knows, and one the staging allowlist holds back, cost it nothing.
+> - **A number nobody knows costs its address instead:** 20 a day (`UNKNOWN_NUMBERS_PER_ADDRESS_DAILY`, `src/http/send-code.ts`). An address past them is refused every number, known or not, until midnight in India. A refusal only for unknown numbers would tell a caller which numbers are real.
+> - Both are read before the number is looked up, so the answer is still the same for every number: `429 rate_limited` from an address past its unknown numbers, and `503 busy` for everyone once the ceiling is reached.
+> - A technician's login reads FSM's user list for a number the mirror does not know at most once in ten minutes, however many such numbers are tried. A technician ops have just added in FSM waits at most that long, or until the nightly sync.
+
 **SMS is off until DLT.** `SMS_PROVIDER` is `none` on staging and production; the app offers WhatsApp only (`sms_in_s` is null) and `POST /api/auth/otp/sms` answers `404`. Locally it is `stub`. "none" is not a stub, so production may hold it. The DLT provider (MSG91 is recommended) arrives as a third value, with its OTP template ending in the WebOTP line `@app.maneman.in #<code>`.
 
 **No Turnstile yet.** A code is sent only to a booked number, and each number and address is limited, so a flood of requests sends little and costs nothing. Turnstile comes with the SMS provider, since each SMS is paid for.

@@ -8,7 +8,7 @@ import {
   syncLead,
 } from "../../src/queues/crm-sync.ts";
 import { createLogger } from "../../src/log.ts";
-import type { CrmLead, CrmProvider } from "../../src/providers/crm.ts";
+import type { CrmContact, CrmLead, CrmProvider } from "../../src/providers/crm.ts";
 import {
   NOW,
   appFor,
@@ -49,12 +49,15 @@ async function bookLead(city = "Gurgaon", mobile = "9810000001"): Promise<string
 function recordingCrm(): CrmProvider & {
   calls: { lead: CrmLead; knownId: string | null }[];
   erasures: { personId: string; knownId: string | null }[];
+  updates: { contact: CrmContact; knownId: string | null }[];
 } {
   const calls: { lead: CrmLead; knownId: string | null }[] = [];
   const erasures: { personId: string; knownId: string | null }[] = [];
+  const updates: { contact: CrmContact; knownId: string | null }[] = [];
   return {
     calls,
     erasures,
+    updates,
     syncLead: (lead, knownId) => {
       calls.push({ lead, knownId });
       return Promise.resolve({ crmLeadId: knownId ?? "zoho-1", created: knownId === null });
@@ -62,6 +65,10 @@ function recordingCrm(): CrmProvider & {
     erasePerson: (personId, knownId) => {
       erasures.push({ personId, knownId });
       return Promise.resolve({ found: knownId !== null });
+    },
+    updateContact: (contact, knownId) => {
+      updates.push({ contact, knownId });
+      return Promise.resolve({ crmLeadId: knownId ?? "zoho-found" });
     },
   };
 }
@@ -221,6 +228,7 @@ describe("crm-sync: the queue batch", () => {
       syncLead: () =>
         ++call === 1 ? Promise.resolve({ crmLeadId: "z", created: true }) : Promise.reject(new Error("down")),
       erasePerson: () => Promise.resolve({ found: false }),
+      updateContact: () => Promise.resolve({ crmLeadId: null }),
     };
     const batch = batchOf([
       { lead_id: ok, request_id: "r1" },
@@ -389,5 +397,59 @@ describe("crm-sync: erasing a person", () => {
     const person = await env.DB.prepare("SELECT crm_erased_at, crm_erasure_error FROM people").first();
     expect(person).toEqual({ crm_erased_at: null, crm_erasure_error: "Zoho 503 down" });
     expect((await leadRow(leadId))?.sync_state).toBe("synced");
+  });
+});
+
+// LIFE-12: a confirmed change of number stayed in D1, and the CRM lead kept the old one.
+describe("crm-sync: a changed number or address", () => {
+  const PERSON = "44444444-4444-4444-8444-444444444444";
+
+  beforeEach(async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO people (id, created_at, mobile_e164, name, zoho_lead_id)
+         VALUES (?1, ?2, '+919810000003', 'Rohit Malhotra', 'zoho-9')`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+         VALUES ('address-1', ?1, ?2, 'House 12', 'Sector 65', 'Gurgaon', '122018')`,
+      ).bind(PERSON, NOW.toISOString()),
+    ]);
+  });
+
+  function update(crm: CrmProvider, attempts = 1) {
+    const body = { update_person_id: PERSON, request_id: "r" };
+    const message = { id: "m1", body, attempts, ack: vi.fn(), retry: vi.fn() };
+    const batch = { queue: "mm-crm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
+    const deps = fakeDependencies({ crm });
+    return { message, deps, done: handleCrmSyncBatch(batch as unknown as MessageBatch, env.DB, deps, log) };
+  }
+
+  it("writes the person's number and city, as D1 has them now, onto their record", async () => {
+    const crm = recordingCrm();
+    const { message, done } = update(crm);
+    await done;
+    expect(crm.updates).toEqual([
+      { contact: { personId: PERSON, mobileE164: "+919810000003", city: "Gurgaon" }, knownId: "zoho-9" },
+    ]);
+    expect(message.ack).toHaveBeenCalled();
+  });
+
+  it("writes nothing for a person erased since", async () => {
+    await env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(PERSON, NOW.toISOString()).run();
+    const crm = recordingCrm();
+    await update(crm).done;
+    expect(crm.updates).toEqual([]);
+  });
+
+  it("tries again, and tells ops once the fifth try fails", async () => {
+    const failing = update(stubCrmThatFails("Zoho 500 down"));
+    await failing.done;
+    expect(failing.message.retry).toHaveBeenCalled();
+
+    const last = update(stubCrmThatFails("Zoho 500 down"), 5);
+    await last.done;
+    expect(last.message.ack).toHaveBeenCalled();
+    expect(last.deps.alerts).toEqual([expect.stringContaining(`Client ${PERSON}'s new number or city`) as string]);
   });
 });

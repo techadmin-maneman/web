@@ -17,13 +17,22 @@
 // of a refusal at once, of any other failure on its third time, and of a draft
 // the client still cannot open an hour after the visit. The Tasks board lists
 // every such draft until it is sent (src/domain/tasks.ts).
+//
+// An invoice is issued only when it totals what the client was sold the visit
+// for, and never for a visit a referral credit paid for until the CA rules how
+// (src/policy/prepayment.ts). Otherwise the draft is held, and ops are told.
 
+import { rupees } from "@maneman/web-kit/money";
+import type { VisitType } from "../config/visit-types.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { scrubString, type Logger } from "../log.ts";
+import { invoiceHold, type InvoiceHold, type SoldVisit } from "../policy/prepayment.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmInvoice, FsmProvider } from "../providers/fsm.ts";
-import { ZohoError } from "../providers/zoho-http.ts";
+import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { priceOf } from "./price-book.ts";
 
 /** How many a pass bills at most. */
 export const PER_PASS = 5;
@@ -45,10 +54,6 @@ export interface InvoiceDeps {
   readonly resolveAlert: ResolveAlert;
 }
 
-/** FSM refuses it: a 4xx, which asking again at once will not change. */
-const refused = (error: unknown): error is ZohoError =>
-  error instanceof ZohoError && error.status >= 400 && error.status < 500;
-
 /** A draft is not a valid tax invoice, and a voided one is no longer one; anything else has been issued. */
 const isIssued = (status: string) => status !== "draft" && status !== "void";
 
@@ -56,6 +61,8 @@ interface Visit {
   id: string;
   person_id: string | null;
   fsm_work_order_id: string;
+  type: VisitType | null;
+  window_start: string | null;
   window_end: string | null;
 }
 
@@ -76,7 +83,7 @@ export async function raiseInvoices(
   const recheck = new Date(now.getTime() - RECHECK_AFTER_MS).toISOString();
   const { results } = await db
     .prepare(
-      `SELECT id, person_id, fsm_work_order_id, window_end FROM appointments
+      `SELECT id, person_id, fsm_work_order_id, type, window_start, window_end FROM appointments
        WHERE status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL
          AND deleted_at IS NULL AND (invoice_checked_at IS NULL OR invoice_checked_at < ?1)
        ORDER BY window_start LIMIT ?2`,
@@ -133,6 +140,15 @@ async function invoiceVisit(pass: Pass, visit: Visit): Promise<{ raised: boolean
     return { raised: false, issued: false };
   }
 
+  // Checked before it is sent: an issued invoice is undone only by a credit note.
+  const sold = await soldVisit(db, visit);
+  const hold = invoiceHold(invoice.total, sold);
+  if (hold !== null) {
+    pass.log.warn("invoice_held", { appointment_id: visit.id, hold });
+    await tellHeld(pass, visit, invoice, hold, sold);
+    return { raised: true, issued: false };
+  }
+
   try {
     await deps.books.issueInvoice(invoice.booksInvoiceId);
   } catch (error) {
@@ -143,6 +159,59 @@ async function invoiceVisit(pass: Pass, visit: Visit): Promise<{ raised: boolean
   }
   await markIssued(pass, visit.id);
   return { raised: true, issued: true };
+}
+
+/**
+ * What the client was sold the visit for: what they paid for it, or, for a
+ * visit no payment names, the price book's price on the day it happened. And
+ * whether a referral credit paid for it, by the ledger or by the hold that
+ * booked it.
+ */
+async function soldVisit(db: D1Database, visit: Visit): Promise<SoldVisit> {
+  const row = await db
+    .prepare(
+      `SELECT
+         (SELECT SUM(amount) FROM payments
+           WHERE appointment_id = ?1 AND kind = 'visit' AND status IN ('captured', 'partially_refunded')) AS paid,
+         EXISTS (SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_kind = 'appointment' AND source_id = ?1)
+           OR EXISTS (SELECT 1 FROM slot_holds WHERE appointment_id = ?1 AND use_credit = 1) AS with_credit`,
+    )
+    .bind(visit.id)
+    .first<{ paid: number | null; with_credit: number }>();
+  const paidWithCredit = row?.with_credit === 1;
+  const paid = row?.paid ?? null;
+  if (paid !== null) return { soldFor: paid, paidWithCredit };
+  return { soldFor: await listPrice(db, visit), paidWithCredit };
+}
+
+/** The price book's price, with GST, for the visit's type on the day it happened in India; null where there is none. */
+async function listPrice(db: D1Database, visit: Visit): Promise<number | null> {
+  if (visit.type === null || visit.window_start === null) return null;
+  const price = await priceOf(db, visit.type, indiaDate(new Date(visit.window_start)));
+  return price?.amount ?? null;
+}
+
+/** The draft's alert, saying why it is held. It shares the draft's key, so a visit is told of once. */
+async function tellHeld(
+  pass: Pass,
+  visit: Visit,
+  invoice: FsmInvoice,
+  hold: InvoiceHold,
+  sold: SoldVisit,
+): Promise<void> {
+  const held = `Invoice ${invoice.booksInvoiceId} of visit ${visit.id} is held as a draft in Books:`;
+  const why: Record<InvoiceHold, string> = {
+    price_differs:
+      `FSM's work order totals ${rupees(invoice.total)}, and the visit was sold for ${rupees(sold.soldFor ?? 0)}. ` +
+      "Correct the draft in Books and send it there, and set FSM's price right for the next one: nothing here sends it.",
+    price_unknown:
+      `nothing here says what the visit was sold for, so FSM's ${rupees(invoice.total)} cannot be checked. ` +
+      "Check the draft in Books and send it there: nothing here sends it.",
+    paid_with_credit:
+      "the visit was paid with a referral credit, and how a credit visit is invoiced waits for the CA " +
+      "(open point 97). Leave the draft until then: nothing here sends it.",
+  };
+  await pass.deps.alertOnce({ key: `invoice_draft:${visit.id}`, message: `${held} ${why[hold]}`, link: linkTo(visit) });
 }
 
 function endedOverAnHourAgo(pass: Pass, visit: Visit): boolean {
@@ -164,7 +233,7 @@ async function tellDraft(pass: Pass, visit: Visit, invoice: FsmInvoice, why: "dr
 /** Logs it, and tells ops of a refusal at once and of any other failure on its third time. */
 async function tellFailure(pass: Pass, visit: Visit, error: unknown): Promise<void> {
   const workOrder = `visit ${visit.id} (work order ${visit.fsm_work_order_id})`;
-  if (refused(error)) {
+  if (isRefusal(error)) {
     pass.log.warn("invoice_refused", { appointment_id: visit.id, status: error.status, code: error.code });
     await pass.deps.alertOnce({
       key: `invoice_refused:${visit.id}`,
