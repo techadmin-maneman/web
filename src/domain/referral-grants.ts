@@ -352,12 +352,12 @@ export async function composeFriendCredited(
     .prepare(
       `SELECT fp.name, g.expires_at FROM referral_attributions r JOIN people fp ON fp.id = r.referred_person_id
        JOIN credit_ledger g ON g.kind = 'grant' AND g.source_kind = 'referral' AND g.source_id = r.id
-         AND g.person_id = r.referred_person_id
+         AND g.person_id = r.referred_person_id AND g.expires_at IS NOT NULL
        WHERE r.id = ?1 AND r.referred_person_id = ?2 AND r.grant_state IN ('granted', 'approved')`,
     )
     .bind(attributionId, friendId)
-    .first<{ name: string; expires_at: string | null }>();
-  if (row === null || row.expires_at === null) return { skip: "no grant for the friend" };
+    .first<{ name: string; expires_at: string }>();
+  if (row === null) return { skip: "no grant for the friend" };
   return {
     template: "friend_credited_v1",
     params: [firstName(row.name), String(CREDITS_PER_REFERRAL), fullDate(indiaDate(new Date(row.expires_at)))],
