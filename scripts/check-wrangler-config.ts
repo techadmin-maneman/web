@@ -6,9 +6,16 @@
 //   node scripts/check-wrangler-config.ts --api <file> --expect-problem "<text>"
 //       negative test: succeeds only if <file> fails with a problem containing <text>
 
+import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { readJsonc } from "./lib/jsonc.ts";
-import { checkAccountsAgree, checkApiConfig, checkSiteConfig, checkSpaConfig } from "./lib/wrangler-config-check.ts";
+import {
+  checkAccountsAgree,
+  checkApiConfig,
+  checkSiteConfig,
+  checkSpaConfig,
+  secretNamesIn,
+} from "./lib/wrangler-config-check.ts";
 import { STATIC_WORKERS } from "./lib/workers.ts";
 
 const { values } = parseArgs({
@@ -22,8 +29,9 @@ const { values } = parseArgs({
 
 const api = readJsonc(values.api);
 const site = readJsonc(values.site);
+const secretNames = secretNamesIn(readFileSync(".dev.vars.example", "utf8"));
 const problems = [
-  ...checkApiConfig(api, { requireProvisioned: values["require-provisioned"] }),
+  ...checkApiConfig(api, { requireProvisioned: values["require-provisioned"], secretNames }),
   ...checkSiteConfig(site),
   ...checkAccountsAgree(api, site),
   // Each single-page app in the registry, against its own surface.

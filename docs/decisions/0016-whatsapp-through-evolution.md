@@ -20,7 +20,7 @@ The owner chose, on 21 September 2026, to use **Evolution API** for now. The sam
 ## Decision
 
 - `MESSAGING_PROVIDER` is `evolution` or `stub`. `src/providers/evolution.ts` sends through an Evolution API bridge: `POST {EVOLUTION_API_URL}/message/sendMedia/{EVOLUTION_INSTANCE_NAME}`, header `apikey`. The image is given as a URL, which the bridge downloads. Secrets: `EVOLUTION_API_URL` (https), `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`. They replace the prompt's `BSP_API_KEY` and `BSP_BASE_URL`.
-- Evolution has no Meta templates. A "template" is a text in `src/config/message-templates.ts`, chosen by `WA_RESULT_TEMPLATE`. `tryon_result_v1` is placeholder copy for the owner to approve. Its second sentence is the design's own.
+- Evolution has no Meta templates. A "template" is a text in `src/config/message-templates.ts`, chosen by `RESULT_TEMPLATE` in the same file (a Worker var, `WA_RESULT_TEMPLATE`, until 26 September 2026: see ADR 0009, rule 6). `tryon_result_v1` is placeholder copy for the owner to approve. Its second sentence is the design's own.
 - Nothing outside the adapter knows the provider. Moving to an official BSP means one new adapter and new secrets; the messaging consumer, the table and the tests stay.
 - Staging sends only to the numbers in `MESSAGING_ALLOWLIST`. It is a secret, so the founders' numbers are not in git, and staging refuses to start with messaging on and the list empty.
 - Production keeps `MESSAGING_ENABLED = "false"`. The gate then promises no WhatsApp copy and every result message is skipped.

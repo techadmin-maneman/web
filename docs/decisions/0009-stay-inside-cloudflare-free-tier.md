@@ -25,7 +25,7 @@ On Workers Free every product except R2 fails closed, which is an outage rather 
 ## Decision
 
 1. **The account stays on Workers Free.** Upgrading to Workers Paid turns every "fails" row above into a bill. It needs a new ADR and the owner's sign-off.
-2. **Only free-tier bindings.** `npm run check:config` allows mm-api exactly these binding kinds: vars, D1, R2, Queues and version metadata. Any other kind (Workers AI, Browser Rendering, Images, Vectorize, Hyperdrive, Analytics Engine, Durable Objects and so on) fails the build until this ADR is revised. A `limits` block fails too, since it is Paid-only. mm-site has no bindings at all.
+2. **Only free-tier bindings.** `npm run check:config` allows mm-api exactly these binding kinds: vars, D1, R2, Queues and version metadata. Any other kind (Workers AI, Browser Rendering, Images, Vectorize, Hyperdrive, Analytics Engine, Durable Objects and so on) fails the build until this ADR is revised. A `limits` block fails too, since it is Paid-only. mm-site binds only its assets and mm-api (docs/decisions/0027-referral-landing.md).
 3. **R2 has an application-level hard cap (M3, before R2 is first used):**
    - Global daily ceilings on upload URLs, renders and result reads, kept in D1 counters. On breach the API answers `503 busy`, the same as the render ceiling.
    - Worst-case monthly usage from those ceilings (operations, and storage from ceiling × maximum object size × retention) must stay under 80% of each R2 allowance. A test proves this from the configured numbers, so a ceiling cannot be raised past the free tier without the build failing.
@@ -35,6 +35,7 @@ On Workers Free every product except R2 fails closed, which is an outage rather 
 5. **The owner sets two alarms**, in case something outside the code bills:
    - a Cloudflare budget alert at the lowest dollar amount (Billing → Budget alerts);
    - usage notifications for R2 storage and operations at 50% of the free allowance (Notifications → Usage-based billing).
+6. **At most 64 vars and secrets on a Worker.** Workers Free allows one Worker 64 variables, text and secret together; past that a deploy is refused (code 10055) before anything moves, as staging's was on 26 September 2026 at 65. `npm run check:config` counts each mm-api environment's vars with every secret `.dev.vars.example` names and fails over 64. A value that is the same in every environment, or that only a release changes, is a constant in `src/config`, not a var.
 
 ## Consequences
 
