@@ -1,7 +1,7 @@
 // The referral grant (docs/decisions/0048-referrals.md, "The grant"). When a referred person's first fit closes
 // as done, the fraud rules run first. Then either both sides get their service-visit credits, the referrer a
 // WhatsApp that their friend was fitted and the friend one that the credits are theirs, or the grant is held for
-// ops' review; a grant ops reject is told to both (docs/decisions/0073-hand-offs-and-messages.md). A referrer who
+// ops' review; a grant ops reject is told to both (docs/decisions/0074-hand-offs-and-messages.md). A referrer who
 // has since been erased gets nothing; their friend keeps what the invite promised (ADR 0025, item 24).
 
 import { fullDate } from "@maneman/web-kit/dates";

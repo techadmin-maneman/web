@@ -1,5 +1,5 @@
 // A client's note on a visit to come (docs/prompts/phase2-backend.md, "Booking":
-// POST /appointments/:id/note; docs/decisions/0073-hand-offs-and-messages.md).
+// POST /appointments/:id/note; docs/decisions/0074-hand-offs-and-messages.md).
 // It is kept on the visit, the latest in place of any before it, and the
 // technician reads it on the client's card, which opens the day before
 // (src/domain/tech-jobs.ts). A visit already under way still takes one; one

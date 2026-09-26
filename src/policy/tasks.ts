@@ -38,7 +38,7 @@
 // ops until they move it or take the leave back.
 //
 // So is a visit to come whose client has given no address
-// (docs/decisions/0073-hand-offs-and-messages.md): a booking from the site asks
+// (docs/decisions/0074-hand-offs-and-messages.md): a booking from the site asks
 // for none, and the app tells the client "We confirm it with you before your
 // visit". Ops confirm it; the task goes when the client's address is saved, and
 // it falls due by the visit at the latest.

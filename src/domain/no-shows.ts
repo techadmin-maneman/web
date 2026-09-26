@@ -11,7 +11,7 @@
 // automatically", so a case opens undecided and waits for a person.
 //
 // The ruling reaches the client: a WhatsApp about it, and their visit's page
-// and Payments say it (docs/decisions/0073-hand-offs-and-messages.md).
+// and Payments say it (docs/decisions/0074-hand-offs-and-messages.md).
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";

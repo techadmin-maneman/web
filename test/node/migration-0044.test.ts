@@ -1,5 +1,5 @@
-// Migration 0043: the hand-offs between surfaces, and the messages people are owed
-// (docs/decisions/0073-hand-offs-and-messages.md). Applied to a database holding
+// Migration 0044: the hand-offs between surfaces, and the messages people are owed
+// (docs/decisions/0074-hand-offs-and-messages.md). Applied to a database holding
 // rows, as staging's does, and held to what the code already deployed writes.
 // Every name and number is made up.
 
@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 const MIGRATIONS = readdirSync("migrations")
   .filter((file) => file.endsWith(".sql"))
   .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0043_")) ?? "";
+const THIS = MIGRATIONS.find((file) => file.startsWith("0044_")) ?? "";
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -53,7 +53,7 @@ function migrated(): DatabaseSync {
   return db;
 }
 
-describe("migration 0043", () => {
+describe("migration 0044", () => {
   it("records a no-show kept as a partial visit as a no-show, and keeps every other visit as it was", () => {
     const db = migrated();
     expect(db.prepare("SELECT id, duration_minutes, outcome, partial_reason FROM visits ORDER BY id").all()).toEqual([

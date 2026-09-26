@@ -128,7 +128,7 @@ const OUTSTANDING = [
   // reached us, and falls due by the visit itself.
   //
   // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it. A
-  // no-show is its own outcome and group; one the Worker before migration 0043 stored as partial is left out too.
+  // no-show is its own outcome and group; one the Worker before migration 0044 stored as partial is left out too.
   `SELECT * FROM (
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.window_start || ' ' || t.name AS detail,

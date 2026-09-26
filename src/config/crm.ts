@@ -1,5 +1,5 @@
 // What the lead sync may write to the Zoho CRM org beyond the fields it has
-// always written (src/providers/zoho.ts; docs/decisions/0073-hand-offs-and-messages.md).
+// always written (src/providers/zoho.ts; docs/decisions/0074-hand-offs-and-messages.md).
 //
 // Zoho refuses a record carrying a pick-list value the org does not have, so a
 // lead written with the referral fields before they exist would not reach the

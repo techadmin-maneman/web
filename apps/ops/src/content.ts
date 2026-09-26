@@ -791,12 +791,12 @@ export const tasks = {
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
     untold_move: "Call about a move",
-    // PLACEHOLDER: two groups the board does not draw (docs/decisions/0073-hand-offs-and-messages.md).
+    // PLACEHOLDER: two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
     consultation_request: "Consultation request",
     replacement_order: "Replacement order",
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0073-hand-offs-and-messages.md).
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     partial_visit: "Visit left partly done",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",

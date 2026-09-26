@@ -10,7 +10,7 @@
 //
 // Leave recorded over jobs already booked moves none of them: ops are told
 // which, the board marks them, and each waits on the Tasks board until it is
-// moved (docs/decisions/0073-hand-offs-and-messages.md).
+// moved (docs/decisions/0074-hand-offs-and-messages.md).
 
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays } from "../lib/india-time.ts";

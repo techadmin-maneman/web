@@ -25,9 +25,9 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your visit credits covers it.",
   visit_reminder_v1: "Hello {{1}}, a reminder that your {{2}} is tomorrow, {{3}}, {{4}}, with {{5}}.",
   visit_moved_v1: "Hello {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
-  // At the technician's check-in (docs/decisions/0073-hand-offs-and-messages.md), the no-show's evidence.
+  // At the technician's check-in (docs/decisions/0074-hand-offs-and-messages.md), the no-show's evidence.
   technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
-  // Ops' ruling on a visit the client was not home for (docs/decisions/0073-hand-offs-and-messages.md), with {{9}}
+  // Ops' ruling on a visit the client was not home for (docs/decisions/0074-hand-offs-and-messages.md), with {{9}}
   // the minutes the technician waited. A charge keeps what was paid, as a cancel inside 24 hours does; what a waiver
   // gives back is the owner's to rule, so until then the client is asked to message us about it
   // (src/policy/no-show.ts, WAIVER_GIVES_BACK). Never ops' reason, which stays with the ruling.
@@ -56,7 +56,7 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   visit_cancelled_credit_gone_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. The visit credit it used has expired, so it cannot come back.",
   // To a person who joined a pincode's waitlist, sent with their consent to be contacted about the request
-  // (docs/decisions/0073-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} their first name, {{2}} the area. Only
+  // (docs/decisions/0074-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} their first name, {{2}} the area. Only
   // one who asked to be told of the launch, and still consents to it, is promised word of it.
   waitlist_listed_v1: "Hello {{1}}, you are on our list for {{2}}. We do not come there yet.",
   waitlist_listed_alert_v1:
@@ -69,7 +69,7 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   friend_fitted_v1:
     "Hello {{1}}, {{2}} has been fitted. You each have {{3}} service visits free, until {{4}}. Thank you for the introduction.",
   // To the friend, when the grant lands, and to both sides when ops reject a held one
-  // (docs/decisions/0073-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} the first name of the one told, and in
+  // (docs/decisions/0074-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} the first name of the one told, and in
   // the credits {{2}} the visits and {{3}} when they expire, in the referrer's rejection {{2}} the friend's first name.
   friend_credited_v1:
     "Hello {{1}}, your first fit is done, so the invite you came with gives you {{2}} service visits free, until {{3}}. They are in the app.",

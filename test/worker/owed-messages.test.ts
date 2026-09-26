@@ -1,4 +1,4 @@
-// The messages people are owed when something changes for them (docs/decisions/0073-hand-offs-and-messages.md):
+// The messages people are owed when something changes for them (docs/decisions/0074-hand-offs-and-messages.md):
 // what each says, to whom, and when it is skipped. Each is sent by the messaging consumer, which writes the text
 // as things stand when it sends. NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is
 // made up.

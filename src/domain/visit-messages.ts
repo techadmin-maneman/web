@@ -1,5 +1,5 @@
 // Messages to a client about their visits (docs/decisions/0047-visit-messages.md): a booking, the day-before
-// reminder, a move and a cancel, and since docs/decisions/0073-hand-offs-and-messages.md the technician's arrival and
+// reminder, a move and a cancel, and since docs/decisions/0074-hand-offs-and-messages.md the technician's arrival and
 // ops' ruling on a visit the client was not home for. Each is a row in outbound_messages about the appointment, written with the change
 // it tells of, then queued. The messaging consumer writes the text from the visit as it stands when it sends, and
 // sends it only with the client's consent to WhatsApp about visits. The sweeper queues any whose queue message was
@@ -37,7 +37,7 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
   "visit_moved",
   // The technician checked in at the door: the no-show evidence reads its receipt (ADR 0047).
   "arrival_notice",
-  // Ops ruled on a visit the client was not home for (docs/decisions/0073-hand-offs-and-messages.md).
+  // Ops ruled on a visit the client was not home for (docs/decisions/0074-hand-offs-and-messages.md).
   "no_show_decided",
 ];
 

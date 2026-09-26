@@ -1,7 +1,7 @@
--- Migration number: 0043
--- contract: docs/decisions/0073-hand-offs-and-messages.md
+-- Migration number: 0044
+-- contract: docs/decisions/0074-hand-offs-and-messages.md
 -- Hand-offs between surfaces, and the messages people are owed
--- (docs/decisions/0073-hand-offs-and-messages.md).
+-- (docs/decisions/0074-hand-offs-and-messages.md).
 
 -- A visit the technician closed as a no-show is recorded as one, not as a
 -- partial visit whose reason happens to say so (src/domain/fsm-mirror.ts).
