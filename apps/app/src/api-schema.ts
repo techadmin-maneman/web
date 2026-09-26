@@ -2660,7 +2660,8 @@ export interface components {
             };
             /** @description Friends whose first fit closed as done, most recent first. */
             fitted: {
-                first_name: string;
+                /** @description Kept with the referral when it was granted, so it stays after the friend is erased. Null for a friend erased before names were kept: never the word the erasure leaves. */
+                first_name: string | null;
                 /** @description YYYY-MM, in India. */
                 month: string;
             }[];

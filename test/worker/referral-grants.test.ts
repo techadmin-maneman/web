@@ -12,7 +12,9 @@ import {
   composeReferralRejected,
   settleReferrals,
 } from "../../src/domain/referral-grants.ts";
+import { erasePerson } from "../../src/domain/erasure.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { createLogger } from "../../src/log.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const REFERRER = "11111111-1111-4111-8111-111111111111";
@@ -356,6 +358,36 @@ async function told(kind: "friend_credited" | "referral_rejected", personId: str
       : await composeReferralRejected(env.DB, ATTRIBUTION, personId);
   return "skip" in composed ? composed : renderMessage(composed.template, composed.params);
 }
+
+// The tracker read the friend's name from their record, so once they were erased it read "Erased · Sep 2026" and told
+// the referrer something about the friend they had no business knowing (LIFE-13).
+describe("the referrer's tracker, after the friend is erased", () => {
+  const tracker = async () => {
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    const cookie = `mm_app=${await openClientSession(REFERRER)}`;
+    return (await (await request(client, "/api/refer", { headers: { Cookie: cookie } })).json<{ fitted: unknown }>())
+      .fitted;
+  };
+
+  it("keeps the friend's first name, kept with the referral when it was granted", async () => {
+    await firstFit(FIT, FRIEND);
+    await settleReferrals(env.DB, NOW);
+    expect(await tracker()).toEqual([{ first_name: "Karan", month: "2026-09" }]);
+
+    await erasePerson(env, FRIEND, NOW, createLogger());
+
+    expect(await tracker()).toEqual([{ first_name: "Karan", month: "2026-09" }]);
+  });
+
+  it("names nobody for a friend erased before names were kept, rather than writing Erased", async () => {
+    await firstFit(FIT, FRIEND);
+    await settleReferrals(env.DB, NOW);
+    await env.DB.prepare("UPDATE referral_attributions SET friend_first_name = NULL").run();
+    await erasePerson(env, FRIEND, NOW, createLogger());
+
+    expect(await tracker()).toEqual([{ first_name: null, month: "2026-09" }]);
+  });
+});
 
 describe("what the friend is told (LIFE-10)", () => {
   it("that the invite's credits are theirs, without naming who invited them", async () => {

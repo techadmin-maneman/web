@@ -3914,7 +3914,15 @@ Request body:
         "type": "object",
         "properties": {
           "first_name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Kept with the referral when it was granted, so it stays after the friend is erased. Null for a friend erased before names were kept: never the word the erasure leaves."
           },
           "month": {
             "type": "string",

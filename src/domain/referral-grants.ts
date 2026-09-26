@@ -14,12 +14,17 @@ import { clawBack, grantCredits } from "./credits.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { NO_VISITS_CONSENT } from "./visit-messages.ts";
 
+/** "Karan Bhatia" → "Karan": all the messages and the tracker name a person by. */
+const firstName = (name: string) => name.split(" ")[0] ?? name;
+
 export interface Attribution {
   readonly id: string;
   readonly code: string;
   readonly referrerId: string;
   readonly referrerErased: boolean;
   readonly referredId: string;
+  /** Kept with the referral when it is granted, for the referrer's tracker; null once the friend is erased. */
+  readonly friendFirstName: string | null;
   readonly firstFitId: string;
   readonly firstFitStart: string;
 }
@@ -125,10 +130,19 @@ export function grantStatements(
       .prepare(
         `UPDATE referral_attributions SET grant_state = ?2, first_fit_appointment_id = ?3, updated_at = ?4,
            reviewed_by = COALESCE(?5, reviewed_by), review_reason = COALESCE(?6, review_reason),
-           reviewed_at = CASE WHEN ?5 IS NULL THEN reviewed_at ELSE ?4 END
+           reviewed_at = CASE WHEN ?5 IS NULL THEN reviewed_at ELSE ?4 END,
+           friend_first_name = COALESCE(?7, friend_first_name)
          WHERE id = ?1`,
       )
-      .bind(attribution.id, state, attribution.firstFitId, at, review?.staff ?? null, review?.reason ?? null),
+      .bind(
+        attribution.id,
+        state,
+        attribution.firstFitId,
+        at,
+        review?.staff ?? null,
+        review?.reason ?? null,
+        attribution.friendFirstName,
+      ),
   ];
   const toFriend = referralMessage(db, {
     personId: attribution.referredId,
@@ -151,7 +165,8 @@ export function grantStatements(
 // CROSS JOIN keeps the referrals as the outer loop. Left to itself, SQLite walks every visit ever made to
 // save sorting the few pending referrals, and the five-minute cron would read them all on each run.
 const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased_at AS referrer_erased,
-    r.referred_person_id, a.id AS first_fit_id, a.window_start, r.via, pin.launched_at
+    r.referred_person_id, fp.name AS friend_name, fp.erased_at AS friend_erased, a.id AS first_fit_id,
+    a.window_start, r.via, pin.launched_at
   FROM referral_attributions r
   JOIN referral_codes rc ON rc.code = r.code JOIN people rp ON rp.id = rc.person_id
   JOIN people fp ON fp.id = r.referred_person_id
@@ -166,6 +181,8 @@ interface AttributionRow {
   referrer_id: string;
   referrer_erased: string | null;
   referred_person_id: string;
+  friend_name: string;
+  friend_erased: string | null;
   first_fit_id: string;
   window_start: string;
   via: "consultation" | "waitlist";
@@ -178,6 +195,7 @@ const attributionFrom = (row: AttributionRow): Attribution => ({
   referrerId: row.referrer_id,
   referrerErased: row.referrer_erased !== null,
   referredId: row.referred_person_id,
+  friendFirstName: row.friend_erased === null ? firstName(row.friend_name.trim()) : null,
   firstFitId: row.first_fit_id,
   firstFitStart: row.window_start,
 });
@@ -334,8 +352,6 @@ export async function composeFriendFitted(
     ],
   };
 }
-
-const firstName = (name: string) => name.split(" ")[0] ?? name;
 
 /**
  * The friend's message: the invite's credits are theirs, and until when. It does not name the referrer, whose

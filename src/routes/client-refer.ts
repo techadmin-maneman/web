@@ -44,7 +44,16 @@ const ReferSchema = z
       })
       .strict(),
     fitted: z
-      .array(z.object({ first_name: z.string(), month: z.string().openapi({ description: "YYYY-MM, in India." }) }))
+      .array(
+        z.object({
+          first_name: z.union([z.string(), z.null()]).openapi({
+            description:
+              "Kept with the referral when it was granted, so it stays after the friend is erased. Null for a " +
+              "friend erased before names were kept: never the word the erasure leaves.",
+          }),
+          month: z.string().openapi({ description: "YYYY-MM, in India." }),
+        }),
+      )
       .openapi({ description: "Friends whose first fit closed as done, most recent first." }),
     invite_credits: z.union([z.enum(["checking", "refused"]), z.null()]).openapi({
       description:
@@ -54,6 +63,23 @@ const ReferSchema = z
   })
   .strict()
   .openapi("Refer");
+
+interface FittedRow {
+  friend_first_name: string | null;
+  name: string;
+  erased_at: string | null;
+  window_start: string;
+}
+
+/**
+ * A fitted friend's first name, as the grant kept it (LIFE-13). A friend erased before names were kept has none:
+ * the tracker must not tell the referrer that the friend asked to be erased.
+ */
+function friendName(friend: FittedRow): string | null {
+  if (friend.friend_first_name !== null) return friend.friend_first_name;
+  if (friend.erased_at !== null) return null;
+  return friend.name.split(" ")[0] ?? friend.name;
+}
 
 /** The invite a client came through, where its grant waits on ops or was refused by them. */
 const INVITE_CREDITS: Readonly<Record<string, "checking" | "refused">> = { held: "checking", rejected: "refused" };
@@ -149,12 +175,12 @@ export function registerClientRefer(app: App): void {
       creditBalance(db, session.subjectId, now),
       db
         .prepare(
-          `SELECT p.name, a.window_start FROM referral_attributions r
+          `SELECT r.friend_first_name, p.name, p.erased_at, a.window_start FROM referral_attributions r
            JOIN people p ON p.id = r.referred_person_id JOIN appointments a ON a.id = r.first_fit_appointment_id
            WHERE r.code = ?1 AND r.grant_state IN ('approved', 'granted') ORDER BY a.window_start DESC`,
         )
         .bind(code)
-        .all<{ name: string; window_start: string }>(),
+        .all<FittedRow>(),
       db
         .prepare("SELECT grant_state FROM referral_attributions WHERE referred_person_id = ?1")
         .bind(session.subjectId)
@@ -169,7 +195,7 @@ export function registerClientRefer(app: App): void {
         credits: { visits: balance.visits, earliest_expiry: balance.earliestExpiry },
         card: { state: card?.card_state ?? ("house" as const), version: card?.card_version ?? 1, consented },
         fitted: fitted.results.map((friend) => ({
-          first_name: friend.name.split(" ")[0] ?? friend.name,
+          first_name: friendName(friend),
           month: indiaDate(new Date(friend.window_start)).slice(0, 7),
         })),
         invite_credits: INVITE_CREDITS[invited?.grant_state ?? ""] ?? null,

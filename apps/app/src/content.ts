@@ -457,6 +457,8 @@ export const refer = {
     /** Board F5's two figures, each above its word. */
     earned: "visits earned",
     remaining: "remaining",
+    // PLACEHOLDER: a friend fitted before the grant kept first names, and erased since; never the erasure's word.
+    unnamed: "A friend",
     when: (month: string) => `Fitted ${month}`,
     each: (visits: number) => `${String(visits)} visits earned`,
     only: "Completed fits only. Whether an invite was opened is your friend's business.",
