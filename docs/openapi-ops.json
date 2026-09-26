@@ -386,35 +386,130 @@
         "additionalProperties": false
       },
       "ClientVisit": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/VisitSummary"
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
           },
-          {
-            "type": "object",
-            "properties": {
-              "outcome": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "done",
-                      "partial"
-                    ]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "description": "What FSM closed the visit as; null until it is closed."
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "India's calendar date."
+          },
+          "window_label": {
+            "type": "string",
+            "enum": [
+              "morning",
+              "afternoon",
+              "evening"
+            ]
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "length_minutes": {
+            "type": "integer"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
               }
-            },
-            "required": [
-              "outcome"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "dispatched",
+              "in_progress",
+              "completed",
+              "cancelled",
+              "terminated",
+              "other"
+            ]
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "booked",
+                  "in_progress",
+                  "closing"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ],
-            "additionalProperties": false
+            "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+          },
+          "prepaid": {
+            "type": "boolean",
+            "description": "Paid for ahead, or covered by a visit credit: board C1's Prepaid."
+          },
+          "technician": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Technician"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "place": {
+            "type": "string",
+            "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "done",
+                  "partial"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What FSM closed the visit as; null until it is closed."
           }
-        ]
+        },
+        "required": [
+          "id",
+          "date",
+          "window_label",
+          "starts_at",
+          "ends_at",
+          "length_minutes",
+          "type",
+          "status",
+          "stage",
+          "prepaid",
+          "technician",
+          "place",
+          "outcome"
+        ],
+        "additionalProperties": false
       },
       "Technician": {
         "type": "object",

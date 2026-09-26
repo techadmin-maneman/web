@@ -1207,330 +1207,441 @@ The piece a label names
 
 ```json
 {
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/TechnicianJob"
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
     },
-    {
-      "type": "object",
-      "properties": {
-        "address": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "line1": {
-                  "type": "string"
-                },
-                "line2": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "building": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "tower": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "floor": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "flat": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "landmark": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "locality": {
-                  "type": "string"
-                },
-                "city": {
-                  "type": "string"
-                },
-                "pincode": {
-                  "type": "string"
-                },
-                "lat": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "lng": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "line1",
-                "line2",
-                "building",
-                "tower",
-                "floor",
-                "flat",
-                "landmark",
-                "locality",
-                "city",
-                "pincode",
-                "lat",
-                "lng"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Null until the day before the visit; the API enforces it, not the screen."
+    "day": {
+      "type": "string",
+      "enum": [
+        "today",
+        "tomorrow",
+        "later"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ends_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
         },
-        "access_notes": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "window_label": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
           ]
         },
-        "client": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "mobile": {
-                  "type": "string"
-                },
-                "note": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "name",
-                "mobile",
-                "note"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Null until the day before the visit."
-        },
-        "progress": {
-          "$ref": "#/components/schemas/TechnicianJobProgress"
-        },
-        "no_show_wait_min": {
-          "type": "integer",
-          "description": "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it."
-        },
-        "pieces": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/Piece"
-              }
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "The client's pieces, newest fit first. Null until the day before the visit."
-        },
-        "last_visit": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "date": {
-                  "type": "string",
-                  "format": "date"
-                },
-                "technician": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "description": "The first name of who did it."
-                },
-                "photo_url": {
-                  "type": "string",
-                  "description": "Its after photograph, never to be kept on the phone."
-                }
-              },
-              "required": [
-                "date",
-                "technician",
-                "photo_url"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "The client's latest earlier visit with after photographs; null for a first visit."
-        },
-        "reminder": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "delivered_at": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "delivered_at"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "The day-before or arrival WhatsApp to the client, and when it was delivered."
-        },
-        "steps": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "check_in",
-              "start",
-              "before_photos",
-              "checklist",
-              "consumables",
-              "piece",
-              "after_photos",
-              "outcome"
-            ]
-          },
-          "description": "The steps this visit type runs, in order."
-        },
-        "checklist": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "label": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "label"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "partial_reasons": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "client_stopped_it",
-              "piece_not_ready",
-              "client_unwell",
-              "more_time_needed"
-            ]
-          }
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "address",
-        "access_notes",
-        "client",
-        "progress",
-        "no_show_wait_min",
-        "pieces",
-        "last_visit",
-        "reminder",
-        "steps",
-        "checklist",
-        "partial_reasons"
+      ]
+    },
+    "sector": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ],
-      "additionalProperties": false
+      "description": "The area, never the street."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "dispatched",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "terminated",
+        "other"
+      ]
+    },
+    "badge": {
+      "type": "string",
+      "enum": [
+        "prepaid",
+        "credit",
+        "free"
+      ],
+      "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
+    },
+    "slots": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type."
+    },
+    "unlocked": {
+      "type": "boolean"
+    },
+    "unlocks_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "address": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "line1": {
+              "type": "string"
+            },
+            "line2": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "building": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "tower": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "floor": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "flat": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "landmark": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "locality": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "pincode": {
+              "type": "string"
+            },
+            "lat": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lng": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "line1",
+            "line2",
+            "building",
+            "tower",
+            "floor",
+            "flat",
+            "landmark",
+            "locality",
+            "city",
+            "pincode",
+            "lat",
+            "lng"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null until the day before the visit; the API enforces it, not the screen."
+    },
+    "access_notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "client": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "mobile": {
+              "type": "string"
+            },
+            "note": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "mobile",
+            "note"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null until the day before the visit."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobProgress"
+    },
+    "no_show_wait_min": {
+      "type": "integer",
+      "description": "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it."
+    },
+    "pieces": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/Piece"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's pieces, newest fit first. Null until the day before the visit."
+    },
+    "last_visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "technician": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The first name of who did it."
+            },
+            "photo_url": {
+              "type": "string",
+              "description": "Its after photograph, never to be kept on the phone."
+            }
+          },
+          "required": [
+            "date",
+            "technician",
+            "photo_url"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's latest earlier visit with after photographs; null for a first visit."
+    },
+    "reminder": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "delivered_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "delivered_at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The day-before or arrival WhatsApp to the client, and when it was delivered."
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "check_in",
+          "start",
+          "before_photos",
+          "checklist",
+          "consumables",
+          "piece",
+          "after_photos",
+          "outcome"
+        ]
+      },
+      "description": "The steps this visit type runs, in order."
+    },
+    "checklist": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "partial_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "client_stopped_it",
+          "piece_not_ready",
+          "client_unwell",
+          "more_time_needed"
+        ]
+      }
     }
-  ]
+  },
+  "required": [
+    "id",
+    "day",
+    "date",
+    "starts_at",
+    "ends_at",
+    "window_label",
+    "type",
+    "sector",
+    "status",
+    "badge",
+    "slots",
+    "unlocked",
+    "unlocks_at",
+    "address",
+    "access_notes",
+    "client",
+    "progress",
+    "no_show_wait_min",
+    "pieces",
+    "last_visit",
+    "reminder",
+    "steps",
+    "checklist",
+    "partial_reasons"
+  ],
+  "additionalProperties": false
 }
 ```
 

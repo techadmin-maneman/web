@@ -1370,7 +1370,33 @@ export interface components {
             /** Format: date-time */
             unlocks_at: string;
         };
-        TechnicianJobDetail: components["schemas"]["TechnicianJob"] & {
+        TechnicianJobDetail: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            day: "today" | "tomorrow" | "later";
+            /** Format: date */
+            date: string;
+            /** Format: date-time */
+            starts_at: string;
+            ends_at: string | null;
+            /** @enum {string} */
+            window_label: "morning" | "afternoon" | "evening";
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The area, never the street. */
+            sector: string | null;
+            /** @enum {string} */
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /**
+             * @description Free for a visit the price book charges nothing for. No response to a technician carries an amount.
+             * @enum {string}
+             */
+            badge: "prepaid" | "credit" | "free";
+            /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
+            slots: number | null;
+            unlocked: boolean;
+            /** Format: date-time */
+            unlocks_at: string;
             /** @description Null until the day before the visit; the API enforces it, not the screen. */
             address: {
                 line1: string;
