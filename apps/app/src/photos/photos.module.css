@@ -79,27 +79,13 @@ div.cell {
   opacity: 1;
 }
 
-/* The sheet: a photograph large, then board D3's download line. */
+/* The sheet (packages/ui/Sheet.tsx): a photograph large, then board D3's download line. */
 .sheet {
-  width: 100%;
-  max-width: var(--app-column);
-  max-height: 100dvh;
-  margin: auto auto 0;
+  min-height: 0;
   padding: var(--sp-22) var(--sp-20) var(--sp-24);
-  border: 0;
+  overflow-y: auto;
   background: var(--paper);
   color: var(--text);
-  animation: rise var(--ease-progress);
-}
-
-.sheet::backdrop {
-  background: var(--ink-night);
-}
-
-@keyframes rise {
-  from {
-    transform: translateY(100%);
-  }
 }
 
 .thumb.large {

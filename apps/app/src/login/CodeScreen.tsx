@@ -1,10 +1,10 @@
 // A2: the code (design/phase2/Client App, board A2).
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LoginChallenge } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { login } from "../content.ts";
 import { BUBBLE } from "../icons.ts";
 import { apiNow } from "../lib/clock.ts";

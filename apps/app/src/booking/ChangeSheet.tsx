@@ -5,6 +5,8 @@
 
 import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import { Sheet } from "@maneman/ui/Sheet";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
 import { booking, change, states } from "../content.ts";
@@ -97,7 +99,6 @@ export function ChangeSheet(props: {
   );
 
   useEffect(() => {
-    dialog.current?.showModal();
     void show(props.start);
   }, [show, props.start]);
 
@@ -130,15 +131,12 @@ export function ChangeSheet(props: {
   }
 
   return (
-    <dialog
+    <Sheet
       ref={dialog}
       className={styles.dialog}
-      aria-labelledby="change-title"
+      labelledBy="change-title"
       onClose={() => {
         onClose(changed.current);
-      }}
-      onClick={(event) => {
-        if (event.target === dialog.current) close();
       }}
     >
       <button className={styles.close} type="button" onClick={close}>
@@ -147,9 +145,9 @@ export function ChangeSheet(props: {
       <div className={styles.sheet}>
         {step.kind === "loading" && (
           <>
-            <h2 className={styles.hidden} id="change-title">
+            <VisuallyHidden as="h2" id="change-title">
               {states.loading}
-            </h2>
+            </VisuallyHidden>
             <div className={styles.loading} aria-busy="true" />
           </>
         )}
@@ -243,6 +241,6 @@ export function ChangeSheet(props: {
           </div>
         )}
       </div>
-    </dialog>
+    </Sheet>
   );
 }

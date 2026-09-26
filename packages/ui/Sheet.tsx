@@ -15,6 +15,8 @@ import styles from "./sheet.module.css";
 export function Sheet({
   ref,
   labelledBy,
+  className,
+  busy = false,
   rises = true,
   outsideTapCloses = true,
   onClose,
@@ -25,6 +27,10 @@ export function Sheet({
   readonly ref?: RefObject<HTMLDialogElement | null>;
   /** The id of the sheet's heading, which names it. */
   readonly labelledBy: string;
+  /** The caller's own class for the frame: the focus ring's colour over the dark ground, say. */
+  readonly className?: string;
+  /** Working on what was asked, as a card being made: said to a screen reader. */
+  readonly busy?: boolean;
   /** False for a sheet that is simply there, as the technician app's questions are: its board draws no motion. */
   readonly rises?: boolean;
   /** False where a tap on the ground around the sheet should do nothing, as on a question that wants an answer. */
@@ -42,8 +48,9 @@ export function Sheet({
   return (
     <dialog
       ref={dialog}
-      className={classes(styles.frame, rises && styles.rises)}
+      className={classes(styles.frame, rises && styles.rises, className)}
       aria-labelledby={labelledBy}
+      aria-busy={busy ? true : undefined}
       onCancel={
         onCancel === undefined
           ? undefined

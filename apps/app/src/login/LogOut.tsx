@@ -3,9 +3,9 @@
 // the next open, which on a shared phone is someone else's. So the button waits
 // for a connection, and says so when the API does not answer.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { profile } from "../content.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { useSession } from "../session.ts";
 import styles from "./logout.module.css";
 

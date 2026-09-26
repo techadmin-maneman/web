@@ -1,7 +1,7 @@
 // The design's empty states (boards D3 and E3): one line in the serif and one
 // beneath it.
 
-import { Icon } from "../components/Icon.tsx";
+import { Icon } from "@maneman/ui/Icon";
 import styles from "./tabs.module.css";
 
 /** `tight` sets the lines 12 px apart, as board E3 does, where D3 and F6 set them 14; D3 draws a glyph above. */

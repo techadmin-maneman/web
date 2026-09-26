@@ -4,10 +4,11 @@
 // sheet is named whatever it shows.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import type { Availability, BookingWindow, Hold, MoveTerms, Price } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { booking, change, messages, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
 import { CHECK, CLOCK } from "../icons.ts";
 import { lateFeeFigures } from "../lib/money.ts";
@@ -61,9 +62,9 @@ function Heading({ title, step, aside }: { title: string; step?: number; aside?:
  */
 function LastMinute({ left }: { left: number }) {
   return (
-    <p className={styles.hidden} role="status">
+    <VisuallyHidden as="p" role="status">
       {left > 0 && left <= 60 ? booking.lastMinute : ""}
-    </p>
+    </VisuallyHidden>
   );
 }
 
@@ -87,9 +88,9 @@ export function LateFee({ fee }: { fee: Price }) {
 export function LoadingStep() {
   return (
     <>
-      <h2 className={styles.hidden} id={TITLE_ID}>
+      <VisuallyHidden as="h2" id={TITLE_ID}>
         {states.loading}
-      </h2>
+      </VisuallyHidden>
       <div className={styles.loading} aria-busy="true" />
     </>
   );

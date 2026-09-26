@@ -8,13 +8,14 @@
 // (docs/decisions/0048-referrals.md).
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { Sheet } from "@maneman/ui/Sheet";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useRef, useState } from "react";
 import { api, putCard, type Refer } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { profile, refer } from "../content.ts";
 import { CHECK, COPY_LINK, OTHER_APPS } from "../icons.ts";
 import { focusIfLost } from "../lib/arrival.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { whatsappShare } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { composeCard, firstFitPhotos, type FirstFitPair } from "./card.ts";
@@ -97,7 +98,6 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   const [busy, once] = useOneAtATime();
 
   useEffect(() => {
-    dialog.current?.showModal();
     let current = true;
     void api.photos().then((answer) => {
       if (current && answer.ok) setPair(firstFitPhotos(answer.body));
@@ -207,16 +207,13 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
 
   const card = which === "house" ? HOUSE : sentCard(state, made);
   return (
-    <dialog
+    <Sheet
       ref={dialog}
       className={styles.dialog}
-      aria-labelledby={TITLE_ID}
-      aria-busy={busy}
+      labelledBy={TITLE_ID}
+      busy={busy}
       onClose={() => {
         onClose(changed.current);
-      }}
-      onClick={(event) => {
-        if (event.target === dialog.current) close();
       }}
     >
       {step === "choice" && (
@@ -351,6 +348,6 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
           </div>
         </div>
       )}
-    </dialog>
+    </Sheet>
   );
 }

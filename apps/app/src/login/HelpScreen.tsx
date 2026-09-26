@@ -3,7 +3,7 @@
 // has a booking (docs/decisions/0030-one-time-codes.md).
 
 import { ICONS } from "@maneman/brand/icons";
-import { Icon } from "../components/Icon.tsx";
+import { Icon } from "@maneman/ui/Icon";
 import { BOOKING_URL, login, whatsapp } from "../content.ts";
 import styles from "./login.module.css";
 

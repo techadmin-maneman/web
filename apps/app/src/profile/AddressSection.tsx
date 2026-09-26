@@ -3,11 +3,11 @@
 // The fields an address cannot do without say they are required, and one left
 // out is marked, named by the error, and given the focus.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useRef, useState } from "react";
 import { api, type Address } from "../api.ts";
 import { profile } from "../content.ts";
 import { focusIfLost } from "../lib/arrival.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { BuildingSearch } from "./BuildingSearch.tsx";
 import styles from "./profile.module.css";
 

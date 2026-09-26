@@ -283,36 +283,12 @@
 }
 
 /*
- * The share sheet (boards F2 to F4). The dialog fills the screen and is clear: F2 and F4 fill it, as drawn, and
- * F3 sits at its foot over the dark ground, with Close above it, where anyone can see it and reach it.
+ * The share sheet (boards F2 to F4; packages/ui/Sheet.tsx). The frame fills the screen and is clear: F2 and F4
+ * fill it, as drawn, and F3 sits at its foot over the dark ground, with Close above it, where anyone can see it
+ * and reach it.
  */
 .dialog {
-  width: 100%;
-  max-width: var(--app-column);
-  height: 100dvh;
-  max-height: 100dvh;
-  margin: 0 auto;
-  padding: 0;
-  border: 0;
-  background: none;
   --focus-colour: var(--paper);
-}
-
-.dialog[open] {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  animation: rise var(--ease-progress);
-}
-
-.dialog::backdrop {
-  background: var(--ink-night);
-}
-
-@keyframes rise {
-  from {
-    transform: translateY(100%);
-  }
 }
 
 .screen {

@@ -2,6 +2,7 @@
 // there are two visits to compare. Before the first fit, board D3's empty
 // state. A photograph opens in a sheet, to download.
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -10,7 +11,6 @@ import { empty, photos, states } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { EmptyState } from "../home/TabScreens.tsx";
 import { TAB_ICONS } from "../icons.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { visitName } from "../lib/visit.ts";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ANGLES, PhotoRow, type OpenPhoto } from "./PhotoRow.tsx";

@@ -5,9 +5,10 @@
 // "Motion").
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
 import { fullDate } from "@maneman/web-kit/dates";
+import { Sheet } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "../components/Icon.tsx";
 import { photos } from "../content.ts";
 import { Thumb, type OpenPhoto } from "./PhotoRow.tsx";
 import styles from "./photos.module.css";
@@ -60,34 +61,24 @@ function Download({ url, name }: { url: string; name: string }) {
 
 export function PhotoSheet({ photo, onClose }: { photo: OpenPhoto; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
-
   const angle = photos.angles[photo.link.angle];
   const date = fullDate(photo.date);
+  // A tap on the ground around the sheet closes it, as Close does.
   return (
-    <dialog
-      ref={dialog}
-      className={styles.sheet}
-      aria-labelledby="photo-title"
-      onClose={onClose}
-      // A tap on the ground around the sheet closes it.
-      onClick={(event) => {
-        if (event.target === dialog.current) dialog.current.close();
-      }}
-    >
-      <Thumb link={photo.link} alt={photos.alt(angle, photo.phase, date)} className={styles.large} eager />
-      <div className={styles.save}>
-        <p className={styles.photoOf} id="photo-title">
-          {photos.photoOf(angle, date)}
-        </p>
-        <Download url={photo.link.url} name={`mane-man-${photo.date}-${photo.phase}-${photo.link.angle}.jpg`} />
+    <Sheet ref={dialog} labelledBy="photo-title" onClose={onClose}>
+      <div className={styles.sheet}>
+        <Thumb link={photo.link} alt={photos.alt(angle, photo.phase, date)} className={styles.large} eager />
+        <div className={styles.save}>
+          <p className={styles.photoOf} id="photo-title">
+            {photos.photoOf(angle, date)}
+          </p>
+          <Download url={photo.link.url} name={`mane-man-${photo.date}-${photo.phase}-${photo.link.angle}.jpg`} />
+        </div>
+        <p className={styles.gallery}>{photos.downloaded}</p>
+        <button className={styles.close} type="button" onClick={() => dialog.current?.close()}>
+          {photos.close}
+        </button>
       </div>
-      <p className={styles.gallery}>{photos.downloaded}</p>
-      <button className={styles.close} type="button" onClick={() => dialog.current?.close()}>
-        {photos.close}
-      </button>
-    </dialog>
+    </Sheet>
   );
 }

@@ -1,34 +1,4 @@
-/* Board B3: loading, offline and error, on paper. */
-
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-14);
-  padding: var(--sp-28) var(--sp-20);
-}
-
-.line,
-.card {
-  background: var(--paper-shade);
-}
-
-.line {
-  width: var(--skeleton-label);
-  height: var(--sp-15);
-}
-
-.card {
-  height: var(--skeleton-card);
-}
+/* Board B3: the error, on paper, and a page's own failure (its loading is packages/ui/States.tsx). */
 
 .failed {
   display: flex;

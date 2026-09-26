@@ -5,11 +5,11 @@
 // and stays as it was, since a switch that looks off while the consent stands
 // would tell the client something untrue about their data.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type ConsentPurpose, type Profile } from "../api.ts";
 import { profile } from "../content.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import styles from "./profile.module.css";
 
 type Consent = Profile["consents"][number];

@@ -4,14 +4,18 @@
 // with the page's title. Each page pads itself, as its board does.
 
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
 import { Mark } from "@maneman/ui/Mark";
+import { Link } from "@maneman/ui/router";
 import type { ReactNode } from "react";
-import { Icon } from "../components/Icon.tsx";
 import { home, states, tabs } from "../content.ts";
 import { TAB_ICONS } from "../icons.ts";
-import { go, type Tab } from "../route.ts";
+import type { Tab } from "../route.ts";
 import { useSession } from "../session.ts";
 import styles from "./shell.module.css";
+
+/** A link within the app: the shared one, under the name the pages know it by. */
+export { Link as AppLink } from "@maneman/ui/router";
 
 export type Header =
   | { readonly kind: "home" }
@@ -27,33 +31,6 @@ interface Props {
   readonly children: ReactNode;
 }
 
-/** A link within the app: the path changes without a reload. */
-export function AppLink({
-  to,
-  className,
-  label,
-  children,
-}: {
-  to: string;
-  className?: string;
-  label?: string;
-  children: ReactNode;
-}) {
-  return (
-    <a
-      className={className}
-      href={to}
-      aria-label={label}
-      onClick={(event) => {
-        event.preventDefault();
-        go(to);
-      }}
-    >
-      {children}
-    </a>
-  );
-}
-
 function PageHeader({ header }: { header: Header }) {
   const { me } = useSession();
   switch (header.kind) {
@@ -61,9 +38,9 @@ function PageHeader({ header }: { header: Header }) {
       return (
         <header className={styles.header}>
           <Mark className={styles.mark} />
-          <AppLink className={styles.avatar} to="/profile" label={home.profile}>
+          <Link className={styles.avatar} to="/profile" label={home.profile}>
             {me.initials}
-          </AppLink>
+          </Link>
         </header>
       );
     case "tab":
@@ -76,9 +53,9 @@ function PageHeader({ header }: { header: Header }) {
     case "back":
       return (
         <header className={`${styles.header} ${styles.titled}`}>
-          <AppLink className={styles.back} to={header.to} label={header.label}>
+          <Link className={styles.back} to={header.to} label={header.label}>
             <Icon d={ICONS.back} size={22} />
-          </AppLink>
+          </Link>
           <h1 className={styles.name}>{header.title}</h1>
         </header>
       );
@@ -103,19 +80,10 @@ export function Shell({ header, tab, footer, children }: Props) {
       {footer !== undefined && <div className={styles.footer}>{footer}</div>}
       <nav className={styles.tabs}>
         {tabs.map((each) => (
-          <a
-            key={each.page}
-            className={styles.tab}
-            href={each.page}
-            aria-current={each.page === tab ? "page" : undefined}
-            onClick={(event) => {
-              event.preventDefault();
-              go(each.page);
-            }}
-          >
+          <Link key={each.page} className={styles.tab} to={each.page} current={each.page === tab}>
             <Icon d={TAB_ICONS[each.icon]} size={21} />
             <span>{each.label}</span>
-          </a>
+          </Link>
         ))}
       </nav>
     </div>

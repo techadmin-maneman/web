@@ -5,6 +5,8 @@
 // photographs against the latest.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import {
   useCallback,
@@ -16,10 +18,8 @@ import {
   type PointerEvent,
 } from "react";
 import { api, type PhotoLink, type PhotoTimeline } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { photos } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { shownPhase } from "./PhotoRow.tsx";

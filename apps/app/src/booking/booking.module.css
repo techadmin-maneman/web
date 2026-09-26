@@ -1,39 +1,13 @@
 /*
  * Boards C2 to C8: the booking and change sheets, on paper over the ink-night
- * ground. The dialog fills the screen and is clear; the sheet sits at its foot,
- * as the boards draw it, and Close stands on the ground above it, where anyone
- * can see it and reach it (the boards draw none). A tap on the ground closes
- * the sheet too.
+ * ground (packages/ui/Sheet.tsx). The frame fills the screen and is clear; the
+ * sheet sits at its foot, as the boards draw it, and Close stands on the
+ * ground above it, where anyone can see it and reach it (the boards draw
+ * none). A tap on the ground closes the sheet too.
  */
 
 .dialog {
-  width: 100%;
-  max-width: var(--app-column);
-  height: 100dvh;
-  max-height: 100dvh;
-  margin: 0 auto;
-  padding: 0;
-  border: 0;
-  background: none;
   --focus-colour: var(--paper);
-}
-
-/* Only while open: a closed dialog stays hidden as the browser hides it. */
-.dialog[open] {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  animation: rise var(--ease-progress);
-}
-
-.dialog::backdrop {
-  background: var(--ink-night);
-}
-
-@keyframes rise {
-  from {
-    transform: translateY(100%);
-  }
 }
 
 .close {
@@ -63,15 +37,6 @@
 .sheet p,
 .sheet h2 {
   margin: 0;
-}
-
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 .loading {
