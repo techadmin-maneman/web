@@ -60,6 +60,26 @@ The booking form's city list, in display order. Cacheable for five minutes.
 }
 ```
 
+### GET /api/published-prices
+
+The prices the site publishes, from the price book, in force today. Cacheable for a minute.
+
+**200**: The prices
+
+```json
+{
+  "$ref": "#/components/schemas/PublishedPrices"
+}
+```
+
+**503**: unavailable: the book lacks one of them, so the site shows its own
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/lead
 
 Book a free consultation, or join a city's waitlist
@@ -1315,6 +1335,72 @@ Razorpay's webhook: payments and refunds
   "required": [
     "name",
     "served"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PublishedPrices
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "on": {
+      "type": "string",
+      "format": "date",
+      "description": "The day in India these are in force."
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "standard"
+      ],
+      "description": "The one tier the price book holds (ADR 0025, item 35)."
+    },
+    "first_fit": {
+      "$ref": "#/components/schemas/Price"
+    },
+    "service": {
+      "$ref": "#/components/schemas/Price"
+    },
+    "replacement": {
+      "$ref": "#/components/schemas/Price"
+    }
+  },
+  "required": [
+    "on",
+    "tier",
+    "first_fit",
+    "service",
+    "replacement"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Price
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
+    "gst_percent": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "amount_ex_gst",
+    "amount",
+    "gst_percent"
   ],
   "additionalProperties": false
 }

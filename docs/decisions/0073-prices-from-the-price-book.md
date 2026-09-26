@@ -19,8 +19,8 @@ Two constraints shape both answers. The account is on the free plan, where a Wor
 
 There were two ways to show a price that changes without a release on a site that is built once:
 
-1. **At the edge.** mm-site's Worker, which already answers `/r/:code` (ADR 0027), also answers the pages that show a price, reads `GET /api/prices` over its service binding to mm-api, and rewrites each figure with `HTMLRewriter` before the page leaves Cloudflare.
-2. **In the browser.** A small island on each page fetches `GET /api/prices` and replaces the figures after the page has loaded.
+1. **At the edge.** mm-site's Worker, which already answers `/r/:code` (ADR 0027), also answers the pages that show a price, reads `GET /api/published-prices` over its service binding to mm-api, and rewrites each figure with `HTMLRewriter` before the page leaves Cloudflare.
+2. **In the browser.** A small island on each page fetches `GET /api/published-prices` and replaces the figures after the page has loaded.
 
 Both fit the free plan and the policy. Each costs one Worker request per page view (mm-site's in the first, mm-api's in the second), and neither needs the policy changed: the first writes text and an attribute, and JSON-LD is data the policy does not hash; the second is a same-origin fetch from a bundled script.
 
@@ -31,8 +31,8 @@ Both fit the free plan and the policy. Each costs one Worker request per page vi
 - **Premium.** The book knows one tier (ADR 0025, item 35), so the Premium column keeps the owner's own figures, from `site/src/content/prices.ts`, until the owner rules on the tier (open point 78). They are the only rupee figures the site holds.
 - **How.** Each figure on a page carries its sentence as a template, `data-price="{firstFit}, then {service} a month"`, and the Worker fills it from the book. The two JSON-LD blocks are built again from the same figures. The booking form's island draws its own prices, so the Worker also writes the book's answer onto `<body>` as `data-prices`, and the island starts from it, as it starts from the invite.
 - **A minute, per isolate.** The Worker keeps the book's answer for 60 seconds, the console's own staleness (ADR 0061), so mm-api is asked about once a minute however busy the site is. A rewritten page carries no `ETag`, so a browser never keeps last week's figures by revalidating against the unchanged file.
-- **When mm-api cannot answer**, the Worker keeps the last answer it had, and failing that serves the page as built. The build carries the book's own figures of 22 September 2026 (`site/src/content/prices.ts`); the booking form's island then asks `GET /api/prices` itself. The local build and the browser tests serve pages without the Worker (ADR 0027), so they show these figures, and the island there reads the local book.
-- **`GET /api/prices`** is on the public host, read-only, cacheable for a minute: the three figures, each with GST and its rate, and the day they are in force. It answers `503` if the book lacks one, and the pages are then served as built.
+- **When mm-api cannot answer**, the Worker keeps the last answer it had, and failing that serves the page as built. The build carries the book's own figures of 22 September 2026 (`site/src/content/prices.ts`); the booking form's island then asks `GET /api/published-prices` itself. The local build and the browser tests serve pages without the Worker (ADR 0027), so they show these figures, and the island there reads the local book.
+- **`GET /api/published-prices`** is on the public host, read-only, cacheable for a minute: the three figures, each with GST and its rate, and the day they are in force. It answers `503` if the book lacks one, and the pages are then served as built.
 - **The production gate** stops a build while any price the site or the landing publishes is a rupee figure typed into its sentence rather than a hole the book fills: `referral.ts` is now covered (FEO-22).
 
 The words "free consultation" are copy, not a price. A consultation the book does not have free is not bookable from the site in any case (ADR 0068).
