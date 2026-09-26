@@ -204,7 +204,7 @@ describe("GET /api/payments, what else a visit took", () => {
         date: "2026-09-02",
         event: "used",
         visits: -1,
-        visit: expect.objectContaining({ id: VISIT }),
+        visit: { id: VISIT, date: "2026-09-10", type: "first_fit" },
         source: null,
         no_show: null,
       },
