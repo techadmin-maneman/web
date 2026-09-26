@@ -1,6 +1,6 @@
-// The texts of the WhatsApp messages we send, by template name. WA_RESULT_TEMPLATE
-// picks one. Evolution has no Meta-approved templates, so the text lives here;
-// an official BSP would hold its own copy.
+// The texts of the WhatsApp messages we send, by template name. RESULT_TEMPLATE
+// picks the try-on result's. Evolution has no Meta-approved templates, so the
+// text lives here; an official BSP would hold its own copy.
 //
 // PLACEHOLDER COPY, pending the owner's wording. The second sentence is the
 // design's own ("a simulation, not a photograph of a result").
@@ -52,3 +52,6 @@ const PLACEHOLDER = /\{\{(\d+)\}\}/g;
 export function isKnownTemplate(name: string): boolean {
   return name in TEMPLATES;
 }
+
+/** The template the try-on result is sent with, in every environment. */
+export const RESULT_TEMPLATE = "tryon_result_v1";
