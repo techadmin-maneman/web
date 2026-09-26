@@ -6,12 +6,21 @@ interface Faults {
   health?: { status?: number; body?: Record<string, unknown>; headers?: Record<string, string> };
   notFound?: { status?: number; body?: unknown; requestId?: string };
   site?: { status?: number; html?: string; robots?: string | null };
+  /** A security header one page the site's Worker answers first has lost. */
+  lostHeader?: { path: string; header: string };
   cities?: unknown;
   /** On a Phase 2 surface's host, the public site's routes must not answer. */
   publicRoutes?: "present" | "absent";
 }
 
 const REQUEST_ID = "4b0e6c0a-0000-4000-8000-000000000001";
+
+/** What the site's _headers gives every page (site/src/lib/static-files.ts), shortened. */
+const SITE_HEADERS = {
+  "content-security-policy": "default-src 'self'; object-src 'none'; frame-ancestors 'none'",
+  "strict-transport-security": "max-age=63072000; includeSubDomains",
+  "x-content-type-options": "nosniff",
+};
 
 /** A fake deployment of both Workers that passes every smoke check unless `faults` says otherwise. */
 function fakeDeployment(environment: string, faults: Faults = {}): { fetch: typeof fetch; seen: Headers[] } {
@@ -35,15 +44,15 @@ function fakeDeployment(environment: string, faults: Faults = {}): { fetch: type
     return json(faults.notFound?.status ?? 404, body);
   }
 
-  function sitePage(): Response {
+  function sitePage(path: string): Response {
     const robots = faults.site?.robots === undefined ? robotsTag : faults.site.robots;
     const html =
       faults.site?.html ??
       `<meta name="mm-worker" content="mm-site" /><meta name="mm-environment" content="${environment}" />`;
-    return new Response(html, {
-      status: faults.site?.status ?? 200,
-      headers: robots === null ? {} : { "x-robots-tag": robots },
-    });
+    const headers = new Headers(SITE_HEADERS);
+    if (robots !== null) headers.set("x-robots-tag", robots);
+    if (faults.lostHeader?.path === path) headers.delete(faults.lostHeader.header);
+    return new Response(html, { status: faults.site?.status ?? 200, headers });
   }
 
   const fakeFetch = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
@@ -53,7 +62,7 @@ function fakeDeployment(environment: string, faults: Faults = {}): { fetch: type
     if (url.endsWith("/api/cities") && faults.publicRoutes !== "absent")
       return Promise.resolve(json(200, faults.cities ?? [{ name: "Gurgaon", served: true }]));
     if (url.includes("/api/")) return Promise.resolve(notFound());
-    return Promise.resolve(sitePage());
+    return Promise.resolve(sitePage(new URL(url).pathname));
   };
   return { fetch: fakeFetch, seen };
 }
@@ -148,10 +157,45 @@ describe("smoke suite", () => {
   it("fails when staging is indexable or production is not", async () => {
     expect(await failures(smokeOptions("staging", { site: { robots: null } }))).toEqual([
       'indexing: site X-Robots-Tag is ""',
+      "site security headers: / is not noindex",
     ]);
     expect(await failures(smokeOptions("production", { site: { robots: "noindex" } }))).toEqual([
       "indexing: production site is marked noindex",
     ]);
+  });
+
+  // The site's Worker answers these first and serves the built page through its assets binding, which keeps
+  // the site's _headers; nothing but this would notice if a change to the Worker lost them.
+  it.each(["/", "/book", "/r/SMOKE0"])(
+    "fails when %s, which the site's Worker answers first, loses a security header",
+    async (path) => {
+      for (const header of ["content-security-policy", "strict-transport-security", "x-content-type-options"]) {
+        const lost = await failures(smokeOptions("staging", { lostHeader: { path, header } }));
+        expect(lost).toEqual([expect.stringMatching(new RegExp(`^site security headers: ${path} .*${header}`, "i"))]);
+      }
+      expect(await failures(smokeOptions("staging", { lostHeader: { path, header: "x-robots-tag" } }))).toContain(
+        `site security headers: ${path} is not noindex`,
+      );
+    },
+  );
+
+  it("asks no headers of production's placeholder page, which it serves until the site goes live there", async () => {
+    const placeholder = {
+      html: '<meta name="mm-worker" content="mm-site" /><meta name="mm-environment" content="production" /><p>Mane Man. Placeholder for the production site.</p>',
+    };
+    const results = await runSmoke(
+      smokeOptions("production", { site: placeholder, lostHeader: { path: "/", header: "content-security-policy" } }),
+    );
+    expect(results.filter((result) => !result.ok)).toEqual([]);
+    expect(results.find((result) => result.name === "site security headers")?.detail).toBe(
+      "production still serves its placeholder (docs/frontend.md, Going live in production)",
+    );
+    // Once the site is live there, production is held to them as staging is.
+    expect(
+      await failures(
+        smokeOptions("production", { lostHeader: { path: "/book", header: "strict-transport-security" } }),
+      ),
+    ).toEqual([expect.stringContaining("site security headers: /book")]);
   });
 
   it("fails when the city list is empty or has no served city", async () => {
