@@ -713,7 +713,7 @@ A photograph, through a link that lasts 15 minutes
 
 The client's payments and refunds, newest first
 
-**200**: One list of payments and refunds
+**200**: One list of payments and refunds, and one of the credits' changes
 
 ```json
 {
@@ -738,10 +738,18 @@ The client's payments and refunds, newest first
           }
         }
       }
+    },
+    "credits": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/CreditLine"
+      },
+      "description": "Every change to the service-visit credits, newest first, which the app lists among the payments."
     }
   },
   "required": [
-    "entries"
+    "entries",
+    "credits"
   ],
   "additionalProperties": false
 }
@@ -3182,6 +3190,17 @@ Request body:
         }
       ],
       "description": "Kept under the 24-hour rule, with its evidence: \"cancelled 9:14 am, visit was 10 am\"."
+    },
+    "no_show": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/NoShowNote"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     }
   },
   "required": [
@@ -3197,7 +3216,8 @@ Request body:
     "reference",
     "refunded_amount",
     "purpose",
-    "charge"
+    "charge",
+    "no_show"
   ],
   "additionalProperties": false
 }
@@ -3326,6 +3346,121 @@ Request body:
     "status",
     "destination",
     "speed"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CreditLine
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "The ledger entry's."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date it was made."
+    },
+    "event": {
+      "type": "string",
+      "enum": [
+        "added",
+        "used",
+        "lost",
+        "returned",
+        "expired",
+        "withdrawn",
+        "corrected"
+      ],
+      "description": "added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that was cancelled inside 24 hours, or that the client was not home for and ops charged; returned: back after a cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand."
+    },
+    "visits": {
+      "type": "integer",
+      "description": "Signed: what it added to the balance, or took from it."
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for, when known."
+    },
+    "source": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "referral",
+            "ops",
+            "import"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where credits added came from; null for any other entry."
+    },
+    "no_show": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/NoShowNote"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "event",
+    "visits",
+    "visit",
+    "source",
+    "no_show"
   ],
   "additionalProperties": false
 }

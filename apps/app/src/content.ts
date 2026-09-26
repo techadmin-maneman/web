@@ -533,6 +533,46 @@ export const payments = {
   charge: "Charge",
   charged: "Charged",
   evidence: (change: "cancelled" | "moved", at: string, visit: string) => `${change} ${at}, visit was ${visit}`,
+  // PLACEHOLDER: the design draws no visit the client was not home for (LIFE-07).
+  noShow: {
+    meta: (note: { waited_minutes: number }) => `not home, we waited ${String(note.waited_minutes)} min`,
+    label: "Not home",
+    decision: { undecided: "under review", charged: "charged", waived: "not charged" },
+    fact: (minutes: number, decision: string) => `We waited ${String(minutes)} minutes · ${decision}`,
+  },
+  /**
+   * The service-visit credits among the payments (LIFE-14). Board E1 draws a visit a credit covered: "Service
+   * visit · 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: every other line.
+   */
+  credits: {
+    title: "Visit credits",
+    meta: {
+      used: "visit credit",
+      lost: "cancelled inside 24 hours",
+      returned: "cancelled in time",
+      expired: "past their date",
+      withdrawn: "the fit was refunded",
+      corrected: "corrected by us",
+      added: "added",
+    },
+    from: { referral: "a friend you invited was fitted", ops: "from us", import: "carried over" },
+    status: {
+      used: "Covered by credit",
+      lost: "Credit lost",
+      returned: "Credit returned",
+      expired: "Credits expired",
+      withdrawn: "Credits withdrawn",
+      corrected: "Credits corrected",
+      added: "Credits added",
+    },
+    count: (event: string, visits: number) => {
+      const credits = `${String(visits)} ${visits === 1 ? "credit" : "credits"}`;
+      if (event === "used") return `${credits} used`;
+      if (event === "lost") return `${credits} lost`;
+      if (event === "returned") return `${credits} back`;
+      return credits;
+    },
+  },
   refundTo: (method: string) => `refund to ${method}`,
   /** A payment's status, and a refund's. */
   status: {

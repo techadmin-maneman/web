@@ -52,6 +52,7 @@ const payment = (overrides: Record<string, unknown>) =>
     visit: { id: "v", date: "2030-09-19", type: "service" },
     purpose: "visit",
     charge: null,
+    no_show: null,
     ...overrides,
   }) as unknown as Extract<Entry, { kind: "payment" }>;
 

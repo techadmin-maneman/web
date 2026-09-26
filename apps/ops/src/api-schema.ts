@@ -2498,6 +2498,17 @@ export interface components {
                 /** @description In paise: what was kept. */
                 amount: number;
             } | null;
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            no_show: components["schemas"]["NoShowNote"] | null;
+        };
+        NoShowNote: {
+            /**
+             * @description What ops ruled: undecided while they look at the evidence, charged, or waived.
+             * @enum {string}
+             */
+            decision: "undecided" | "charged" | "waived";
+            /** @description How long the technician waited at the door. */
+            waited_minutes: number;
         };
         RefundEntry: {
             /**

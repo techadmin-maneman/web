@@ -1136,7 +1136,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description One list of payments and refunds */
+                /** @description One list of payments and refunds, and one of the credits' changes */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1144,6 +1144,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             entries: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+                            /** @description Every change to the service-visit credits, newest first, which the app lists among the payments. */
+                            credits: components["schemas"]["CreditLine"][];
                         };
                     };
                 };
@@ -2472,6 +2474,8 @@ export interface components {
                 /** @description In paise: what was kept. */
                 amount: number;
             } | null;
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            no_show: components["schemas"]["NoShowNote"] | null;
         };
         RefundEntry: {
             /**
@@ -2508,6 +2512,33 @@ export interface components {
             destination: string | null;
             /** @description normal (5 to 7 working days) or instant. */
             speed: string | null;
+        };
+        CreditLine: {
+            /** @description The ledger entry's. */
+            id: string;
+            /**
+             * Format: date
+             * @description India's calendar date it was made.
+             */
+            date: string;
+            /**
+             * @description added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that was cancelled inside 24 hours, or that the client was not home for and ops charged; returned: back after a cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand.
+             * @enum {string}
+             */
+            event: "added" | "used" | "lost" | "returned" | "expired" | "withdrawn" | "corrected";
+            /** @description Signed: what it added to the balance, or took from it. */
+            visits: number;
+            /** @description The visit it paid for, when known. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description Where credits added came from; null for any other entry. */
+            source: ("referral" | "ops" | "import") | null;
+            no_show: components["schemas"]["NoShowNote"] | null;
         };
         PaymentDetail: components["schemas"]["PaymentEntry"] & {
             documents: {

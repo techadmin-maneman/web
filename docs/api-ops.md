@@ -2474,6 +2474,17 @@ Request body:
         }
       ],
       "description": "Kept under the 24-hour rule, with its evidence: \"cancelled 9:14 am, visit was 10 am\"."
+    },
+    "no_show": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/NoShowNote"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     }
   },
   "required": [
@@ -2489,7 +2500,36 @@ Request body:
     "reference",
     "refunded_amount",
     "purpose",
-    "charge"
+    "charge",
+    "no_show"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NoShowNote
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "undecided",
+        "charged",
+        "waived"
+      ],
+      "description": "What ops ruled: undecided while they look at the evidence, charged, or waived."
+    },
+    "waited_minutes": {
+      "type": "integer",
+      "description": "How long the technician waited at the door."
+    }
+  },
+  "required": [
+    "decision",
+    "waited_minutes"
   ],
   "additionalProperties": false
 }

@@ -22,6 +22,7 @@ export type PhotoSet = Schemas["PhotoSet"];
 export type PhotoTimeline = Schemas["PhotoTimeline"];
 export type Angle = PhotoLink["angle"];
 export type Entry = Schemas["PaymentEntry"] | Schemas["RefundEntry"];
+export type CreditLine = Schemas["CreditLine"];
 export type EntryDetail = Schemas["PaymentDetail"] | Schemas["RefundDetail"];
 export type Availability = Schemas["Availability"];
 export type Hold = Schemas["Hold"];
@@ -144,7 +145,7 @@ export const api = {
   visits: () => call<Visits>("GET", "/api/visits"),
   visit: (id: string) => call<VisitDetail>("GET", `/api/visits/${id}`),
   photos: () => call<PhotoTimeline>("GET", "/api/photos"),
-  payments: () => call<{ entries: Entry[] }>("GET", "/api/payments"),
+  payments: () => call<{ entries: Entry[]; credits: CreditLine[] }>("GET", "/api/payments"),
   entry: (id: string) => call<EntryDetail>("GET", `/api/payments/${id}`),
   availability: (type: BookableType, moving?: string) =>
     call<Availability>("GET", `/api/availability?type=${type}${moving === undefined ? "" : `&moving=${moving}`}`),
