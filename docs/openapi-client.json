@@ -2580,6 +2580,38 @@
         ],
         "additionalProperties": false
       },
+      "VisitNoted": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string"
+          },
+          "noted_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "note",
+          "noted_at"
+        ],
+        "additionalProperties": false
+      },
+      "VisitNote": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "What the technician should know at the door. Replaces any note before it."
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "additionalProperties": false
+      },
       "Refer": {
         "type": "object",
         "properties": {
@@ -4411,6 +4443,86 @@
           },
           "503": {
             "description": "unavailable: FSM did not answer; nothing changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/appointments/{id}/note": {
+      "post": {
+        "summary": "Leave the technician a note on a visit to come",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The visit's ID."
+            },
+            "required": true,
+            "description": "The visit's ID.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitNote"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kept on the visit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitNoted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: an empty note, or one over 500 characters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such visit of this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_changeable: the visit is over or cancelled; or ops_assisted: self-serve booking is off",
             "content": {
               "application/json": {
                 "schema": {

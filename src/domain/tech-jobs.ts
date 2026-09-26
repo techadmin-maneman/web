@@ -132,6 +132,8 @@ interface JobRow {
   status: AppointmentStatus;
   person_id: string | null;
   service_city: string | null;
+  /** The client's note from the app (src/domain/client-notes.ts). */
+  client_note: string | null;
   client_name: string | null;
   client_mobile: string | null;
   line1: string | null;
@@ -154,7 +156,7 @@ interface JobRow {
 // `free`: the price book's row for the visit type on the visit's day in India
 // charges nothing, as it does a consultation.
 const SELECT_JOB = `
-  SELECT a.id, a.window_start, a.window_end, a.type, a.status, a.person_id, a.service_city,
+  SELECT a.id, a.window_start, a.window_end, a.type, a.status, a.person_id, a.service_city, a.client_note,
     p.name AS client_name, p.mobile_e164 AS client_mobile,
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
     d.access_notes, d.lat, d.lng,
@@ -214,7 +216,7 @@ export async function jobDetail(
     client:
       row.client_name === null || row.client_mobile === null
         ? null
-        : { name: row.client_name, mobile: row.client_mobile, note: null },
+        : { name: row.client_name, mobile: row.client_mobile, note: row.client_note },
     pieces: row.person_id === null ? [] : (await piecesOf(db, row.person_id)).map(cardPiece),
     last_visit: await lastVisitOf(db, row),
     reminder: await reminderOf(db, row.id),

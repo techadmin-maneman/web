@@ -161,6 +161,9 @@ export const api = {
     call<CancelTerms>("POST", `/api/appointments/${visitId}/cancel`, { confirm: false }),
   cancel: (visitId: string, notice: CancelTerms["notice"]) =>
     call<CancelTerms>("POST", `/api/appointments/${visitId}/cancel`, { confirm: true, notice }),
+  /** The client's note on a visit to come, for the technician's card; the latest replaces any before it. */
+  note: (visitId: string, note: string) =>
+    call<{ note: string; noted_at: string }>("POST", `/api/appointments/${visitId}/note`, { note }),
 };
 
 /** A visit's tax invoice, as a PDF the browser opens itself. */

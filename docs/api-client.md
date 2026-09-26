@@ -1204,6 +1204,58 @@ Request body:
 }
 ```
 
+### POST /api/appointments/{id}/note
+
+Leave the technician a note on a visit to come
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/VisitNote"
+}
+```
+
+**200**: Kept on the visit
+
+```json
+{
+  "$ref": "#/components/schemas/VisitNoted"
+}
+```
+
+**400**: invalid_request: an empty note, or one over 500 characters
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable: the visit is over or cancelled; or ops_assisted: self-serve booking is off
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PUT /api/refer/card
 
 Upload the client's referral card: the body is the JPEG itself
@@ -4098,6 +4150,48 @@ Request body:
     "kept",
     "destination",
     "cancelled"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitNoted
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string"
+    },
+    "noted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "note",
+    "noted_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitNote
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "What the technician should know at the door. Replaces any note before it."
+    }
+  },
+  "required": [
+    "note"
   ],
   "additionalProperties": false
 }

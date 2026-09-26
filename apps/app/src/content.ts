@@ -367,6 +367,25 @@ export const booking = {
 } as const;
 
 /**
+ * A note on a visit to come, kept on it for the technician's card (REQ-04). PLACEHOLDER: the design draws the
+ * "Add a note" button and no sheet behind it.
+ */
+export const note = {
+  title: (technician: string | null) =>
+    technician === null ? "Add a note for your technician" : `Add a note for ${technician}`,
+  label: "What should they know at the door?",
+  save: "Save the note",
+  saving: "Saving",
+  saved: (technician: string | null) =>
+    technician === null
+      ? "Saved. Your technician reads it before your visit."
+      : `Saved. ${technician} reads it before your visit.`,
+  withOps: "Notes go to us on WhatsApp just now.",
+  failed: "That did not go through.",
+  whatsapp: "Send it on WhatsApp",
+};
+
+/**
  * Moving or cancelling a visit (boards C7 and C8; docs/decisions/0046-moving-and-cancelling.md). The consequence
  * shows before the client confirms. The design writes refunds as "three to five working days"; the owner ruled
  * the app says 5 to 7 (ADR 0025, item 28).

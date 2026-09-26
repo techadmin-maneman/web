@@ -48,6 +48,12 @@ CREATE UNIQUE INDEX outbound_messages_one_arrival ON outbound_messages (subject_
 -- (src/domain/no-shows.ts), found by the visit.
 CREATE INDEX no_show_cases_by_appointment ON no_show_cases (appointment_id, created_at);
 
+-- The client's note on a visit to come, from the app's "Add a note", which the
+-- technician reads on the client's card (src/domain/client-notes.ts). The
+-- latest replaces any before it. Blanked when the client is erased.
+ALTER TABLE appointments ADD COLUMN client_note TEXT;
+ALTER TABLE appointments ADD COLUMN client_note_at TEXT;
+
 -- When a visit first reached our records, from a booking or from FSM, which
 -- the address it still needs waits from on the Tasks board (src/domain/tasks.ts).
 -- Written once, on insert. A visit the Worker already deployed writes has none,

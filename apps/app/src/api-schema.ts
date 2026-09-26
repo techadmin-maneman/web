@@ -1829,6 +1829,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/appointments/{id}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave the technician a note on a visit to come */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VisitNote"];
+                };
+            };
+            responses: {
+                /** @description Kept on the visit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VisitNoted"];
+                    };
+                };
+                /** @description invalid_request: an empty note, or one over 500 characters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such visit of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_changeable: the visit is over or cancelled; or ops_assisted: self-serve booking is off */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/refer/card": {
         parameters: {
             query?: never;
@@ -2699,6 +2778,15 @@ export interface components {
             destination: string | null;
             /** @description false: the terms only; true: the visit is cancelled. */
             cancelled: boolean;
+        };
+        VisitNoted: {
+            note: string;
+            /** Format: date-time */
+            noted_at: string;
+        };
+        VisitNote: {
+            /** @description What the technician should know at the door. Replaces any note before it. */
+            note: string;
         };
         Refer: {
             code: string;
