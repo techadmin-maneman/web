@@ -44,6 +44,12 @@ CREATE INDEX visits_partial ON visits (appointment_id) WHERE outcome = 'partial'
 -- no-show's evidence reads its receipt (src/domain/visit-messages.ts).
 CREATE UNIQUE INDEX outbound_messages_one_arrival ON outbound_messages (subject_id) WHERE kind = 'arrival_notice';
 
+-- When a visit first reached our records, from a booking or from FSM, which
+-- the address it still needs waits from on the Tasks board (src/domain/tasks.ts).
+-- Written once, on insert. A visit the Worker already deployed writes has none,
+-- and waits from when it was last synced instead.
+ALTER TABLE appointments ADD COLUMN first_seen_at TEXT;
+
 -- The friend's first name, kept with the referral when it is granted, so the
 -- referrer's tracker still reads it after the friend is erased rather than
 -- "Erased" (src/routes/client-refer.ts). Filled here for the grants already

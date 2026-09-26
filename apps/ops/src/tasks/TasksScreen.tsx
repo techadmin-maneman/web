@@ -3,7 +3,8 @@
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a number change, an erasure, a grievance, a piece past its
 // replacement date, an invoice still a draft, an erasure FSM would not finish,
-// a moved visit whose client has not heard of it, a visit left partly done — so it leaves the list when
+// a moved visit whose client has not heard of it, a visit left partly done, a
+// visit to come with no address — so it leaves the list when
 // that row is decided, on the section that decides it (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
@@ -47,6 +48,7 @@ const DECIDED_IN: Partial<Record<Group, { readonly page: string; readonly row: s
 /** The tab of the client's page each group is about; the page opens on Pieces otherwise. */
 const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   untold_move: "visits",
+  address_to_confirm: "visits",
   consultation_request: "visits",
   replacement_order: "pieces",
   partial_visit: "visits",
@@ -73,6 +75,12 @@ function subOf(group: Group, task: Task): string {
     return task.detail === null
       ? tasks.unknown
       : copy.untold_move(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
+  }
+  if (group === "address_to_confirm") {
+    // The visit's start.
+    return task.detail === null
+      ? tasks.unknown
+      : copy.address_to_confirm(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
   }
   if (group === "consultation_request") {
     // The day and the window, as the request recorded them: both are always there.

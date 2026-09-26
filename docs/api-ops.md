@@ -4619,6 +4619,7 @@ Request body:
             "type": "string",
             "enum": [
               "untold_move",
+              "address_to_confirm",
               "consultation_request",
               "replacement_order",
               "partial_visit",

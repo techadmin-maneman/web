@@ -2982,7 +2982,7 @@ export interface components {
             truncated: boolean;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "consultation_request" | "replacement_order" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "address_to_confirm" | "consultation_request" | "replacement_order" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
                 /** @description The longest wait first, at most 50. */

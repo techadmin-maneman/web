@@ -33,6 +33,12 @@
 // is counted down on this board as the other requests about their data are.
 
 //
+// So is a visit to come whose client has given no address
+// (docs/decisions/0073-hand-offs-and-messages.md): a booking from the site asks
+// for none, and the app tells the client "We confirm it with you before your
+// visit". Ops confirm it; the task goes when the client's address is saved, and
+// it falls due by the visit at the latest.
+//
 // A visit left partly done is the prompt's own (BIZ-21): "Partial reasons. …
 // ops need the full set because these drive the task queue." It waits with the
 // technician's reason until the client has another visit booked after it to
@@ -48,6 +54,7 @@ export const RULES = [
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [
   "untold_move",
+  "address_to_confirm",
   "consultation_request",
   "replacement_order",
   "partial_visit",
@@ -73,6 +80,8 @@ export type Slas = Readonly<Record<TaskGroup, number>>;
 export const TASK_SLA_HOURS: Slas = {
   // A client who does not know his visit moved will not be home for it: a call the same day.
   untold_move: 4,
+  // Never later than the visit itself (src/domain/tasks.ts).
+  address_to_confirm: 48,
   consultation_request: 48,
   replacement_order: 48,
   partial_visit: 48,

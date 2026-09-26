@@ -784,6 +784,8 @@ export const tasks = {
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
     untold_move: "Call about a move",
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0073-hand-offs-and-messages.md).
+    address_to_confirm: "Address to confirm",
     consultation_request: "Consultation request",
     replacement_order: "Replacement order",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0073-hand-offs-and-messages.md).
@@ -827,6 +829,11 @@ export const tasks = {
   subs: {
     /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the dispatch board. */
     untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
+    /**
+     * PLACEHOLDER: "Visit Tue 22 Sep, 10 am; no address yet". Only the client can save one, in the app, whose Home
+     * asks for it; the task goes when they do.
+     */
+    address_to_confirm: (when: string) => `Visit ${when}; no address yet`,
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
