@@ -7,11 +7,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, fails, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-async function open(page: Page, body: unknown = TASKS): Promise<void> {
+async function open(page: Page, body: OpsReply<"/api/tasks"> = TASKS): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(body) });
   await page.goto("/tasks");
@@ -65,6 +65,7 @@ test("names the one fact each group turns on", async ({ page }) => {
 test("names the day and window a consultation was asked for", async ({ page }) => {
   await open(page, {
     overdue: 0,
+    truncated: false,
     groups: [
       {
         group: "consultation_request",
@@ -91,6 +92,7 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
 }) => {
   await open(page, {
     overdue: 0,
+    truncated: false,
     groups: [
       {
         group: "draft_invoice",
@@ -205,6 +207,7 @@ test("counts a group whole when it lists only its longest waits, and says when i
   page,
 }) => {
   const [first] = TASKS.groups;
+  if (first === undefined) throw new Error("the board's tasks have no group");
   await open(page, {
     ...TASKS,
     truncated: true,
@@ -222,7 +225,7 @@ test("says nothing is closed here, since a task leaves when its own row is decid
 });
 
 test("says so when no queue holds anything", async ({ page }) => {
-  await open(page, { overdue: 0, groups: [] });
+  await open(page, { overdue: 0, truncated: false, groups: [] });
   await expect(page.getByText("Nothing is waiting.")).toBeVisible();
   await expect(page.getByText("0 overdue")).toBeVisible();
 });
@@ -243,7 +246,7 @@ test("meets WCAG 2.2 AA with a list, and with none", async ({ page }) => {
   const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(full.violations.map((violation) => violation.id)).toEqual([]);
 
-  await open(page, { overdue: 0, groups: [] });
+  await open(page, { overdue: 0, truncated: false, groups: [] });
   const none = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(none.violations.map((violation) => violation.id)).toEqual([]);
 });

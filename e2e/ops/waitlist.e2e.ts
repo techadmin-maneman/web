@@ -102,7 +102,7 @@ test("says so when the launch is refused, and keeps the panel open", async ({ pa
 });
 
 test("says nobody is waiting when the list is empty", async ({ page }) => {
-  await answer(page, { "GET /api/waitlist": json({ areas: [] }) });
+  await answer(page, { "GET /api/waitlist": json({ areas: [], more: false }) });
   await page.goto("/waitlist");
   await expect(page.getByText("Nobody is waiting outside the areas we serve.")).toBeVisible();
 });

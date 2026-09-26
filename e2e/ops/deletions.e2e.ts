@@ -11,13 +11,27 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON, type Call } from "./fixtures.ts";
+import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = DELETION_REQUESTS.requests[0];
 const DECISION = `/api/deletion-requests/${FIRST?.id ?? ""}/decision` as const;
 const DECIDE: Call = `POST ${DECISION}`;
 const DELETE = "Delete the account of Rohit Malhotra";
+
+/** The API's refusal while the client still has a visit booked, naming it (src/routes/ops-profile.ts). */
+const VISIT_BOOKED = {
+  error: { code: "visit_booked", request_id: "test" },
+  visits: [
+    {
+      id: "33000000-0000-4000-8000-000000000002",
+      type: "service",
+      status: "scheduled",
+      window_start: "2027-09-25T03:30:00.000Z",
+    },
+  ],
+  payments: [],
+} satisfies OpsReply<"/api/deletion-requests/{id}/decision", "post", 409>;
 const CHECKED = "I have confirmed this request with the client, on their own number.";
 
 async function open(page: Page, decision = json({ state: "done" })): Promise<void> {
@@ -146,7 +160,7 @@ test("says so when someone has decided it already, and the client is not erased"
 });
 
 test("says what to settle first when the client still has a visit booked, and erases nothing", async ({ page }) => {
-  await open(page, fails(409, "visit_booked"));
+  await open(page, json(VISIT_BOOKED, 409));
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
   await page.getByRole("button", { name: "Delete this account" }).click();

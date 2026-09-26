@@ -298,8 +298,14 @@ export interface Fake {
   tooEarly: boolean;
   /** What the check-in answers: pass, or a distance outside the radius. */
   checkIn: { passed: boolean; distance_m: number | null };
-  /** How long the no-show wait runs from the check-in, in minutes. */
+  /** How long the no-show wait runs from the check-in, in whole minutes, as ops set it. */
   waitMinutes: number;
+  /**
+   * Set to answer a passing check-in with only this many milliseconds of the wait
+   * left, so a test need not wait whole minutes. The API answers so for a check-in
+   * the phone made earlier and sent late, which keeps its claimed time (ADR 0065).
+   */
+  waitLeftMs: number | null;
   /** False for an address saved by typing, which has no coordinate for Navigate to take. */
   pin: boolean;
   /** The first job's type: a replacement or a first fit has the piece step. */
@@ -368,6 +374,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     tooEarly: false,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
+    waitLeftMs: null,
     pin: true,
     type: "service",
     pieces: [],
@@ -450,7 +457,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
 
       if (path.endsWith("/checkin")) {
         const now = new Date();
-        const waitEnds = new Date(now.getTime() + fake.waitMinutes * 60_000).toISOString();
+        const waitEnds = new Date(now.getTime() + (fake.waitLeftMs ?? fake.waitMinutes * 60_000)).toISOString();
         if (fake.checkIn.passed) {
           fake.progress = {
             ...fake.progress,
