@@ -41,7 +41,7 @@ npm run verify              # all of these in one, the tests without coverage; b
 npm run typecheck && npm run check:types
 npm run lint
 npm run format:check
-npm run test:coverage       # Worker tests in workerd, script tests in Node; 85% lines on src/
+npm run test:coverage       # Worker tests in workerd, script tests in Node; 90% lines, 80% branches on src/
 npm run check:config        # environment isolation in both wrangler configs
 npm run check:migrations    # forward-only, contract steps need an ADR (docs/migrations.md)
 npm run build               # both Workers, every environment, dry run
