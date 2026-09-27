@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { refer } from "../../apps/app/src/content.ts";
 import { inviteDescription, inviteTitle } from "../../site/src/content/referral.ts";
+import { serviceArea } from "../../site/src/content/service.ts";
 
 describe("the app's preview of an invite", () => {
   it("is titled as the landing's preview, named and not", () => {
@@ -17,5 +18,11 @@ describe("the app's preview of an invite", () => {
     expect(refer.preview.body).toBe(
       inviteDescription({ state: "valid", referrer_first_name: null, card: { state: "house", version: 1 } }),
     );
+  });
+
+  // A client not yet fitted cannot say they had theirs fitted, so their message says where we come instead
+  // (ADR 0083): the site's area, as the preview above it does.
+  it("names the landing's area in the message of a client not yet fitted", () => {
+    expect(refer.preview.messageBeforeFit("https://maneman.in/r/RM4417")).toContain(serviceArea);
   });
 });

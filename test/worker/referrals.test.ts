@@ -5,7 +5,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
-import { newReferralCode } from "../../src/domain/referrals.ts";
+import { settleReferrals } from "../../src/domain/referral-grants.ts";
+import { attribute, inviteOf, newReferralCode } from "../../src/domain/referrals.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
@@ -427,6 +428,82 @@ describe("POST /api/r/:code/*: the Idempotency-Key", () => {
     expect(first.status).toBe(201);
     expect(await again.json()).toEqual({ area: "Bandra", credits: true, invite: "valid" });
     expect(await count("SELECT COUNT(*) AS n FROM leads")).toBe(1);
+  });
+});
+
+// The owner's ruling of 27 September 2026: every signed-in client can share an invite, not only a fitted one, and
+// a friend fitted through it rewards both sides as before (ADR 0083).
+describe("a referrer not yet fitted", () => {
+  const FRIEND_ID = "77777777-7777-4777-8777-777777777777";
+  const FRIEND_FIT = "88888888-8888-4888-8888-888888888888";
+
+  /** A consultation two days on, which makes the referrer a lead. */
+  async function consultationBooked() {
+    const start = new Date(NOW.getTime() + 2 * DAY).toISOString();
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         fsm_modified_at, synced_at)
+       VALUES ('lead-consultation', 'fsm-lead-consultation', ?1, 'consultation', 'scheduled', 'Scheduled', ?2, ?2,
+         ?3, ?3)`,
+    )
+      .bind(REFERRER, start, NOW.toISOString())
+      .run();
+  }
+
+  async function firstFitDone(appointmentId: string, personId: string) {
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         fsm_modified_at, synced_at)
+       VALUES (?1, ?2, ?3, 'first_fit', 'completed', 'Completed', '2026-09-20T03:30:00.000Z',
+         '2026-09-20T06:00:00.000Z', ?4, ?4)`,
+    )
+      .bind(appointmentId, `fsm-${appointmentId}`, personId, NOW.toISOString())
+      .run();
+    await env.DB.prepare("INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES (?1, ?2, 'done', ?3)")
+      .bind(crypto.randomUUID(), appointmentId, NOW.toISOString())
+      .run();
+  }
+
+  it("has a code, a link and a balance, with nothing booked and as a lead, and the landing reads the invite", async () => {
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
+    const read = async (path: string) =>
+      (await request(client(), path, { headers: { Cookie: cookie } })).json<Record<string, unknown>>();
+
+    expect(await read("/api/me")).toMatchObject({ state: "nothing_booked" });
+    const before = await read("/api/refer");
+    expect(before).toMatchObject({
+      code: expect.stringMatching(/^RM[A-HJ-NP-Z2-9]{4}$/) as string,
+      link: `http://localhost:4321/r/${String(before.code)}`,
+      credits: { visits: 0, earliest_expiry: null },
+      fitted: [],
+    });
+
+    await consultationBooked();
+    expect(await read("/api/me")).toMatchObject({ state: "lead" });
+    expect(await read("/api/refer")).toEqual(before);
+    expect(await (await request(site(), `/api/r/${String(before.code)}`)).json()).toEqual({
+      state: "valid",
+      referrer_first_name: null,
+      card: { state: "house", version: 1 },
+    });
+  });
+
+  it("gets 3 service visits with the friend, once a friend they invited is fitted", async () => {
+    await consultationBooked();
+    const code = await codeOf();
+    await person(FRIEND_ID, "Karan Bhatia", "+919810000002");
+    const invite = await inviteOf(env.DB, code, true);
+    if (invite === null) throw new Error("the lead's invite is not known");
+    expect(
+      await attribute(env.DB, { invite, personId: FRIEND_ID, via: "consultation", pincode: null, now: NOW }),
+    ).toEqual({ credits: true, lapsed: false });
+
+    await firstFitDone(FRIEND_FIT, FRIEND_ID);
+    const settled = await settleReferrals(env.DB, NOW);
+    expect(settled).toMatchObject({ granted: 1, held: 0 });
+    expect(settled.messageIds).toHaveLength(2);
+    expect((await creditBalance(env.DB, FRIEND_ID, NOW)).visits).toBe(3);
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(3);
   });
 });
 

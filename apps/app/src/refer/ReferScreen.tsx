@@ -3,8 +3,8 @@
 // only (docs/decisions/0048-referrals.md). A client who came through an invite whose credits ops are reviewing,
 // or refused, is told so beneath the credit (docs/decisions/0074-hand-offs-and-messages.md; the board draws none).
 //
-// Until their first fit a client has nothing to vouch for, and the invite's own words ("Had my hair system
-// fitted") would not be true: board B2 draws Refer for a lead as reachable but empty.
+// Every signed-in client can share an invite, fitted or not, where board B2 draws Refer for a lead as reachable
+// but empty (docs/decisions/0083-anyone-signed-in-can-refer.md).
 
 import { ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -13,10 +13,8 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, type Refer } from "../api.ts";
-import { empty, refer } from "../content.ts";
+import { refer } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
-import { EmptyState } from "../home/TabScreens.tsx";
-import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ShareSheet } from "./ShareSheet.tsx";
@@ -93,7 +91,7 @@ function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
   );
 }
 
-function Fitted() {
+function Referrals() {
   const [loaded, retry] = useLoad(useCallback(() => api.refer(), []));
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PageFailed onRetry={retry} />;
@@ -101,10 +99,9 @@ function Fitted() {
 }
 
 export function ReferScreen() {
-  const { me } = useSession();
   return (
     <Shell header={{ kind: "tab", title: refer.title }} tab="/refer">
-      {me.state === "fitted" ? <Fitted /> : <EmptyState lines={empty.refer.lines} />}
+      <Referrals />
     </Shell>
   );
 }

@@ -836,6 +836,31 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
   await empty.close();
 }
 
+/**
+ * F1 and F4 for the design's lead, who has no credits and has agreed to nothing: every signed-in client can share
+ * an invite, and before a first fit it is the house card, in words true for them (ADR 0083).
+ */
+async function referBeforeFitPairs(browser: Browser, design: Page): Promise<void> {
+  const lead = await openApp(browser, "/refer", {
+    "/api/me": json(ME),
+    "/api/refer": json({
+      ...REFER,
+      named: false,
+      credits: { visits: 0, earliest_expiry: null },
+      card: { state: "house", version: 1, consented: false },
+      fitted: [],
+    }),
+  });
+  await lead.getByRole("button", { name: "Share an invite" }).waitFor();
+  await pair(OUT, WIDTH, "f1-refer-before-fit", await frame(design, "Refer · landing"), await shot(lead));
+
+  await lead.getByRole("button", { name: "Share an invite" }).click();
+  await lead.getByRole("heading", { name: /^Preview/ }).waitFor();
+  await photographsIn(lead);
+  await pair(OUT, WIDTH, "f4-share-before-fit", await frame(design, "Refer · share"), await shot(lead));
+  await lead.close();
+}
+
 const servers: Server[] = [
   await serveDirectory(APP_DIR, 4314, undefined, { spa: true }),
   await serveDirectory(DESIGN_DIR, 4313),
@@ -853,6 +878,7 @@ try {
   await bookingPairs(browser, design);
   await changePairs(browser, design);
   await referPairs(browser, design);
+  await referBeforeFitPairs(browser, design);
   console.log(`fidelity: written to ${OUT}`);
 } finally {
   await browser.close();
