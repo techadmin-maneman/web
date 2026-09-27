@@ -58,7 +58,6 @@
   --ops-consent-state: 92px; /* a consent's state, date and notice, beside the purpose (board B3) */
   --ops-consent-date: 96px;
   --ops-consent-notice: 72px;
-  --ops-technician: 120px; /* the roster's name column, which board D3 draws as the 1fr of its five */
   --ops-zone: 96px; /* and the zone beside it */
   --ops-jobs: 64px; /* the jobs he has finished, right aligned as every column of figures is */
   --ops-service: 88px; /* and how they ran against the length they were planned for */

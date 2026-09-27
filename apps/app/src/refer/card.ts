@@ -3,6 +3,7 @@
 // photographs never leave the phone except as this card, which goes to the API only when the client shares it
 // (docs/decisions/0048-referrals.md).
 
+import { cssToken } from "@maneman/ui/cssToken";
 import type { PhotoTimeline } from "../api.ts";
 import type { CardColours } from "./card-layout.ts";
 import type { ComposeRequest } from "./compose.worker.ts";
@@ -24,9 +25,7 @@ export function firstFitPhotos(timeline: PhotoTimeline): FirstFitPair | null {
 
 /** The brand's colours, as the page's stylesheet holds them (packages/brand/tokens.css). */
 function cardColours(): CardColours {
-  const style = getComputedStyle(document.documentElement);
-  const token = (name: string) => style.getPropertyValue(name).trim();
-  return { ink: token("--ink"), gilt: token("--gilt"), paper: token("--paper") };
+  return { ink: cssToken("--ink"), gilt: cssToken("--gilt"), paper: cssToken("--paper") };
 }
 
 async function photograph(url: string): Promise<Blob | null> {

@@ -9,6 +9,7 @@ The design values every Mane Man front end shares: the public site now, and the 
 | `@maneman/brand/fonts.css`         | EB Garamond and Instrument Sans, self-hosted, with ₹ from a one-glyph file (`npm run fonts` rebuilds it)                                                 |
 | `@maneman/brand/icons`             | `ICONS` (Phase 1, frozen), `ICONS_P2` (the nine Phase 2 glyphs), `HEAD_OUTLINE` and `ICON_STROKE`                                                        |
 | `@maneman/brand/marks`             | The mark and both cuts of the wordmark, as path data from `design/brand`                                                                                 |
+| `@maneman/brand/colours`           | `colourOf()`, a colour token's value read from `tokens.css`, for what is drawn outside a stylesheet at build time: icons, card images, the house card    |
 
 The brand kit's SVG files stay in `design/brand/`, which is the owner's export.
 

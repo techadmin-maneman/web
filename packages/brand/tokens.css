@@ -103,8 +103,6 @@
   --fs-upload-title: clamp(32px, 4.6vw, 60px);
   --fs-countdown: clamp(44px, 6vw, 64px);
   --fs-error-title: clamp(28px, 3.6vw, 44px);
-  --fs-book-title: clamp(32px, 4.6vw, 56px);
-  --fs-booked-title: clamp(32px, 4.4vw, 52px);
 
   /* ---- Fixed spaces ------------------------------------------------------ */
   --sp-2: 2px;
@@ -171,13 +169,10 @@
   --measure-lead: 620px;
   --measure-hero-body: 600px;
   --measure-note: 560px;
-  --measure-done-note: 540px;
   --measure-closing: 520px;
   --measure-upload-title: 520px;
   --measure-error: 520px;
   --measure-short: 480px;
-  --measure-book-title: 480px;
-  --measure-book-intro: 460px;
   --measure-form: 440px;
   --measure-button-column: 360px;
 
@@ -274,20 +269,14 @@
   --gate-frame-h: clamp(300px, 44vw, 420px);
   --gate-blur: 7px;
   --result-gap: clamp(28px, 4vw, 56px);
-  --result-frame-h: clamp(340px, 52vw, 520px);
   /* The result takes the photograph's own shape, up to this (site/src/lib/frame-aspect.ts). */
   --result-frame-max-h: min(70vh, 720px);
   --result-handle: 48px;
   --error-frame-h: clamp(200px, 28vw, 260px);
   --error-title-gap: clamp(24px, 3vw, 36px);
 
-  /* ---- Booking ----------------------------------------------------------- */
+  /* ---- The legal pages and the 404, whose tops are the retired booking page's ---- */
   --book-pad-top: clamp(40px, 6vw, 88px);
-  --book-card-pad: clamp(22px, 3vw, 40px);
-  --field-min: 200px;
-  --booked-title-gap: clamp(22px, 3vw, 32px);
-  --booked-rows-gap: clamp(28px, 3vw, 40px);
-  --booked-actions-gap: clamp(28px, 4vw, 40px);
 
   /* ---- The referral landing and /book (Referral and Waitlist, C1 to C5): 390, then 1440 ---- */
   --landing-pad-top: clamp(26px, 4.4vw, 64px);

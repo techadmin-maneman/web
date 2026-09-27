@@ -9,6 +9,7 @@
     "./Button": "./Button.tsx",
     "./Caps": "./Caps.tsx",
     "./classes": "./classes.ts",
+    "./cssToken": "./cssToken.ts",
     "./Dialog": "./Dialog.tsx",
     "./ErrorBoundary": "./ErrorBoundary.tsx",
     "./Field": "./Field.tsx",

@@ -39,13 +39,13 @@ describe("icons", () => {
   });
 
   it("GLYPHS, the apps' own, repeats none of the icon sets", () => {
-    const sets = new Set([...Object.values(ICONS), ...Object.values(ICONS_P2)]);
+    const sets = new Set<string>([...Object.values(ICONS), ...Object.values(ICONS_P2)]);
     expect(Object.values(GLYPHS).filter((path) => sets.has(path))).toEqual([]);
   });
 
   // DS-24: the technician app re-declared five of the set's glyphs, and both apps the chevron and the tick.
   it.each(["apps/app/src/icons.ts", "apps/tech/src/icons.ts"])("%s declares no glyph the brand holds", (file) => {
-    const held = new Set([...Object.values(ICONS), ...Object.values(ICONS_P2), ...Object.values(GLYPHS)]);
+    const held = new Set<string>([...Object.values(ICONS), ...Object.values(ICONS_P2), ...Object.values(GLYPHS)]);
     const declared = [...readFileSync(file, "utf8").matchAll(/"(M[^"]+)"/g)].map((match) => match[1] ?? "");
     expect(declared.filter((path) => held.has(path))).toEqual([]);
   });
@@ -75,6 +75,35 @@ describe("marks", () => {
         file,
       ).toEqual([drawing.d]);
     }
+  });
+});
+
+describe("every token", () => {
+  const files = ["packages/brand/tokens.css", "packages/brand/tokens-phase2.css"];
+  const names = files.flatMap((file) =>
+    [...readFileSync(file, "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""),
+  );
+
+  // DS-15: --fs-30 was once defined twice, which a Map of the names hides.
+  it("is defined once across the brand's token files", () => {
+    expect(names.filter((name, index) => names.indexOf(name) !== index)).toEqual([]);
+  });
+
+  // DS-16: eleven were left behind by the Phase 1 booking form.
+  it("is used by a stylesheet, a component or a script, or it is not a token", () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const path = `${dir}/${entry.name}`;
+        if (["node_modules", "dist", ".astro"].includes(entry.name)) return [];
+        return entry.isDirectory() ? walk(path) : [path];
+      });
+    const text = ["apps", "site/src", "packages", "scripts"]
+      .flatMap(walk)
+      .filter((path) => /\.(css|astro|tsx?|html)$/.test(path))
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
+    const used = new Set([...text.matchAll(/var\((--[a-z0-9-]+)/g)].map((match) => match[1]));
+    expect(names.filter((name) => !used.has(name))).toEqual([]);
   });
 });
 
