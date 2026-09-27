@@ -963,7 +963,7 @@ Request body:
 }
 ```
 
-**409**: taken: nobody is free in that window now; not_changeable; or ops_assisted
+**409**: address_required: the client has not given the address the visit goes to; taken: nobody is free in that window now; not_changeable; or ops_assisted
 
 ```json
 {
@@ -1438,6 +1438,7 @@ Request body:
             "taken",
             "not_bookable",
             "hold_expired",
+            "address_required",
             "already_booked",
             "not_changeable",
             "terms_changed",

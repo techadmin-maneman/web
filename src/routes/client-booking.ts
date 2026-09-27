@@ -13,6 +13,10 @@
 // visits (docs/decisions/0046-moving-and-cancelling.md): with its technician,
 // priced at what the move costs now.
 //
+// No slot is held, for a new visit or a move, until the client has given the
+// address the visit goes to, and the hold carries its pincode
+// (docs/decisions/0079-an-address-before-a-slot.md).
+//
 // Once paid for, a hold keeps its time until it is booked or refunded, and the
 // client can no longer let it go (docs/decisions/0068-a-paid-hold-is-kept.md).
 
@@ -24,7 +28,8 @@ import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-
 import { startBooking } from "../domain/bookings.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { priceOf, type Price } from "../domain/price-book.ts";
-import { bookingPincode, checkoutHold, clientHold, releaseHold } from "../domain/holds.ts";
+import { checkoutHold, clientHold, releaseHold } from "../domain/holds.ts";
+import { currentAddress } from "../domain/profile.ts";
 import {
   activeTechnicians,
   availability,
@@ -38,6 +43,7 @@ import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
+import { isFullAddress } from "../policy/booking.ts";
 import { LATE_FEES } from "../policy/moving-a-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -178,7 +184,10 @@ const holdRoute = createRoute({
   responses: {
     201: { description: "Held", content: { "application/json": { schema: HoldSchema } } },
     401: errorResponse("session_required"),
-    409: errorResponse("taken: nobody is free in that window now; not_changeable; or ops_assisted"),
+    409: errorResponse(
+      "address_required: the client has not given the address the visit goes to; taken: nobody is free in that " +
+        "window now; not_changeable; or ops_assisted",
+    ),
     422: errorResponse("not_bookable: this kind of visit, or that day, is not open to the client"),
   },
 });
@@ -330,6 +339,8 @@ export function registerClientBooking(app: App): void {
     if (price === null || date < first || date > addDays(first, BOOKING_DAYS - 1)) {
       return c.json(errorBody("not_bookable", c.var.requestId), 422);
     }
+    const address = await currentAddress(c.env.DB, session.subjectId);
+    if (!isFullAddress(address)) return c.json(errorBody("address_required", c.var.requestId), 409);
     const moves =
       move === null
         ? undefined
@@ -346,7 +357,7 @@ export function registerClientBooking(app: App): void {
         window,
         price,
         lateFee: lateFeeItem === undefined ? null : await priceOf(c.env.DB, lateFeeItem, date),
-        pincode: await bookingPincode(c.env.DB, session.subjectId),
+        pincode: address.pincode,
         useCredit,
         from: "app",
         ...(moves === undefined ? {} : { moves }),

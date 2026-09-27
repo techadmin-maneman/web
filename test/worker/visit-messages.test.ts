@@ -25,6 +25,7 @@ import {
   markDatabase,
   NOW,
   request,
+  savedAddress,
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -270,6 +271,7 @@ describe("the day-before reminders", () => {
 
 describe("what queues a visit message", () => {
   it("a paid booking queues its receipt, and a free consultation its confirmation", async () => {
+    await savedAddress(PERSON);
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
     const app = appFor("local", fakeDependencies(), {}, "client");
     const answer = await request(app, "/api/holds", {

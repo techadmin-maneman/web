@@ -9,7 +9,7 @@ import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/d
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -41,6 +41,7 @@ beforeEach(async () => {
   )
     .bind(PERSON, NOW.toISOString())
     .run();
+  await savedAddress(PERSON);
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
 });
 

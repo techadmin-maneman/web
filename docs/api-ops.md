@@ -1852,6 +1852,7 @@ Who Access let through, and where signing out goes
             "taken",
             "not_bookable",
             "hold_expired",
+            "address_required",
             "already_booked",
             "not_changeable",
             "terms_changed",
