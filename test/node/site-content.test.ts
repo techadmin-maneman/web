@@ -14,6 +14,7 @@ import { publishProblems } from "../../site/src/lib/publish-gate.ts";
 import { headersFile, robotsFile } from "../../site/src/lib/static-files.ts";
 import { fill } from "../../site/src/lib/text.ts";
 import { PRESETS } from "../../src/config/presets.ts";
+import { COPY_LONG_EDGE_PX, MAX_COPY_BYTES } from "../../src/config/tryon.ts";
 import { VISIT_BLOCKS } from "../../src/config/scheduling.ts";
 
 const BLOCKS: Record<PlaceholderBlockName, { publish: boolean }> = {
@@ -55,17 +56,44 @@ describe("content", () => {
     expect(site.looks[0]).toMatchObject({ density: "Full density", detail: "Natural hairline · short" });
   });
 
-  it("builds the consent screen from the backend's photo notice, word for word", () => {
-    expect(site.tryOn.consent.title).toBe("What happens to your photograph.");
-    expect(site.tryOn.consent.rows.map((row) => row.k)).toEqual([
-      "Used for",
-      "Kept for",
-      "Training",
-      "Shared with",
-      "To withdraw",
-    ]);
-    expect(site.tryOn.consent.agreement).toBe("I understand, and I agree to my photograph being used this way.");
-    expect(site.tryOn.gate.title).toBe("Where should we send it?");
+  it("builds the consent screen and the gate from the backend's notices, word for word, in either promise", () => {
+    for (const promise of Object.values(site.tryOnPromises)) {
+      const consent = site.consentCopy(promise.photo);
+      expect(consent.title).toBe("What happens to your photograph.");
+      expect(consent.rows.map((row) => row.k)).toEqual([
+        "Used for",
+        "Kept for",
+        "Training",
+        "Shared with",
+        "To withdraw",
+      ]);
+      expect(consent.agreement).toBe("I understand, and I agree to my photograph being used this way.");
+      expect(site.gateCopy(promise.gate).title).toBe("Where should we send it?");
+    }
+  });
+
+  // ADR 0084: the notices that keep a client's try-on await counsel, so production keeps the approved pair, and
+  // today's rules, and sends no copy.
+  it("makes production the approved promise, and every other build the one awaiting counsel, which sends the copy", () => {
+    const { approved, awaitingCounsel } = site.tryOnPromises;
+    expect(approved.photo).toEqual(site.notices.photo);
+    expect(approved.gate).toEqual(site.notices.gate);
+    expect([approved.photo.approved, approved.gate.approved, approved.sendsCopy]).toEqual([true, true, false]);
+    expect([awaitingCounsel.photo.version, awaitingCounsel.gate.version]).toEqual(["photo-v2", "gate-v2"]);
+    expect([awaitingCounsel.photo.approved, awaitingCounsel.sendsCopy]).toEqual([false, true]);
+    expect(site.privacyPage(awaitingCounsel.privacy).paragraphs[0]).toContain(
+      "we keep a small copy of your photograph in your Mane Man account as your before photo",
+    );
+    expect(readFileSync("site/src/lib/build.ts", "utf8")).toContain(
+      `TRY_ON_PROMISE: TryOnPromiseName = IS_PRODUCTION ? "approved" : "awaitingCounsel"`,
+    );
+  });
+
+  it("makes the small copy the size the API keeps, as the technician's camera makes a visit photograph", () => {
+    const encoder = readFileSync("packages/web-kit/small-jpeg.ts", "utf8");
+    expect(MAX_COPY_BYTES).toBe(250 * 1024);
+    expect(encoder).toContain("SMALL_JPEG_BYTES = 250 * 1024");
+    expect(encoder).toContain(`SMALL_JPEG_LONG_EDGE = ${String(COPY_LONG_EDGE_PX)}`);
   });
 
   it("holds every placeholder value the gate knows in each unpublished block, so the gate list stays accurate", () => {

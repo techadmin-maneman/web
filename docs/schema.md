@@ -764,7 +764,7 @@ Indexes:
 
 A visit's set of photographs, before or after (ADR 0028).
 
-Made by `0013_client_photos.sql`.
+Made by `0013_client_photos.sql`; changed by `0045_kept_try_ons.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -775,6 +775,7 @@ Made by `0013_client_photos.sql`.
 
 Indexes:
 
+- `photo_sets_by_created`: on (`created_at`)
 - A `UNIQUE` constraint: unique on (`appointment_id`, `phase`)
 
 ## photos
@@ -1126,7 +1127,7 @@ Indexes:
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 
-Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`.
+Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1164,6 +1165,9 @@ Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`.
 | `photo_consent_at` | TEXT | no |  |  |
 | `ip_hash` | TEXT | no |  |  |
 | `request_id` | TEXT | no |  |  |
+| `copy_key` | TEXT | yes |  |  |
+| `kept_at` | TEXT | yes |  |  |
+| `kept_look_key` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1171,6 +1175,7 @@ Indexes:
 - `tryon_jobs_by_session`: on (`session_id`)
 - `tryon_jobs_by_state`: on (`state`, `created_at`)
 - `tryon_jobs_by_upload`: on (`upload_key`)
+- `tryon_jobs_one_kept`: unique on (`person_id`), where `kept_at IS NOT NULL`
 - `tryon_jobs_photos_held`: on (`upload_key`, `created_at`, `state`), where `upload_deleted_at IS NULL AND uploaded_at IS NOT NULL`
 
 ## tryon_sessions

@@ -1,12 +1,13 @@
 import { ICONS } from "@maneman/brand/icons";
-import { tryOn } from "../../content/site.ts";
+import { gateCopy, tryOn, type Notice } from "../../content/site.ts";
 import { formatMobile } from "../../lib/phone.ts";
 import { Icon } from "../Drawings.tsx";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
-/** Step five: the result is ready. The name and number are optional, as the copy says. */
+/** Step five: the result is ready. The name and number are optional, as the gate's notice says. */
 export function Gate(props: {
+  notice: Notice;
   name: string;
   mobile: string;
   nameBad: boolean;
@@ -19,6 +20,7 @@ export function Gate(props: {
   onSubmit: (event: Event) => void;
 }) {
   const { nameBad, mobileBad, sending } = props;
+  const words = gateCopy(props.notice);
   return (
     <div class={styles.gate}>
       <div class={styles.gateImage}>
@@ -27,11 +29,11 @@ export function Gate(props: {
           <div class={styles.gateRight} />
           <span class={`caps ${styles.gateReady}`}>{tryOn.gate.ready}</span>
         </div>
-        <p class={styles.gateCaption}>{tryOn.gate.caption}</p>
+        <p class={styles.gateCaption}>{words.caption}</p>
       </div>
       <form onSubmit={props.onSubmit} noValidate>
-        <Title heading={props.heading}>{tryOn.gate.title}</Title>
-        <p class={styles.body}>{tryOn.gate.body}</p>
+        <Title heading={props.heading}>{words.title}</Title>
+        <p class={styles.body}>{words.body}</p>
         <div class={styles.fields}>
           <div>
             <label class={styles.fieldLabel} for="gate-name">
@@ -94,7 +96,7 @@ export function Gate(props: {
           {sending && <Icon path={ICONS.sending} size={15} stroke={1.7} />}
           {sending ? tryOn.gate.sending : tryOn.gate.submit}
         </button>
-        <div class={styles.reassurance}>{tryOn.gate.reassurance}</div>
+        <div class={styles.reassurance}>{words.reassurance}</div>
       </form>
     </div>
   );

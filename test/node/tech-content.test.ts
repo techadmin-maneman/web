@@ -50,16 +50,19 @@ describe("photographs never touch the phone's gallery", () => {
     expect(withCapture).toEqual([]);
   });
 
+  // The encoding is shared with the site's try-on copy (packages/web-kit/small-jpeg.ts, ADR 0084).
   it("takes its frames from getUserMedia into a canvas", () => {
     const capture = readFileSync(`${SOURCE}/camera/capture.ts`, "utf8");
+    const encoder = readFileSync("packages/web-kit/small-jpeg.ts", "utf8");
     expect(capture).toContain("getUserMedia");
-    expect(capture).toContain("toBlob");
-    expect(capture).toContain("image/jpeg");
+    expect(capture).toContain("smallJpeg(video,");
+    expect(encoder).toContain("toBlob");
+    expect(encoder).toContain("image/jpeg");
   });
 
   it("re-encodes to about the 250 KB ADR 0039's R2 budget assumes", () => {
-    const capture = readFileSync(`${SOURCE}/camera/capture.ts`, "utf8");
-    expect(capture).toContain("TARGET_BYTES = 250 * 1024");
+    const encoder = readFileSync("packages/web-kit/small-jpeg.ts", "utf8");
+    expect(encoder).toContain("SMALL_JPEG_BYTES = 250 * 1024");
     expect(readFileSync("docs/decisions/0039-phase-2-budget.md", "utf8")).toContain("about 250 KB each");
   });
 });

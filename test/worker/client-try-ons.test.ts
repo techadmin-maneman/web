@@ -22,11 +22,12 @@ const at = (offsetMs: number) => new Date(NOW.getTime() + offsetMs).toISOString(
 
 interface TryOnImage {
   url: string;
-  kept_until: string;
+  kept_until: string | null;
 }
 interface TryOn {
   id: string;
   made_on: string;
+  kept: boolean;
   photo: TryOnImage | null;
   look: TryOnImage | null;
 }
@@ -164,6 +165,7 @@ describe("GET /api/photos's try-ons", () => {
       job,
       mobileE164: MOBILE,
       name: "Rohit Malhotra",
+      gateNotice: "gate-v1",
       attribution: {},
       ipHash: "ip-hash",
       requestId: "request",
@@ -245,5 +247,126 @@ describe("GET /api/photos/try-on/{image}/{token}", () => {
 
     await env.DB.prepare("UPDATE tryon_jobs SET expires_at = ?1").bind(at(-MINUTE)).run();
     expect((await get(tryOn.look?.url ?? "")).status).toBe(404);
+  });
+});
+
+// The owner's ruling of 27 September 2026: "Show the before photo always, keep the generated image till the photos
+// for first fit are taken" (docs/decisions/0084-a-clients-try-on-is-kept.md).
+describe("a client's try-on, kept", () => {
+  const copyOf = (id: string) => `tryons/${id}/before.jpg`;
+
+  /** A look made under the notice that keeps a client's try-on, with the small copy the site sent. */
+  async function withCopy(id: string, createdAgoMs: number, columns: Record<string, string | number | null> = {}) {
+    await madeLook(id, createdAgoMs, { photo_consent_version: "photo-v2", copy_key: copyOf(id), ...columns });
+    await env.CLIENT_PHOTOS.put(copyOf(id), syntheticJpeg(900, 1200), { httpMetadata: { contentType: "image/jpeg" } });
+  }
+
+  async function booksAVisit(type = "consultation", id = `visit-${type}`): Promise<void> {
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+         fsm_modified_at, synced_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?5, 'scheduled', 'Scheduled', ?5, ?5)`,
+    )
+      .bind(id, `fsm-${id}`, CLIENT, type, at(3 * DAY))
+      .run();
+  }
+
+  async function firstFitPhotographed(): Promise<void> {
+    await booksAVisit("first_fit", "visit-first-fit");
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES ('set', 'visit-first-fit', 'before', ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, created_at)
+         VALUES ('p', 'set', 'front', 'visits/visit-first-fit/front.jpg', 'image/jpeg', 1000, ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+  }
+
+  it("shows the small copy as the photograph, held as long as the look, before the client books", async () => {
+    await withCopy("job", 2 * 60 * MINUTE, { upload_deleted_at: at(-MINUTE) });
+
+    const [tryOn] = await tryOns();
+    expect(tryOn?.kept).toBe(false);
+    expect(tryOn?.photo?.kept_until).toBe(at(14 * DAY - 120 * MINUTE));
+    expect(tryOn?.look?.kept_until).toBe(at(14 * DAY - 120 * MINUTE));
+  });
+
+  it("keeps the photograph and, until the first fit is photographed, the look, once the client has booked", async () => {
+    await withCopy("job", 2 * 60 * MINUTE, { upload_deleted_at: at(-MINUTE) });
+    await booksAVisit();
+
+    const [tryOn] = await tryOns();
+    expect(tryOn).toMatchObject({ id: "job", kept: true, photo: { kept_until: null }, look: { kept_until: null } });
+  });
+
+  it("keeps one try-on a client, the oldest; the others keep their days", async () => {
+    await withCopy("older", 3 * DAY);
+    await withCopy("newer", 60 * MINUTE);
+    await booksAVisit();
+
+    const listed = await tryOns();
+    expect(listed.map((tryOn) => [tryOn.id, tryOn.kept])).toEqual([
+      ["newer", false],
+      ["older", true],
+    ]);
+  });
+
+  it("shows the before photo alone after the first fit is photographed, and still on every visit after", async () => {
+    await withCopy("job", 20 * DAY, {
+      state: "expired",
+      upload_deleted_at: at(-20 * DAY),
+      kept_at: at(-6 * DAY),
+      kept_look_key: null,
+    });
+    await firstFitPhotographed();
+
+    const visitPhotos = async () => {
+      const [tryOn] = await tryOns();
+      expect(tryOn).toMatchObject({ id: "job", kept: true, photo: { kept_until: null }, look: null });
+      const photo = await get(tryOn?.photo?.url ?? "");
+      expect(photo.status).toBe(200);
+      expect(photo.headers.get("Content-Type")).toBe("image/jpeg");
+    };
+    await visitPhotos();
+    await visitPhotos();
+  });
+
+  it("serves a kept look from where it is kept, past the day the site keeps looks to", async () => {
+    await withCopy("job", 20 * DAY, {
+      state: "expired",
+      upload_deleted_at: at(-20 * DAY),
+      kept_at: at(-6 * DAY),
+      kept_look_key: "tryons/job/look.png",
+    });
+    await env.CLIENT_PHOTOS.put("tryons/job/look.png", syntheticPng(900, 1200), {
+      httpMetadata: { contentType: "image/png" },
+    });
+
+    const [tryOn] = await tryOns();
+    expect(tryOn?.look?.kept_until).toBeNull();
+    const look = await get(tryOn?.look?.url ?? "");
+    expect(look.status).toBe(200);
+    expect(look.headers.get("Content-Type")).toBe("image/png");
+  });
+
+  it("gives the look its day for a client whose first fit is photographed already", async () => {
+    await withCopy("job", 2 * 60 * MINUTE);
+    await firstFitPhotographed();
+
+    const [tryOn] = await tryOns();
+    expect(tryOn).toMatchObject({ kept: true, photo: { kept_until: null } });
+    expect(tryOn?.look?.kept_until).toBe(at(14 * DAY - 120 * MINUTE));
+  });
+
+  it("keeps today's rules for a try-on agreed to under the published notice, booked or not", async () => {
+    await madeLook("job", 30 * MINUTE);
+    await booksAVisit();
+
+    const [tryOn] = await tryOns();
+    expect(tryOn?.kept).toBe(false);
+    expect(tryOn?.photo?.kept_until).toBe(at(30 * MINUTE));
+    expect(tryOn?.look?.kept_until).toBe(at(14 * DAY - 30 * MINUTE));
   });
 });

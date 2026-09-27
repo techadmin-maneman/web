@@ -460,7 +460,7 @@ describe("a move and the time it goes to", () => {
     };
 
     await sweep(
-      { DB: env.DB, UPLOADS: env.UPLOADS, RESULTS: env.RESULTS, ...queues },
+      { DB: env.DB, UPLOADS: env.UPLOADS, RESULTS: env.RESULTS, CLIENT_PHOTOS: env.CLIENT_PHOTOS, ...queues },
       fakeDependencies(),
       createLogger(),
       {

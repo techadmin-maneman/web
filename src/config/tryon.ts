@@ -52,6 +52,13 @@ export const PHOTO_RETENTION_MS = HOUR_MS;
 export const MIN_SIDE_PX = 200;
 /** Premium's documented maximum; Pro's is 4095. */
 export const MAX_SIDE_PX = 4090;
+/**
+ * The small copy of the photograph a client keeps as their before photo (docs/decisions/0084-a-clients-try-on-is-kept.md),
+ * re-encoded in the browser as a visit photograph is on the technician's phone: a JPEG of about 250 KB, at most
+ * 1600 px on its long side.
+ */
+export const MAX_COPY_BYTES = 250 * 1024;
+export const COPY_LONG_EDGE_PX = 1600;
 
 /** How long the upload link from POST /api/tryon/upload-url works. */
 export const TRYON_UPLOAD_LINK_TTL_MS = 5 * MINUTE_MS;

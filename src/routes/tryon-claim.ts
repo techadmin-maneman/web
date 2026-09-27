@@ -9,6 +9,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
+import { CURRENT_NOTICE, findNotice } from "../config/notices.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob, loadSession, type JobRow } from "../domain/tryon.ts";
@@ -28,6 +29,17 @@ export const ClaimRequestSchema = z
     job_id: z.uuid(),
     name: z.string().trim().min(1).max(60),
     mobile: z.string().regex(INDIAN_MOBILE_PATTERN).openapi({ example: "98100 00000" }),
+    notice_version: z
+      .string()
+      .min(1)
+      .max(40)
+      .optional()
+      .openapi({
+        example: "gate-v1",
+        description:
+          "The gate's notice the page showed; the one production shows when left out. Staging's site shows the one " +
+          "awaiting counsel (docs/decisions/0084-a-clients-try-on-is-kept.md).",
+      }),
     attribution: AttributionSchema.optional(),
   })
   .strict()
@@ -108,6 +120,10 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
 
   const mobileE164 = toE164(request.mobile);
   if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request", fields: ["mobile"] };
+  const gateNotice = request.notice_version ?? CURRENT_NOTICE.result_delivery;
+  if (findNotice(gateNotice)?.purpose !== "result_delivery") {
+    return { ok: false, status: 400, code: "invalid_request", fields: ["notice_version"] };
+  }
 
   const job = await loadJob(db, request.job_id);
   if (job === null) return { ok: false, status: 404, code: "not_found" };
@@ -130,6 +146,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
     job,
     mobileE164,
     name: request.name,
+    gateNotice,
     attribution: request.attribution ?? {},
     ipHash: visitor.ipHash,
     requestId,

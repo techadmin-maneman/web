@@ -21,8 +21,14 @@
 
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
-import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
+import {
+  CURRENT_NOTICE,
+  findNotice,
+  LANDING_NOTICES,
+  TRY_ON_NOTICES_AWAITING_COUNSEL,
+} from "../../../src/config/notices.ts";
 import { PRESETS } from "../../../src/config/presets.ts";
+import { KEEPING_NOTICES } from "../../../src/policy/kept-try-ons.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
 
 export interface Picture {
@@ -59,6 +65,7 @@ function notice(version: string): Notice {
 // Notices
 // ---------------------------------------------------------------------------
 
+/** Every notice production shows, which its build refuses unless each is approved. */
 export const notices = {
   /** The try-on consent screen. */
   photo: notice(CURRENT_NOTICE.tryon_photo),
@@ -71,6 +78,40 @@ export const notices = {
   /** The waitlist's optional launch alert. */
   launchAlert: notice(CURRENT_NOTICE.whatsapp_launches),
 } as const;
+
+/**
+ * What the try-on promises of the photograph and the look, in two versions (docs/decisions/0084-a-clients-try-on-is-kept.md):
+ * the approved one, which production shows, and the one that keeps a client's try-on, which awaits counsel
+ * (docs/open-points.md, item 146) and which every other build shows. Production moves to it once counsel approves it.
+ */
+export interface TryOnPromise {
+  readonly photo: Notice;
+  readonly gate: Notice;
+  /** The site sends the photograph's small copy only under a notice that says a client keeps it. */
+  readonly sendsCopy: boolean;
+  /** The privacy page's sentences on the try-on. */
+  readonly privacy: string;
+}
+
+export type TryOnPromiseName = "approved" | "awaitingCounsel";
+
+function tryOnPromise(photo: string, gate: string, privacy: string): TryOnPromise {
+  return { photo: notice(photo), gate: notice(gate), sendsCopy: KEEPING_NOTICES.includes(photo), privacy };
+}
+
+export const tryOnPromises: Readonly<Record<TryOnPromiseName, TryOnPromise>> = {
+  approved: tryOnPromise(
+    CURRENT_NOTICE.tryon_photo,
+    CURRENT_NOTICE.result_delivery,
+    "If you use the try-on, your photograph is used only to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour; the simulation itself is kept for fourteen days. Giving your number at the end of the try-on is optional; if you give it, we use it to send you the result on WhatsApp and for nothing else.",
+  ),
+  // PLACEHOLDER: the try-on's sentences await counsel with the notices (docs/open-points.md, item 146).
+  awaitingCounsel: tryOnPromise(
+    TRY_ON_NOTICES_AWAITING_COUNSEL.photo,
+    TRY_ON_NOTICES_AWAITING_COUNSEL.gate,
+    "If you use the try-on, your photograph is used to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour; the simulation itself is kept for fourteen days. Giving your number at the end of the try-on is optional; if you give it, we use it to send you the result on WhatsApp. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.",
+  ),
+};
 
 // ---------------------------------------------------------------------------
 // Placeholder blocks
@@ -225,16 +266,24 @@ export const founderNote = {
   signature: "Founder, Mane Man",
 };
 
-/** The two long-form pages. Their text is supplied later. */
-export const legalPages = {
-  privacy: {
+/**
+ * The privacy page, with the try-on's sentences of one version of its promise (tryOnPromises), in the middle of its
+ * first paragraph.
+ */
+export function privacyPage(tryOnSentences: string) {
+  return {
     publish: true,
     title: "Privacy",
     paragraphs: [
-      "Mane Man Grooming Services Private Limited collects only what it needs to arrange your visit and your simulation. When you book, we keep your name, mobile number, the address the visit is at, preferred visit time and the extent of your hair loss, with how you reached this site. They are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM; your name, number and address also go to Zoho FSM, where our technicians' visits are arranged, so that the technician finds your door. We use them to arrange and confirm the visit and for nothing else, we never sell them, and we keep your address until you ask us to erase it. If you use the try-on, your photograph is used only to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour; the simulation itself is kept for fourteen days. Giving your number at the end of the try-on is optional; if you give it, we use it to send you the result on WhatsApp and for nothing else.",
+      `Mane Man Grooming Services Private Limited collects only what it needs to arrange your visit and your simulation. When you book, we keep your name, mobile number, the address the visit is at, preferred visit time and the extent of your hair loss, with how you reached this site. They are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM; your name, number and address also go to Zoho FSM, where our technicians' visits are arranged, so that the technician finds your door. We use them to arrange and confirm the visit and for nothing else, we never sell them, and we keep your address until you ask us to erase it. ${tryOnSentences}`,
       "The site sets two cookies of its own, both for the try-on: one keeps your session for thirty minutes, the other remembers for thirty days that you have had your one look, so that this browser can show it to you again while the simulation is kept. We count visits with Cloudflare Web Analytics, and measure our advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse. Under India's Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased: message us on WhatsApp at +91 90079 73247 and we erase it the same day.",
     ],
-  },
+  };
+}
+
+/** The two long-form pages. The privacy page is production's; privacy.astro shows each build its own. */
+export const legalPages = {
+  privacy: privacyPage(tryOnPromises.approved.privacy),
   // Drafted from the site's published prices, guarantee and try-on rules; the owner approved it on 22 September 2026.
   terms: {
     publish: true,
@@ -670,8 +719,9 @@ export const looks = PRESETS.map((preset) => {
   return { id: preset.id, label: preset.label, density, detail: rest.join(" · ") };
 });
 
-function photoNoticeParts(lines: readonly string[]) {
-  const [title = "", ...rest] = lines;
+/** The consent screen's words, from the photo notice: its title, its rows and the agreement. */
+export function consentCopy(photo: Notice) {
+  const [title = "", ...rest] = photo.lines;
   const agreement = rest.at(-1) ?? "";
   const rows = rest.slice(0, -1).map((line) => {
     const [k = "", ...v] = line.split(": ");
@@ -680,7 +730,11 @@ function photoNoticeParts(lines: readonly string[]) {
   return { title, rows, agreement };
 }
 
-const [gateCaption = "", gateTitle = "", gateBody = "", gateReassurance = ""] = notices.gate.lines;
+/** The gate's words, from its notice. */
+export function gateCopy(gate: Notice) {
+  const [caption = "", title = "", body = "", reassurance = ""] = gate.lines;
+  return { caption, title, body, reassurance };
+}
 
 export const tryOn = {
   back: "Back",
@@ -719,8 +773,8 @@ export const tryOn = {
     previewAlt: "The photograph you chose",
     oval: "Fill the oval",
   },
+  /** With the photo notice's words (consentCopy). */
   consent: {
-    ...photoNoticeParts(notices.photo.lines),
     continue: "Continue",
     privacy: {
       before: "The full ",
@@ -753,11 +807,9 @@ export const tryOn = {
       { label: "Matching the light", at: 16 },
     ],
   },
+  /** With the gate notice's words (gateCopy). */
   gate: {
-    caption: gateCaption,
     ready: "Your result · ready",
-    title: gateTitle,
-    body: gateBody,
     name: "Name",
     namePlaceholder: "Your name",
     nameError: "Tell us what to call you.",
@@ -766,7 +818,6 @@ export const tryOn = {
     mobileError: "Enter all ten digits so we can send the result.",
     submit: "Show me the result",
     sending: "Saving",
-    reassurance: gateReassurance,
     errors: {
       rateLimited: "This number has had several results today. Please try again tomorrow.",
       taken: "This result is already saved to another number.",

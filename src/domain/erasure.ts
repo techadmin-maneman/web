@@ -21,6 +21,7 @@
 import type { VisitType } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
+import { copyKey, keptLookKey } from "./kept-try-ons.ts";
 import { recordEvent } from "./tryon.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
@@ -237,7 +238,7 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
 }
 
 /**
- * An erased person's files: their try-on photographs and results, their visit
+ * An erased person's files: their try-on photographs, results, small copies and kept looks, their visit
  * photographs (docs/decisions/0049-dpdp.md) and their referral card. Each is
  * deleted from R2 before the row that names it, so a run that fails part-way
  * leaves the rest for the next.
@@ -262,10 +263,20 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
     `results/${job.id}.png`,
     `results/${job.id}.jpg`,
   ]);
+  // A client's kept copy and look (docs/decisions/0084-a-clients-try-on-is-kept.md), under every key either can
+  // have, for a sweep that stored one and was stopped before it said so.
+  const kept = jobs.flatMap((job) => [
+    copyKey(job.id),
+    keptLookKey(job.id, "image/png"),
+    keptLookKey(job.id, "image/jpeg"),
+  ]);
   await deleteKeys(env.UPLOADS, photos);
   await deleteKeys(env.RESULTS, results);
+  await deleteKeys(env.CLIENT_PHOTOS, kept);
   await env.DB.prepare(
-    "UPDATE tryon_jobs SET result_key = NULL, upload_deleted_at = COALESCE(upload_deleted_at, ?2) WHERE person_id = ?1",
+    `UPDATE tryon_jobs SET result_key = NULL, upload_deleted_at = COALESCE(upload_deleted_at, ?2), copy_key = NULL,
+       kept_look_key = NULL
+     WHERE person_id = ?1`,
   )
     .bind(personId, now.toISOString())
     .run();

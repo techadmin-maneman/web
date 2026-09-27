@@ -983,6 +983,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tryon/upload/{job_id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload the photo's small copy, which a client keeps as their before photo: a JPEG of at most 250 KB and 200 to 1600 px a side
+         * @description With the upload link's token, after the photo itself, and only under a photo notice that says a client's try-on is kept (docs/decisions/0084-a-clients-try-on-is-kept.md). The sweeper deletes it with the photo, or with the look, unless its person books a visit.
+         */
+        put: {
+            parameters: {
+                query: {
+                    token: string;
+                };
+                header?: never;
+                path: {
+                    job_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Received */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description not_found: no such job, or the link has expired */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description upload_missing: the photo has not been uploaded, or has been deleted; upload_already_received: the copy was; consent_required: the photo notice agreed to keeps no copy */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description photo_invalid_file: not a JPEG, over 250 KB, or the wrong size */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tryon/generate": {
         parameters: {
             query?: never;
@@ -1894,6 +1962,11 @@ export interface components {
             name: string;
             /** @example 98100 00000 */
             mobile: string;
+            /**
+             * @description The gate's notice the page showed; the one production shows when left out. Staging's site shows the one awaiting counsel (docs/decisions/0084-a-clients-try-on-is-kept.md).
+             * @example gate-v1
+             */
+            notice_version?: string;
             attribution?: components["schemas"]["Attribution"];
         };
         ResultReady: {

@@ -1,6 +1,6 @@
 # 0039. The Phase 2 budget on the free plan
 
-- Status: accepted
+- Status: accepted; amended 27 September 2026 by [0084](0084-a-clients-try-on-is-kept.md): a client's kept try-on is paid from Phase 2's share, which shortens the photograph runway, and the table below was worked at a result's old 6 MB
 - Date: 2026-09-22
 
 ## Context
@@ -34,7 +34,7 @@ Production has served no try-on, so no stored result is affected.
 | R2 Class A a month     | 1,000,000  | 5,580             | 100,000         | 10.6%    |
 | R2 Class B a month     | 10,000,000 | 39,060            | 1,000,000       | 10.4%    |
 
-**The photograph runway is about 1,480 visits.** Phase 2's 4 GB holds:
+**The photograph runway is about 1,480 visits.** (Amended 27 September 2026, ADR 0084: about 460 at worst while a client's look is kept at full size, since each visit may bring a new client's kept try-on; see below.) Phase 2's 4 GB holds:
 
 - **the referral cards:** a thousand of them, at the 300 KB limit Open Graph images need;
 - **each visit's ten photographs**, re-encoded on the phone to about 250 KB each.
@@ -54,9 +54,15 @@ Before the photographs pass that runway, the owner must decide between the paid 
   - neither holds images.
 - **Cron triggers (5 for the account):** `mm-api` uses one, every five minutes. Phase 2's jobs, such as reconciliation, credit expiry and hold expiry, run on that same trigger, and none is added.
 
+**Amended 27 September 2026 ([ADR 0084](0084-a-clients-try-on-is-kept.md)).**
+
+- **The table above was worked at 6 MB a result.** At today's 5 MB (`MAX_RESULT_BYTES`) the try-on's worst case was 3.28 GB, 72.8% with Phase 2's share.
+- **The small copies a client keeps as their before photo** are held with their looks until the client books, and are counted at the upload ceiling: the try-on's worst case is now 3.60 GB, **76.0%** with Phase 2's share. Class A is 11.1% and Class B 10.4%.
+- **A client's kept try-on is held for good**, the copy until they are erased and the look until their first fit is photographed, which for a client never fitted is never. So it is paid from Phase 2's share. Each visit on the runway may be a new client's, with one kept try-on of up to 5.25 MB, so the runway is **462 visits** at worst (`photoRunwayVisits`, `scripts/lib/free-tier-budget.ts`). A copy of the look as small as the before photo would leave 1,228. The owner decides (`docs/open-points.md`, item 151).
+
 ## Consequences
 
 - **The budget test fails** if a try-on ceiling grows into Phase 2's share. It also fails if results go back to thirty days while the share is reserved.
-- **The owner owes a decision before about 1,480 visits:** the paid plan, or photographs in FSM. The storage meter that was to give notice is not built (open point 142); Cloudflare's usage notifications at half of each allowance, which the owner sets by hand, are the only warning today (`docs/runbook.md`, "R2 storage growing").
+- **The owner owes a decision before about 1,480 visits** (about 460 at worst while clients' looks are kept at full size, ADR 0084): the paid plan, or photographs in FSM. The storage meter that was to give notice is not built (open point 142); Cloudflare's usage notifications at half of each allowance, which the owner sets by hand, are the only warning today (`docs/runbook.md`, "R2 storage growing").
 - **The privacy page changed.** The owner approved the privacy and terms text on 22 September 2026. These two phrases are the only changes, and they bring it in line with the new retention.
 - **Staging still keeps results for three days,** as before.

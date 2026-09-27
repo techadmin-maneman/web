@@ -42,6 +42,10 @@ export interface JobRow {
   photo_consent_at: string;
   ip_hash: string;
   request_id: string;
+  /** A client's try-on, kept (docs/decisions/0084-a-clients-try-on-is-kept.md): the small copy, when it was kept, and the kept look. */
+  copy_key: string | null;
+  kept_at: string | null;
+  kept_look_key: string | null;
 }
 
 export type ColorRoute = "as_detected" | UnknownColorRoute;

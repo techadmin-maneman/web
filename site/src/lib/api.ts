@@ -87,6 +87,12 @@ export function uploadPhoto(uploadUrl: string, photo: Blob): Promise<Answer<null
   return call<null>(uploadUrl, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: photo });
 }
 
+/** The photograph's small copy, which a client keeps as their before photo (ADR 0084), on the photo's own link. */
+export function uploadCopy(uploadUrl: string, copy: Blob): Promise<Answer<null>> {
+  const [path = "", query = ""] = uploadUrl.split("?");
+  return call<null>(`${path}/copy?${query}`, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: copy });
+}
+
 /** The job to follow is the one this returns, which may differ from the one sent. */
 export function generateLook(request: GenerateRequest): Promise<Answer<JobStatus>> {
   return post<JobStatus>("/api/tryon/generate", request);
