@@ -54,6 +54,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
       ailabApiKey: null,
     },
     messaging: { enabled: false, resultTemplate: "", allowlist: [], evolution: null },
+    devRoutes: false,
   },
 };
 
@@ -99,7 +100,7 @@ export type OpenApiDocument = ReturnType<ReturnType<typeof createApp>["getOpenAP
 
 export function buildOpenApiDocument(surface: DocumentedSurface = "public"): OpenApiDocument {
   const app = createApp(DOCUMENTATION_CONFIG, undefined, surface);
-  return app.getOpenAPI31Document({
+  const document = app.getOpenAPI31Document({
     openapi: "3.1.0",
     info: { version: "1", ...INFO[surface] },
     servers: [
@@ -107,6 +108,46 @@ export function buildOpenApiDocument(surface: DocumentedSurface = "public"): Ope
       { url: `https://${SURFACE_HOSTS.staging[surface]}`, description: "staging (Cloudflare Access)" },
     ],
   });
+  mergeExtendedSchemas(document.components?.schemas ?? {});
+  return document;
+}
+
+interface ObjectSchema {
+  readonly type: "object";
+  readonly properties: Readonly<Record<string, unknown>>;
+  readonly required?: readonly string[];
+  readonly additionalProperties?: unknown;
+}
+
+function isObjectSchema(schema: unknown): schema is ObjectSchema {
+  return property(schema, "type") === "object" && typeof property(schema, "properties") === "object";
+}
+
+/**
+ * A registered schema's .extend() is written as `allOf: [the base, what it adds]`, and each part is closed with
+ * `additionalProperties: false`, so each refuses the other's fields and no real answer could ever validate. Each
+ * such component is written instead as the one closed object it means.
+ */
+function mergeExtendedSchemas(schemas: Record<string, unknown>): void {
+  const resolve = (part: unknown): unknown => {
+    const ref = property(part, "$ref");
+    return typeof ref === "string" ? schemas[ref.replace("#/components/schemas/", "")] : part;
+  };
+  for (const [name, schema] of Object.entries(schemas)) {
+    const allOf = property(schema, "allOf");
+    if (!Array.isArray(allOf)) continue;
+    const parts = allOf.map(resolve);
+    if (!parts.every(isObjectSchema)) continue;
+    const annotations = Object.entries(schema as object).filter(([key]) => key !== "allOf");
+    const closed = parts.some((part) => part.additionalProperties === false);
+    schemas[name] = {
+      ...Object.fromEntries(annotations),
+      type: "object",
+      properties: Object.assign({}, ...parts.map((part) => part.properties)) as Record<string, unknown>,
+      required: [...new Set(parts.flatMap((part) => part.required ?? []))],
+      ...(closed ? { additionalProperties: false } : {}),
+    };
+  }
 }
 
 const METHODS = ["get", "post", "put", "patch", "delete"] as const;

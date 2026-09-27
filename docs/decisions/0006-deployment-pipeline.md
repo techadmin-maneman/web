@@ -1,6 +1,6 @@
 # 0006. Deployment pipeline
 
-- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped".
+- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)).
 - Date: 2026-09-21
 
 ## Decision
@@ -9,7 +9,7 @@
 
 - `what changed`: which of the jobs below this pull request can affect;
 - `static checks`: `typecheck`, including that the generated `Env` types match `wrangler.jsonc` (`check:types`); `lint`, including actionlint, pinned by digest, on the workflows; `format`; the real configs pass and the broken fixture fails; migrations are forward-only and unchanged against the base branch; the dependency audit, with registry signatures;
-- `tests (unit, contract, coverage)`: unit and contract tests and 85% line coverage of `src/`, in one run;
+- `tests (unit, contract, coverage)`: unit and contract tests, and coverage of `src/` (90% of lines and 80% of branches, with floors for the vendor clients: ADR 0075), in one run;
 - `deployed code on these migrations`: when a migration changed, the base branch's Worker tests run on this branch's migrations (`scripts/old-code-on-new-schema.ts`);
 - `build`: every Worker bundled for all three environments;
 - `browser tests and Lighthouse`: the site at 390 and 1440 px, the client app at 390 and the ops console at 1440 against a local `mm-api`, then Lighthouse on `/`, `/try`, `/book`, an invite's landing and the client app's first screen, each against its own budget;
@@ -51,7 +51,7 @@ One job ran every check in turn, about thirteen minutes, of which the browser te
 - **What a job costs is what groups it.** The browser tests are the longest, so they are a job of their own and start at once; the static checks, the test suite, the build dry run and the local smoke fill the other runner. Lighthouse stays with the browser tests, after them: it measures a page load, and it should not be sharing the machine with a suite this run started.
 - **`checks` is the gate.** `deploy-staging.yml` waits for this workflow, and a workflow fails when a job in it fails; `checks` needs every job and fails unless each one passed or was skipped. So one name still stands for the whole of CI, for the deploy workflows and for main's protection once the plan allows required checks (0008).
 - **A change that no build and no browser can see skips them.** `what changed` compares the pull request with its base: when every file is under `docs/` or `design/` or is a note at the repository root, the build, the browser tests, Lighthouse and the local smoke are skipped, and `checks` counts a skipped job as a pass, so a documentation pull request is still mergeable. Anything else runs them all, `src/` and the configs included: the browser tests drive a local `mm-api`, so they are not the front end's alone. The tests and the static checks run whatever changed. A staging deploy filters nothing.
-- **Coverage is still one run** of the whole suite, so the 85% threshold still measures all of `src/`.
+- **Coverage is still one run** of the whole suite, so the thresholds still measure all of `src/`.
 - **Each job installs for itself.** `npm ci` from the runner's own npm cache takes about 40 seconds, and the jobs it repeats for run beside each other, so it costs less than the waiting it removes. Caching `node_modules` between jobs would mean GitHub's cache over the network, which took three to six minutes a run on this machine ("The runner", above).
 - **On GitHub's runners a run bills seven jobs,** each a minute at least, where it used to bill one. The escape hatch in the runbook is that much dearer; on the machine the minutes are free.
 - **Nothing about what runs changed:** every check the one job ran still runs, in the same order within its job, on every pull request that can affect it and on every staging deploy.

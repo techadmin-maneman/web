@@ -7,15 +7,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON, type Call } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const CHANGE = NUMBER_CHANGES.changes[0]?.id ?? "";
-const DECISION = `/api/number-changes/${CHANGE}/decision`;
+const DECISION = `/api/number-changes/${CHANGE}/decision` as const;
+const DECIDE: Call = `POST ${DECISION}`;
 
 async function open(page: Page, decision = json({ state: "confirmed" }), path = "/number-changes"): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "/api/number-changes": json(NUMBER_CHANGES), [DECISION]: decision });
+  await answer(page, { "GET /api/number-changes": json(NUMBER_CHANGES), [DECIDE]: decision });
   await page.goto(path);
   await expect(page.getByRole("heading", { level: 1, name: "Number changes" })).toBeVisible();
 }
@@ -109,17 +110,17 @@ test("says so when someone has decided it already", async ({ page }) => {
 });
 
 test("says so when nothing is waiting", async ({ page }) => {
-  await answer(page, { "/api/number-changes": json({ changes: [] }) });
+  await answer(page, { "GET /api/number-changes": json({ changes: [] }) });
   await page.goto("/number-changes");
   await expect(page.getByText("No number change is waiting.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
-  await answer(page, { "/api/number-changes": fails(503, "unavailable") });
+  await answer(page, { "GET /api/number-changes": fails(503, "unavailable") });
   await page.goto("/number-changes");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
-  await answer(page, { "/api/number-changes": json(NUMBER_CHANGES) });
+  await answer(page, { "GET /api/number-changes": json(NUMBER_CHANGES) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });

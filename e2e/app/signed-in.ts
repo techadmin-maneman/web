@@ -2,6 +2,7 @@
 // code (OTP_FIXED_CODE in playwright.config.ts), on Home.
 
 import type { APIRequestContext, Page } from "@playwright/test";
+import { API_ORIGIN } from "../../scripts/lib/local-stack.ts";
 import { DUMMY_TOKEN, expect, randomMobile } from "../support.ts";
 
 export const CODE = "246810";
@@ -9,7 +10,7 @@ export const CODE = "246810";
 /** Books a consultation for a new number, logs in with it, and returns the number. */
 export async function signIn(page: Page, request: APIRequestContext): Promise<string> {
   const mobile = randomMobile();
-  const booking = await request.post("http://127.0.0.1:8787/api/lead", {
+  const booking = await request.post(`${API_ORIGIN}/api/lead`, {
     data: {
       name: "Rohit Malhotra",
       mobile,

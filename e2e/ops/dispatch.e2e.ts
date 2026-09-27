@@ -12,12 +12,18 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, BOARD, fails, json, MOVED, ROHIT, ROOM, VIKRAM } from "./fixtures.ts";
+import { answer, BOARD, fails, json, MOVED, ROHIT, ROOM, VIKRAM, type Answers, type Call } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const BOARD_PATH = "/api/dispatch";
 const MOVE = "/api/dispatch/move";
 const ASSIGN = "/api/dispatch/assign";
+const TOLD = `/api/dispatch/moves/${MOVED.move_id}/told` as const;
+const READ_BOARD: Call = `GET ${BOARD_PATH}`;
+const READ_ROOM: Call = "GET /api/dispatch/room";
+const MOVE_IT: Call = `POST ${MOVE}`;
+const ASSIGN_IT: Call = `POST ${ASSIGN}`;
+const TOLD_IT: Call = `POST ${TOLD}`;
 
 /** The block the design moves, and where it moves it to. */
 const ROHIT_BLOCK = "Rohit M., Fri 19 Sep, morning";
@@ -25,10 +31,8 @@ const TO_SANDEEP = "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning";
 const ROHIT_JOB = BOARD.technicians[0]?.days[0]?.blocks[0];
 const VIKRAM_JOB = BOARD.technicians[0]?.days[0]?.blocks[1];
 
-type Answers = Parameters<typeof answer>[1];
-
 async function open(page: Page, writes: Answers = {}): Promise<void> {
-  await answer(page, { [BOARD_PATH]: json(BOARD), "/api/dispatch/room": json(ROOM), ...writes });
+  await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM), ...writes });
   await page.goto("/dispatch");
   await expect(page.getByRole("heading", { level: 1, name: "Dispatch" })).toBeVisible();
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeVisible();
@@ -113,7 +117,7 @@ test("says how much of a day the job takes, and offers only the windows it would
 });
 
 test("names leave when the server refuses a move onto a day off", async ({ page }) => {
-  await open(page, { [MOVE]: fails(409, "on_leave") });
+  await open(page, { [MOVE_IT]: fails(409, "on_leave") });
   await press(page, ROHIT_BLOCK);
   await press(page, "Move this visit");
   await press(page, TO_SANDEEP);
@@ -184,7 +188,7 @@ test("keeps the keyboard off the board behind an open panel", async ({ page }) =
 });
 
 test("moves a job from a list, sends the board it was taken from, and says only what happened", async ({ page }) => {
-  await open(page, { [MOVE]: json(MOVED) });
+  await open(page, { [MOVE_IT]: json(MOVED) });
   const sent = sentTo(page, MOVE);
 
   await press(page, ROHIT_BLOCK);
@@ -220,7 +224,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
 });
 
 test("drags a block onto a window, which asks for the same reason", async ({ page }) => {
-  await open(page, { [MOVE]: json(MOVED) });
+  await open(page, { [MOVE_IT]: json(MOVED) });
 
   // The windows are offered once the drag has begun, so the drop is walked by hand.
   const carried = await page.evaluateHandle(() => new DataTransfer());
@@ -233,7 +237,7 @@ test("drags a block onto a window, which asks for the same reason", async ({ pag
 });
 
 test("says which technician and which window clashed, and keeps the job in hand", async ({ page }) => {
-  await open(page, { [MOVE]: fails(409, "clash") });
+  await open(page, { [MOVE_IT]: fails(409, "clash") });
 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move this visit");
@@ -251,7 +255,7 @@ test("says which technician and which window clashed, and keeps the job in hand"
 
 // OPS-06: a free window with no room was refused as a clash that did not exist.
 test("says a window has no room for the visit, rather than naming a clash", async ({ page }) => {
-  await open(page, { [MOVE]: fails(409, "does_not_fit") });
+  await open(page, { [MOVE_IT]: fails(409, "does_not_fit") });
   await press(page, ROHIT_BLOCK);
   await press(page, "Move this visit");
   await press(page, TO_SANDEEP);
@@ -264,7 +268,7 @@ test("says a window has no room for the visit, rather than naming a clash", asyn
 });
 
 test("assigns a tray job through the assign route, with no technician expected", async ({ page }) => {
-  await open(page, { [ASSIGN]: json(MOVED) });
+  await open(page, { [ASSIGN_IT]: json(MOVED) });
   const assigned = sentTo(page, ASSIGN);
   const moved = sentTo(page, MOVE);
   const tray = BOARD.unassigned[0];
@@ -291,10 +295,10 @@ test("assigns a tray job through the assign route, with no technician expected",
 
 // OPS-01: "The client has been messaged" followed every move, while most clients had not agreed to WhatsApp.
 test("asks ops to call a client who has not agreed to WhatsApp, and records the call", async ({ page }) => {
-  const told = sentTo(page, `/api/dispatch/moves/${MOVED.move_id}/told`);
+  const told = sentTo(page, TOLD);
   await open(page, {
-    [MOVE]: json({ ...MOVED, client_notice: "call" }),
-    [`/api/dispatch/moves/${MOVED.move_id}/told`]: json({ told: true }),
+    [MOVE_IT]: json({ ...MOVED, client_notice: "call" }),
+    [TOLD_IT]: json({ told: true }),
   });
 
   await press(page, "Vikram S., Fri 19 Sep, afternoon");
@@ -320,7 +324,7 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
 });
 
 test("tells ops a change of technician alone messages nobody", async ({ page }) => {
-  await open(page, { [MOVE]: json({ ...MOVED, client_notice: "unchanged" }) });
+  await open(page, { [MOVE_IT]: json({ ...MOVED, client_notice: "unchanged" }) });
   await press(page, ROHIT_BLOCK);
   await press(page, "Move this visit");
   await press(page, "Move Rohit M. to Sandeep Yadav, Fri 19 Sep, morning");
@@ -344,9 +348,9 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   });
   const sent = sentTo(page, MOVE);
   await open(page, {
-    [MOVE]: async (route: Route) => {
+    [MOVE_IT]: async (route: Route) => {
       await held;
-      await route.fulfill({ json: MOVED });
+      await json(MOVED)(route);
     },
   });
 
@@ -375,11 +379,11 @@ test("refuses a move made from a stale board, and says where the job is now", as
   if (rohit !== undefined) arjun?.days[1]?.blocks.push({ ...rohit, window: "evening" });
   let reads = 0;
   await open(page, {
-    [BOARD_PATH]: (route: Route) => {
+    [READ_BOARD]: (route: Route) => {
       reads += 1;
-      return route.fulfill({ json: reads === 1 ? BOARD : movedByAnother });
+      return json(reads === 1 ? BOARD : movedByAnother)(route);
     },
-    [MOVE]: fails(409, "superseded"),
+    [MOVE_IT]: fails(409, "superseded"),
   });
 
   await press(page, ROHIT_BLOCK);
@@ -397,9 +401,9 @@ test("refuses a move made from a stale board, and says where the job is now", as
 test("reads the board again when the tab comes back, without the loading state", async ({ page }) => {
   let reads = 0;
   await open(page, {
-    [BOARD_PATH]: (route: Route) => {
+    [READ_BOARD]: (route: Route) => {
       reads += 1;
-      return route.fulfill({ json: BOARD });
+      return json(BOARD)(route);
     },
   });
   expect(reads).toBe(1);
@@ -458,7 +462,7 @@ test("keeps every day readable, and the navigation in reach, at 200% zoom", asyn
 });
 
 test("meets WCAG 2.2 AA on the board, the drawer, a job in hand, the picker and a refusal", async ({ page }) => {
-  await open(page, { [MOVE]: fails(409, "clash") });
+  await open(page, { [MOVE_IT]: fails(409, "clash") });
   const board = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(board.violations.map((violation) => violation.id)).toEqual([]);
 

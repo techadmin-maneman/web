@@ -84,7 +84,8 @@ describe("referral codes", () => {
     const again = await (await request(client(), "/api/refer", { headers: { Cookie: cookie } })).json();
     expect(again).toEqual({
       code: first.code,
-      link: `http://localhost:8787/r/${first.code}`,
+      // Locally the site, where /r/:code is served, is on :4321; mm-api on :8787 has no such page (LIFE-17).
+      link: `http://localhost:4321/r/${first.code}`,
       named: false,
       credits: { visits: 0, earliest_expiry: null },
       card: { state: "house", version: 1, consented: false },

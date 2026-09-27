@@ -30,11 +30,14 @@
   // import code written against the DOM.
   "exclude": [
     "test/node/app-api.test.ts",
+    "test/node/app-checkout.test.ts",
     "test/node/app-documents.test.ts",
+    "test/node/fakes-contract.test.ts",
     "test/node/app-payments.test.ts",
     "test/node/app-money.test.ts",
     "test/node/app-referral-card.test.ts",
     "test/node/app-route.test.ts",
+    "test/node/ops-dispatch-job.test.ts",
     "test/node/ops-route.test.ts",
     "test/node/tech-api.test.ts",
     "test/node/tech-kept.test.ts",
@@ -43,6 +46,7 @@
     "test/node/tech-progress.test.ts",
     "test/node/tech-store.test.ts",
     "test/node/static-server.test.ts",
+    "scripts/seed-local.ts",
     "scripts/fidelity.ts",
     "scripts/fidelity-app.ts",
     "scripts/fidelity-ops.ts",

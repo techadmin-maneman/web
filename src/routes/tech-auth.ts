@@ -108,7 +108,10 @@ const logoutRoute = createRoute({
   method: "post",
   path: "/api/tech/auth/logout",
   summary: "End this session on this phone",
-  responses: { 204: { description: "Logged out" } },
+  responses: {
+    204: { description: "Logged out" },
+    401: errorResponse("session_required; device_revoked: there was no session here to end"),
+  },
 });
 
 /**

@@ -167,7 +167,10 @@ export interface Settings {
   readonly zoho: ZohoSettings | null;
   /** Present when FSM_PROVIDER or BOOKS_PROVIDER is "zoho". */
   readonly zohoFsm: ZohoFsmSettings | null;
-  /** Present when PAYMENTS_PROVIDER is "razorpay". */
+  /**
+   * Present when PAYMENTS_PROVIDER is "razorpay", and for the stub, with no keys: locally its payments arrive by the
+   * same signed webhook, with a placeholder secret (docs/getting-started.md).
+   */
   readonly razorpay: RazorpaySettings | null;
   /** Present when ACCESS_PROVIDER is "cloudflare". */
   readonly access: AccessSettings | null;
@@ -176,6 +179,11 @@ export interface Settings {
   readonly login: LoginSettings;
   readonly tryon: TryonSettings;
   readonly messaging: MessagingSettings;
+  /**
+   * DEV_ROUTES=on, locally only: the routes that stand in for what FSM does on staging, such as closing a job
+   * (src/routes/dev-fsm.ts). The guard refuses it anywhere else, and no other environment's app has the routes.
+   */
+  readonly devRoutes: boolean;
 }
 
 /**
@@ -376,6 +384,8 @@ export function readSettings(
     if (environment !== "production" && razorpay.keyId.startsWith("rzp_live_")) {
       read.problems.push("RAZORPAY_KEY_ID is a live key outside production: it would take real money");
     }
+  } else if (providers.PAYMENTS_PROVIDER === "stub") {
+    razorpay = { keyId: "", keySecret: "", webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET") };
   }
 
   const geocode: GeocodeSettings = {
@@ -420,6 +430,13 @@ export function readSettings(
     read.problems.push("OTP_FIXED_CODE is set outside local: every login code would be known");
   } else if (login.fixedCode !== null && !/^\d{6}$/.test(login.fixedCode)) {
     read.problems.push("OTP_FIXED_CODE must be six digits");
+  }
+
+  const devRoutes = read.optionalText("DEV_ROUTES");
+  if (devRoutes !== null && environment !== "local") {
+    read.problems.push(
+      "DEV_ROUTES is set outside local: its routes stand in for FSM and would close jobs no technician worked",
+    );
   }
 
   const tryon: TryonSettings = {
@@ -488,6 +505,7 @@ export function readSettings(
     login,
     tryon,
     messaging,
+    devRoutes: environment === "local" && devRoutes === "on",
   };
   return { settings, problems: read.problems };
 }

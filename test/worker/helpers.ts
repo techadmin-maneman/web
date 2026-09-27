@@ -61,6 +61,7 @@ export const LOCAL_SETTINGS: Settings = {
     ailabApiKey: null,
   },
   messaging: { enabled: true, resultTemplate: "tryon_result_v1", allowlist: [], evolution: null },
+  devRoutes: false,
 };
 
 export const LOCAL_CONFIG: StaticConfig = {

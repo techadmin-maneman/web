@@ -3,7 +3,7 @@
 // (e2e/app/checkout-fakes.ts).
 
 import AxeBuilder from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
@@ -121,6 +121,13 @@ async function bookedWithoutPaying(page: Page, hold: () => Hold): Promise<void> 
 }
 
 /** Every hold the page lets go of. */
+/** Waits until the hold's count has moved on a second, which is time passing with the sheet still up. */
+async function ticked(sheet: Locator): Promise<void> {
+  const count = sheet.getByText(/^Slot held \d:\d\d more\.$/);
+  const shown = (await count.textContent()) ?? "";
+  await expect(count).not.toHaveText(shown);
+}
+
 function releases(page: Page): string[] {
   const released: string[] = [];
   page.on("request", (request) => {
@@ -278,7 +285,7 @@ test("says so when the payment fails, with the hold counting outside the alert",
   await expect(sheet.getByRole("button", { name: "Another method" })).toBeVisible();
   // A screen reader reads an alert again whenever it changes: the ticking count is kept out of it.
   const said = await alert.textContent();
-  await page.waitForTimeout(2_000);
+  await ticked(sheet);
   expect(await alert.textContent()).toBe(said);
 });
 
@@ -298,7 +305,7 @@ test("keeps the sheet, and the hold, when Checkout fails the moment it opens", a
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const failed = page.getByRole("dialog").getByText("The payment did not go through.");
   await expect(failed).toBeVisible();
-  await page.waitForTimeout(500);
+  await ticked(page.getByRole("dialog"));
   await expect(failed).toBeVisible();
   expect(released).toEqual([]);
 });
@@ -372,7 +379,8 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
   ]);
 
   await expect.poll(() => orders.length, { timeout: 15_000 }).toBeGreaterThan(0);
-  await page.waitForTimeout(1_500); // a second order, held the same second, would have landed by now
+  // Every order asked for has come back: a second one is let go with the first (e2e/app/one-tap.ts).
+  await expect.poll(() => orders.length).toBe(asked);
   expect({ asked, distinctOrders: new Set(orders).size, liveWhileBusy }).toEqual({
     asked: 1,
     distinctOrders: 1,
@@ -540,13 +548,63 @@ test("has a Close anyone can see, a full target, ringed in paper on the ground i
   ).toBe("rgb(22, 35, 58)");
 });
 
+/** axe on the page as it stands, against WCAG 2.2 AA. */
+async function scanOf(page: Page): Promise<void> {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+}
+
+// A11Y-23: axe read C2 to C4 only; board C6's states, where a client is told something went wrong, went unread.
+test("the payment's outcomes meet WCAG 2.2 AA: failed, the slot gone back, and confirmed", async ({ page }) => {
+  await fakeCheckout(page, "failed");
+  await page.clock.install();
+  await toPayment(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await expect(page.getByRole("dialog", { name: "The payment did not go through." })).toBeVisible();
+  await scanOf(page);
+
+  await page.clock.fastForward("11:00");
+  await expect(page.getByRole("dialog", { name: "That slot has gone back." })).toBeVisible();
+  await scanOf(page);
+});
+
+test("a confirmed booking meets WCAG 2.2 AA", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await confirmedByRazorpay(page);
+  await toPayment(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await expect(page.getByRole("dialog", { name: "Confirmed" })).toBeVisible({ timeout: 15_000 });
+  await scanOf(page);
+});
+
+// Every app project runs with reduced motion, so the sheets' movement was never read by axe or the keyboard.
+test.describe("with motion, as most phones have it", () => {
+  test.use({ reducedMotion: "no-preference" });
+
+  test("the booking sheet rises and moves between steps, keeps the focus in it, and meets WCAG 2.2 AA", async ({
+    page,
+  }) => {
+    await openSheet(page);
+    const dates = page.getByRole("dialog", { name: "Pick a date" });
+    await expect(dates).toBeVisible();
+    await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
+    await scanOf(page);
+    await expect.poll(() => dates.evaluate((sheet) => sheet.contains(document.activeElement))).toBe(true);
+
+    await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
+    await page.getByRole("button", { name: "Continue" }).click();
+    const windows = page.getByRole("dialog", { name: "Pick a window" });
+    await expect(windows).toBeVisible();
+    await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
+    await scanOf(page);
+    await expect.poll(() => windows.evaluate((sheet) => sheet.contains(document.activeElement))).toBe(true);
+  });
+});
+
 test("each booking step meets WCAG 2.2 AA", async ({ page }) => {
-  const scan = async () => {
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-      .analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
-  };
+  const scan = () => scanOf(page);
   await fakeCheckout(page, "paid");
   await openSheet(page);
   await expect(page.getByRole("dialog", { name: "Pick a date" })).toBeVisible();

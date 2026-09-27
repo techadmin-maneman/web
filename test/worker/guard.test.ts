@@ -454,6 +454,35 @@ describe("validateStaticConfig: Razorpay", () => {
       "RAZORPAY_KEY_ID is not a live key in production",
     ]);
   });
+
+  // LIFE-17: locally the webhook answered 404, so nothing past a booking's payment could be run there.
+  it("reads the webhook secret for the local stub too, whose payments arrive by the same signed webhook", () => {
+    const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS, RAZORPAY_WEBHOOK_SECRET: "a-local-placeholder" };
+    expect(validateStaticConfig(local).settings.razorpay).toEqual({
+      keyId: "",
+      keySecret: "",
+      webhookSecret: "a-local-placeholder",
+    });
+    expect(validateStaticConfig({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS }).settings.razorpay?.webhookSecret).toBe(
+      null,
+    );
+  });
+});
+
+describe("validateStaticConfig: the local dev routes", () => {
+  it("are switched on locally by DEV_ROUTES=on, and off without it", () => {
+    const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS };
+    expect(validateStaticConfig({ ...local, DEV_ROUTES: "on" }).settings.devRoutes).toBe(true);
+    expect(validateStaticConfig(local).settings.devRoutes).toBe(false);
+  });
+
+  it("stop staging and production from starting, where they would close FSM jobs no technician worked", () => {
+    for (const environment of [stagingBase, production]) {
+      expect(problemsOf({ ...environment, DEV_ROUTES: "on" })).toContain(
+        "DEV_ROUTES is set outside local: its routes stand in for FSM and would close jobs no technician worked",
+      );
+    }
+  });
 });
 
 describe("the address search", () => {

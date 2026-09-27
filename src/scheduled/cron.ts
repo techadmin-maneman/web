@@ -46,8 +46,11 @@ export const CRON_CALLS = 40;
 /** One failed run is a blip; three in a row is a quarter of an hour of it. */
 const ALERT_AFTER_FAILED_RUNS = 3;
 
-/** What a job needs switched on in this environment before it runs. */
-type Needs = "nothing" | "fsm" | "fsm_and_books" | "messaging";
+/**
+ * What a job needs switched on in this environment before it runs. "fsm_record" is the real FSM: the stub remembers
+ * no appointment, so a job that trusts FSM's word on what exists would take it that every visit had been deleted.
+ */
+type Needs = "nothing" | "fsm" | "fsm_record" | "fsm_and_books" | "messaging";
 
 export interface CronJob {
   readonly name: string;
@@ -68,6 +71,8 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
       return true;
     case "fsm":
       return fsm;
+    case "fsm_record":
+      return config.providers.FSM_PROVIDER === "zoho";
     case "fsm_and_books":
       return fsm && books;
     case "messaging":
@@ -167,7 +172,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
-  { name: "fsm_reconcile", needs: "fsm", run: reconcileJob },
+  { name: "fsm_reconcile", needs: "fsm_record", run: reconcileJob },
   // Once an hour: FSM's catalogue against the price book, which it prices invoices by
   // (docs/decisions/0073-prices-from-the-price-book.md).
   { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },

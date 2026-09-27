@@ -56,7 +56,8 @@ test("a double tap on Capture keeps one frame for one angle, and moves on by one
 
   await capture.dblclick();
   await expect(page.getByText("1 of 5")).toBeVisible();
-  await page.waitForTimeout(600);
+  // Ready for the next angle: no capture is running, so a second one would have been counted by now.
+  await expect(capture).toBeEnabled();
   await expect(page.getByText("1 of 5")).toBeVisible();
   // One frame per angle: the API keeps one photograph for each, so a second would cost the next angle.
   expect(await anglesOnPhone(page)).toEqual(["front"]);

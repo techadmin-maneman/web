@@ -6,7 +6,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, DAY_MONEY, fails, json, NO_SHOW_UNMEASURED, NO_SHOWS } from "./fixtures.ts";
+import { answer, DAY_MONEY, fails, json, NO_SHOW_UNMEASURED, NO_SHOWS, type Call } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Visit of Sun 19 Sep";
@@ -14,12 +14,13 @@ const SECOND = "Visit of Mon 20 Sep";
 const QUEUE = "Waiting for a decision";
 const MONEY = "Today";
 const CASE = NO_SHOWS.cases[0]?.id ?? "";
+const DECIDE: Call = `POST /api/no-shows/${CASE}/decision`;
 
 async function open(page: Page, decision = json({ decided: true }), path = "/no-shows"): Promise<void> {
   await answer(page, {
-    "/api/payments": json(DAY_MONEY),
-    "/api/no-shows": json(NO_SHOWS),
-    [`/api/no-shows/${CASE}/decision`]: decision,
+    "GET /api/payments": json(DAY_MONEY),
+    "GET /api/no-shows": json(NO_SHOWS),
+    [DECIDE]: decision,
   });
   await page.goto(path);
   await expect(page.getByRole("heading", { name: QUEUE })).toBeVisible();
@@ -85,7 +86,7 @@ test("says why the disputed charge is not built, and offers no Refund or Uphold"
 
 test("says so when nothing was charged on the day", async ({ page }) => {
   await answer(page, {
-    "/api/payments": json({
+    "GET /api/payments": json({
       ...DAY_MONEY,
       collected: 0,
       refunds_processing: 0,
@@ -94,7 +95,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
       no_shows_charged: 0,
       charges: [],
     }),
-    "/api/no-shows": json(NO_SHOWS),
+    "GET /api/no-shows": json(NO_SHOWS),
   });
   await page.goto("/no-shows");
   await expect(page.getByText("Nothing was charged today.")).toBeVisible();
@@ -104,7 +105,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
 });
 
 test("says so when the day's money cannot be loaded, and leaves the queue standing", async ({ page }) => {
-  await answer(page, { "/api/payments": fails(503, "unavailable"), "/api/no-shows": json(NO_SHOWS) });
+  await answer(page, { "GET /api/payments": fails(503, "unavailable"), "GET /api/no-shows": json(NO_SHOWS) });
   await page.goto("/no-shows");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
   await expect(page.getByText(FIRST)).toBeVisible();
@@ -146,7 +147,7 @@ test("says how long the case had been with us when the check-in reached us late"
 
 test("shows what the phone said when the bounds would not take its time", async ({ page }) => {
   const claimed = { ...NO_SHOWS.cases[0], phone_checked_in_at: "2027-09-19T04:00:00.000Z" };
-  await answer(page, { "/api/payments": json(DAY_MONEY), "/api/no-shows": json({ cases: [claimed] }) });
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ cases: [claimed] }) });
   await page.goto("/no-shows");
   await expect(fact(page, FIRST, "The phone said")).toHaveText("Sun 19 Sep, 9:30 am");
 });
@@ -164,7 +165,7 @@ test("tells a reminder sent and never delivered from one that was never sent", a
     { ...NO_SHOWS.cases[0], message_state: "sent", message_delivered_at: null },
     { ...NO_SHOWS.cases[1], message_state: "none" },
   ];
-  await answer(page, { "/api/payments": json(DAY_MONEY), "/api/no-shows": json({ cases }) });
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ cases }) });
   await page.goto("/no-shows");
   await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Sent, and never delivered");
   await expect(fact(page, SECOND, "WhatsApp")).toHaveText("No reminder was sent");
@@ -174,7 +175,7 @@ test("tells a reminder sent and never delivered from one that was never sent", a
 // this queue is where a client is charged for being out. The words must stand
 // where the number would, and no 0 may appear in the case at all.
 test("says the distance was never measured, and shows no number, when the route carries none", async ({ page }) => {
-  await answer(page, { "/api/payments": json(DAY_MONEY), "/api/no-shows": json(NO_SHOW_UNMEASURED) });
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(NO_SHOW_UNMEASURED) });
   await page.goto("/no-shows");
 
   const only = page.getByRole("listitem").filter({ hasText: FIRST });
@@ -222,7 +223,7 @@ test("sends nothing when the charge is taken back, and hands the keyboard to Cha
   let sent = 0;
   await open(page, (route) => {
     sent += 1;
-    return route.fulfill({ json: { decided: true } });
+    return json({ decided: true })(route);
   });
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Delivered the evening before");
@@ -270,17 +271,17 @@ test("brings the case a task named into view, and gives it the keyboard", async 
 });
 
 test("says nothing is waiting when the queue is empty", async ({ page }) => {
-  await answer(page, { "/api/payments": json(DAY_MONEY), "/api/no-shows": json({ cases: [] }) });
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ cases: [] }) });
   await page.goto("/no-shows");
   await expect(page.getByText("No no-show is waiting for a decision.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
-  await answer(page, { "/api/payments": json(DAY_MONEY), "/api/no-shows": fails(503, "unavailable") });
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": fails(503, "unavailable") });
   await page.goto("/no-shows");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
-  await answer(page, { "/api/payments": json(DAY_MONEY), "/api/no-shows": json(NO_SHOWS) });
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(NO_SHOWS) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText(FIRST)).toBeVisible();
 });

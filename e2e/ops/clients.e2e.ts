@@ -5,7 +5,7 @@
 // since no route seeds a client's pieces or photographs.
 
 import AxeBuilder from "@axe-core/playwright";
-import type { Page, Route } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import {
   answer,
@@ -20,10 +20,21 @@ import {
   PHOTOS,
   PIECES,
   RECORD,
+  type Answers,
+  type Call,
+  type OpsReply,
 } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-const RECORD_PATH = `/api/clients/${CLIENT.id}`;
+const RECORD_PATH = `/api/clients/${CLIENT.id}` as const;
+const READ_RECORD: Call = `GET ${RECORD_PATH}`;
+const READ_PIECES: Call = `GET ${RECORD_PATH}/pieces`;
+const READ_PHOTOS: Call = `GET ${RECORD_PATH}/photos`;
+const VIEW_PHOTOS: Call = `POST ${RECORD_PATH}/photos/view`;
+const READ_CONSENTS: Call = `GET ${RECORD_PATH}/consents`;
+const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
+const FIND: Call = "POST /api/clients/find";
+const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 const NAME = { name: CLIENT.name, exact: true };
 const MOBILE = "+91 98100 04417";
 
@@ -31,22 +42,17 @@ const MOBILE = "+91 98100 04417";
 const VIEW = {
   logged_at: "2027-09-22T05:12:00.000Z",
   before: [{ by: "ops@maneman.in", at: "2027-09-19T04:40:00.000Z" }],
-};
-
-type Answers = Readonly<Record<string, (route: Route) => Promise<void>>>;
+} satisfies OpsReply<"/api/clients/{id}/photos/view", "post">;
 
 /** The client's routes, with every photograph a block of ink; `over` replaces any of them. */
 async function clientRoutes(page: Page, over: Answers = {}): Promise<void> {
-  const bytes = await inkPhoto();
-  const photos: Record<string, (route: Route) => Promise<void>> = {};
-  for (const shot of PHOTOS.visits[0]?.photos ?? []) photos[`${RECORD_PATH}/photos/${shot.id}`] = jpeg(bytes);
   await answer(page, {
-    [RECORD_PATH]: json(RECORD),
-    [`${RECORD_PATH}/pieces`]: json(PIECES),
-    [`${RECORD_PATH}/photos`]: json(PHOTOS),
-    [`${RECORD_PATH}/photos/view`]: json(VIEW),
-    [`${RECORD_PATH}/consents`]: json(CONSENTS),
-    ...photos,
+    [READ_RECORD]: json(RECORD),
+    [READ_PIECES]: json(PIECES),
+    [READ_PHOTOS]: json(PHOTOS),
+    [VIEW_PHOTOS]: json(VIEW),
+    [READ_CONSENTS]: json(CONSENTS),
+    "GET /api/clients/{id}/photos/{photo_id}": jpeg(await inkPhoto()),
     ...over,
   });
 }
@@ -62,9 +68,9 @@ const meta = (page: Page) => page.getByRole("definition");
 // A client could be found only by their whole number, typed exactly (OPS-04).
 test("finds clients by part of a name, and sends it in the body, never in the URL", async ({ page }) => {
   await answer(page, {
-    "/api/clients/find": json({ clients: [CLIENT], more: false }),
-    [RECORD_PATH]: json(RECORD),
-    [`${RECORD_PATH}/pieces`]: json(PIECES),
+    [FIND]: json({ clients: [CLIENT], more: false }),
+    [READ_RECORD]: json(RECORD),
+    [READ_PIECES]: json(PIECES),
   });
   await page.goto("/clients");
 
@@ -85,19 +91,19 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
 });
 
 test("says so when nobody matches, and when more match than are listed", async ({ page }) => {
-  await answer(page, { "/api/clients/find": json({ clients: [], more: false }) });
+  await answer(page, { [FIND]: json({ clients: [], more: false }) });
   await page.goto("/clients");
   await page.getByLabel("Name or number").fill("98100 0441");
   await page.getByRole("button", { name: "Find" }).click();
   await expect(page.getByRole("status")).toContainText("Nobody matches “98100 0441”.");
 
-  await answer(page, { "/api/clients/find": json({ clients: [CLIENT], more: true }) });
+  await answer(page, { [FIND]: json({ clients: [CLIENT], more: true }) });
   await page.getByRole("button", { name: "Find" }).click();
   await expect(page.getByText("More clients match than are listed.")).toBeVisible();
 });
 
 test("asks for two letters or four digits when given fewer", async ({ page }) => {
-  await answer(page, { "/api/clients/find": fails(400, "invalid_request") });
+  await answer(page, { [FIND]: fails(400, "invalid_request") });
   await page.goto("/clients");
   await page.getByLabel("Name or number").fill("r");
   await page.getByRole("button", { name: "Find" }).click();
@@ -126,7 +132,7 @@ test("opens a WhatsApp chat with the client from beside their name, as the board
 });
 
 test("says in words that a client wearing no piece falls due on no date", async ({ page }) => {
-  await openClient(page, `/clients/${CLIENT.id}`, { [RECORD_PATH]: json(NEW_RECORD) });
+  await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
   await expect(meta(page)).toHaveText(["Booked", "2 · expire 3 Jan 2028", "No piece fitted", MOBILE]);
 });
 
@@ -159,7 +165,7 @@ test("writes a gap where FSM's asset has no supplier lot, replacement date or fa
 });
 
 test("says so when the client has no piece yet", async ({ page }) => {
-  await openClient(page, `/clients/${CLIENT.id}/pieces`, { [`${RECORD_PATH}/pieces`]: json({ pieces: [] }) });
+  await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_PIECES]: json({ pieces: [] }) });
   await expect(page.getByText("No piece has been fitted for this client.")).toBeVisible();
 });
 
@@ -179,7 +185,7 @@ test("lists where visits go, and every visit to come and done", async ({ page })
 });
 
 test("says so when there is no address and no visit either way", async ({ page }) => {
-  await openClient(page, `/clients/${CLIENT.id}/visits`, { [RECORD_PATH]: json(NEW_RECORD) });
+  await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(NEW_RECORD) });
   await expect(page.getByText("No address saved yet.")).toBeVisible();
   await expect(page.getByText("Nothing booked.")).toBeVisible();
   await expect(page.getByText("No visit done yet.")).toBeVisible();
@@ -197,7 +203,7 @@ test("lists what the client has paid, and what for", async ({ page }) => {
 // A credit given or taken in error once needed SQL to put right (BIZ-15).
 test("puts a client's credits right, with the reason, and shows the balance it answers", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
-    [`${RECORD_PATH}/credits`]: json({ visits: 1, earliest_expiry: "2028-01-03T06:00:00.000Z" }),
+    [ADD_CREDITS]: json({ visits: 1, earliest_expiry: "2028-01-03T06:00:00.000Z" }),
   });
   const credits = page.getByRole("region", { name: "Service-visit credits" });
   await expect(credits).toContainText("2 visits The soonest expires 3 Jan 2028.");
@@ -231,7 +237,7 @@ test("offers no change of nought, or of more than twelve visits either way", asy
 
 test("says so when the API would take away more than the client holds", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
-    [`${RECORD_PATH}/credits`]: fails(400, "invalid_request"),
+    [ADD_CREDITS]: fails(400, "invalid_request"),
   });
   const credits = page.getByRole("region", { name: "Service-visit credits" });
   await credits.getByLabel("Visits to add, or to take away with a minus").fill("-5");
@@ -243,7 +249,7 @@ test("says so when the API would take away more than the client holds", async ({
 test("keeps the photographs locked, and says what opening them records", async ({ page }) => {
   let asked = 0;
   await openClient(page, `/clients/${CLIENT.id}/photos`, {
-    [`${RECORD_PATH}/photos`]: (route) => {
+    [READ_PHOTOS]: (route) => {
       asked += 1;
       return json(PHOTOS)(route);
     },
@@ -291,7 +297,7 @@ test("shows nothing, and asks for no photograph, when the opening could not be l
     if (/\/photos\/[0-9a-f-]{36}$/.test(new URL(request.url()).pathname)) photos += 1;
   });
   await openClient(page, `/clients/${CLIENT.id}/photos`, {
-    [`${RECORD_PATH}/photos/view`]: fails(503, "unavailable"),
+    [VIEW_PHOTOS]: fails(503, "unavailable"),
   });
   await page.getByRole("button", { name: "View photos" }).click();
   await expect(page.getByRole("alert")).toContainText("The view could not be recorded, so nothing is shown.");
@@ -302,7 +308,7 @@ test("shows nothing, and asks for no photograph, when the opening could not be l
 test("shows no photograph the API would not serve", async ({ page }) => {
   const first = PHOTOS.visits[0]?.photos[0]?.id ?? "";
   await openClient(page, `/clients/${CLIENT.id}/photos`, {
-    [`${RECORD_PATH}/photos/${first}`]: fails(503, "unavailable"),
+    [readPhoto(first)]: fails(503, "unavailable"),
   });
   await page.getByRole("button", { name: "View photos" }).click();
   await expect(page.getByRole("alert")).toContainText("The view could not be recorded");
@@ -319,7 +325,7 @@ test("fetches the newest visits' photographs first, and earlier ones when asked"
     date,
   });
   const three = { visits: [visit, earlier(1, "2027-06-27"), earlier(2, "2026-11-14")] };
-  await openClient(page, `/clients/${CLIENT.id}/photos`, { [`${RECORD_PATH}/photos`]: json(three) });
+  await openClient(page, `/clients/${CLIENT.id}/photos`, { [READ_PHOTOS]: json(three) });
   await page.getByRole("button", { name: "View photos" }).click();
 
   await expect(page.getByText("27 Jun 2027 · service visit · Imran Qureshi")).toBeVisible();
@@ -344,7 +350,7 @@ test("lists every consent with its state, date and notice, and says ops cannot g
 
 test("says when the client has asked to be erased", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, {
-    [`${RECORD_PATH}/consents`]: json(ERASURE_REQUESTED),
+    [READ_CONSENTS]: json(ERASURE_REQUESTED),
   });
   await expect(page.getByText("Erasure requested 18 Sep 2027. It is not decided here.")).toBeVisible();
 });
@@ -370,7 +376,7 @@ test("counts the client's visits and replacements, and the day their piece falls
 });
 
 test("writes a client with no record in words, and their true noughts as noughts", async ({ page }) => {
-  await openClient(page, `/clients/${CLIENT.id}/history`, { [RECORD_PATH]: json(NEW_RECORD) });
+  await openClient(page, `/clients/${CLIENT.id}/history`, { [READ_RECORD]: json(NEW_RECORD) });
   const history = page.getByRole("region", { name: "History" });
   const fact = (label: string) =>
     history
@@ -388,11 +394,11 @@ test("moves between the tabs without reading the record again, and keeps the pho
   let records = 0;
   let views = 0;
   await openClient(page, `/clients/${CLIENT.id}/photos`, {
-    [RECORD_PATH]: (route) => {
+    [READ_RECORD]: (route) => {
       records += 1;
       return json(RECORD)(route);
     },
-    [`${RECORD_PATH}/photos/view`]: (route) => {
+    [VIEW_PHOTOS]: (route) => {
       views += 1;
       return json(VIEW)(route);
     },
@@ -418,7 +424,7 @@ test("moves between the tabs without reading the record again, and keeps the pho
 });
 
 test("says so when the client cannot be loaded, and loads them on Try again", async ({ page }) => {
-  await openClient(page, `/clients/${CLIENT.id}`, { [RECORD_PATH]: fails(503, "unavailable") });
+  await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: fails(503, "unavailable") });
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
   await clientRoutes(page);
@@ -435,7 +441,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
     ).toEqual([]);
   };
 
-  await answer(page, { "/api/clients/find": json({ clients: [CLIENT], more: false }) });
+  await answer(page, { [FIND]: json({ clients: [CLIENT], more: false }) });
   await page.goto("/clients");
   await page.getByLabel("Name or number").fill("malhotra");
   await page.getByRole("button", { name: "Find" }).click();
