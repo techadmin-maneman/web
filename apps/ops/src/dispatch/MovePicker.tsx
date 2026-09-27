@@ -12,6 +12,7 @@
 // him, with his number; and a change of technician alone, which leaves his
 // window as it was, tells him nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
+import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -99,19 +100,20 @@ export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
       <p className={styles.consequence}>{notice.line}</p>
       {isSoon(job, new Date()) && <p className={styles.consequence}>{copy.soon}</p>}
       <div className={styles.actions}>
-        <button
-          className={styles.send}
-          type="button"
+        <Button
+          variant="primary"
+          size="small"
           disabled={reason === null || sending}
+          busy={sending}
           onClick={() => {
             if (reason !== null) onSend(reason);
           }}
         >
           {sendLabel(sending, notice.messaged)}
-        </button>
-        <button className={styles.quiet} type="button" disabled={sending} onClick={onCancel}>
+        </Button>
+        <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
           {copy.cancel}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

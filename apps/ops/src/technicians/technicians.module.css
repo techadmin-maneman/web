@@ -261,40 +261,11 @@
   margin-top: var(--sp-8);
 }
 
+/* The roster's buttons (packages/ui/Button.tsx, 44 px), in the drawer's smaller words. */
 .revoke,
 .quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
   padding: 0 var(--sp-14);
-  font: inherit;
   font-size: var(--fs-14);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.revoke {
-  border: var(--hairline) solid var(--error-on-paper);
-  background: transparent;
-  color: var(--error-on-paper);
-}
-
-.quiet {
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-}
-
-.revoke:disabled,
-.quiet:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.revoke:focus-visible,
-.quiet:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
 }
 
 .revoked {

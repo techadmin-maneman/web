@@ -950,12 +950,11 @@ export const technicians = {
   /** The two columns counted from the jobs themselves (src/domain/technician-work.ts). */
   work: {
     /** The average itself, as the board writes it: "1 h 24 m", and "48 m" under the hour. */
-    average: (hours: number, minutes: number) =>
-      hours === 0
-        ? `${String(minutes)} m`
-        : minutes === 0
-          ? `${String(hours)} h`
-          : `${String(hours)} h ${String(minutes)} m`,
+    average: (hours: number, minutes: number) => {
+      if (hours === 0) return `${String(minutes)} m`;
+      if (minutes === 0) return `${String(hours)} h`;
+      return `${String(hours)} h ${String(minutes)} m`;
+    },
     /**
      * PLACEHOLDER: how far over the planned length reads as running over. The
      * board letters 1 h 48 m in oxblood, 18 minutes past the 90 a service visit

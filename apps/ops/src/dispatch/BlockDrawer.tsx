@@ -10,9 +10,10 @@
 // The drawer is also the keyboard way into a move: the design moves a block by
 // dragging it, and everything the drag does can be done from here.
 
-import { shortDate } from "@maneman/web-kit/dates";
 import { ICONS } from "@maneman/brand/icons";
+import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
+import { shortDate } from "@maneman/web-kit/dates";
 import { OpsLink } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
@@ -71,39 +72,45 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
         {block.untold !== null && person !== null && (
           <div className={styles.untold}>
             <p className={styles.untoldLine}>{copy.untold(movedTo, phoneWords(person.mobile))}</p>
-            <button
-              className={styles.quiet}
-              type="button"
+            <Button
+              variant="outline"
+              size="small"
               onClick={() => {
                 if (block.untold !== null) onTold(block.untold.move_id);
               }}
             >
               {dispatch.landing.told}
-            </button>
+            </Button>
           </div>
         )}
         <div className={styles.drawerActions}>
           {person !== null && (
             <>
-              <a className={styles.quiet} href={whatsAppLink(person.mobile)} target="_blank" rel="noopener noreferrer">
+              <ButtonLink
+                variant="outline"
+                size="small"
+                href={whatsAppLink(person.mobile)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d={ICONS.whatsapp} />
                 </svg>
                 {copy.whatsapp(firstNameOf(person))}
-              </a>
-              <OpsLink className={styles.quiet} to={`/clients/${person.id}`}>
+              </ButtonLink>
+              <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={`/clients/${person.id}`}>
                 {copy.openClient}
               </OpsLink>
             </>
           )}
           {isMovable(block) && (
-            <button className={styles.quiet} type="button" onClick={onMove}>
+            <Button variant="outline" size="small" onClick={onMove}>
               {copy.move}
-            </button>
+            </Button>
           )}
-          <button className={styles.quiet} type="button" onClick={onClose}>
+          <Button variant="outline" size="small" onClick={onClose}>
             {copy.close}
-          </button>
+          </Button>
         </div>
       </div>
     </Dialog>

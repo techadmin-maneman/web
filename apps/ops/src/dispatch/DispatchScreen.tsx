@@ -16,6 +16,7 @@
 // after a move, without the loading state: the grid keeps its scroll, and the
 // keyboard goes back to the block that moved.
 
+import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -392,15 +393,15 @@ function NoticeLine({ notice, onTold }: { notice: Notice; onTold: (moveId: strin
     <div className={done ? styles.done : styles.refusal} role={done ? "status" : "alert"}>
       <p className={styles.noticeText}>{notice.text}</p>
       {notice.call !== null && (
-        <button
-          className={styles.quiet}
-          type="button"
+        <Button
+          variant="outline"
+          size="small"
           onClick={() => {
             if (notice.call !== null) void onTold(notice.call.moveId, notice.call.name);
           }}
         >
           {dispatch.landing.told}
-        </button>
+        </Button>
       )}
     </div>
   );

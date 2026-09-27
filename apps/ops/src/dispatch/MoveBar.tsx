@@ -4,6 +4,7 @@
 // same sheet". The list holds the windows the job would land in, on the rows
 // ops have narrowed the board to, so it is as short as the search makes it.
 
+import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { forwardRef, useState } from "react";
 import type { BoardRow, BookingWindow } from "../api.ts";
@@ -88,21 +89,21 @@ export const MoveBar = forwardRef<HTMLDivElement, Props>(function MoveBar(
               ))}
             </select>
           </div>
-          <button
-            className={styles.quiet}
-            type="button"
+          <Button
+            variant="outline"
+            size="small"
             disabled={choice === undefined}
             onClick={() => {
               if (choice !== undefined) onLand(choice.target);
             }}
           >
             {copy.listGo}
-          </button>
+          </Button>
         </div>
       )}
-      <button className={styles.quiet} type="button" onClick={onStop}>
+      <Button variant="outline" size="small" onClick={onStop}>
         {copy.stop}
-      </button>
+      </Button>
     </div>
   );
 });

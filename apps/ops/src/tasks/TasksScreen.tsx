@@ -121,10 +121,17 @@ function unnamedSubject(group: Group, task: Task): string {
   return group === "erasure_unfinished" ? tasks.erased(day) : tasks.visit(day);
 }
 
+/** How long is left to answer: the days over, today, or the days left. */
+function slaText(days: number): string {
+  if (days < 0) return tasks.sla.over(-days);
+  if (days === 0) return tasks.sla.today;
+  return tasks.sla.left(days);
+}
+
 function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
   const days = daysUntil(task.due, now);
   const overdue = days < 0;
-  const sla = overdue ? tasks.sla.over(-days) : days === 0 ? tasks.sla.today : tasks.sla.left(days);
+  const sla = slaText(days);
   const subject = task.person?.name ?? unnamedSubject(group, task);
   const where = decidedAt(group, task);
   const action = tasks.decide[group];

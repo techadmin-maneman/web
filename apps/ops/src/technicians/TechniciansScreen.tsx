@@ -12,6 +12,7 @@
 // covers are refused to self-serve booking and to the dispatch board alike,
 // which is why the form says so before it is sent.
 
+import { Button, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, listDate, longDate, shortDate } from "@maneman/web-kit/dates";
@@ -104,34 +105,42 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
         <div className={styles.asking}>
           <p className={styles.warning}>{copy.warning}</p>
           <div className={styles.actions}>
-            <button className={styles.revoke} type="button" disabled={sending} onClick={() => void revoke()}>
+            <Button
+              variant="danger"
+              size="small"
+              className={styles.revoke}
+              disabled={sending}
+              onClick={() => void revoke()}
+            >
               {sending ? copy.revoking : copy.confirm}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending}
               onClick={() => {
                 setRevoking({ step: "listed" });
               }}
             >
               {copy.cancel}
-            </button>
+            </Button>
           </div>
         </div>
       )}
       {offered && (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="outline"
+            size="small"
             className={styles.quiet}
-            type="button"
             aria-label={copy.revokeLabel(name, technician.name)}
             onClick={() => {
               setRevoking({ step: "asking" });
             }}
           >
             {copy.revoke}
-          </button>
+          </Button>
         </div>
       )}
       {revoking.step === "failed" && (
@@ -165,7 +174,7 @@ function Stranded({ jobs }: { jobs: readonly JobOnLeave[] }) {
           </li>
         ))}
       </ul>
-      <OpsLink className={styles.quiet} to="/dispatch">
+      <OpsLink className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })} to="/dispatch">
         {copy.move}
       </OpsLink>
     </div>
@@ -230,15 +239,16 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
             <li className={styles.leaveRow} key={leave.id}>
               <span className={styles.leavePeriod}>{periodOf(leave)}</span>
               {leave.note !== null && <span className={styles.leaveNote}>{leave.note}</span>}
-              <button
+              <Button
+                variant="outline"
+                size="small"
                 className={styles.quiet}
-                type="button"
                 disabled={sending}
                 aria-label={copy.takeLabel(periodOf(leave), technician.name)}
                 onClick={() => void take(leave)}
               >
                 {sending ? copy.taking : copy.take}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -246,9 +256,10 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
 
       {form === null ? (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="outline"
+            size="small"
             className={styles.quiet}
-            type="button"
             aria-label={copy.addLabel(technician.name)}
             onClick={() => {
               setFailed(null);
@@ -256,7 +267,7 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
             }}
           >
             {copy.add}
-          </button>
+          </Button>
         </div>
       ) : (
         <form
@@ -308,19 +319,20 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
             />
           </label>
           <div className={styles.actions}>
-            <button className={styles.revoke} type="submit" disabled={sending}>
+            <Button variant="danger" size="small" className={styles.revoke} type="submit" disabled={sending}>
               {sending ? copy.saving : copy.save}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending}
               onClick={() => {
                 setForm(null);
               }}
             >
               {copy.cancel}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -357,9 +369,9 @@ function TechnicianPanel({
         <h2 className={styles.drawerTitle} id="technician-title">
           {technician.name}
         </h2>
-        <button className={styles.quiet} type="button" onClick={onClose}>
+        <Button variant="outline" size="small" className={styles.quiet} onClick={onClose}>
           {technicians.close}
-        </button>
+        </Button>
       </div>
       <div className={styles.drawerBody}>
         <section className={styles.section} aria-labelledby="phones-title">
