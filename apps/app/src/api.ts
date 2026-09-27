@@ -34,6 +34,7 @@ export type Availability = Schemas["Availability"];
 export type Hold = Schemas["Hold"];
 export type Price = Schemas["Price"];
 export type Booking = Schemas["Booking"];
+export type BookingConsent = NonNullable<Schemas["BookingStart"]["consents"]>[number];
 export type MoveTerms = Schemas["MoveTerms"];
 export type CancelTerms = Schemas["CancelTerms"];
 export type Refer = Schemas["Refer"];
@@ -124,7 +125,11 @@ export const api = {
     client.post("/api/holds", { body: { type, date, window, ...(moving === undefined ? {} : { moving }) } }),
   holdById: (id: string) => client.get("/api/holds/{id}", { path: { id } }),
   releaseHold: (id: string) => client.delete("/api/holds/{id}", { path: { id } }),
-  book: (holdId: string) => client.post("/api/bookings", { body: { hold_id: holdId } }),
+  /** `consents`: the photograph purposes whose lines the pay step showed, which the tap agrees to (ADR 0080). */
+  book: (holdId: string, consents: readonly BookingConsent[]) =>
+    client.post("/api/bookings", {
+      body: { hold_id: holdId, ...(consents.length === 0 ? {} : { consents: [...consents] }) },
+    }),
   // One path, two answers: sent no hold it gives the move's terms (200), sent one the booking (201).
   moveTerms: (visitId: string) =>
     client.post("/api/appointments/{id}/reschedule", { path: { id: visitId }, body: {} }) as Promise<Answer<MoveTerms>>,

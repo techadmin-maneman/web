@@ -218,6 +218,26 @@ export function switchConsent(
     );
 }
 
+/**
+ * A consent given, on the notice the client was shown, only while they have never decided on the purpose: a
+ * purpose they have switched, either way, is left as they left it (ADR 0080). As with switchConsent, the write
+ * settles it, so two taps at once record it once. Returns the row's ID, for an audit entry written only with it.
+ */
+export function grantIfUndecided(
+  db: D1Database,
+  options: { personId: string; purpose: ConsentPurpose; noticeVersion: string; ipHash: string; now: Date },
+): { readonly id: string; readonly statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = db
+    .prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
+       SELECT ?1, ?2, ?3, ?4, 1, ?5, ?6
+       WHERE NOT EXISTS (SELECT 1 FROM consents WHERE person_id = ?2 AND purpose = ?3)`,
+    )
+    .bind(id, options.personId, options.purpose, options.noticeVersion, options.now.toISOString(), options.ipHash);
+  return { id, statement };
+}
+
 /** "+91 98xxx x4417", as the design shows a number. */
 export function maskedMobile(mobileE164: string): string {
   const digits = mobileE164.replace(/^\+91/, "");

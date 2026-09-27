@@ -16,6 +16,7 @@
     "e2e/**/*.ts",
     "test/node/app-api.test.ts",
     "test/node/app-checkout.test.ts",
+    "test/node/app-consent-lines.test.ts",
     "test/node/app-documents.test.ts",
     "test/node/fakes-contract.test.ts",
     "test/node/app-payments.test.ts",

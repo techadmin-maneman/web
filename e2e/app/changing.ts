@@ -1,7 +1,7 @@
 // Two clients whose next visit the change tests move and cancel (boards C7 and C8), written into the local
 // database as the FSM and payments mirrors would hold them: each has a paid service visit with a work order in
-// (stub) FSM. One visit is five days out, free to change; the other starts in three hours, inside 24 hours.
-// Every name and number is made up.
+// (stub) FSM, and an address saved, which a move needs as a booking does. One visit is five days out, free to
+// change; the other starts in three hours, inside 24 hours. Every name and number is made up.
 //
 // e2e/global-setup.ts seeds them once, with the fitted client (e2e/app/fitted.ts), since wrangler writing to the
 // local database while mm-api does would meet it on SQLite's lock.
@@ -48,6 +48,9 @@ export async function seedChanging(): Promise<void> {
       `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, method, status,
          captured_at, created_at, updated_at) VALUES
          ${row(payment, person, visit, `pay_${payment}`, 200000, "INR", "upi", "captured", at, at, at)};`,
+      // A move holds a slot, and no slot is held for a client without an address (ADR 0079).
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode) VALUES
+         ${row(crypto.randomUUID(), person, at, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
     );
     const date = new Date(starts.getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
     return { mobile, visitId: visit, date };

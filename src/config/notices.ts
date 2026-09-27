@@ -16,6 +16,37 @@ export interface Notice {
   readonly text: readonly string[];
 }
 
+/** The line a referrer reads before their invite names them (ADR 0025, item 24). */
+const NAMING_LINE = "Your first name appears on your invite.";
+
+/**
+ * The pay step's lines, when booking a visit in the app also agrees to the photograph purposes the client has never
+ * decided on (ADR 0080): for both, or for one asked alone. The app shows them word for word
+ * (apps/app/src/booking/consents.ts; test/node/app-consent-lines.test.ts).
+ */
+const BOOKING_BOTH = [
+  "By booking this visit, you also agree to photographs for your own record and on referral cards.",
+  "Anyone you send this card to can see your photographs.",
+  "They can forward it, and so can anyone who receives it.",
+  "You can switch it off at any time, and new opens will show our house example instead.",
+  "Cards already delivered stay in people’s chats. We cannot take those back.",
+  NAMING_LINE,
+  "You can switch either off in Profile.",
+];
+const BOOKING_OWN_RECORD = [
+  "By booking this visit, you also agree to photographs for your own record.",
+  "You can switch it off in Profile.",
+];
+const BOOKING_REFERRAL_CARDS = [
+  "By booking this visit, you also agree to photographs on referral cards.",
+  "Anyone you send this card to can see your photographs.",
+  "They can forward it, and so can anyone who receives it.",
+  "You can switch it off at any time, and new opens will show our house example instead.",
+  "Cards already delivered stay in people’s chats. We cannot take those back.",
+  NAMING_LINE,
+  "You can switch it off in Profile.",
+];
+
 export const NOTICES: readonly Notice[] = [
   {
     // The booking form's consent checkbox.
@@ -80,6 +111,15 @@ export const NOTICES: readonly Notice[] = [
       "Your first name appears on your invite.",
     ],
   },
+  // Given by booking a visit in the app (ADR 0080): each purpose's notice is every line the pay step showed.
+  { version: "photos-own-record-booking-v1", purpose: "photos_own_record", text: BOOKING_BOTH },
+  { version: "photos-referral-cards-booking-v1", purpose: "photos_referral_cards", text: BOOKING_BOTH },
+  { version: "photos-own-record-booking-alone-v1", purpose: "photos_own_record", text: BOOKING_OWN_RECORD },
+  {
+    version: "photos-referral-cards-booking-alone-v1",
+    purpose: "photos_referral_cards",
+    text: BOOKING_REFERRAL_CARDS,
+  },
   {
     version: "photos-marketing-v1",
     purpose: "photos_marketing",
@@ -123,6 +163,26 @@ export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
   whatsapp_visits: "whatsapp-visits-v1",
   whatsapp_launches: "whatsapp-launches-v1",
 };
+
+/**
+ * The notices a consent given by booking is recorded under (ADR 0080), by whether the pay step asked for both
+ * photograph purposes or for one alone. The profile's switch goes on recording CURRENT_NOTICE.
+ */
+export const BOOKING_NOTICES = {
+  both: {
+    photos_own_record: "photos-own-record-booking-v1",
+    photos_referral_cards: "photos-referral-cards-booking-v1",
+  },
+  alone: {
+    photos_own_record: "photos-own-record-booking-alone-v1",
+    photos_referral_cards: "photos-referral-cards-booking-alone-v1",
+  },
+} as const;
+
+/** Every notice for referral cards that carries the naming line: an invite names its referrer only on one of these. */
+export const NAMING_NOTICES: readonly string[] = NOTICES.filter(
+  (notice) => notice.purpose === "photos_referral_cards" && notice.text.includes(NAMING_LINE),
+).map((notice) => notice.version);
 
 export function findNotice(version: string): Notice | undefined {
   return NOTICES.find((notice) => notice.version === version);

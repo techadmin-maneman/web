@@ -9,7 +9,7 @@ import type { App } from "../../src/http/context.ts";
 import { placement, unitAt } from "../../src/domain/scheduling.ts";
 import { windowAt } from "../../src/policy/windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
 
 const IMRAN = "t1";
 const SANDEEP = "t2";
@@ -23,19 +23,29 @@ async function technician(id: string, name: string, initials: string) {
 }
 
 let people = 0;
-/** A client with a session; fitted, with Imran as their regular technician, unless `lead`. */
-async function client(lead = false): Promise<{ id: string; cookie: string }> {
+/**
+ * A client with a session and a saved address; fitted, with Imran as their regular technician, unless `lead`.
+ * `withoutAddress`: one who has not given their address yet.
+ */
+async function client(lead = false, { withoutAddress = false } = {}): Promise<{ id: string; cookie: string }> {
   people += 1;
   const id = crypto.randomUUID();
   await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')")
     .bind(id, NOW.toISOString(), `+9198100000${String(people).padStart(2, "0")}`)
     .run();
+  if (!withoutAddress) await savedAddress(id, "122018");
   await visit(id, lead ? "consultation" : "service", "completed", "2026-09-01T06:30:00.000Z", IMRAN);
   const session = await openSession(env.DB, { kind: "client", subjectId: id, deviceLabel: null, now: NOW });
   return { id, cookie: `mm_app=${session}` };
 }
 
-async function visit(personId: string | null, type: string, status: string, startsAt: string, technicianId: string) {
+async function visit(
+  personId: string | null,
+  type: string,
+  status: string,
+  startsAt: string,
+  technicianId: string,
+): Promise<string> {
   const id = crypto.randomUUID();
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
@@ -44,6 +54,7 @@ async function visit(personId: string | null, type: string, status: string, star
   )
     .bind(id, `fsm-${id}`, personId, type, status, startsAt, technicianId, NOW.toISOString())
     .run();
+  return id;
 }
 
 let app: App;
@@ -197,6 +208,40 @@ describe("POST /api/holds", () => {
     });
     expect((await hold(lead, { type: "first_fit", date: "2026-10-30", window: "morning" })).status).toBe(422);
     expect((await hold(lead, { type: "first_fit", date: "2026-09-21", window: "evening" })).status).toBe(422);
+  });
+
+  it("holds the visit at the pincode of the client's saved address", async () => {
+    const rohit = await client(false, { withoutAddress: true });
+    await savedAddress(rohit.id, "122011");
+    const { id } = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
+    const held = await env.DB.prepare("SELECT pincode FROM slot_holds WHERE id = ?1").bind(id).first();
+    expect(held).toEqual({ pincode: "122011" });
+  });
+
+  // The owner's ruling of 27 September 2026 (src/policy/booking.ts; ADR 0079).
+  it("holds no slot for a client who has not given their address, and says why", async () => {
+    const rohit = await client(false, { withoutAddress: true });
+    const answer = await hold(rohit, TUESDAY_AFTERNOON);
+    expect(answer.status).toBe(409);
+    expect((await answer.json<{ error: { code: string } }>()).error.code).toBe("address_required");
+    const held = await env.DB.prepare("SELECT COUNT(*) AS holds FROM slot_holds").first();
+    expect(held).toEqual({ holds: 0 });
+
+    await savedAddress(rohit.id);
+    expect((await hold(rohit, TUESDAY_AFTERNOON)).status).toBe(201);
+  });
+
+  it("moves no visit for a client who has not given their address", async () => {
+    const rohit = await client(false, { withoutAddress: true });
+    const booked = await visit(rohit.id, "service", "scheduled", "2026-09-24T06:30:00.000Z", IMRAN);
+    await env.DB.prepare("UPDATE appointments SET fsm_work_order_id = 'fsm-order-1' WHERE id = ?1").bind(booked).run();
+    const move = { ...TUESDAY_AFTERNOON, date: "2026-09-25", moving: booked };
+    const answer = await hold(rohit, move);
+    expect(answer.status).toBe(409);
+    expect((await answer.json<{ error: { code: string } }>()).error.code).toBe("address_required");
+
+    await savedAddress(rohit.id);
+    expect((await hold(rohit, move)).status).toBe(201);
   });
 
   it("shows a hold as lapsed once its ten minutes are up, and lets the client release it", async () => {
