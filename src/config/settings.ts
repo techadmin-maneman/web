@@ -292,13 +292,13 @@ class Reader {
   }
 }
 
-/** The providers the guard read, each where it is one PROVIDER_VARS allows. */
-type Providers = Partial<Record<ProviderVar, string>>;
+/** The provider vars as the guard read them, before it has refused any: one that failed its check is missing. */
+type ProvidersRead = Partial<Record<ProviderVar, string>>;
 
 export function readSettings(
   env: Env,
   environment: EnvironmentName | undefined,
-  providers: Providers,
+  providers: ProvidersRead,
 ): { settings: Settings; problems: string[] } {
   const read = new Reader(env);
   const isRemote = environment === "staging" || environment === "production";
@@ -389,7 +389,7 @@ function checkZohoHosts(read: Reader, hosts: readonly (readonly [name: string, h
 }
 
 /** The CRM's Zoho client, when CRM_PROVIDER is zoho. */
-function readZoho(read: Reader, providers: Providers): ZohoSettings | null {
+function readZoho(read: Reader, providers: ProvidersRead): ZohoSettings | null {
   if (providers.CRM_PROVIDER !== "zoho") return null;
   const zoho: ZohoSettings = {
     clientId: read.text("ZOHO_CLIENT_ID"),
@@ -407,7 +407,7 @@ function readZoho(read: Reader, providers: Providers): ZohoSettings | null {
 }
 
 /** The Zoho client FSM and Books share, when either is zoho. */
-function readZohoFsm(read: Reader, providers: Providers): ZohoFsmSettings | null {
+function readZohoFsm(read: Reader, providers: ProvidersRead): ZohoFsmSettings | null {
   if (providers.FSM_PROVIDER !== "zoho" && providers.BOOKS_PROVIDER !== "zoho") return null;
   const zohoFsm: ZohoFsmSettings = {
     clientId: read.text("ZOHO_FSM_CLIENT_ID"),
@@ -432,7 +432,7 @@ function readZohoFsm(read: Reader, providers: Providers): ZohoFsmSettings | null
 /** Razorpay's keys, when PAYMENTS_PROVIDER is razorpay; the stub's webhook secret, when it is the stub. */
 function readRazorpay(
   read: Reader,
-  providers: Providers,
+  providers: ProvidersRead,
   environment: EnvironmentName | undefined,
 ): RazorpaySettings | null {
   if (providers.PAYMENTS_PROVIDER === "stub") {
@@ -455,7 +455,7 @@ function readRazorpay(
 }
 
 /** The address search: its key when there is one, and its daily ceiling always. */
-function readGeocode(read: Reader, providers: Providers): GeocodeSettings {
+function readGeocode(read: Reader, providers: ProvidersRead): GeocodeSettings {
   const geocode: GeocodeSettings = {
     apiKey: providers.GEOCODE_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null,
     dailyCeiling: read.count("GEOCODE_DAILY_CEILING"),
@@ -474,7 +474,7 @@ function readGeocode(read: Reader, providers: Providers): GeocodeSettings {
 /** Cloudflare Access, when ACCESS_PROVIDER is cloudflare. A stub is refused in staging. */
 function readAccess(
   read: Reader,
-  providers: Providers,
+  providers: ProvidersRead,
   environment: EnvironmentName | undefined,
 ): AccessSettings | null {
   if (providers.ACCESS_PROVIDER !== "cloudflare") {
@@ -510,7 +510,7 @@ function readLogin(read: Reader, environment: EnvironmentName | undefined, clien
 }
 
 /** The try-on's limits, ceilings, retention and keys. */
-function readTryon(read: Reader, providers: Providers, isLocal: boolean): TryonSettings {
+function readTryon(read: Reader, providers: ProvidersRead, isLocal: boolean): TryonSettings {
   const tryon: TryonSettings = {
     uploadIpHourlyLimit: read.fixedLimit("TRYON_UPLOAD_IP_HOURLY_LIMIT", isLocal),
     generateIpHourlyLimit: read.fixedLimit("TRYON_GENERATE_IP_HOURLY_LIMIT", isLocal),
@@ -532,7 +532,7 @@ function readTryon(read: Reader, providers: Providers, isLocal: boolean): TryonS
 }
 
 /** Evolution's bridge, when MESSAGING_PROVIDER is evolution. */
-function readEvolution(read: Reader, providers: Providers): EvolutionSettings | null {
+function readEvolution(read: Reader, providers: ProvidersRead): EvolutionSettings | null {
   if (providers.MESSAGING_PROVIDER !== "evolution") return null;
   const evolution: EvolutionSettings = {
     baseUrl: read.text("EVOLUTION_API_URL").replace(/\/+$/, ""),
@@ -552,7 +552,7 @@ function readEvolution(read: Reader, providers: Providers): EvolutionSettings | 
 /** WhatsApp: whether it is on, the allowlist, and the bridge. */
 function readMessaging(
   read: Reader,
-  providers: Providers,
+  providers: ProvidersRead,
   environment: EnvironmentName | undefined,
 ): MessagingSettings {
   const evolution = readEvolution(read, providers);

@@ -130,3 +130,6 @@ export const PROVIDER_VARS = {
   GEOCODE_PROVIDER: ["google", "stub", "none"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;
+
+/** Each provider var as one of the values PROVIDER_VARS allows it: what the guard hands on once it has checked them. */
+export type Providers = { readonly [Variable in ProviderVar]: (typeof PROVIDER_VARS)[Variable][number] };

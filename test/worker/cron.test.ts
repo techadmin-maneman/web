@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
 import { CRON_CALLS, CRON_JOBS, runCronJobs, type CronJob } from "../../src/scheduled/cron.ts";
 import { LOCAL_CONFIG, captureLogs, fakeDependencies } from "./helpers.ts";
@@ -9,7 +10,10 @@ beforeEach(() => {
   logs = captureLogs();
 });
 
-const WITHOUT_BOOKS = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, BOOKS_PROVIDER: "none" } };
+const WITHOUT_BOOKS: StaticConfig = {
+  ...LOCAL_CONFIG,
+  providers: { ...LOCAL_CONFIG.providers, BOOKS_PROVIDER: "none" },
+};
 
 function recorder() {
   const ran: string[] = [];
@@ -78,7 +82,7 @@ describe("runCronJobs", () => {
   it("repairs the FSM mirror only against the real FSM, which is a record; the stub holds none", async () => {
     const { ran, job } = recorder();
     const jobs = [job("fsm_reconcile", "fsm_record"), job("fsm_catalogue", "fsm")];
-    const zoho = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" } };
+    const zoho: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" } };
 
     await runCronJobs(jobs, { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
     expect(ran).toEqual(["fsm_catalogue"]);
