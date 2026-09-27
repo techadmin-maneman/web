@@ -25,7 +25,7 @@ Until now a consent was given only by the client's own switch in Profile, or, fo
 | Both                   | `photos-own-record-booking-v1`       | `photos-referral-cards-booking-v1`       |
 | One, the other decided | `photos-own-record-booking-alone-v1` | `photos-referral-cards-booking-alone-v1` |
 
-Both lines read "By booking this visit, you also agree to …", the card's five lines follow wherever cards are asked, naming line included, and the last says the client can switch it, or either, off in Profile. The app composes the same lines (`apps/app/src/booking/consent-lines.ts`), and `test/node/app-content.test.ts` holds them to the notices, so the notice recorded is the text shown.
+Both lines read "By booking this visit, you also agree to …", the card's five lines follow wherever cards are asked, naming line included, and the last says the client can switch it, or either, off in Profile. The app composes the same lines (`apps/app/src/booking/consents.ts`), and `test/node/app-consent-lines.test.ts` holds them to the notices, so the notice recorded is the text shown.
 
 **`CURRENT_NOTICE` does not change; the naming check takes a set.** `CURRENT_NOTICE` is what the profile's switch and the share sheet show, and they still show `photos-referral-cards-v2`. The invite names its referrer when their latest consent to cards is on any notice carrying the naming line: `NAMING_NOTICES`, read from the notices' own text, so a later notice that carries it counts without anyone remembering to add it. The share sheet's F3 step is asked only when that consent does not stand (`GET /api/refer`'s `card.consented` reads the same check), so a client who agreed by booking is not asked again, and one who never booked in the app is asked there as before.
 

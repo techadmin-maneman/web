@@ -1,11 +1,13 @@
 // Before any test runs: the builds the run will be served are checked against
 // their source, then a fitted client in the local mirrors, for the client app's
-// read surfaces (e2e/app/fitted.ts), two clients whose visits the change tests
-// move and cancel (e2e/app/changing.ts), and the service area the booking pages
-// read (e2e/booking-area.ts).
+// read surfaces (e2e/app/fitted.ts), a fitted client with an address, who books
+// (e2e/app/booker.ts), two clients whose visits the change tests move and cancel
+// (e2e/app/changing.ts), and the service area the booking pages read
+// (e2e/booking-area.ts).
 
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { seedBooker } from "./app/booker.ts";
 import { seedChanging } from "./app/changing.ts";
 import { seedFitted } from "./app/fitted.ts";
 import { seedBookingArea } from "./booking-area.ts";
@@ -57,6 +59,7 @@ function checkBuilds(): void {
 export default async function globalSetup(): Promise<void> {
   checkBuilds();
   await seedFitted();
+  await seedBooker();
   await seedChanging();
   await seedBookingArea();
 }

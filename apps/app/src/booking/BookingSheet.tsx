@@ -5,6 +5,10 @@
 // Closed before paying, the hold is let go. Moving a visit (board C7) takes the
 // same steps, with its own technician and at what the move costs.
 //
+// A client who has given no address is asked for it first, since no slot is
+// held without one (ADR 0079). The pay step of a new visit says what booking
+// also agrees to, and its tap sends that on (ADR 0080).
+//
 // The hold's ten minutes are counted on the API's clock, not the phone's
 // (lib/clock.ts), and when the phone sees them run out it lets the hold go too.
 
@@ -15,6 +19,7 @@ import {
   type Availability,
   type BookableType,
   type Booking,
+  type BookingConsent,
   type BookingWindow,
   type Hold,
   type MoveTerms,
@@ -24,7 +29,9 @@ import { booking } from "../content.ts";
 import { focusIfLost } from "../lib/arrival.ts";
 import { apiNow } from "../lib/clock.ts";
 import { loadCheckout, pay, type Paid, type PayMethod } from "./checkout.ts";
+import { undecidedOf } from "./consents.ts";
 import {
+  AddressStep,
   ConfirmedStep,
   DateStep,
   ExpiredStep,
@@ -40,6 +47,8 @@ import styles from "./booking.module.css";
 
 type Step =
   | { readonly kind: "loading" }
+  /** No address yet (ADR 0079). `refused`: the API refused a hold for want of one. */
+  | { readonly kind: "address"; readonly refused: boolean }
   | { readonly kind: "date" }
   | { readonly kind: "window" }
   | { readonly kind: "pay"; readonly hold: Hold }
@@ -83,6 +92,10 @@ export function BookingSheet({
   /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
   const [reminders, setReminders] = useState<boolean | null>(null);
   const [remind, setRemind] = useState(false);
+  // True once the sheet has asked for the address, which makes its steps four rather than the boards' three.
+  const [addressFirst, setAddressFirst] = useState(false);
+  /** The photograph purposes the client has never decided on, which booking a new visit also agrees to. */
+  const [undecided, setUndecided] = useState<readonly BookingConsent[]>([]);
   // True once the client has paid, or booked without paying, so Home is fetched again when the sheet closes.
   const changed = useRef(false);
   // True while Razorpay Checkout is open, and this sheet has stepped out of its way.
@@ -90,6 +103,11 @@ export function BookingSheet({
   // True from the tap until Checkout has answered. `busy` disables the buttons, but only on
   // the next render, and a tap in that gap would pay for the hold a second time (ADR 0057).
   const starting = useRef(false);
+
+  const askForAddress = (refused: boolean) => {
+    setAddressFirst(true);
+    setStep({ kind: "address", refused });
+  };
 
   const load = useCallback(async () => {
     setStep({ kind: "loading" });
@@ -99,9 +117,14 @@ export function BookingSheet({
       return;
     }
     setReminders(profile.ok ? remindersOn(profile.body) : null);
+    setUndecided(profile.ok ? undecidedOf(profile.body) : []);
     setAvailability(answer.body);
     setDate(null);
     setChosenWindow(null);
+    if (profile.ok && profile.body.address === null) {
+      askForAddress(false);
+      return;
+    }
     setStep({ kind: "date" });
   }, [type, movingId]);
 
@@ -178,7 +201,8 @@ export function BookingSheet({
       const fresh = await api.availability(type, movingId);
       if (fresh.ok) setAvailability(fresh.body);
       setChosenWindow(null);
-    } else setProblem(booking.failedToStart);
+    } else if (answer.code === "address_required") askForAddress(true);
+    else setProblem(booking.failedToStart);
   };
 
   /**
@@ -217,7 +241,8 @@ export function BookingSheet({
     setProblem(null);
     try {
       if (remind && reminders !== true) await switchOnReminders();
-      const started = movingId === undefined ? await api.book(hold.id) : await api.startMove(movingId, hold.id);
+      const started =
+        movingId === undefined ? await api.book(hold.id, undecided) : await api.startMove(movingId, hold.id);
       if (!started.ok) {
         setBusy(false);
         if (started.code === "hold_expired") setStep({ kind: "expired" });
@@ -257,8 +282,10 @@ export function BookingSheet({
       <div className={styles.sheet}>
         {step.kind === "loading" && <LoadingStep />}
         {step.kind === "broken" && <WaitStep text={booking.failedToStart} onClose={close} />}
+        {step.kind === "address" && <AddressStep refused={step.refused} onSaved={() => void load()} />}
         {step.kind === "date" && availability !== null && (
           <DateStep
+            addressFirst={addressFirst}
             days={availability.days}
             chosen={date}
             onChoose={setDate}
@@ -269,6 +296,7 @@ export function BookingSheet({
         )}
         {step.kind === "window" && day !== undefined && availability !== null && (
           <WindowStep
+            addressFirst={addressFirst}
             day={day}
             regular={availability.regular}
             chosen={chosenWindow}
@@ -286,6 +314,7 @@ export function BookingSheet({
             busy={busy}
             problem={problem}
             askToRemind={reminders !== true}
+            consents={movingId === undefined ? undecided : []}
             remind={remind}
             onRemind={setRemind}
             onMethod={setMethod}

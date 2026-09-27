@@ -62,6 +62,8 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
   await expect(pay.getByText("Service visit · moved")).toBeVisible();
   await expect(pay.getByText("Free", { exact: true })).toBeVisible();
   await expect(pay.getByText("Your Rs. 2,000 carries over.")).toBeVisible();
+  // This client has decided neither photograph consent, and a move agrees to nothing (ADR 0080).
+  await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
   await pay.getByRole("button", { name: "Confirm the move" }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText("Moved")).toBeVisible();
 });
