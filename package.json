@@ -33,6 +33,8 @@
     "check:types": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example --check",
     "types": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example",
     "build": "node scripts/build.ts",
+    "adr-index": "node scripts/generate-adr-index.ts",
+    "schema": "node scripts/generate-schema-doc.ts",
     "openapi": "node scripts/generate-openapi.ts && openapi-typescript docs/openapi.json --output site/src/lib/api-schema.ts && openapi-typescript docs/openapi-client.json --output apps/app/src/api-schema.ts && openapi-typescript docs/openapi-ops.json --output apps/ops/src/api-schema.ts && openapi-typescript docs/openapi-tech.json --output apps/tech/src/api-schema.ts",
     "smoke": "node scripts/smoke.ts",
     "apply-triggers": "node scripts/apply-triggers.ts",
