@@ -1,5 +1,6 @@
 // What a client consents to (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them; their code arrives in P2-M1.
+// The rules as the prompt states them, and the purposes they name. A client switches each in src/domain/profile.ts;
+// ops read them in the console (src/routes/ops-clients.ts) and never write one.
 
 export const RULES = [
   "Each purpose carries its own date and can be switched by the client in the app. Ops can read them and never grant them. The purposes are:",

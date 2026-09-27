@@ -5,7 +5,8 @@
 
 import { CHECKLIST } from "../config/job-sheet.ts";
 import type { VisitType } from "../config/visit-types.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
+import { indiaDate, indiaTime } from "../lib/india-time.ts";
+import { windowAt } from "../policy/windows.ts";
 import { signToken } from "../lib/signed-token.ts";
 import type { AppointmentStatus, VisitOutcome } from "./fsm-mirror.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
@@ -20,10 +21,7 @@ export type VisitWindowLabel = "morning" | "afternoon" | "evening";
 /** A photograph's link lasts this long; the app asks again for a fresh one. */
 export const PHOTO_LINK_MS = 15 * MINUTE_MS;
 
-export function windowOf(startsAt: string): VisitWindowLabel {
-  const hour = Number(indiaHour(new Date(startsAt)).slice(11, 13));
-  return hour < 12 ? "morning" : hour < 16 ? "afternoon" : "evening";
-}
+export const windowOf = (startsAt: string): VisitWindowLabel => windowAt(indiaTime(new Date(startsAt)));
 
 /**
  * Where a visit FSM has not closed stands for the client: still to come, under

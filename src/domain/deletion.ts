@@ -3,7 +3,7 @@
 // (docs/decisions/0019-erasure.md): photographs, results and details, the same day.
 
 import type { Logger } from "../log.ts";
-import { erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
+import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { erasePerson, erasureBlockers, type ErasureBlockers, type ErasureEnv } from "./erasure.ts";
 import { DAY_MS } from "../lib/durations.ts";
@@ -129,10 +129,11 @@ export async function decideDeletion(
   return { kind: "decided", personId };
 }
 
-/** Ops are told when a request has waited this long, so it is processed within its 7 days. */
-export const DELETION_ALERT_AFTER_MS = 5 * DAY_MS;
+/** Ops are told when a request has waited this long, so it is decided within DELETION_DECIDED_WITHIN_DAYS. */
+const ALERT_AFTER_DAYS = 5;
+export const DELETION_ALERT_AFTER_MS = ALERT_AFTER_DAYS * DAY_MS;
 
-/** Alerts ops, once per request, about deletion requests nearing the end of their 7 days. */
+/** Alerts ops, once per request, about deletion requests nearing the end of their days. */
 export async function alertAgedDeletions(
   db: D1Database,
   now: Date,
@@ -148,8 +149,8 @@ export async function alertAgedDeletions(
   const count = aged.results.length;
   if (count > 0) {
     await alert(
-      `${String(count)} account deletion request(s) have waited 5 days. Each must be processed within 7 ` +
-        "(ops console, deletion requests).",
+      `${String(count)} account deletion request(s) have waited ${String(ALERT_AFTER_DAYS)} days. Each must be ` +
+        `processed within ${String(DELETION_DECIDED_WITHIN_DAYS)} (ops console, deletion requests).`,
     );
   }
   return count;

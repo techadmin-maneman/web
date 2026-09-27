@@ -6,7 +6,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
-import { placement, unitAt, windowAt } from "../../src/domain/scheduling.ts";
+import { placement, unitAt } from "../../src/domain/scheduling.ts";
+import { windowAt } from "../../src/policy/windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request } from "./helpers.ts";
 

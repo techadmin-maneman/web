@@ -27,7 +27,7 @@ import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
-import { windowAt } from "./scheduling.ts";
+import { windowAt } from "../policy/windows.ts";
 
 /** The statuses a job the technician still has work on can be in. */
 const LIVE = ["scheduled", "dispatched", "in_progress"] as const;

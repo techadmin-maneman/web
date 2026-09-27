@@ -10,10 +10,11 @@ import { rupees } from "@maneman/web-kit/money";
 import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import { WAIVER_GIVES_BACK, type NoShowDecision } from "../policy/no-show.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import type { MessageKind } from "./messages.ts";
-import { windowAt } from "./scheduling.ts";
+import { windowAt } from "../policy/windows.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
 export type VisitMessageKind = Extract<
@@ -84,7 +85,7 @@ export const ARRIVAL_NOTICE_WITHIN_MINUTES = 10;
 export const ARRIVAL_TOO_LATE = "the check-in reached us too late to tell the client";
 
 /** The day before a visit, reminders go from this time in India. */
-export const REMINDERS_FROM = "18:00";
+export const REMINDERS_FROM = `${String(DAY_BEFORE_REMINDER_HOUR)}:00`;
 /** How many reminders a cron pass queues, well inside its 50 outside calls. */
 const REMINDERS_PER_PASS = 20;
 

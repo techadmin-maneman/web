@@ -31,7 +31,7 @@ import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/razorpay.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { priceOf, type Price } from "./price-book.ts";
-import { windowAt } from "./scheduling.ts";
+import { windowAt } from "../policy/windows.ts";
 import { visitMessage } from "./visit-messages.ts";
 
 export interface ChangeableVisit {

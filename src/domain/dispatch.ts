@@ -43,10 +43,10 @@ import {
   placement,
   unitAt,
   visitTimes,
-  windowAt,
   type Day,
 } from "./scheduling.ts";
 import { visitMessage } from "./visit-messages.ts";
+import { windowAt } from "../policy/windows.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 /** Seven days, as the board shows them. */

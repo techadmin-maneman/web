@@ -1,6 +1,10 @@
 // What a technician sees of each job, and when (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
 // The rules as the prompt states them, and the day-before unlock they turn on.
 // Dates are India's, since a working day is (docs/decisions/0035-window-slot-map.md).
+//
+// src/domain/tech-jobs.ts builds a job's answer from `unlocked`: a job still
+// locked carries no address, access notes, client, pieces, last visit or
+// reminder, and no answer to a technician carries an amount.
 
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 
@@ -20,17 +24,20 @@ export function jobDay(windowStart: Date, now: Date): JobDay {
   return date === addDays(today, 1) ? "tomorrow" : "later";
 }
 
+/** The hour in India the day-before WhatsApp goes at (docs/decisions/0047-visit-messages.md). */
+export const DAY_BEFORE_REMINDER_HOUR = 18;
+
 /**
  * The India clock time a job unlocks at on the day before the visit. The owner
  * ruled 6 pm on 24 September 2026 (docs/open-points.md, "When a job's address
  * unlocks"): the technician sees the address at the moment the client is told
- * someone is coming, since the day-before WhatsApp goes at 6 pm (ADR 0047).
+ * someone is coming, when the day-before WhatsApp goes.
  *
  * It is a privacy boundary, not a convenience: it is what keeps a whole day's
  * client list off a phone that might be lost, so the six hours it takes off
  * midnight are the point of it.
  */
-export const UNLOCK_HOUR = 18;
+export const UNLOCK_HOUR = DAY_BEFORE_REMINDER_HOUR;
 
 /**
  * The hour ops have set, or the one above. It is an ops-editable input
@@ -43,12 +50,6 @@ export const unlocksAt = (windowStart: Date, hour: number = UNLOCK_HOUR): Date =
 /** Whether the address, access notes and client card are unlocked yet. */
 export const unlocked = (windowStart: Date, now: Date, hour: number = UNLOCK_HOUR): boolean =>
   now.getTime() >= unlocksAt(windowStart, hour).getTime();
-
-/** What a locked job carries: "only time, type and sector". */
-export const OUTLINE_FIELDS = ["window_start", "window_end", "type", "sector"] as const;
-
-/** What it gains the day before. The API enforces this, not just the screen. */
-export const UNLOCKED_FIELDS = ["address", "access_notes", "client_card"] as const;
 
 /**
  * The only money a technician's job carries: a badge, never an amount. The
@@ -68,7 +69,3 @@ export function paymentBadge(visit: { readonly onCredit: boolean; readonly free:
   if (visit.free) return "free";
   return "prepaid";
 }
-
-/** The fields a job may carry at this moment, so a route can build its answer from one list. */
-export const visibleFields = (windowStart: Date, now: Date, hour: number = UNLOCK_HOUR): readonly string[] =>
-  unlocked(windowStart, now, hour) ? [...OUTLINE_FIELDS, ...UNLOCKED_FIELDS] : OUTLINE_FIELDS;
