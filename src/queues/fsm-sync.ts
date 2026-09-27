@@ -43,6 +43,7 @@ import { failureReason, type Logger } from "../log.ts";
 import type { FsmContactUpdate } from "../providers/fsm.ts";
 import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
 import type { MessagingMessage } from "./messaging.ts";
+import { retryWithBackoff } from "./backoff.ts";
 
 export const MAX_FSM_SYNC_ATTEMPTS = 5;
 const FIRST_RETRY_DELAY_SECONDS = 30;
@@ -176,7 +177,7 @@ export async function handleFsmSyncBatch(
         });
         message.ack();
       } else {
-        message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+        retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
       }
     }
   }
@@ -196,7 +197,7 @@ async function bookHold(
   options: ConfirmOptions,
 ): Promise<void> {
   const retryLater = () => {
-    message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+    retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
   };
   try {
     const outcome = await confirmBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options);
@@ -378,7 +379,7 @@ async function writeJobEvent(
     const reason = failureReason(error);
     log.warn("job_event_write_failed", { appointment_id: job.id, kind: event.kind, attempt: message.attempts, reason });
     if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
-      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
       return;
     }
     await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
@@ -517,7 +518,7 @@ async function updateContact(
     const reason = failureReason(error);
     log.warn("fsm_contact_update_failed", { person_id: personId, attempt: message.attempts, reason });
     if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
-      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
       return;
     }
     await deps.alertOnce({
@@ -572,7 +573,7 @@ async function sendLead(
       );
       message.ack();
     } else {
-      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
     }
   }
 }
