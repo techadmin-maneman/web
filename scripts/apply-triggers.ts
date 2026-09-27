@@ -5,8 +5,9 @@
 //
 //   npm run apply-triggers -- --env staging
 //
-// An app not deployed there yet, and that need not be, is passed over: its
-// bootstrap attaches its route (docs/runbook.md, step 11). Given a
+// An app whose surface is not switched on there is passed over, deployed or
+// not: its bootstrap or its surface's release attaches its route (docs/runbook.md,
+// step 11). Given a
 // CLOUDFLARE_API_TOKEN that can read Workers and Queues, it then checks that
 // what is live matches (scripts/check-triggers.ts).
 

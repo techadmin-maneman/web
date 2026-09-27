@@ -350,7 +350,7 @@ To switch one on:
 
    The config check fails if either comes without the other.
 
-5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
+5. **The route.** After the merge, attach the new route with `npm run apply-triggers -- --env <env>` (step 9), since CI never changes routes. Never `W deploy --env production` for it: that sends a version of mm-api all production traffic outside the release, with no canary and before its migrations (corrected 27 September 2026). Then run the smoke tests against the new host.
 6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md), the ops console is `mm-ops`, and the technician app is `mm-tech` (docs/decisions/0053-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then a production release passes over it, as long as its surface is not switched on there. A Worker that must be there and is not — mm-api, mm-site, or an app whose host is live — fails the deploy, and so does any answer from Cloudflare other than "it does not exist".
 
    ```sh
@@ -364,7 +364,7 @@ To switch one on:
    W deploy --config apps/tech/wrangler.jsonc --env <env> --tag bootstrap
    ```
 
-   Then add the new Worker to that environment's CI token (step 3), which can only name a Worker that exists.
+   Then add the new Worker to that environment's CI token (step 6), which can only name a Worker that exists.
 
 ### 11a. The client app's login
 
@@ -423,7 +423,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    ```
 
 6. **FSM's webhook** keeps the mirror current within seconds. Without it, the mirror waits for the reconciliation.
-   - **The token.** Make one and set it: `openssl rand -hex 24 | W secret put FSM_WEBHOOK_TOKEN --env <env>`.
+   - **The token.** Make one with `openssl rand -hex 24`, keep it in the password manager, and set it with `W secret put FSM_WEBHOOK_TOKEN --env <env>`: the webhook's URL below needs the same value, and a secret cannot be read back (corrected 27 September 2026; piping it straight into `secret put` lost it).
    - **The webhook.** In FSM, Setup → Automation → Webhooks → New Webhook:
      - URL: `https://<public host>/api/hooks/fsm/<token>`;
      - method: POST;
