@@ -2,13 +2,13 @@
 // counts board B5 and board B4 show: what is left of the wait, and how long the
 // job took.
 
-import { fullDate, indiaClock } from "@maneman/web-kit/dates";
+import { fullDate, inIndia, indiaClock, indiaDate } from "@maneman/web-kit/dates";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Today's calendar date in India, YYYY-MM-DD: the day the app asks the backend for. */
 export function todayInIndia(now: Date = new Date()): string {
-  return new Date(now.getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
+  return indiaDate(now.toISOString());
 }
 
 export function dayAfter(isoDate: string): string {
@@ -26,7 +26,7 @@ export const clock = indiaClock;
 
 /** "9:30", "2:00": the time down the left of a job row (board A1), which never carries am or pm. */
 export function clockShort(isoInstant: string): string {
-  const india = new Date(new Date(isoInstant).getTime() + 330 * 60 * 1000);
+  const india = inIndia(isoInstant);
   const hours = india.getUTCHours() % 12 === 0 ? 12 : india.getUTCHours() % 12;
   return `${String(hours)}:${String(india.getUTCMinutes()).padStart(2, "0")}`;
 }

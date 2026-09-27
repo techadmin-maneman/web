@@ -74,6 +74,17 @@ describe.each(APPS)("%s", (app) => {
   });
 });
 
+// A service worker is registered as a classic script, which cannot import: built with a shared module, it would load
+// the app's chunk with an import statement and fail to install. So it takes nothing from the packages.
+describe.each(["apps/app", "apps/tech"])("%s's service worker", (app) => {
+  it("imports only its own files", () => {
+    const imports = filesUnder(`${app}/sw`)
+      .filter((path) => path.endsWith(".ts"))
+      .flatMap((path) => [...read(path).matchAll(/^import [^;]*? from "([^"]+)";/gms)].map((match) => match[1] ?? ""));
+    expect(imports.filter((from) => !from.startsWith("./"))).toEqual([]);
+  });
+});
+
 /** Every file under a directory. */
 function filesUnder(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

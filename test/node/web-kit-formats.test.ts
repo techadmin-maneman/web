@@ -3,6 +3,7 @@ import {
   fullDate,
   indiaClock,
   indiaDate,
+  indiaInstant,
   listDate,
   listMonth,
   longDate,
@@ -58,6 +59,21 @@ describe("web-kit dates", () => {
     expect(indiaDate(instant)).toBe(date);
     expect(indiaClock(instant)).toBe(clock);
   });
+
+  it("turns India's date and clock into the instant they are, as a calendar file needs", () => {
+    expect(indiaInstant("2026-09-24", "09:00").toISOString()).toBe("2026-09-24T03:30:00.000Z");
+    expect(indiaInstant("2026-09-24", "03:00").toISOString()).toBe("2026-09-23T21:30:00.000Z");
+  });
+
+  // FEA-40: India's offset was written out seven times across the front ends.
+  // A service worker is built on its own and imports nothing, so the technician app's keeps its own copy.
+  it("is the one place the front ends add India's offset", () => {
+    const offsets = ["apps", "site/src", "packages"]
+      .flatMap((root) => sourcesUnder(root))
+      .filter((path) => path !== "packages/web-kit/dates.ts" && !/^apps\/\w+\/sw\//.test(path))
+      .filter((path) => /\b330\b/.test(readFileSync(path, "utf8")));
+    expect(offsets).toEqual([]);
+  });
 });
 
 describe("web-kit money", () => {
@@ -82,16 +98,19 @@ describe("web-kit money", () => {
   });
 
   it("is the one way any front end writes rupees", () => {
-    const sources = (dir: string): string[] =>
-      readdirSync(dir).flatMap((name) => {
-        const path = join(dir, name).replace(/\\/g, "/");
-        if (name === "node_modules" || name === "dist" || name.endsWith("api-schema.ts")) return [];
-        if (statSync(path).isDirectory()) return sources(path);
-        return /\.(ts|tsx|astro)$/.test(name) ? [path] : [];
-      });
     const formatting = ["apps", "site/src", "packages/ui"]
-      .flatMap(sources)
+      .flatMap(sourcesUnder)
       .filter((path) => readFileSync(path, "utf8").includes("new Intl.NumberFormat("));
     expect(formatting).toEqual([]);
   });
 });
+
+/** The front ends' source files under a directory, with forward slashes, leaving out builds and generated schemas. */
+function sourcesUnder(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name).replace(/\\/g, "/");
+    if (name === "node_modules" || name === "dist" || name.endsWith("api-schema.ts")) return [];
+    if (statSync(path).isDirectory()) return sourcesUnder(path);
+    return /\.(ts|tsx|astro)$/.test(name) ? [path] : [];
+  });
+}

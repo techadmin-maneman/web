@@ -1,17 +1,12 @@
 // "Add to calendar": an .ics file for a booked consultation, made in the browser. The technician comes within the
 // window, so the event covers the whole of it, in India's time as src/config/scheduling.ts gives it.
 
+import { indiaInstant } from "@maneman/web-kit/dates";
 import { WINDOW_TIMES, type BookingWindow } from "../../../src/config/scheduling.ts";
-
-/** India is five and a half hours ahead of UTC, all year. */
-const INDIA_OFFSET_MINUTES = 330;
 
 /** "2026-09-24" at "09:00" in India, as a calendar file's UTC time: 20260924T033000Z. */
 function utcStamp(date: string, time: string): string {
-  const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
-  const [hours = 0, minutes = 0] = time.split(":").map(Number);
-  const instant = new Date(Date.UTC(year, month - 1, day, hours, minutes - INDIA_OFFSET_MINUTES));
-  return instant
+  return indiaInstant(date, time)
     .toISOString()
     .replace(/[-:]/g, "")
     .replace(/\.\d+Z$/, "Z");

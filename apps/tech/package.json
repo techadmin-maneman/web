@@ -2,7 +2,7 @@
   "name": "@maneman/tech",
   "private": true,
   "version": "0.0.0",
-  "description": "The technician app: the day's jobs, one job's screen, and the offline outbox that holds what the phone has not yet sent (docs/decisions/0038-the-technician-app-offline.md).",
+  "description": "The technician app: the day's jobs, one job's screen, and the offline outbox that holds what the phone has not yet sent (docs/decisions/0053-the-technician-app-offline.md).",
   "type": "module",
   "dependencies": {
     "@maneman/brand": "0.0.0",
