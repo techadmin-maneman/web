@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { saltedHash } from "../../src/lib/hash.ts";
-import { LOCAL_SETTINGS, NOW, appFor, fakeDependencies, markDatabase, request } from "./helpers.ts";
+import { LOCAL_SETTINGS, NOW, appFor, captureLogs, fakeDependencies, markDatabase, request } from "./helpers.ts";
 
 const SECRET = "a-razorpay-webhook-secret-for-tests";
 const RAZORPAY = { razorpay: { keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: SECRET } };
@@ -170,5 +170,15 @@ describe("Razorpay's webhook: refunds", () => {
     await deliver(paymentEvent("payment.captured"), "evt_2");
     expect((await deliver(refundEvent("refund.processed", 1000000), "evt_1")).status).toBe(200);
     expect((await payment())?.status).toBe("partially_refunded");
+  });
+
+  it("takes nothing from a payment that is not Razorpay's shape, and leaves it for Razorpay to send again", async () => {
+    captureLogs();
+    const response = await deliver(paymentEvent("payment.captured", { amount: undefined }), "evt_1");
+
+    expect(response.status).toBe(500);
+    expect(await payment()).toBeNull();
+    const seen = await env.DB.prepare("SELECT COUNT(*) AS n FROM razorpay_events").first<{ n: number }>();
+    expect(seen?.n).toBe(0);
   });
 });

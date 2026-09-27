@@ -9,6 +9,7 @@
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
+import type { RazorpayPayment, RazorpayRefund } from "../providers/razorpay.ts";
 import { confirmPaidHold } from "./bookings.ts";
 
 export type PaymentStatus = "authorized" | "captured" | "failed" | "refunded" | "partially_refunded";
@@ -21,32 +22,6 @@ const RANK: Readonly<Record<PaymentStatus, number>> = {
   partially_refunded: 3,
   refunded: 4,
 };
-
-/** The fields of Razorpay's payment entity the mirror reads. */
-export interface RazorpayPayment {
-  readonly id: string;
-  readonly amount: number;
-  readonly currency: string;
-  readonly status: string;
-  readonly order_id?: string | null;
-  readonly method?: string | null;
-  readonly vpa?: string | null;
-  readonly contact?: string | null;
-  readonly card?: { readonly network?: string | null } | null;
-  readonly notes?: Record<string, unknown> | unknown[] | null;
-  /** Unix seconds. */
-  readonly created_at: number;
-}
-
-export interface RazorpayRefund {
-  readonly id: string;
-  readonly payment_id: string;
-  readonly amount: number;
-  readonly status: string;
-  readonly speed_processed?: string | null;
-  readonly speed_requested?: string | null;
-  readonly created_at: number;
-}
 
 /** A payment event's state: from the event's name where it says, else from the payment. */
 export function paymentStatusOf(event: string, payment: RazorpayPayment): PaymentStatus | null {

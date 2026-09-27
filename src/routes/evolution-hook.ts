@@ -25,7 +25,7 @@ const ReceiptSchema = z.object({
   keyId: z.string().optional(),
   key: z.object({ id: z.string().optional() }).optional(), // how older Evolution versions name the message
   fromMe: z.boolean().optional(),
-  status: z.unknown(),
+  status: z.string().catch(""),
 });
 const EvolutionEventSchema = z.object({
   event: z.string(),
@@ -70,9 +70,8 @@ export function registerEvolutionHook(app: App): void {
     let recorded = 0;
     for (const receipt of receipts) {
       const providerMessageId = receipt.keyId ?? receipt.key?.id;
-      const status = typeof receipt.status === "string" ? receipt.status : "";
-      if (providerMessageId === undefined || receipt.fromMe === false || !DELIVERED.has(status)) continue;
-      recorded += await recordReceipt(c.env.DB, providerMessageId, READ.has(status), now);
+      if (providerMessageId === undefined || receipt.fromMe === false || !DELIVERED.has(receipt.status)) continue;
+      recorded += await recordReceipt(c.env.DB, providerMessageId, READ.has(receipt.status), now);
     }
     log.info("evolution_receipts", { receipts: receipts.length, recorded });
     return c.body(null, 204);

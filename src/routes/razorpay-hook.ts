@@ -10,16 +10,11 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
-import {
-  paymentStatusOf,
-  recordPayment,
-  recordRefund,
-  type RazorpayPayment,
-  type RazorpayRefund,
-} from "../domain/payments.ts";
+import { paymentStatusOf, recordPayment, recordRefund } from "../domain/payments.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { saltedHash, secretsMatch, sha256Hex } from "../lib/hash.ts";
+import { RazorpayPaymentSchema, RazorpayRefundSchema, type RazorpayPayment } from "../providers/razorpay.ts";
 
 const EventSchema = z.object({
   event: z.string(),
@@ -85,8 +80,9 @@ export function registerRazorpayHook(app: App): void {
       return c.body(null, 200);
     }
 
+    // An entity not of Razorpay's shape throws, so the event is answered 500 and Razorpay sends it again.
     if (payload?.payment !== undefined && !event.startsWith("refund.")) {
-      const payment = payload.payment.entity as unknown as RazorpayPayment;
+      const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const status = paymentStatusOf(event, payment);
       if (status !== null) await recordPayment(db, payment, status, config.settings.ipHashSalt, now);
       // Paid for a hold in the app: the booking is written to FSM from the queue (src/domain/bookings.ts).
@@ -97,7 +93,7 @@ export function registerRazorpayHook(app: App): void {
         await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
       }
     } else if (payload?.refund !== undefined) {
-      const recorded = await recordRefund(db, payload.refund.entity as unknown as RazorpayRefund, now);
+      const recorded = await recordRefund(db, RazorpayRefundSchema.parse(payload.refund.entity), now);
       // Its payment's event has not arrived yet. Not kept as seen, so Razorpay's retry is applied.
       if (!recorded) {
         log.info("razorpay_hook_refund_early", { event });

@@ -23,27 +23,43 @@ const TIMEOUT_MS = 5_000;
 /** India only: the business serves NCR, and a narrower search is a better one. */
 const REGION = "in";
 
+import { z } from "zod";
 import type { GeocodeProvider, LookupFailure } from "./geocode.ts";
 
-interface AutocompleteAnswer {
-  suggestions?: {
-    placePrediction?: {
-      placeId?: unknown;
-      structuredFormat?: { mainText?: { text?: unknown }; secondaryText?: { text?: unknown } };
-    };
-  }[];
-}
+/** A string Google may leave out, read as empty. */
+const Text = z.string().catch("");
+const Named = z.object({ text: Text }).catch({ text: "" });
 
-interface GeocodeAnswer {
-  status?: unknown;
-  results?: {
-    place_id?: unknown;
-    formatted_address?: unknown;
-    geometry?: { location?: { lat?: unknown; lng?: unknown } };
-  }[];
-}
+const Autocomplete = z.object({
+  suggestions: z
+    .array(
+      z.object({
+        placePrediction: z
+          .object({
+            placeId: Text,
+            structuredFormat: z
+              .object({ mainText: Named, secondaryText: Named })
+              .catch({ mainText: { text: "" }, secondaryText: { text: "" } }),
+          })
+          .optional()
+          .catch(undefined),
+      }),
+    )
+    .catch([]),
+});
 
-const text = (value: unknown): string => (typeof value === "string" ? value : "");
+/** The Geocoding API's answer: its status, and the results, of which only the first is read. */
+const Geocoded = z.object({ status: Text, results: z.array(z.unknown()).catch([]) });
+const GeocodedPlace = z.object({
+  formatted_address: Text,
+  geometry: z.object({ location: z.object({ lat: z.number(), lng: z.number() }) }),
+});
+
+/** Why Google refused, where it says: the Places API in `error`, the Geocoding API in `error_message`. */
+const Refusal = z.object({
+  error: z.object({ message: Text, status: Text }).catch({ message: "", status: "" }),
+  error_message: Text,
+});
 
 /**
  * Google says why it refused, in the body; a status on its own does not. A 403
@@ -53,9 +69,9 @@ const text = (value: unknown): string => (typeof value === "string" ? value : ""
  * leaving this module is.
  */
 function why(body: unknown): string {
-  const error = (body as { error?: { message?: unknown; status?: unknown } } | null)?.error;
-  const message = text(error?.message) || text((body as { error_message?: unknown } | null)?.error_message);
-  const status = text(error?.status);
+  const said = Refusal.safeParse(body).data ?? { error: { message: "", status: "" }, error_message: "" };
+  const message = said.error.message === "" ? said.error_message : said.error.message;
+  const { status } = said.error;
   if (message === "") return status === "" ? "" : `: ${status}`;
   return status === "" ? `: ${message}` : `: ${status}, ${message}`;
 }
@@ -110,17 +126,11 @@ export function createGooglePlaces(apiKey: string, deps: { fetch: typeof fetch }
           detail: scrub(`autocomplete ${String(answer.status)}${why(answer.body)}`),
         };
       }
-      const suggestions = ((answer.body as AutocompleteAnswer | null)?.suggestions ?? []).flatMap((entry) => {
-        const prediction = entry.placePrediction;
-        const placeId = text(prediction?.placeId);
-        if (placeId === "") return [];
-        return [
-          {
-            placeId,
-            primary: text(prediction?.structuredFormat?.mainText?.text),
-            secondary: text(prediction?.structuredFormat?.secondaryText?.text),
-          },
-        ];
+      const predictions = Autocomplete.safeParse(answer.body).data?.suggestions ?? [];
+      const suggestions = predictions.flatMap(({ placePrediction }) => {
+        if (placePrediction === undefined || placePrediction.placeId === "") return [];
+        const { mainText, secondaryText } = placePrediction.structuredFormat;
+        return [{ placeId: placePrediction.placeId, primary: mainText.text, secondary: secondaryText.text }];
       });
       return { ok: true, suggestions };
     },
@@ -145,21 +155,18 @@ export function createGooglePlaces(apiKey: string, deps: { fetch: typeof fetch }
           detail: scrub(`geocoding ${String(answer.status)}${why(answer.body)}`),
         };
       }
-      const body = answer.body as GeocodeAnswer | null;
-      const status = text(body?.status);
-      const first = body?.results?.[0];
-      const lat = first?.geometry?.location?.lat;
-      const lng = first?.geometry?.location?.lng;
-      if (status !== "OK" || typeof lat !== "number" || typeof lng !== "number") {
+      const geocoded = Geocoded.safeParse(answer.body).data;
+      const status = geocoded?.status ?? "";
+      const first = GeocodedPlace.safeParse(geocoded?.results[0]).data;
+      if (status !== "OK" || first === undefined) {
         // OK with no coordinate, or ZERO_RESULTS: this Place ID resolved to nothing,
         // as one over a year old can (Google's own advice).
         const reason: LookupFailure = status === "OK" ? "not_found" : (GEOCODING_STATUS[status] ?? "unavailable");
-        return { ok: false, reason, detail: scrub(`geocoding said ${status === "" ? "nothing" : status}${why(body)}`) };
+        const said = status === "" ? "nothing" : status;
+        return { ok: false, reason, detail: scrub(`geocoding said ${said}${why(answer.body)}`) };
       }
-      return {
-        ok: true,
-        place: { placeId, lat, lng, formattedAddress: text(first?.formatted_address) },
-      };
+      const { lat, lng } = first.geometry.location;
+      return { ok: true, place: { placeId, lat, lng, formattedAddress: first.formatted_address } };
     },
   };
 }

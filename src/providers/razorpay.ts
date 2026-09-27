@@ -17,8 +17,46 @@ export interface PaymentsProvider {
   refund(paymentId: string, refund: { amount: number; notes: Record<string, string> }): Promise<{ id: string }>;
 }
 
+/** The fields of Razorpay's payment entity, as its webhook carries it, that the mirror reads. */
+export const RazorpayPaymentSchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  currency: z.string(),
+  status: z.string(),
+  order_id: z.string().nullish(),
+  method: z.string().nullish(),
+  vpa: z.string().nullish(),
+  contact: z.string().nullish(),
+  card: z.object({ network: z.string().nullish() }).nullish(),
+  /** An object of our order's notes; Razorpay sends [] for none. */
+  notes: z.union([z.record(z.string(), z.unknown()), z.array(z.unknown())]).nullish(),
+  /** Unix seconds. */
+  created_at: z.number(),
+});
+export type RazorpayPayment = z.infer<typeof RazorpayPaymentSchema>;
+
+/** The fields of Razorpay's refund entity that the mirror reads. */
+export const RazorpayRefundSchema = z.object({
+  id: z.string(),
+  payment_id: z.string(),
+  amount: z.number(),
+  status: z.string(),
+  speed_processed: z.string().nullish(),
+  speed_requested: z.string().nullish(),
+  /** Unix seconds. */
+  created_at: z.number(),
+});
+export type RazorpayRefund = z.infer<typeof RazorpayRefundSchema>;
+
 const API = "https://api.razorpay.com/v1";
 const Created = z.object({ id: z.string() });
+/** Razorpay's reason for a refusal, as much of it as it gave. */
+const Refused = z.object({
+  error: z.object({
+    code: z.string().optional().catch(undefined),
+    description: z.string().optional().catch(undefined),
+  }),
+});
 
 export class RazorpayError extends Error {
   readonly status: number;
@@ -57,7 +95,7 @@ function createRazorpay(settings: RazorpaySettings, deps: { fetch: typeof fetch;
     deps.log.info("razorpay_call", { step, status: response.status, duration_ms: Date.now() - started });
     const answer: unknown = await response.json().catch(() => null);
     if (!response.ok) {
-      const error = (answer as { error?: { code?: string; description?: string } } | null)?.error;
+      const error = Refused.safeParse(answer).data?.error;
       throw new RazorpayError(response.status, error?.code ?? "UNKNOWN", error?.description ?? "no description");
     }
     return Created.parse(answer);
