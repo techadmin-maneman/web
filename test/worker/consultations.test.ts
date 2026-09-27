@@ -73,6 +73,7 @@ describe("POST /api/consultation", () => {
       date: "2026-09-23",
       window: "morning",
       area: "Gurgaon South City II",
+      address: "saved",
     });
     expect(fsm.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
@@ -135,6 +136,7 @@ describe("POST /api/consultation", () => {
       date: "2026-09-23",
       window: "morning",
       area: "Gurgaon South City II",
+      address: "saved",
     });
     expect(fsm.sent).toEqual([]);
     expect(crm.sent).toHaveLength(1);
@@ -216,7 +218,8 @@ describe("the address the consultation is at", () => {
     expect(saved).toEqual({ line1: "Palm Grove Society", pincode: "122018" });
   });
 
-  it("replaces the one a person we know gave before, keeps that, and goes on to their FSM contact and CRM lead", async () => {
+  // The form needs no login, only a number: whoever types one must not move where that person's visits go.
+  it("never replaces the address a person already has: it is kept, the visit goes to it, and the answer says so", async () => {
     await env.DB.prepare(
       `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id, zoho_lead_id)
        VALUES ('p-known', ?1, '+919810000002', 'Karan Bhatia', 'contact-7', 'lead-7')`,
@@ -225,20 +228,55 @@ describe("the address the consultation is at", () => {
       .run();
     await env.DB.prepare(
       `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
-       VALUES ('old', 'p-known', '2026-09-01T00:00:00.000Z', 'House 12', 'Sector 45', 'Gurgaon', '122003')`,
+       VALUES ('old', 'p-known', '2026-09-01T00:00:00.000Z', 'House 12', 'Sector 45', 'Gurgaon', '122018')`,
     ).run();
     const fsm = fakeQueue();
     const crm = fakeQueue();
-    expect((await book({ address: ADDRESS }, { FSM_QUEUE: fsm, CRM_QUEUE: crm })).status).toBe(201);
+    const answer = await book({ address: ADDRESS }, { FSM_QUEUE: fsm, CRM_QUEUE: crm });
 
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", address: "on_account" });
     const addresses = await env.DB.prepare(
-      `SELECT line1, replaced_at IS NOT NULL AS replaced FROM addresses WHERE person_id = 'p-known'
-       ORDER BY created_at`,
+      "SELECT id, line1, replaced_at FROM addresses WHERE person_id = 'p-known'",
+    ).all();
+    expect(addresses.results).toEqual([{ id: "old", line1: "House 12", replaced_at: null }]);
+    // Nothing about them changed, so nothing is sent on to FSM or the CRM but the booking and its lead.
+    expect(fsm.sent).not.toContainEqual(expect.objectContaining({ update_contact_person_id: "p-known" }));
+    expect(crm.sent).not.toContainEqual(expect.objectContaining({ update_person_id: "p-known" }));
+  });
+
+  it("leaves the first address untouched when the same number books again with another", async () => {
+    const first = await book({ address: ADDRESS });
+    expect(await first.json()).toMatchObject({ state: "booked", address: "saved" });
+    // Ops cancel the first, so the number may book a consultation again.
+    await env.DB.prepare("UPDATE slot_holds SET state = 'released'").run();
+
+    const elsewhere = { ...ADDRESS, flat: "House 9", line1: "Rose Lane", locality: "Sector 45" };
+    const second = await book({ date: "2026-09-24", address: elsewhere });
+    expect(second.status).toBe(201);
+    expect(await second.json()).toMatchObject({ state: "booked", address: "on_account" });
+    const addresses = await env.DB.prepare(
+      `SELECT a.flat, a.line1, a.locality, a.replaced_at FROM addresses a JOIN people p ON p.id = a.person_id
+       WHERE p.mobile_e164 = '+919810000002'`,
     ).all();
     expect(addresses.results).toEqual([
-      { line1: "House 12", replaced: 1 },
-      { line1: "Palm Grove Society", replaced: 0 },
+      { flat: "Flat 402", line1: "Palm Grove Society", locality: "Sector 65", replaced_at: null },
     ]);
+  });
+
+  it("is saved for a person we know who has none, and goes on to their FSM contact and CRM lead", async () => {
+    await env.DB.prepare(
+      `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id, zoho_lead_id)
+       VALUES ('p-known', ?1, '+919810000002', 'Karan Bhatia', 'contact-7', 'lead-7')`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const fsm = fakeQueue();
+    const crm = fakeQueue();
+    const answer = await book({ address: ADDRESS }, { FSM_QUEUE: fsm, CRM_QUEUE: crm });
+
+    expect(await answer.json()).toMatchObject({ address: "saved" });
+    expect(await count("SELECT COUNT(*) AS n FROM addresses WHERE person_id = 'p-known'")).toBe(1);
     expect(fsm.sent).toContainEqual({ update_contact_person_id: "p-known", request_id: expect.any(String) as string });
     expect(crm.sent).toContainEqual({ update_person_id: "p-known", request_id: expect.any(String) as string });
   });

@@ -8,8 +8,8 @@
 //   the slot,  held for the person and written to FSM from the fsm-sync queue;
 //   the lead,  so the CRM funnel sees every booking, as it did in Phase 1;
 //   the person, the consent they gave, under the notice they were shown, and
-//              the address the visit is at, which is theirs from then on, as
-//              though they had saved it in the app
+//              the address the visit is at, which is theirs from then on,
+//              unless they already had one, which is kept
 //              (docs/decisions/0081-the-site-takes-the-address.md).
 //
 // The slot is what the client sees; the lead is what ops sees. A waitlist entry
@@ -23,11 +23,11 @@
 // payment cannot book.
 //
 // These forms need no login, only a number, so they never rename the person
-// the number belongs to, never let go of a hold made in the app, and book no
-// second consultation beside one still to happen. The address they do replace:
-// it is where this visit goes. The person, their consent, their address and the
-// slot are written in one batch: a slot that has gone leaves nothing behind
-// (docs/decisions/0068-a-paid-hold-is-kept.md).
+// the number belongs to, never replace the address they have
+// (src/policy/site-booking.ts), never let go of a hold made in the app, and book
+// no second consultation beside one still to happen. The person, their consent,
+// their address and the slot are written in one batch: a slot that has gone
+// leaves nothing behind (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // The number, the Turnstile token and the day's limits are checked by the
 // route's side (src/http/public-form.ts), which this is handed as checkPerson:
@@ -41,7 +41,8 @@ import type { Logger } from "../log.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { priceOf } from "./price-book.ts";
-import { addressStatements, type Address } from "./profile.ts";
+import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
+import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
 import { attribute, type Invite, type InviteState } from "./referrals.ts";
 import { bookableTypes, holdSlot, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
@@ -99,7 +100,7 @@ export interface FormRequest {
   readonly selfServeBooking: boolean;
   /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
   readonly checkPerson: (mobile: string, turnstileToken: string) => Promise<Checked>;
-  /** Sends a person's new address on to their FSM contact and CRM lead, as an edit in the app does. */
+  /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
 }
 
@@ -272,7 +273,7 @@ export interface ConsultationRequest {
   readonly name: string;
   readonly mobile: string;
   readonly pincode: string;
-  /** Where the consultation is, typed in full; it must be in the pincode. */
+  /** Where the consultation is, typed in full; it must be in the pincode, and is written only if the person has none. */
   readonly address: Address;
   readonly date: string;
   readonly window: BookingWindow;
@@ -298,6 +299,8 @@ export interface Booked {
   readonly credits: boolean;
   /** The invite as it stands for this person: expired when theirs lapsed while they waited (src/policy/invites.ts). */
   readonly invite: InviteState;
+  /** Whether the address typed in was saved, or the one the person already had is kept and used. */
+  readonly address: TypedAddress;
 }
 
 /** Books the free consultation: the slot, the lead, and the invite's credits where they apply. */
@@ -328,8 +331,12 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     ipHash: checked.ipHash,
     now,
   });
-  // Typed, never chosen from Google's suggestions, so the address has no pin.
-  const alongside = [...person.statements, ...addressStatements(db, person.id, request.address, null, now)];
+  const saved = knownId === null ? null : await currentAddress(db, knownId);
+  const address = typedAddress({ hasSavedAddress: saved !== null });
+  const alongside =
+    address === "saved"
+      ? [...person.statements, firstAddressStatement(db, person.id, request.address, now)]
+      : person.statements;
 
   // A slot is held and FSM told only while self-serve booking is on and the consultation is free that day;
   // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
@@ -358,9 +365,9 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
     await db.batch([...alongside, requestStatement(db, { ...asked, invite: request.invite, now })]);
   }
-  // Someone we knew may be in FSM and the CRM already, with an older address or none. Someone new is added to
-  // both with this one, by the booking and its lead.
-  if (knownId !== null) await form.syncContact(person.id);
+  // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
+  // one, by the booking and its lead.
+  if (knownId !== null && address === "saved") await form.syncContact(person.id);
   const invited = await applyInvite(db, {
     invite: request.invite,
     personId: person.id,
@@ -397,6 +404,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     area: pincode.area,
     credits: invited.credits,
     invite: invited.invite,
+    address,
   };
 }
 

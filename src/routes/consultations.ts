@@ -16,7 +16,7 @@
 // The same submission sent again under its Idempotency-Key gets its first answer.
 //
 // A consultation is booked with the full address it is at, which becomes the
-// person's address as if saved in the app; a waitlist entry takes none
+// person's address unless they already have one; a waitlist entry takes none
 // (docs/decisions/0081-the-site-takes-the-address.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
@@ -58,6 +58,13 @@ const Person = {
   attribution: AttributionSchema,
 };
 
+/** What a booking did with the address it was sent (src/policy/site-booking.ts). */
+export const AddressOutcomeSchema = z.enum(["saved", "on_account"]).openapi({
+  description:
+    "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes " +
+    "to, and the one sent was not written. The address on the account is never sent back.",
+});
+
 /**
  * The address a consultation is at: the app's, typed in full, without a building chosen from Google's
  * suggestions, which the site does not offer. Its pincode is the one booked at.
@@ -92,6 +99,7 @@ const ConsultationSchema = z
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     area: z.string(),
+    address: AddressOutcomeSchema,
   })
   .strict()
   .openapi("Consultation");
@@ -186,7 +194,8 @@ export function registerConsultations(app: App): void {
         invite: null,
       });
       if (!booked.ok) return booked;
-      return { ok: true, body: { state: booked.state, date: booked.date, window: booked.window, area: booked.area } };
+      const { state, date, window, area, address } = booked;
+      return { ok: true, body: { state, date, window, area, address } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
     if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);

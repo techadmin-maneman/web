@@ -1606,13 +1606,22 @@ Razorpay's webhook: payments and refunds
     },
     "area": {
       "type": "string"
+    },
+    "address": {
+      "type": "string",
+      "enum": [
+        "saved",
+        "on_account"
+      ],
+      "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
     }
   },
   "required": [
     "state",
     "date",
     "window",
-    "area"
+    "area",
+    "address"
   ],
   "additionalProperties": false
 }
@@ -1972,6 +1981,14 @@ Razorpay's webhook: payments and refunds
         "unknown"
       ],
       "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have."
+    },
+    "address": {
+      "type": "string",
+      "enum": [
+        "saved",
+        "on_account"
+      ],
+      "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
     }
   },
   "required": [
@@ -1980,7 +1997,8 @@ Razorpay's webhook: payments and refunds
     "window",
     "area",
     "credits",
-    "invite"
+    "invite",
+    "address"
   ],
   "additionalProperties": false
 }

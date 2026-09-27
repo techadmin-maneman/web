@@ -203,6 +203,7 @@ describe("POST /api/r/:code/consultation", () => {
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
+      address: "saved",
     });
     expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     const friend = await env.DB.prepare(
@@ -413,6 +414,7 @@ describe("POST /api/r/:code/consultation", () => {
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
+      address: "saved",
     });
     // Nothing is held and FSM is not told; the lead and the invite still stand.
     expect(fsm.sent).toEqual([]);

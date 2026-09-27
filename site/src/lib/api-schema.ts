@@ -1744,6 +1744,11 @@ export interface components {
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
             area: string;
+            /**
+             * @description saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back.
+             * @enum {string}
+             */
+            address: "saved" | "on_account";
         };
         AlreadyBooked: {
             error: {
@@ -1814,6 +1819,11 @@ export interface components {
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
+            /**
+             * @description saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back.
+             * @enum {string}
+             */
+            address: "saved" | "on_account";
         };
         ReferralWaitlist: {
             area: string | null;

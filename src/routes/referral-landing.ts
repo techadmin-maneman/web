@@ -26,7 +26,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
 import { addressOf } from "./client-profile.ts";
-import { takenOrBooked, TypedAddressSchema } from "./consultations.ts";
+import { AddressOutcomeSchema, takenOrBooked, TypedAddressSchema } from "./consultations.ts";
 
 const CodeParams = z.object({ code: z.string().regex(/^[A-Za-z0-9]{4,12}$/) });
 
@@ -152,6 +152,7 @@ const consultationRoute = createRoute({
               area: z.string(),
               credits: z.boolean().openapi({ description: "Whether the invite's 3 service visits apply." }),
               invite: InviteStateSchema,
+              address: AddressOutcomeSchema,
             })
             .strict()
             .openapi("ReferralConsultation"),
@@ -270,6 +271,7 @@ export function registerReferralLanding(app: App): void {
           area: booked.area,
           credits: booked.credits,
           invite: booked.invite,
+          address: booked.address,
         },
       };
     });
