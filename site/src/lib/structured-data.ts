@@ -3,14 +3,16 @@
 // book's: the build writes them with the figures it has, and the mm-site Worker
 // builds both again with the book's (docs/decisions/0073-prices-from-the-price-book.md).
 
-import { business, faq, phone, whatsapp } from "../content/site.ts";
+import { business, faq, whatsapp } from "../content/site.ts";
 import type { PriceWords } from "./prices.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 import { fill } from "./text.ts";
 
-/** The number search engines show: the phone line once published, else the WhatsApp number. */
+/**
+ * The number search engines show: the business's WhatsApp number, the only one the site gives. The owner ruled on
+ * 27 September 2026 that the footer shows it as WhatsApp and not as a line to call (docs/open-points.md, item 47).
+ */
 function telephone(): string | undefined {
-  if (phone.publish) return phone.number;
   if (whatsapp.publish) return `+${whatsapp.number}`;
   return undefined;
 }

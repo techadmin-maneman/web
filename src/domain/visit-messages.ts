@@ -61,8 +61,8 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
 
 /**
  * What the ruling on a no-show says, by the ruling and by what the client paid ahead. A charge keeps it, as a
- * cancel inside 24 hours does; what a waiver gives back is the owner's to rule (WAIVER_GIVES_BACK), so until then
- * the client is asked to message us about it rather than promised anything.
+ * cancel inside 24 hours does; a waiver gives it back, as the owner ruled on 27 September 2026
+ * (WAIVER_GIVES_BACK): the payment is refunded and the credit returned, and the message says which.
  */
 const NO_SHOW_TEMPLATES = {
   charged: { payment: "no_show_charged_paid_v1", credit: "no_show_charged_credit_v1", nothing: "no_show_missed_v1" },

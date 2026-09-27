@@ -85,9 +85,11 @@ export type NoShowDecision = (typeof NO_SHOW_DECISIONS)[number];
  * Whether waiving a no-show gives the client back what the visit took: its
  * payment refunded, its credit returned. The prompt's rule (RULES[3]) says a
  * charge keeps it, as a cancel inside 24 hours does; it says nothing of a
- * waiver, which is the owner's to rule (docs/open-points.md). Until then a
- * waiver records the ruling and moves no money, and ops settle it by hand.
- * The code behind `true` is written and tested, for the day the owner says so.
+ * waiver, which the owner ruled on 27 September 2026: a waiver refunds the
+ * payment and returns the credit (docs/owner-answers-2026-09-27.md). A waiver
+ * means we accept the fault, so keeping the money would contradict it. Under
+ * the owner's standing rule this becomes a console setting with the other
+ * policies (docs/open-points.md, item 12).
  */
 // Widened from its literal, so the code for either answer stays checked while the switch stands at one.
-export const WAIVER_GIVES_BACK = false as boolean;
+export const WAIVER_GIVES_BACK = true as boolean;

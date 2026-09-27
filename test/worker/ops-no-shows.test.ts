@@ -203,8 +203,8 @@ describe("POST /api/no-shows/:id/decision", () => {
     expect(messages.sent).toEqual([{ message_id: queued.results[0]?.id, request_id: expect.any(String) as string }]);
   });
 
-  // BIZ-28: what a waiver does to the money waits for the owner; until then it moves none, and says so.
-  it("moves no money on a waiver while the owner has not ruled what one gives back", async () => {
+  // BIZ-28: the owner ruled on 27 September 2026 that a waiver gives back the payment and the credit.
+  it("gives back the payment and the credit when ops waive a no-show", async () => {
     const payments = createStubPayments();
     const app = appFor("local", fakeDependencies({ payments }), {}, "ops");
     await paidAndCredited();
@@ -221,7 +221,33 @@ describe("POST /api/no-shows/:id/decision", () => {
     );
 
     expect(answer.status).toBe(200);
-    expect(payments.made.refunds).toEqual([]);
+    expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 200000 })]);
+    expect(await env.DB.prepare("SELECT kind, visits FROM credit_ledger WHERE kind = 'restore'").all()).toMatchObject({
+      results: [{ kind: "restore", visits: 1 }],
+    });
+  });
+
+  it("moves no money on a waiver where the switch is off", async () => {
+    await paidAndCredited();
+
+    const ruled = await decideNoShow(env.DB, {
+      caseId: CASE,
+      decision: "waived",
+      reason: "The lift was out",
+      actor: "ops@localhost",
+      audit: {
+        surface: "ops",
+        actor: { kind: "staff", id: "ops@localhost" },
+        action: "no_show.decide",
+        subject: { kind: "no_show_case", id: CASE },
+        requestId: "request-1",
+        detail: { decision: "waived" },
+      },
+      now: NOW,
+      waiverGivesBack: false,
+    });
+
+    expect(ruled?.refund).toBeNull();
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'").first()).toEqual({
       n: 0,
     });

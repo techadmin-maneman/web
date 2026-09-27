@@ -168,10 +168,16 @@ describe("the no-show ruling (LIFE-07)", () => {
     expect((await send(await ruled("charged", "nothing"))).text).toBe(`${MISSED} Message us to book again.`);
   });
 
-  // What a waiver gives back waits for the owner (BIZ-28): until then the message promises nothing it cannot keep.
-  it("says a waiver charges nothing, and asks the client to message us about what they paid", async () => {
+  // A waiver gives back what the visit took, as the owner ruled on 27 September 2026 (BIZ-28).
+  it("says a waiver charges nothing, and that the payment is on its way back", async () => {
     expect((await send(await ruled("waived", "payment"))).text).toBe(
-      `${MISSED} We are not charging you for it. Message us about the Rs. 2,000 you paid for it.`,
+      `${MISSED} We are not charging you for it: Rs. 2,000 is on its way back to your UPI, in 5 to 7 working days.`,
+    );
+  });
+
+  it("says a waiver of a credit visit gives the credit back", async () => {
+    expect((await send(await ruled("waived", "credit"))).text).toBe(
+      `${MISSED} We are not charging you for it, and your visit credit is back.`,
     );
   });
 

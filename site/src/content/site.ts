@@ -124,13 +124,6 @@ export const whatsapp = {
   label: "WhatsApp · +91 90079 73247",
 };
 
-/** The footer's phone number: the business number, the owner's on 22 September 2026. */
-export const phone = {
-  publish: true,
-  number: `+${WHATSAPP_NUMBER}`,
-  label: "Phone · +91 90079 73247",
-};
-
 export const heroFootage = {
   publish: false,
   video: "hero.mp4",
