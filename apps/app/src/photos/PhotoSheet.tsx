@@ -7,7 +7,6 @@
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
-import { fullDate } from "@maneman/web-kit/dates";
 import { Sheet } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { photos } from "../content.ts";
@@ -63,18 +62,16 @@ function Download({ url, name }: { url: string; name: string }) {
 
 export function PhotoSheet({ photo, onClose }: { photo: OpenPhoto; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const angle = photos.angles[photo.link.angle];
-  const date = fullDate(photo.date);
   // A tap on the ground around the sheet closes it, as Close does.
   return (
     <Sheet ref={dialog} labelledBy="photo-title" onClose={onClose}>
       <div className={styles.sheet}>
-        <Thumb link={photo.link} alt={photos.alt(angle, photo.phase, date)} className={styles.large} eager />
+        <Thumb link={photo.link} alt={photo.alt} className={styles.large} eager />
         <div className={styles.save}>
           <p className={styles.photoOf} id="photo-title">
-            {photos.photoOf(angle, date)}
+            {photo.title}
           </p>
-          <Download url={photo.link.url} name={`mane-man-${photo.date}-${photo.phase}-${photo.link.angle}.jpg`} />
+          <Download url={photo.link.url} name={photo.fileName} />
         </div>
         <p className={styles.gallery}>{photos.downloaded}</p>
         <Button variant="outline" size="control" className={styles.close} onClick={() => dialog.current?.close()}>

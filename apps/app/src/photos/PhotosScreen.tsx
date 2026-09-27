@@ -1,6 +1,7 @@
 // Photos (board D1): each visit's photographs, newest first, and Compare once
 // there are two visits to compare. Before the first fit, board D3's empty
-// state. A photograph opens in a sheet, to download.
+// state. Above them, a try-on the client made on the site, while it is kept
+// (ADR 0082). A photograph opens in a sheet, to download.
 
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -15,6 +16,7 @@ import { visitName } from "../lib/visit.ts";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ANGLES, PhotoRow, type OpenPhoto } from "./PhotoRow.tsx";
 import { PhotoSheet } from "./PhotoSheet.tsx";
+import { TryOnGroup } from "./TryOnGroup.tsx";
 import styles from "./photos.module.css";
 
 /** Board D3's loading: the row's five blocks, before anything has arrived. */
@@ -31,23 +33,35 @@ function PhotosLoading() {
   );
 }
 
-/** Board D1: each visit's photographs, newest first; before the first fit, board D3's empty state. */
-function Timeline({ visits, onOpen }: { visits: PhotoTimeline["visits"]; onOpen: (photo: OpenPhoto) => void }) {
-  if (visits.length === 0) return <EmptyState lines={empty.photos.lines} icon={TAB_ICONS.photos} />;
+/**
+ * Board D1: each visit's photographs, newest first, beneath the try-ons still kept (ADR 0082); before the first
+ * fit, board D3's empty state, or its lines beneath a try-on.
+ */
+function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (photo: OpenPhoto) => void }) {
+  const { visits, try_ons: tryOns } = timeline;
+  if (visits.length === 0 && tryOns.length === 0) {
+    return <EmptyState lines={empty.photos.lines} icon={TAB_ICONS.photos} />;
+  }
   return (
-    <div className={styles.timeline}>
-      {visits.map((visit) => (
-        <section key={visit.visit_id} aria-labelledby={`visit-${visit.visit_id}`}>
-          <div className={styles.group}>
-            <h2 className={styles.groupDate} id={`visit-${visit.visit_id}`}>
-              {fullDate(visit.date)}
-            </h2>
-            <p className={styles.groupWhat}>{visitName(visit.type)}</p>
-          </div>
-          <PhotoRow set={visit.photos} date={visit.date} onOpen={onOpen} />
-        </section>
-      ))}
-    </div>
+    <>
+      <div className={styles.timeline}>
+        {tryOns.map((tryOn) => (
+          <TryOnGroup key={tryOn.id} tryOn={tryOn} onOpen={onOpen} />
+        ))}
+        {visits.map((visit) => (
+          <section key={visit.visit_id} aria-labelledby={`visit-${visit.visit_id}`}>
+            <div className={styles.group}>
+              <h2 className={styles.groupDate} id={`visit-${visit.visit_id}`}>
+                {fullDate(visit.date)}
+              </h2>
+              <p className={styles.groupWhat}>{visitName(visit.type)}</p>
+            </div>
+            <PhotoRow set={visit.photos} date={visit.date} onOpen={onOpen} />
+          </section>
+        ))}
+      </div>
+      {visits.length === 0 && <EmptyState lines={empty.photos.lines} />}
+    </>
   );
 }
 
@@ -67,7 +81,7 @@ export function PhotosScreen() {
       {whenLoaded(loaded, {
         loading: <PhotosLoading />,
         failed: <PageFailed onRetry={retry} />,
-        loaded: (timeline) => <Timeline visits={timeline.visits} onOpen={setOpen} />,
+        loaded: (timeline) => <Timeline timeline={timeline} onOpen={setOpen} />,
       })}
       {open !== null && (
         <PhotoSheet
