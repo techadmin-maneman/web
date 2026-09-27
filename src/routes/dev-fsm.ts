@@ -10,7 +10,7 @@
 // document: nothing but a developer calls it (docs/getting-started.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 
 /** What each outcome is in FSM, and in the mirror: done is Complete Work, partial is Terminate. */

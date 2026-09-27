@@ -5,7 +5,8 @@
 
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import { paymentStatusOf, recordPayment, recordRefund, type RazorpayPayment } from "../../src/domain/payments.ts";
+import { paymentStatusOf, recordPayment, recordRefund } from "../../src/domain/payments.ts";
+import type { RazorpayPayment } from "../../src/providers/razorpay.ts";
 import { NOW } from "./helpers.ts";
 
 const SALT = "test-salt-that-is-long-enough-000000";
