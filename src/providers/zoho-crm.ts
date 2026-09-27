@@ -139,7 +139,7 @@ export interface OrgFields {
   readonly referral: boolean;
 }
 
-/** The Zoho Leads fields for this lead. See docs/runbook.md, "Setting up Zoho", for the custom fields. */
+/** The Zoho Leads fields for this lead. See docs/runbook.md, step 8, "Zoho", for the custom fields. */
 export function recordFor(
   lead: CrmLead,
   status: LeadStatus | null,

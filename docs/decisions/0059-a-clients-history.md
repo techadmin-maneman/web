@@ -51,13 +51,13 @@ A visit done is a **completed** appointment with a window — the same rule `isF
 | lifetime spend                 | `payments.amount - refunded_amount` where captured, in paise   | GST included; a visit covered by a credit cost nothing and adds nothing                              |
 | replacement due                | the piece in wear's `replacement_due_at` (`failed_at IS NULL`) | **null**, not a distant date, when the client is wearing no piece                                    |
 
-**Could not be derived at all**, because nothing records them: the tier and the usual technician the design's page head draws, and how many pieces a client has bought outside a replacement _visit_. They stay part of open point 49.
+**Could not be derived at all**, because nothing records them: the tier and the usual technician the design's page head draws, and how many pieces a client has bought outside a replacement _visit_. They stay part of open point 50.
 
 A count of nought is written as a nought, because it is true. A figure the system cannot know is written in words — "No first fit on record", "No piece fitted, so no date" — never as a dash, a zero or a date. That rule is the standing lesson of the fabricated `0 m` on the no-show screen (PR #89) and the ₹0 dispute that did not exist (PR #100).
 
 ### 2. A replacement date is a promise the moment a client can read it, so the client is told a month
 
-The owner ruled the replacement cycle to 180 days for every base on 24 September (open point 52), and `syncPieces` works `replacement_due_at` out afresh from FSM's `Installation_Date` on **every sync**. A day shown to a client can therefore move under them after they have read it, without anybody deciding to move it.
+The owner ruled the replacement cycle to 180 days for every base on 24 September (open point 129), and `syncPieces` works `replacement_due_at` out afresh from FSM's `Installation_Date` on **every sync**. A day shown to a client can therefore move under them after they have read it, without anybody deciding to move it.
 
 **The client is told the month and never the day.** The design had already reached the same answer without being asked to: board B1 of the Client App writes "Your replacement piece is due in March.", and the Ops Console's page head writes "Mar 2028". `GET /api/visits` answers the client `{ month: "2028-03" }` and carries no day at all, so no client-side change can leak one.
 
@@ -110,6 +110,6 @@ What the contact consent _would_ permit, and the only CRM change this ADR would 
 - **A date that can move is never shown as a day to the person it is a promise to**, and the design agreed before it was asked.
 - **The CRM is no worse than it was**, and now has a written account of why it is as it is. Erasure needs no extension in this change, and the reason it needs none is that nothing new was written to Zoho.
 - **The Leads sync is unchanged**: the three statuses, the try-on rule and its tests all stand.
-- **Open point 49 shrinks.** The pieces table and the replacement date are answered; the tier and the usual technician are still recorded nowhere.
+- **Open point 50 shrinks.** The pieces table and the replacement date are answered; the tier and the usual technician are still recorded nowhere.
 - **Three new open points** carry what is left: the Contacts scope, the marketing consent, and the conversion ruling.
 - **What is only reasoned, not proved:** that `ZCRM_Id` names a CRM **Contact** rather than some other module. Proving it needs either the owner's console or a token scope we do not have; converting a throwaway lead to find out would have left a Contact in the owner's real org that we could not delete.

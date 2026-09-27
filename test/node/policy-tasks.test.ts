@@ -46,7 +46,7 @@ describe("tasks", () => {
       untold_move: 4,
       // "The 7 days run from the client's request to ops' decision" (ADR 0049).
       erasure_request: 7 * 24,
-      // The client's app: "within 30 days at the latest" (docs/open-points.md, item 42).
+      // The client's app: "within 30 days at the latest" (docs/open-points.md, item 51).
       grievance: 30 * 24,
     };
     for (const group of TASK_GROUPS) expect(TASK_SLA_HOURS[group], group).toBe(promised[group] ?? 48);

@@ -257,7 +257,7 @@ export const visits = {
       // The owner's own words on 23 September 2026: a free visit says "No charge", and never promises a document.
       free: "No charge for this visit, so there is no invoice.",
       // PLACEHOLDER: an invoice held back on purpose (ADR 0070): a credit visit's waits on the accountant's ruling
-      // (open point 97), and a draft whose total is not what the visit was sold for is checked before it is sent.
+      // (open point 14), and a draft whose total is not what the visit was sold for is checked before it is sent.
       credit:
         "A visit credit paid for this visit. We send its invoice once our accountant has settled how it is written.",
       checking: "We are checking this invoice before we send it. Message us if you need it sooner.",

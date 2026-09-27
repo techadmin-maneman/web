@@ -10,7 +10,7 @@ The prompt: "Offline writes from the technician app are queued on the device wit
 Two facts from the trial (`docs/decisions/fsm-trial.md`) shape the rest:
 
 - **FSM offers no idempotency key anywhere.** Deduplication is ours.
-- **The org has no job-sheet template.** `meta/job_sheet_forms` is empty, and the forms are built in FSM's settings, not through the API (`docs/open-points.md`, item 13). There is no job-sheet record to create yet.
+- **The org has no job-sheet template.** `meta/job_sheet_forms` is empty, and the forms are built in FSM's settings, not through the API (`docs/open-points.md`, item 28). There is no job-sheet record to create yet.
 
 ## Decision
 
@@ -24,7 +24,7 @@ Every technician write takes an `X-Client-Event-Id` header and lands in `job_eve
 
 ### Writing to FSM
 
-**Through the `fsm-sync` queue, not in the request** (ADR 0032: synchronously where the client waits on the result, through the queue where it does not). The technician does not wait on FSM: he is on a phone, often on a weak line, and a refusal FSM will take a minute later must not lose his work. The route answers `202` with `fsm_write_state: "pending"`, and the consumer retries after 30 s, 1, 2 and 4 minutes; the fifth alerts and leaves the event for ops.
+**Through the `fsm-sync` queue, not in the request.** The rule for a write to FSM, set here: synchronously where the person waits on the result, through the queue where they do not. (Corrected 27 September 2026: this credited the rule to ADR 0032, which says nothing of it.) The technician does not wait on FSM: he is on a phone, often on a weak line, and a refusal FSM will take a minute later must not lose his work. The route answers `202` with `fsm_write_state: "pending"`, and the consumer retries after 30 s, 1, 2 and 4 minutes; the fifth alerts and leaves the event for ops.
 
 Dispatch is the other way round, and synchronous, because ops **do** wait on the result: a clash or a refusal has to be on the screen before the board shows the job moved.
 
@@ -45,11 +45,11 @@ What each event writes:
 
 The checklist, the consumables, the outcome, the partial reason and the duration are written **on the appointment**: as its `Summary`, and as the mandatory note of the transition that closes it. That is what FSM can hold today.
 
-Our own `job_events` keep the same facts field by field, so the day the owner builds the template (item 13) they can be replayed into job-sheet records without asking a technician to type anything twice. The summary is rebuilt from the events on every write, so it is the same text whether it is written once or five times.
+Our own `job_events` keep the same facts field by field, so the day the owner builds the template (open point 28) they can be replayed into job-sheet records without asking a technician to type anything twice. The summary is rebuilt from the events on every write, so it is the same text whether it is written once or five times.
 
 ## Consequences
 
 - A phone can replay its whole outbox after a week offline and land each event once.
 - A job reassigned while the phone was offline is refused with what changed, and the technician is told rather than having his work quietly overwritten.
-- FSM's record of a job is complete in substance but not yet in shape: the facts are in the summary and the closing note, not in job-sheet fields. Until item 13 is settled, ops reading FSM's own console read prose, not a form. This is the one place P2-M4 falls short of the prompt, and it falls short because FSM has nowhere to put the data, not because we chose to keep it.
+- FSM's record of a job is complete in substance but not yet in shape: the facts are in the summary and the closing note, not in job-sheet fields. Until open point 28 is settled, ops reading FSM's own console read prose, not a form. This is the one place P2-M4 falls short of the prompt, and it falls short because FSM has nowhere to put the data, not because we chose to keep it.
 - No FSM idempotency key means a retry after a timeout could write twice in FSM. The writes are chosen to be idempotent in effect: `Summary` and the actual times are overwritten, an asset is created only when the piece code is unknown to us, and a transition FSM has already made is no longer offered.

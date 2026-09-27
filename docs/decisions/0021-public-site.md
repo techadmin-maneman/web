@@ -33,7 +33,7 @@ A production build stops (`site/src/lib/publish-gate.ts`) while:
 - any consent notice is unapproved;
 - the privacy or terms page has no text, since the try-on's consent screen links to `/privacy`.
 
-`test/node/site-production-gate.test.ts` runs the production build and checks that it fails for exactly those reasons.
+`test/node/site-content.test.ts` ("the publish gate") checks that the gate stops for exactly those reasons, and lets through a block whose material is replaced. `test/node/site-production-gate.test.ts` runs the production build as it stands and checks that it passes the gate and ships none of the design's placeholder text, photographs or footage. (Corrected 27 September 2026: this said the second test checks that the build fails; since the terms and the business number were published on 22 September 2026, the build passes, and the refusals are the first test's.)
 
 The prompt lists six placeholder blocks. v2 tags more of its images "Placeholder" (the hero footage, the plate opening "What it is", the how-it-works photographs and the base photographs), so each of those is a placeholder block too, as are the two legal pages. That leaves production with nothing to tag. An unpublished block renders nothing in production: its section, or its image, collapses.
 

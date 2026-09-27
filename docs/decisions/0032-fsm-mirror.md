@@ -83,7 +83,7 @@ The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcil
 ### Photographs (P2-M2.4)
 
 - **Where they are stored.** Each visit's photographs, five angles before and five after, are copied from FSM into `mm-<env>-client-photos` (migration 0013: `photo_sets` and `photos`). The bucket has no lifecycle rule: a photograph is only ever deleted on purpose, and audited.
-- **Their names.** While technicians photograph in FSM's own app, a photograph gives its phase and angle by its file name, e.g. `before-front.jpg` or `after hair.jpg`. Other attachments are left alone. When the job-sheet template exists, its image fields can replace the names (`docs/open-points.md`, item 13). From P2-M4 our technician app takes the photographs itself and knows each angle.
+- **Their names.** While technicians photograph in FSM's own app, a photograph gives its phase and angle by its file name, e.g. `before-front.jpg` or `after hair.jpg`. Other attachments are left alone. When the job-sheet template exists, its image fields can replace the names (`docs/open-points.md`, item 28). From P2-M4 our technician app takes the photographs itself and knows each angle.
 - **When they are copied.** The `fsm-sync` consumer copies them once it has written a completed or terminated appointment, and not once its set of ten is complete.
 - **Checking the image.** Each file's bytes are checked to be a JPEG or PNG, and its width and height are read from them.
 - **Retakes.** The newest file for an angle becomes the photograph. One it replaces stays in the bucket under the visit's prefix, `visits/<appointment>/`, so that an erasure finds it, rather than being deleted automatically.
@@ -91,10 +91,10 @@ The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcil
 
 ## Consequences
 
-- **Staging reads and writes the real org.** Its catalogue was created there on 22 September 2026. Its test records must be removed before go-live (`docs/open-points.md`, item 10).
+- **Staging reads and writes the real org.** Its catalogue was created there on 22 September 2026. Its test records must be removed before go-live (`docs/open-points.md`, item 19).
 - **Books has no GST set up yet,** so staging's documents carry no tax (`docs/open-points.md`, item 3).
-- **FSM's app uploads photographs at full size,** several megabytes each, where the Phase 2 budget (ADR 0039) assumes about 270 KB. Until our technician app re-encodes them on the phone (P2-M4), R2's 10 GB fills faster (`docs/open-points.md`, item 34).
-- **The FSM and Books trials end around 6 October 2026** (`docs/open-points.md`, item 9). After that FSM drops to its Free edition, which has no assets or job sheets.
+- **FSM's app uploads photographs at full size,** several megabytes each, where the Phase 2 budget (ADR 0039) assumes about 270 KB. Until our technician app re-encodes them on the phone (P2-M4), R2's 10 GB fills faster (`docs/open-points.md`, item 125).
+- **The FSM and Books trials end around 6 October 2026** (`docs/open-points.md`, item 18). After that FSM drops to its Free edition, which has no assets or job sheets.
 
 ## Leads into FSM (P2-M2.7)
 

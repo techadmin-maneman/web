@@ -3181,9 +3181,9 @@ export interface components {
             refunded: number;
             /** @description In paise. Kept from the client on the day: "Charges and no-shows", less the no-shows, which carry no amount. */
             charged: number;
-            /** @description How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 57). */
+            /** @description How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 60). */
             no_shows_charged: number;
-            /** @description The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 57). */
+            /** @description The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 60). */
             dispute: null;
             /** @description No-shows and late cancellations, the earliest first. */
             charges: components["schemas"]["OpsCharge"][];

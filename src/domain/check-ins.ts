@@ -2,7 +2,7 @@
 //
 // Every check-in is recorded, whether it passed the geofence or not, with the
 // distance measured and the radius in force, "so the value can be tuned from
-// real data" (docs/open-points.md, item 46). Only a check-in that passed starts
+// real data" (docs/open-points.md, item 56). Only a check-in that passed starts
 // the job: the technician who is too far away moves closer and tries again.
 //
 // The address's coordinates come from the client's chosen building

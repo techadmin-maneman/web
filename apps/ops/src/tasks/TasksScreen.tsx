@@ -12,7 +12,7 @@
 // longer than the board lists says so.
 //
 // The board writes an owner in ops against every task. Nothing records one, so
-// the column is not drawn (docs/open-points.md, item 58).
+// the column is not drawn (docs/open-points.md, item 61).
 
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";

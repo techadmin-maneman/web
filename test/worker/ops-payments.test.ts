@@ -264,7 +264,7 @@ describe("GET /api/payments", () => {
 
   // Ops rule on the evidence and record the ruling; the charge itself is applied
   // at P2-M5. Answering the visit's payment here would say money was taken that
-  // nothing took (docs/open-points.md, item 57).
+  // nothing took (docs/open-points.md, item 60).
   it("carries no amount on a no-show, because nothing records one", async () => {
     await noShow("charged", MORNING);
     expect((await day()).charges[0]?.amount).toBeNull();

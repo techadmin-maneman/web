@@ -1,6 +1,6 @@
 # 0023. Launch hardening: headers, analytics, budgets
 
-- Status: accepted, except item 2, which waits for the owner. Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
+- Status: accepted. Item 2 was settled by the owner on 22 September 2026: Bot Fight Mode is off, option a (ADR 0025, item 12). Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
 - Date: 2026-09-22
 
 ## Context
@@ -18,7 +18,7 @@ The build writes them into the Workers static-assets `_headers` file (`site/src/
   - The R2 endpoint the prompt names is not needed, because the photo goes to the API (ADR 0022, 1).
   - `blob:` images are allowed, for the try-on's photograph and result shown from memory.
   - Cloudflare limits a `_headers` line to 2,000 characters. The policy is about 870 today, and a test fails if the policy with every tag enabled would go past the limit.
-- **HSTS** for a year, without `includeSubDomains` or `preload`. The owner can add both once every subdomain of maneman.in serves HTTPS. **Changed 25 September 2026:** two years with `includeSubDomains`, as the apps already send it (`packages/web-kit/headers.ts`); every host under maneman.in the platform uses serves HTTPS on Cloudflare's certificate. `preload` stays off, and is the owner's call: once on the browsers' preload list the domain takes months to leave it (`docs/open-points.md`, item 82).
+- **HSTS** for a year, without `includeSubDomains` or `preload`. The owner can add both once every subdomain of maneman.in serves HTTPS. **Changed 25 September 2026:** two years with `includeSubDomains`, as the apps already send it (`packages/web-kit/headers.ts`); every host under maneman.in the platform uses serves HTTPS on Cloudflare's certificate. `preload` stays off, and is the owner's call: once on the browsers' preload list the domain takes months to leave it (`docs/open-points.md`, item 87).
 - **`Referrer-Policy: strict-origin-when-cross-origin`**, and `X-Content-Type-Options: nosniff`.
 - **`Permissions-Policy`.** It turns the camera, microphone and location off everywhere, and allows the camera on `/try` alone, through `_headers`'s `!` detach. Cloudflare's asset server was checked under `wrangler dev`: `/try` gets `camera=(self)` only.
 - **Caching.** Built files under `/_astro/` carry a content hash in their names, so they are cached for a year as immutable.
@@ -36,6 +36,8 @@ As built, the policy blocks the script. Each page then logs one policy error in 
 - **c. Stamp a nonce per request.** A Worker in front of the site's HTML would add a fresh nonce to the policy and to the page's scripts, and Cloudflare would stamp the same nonce onto its own script. That costs one Worker request per page view, counted against the free plan's 100,000 a day (ADR 0009), which the API shares.
 
 Staging runs as (b) until the owner decides.
+
+**Decided: a.** Bot Fight Mode was turned off on 21 September 2026, since it challenged CI's smoke tests (ADR 0008's update of that day), and the owner ruled it stays off on 22 September 2026 (ADR 0025, item 12). No script is blocked, on staging or in production.
 
 ### 3. Analytics
 

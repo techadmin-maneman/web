@@ -11,7 +11,7 @@ Both are verbatim and excluded from Prettier. To refresh them, copy the files ag
 
 ## For the front-end task: the browser-side code
 
-The harness does three things in the browser, in `cloudflare/public/index.html` (the `preflight` and `detect` functions). They were not ported here, because this repository is backend only.
+The harness does three things in the browser, in `cloudflare/public/index.html` (the `preflight` and `detect` functions). They were not ported with the backend, which was all this repository held at M3; the public site's try-on now does them in `site/src/lib/photo.ts` and `hair-colour.ts` (`docs/frontend.md`).
 
 - **Resize and re-encode.** The photo is scaled to at most 4090 px on the long side and re-encoded as JPEG at quality 0.92, shrinking by 15% until it is under 5 MB. The API refuses anything larger, or anything that is not JPEG or PNG.
 - **Hair colour detection.** Skin tone locates the head, texture proves a region is hair, and the median colour is matched in LAB space to the natural shades. The reference RGB values are in section 7.11 of the API notes.

@@ -247,7 +247,7 @@ test("check-in: outside the fence it fails with the distance, inside it passes",
   expect(nearBody.wait_ends_at).not.toBeNull();
   await expect(page.getByText("2 · Waiting")).toBeVisible();
 
-  // Both attempts are on the record, with the radius in force: what open point 46 is tuned from.
+  // Both attempts are on the record, with the radius in force: what open point 56 is tuned from.
   const rows = await query<{ distance_m: number; radius_m: number; passed: number }>(
     `SELECT distance_m, radius_m, passed FROM checkins WHERE appointment_id = '${fixture.today.id}' ORDER BY at;`,
   );

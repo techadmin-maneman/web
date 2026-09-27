@@ -210,7 +210,7 @@ async function tellHeld(
       "Check the draft in Books and send it there: nothing here sends it.",
     paid_with_credit:
       "the visit was paid with a referral credit, and how a credit visit is invoiced waits for the CA " +
-      "(open point 97). Leave the draft until then: nothing here sends it.",
+      "(open point 14). Leave the draft until then: nothing here sends it.",
   };
   await pass.deps.alertOnce({ key: `invoice_draft:${visit.id}`, message: `${held} ${why[hold]}`, link: linkTo(visit) });
 }

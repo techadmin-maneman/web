@@ -76,7 +76,7 @@ test("says a no-show is not charged yet, and puts no amount against it", async (
 
 // Nothing records a disputed charge and no client can raise one, so the board's
 // second card is a line saying so rather than a Refund and an Uphold that
-// would rule on nothing (docs/open-points.md, item 57).
+// would rule on nothing (docs/open-points.md, item 60).
 test("says why the disputed charge is not built, and offers no Refund or Uphold", async ({ page }) => {
   await open(page);
   await expect(page.getByText("No client can raise a dispute yet")).toBeVisible();

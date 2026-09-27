@@ -10,7 +10,7 @@
 // kept is added and the no-shows are counted beside it rather than being given
 // an amount nothing recorded. Nothing records a dispute either, and no client
 // can raise one, so `dispute` is always null: the board's Refund and Uphold
-// rule on a record that is still to be built (docs/open-points.md, item 57).
+// rule on a record that is still to be built (docs/open-points.md, item 60).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
@@ -62,11 +62,11 @@ const DayMoneySchema = z
     ),
     no_shows_charged: z.number().int().openapi({
       description:
-        "How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 57).",
+        "How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 60).",
     }),
     dispute: z.null().openapi({
       description:
-        "The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 57).",
+        "The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 60).",
     }),
     charges: z.array(ChargeSchema).openapi({ description: "No-shows and late cancellations, the earliest first." }),
   })

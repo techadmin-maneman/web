@@ -29,5 +29,5 @@ Two things were missing. `technicians` held no mobile number, so nothing could m
 
 - Ops can take a lost phone out of the fleet in one call, and know from `wiped_at` whether it has been back since.
 - A technician who changes his number in FSM changes the number he logs in with, which is right: FSM is the record.
-- A technician with no number on his FSM user cannot log in, and the error he sees is the same as any unknown number. `docs/open-points.md` item 12 now covers the number as well as the territory.
+- A technician with no number on his FSM user cannot log in, and the error he sees is the same as any unknown number. `docs/open-points.md` item 27 now covers the number as well as the territory.
 - The client's login gained a `technician_id IS NULL` filter on two queries. Nothing else about it changed, and no row that existed before has the column set.

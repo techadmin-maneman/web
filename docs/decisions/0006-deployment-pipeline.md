@@ -21,7 +21,7 @@
 **Production** (`deploy-production.yml`), started by hand with a commit SHA:
 
 1. The commit must be on `main` and have a successful staging run.
-2. The job runs in the `production` GitHub Environment (required reviewers).
+2. The job runs in the `production` GitHub Environment. Required reviewers wait for the paid GitHub plan (0008), so nobody has to approve it today.
 3. It records the version each Worker serves now, checks the database identity, uploads the new `mm-api` version with no traffic, then applies migrations and marks the database.
 4. It splits traffic (default 10% new, 90% old).
 5. It smokes the new version with `Cloudflare-Workers-Version-Overrides`, soaks (default 5 minutes) watching the new version's real error rate where the token can read Workers analytics, smokes again, promotes to 100%, and smokes again.
@@ -43,6 +43,8 @@ GitHub gives a private repository 2,000 minutes of its runners a month. Ten jobs
 - **npm's cache is the runner's own,** on its disk between jobs. GitHub's cache, fetched over the network, took three to six minutes a run on the machine, and once stalled a run outright; GitHub's own runners keep using it.
 - **A lost reply is not a failed upload.** Cloudflare's API sometimes accepts a version upload and never answers: the request hangs about five minutes and the connection drops ("terminated"), and wrangler exits 1 although the version is on the account. Six staging deploys failed that way on 22 September 2026, from the runner and from a laptop alike. `scripts/release.ts` now asks for the version by its tag before failing, and the same for a traffic split that may already be live. Work that is the same done twice — applying the migrations that are missing, marking the database — is simply run again (`scripts/lib/cloudflare-api.ts`).
 - **Nothing about what runs changed:** every check still runs on every pull request and again before every staging deploy, and production still needs its manual start, a commit on `main`, and a successful staging deploy of that commit (`deploy-production.yml`, "commit is on main and passed staging").
+
+**Where the jobs run today (27 September 2026).** `CI_RUNNER` has been `github` since 23 September 2026, 09:21 in India, so every job runs on GitHub's runners and is billed, at seven jobs a pull request and again on each staging deploy that is not skipped ("Deploys that prove what they shipped", below). The machine above is still set up and takes the jobs back when the variable is `maneman`. Whether to go back to it, pay for GitHub's minutes, or thin the runs is the owner's decision (`docs/open-points.md`, item 88).
 
 ## Parallel jobs (23 September 2026)
 

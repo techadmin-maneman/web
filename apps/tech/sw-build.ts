@@ -4,7 +4,7 @@
 // (apps/tech/sw/sw.ts).
 //
 // The app had neither manifest nor icons while the phones were to be company
-// Android ones. The owner ruled open point 27 on 24 September 2026 — any phone,
+// Android ones. The owner ruled open point 124 on 24 September 2026 — any phone,
 // including iPhones — and on an iPhone the home screen is not a convenience but
 // the only way the store is safe: WebKit "currently grants a request [for
 // persistent storage] based on heuristics like whether the website is opened as

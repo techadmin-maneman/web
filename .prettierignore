@@ -16,6 +16,9 @@ apps/app/src/api-schema.ts
 apps/ops/src/api-schema.ts
 apps/tech/src/api-schema.ts
 src/worker-configuration.d.ts
+# Generated from their sources, and held to them by a test: npm run adr-index, npm run schema.
+docs/decisions/README.md
+docs/schema.md
 # The design exports: read-only reference (docs/frontend.md, design/phase2/README.md).
 design/
 # The owner's prompts, committed word for word (docs/prompts/README.md).

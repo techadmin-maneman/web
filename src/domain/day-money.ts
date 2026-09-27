@@ -28,7 +28,7 @@ export interface DayFigures {
   /**
    * How many no-shows ops ruled charged on the day. Counted rather than added,
    * so the figure above is never read as the whole of what was kept
-   * (docs/open-points.md, item 57).
+   * (docs/open-points.md, item 60).
    */
   readonly no_shows_charged: number;
 }
@@ -44,7 +44,7 @@ export interface Charge {
   /**
    * In paise, and null on a no-show: ops record the ruling and nothing records
    * an amount, because the charge itself is applied at P2-M5
-   * (src/routes/ops-field.ts, docs/open-points.md, item 57).
+   * (src/routes/ops-field.ts, docs/open-points.md, item 60).
    */
   readonly amount: number | null;
   /** When the client cancelled, or when ops ruled on the no-show. */

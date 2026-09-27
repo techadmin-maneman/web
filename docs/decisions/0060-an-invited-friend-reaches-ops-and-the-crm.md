@@ -8,7 +8,7 @@
 
 The referral landing at `/r/:code` had two holes in it, both recorded as open points and neither needing the owner.
 
-**A friend left no lead** (`docs/open-points.md`, "An invited friend is not in the CRM"). `leads.loss_extent` is `NOT NULL`, and only the site's own form asks where the hair loss is; the landing does not. `recordLead` therefore returned null for every invited friend. They are the one customer the business has already paid a referral credit for, and they were the one customer marketing could not see.
+**A friend left no lead** (`docs/open-points.md`, item 119). `leads.loss_extent` is `NOT NULL`, and only the site's own form asks where the hair loss is; the landing does not. `recordLead` therefore returned null for every invited friend. They are the one customer the business has already paid a referral credit for, and they were the one customer marketing could not see.
 
 ADR 0051 recorded the two ways out: ask on the landing too, or make the column optional. The second looked closed. Migration 0025 set out to rebuild the leads table and was withdrawn: `tryon_jobs.lead_id` points at a lead, D1 runs a migration in one transaction, and SQLite counts dropping the parent as a violation that re-creating it does not undo.
 
@@ -23,7 +23,7 @@ So the second hole was the worse one, and the first was narrower than it read.
 
 **The Lead is also the only CRM record we can write.** ADR 0059 found the Worker's CRM token scoped `ZohoCRM.modules.leads.ALL`; `/crm/v8/Contacts` answers `401 OAUTH_SCOPE_MISMATCH`. Whatever the right long-term home for a customer is, a Lead is the only place this code can put a friend's source and attribution today, and the only CRM record `erasePerson` can blank.
 
-**A friend got nothing when self-serve booking was off** (`docs/open-points.md`, "Referral consultations without self-serve"). `bookConsultation` checked `SELF_SERVE_BOOKING` before it did anything else and answered `409 ops_assisted`. The friend filled in the whole form — name, number, pincode, a day, a window, the consent — pressed the button, and was told to start again on WhatsApp. Nothing was written: no person, no consent, no attribution, no lead. Ops learnt nothing, and the invite that brought the friend was lost unless they messaged of their own accord. That is the state production would have launched in, because self-serve is off there.
+**A friend got nothing when self-serve booking was off** (`docs/open-points.md`, item 120). `bookConsultation` checked `SELF_SERVE_BOOKING` before it did anything else and answered `409 ops_assisted`. The friend filled in the whole form — name, number, pincode, a day, a window, the consent — pressed the button, and was told to start again on WhatsApp. Nothing was written: no person, no consent, no attribution, no lead. Ops learnt nothing, and the invite that brought the friend was lost unless they messaged of their own accord. That is the state production would have launched in, because self-serve is off there.
 
 ## Decision
 

@@ -2,7 +2,7 @@
 // The client books one of three windows; the dispatch board has four slots a
 // day. Slots are counted in halves, so a replacement's slot and a half is a
 // whole number. The times are placeholders until the owner rules
-// (docs/open-points.md, item 24).
+// (docs/open-points.md, item 53).
 
 import type { VisitType } from "./visit-types.ts";
 

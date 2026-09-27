@@ -1,6 +1,6 @@
 # 0051. Booking from the site is the landing's booking
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the page records a request for ops rather than refusing.
 - Date: 2026-09-23
 
 ## Context
@@ -23,12 +23,12 @@ We can now. `serviceable_pincodes` holds 198 NCR pincodes, and `GET /api/pincode
 - The public page shows no card and no invite, and asks **where the hair loss is**, as Phase 1's form did, because that answer is worth having and an invited friend is never asked it.
 - **Every booking still leaves a lead**, so the CRM funnel sees what it saw in Phase 1. The lead carries the date the person actually booked, not a guess.
 
-`SELF_SERVE_BOOKING` still governs it. While the flag is off, the page answers `ops_assisted` and says booking goes through WhatsApp for now, exactly as the landing does.
+`SELF_SERVE_BOOKING` still governs it. While the flag is off, the page books nothing and records a request for ops, answered `201` with `state: "requested"`, and says ops will fix the hour on WhatsApp, exactly as the landing does. (Until 24 September 2026 it answered `409 ops_assisted`; [ADR 0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) changed both pages. Corrected 27 September 2026.)
 
 ## Consequences
 
 - **The four rough windows are gone from the site.** A visitor picks a day in the next fortnight and one of the three real windows, and the slot is held for them.
-- **A booking from the site leaves a lead; a booking from an invite does not.** `leads.loss_extent` is required, and only the site's own form asks where the hair loss is. Migration 0025 set out to make the column optional by rebuilding the table, and was withdrawn: a try-on job points at a lead, and D1 runs a migration in one transaction, where SQLite counts dropping the parent as a violation that re-creating it does not undo. `first_choice_window` was already optional. The gap — an invited friend reaching FSM and the referral records but not the CRM — is `docs/open-points.md`, item 50. (Corrected 27 September 2026: migration 0031 made `leads.loss_extent` optional, and a booking from an invite leaves a lead too; see ADR 0060.)
+- **A booking from the site leaves a lead; a booking from an invite does not.** `leads.loss_extent` is required, and only the site's own form asks where the hair loss is. Migration 0025 set out to make the column optional by rebuilding the table, and was withdrawn: a try-on job points at a lead, and D1 runs a migration in one transaction, where SQLite counts dropping the parent as a violation that re-creating it does not undo. `first_choice_window` was already optional. The gap — an invited friend reaching FSM and the referral records but not the CRM — is `docs/open-points.md`, item 119. (Corrected 27 September 2026: migration 0031 made `leads.loss_extent` optional, and a booking from an invite leaves a lead too; see ADR 0060.)
 - **The consent is recorded once**, under the notice the page actually showed — `referral-consultation-v1` for a booking, `waitlist-v1` for the list — instead of Phase 1's booking notice.
 - **A pincode we do not know** is treated as one we do not serve: the page takes the number for it. The 198 pincodes are NCR's; someone outside it joins a list with no area named.
 - **`/book`'s fidelity pairs move** to the referral harness, because the Phase 1 design's booking board no longer describes the page. The Phase 2 design has no board for a public booking; boards C2 to C4 are that page, minus the invite.

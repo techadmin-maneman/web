@@ -12,7 +12,7 @@ and nothing is behind it. REQ4, `8229000000304279`, is still in that state in th
 owner's org, and is left there as the evidence.
 
 The proof concluded "FSM's own screen opens a form there that the API does not",
-and open point 65 has stood since as a capability FSM lacks. PR #92 taught us to
+and open point 33 has stood since as a capability FSM lacks. PR #92 taught us to
 distrust that shape: `POST /fsm/v1/Invoices` answered a bare `500` for months of
 reasoning about scopes and field names, and the answer was that **we** were not
 sending the line items and `$finance_data` (ADR 0055).
@@ -87,7 +87,7 @@ the transition again, and `src/providers/fsm-zoho.ts` gains nothing speculative.
 
 ## Consequences
 
-- Open point 65 stops being "FSM cannot" and becomes a business question: whether
+- Open point 33 stops being "FSM cannot" and becomes a business question: whether
   ops always convert in FSM's screen, or whether a booked lead should be turned
   into a work order by us. That is the owner's, and it is unchanged by this.
 - A Request converted by the transition alone is still stranded. Nothing of ours

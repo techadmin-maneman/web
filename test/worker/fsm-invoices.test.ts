@@ -399,6 +399,6 @@ describe("what the invoice totals, before it is issued", () => {
     expect(await done).toEqual({ raised: 1, issued: 0 });
     expect(books.made.issued).toEqual([]);
     expect(alerted[0]).toContain("was paid with a referral credit");
-    expect(alerted[0]).toContain("open point 97");
+    expect(alerted[0]).toContain("open point 14");
   });
 });

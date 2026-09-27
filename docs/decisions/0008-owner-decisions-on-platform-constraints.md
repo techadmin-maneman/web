@@ -40,3 +40,9 @@ When the plan changes: require every `ci.yml` job on `main`, and add reviewers t
 - The staging DNS record and the Access application are in place. Every staging path now redirects to Cloudflare Access; production stays public.
 - **Bot Fight Mode is off.** It answered every request from GitHub's runners with a challenge (`cf-mitigated: challenge`), before Access and the Workers, which broke the smoke tests. On the Free plan it cannot be exempted per path. It would also challenge real visitors on data-centre or VPN addresses, whose form submissions (`fetch` calls) cannot solve a challenge. Abuse control is Turnstile on the forms plus the per-IP and per-mobile rate limits (M2).
 - The Access service token is on the `staging` environment only.
+
+## Update, 27 September 2026
+
+- **Each CI token reaches its environment's five Workers**, not two: Phase 2 added `mm-app`, `mm-ops` and `mm-tech` beside `mm-api` and `mm-site` (`scripts/lib/workers.ts`). `scripts/verify-ci-token.ts` checks each one, and D1 Edit is still account-wide, as decision 3 accepts.
+- **Production has its own Access service token** since 22 September 2026, for the smoke suite behind Access on production's app, ops and technician hosts (`docs/open-points.md`, "Settled").
+- **The GitHub gates are still deferred** (decision 2): `main` requires no checks and `production` has no reviewers.

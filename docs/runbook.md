@@ -40,9 +40,9 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | ---------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
 | 1. D1 database                                 | done                                                   | done                                                                                      |
 | 1. Queues: render, crm-sync, messaging         | done                                                   | done                                                                                      |
-| 1. Queue: fsm-sync                             | done                                                   | not yet (open point 32)                                                                   |
+| 1. Queue: fsm-sync                             | done                                                   | not yet (open point 85)                                                                   |
 | 1. R2 buckets, 30-day expiry                   | done                                                   | done                                                                                      |
-| 1. R2 buckets: photographs, referral cards     | done                                                   | not yet (open point 33)                                                                   |
+| 1. R2 buckets: photographs, referral cards     | done                                                   | not yet (open point 86)                                                                   |
 | 2. DNS record                                  | done                                                   | exists (the apex record)                                                                  |
 | 3. Access application and service token        | done                                                   | not applicable                                                                            |
 | 4. Migrations and identity mark                | done                                                   | done, to the migrations of 268eaa4                                                        |
@@ -60,12 +60,12 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 10. Access bypass for result links             | done                                                   | not applicable                                                                            |
 | 11. Phase 2 hosts: DNS, Access                 | done                                                   | done (all three behind Access until go-live)                                              |
 | 11. Phase 2 surfaces switched on               | done (22 September 2026)                               | not yet: waits for the production go-ahead                                                |
-| 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                    | mm-app recorded as bootstrapped with no route (open point 29); mm-ops and mm-tech not yet |
+| 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                    | mm-app recorded as bootstrapped with no route (open point 83); mm-ops and mm-tech not yet |
 | 11b. FSM and Books                             | done                                                   | not yet: `FSM_PROVIDER` and `BOOKS_PROVIDER` are `none`                                   |
 | 11c. Razorpay                                  | done, test keys                                        | not yet: `PAYMENTS_PROVIDER` is `none`                                                    |
 | 12. Evolution receipts: token, bypass          | done                                                   | not yet                                                                                   |
 | 12. Evolution receipts: the webhook            | open: the shared instance's webhook                    | not yet                                                                                   |
-| 13. The address search (Google)                | `google`, and Google refuses the key (open point 26)   | not yet: `none`                                                                           |
+| 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)   | not yet: `none`                                                                           |
 | 14. Cloudflare Web Analytics                   | not recorded: check it (step 14)                       | not recorded: check it (step 14)                                                          |
 
 ### 1. Resources
@@ -443,7 +443,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 8. **FSM's catalogue and the price book.** FSM prices a visit's tax invoice from its catalogue item, so each item must hold the price book's price before GST (docs/decisions/0073-prices-from-the-price-book.md).
    - **The check.** Once an hour the cron's `fsm_catalogue` job reads the catalogue and compares it with the book. An item that differs, or is missing, is an alert `fsm_catalogue:<visit type>` naming the item's ID and both figures, closed when the two agree. Until the push is on, set the item's price in FSM by hand as the alert says (Setup → Service and Parts).
    - **The push** writes each price ops set in the console to the catalogue, and a price from a later day on its day. `FSM_CATALOGUE_PUSH` in `src/config/environments.ts` is off in every environment. **Only the owner switches it on, and only in production,** once production's price book holds the owner's prices and production connects FSM: set its `production` to `true`, and release. Staging's stays off for as long as it shares the owner's real org; a test refuses it on.
-   - **After switching it on,** set any price in the console and look for `fsm_catalogue_pushed` in the logs; the next hour's check should raise no `fsm_catalogue` alert. The write, `PUT /fsm/v1/Products/{id}`, has never been tried on the org (`docs/open-points.md`, item 98): if FSM refuses it, `fsm_catalogue_push_failed` is logged with FSM's answer, and the check tells ops an hour later.
+   - **After switching it on,** set any price in the console and look for `fsm_catalogue_pushed` in the logs; the next hour's check should raise no `fsm_catalogue` alert. The write, `PUT /fsm/v1/Products/{id}`, has never been tried on the org (`docs/open-points.md`, item 25): if FSM refuses it, `fsm_catalogue_push_failed` is logged with FSM's answer, and the check tells ops an hour later.
 
 ### 11c. Razorpay
 
@@ -571,13 +571,13 @@ The site counts its visits with Cloudflare Web Analytics, and its privacy notice
 
 If the page carries no beacon, the automatic setup is not reaching the pages the Worker serves. The manual snippet, a `<script defer>` from `static.cloudflareinsights.com` with the site's token, then goes in `site/src/layouts/Site.astro`; the policy already allows its host.
 
-The client app's policy does not allow the beacon (`apps/app/headers.ts`), though ADR 0043 allows Web Analytics there. Switch it on for `app.maneman.in` only after the policy allows it.
+The client app's policy does not allow the beacon (`apps/app/headers.ts`), and ADR 0043 allows none there (`docs/open-points.md`, item 144). Switch it on for `app.maneman.in` only after the policy allows it.
 
 ### Before the first production release of Phase 2
 
 Production runs 268eaa4, of 21 September 2026. The next release carries every migration since, and a Worker that binds what production has never had. Before starting `deploy-production.yml`:
 
-1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-fsm-sync-prod`, `mm-prod-client-photos` and `mm-prod-referral-cards` (open points 32 and 33). Then check every bucket with `node --env-file=.env.cf-read scripts/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
+1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-fsm-sync-prod`, `mm-prod-client-photos` and `mm-prod-referral-cards` (open points 85 and 86). Then check every bucket with `node --env-file=.env.cf-read scripts/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
 2. **Vars and secrets.** `npm run check:config` holds each environment to 64 vars and secrets together (ADR 0009, rule 6). A secret the switched-on providers need must be set before the release (step 7): the Worker refuses to start without it, and Cloudflare refuses the upload.
 3. **The apps.** The release passes over an app whose surface is off in production and that has no Worker there; mm-ops and mm-tech have none yet (step 11).
 4. **After the release.** Attach the new consumer with `npm run apply-triggers -- --env production` and check it (step 9). Then the contract step ADR 0070 holds back, dropping the old Zoho token tables, may be merged (`docs/migrations.md`).
@@ -639,7 +639,7 @@ R2's 10 GB a month is the account's, both environments together, and past it R2 
 | `mm-<t>-client-photos`  | Visit photographs, ten a visit, from the technician app or copied from FSM | For good: deleted only by an erasure                                                 |
 | `mm-<t>-referral-cards` | One card for each referrer who made one                                    | Until its referrer revokes it or is erased                                           |
 
-ADR 0039 gives the photographs and the cards 4 GB, about 1,480 visits at 250 KB a photograph, which is what the technician app sends. Two things spend it faster: a photograph copied from FSM keeps FSM's size, several MB (open point 34), and the API takes one from the technician app up to 12 MB. The storage meter ADR 0039 planned, warning at 50% and 80% of the share, has not been built. The usage notifications above, at 5 GB, are the only warning.
+ADR 0039 gives the photographs and the cards 4 GB, about 1,480 visits at 250 KB a photograph, which is what the technician app sends. Two things spend it faster: a photograph copied from FSM keeps FSM's size, several MB (open point 125), and the API takes one from the technician app up to 12 MB. The storage meter ADR 0039 planned, warning at 50% and 80% of the share, has not been built. The usage notifications above, at 5 GB, are the only warning.
 
 Where it stands: the dashboard's R2 page gives each bucket's size, which is the figure that bills. The photographs the database knows of:
 
@@ -846,11 +846,11 @@ A booking is written to FSM from the queue once Razorpay says the client paid (A
 
 The cron raises each finished visit's invoice through FSM, which puts it in Books as a draft, and marks it sent once it totals what the client was sold the visit for (ADRs 0056 and 0070). Only then can the client open it. It records each payment and refund in Books and sets a visit's payment against its invoice. Nothing here ever sends a draft that already exists, so a draft ops correct is sent by ops.
 
-- **Held as a draft** (`invoice_draft`), the alert says why. The price differs: correct the draft in Books and send it there, and set FSM's catalogue price right (step 11b, point 8). Nothing says what the visit was sold for: check the draft and send it. Paid with a referral credit: leave it until the CA rules (open point 97).
+- **Held as a draft** (`invoice_draft`), the alert says why. The price differs: correct the draft in Books and send it there, and set FSM's catalogue price right (step 11b, point 8). Nothing says what the visit was sold for: check the draft and send it. Paid with a referral credit: leave it until the CA rules (open point 14).
 - **Still a draft an hour after the visit, or Books would not mark it sent** (`invoice_draft`, and `invoice_not_issued` in the logs): send it in Books. Within the hour the pass sees it sent, the client can open it, and the alert closes.
 - **FSM refused to invoice** (`invoice_refused`): raise it in FSM by hand, then send it in Books; the pass finds it, since FSM gives a work order one invoice however often it is asked.
 - **Books refused a payment, its application or a refund** (`books_…_refused`): the message says what; put it right in Books. It is asked again every hour, and the alert closes when it goes through. `books_…_failed` is Books failing three times in some other way, usually Books being down; nothing to do.
-- **Nothing to set a payment against** (`books_unapplied`): it stays in Books as the client's credit. Settle it by hand in Books; how a kept charge is invoiced waits for the CA (open point 79).
+- **Nothing to set a payment against** (`books_unapplied`): it stays in Books as the client's credit. Settle it by hand in Books; how a kept charge is invoiced waits for the CA (open point 16).
 - Refunds are recorded in Books only while `BOOKS_REFUND_ACCOUNT_ID` is set (step 11b, point 7).
 
 The console's Tasks board lists every draft invoice. From SQL:
@@ -936,7 +936,7 @@ Alert: "its result was billed but never downloaded, and its URL has expired". Th
 
 Symptoms: messages fail with `HTTP 5xx`, `unreachable` or `Connection Closed`, and an alert names each after four attempts. Every login code goes through the bridge too, so clients and technicians cannot sign in. Two alerts say so: the cron reads the bridge's connection state every five minutes and alerts when two readings in a row find it closed, and login codes alert when three fail to send in an hour. Both close once it works again. A message that failed with `delivery unconfirmed` is different: the bridge did not answer in time (20 s for a text, 60 s for an image), and the message may have arrived. It is never retried automatically.
 
-Whoever is signed in stays signed in: a client's or a technician's session lasts 90 days from its last use, and only a new sign-in needs a code. There is no other way in. SMS is off until a DLT-registered provider exists (open point 17), and the fixed code `dev:all` uses is refused anywhere but a laptop. So ask technicians not to sign out while it lasts.
+Whoever is signed in stays signed in: a client's or a technician's session lasts 90 days from its last use, and only a new sign-in needs a code. There is no other way in. SMS is off until a DLT-registered provider exists (open point 37), and the fixed code `dev:all` uses is refused anywhere but a laptop. So ask technicians not to sign out while it lasts.
 
 1. Check the bridge. `GET {EVOLUTION_API_URL}/instance/connectionState/{instance}` with the `apikey` header should say `"state": "open"`.
 2. If the WhatsApp session dropped, reconnect it in the bridge (scan the QR code again). If WhatsApp will not take the number back, see the next section.
@@ -959,7 +959,7 @@ The bridge drives an ordinary WhatsApp account, and WhatsApp can ban a number fo
 3. Clients now hear from another number. The number the site and the apps ask clients to write to is `WHATSAPP_NUMBER` in `packages/web-kit/whatsapp.ts`; if that number is the banned one, change it and release the site and the apps.
 4. Replay the messages that failed (below).
 
-The lasting answers are a number of Mane Man's own (open point 18) and SMS (open point 17).
+The lasting answers are a number of Mane Man's own (open point 38) and SMS (open point 37).
 
 ### Replaying a failed message
 
@@ -1087,7 +1087,7 @@ A request waiting 5 days alerts ops: process it before its 7 days run out. The c
 **The pincodes we serve** are loaded from `data/pincodes/ncr-pincodes.csv` (docs/decisions/0048-referrals.md). Fill in its `served` and `launch_on` columns, then:
 
 ```sh
-node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging's placeholder (open point 21)
+node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging's placeholder (open point 48)
 node scripts/import-pincodes.ts production                             # the file's own columns
 ```
 
@@ -1132,7 +1132,7 @@ The DPDP Act and its Rules require us to tell the Data Protection Board and each
 4. **Notify.**
    - **The Board,** at once in brief, and in full within 72 hours: what happened, when, the data and people affected, the harm likely, what we have done, and who to contact.
    - **Each person affected,** in plain words on WhatsApp or by phone: what happened to their data, what it may mean for them, what we have done, what they can do, and who to contact.
-   - **The Grievance Officer** leads both (`docs/open-points.md`, item 42).
+   - **The Grievance Officer** leads both (`docs/open-points.md`, item 51).
 5. **Record.** Keep a note of the breach, the timeline, the decisions and the notices, for the Board and for us. Review it within two weeks, and fix what let it happen.
 
 ---

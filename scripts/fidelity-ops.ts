@@ -214,7 +214,7 @@ const NO_SHOWS = {
  * figures and its two charges. The board prices the no-show at Rs. 2,360 like
  * the late cancellation; nothing here records what a no-show was charged, so
  * the third figure holds the cancellation alone and counts the no-show beside
- * it (docs/open-points.md, item 57).
+ * it (docs/open-points.md, item 60).
  */
 const DAY_MONEY = {
   date: "2027-09-22",

@@ -28,7 +28,7 @@ describe("the ops console's content", () => {
 
 // Ops are shown how long a request has left against a time we have already
 // promised the client, so the two have to be the same number
-// (docs/decisions/0049-dpdp.md, docs/open-points.md, item 42).
+// (docs/decisions/0049-dpdp.md, docs/open-points.md, item 51).
 describe("what the DPDP queues promise", () => {
   it("counts a grievance down to the answer time the client's app names", () => {
     expect(profile.data.sent).toContain(`within ${String(grievances.queue.answerDays)} days`);

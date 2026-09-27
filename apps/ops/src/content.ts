@@ -16,7 +16,7 @@ export const shell = {
    * Each section's name in the navigation, in apps/ops/src/route.ts's order;
    * the design draws eight. Its third is drawn as "Payments" and built as
    * "No-shows": the day's money is there, over the queue, but the dispute the
-   * board rules on has no record behind it (docs/open-points.md, item 57).
+   * board rules on has no record behind it (docs/open-points.md, item 60).
    * Settings is the eighth, built from ADR 0061.
    *
    * Grievances, Deletion requests and Number changes are drawn on no board at
@@ -95,7 +95,7 @@ export const dispatch = {
   /**
    * PLACEHOLDER: each window's hours, which the drawer writes as the board does
    * ("12 to 4 pm"). They are src/config/scheduling.ts's WINDOW_TIMES, still the
-   * owner's to rule (docs/open-points.md, item 24); test/node/ops-content.test.ts
+   * owner's to rule (docs/open-points.md, item 53); test/node/ops-content.test.ts
    * holds the two together.
    */
   windowHours: {
@@ -647,7 +647,7 @@ export const waitlist = {
  * Board D1's queue. The board draws the day's money over "No-shows and late
  * cancellations", and beside it a disputed charge ruled on with Refund or
  * Uphold. Only the no-show cases and their three facts have a route, so only
- * they are here (docs/open-points.md, item 57).
+ * they are here (docs/open-points.md, item 60).
  */
 export const noShows = {
   title: "No-shows",
@@ -655,7 +655,7 @@ export const noShows = {
    * Board D1's first card: the day's money, over the charges it was kept on.
    * The card carries no heading on the board and names no day, so both are
    * placeholders. Two of its three figures are read from the payments
-   * themselves; the third has no source at all (docs/open-points.md, item 57).
+   * themselves; the third has no source at all (docs/open-points.md, item 60).
    */
   money: {
     /** PLACEHOLDER: the board's card has no heading, and a panel needs a name to be read by. */
@@ -820,7 +820,7 @@ export const noShows = {
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
  * groups, of which two have something behind them; the others here are queues
- * it does not draw (docs/open-points.md, item 58).
+ * it does not draw (docs/open-points.md, item 61).
  */
 export const tasks = {
   title: "Tasks",
@@ -1058,7 +1058,7 @@ export const grievances = {
     title: "Open grievances",
     /**
      * The days the app promises the client an answer within, which counsel has
-     * still to confirm (docs/open-points.md, item 42).
+     * still to confirm (docs/open-points.md, item 51).
      * test/node/ops-content.test.ts holds this to the app's own words.
      */
     answerDays: 30,

@@ -10,6 +10,7 @@ D1 runs each file in `migrations/` once, in order, in one transaction, with fore
 4. **Never rebuild a table another table points at.** SQLite's recipe (create a copy, move the rows, drop the old one, rename) needs foreign keys switched off, and D1 ignores that pragma inside its transaction. Dropping the parent is a violation that re-creating it does not undo. Migration 0025 tried it on `leads`, which `tryon_jobs` points at, and staging refused it.
 5. **Change a column on such a table by swapping it in place**, as migration 0031 does: add the new column, copy the values across, drop the old column, rename the new one. The table and every reference into it stay put. SQLite will not drop a column that is indexed, unique, a key, or named in a view, trigger or `CHECK` elsewhere: drop what depends on it first, and put it back after.
 6. **No filler in place of "not known".** A `NOT NULL` column needs a real value for every row, old and new. `checkins.distance_m` began as `NOT NULL`, so a check-in with no address to measure against stored 0, the console showed "0 m" for it until its read learnt to tell the two apart, and the column then had to be swapped for a nullable one. Where a value can be missing, make the column nullable from the start.
+7. **Name a time for what it holds.** A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00.000Z`); one ending `_date` holds a calendar day in India (`2026-09-27`). Two `_at` columns hold a day, from before this rule was written, and `docs/schema.md` names them and how each is read; a new column does not add a third. After a migration adds or changes a table, run `npm run schema` to write `docs/schema.md` again: `test/node/schema-doc.test.ts` fails until it matches the migrations, and until a new table has its line in `PURPOSES` (`scripts/lib/schema-doc.ts`).
 
 ## Contract steps waiting
 
@@ -18,6 +19,17 @@ What a later release drops, once no deployed Worker reads it. Each waits for the
 | What                                         | Replaced by                                   | Dropped once production has run               | ADR  |
 | -------------------------------------------- | --------------------------------------------- | --------------------------------------------- | ---- |
 | `zoho_token` (0002) and `zoho_tokens` (0010) | `zoho_access_tokens` (0041, seeded from both) | #125 (6ef2ddb): the code before it reads them | 0070 |
+
+## Comments an applied migration cannot correct
+
+A migration's comments are part of it, so they are never edited either (rule 1), and some have gone out of date. What is true now:
+
+| Migration                 | It says                                                             | True now                                                                                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Any, citing an open point | "docs/open-points.md, item N"                                       | The open points were renumbered on 27 September 2026; `docs/open-points.md`, "Numbers before 27 September 2026", maps each old number to its new one                      |
+| 0026 (field operations)   | "The milestone itself waits on Zoho's licensing answer"             | The owner ruled on 23 September 2026 that we build our own apps and go on, so P2-M4 went ahead; Zoho's written answer is still wanted (`docs/decisions/fsm-licensing.md`) |
+| 0027 (pieces and zones)   | The piece label's format "is a placeholder until the owner sets it" | Set on 24 September 2026: `MM-<base>-<digits>-<letter>`, typed by hand (`PIECE_CODE_PATTERN`, `src/config/pieces.ts`)                                                     |
+| 0027 (pieces and zones)   | `fitted_at` and `replacement_due_at`, named as instants             | Each holds a calendar day, `YYYY-MM-DD` (`docs/schema.md`, "Times and dates")                                                                                             |
 
 ## Deleting rows
 

@@ -2,7 +2,7 @@
 // kept on, then each case with the evidence ops rule on, charged or waived
 // here. The board's second card is a disputed charge; nothing records a dispute
 // and no client can raise one, so it is a line between the two and not a card
-// (docs/open-points.md, item 57).
+// (docs/open-points.md, item 60).
 //
 // A case is evidence a client may be charged on, so it names the client and
 // says when the visit was booked for, when the technician's phone says he

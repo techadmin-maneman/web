@@ -9,7 +9,7 @@
 //
 // The duration is the phone's own: it runs from the `started_at` the API keeps
 // to the instant the technician took the outcome, because nothing gives the
-// closing time back (docs/open-points.md, item 57).
+// closing time back (docs/open-points.md, item 60).
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";

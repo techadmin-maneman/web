@@ -1,7 +1,6 @@
 # Every pull request, and every staging deploy (called from deploy-staging.yml).
 #
-# Jobs that do not need each other run side by side on the two runners the
-# machine has (docs/runbook.md, "The CI runner"), so a run takes the longest
+# Jobs that do not need each other run side by side, so a run takes the longest
 # job's time rather than every job's. The browser tests are the longest, and
 # they start at once: nothing waits behind a check it does not need.
 #
@@ -10,8 +9,10 @@
 # pull request, which skips the jobs a browser or a build would run, is still
 # green (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs").
 #
-# Jobs run on the owner's machine when the repository variable CI_RUNNER is
-# "maneman", else on GitHub's runners.
+# Jobs run on the owner's machine, two at a time, when the repository variable
+# CI_RUNNER is "maneman" (docs/runbook.md, "The CI runner"), else on GitHub's
+# runners, which bill each job; it has been "github" since 23 September 2026
+# (docs/decisions/0006-deployment-pipeline.md, "The runner").
 name: ci
 
 on:
@@ -118,6 +119,8 @@ jobs:
           else
             npm run check:migrations -- --base "$BASE"
           fi
+      - name: Open points have one number each, and every citation of one names a point that exists
+        run: npm run check:open-points
 
       - name: Dependency audit
         run: npm audit --audit-level=high

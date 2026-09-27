@@ -336,7 +336,7 @@ export const steps = {
     less: (name: string) => `One fewer ${name.toLowerCase()}`,
     more: (name: string) => `One more ${name.toLowerCase()}`,
     count: (name: string, count: number) => `${name}: ${String(count)}`,
-    // PLACEHOLDER: FSM holds no consumables catalogue, so the board's four stand in (open point 13).
+    // PLACEHOLDER: FSM holds no consumables catalogue, so the board's four stand in (open point 28).
     items: ["Tape strips", "Bonding glue", "Solvent", "Shampoo sachet"],
     none: "None used",
   },
@@ -354,7 +354,7 @@ export const steps = {
     notThisClient: "That piece is not this client's.",
     notThisClientAction: "That piece is not this client's",
     rows: { piece: "Piece", base: "Base", lot: "Supplier lot" },
-    // PLACEHOLDER: the board draws the base as read, not typed; the pieces tab needs it and the lot (item 13).
+    // PLACEHOLDER: the board draws the base as read, not typed; the pieces tab needs it and the lot (open point 28).
     base: "Base",
     lot: "Supplier lot",
     pick: "Pick from the list",
@@ -392,7 +392,7 @@ export const closeOut = {
   who: (name: string, outcome: string) => `${name} · ${outcome}`,
   outcomes: { done: "done", partial: "partial", no_show: "no-show" },
   duration: "Duration",
-  // PLACEHOLDER: the board writes "1 h 22 m"; the phone times it from Start job (open point 57).
+  // PLACEHOLDER: the board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) =>
     hours === 0 ? `${String(minutes)} m` : `${String(hours)} h ${String(minutes)} m`,
   photos: "Photos",

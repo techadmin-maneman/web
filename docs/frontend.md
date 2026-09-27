@@ -57,9 +57,9 @@ Every price on the site and the landing is the price book's, which ops set in th
 
 ## Approving a notice
 
-The three consent notices (booking, photo, gate) are the backend's, in `src/config/notices.ts`. The page shows that text, and a consent row records its version.
+The site shows five consent notices, each the backend's, in `src/config/notices.ts`: the try-on's photograph and gate notices, the booking form's agreement on `/book` and `/r/:code`, and the waitlist's agreement and its optional launch alert (`notices` in `site/src/content/site.ts`). The page shows that text, and a consent row records its version.
 
-- **Once counsel approves a notice,** set its `approved` to `true` in `site.ts`.
+- **Once counsel approves a notice,** add its version to `APPROVED_NOTICES` in `site.ts`.
 - **To change the wording,** add a new version in `src/config/notices.ts`, point `CURRENT_NOTICE` at it, and approve that version. A published version is never edited.
 
 ## Changing a preset label
@@ -105,7 +105,7 @@ The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a G
 Production still serves `site/placeholder/production`. To go live:
 
 1. Keep `npm run build:site -- --env production` passing. It has passed since 22 September 2026, when the terms and the phone number were published; `test/node/site-production-gate.test.ts` checks it. **A passing build is not a finished home page:** every placeholder block is left out of it, so today's production home page has no photograph or film at all.
-2. **Look at the production build's home page before going live** (`npm run build:site -- --env production`, then serve `site/dist/production`). Each unpublished block is an open point (`docs/open-points.md`, items 86 to 94): the owner supplies its cleared material, or the section goes. The build ships none of the design's placeholder files, even unlinked, and the gate test checks that too.
-3. Add production's analytics IDs, and decide on Bot Fight Mode (docs/decisions/0023-launch-hardening.md, 2).
+2. **Look at the production build's home page before going live** (`npm run build:site -- --env production`, then serve `site/dist/production`). Each unpublished block is an open point (`docs/open-points.md`, items 73 to 81): the owner supplies its cleared material, or the section goes. The build ships none of the design's placeholder files, even unlinked, and the gate test checks that too.
+3. Add production's analytics IDs (`docs/open-points.md`, item 84). Bot Fight Mode is off, by the owner's ruling of 22 September 2026 (ADR 0025, item 12), so it needs no decision here.
 4. In `site/wrangler.jsonc`, point production's `assets.directory` at `./dist/production`.
 5. In `deploy-production.yml`, build the production site before "Deploy mm-site".
