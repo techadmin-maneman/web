@@ -15,7 +15,7 @@ import {
   POLL_SLOW_AFTER_MS,
   RENDER_GIVE_UP_MS,
 } from "../../src/config/pipeline.ts";
-import { MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
+import { MAX_COPY_BYTES, MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
 
 /** The Workers Free plan, per Cloudflare's pricing pages (read 21 September 2026). */
 export const FREE_TIER = {
@@ -77,10 +77,19 @@ export const PHOTOS_PER_VISIT = 10;
 export const PHOTO_BYTES = 250_000;
 /** Referral cards: one 1200×630 JPEG of at most 300 KB per referrer, for up to a thousand referrers. */
 export const REFERRAL_CARDS_BYTES = 1_000 * 300_000;
+/**
+ * A client's kept try-on (docs/decisions/0084-a-clients-try-on-is-kept.md): the small copy of their photograph, for
+ * good, and the look until their first fit is photographed, which for a client never fitted is for good as well.
+ */
+export const KEPT_TRY_ON_BYTES = MAX_COPY_BYTES + MAX_RESULT_BYTES;
 
-/** How many visits' photographs fit in Phase 2's R2 share, after the referral cards. */
-export function photoRunwayVisits(): number {
-  return Math.floor((PHASE_2_ALLOWANCE.r2StorageBytes - REFERRAL_CARDS_BYTES) / (PHOTOS_PER_VISIT * PHOTO_BYTES));
+/**
+ * How many visits fit in Phase 2's R2 share, after the referral cards. A client keeps one try-on, and every client
+ * has booked a visit, so at worst each visit is a new client's and brings one kept try-on with its photographs.
+ */
+export function photoRunwayVisits(keptTryOnBytes: number = KEPT_TRY_ON_BYTES): number {
+  const perVisit = PHOTOS_PER_VISIT * PHOTO_BYTES + keptTryOnBytes;
+  return Math.floor((PHASE_2_ALLOWANCE.r2StorageBytes - REFERRAL_CARDS_BYTES) / perVisit);
 }
 const DAYS_PER_MONTH = 31;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -131,12 +140,17 @@ export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
   let classB = 0;
   for (const ceilings of environments) {
     renders += ceilings.renderDaily;
-    // Stored at any moment: each day's results for the retention period, and each day's photos for about an hour.
+    // Stored at any moment: each day's results for the retention period, each day's photos for about an hour, and
+    // each photo's small copy for the hour and then as long as its look (ADR 0084). A client's kept try-on is held
+    // for good, so it is paid from Phase 2's share (photoRunwayVisits).
+    const hour = PHOTO_RETENTION_MS + SWEEP_INTERVAL_MS;
     storage += ceilings.renderDaily * ceilings.resultRetentionDays * MAX_RESULT_BYTES;
-    storage += (ceilings.uploadDaily * MAX_UPLOAD_BYTES * (PHOTO_RETENTION_MS + SWEEP_INTERVAL_MS)) / DAY_MS;
-    // Writes: one per photo and one per result. Reads: the photo once per render, and each result read.
-    classA += DAYS_PER_MONTH * (ceilings.uploadDaily + ceilings.renderDaily);
-    classB += DAYS_PER_MONTH * (ceilings.renderDaily + ceilings.resultReadDaily);
+    storage += (ceilings.uploadDaily * MAX_UPLOAD_BYTES * hour) / DAY_MS;
+    storage += (ceilings.uploadDaily * MAX_COPY_BYTES * (ceilings.resultRetentionDays * DAY_MS + hour)) / DAY_MS;
+    // Writes: one per photo, one per copy, one per result, and one per look kept by moving it. Reads: the photo once
+    // per render, each result read, and each look kept.
+    classA += DAYS_PER_MONTH * (2 * ceilings.uploadDaily + 2 * ceilings.renderDaily);
+    classB += DAYS_PER_MONTH * (2 * ceilings.renderDaily + ceilings.resultReadDaily);
   }
   return {
     queueOperationsPerDay: renders * queueOperationsPerRender() + LEAD_OPERATIONS_RESERVE + SWEEPER_OPERATIONS_RESERVE,

@@ -8,6 +8,7 @@ import {
   cronRowsReadPerDay,
   FREE_TIER,
   HEADROOM,
+  KEPT_TRY_ON_BYTES,
   overBudget,
   PHASE_2_ALLOWANCE,
   photoRunwayVisits,
@@ -15,6 +16,7 @@ import {
   worstCaseUsage,
   type Ceilings,
 } from "../../scripts/lib/free-tier-budget.ts";
+import { MAX_COPY_BYTES, MAX_RESULT_BYTES } from "../../src/config/tryon.ts";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
 
 function ceilingsOf(environment: "staging" | "production"): Ceilings {
@@ -46,9 +48,25 @@ describe("free-tier budget", () => {
     expect(overBudget(thirtyDays)).toEqual([expect.stringMatching(/^R2 storage/) as string]);
   });
 
-  it("gives Phase 2 room for about 1,500 visits' photographs, beside the referral cards", () => {
+  // ADR 0084: each photograph's small copy is held while its look is, counted at the upload ceiling.
+  it("holds the try-on's worst case at 3.6 GB, 76% of R2 with Phase 2's share", () => {
+    const { r2StorageBytes } = worstCaseUsage(committed);
+    expect(Math.round(r2StorageBytes / 1e6)).toBe(3_598);
+    const withPhase2 = (r2StorageBytes + PHASE_2_ALLOWANCE.r2StorageBytes) / FREE_TIER.r2StorageBytes;
+    expect(Math.round(withPhase2 * 1000)).toBe(760);
+  });
+
+  // ADR 0084: a client keeps one try-on for good (the look of a client never fitted is never let go), and every
+  // client has booked a visit, so each visit may bring one.
+  it("gives Phase 2 room for about 460 visits' photographs, each with a kept try-on, beside the referral cards", () => {
     expect(PHASE_2_ALLOWANCE.r2StorageBytes).toBe(4e9);
-    expect(photoRunwayVisits()).toBe(1_480);
+    expect(KEPT_TRY_ON_BYTES).toBe(MAX_COPY_BYTES + MAX_RESULT_BYTES);
+    expect(photoRunwayVisits()).toBe(462);
+  });
+
+  it("would give room for 1,480 visits with no try-on kept, and 1,228 with the look kept as small as the photograph", () => {
+    expect(photoRunwayVisits(0)).toBe(1_480);
+    expect(photoRunwayVisits(2 * MAX_COPY_BYTES)).toBe(1_228);
   });
 
   it("counts a render polled to the give-up time, its download retries, its message and its CRM sync", () => {
