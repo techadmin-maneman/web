@@ -1,8 +1,8 @@
-# 0076. A token scale written once, and names for what a value is for
+# 0077. A token scale written once, and names for what a value is for
 
 - Status: accepted
 - Date: 2026-09-27
-- Amends [0037](0037-shared-packages.md); follows [0075](0075-one-ui-layer-and-one-api-client.md)
+- Amends [0037](0037-shared-packages.md); follows [0076](0076-one-ui-layer-and-one-api-client.md)
 
 ## Context
 

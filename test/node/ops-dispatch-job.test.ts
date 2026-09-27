@@ -80,7 +80,7 @@ describe("a job's name on the board", () => {
 
   it("gives the drawer the client's first name, and a WhatsApp chat with digits only", () => {
     expect(firstNameOf(ROHIT)).toBe("Rohit");
-    // The drawer's link is web-kit's, as every front end's is (ADR 0075).
+    // The drawer's link is web-kit's, as every front end's is (ADR 0076).
     expect(whatsappChat(ROHIT.mobile)).toBe("https://wa.me/919810000001");
   });
 });
