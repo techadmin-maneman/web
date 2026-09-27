@@ -39,7 +39,8 @@ import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES } from "../policy/consents.ts";
 import { clientHistory } from "../domain/client-history.ts";
-import { EntrySchema, paymentEntries } from "./client-payments.ts";
+import { paymentEntries } from "../domain/client-payments.ts";
+import { EntrySchema } from "./client-payments.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 
 const clientId = z.object({ id: z.uuid() });
