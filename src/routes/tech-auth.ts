@@ -26,7 +26,7 @@ import {
 } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { initialsOf } from "../lib/names.ts";
-import { codeGate, countCode, sendCodeAfterResponse } from "../http/send-code.ts";
+import { countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import {
   clearTechnicianCookie,
   setTechnicianCookie,
@@ -34,8 +34,6 @@ import {
   technicianOf,
 } from "../http/technician-session.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { saltedHash } from "../lib/hash.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { newCode } from "../policy/one-time-code.ts";
 
@@ -151,7 +149,7 @@ export function registerTechAuth(app: App): void {
 
   app.openapi(otpRoute, async (c) => {
     const { requestId, deps, config } = c.var;
-    const { login: limits, ipHashSalt } = config.settings;
+    const { login: limits } = config.settings;
     const db = c.env.DB;
     const now = deps.now();
 
@@ -159,25 +157,9 @@ export function registerTechAuth(app: App): void {
     if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
     const visitor = await visitorOf(c);
-    const gate = await codeGate(c, visitor.ipHash, now);
-    if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
-    if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
-
-    const withinAddress = await takeOne(db, {
-      scope: "tech:code:ip",
-      key: visitor.ipHash,
-      window: indiaHour(now),
-      limit: limits.codeIpHourlyLimit,
-    });
-    const withinNumber =
-      withinAddress &&
-      (await takeOne(db, {
-        scope: "tech:code:mobile",
-        key: await saltedHash(ipHashSalt, `mobile:${mobileE164}`),
-        window: indiaDate(now),
-        limit: limits.codeMobileDailyLimit,
-      }));
-    if (!withinNumber) return c.json(errorBody("rate_limited", requestId), 429);
+    const asked = await mayAskForCode(c, { surface: "tech", mobileE164, ipHash: visitor.ipHash, now });
+    if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+    if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
 
     // A technician FSM listed since the last sync is unknown to the mirror; read it, then look again.
     let technician = await findFieldTechnician(db, mobileE164);

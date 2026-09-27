@@ -13,7 +13,8 @@ import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 import { onAllowlist } from "../config/settings.ts";
 import { alertCeilingReached, ceilingReached, takeFromCeiling } from "../domain/ceilings.ts";
-import { countOne, isSpent } from "../domain/rate-limit.ts";
+import { countOne, isSpent, takeOne } from "../domain/rate-limit.ts";
+import { saltedHash } from "../lib/hash.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { scrubString } from "../log.ts";
 import type { CodeChannel } from "../providers/codes.ts";
@@ -50,6 +51,41 @@ export async function codeGate(c: Context<AppEnv>, ipHash: string, now: Date): P
   if (!(await ceilingReached(c.env.DB, "login_code", codeDailyCeiling, now))) return "open";
   await alertCeilingReached(c.env.DB, c.var.deps.alert, "login_code", codeDailyCeiling, now);
   return "busy";
+}
+
+/**
+ * Whether a new login code may be asked for this number, before anyone is looked up: the gate above, then the
+ * address's codes this hour and the number's today, each counted under its surface's own scope
+ * (docs/decisions/0030-one-time-codes.md). A code resent on its challenge answers to the gate alone.
+ */
+export async function mayAskForCode(
+  c: Context<AppEnv>,
+  input: {
+    readonly surface: "login" | "tech";
+    readonly mobileE164: string;
+    readonly ipHash: string;
+    readonly now: Date;
+  },
+): Promise<CodeGate> {
+  const gate = await codeGate(c, input.ipHash, input.now);
+  if (gate !== "open") return gate;
+  const { login: limits, ipHashSalt } = c.var.config.settings;
+  const db = c.env.DB;
+  const withinAddress = await takeOne(db, {
+    scope: `${input.surface}:code:ip`,
+    key: input.ipHash,
+    window: indiaHour(input.now),
+    limit: limits.codeIpHourlyLimit,
+  });
+  const withinNumber =
+    withinAddress &&
+    (await takeOne(db, {
+      scope: `${input.surface}:code:mobile`,
+      key: await saltedHash(ipHashSalt, `mobile:${input.mobileE164}`),
+      window: indiaDate(input.now),
+      limit: limits.codeMobileDailyLimit,
+    }));
+  return withinNumber ? "open" : "rate_limited";
 }
 
 /**

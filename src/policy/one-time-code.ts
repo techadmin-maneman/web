@@ -1,6 +1,7 @@
 // The login code (docs/prompts/phase2-backend.md, "Business rules, decided").
 // The rules as the prompt states them, and the numbers they turn on (docs/decisions/0030-one-time-codes.md). A code is
-// sent from src/routes/client-auth.ts and tech-auth.ts, and checked in src/domain/login.ts and technicians.ts.
+// asked for and sent through src/http/send-code.ts, and checked, for a client and a technician alike, by
+// src/domain/one-time-codes.ts.
 
 import { MINUTE_MS } from "../lib/durations.ts";
 

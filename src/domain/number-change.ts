@@ -4,7 +4,8 @@
 
 import { newCode } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { createChallenge, verifyCode, type Challenge, type ChallengePurpose, type Verification } from "./login.ts";
+import { createChallenge, verifyCode, type Challenge, type Verification } from "./login.ts";
+import type { ChallengePurpose } from "./one-time-codes.ts";
 import { DAY_MS } from "../lib/durations.ts";
 
 export type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";

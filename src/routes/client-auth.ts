@@ -20,14 +20,11 @@ import {
   verifyCode,
   type Challenge,
 } from "../domain/login.ts";
-import { takeOne } from "../domain/rate-limit.ts";
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { codeGate, countCode, sendCodeAfterResponse } from "../http/send-code.ts";
+import { codeGate, countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { saltedHash } from "../lib/hash.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { MAX_SENDS_PER_CHALLENGE, newCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
 import type { CodeChannel } from "../providers/codes.ts";
@@ -157,7 +154,7 @@ async function mobileOf(db: D1Database, personId: string | null): Promise<string
 
 const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   const { requestId, deps, config } = c.var;
-  const { login: limits, ipHashSalt } = config.settings;
+  const { login: limits } = config.settings;
   const db = c.env.DB;
   const now = deps.now();
 
@@ -165,25 +162,9 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
   const visitor = await visitorOf(c);
-  const gate = await codeGate(c, visitor.ipHash, now);
-  if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
-  if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
-
-  const withinAddress = await takeOne(db, {
-    scope: "login:code:ip",
-    key: visitor.ipHash,
-    window: indiaHour(now),
-    limit: limits.codeIpHourlyLimit,
-  });
-  const withinNumber =
-    withinAddress &&
-    (await takeOne(db, {
-      scope: "login:code:mobile",
-      key: await saltedHash(ipHashSalt, `mobile:${mobileE164}`),
-      window: indiaDate(now),
-      limit: limits.codeMobileDailyLimit,
-    }));
-  if (!withinNumber) return c.json(errorBody("rate_limited", requestId), 429);
+  const asked = await mayAskForCode(c, { surface: "login", mobileE164, ipHash: visitor.ipHash, now });
+  if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+  if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
 
   const person = await findEligiblePerson(db, mobileE164);
   const sendsTo = person?.mobileE164 ?? null;
