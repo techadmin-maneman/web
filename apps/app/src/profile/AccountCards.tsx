@@ -3,18 +3,33 @@
 // written in the same card, with placeholder words (apps/app/src/content.ts).
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
-import { api, EXPORT_URL, type NumberChange, type Profile } from "../api.ts";
+import { useState, type ReactNode } from "react";
+import { api, EXPORT_URL, type Answer, type NumberChange, type Profile } from "../api.ts";
 import { login, profile, whatsapp } from "../content.ts";
 import { mobileDigits } from "../login/mobile.ts";
 import styles from "./profile.module.css";
 
 type Which = "old" | "new";
 
-/** "A code goes to both numbers, then we confirm with you before it takes effect." */
+/** Why a change of number did not start: too many today, a number the API would not take, or anything else. */
+function startProblem(answer: { readonly status: number; readonly code: string }): string {
+  const copy = profile.change;
+  if (answer.code === "rate_limited") return copy.limited;
+  if (answer.status === 400) return copy.invalid;
+  return copy.failed;
+}
+
+/** What one number's code came back as: proven, wrong with the tries left, or not checked at all. */
+function codeNote(answer: Answer<{ readonly attempts_left: number | null }>): string {
+  if (!answer.ok) return profile.change.failed;
+  if (answer.body.attempts_left === null) return profile.change.proven;
+  return login.code.mismatch(answer.body.attempts_left);
+}
+
 /** What ops decided about the client's last change of number, with their reason for a rejection. */
 function Decided({ decided }: { decided: NonNullable<Profile["number_change_decided"]> }) {
   const copy = profile.change;
@@ -63,7 +78,7 @@ export function NumberChangeCard({
         setNotes({ old: null, new: null });
         onChanged();
       } else {
-        setProblem(answer.code === "rate_limited" ? copy.limited : answer.status === 400 ? copy.invalid : copy.failed);
+        setProblem(startProblem(answer));
       }
     });
 
@@ -93,28 +108,24 @@ export function NumberChangeCard({
       const next = { ...notes };
       for (const which of pending) {
         if (codes[which].length !== 6) continue;
-        const answer = await api.verifyNumberChange(requestId, which, codes[which]);
-        next[which] = !answer.ok
-          ? copy.failed
-          : answer.body.attempts_left === null
-            ? copy.proven
-            : login.code.mismatch(answer.body.attempts_left);
+        next[which] = codeNote(await api.verifyNumberChange(requestId, which, codes[which]));
       }
       setNotes(next);
       onChanged();
     });
 
-  return (
-    <section className={styles.card} aria-labelledby="change">
-      <h2 className={styles.cardLabel} id="change">
-        {copy.label}
-      </h2>
-      {change?.state === "awaiting_ops" ? (
+  /** Waiting for ops, proving both numbers, or a new number to start from. */
+  function current(): ReactNode {
+    if (change?.state === "awaiting_ops") {
+      return (
         <div aria-busy={busy}>
           <p className={styles.cardBody}>{copy.waiting(change.new_mobile)}</p>
           {withdrawal}
         </div>
-      ) : change?.state === "verifying" ? (
+      );
+    }
+    if (change?.state === "verifying") {
+      return (
         <form
           noValidate
           aria-busy={busy}
@@ -155,49 +166,59 @@ export function NumberChangeCard({
               </label>
             );
           })}
-          <button className={styles.primary} type="submit" disabled={busy}>
+          <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>
             {copy.check}
-          </button>
+          </Button>
           {withdrawal}
         </form>
-      ) : (
-        <form
-          noValidate
-          aria-busy={busy}
-          onSubmit={(event) => {
-            event.preventDefault();
-            void start();
-          }}
-        >
-          {decided !== null && <Decided decided={decided} />}
-          <p className={styles.cardBody}>{copy.body}</p>
-          <div className={styles.numberField}>
-            <span className={styles.prefix} aria-hidden="true">
-              {copy.prefix}
-            </span>
-            <input
-              className={styles.numberInput}
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel-national"
-              placeholder={copy.placeholder}
-              aria-label={copy.placeholder}
-              value={typed}
-              onChange={(event) => {
-                setTyped(event.target.value);
-              }}
-            />
-          </div>
-          {problem !== null && (
-            <p className={styles.error} role="alert">
-              {problem}
-            </p>
-          )}
-          <button className={styles.primary} type="submit" disabled={busy}>
-            {copy.start}
-          </button>
-        </form>
-      )}
+      );
+    }
+    return (
+      <form
+        noValidate
+        aria-busy={busy}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void start();
+        }}
+      >
+        {decided !== null && <Decided decided={decided} />}
+        <p className={styles.cardBody}>{copy.body}</p>
+        <div className={styles.numberField}>
+          <span className={styles.prefix} aria-hidden="true">
+            {copy.prefix}
+          </span>
+          <input
+            className={styles.numberInput}
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            placeholder={copy.placeholder}
+            aria-label={copy.placeholder}
+            value={typed}
+            onChange={(event) => {
+              setTyped(event.target.value);
+            }}
+          />
+        </div>
+        {problem !== null && (
+          <p className={styles.error} role="alert">
+            {problem}
+          </p>
+        )}
+        <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>
+          {copy.start}
+        </Button>
+      </form>
+    );
+  }
+
+  return (
+    <section className={styles.card} aria-labelledby="change">
+      <h2 className={styles.cardLabel} id="change">
+        {copy.label}
+      </h2>
+      {current()}
     </section>
   );
 }
@@ -235,72 +256,91 @@ export function DataCard() {
       if (answer.ok) setWriting(false);
     });
 
+  /** A concern: sent, being written, or the way to raise one. */
+  function concern(): ReactNode {
+    if (state === "sent") {
+      return (
+        <p className={styles.cardHint} role="status">
+          {copy.sent}
+        </p>
+      );
+    }
+    if (!writing) {
+      return (
+        <Button
+          variant="outline"
+          size="control"
+          className={styles.secondary}
+          onClick={() => {
+            setWriting(true);
+          }}
+        >
+          {copy.raise}
+        </Button>
+      );
+    }
+    return (
+      <form
+        className={styles.confirm}
+        aria-busy={busy}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void send();
+        }}
+      >
+        <label className={styles.formField}>
+          <span className={styles.formLabel}>{copy.field}</span>
+          <textarea
+            className={styles.input}
+            rows={4}
+            maxLength={2000}
+            required
+            value={text}
+            onChange={(event) => {
+              setText(event.target.value);
+            }}
+          />
+        </label>
+        {state === "failed" && (
+          <p className={styles.error} role="alert">
+            {copy.failed}
+          </p>
+        )}
+        <div className={styles.row}>
+          <Button
+            variant="primary"
+            size="control"
+            className={styles.primary}
+            type="submit"
+            disabled={busy || text.trim() === ""}
+          >
+            {copy.send}
+          </Button>
+          <Button
+            variant="outline"
+            size="control"
+            className={styles.secondary}
+            onClick={() => {
+              setWriting(false);
+            }}
+          >
+            {copy.cancel}
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
   return (
     <section className={styles.card} aria-labelledby="data">
       <h2 className={styles.cardLabel} id="data">
         {copy.label}
       </h2>
       <p className={styles.cardBody}>{copy.body}</p>
-      <a className={styles.secondary} href={EXPORT_URL} download>
+      <ButtonLink variant="outline" size="control" className={styles.secondary} href={EXPORT_URL} download>
         {copy.download}
-      </a>
-      {state === "sent" ? (
-        <p className={styles.cardHint} role="status">
-          {copy.sent}
-        </p>
-      ) : writing ? (
-        <form
-          className={styles.confirm}
-          aria-busy={busy}
-          onSubmit={(event) => {
-            event.preventDefault();
-            void send();
-          }}
-        >
-          <label className={styles.formField}>
-            <span className={styles.formLabel}>{copy.field}</span>
-            <textarea
-              className={styles.input}
-              rows={4}
-              maxLength={2000}
-              required
-              value={text}
-              onChange={(event) => {
-                setText(event.target.value);
-              }}
-            />
-          </label>
-          {state === "failed" && (
-            <p className={styles.error} role="alert">
-              {copy.failed}
-            </p>
-          )}
-          <div className={styles.row}>
-            <button className={styles.primary} type="submit" disabled={busy || text.trim() === ""}>
-              {copy.send}
-            </button>
-            <button
-              className={styles.secondary}
-              type="button"
-              onClick={() => {
-                setWriting(false);
-              }}
-            >
-              {copy.cancel}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <button
-          className={styles.secondary}
-          type="button"
-          onClick={() => {
-            setWriting(true);
-          }}
-        >
-          {copy.raise}
-        </button>
-      )}
+      </ButtonLink>
+      {concern()}
     </section>
   );
 }
@@ -321,52 +361,71 @@ export function DeletionCard({ deletion, onRequested }: { deletion: Profile["del
       onRequested();
     });
 
+  /** The request: made, being confirmed, or the way to make it. */
+  function current(): ReactNode {
+    if (deletion !== null) {
+      return (
+        <p className={styles.cardHint} role="status">
+          {copy.requested(longDate(deletion.requested_at))}
+        </p>
+      );
+    }
+    if (!confirming) {
+      return (
+        <Button
+          variant="danger"
+          size="control"
+          className={styles.danger}
+          onClick={() => {
+            setConfirming(true);
+          }}
+        >
+          {copy.request}
+        </Button>
+      );
+    }
+    return (
+      <div className={styles.confirm} aria-busy={busy}>
+        <p className={styles.cardBody}>{copy.confirm}</p>
+        {failed && (
+          <p className={styles.error} role="alert">
+            {copy.failed}
+          </p>
+        )}
+        <div className={styles.row}>
+          <Button
+            variant="danger"
+            size="control"
+            className={styles.danger}
+            disabled={busy}
+            onClick={() => void request()}
+          >
+            {copy.yes}
+          </Button>
+          <Button
+            variant="outline"
+            size="control"
+            className={styles.secondary}
+            disabled={busy}
+            onClick={() => {
+              setConfirming(false);
+              setFailed(false);
+            }}
+          >
+            {copy.no}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={styles.card} aria-labelledby="deletion">
       <h2 className={styles.cardLabel} id="deletion">
         {copy.label}
       </h2>
       <p className={styles.cardBody}>{copy.body}</p>
-      {deletion !== null ? (
-        <p className={styles.cardHint} role="status">
-          {copy.requested(longDate(deletion.requested_at))}
-        </p>
-      ) : confirming ? (
-        <div className={styles.confirm} aria-busy={busy}>
-          <p className={styles.cardBody}>{copy.confirm}</p>
-          {failed && (
-            <p className={styles.error} role="alert">
-              {copy.failed}
-            </p>
-          )}
-          <div className={styles.row}>
-            <button className={styles.danger} type="button" disabled={busy} onClick={() => void request()}>
-              {copy.yes}
-            </button>
-            <button
-              className={styles.secondary}
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setConfirming(false);
-                setFailed(false);
-              }}
-            >
-              {copy.no}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          className={styles.danger}
-          type="button"
-          onClick={() => {
-            setConfirming(true);
-          }}
-        >
-          {copy.request}
-        </button>
-      )}
+      {current()}
     </section>
   );
 }

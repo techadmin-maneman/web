@@ -3,6 +3,7 @@
 // the next open, which on a shared phone is someone else's. So the button waits
 // for a connection, and says so when the API does not answer.
 
+import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { profile } from "../content.ts";
@@ -15,9 +16,10 @@ export function LogOut({ className }: { className?: string }) {
   const [failed, setFailed] = useState(false);
   return (
     <>
-      <button
+      <Button
+        variant="outline"
+        size="control"
         className={className}
-        type="button"
         disabled={offline || busy}
         onClick={() =>
           void once(async () => {
@@ -26,7 +28,7 @@ export function LogOut({ className }: { className?: string }) {
         }
       >
         {profile.logout}
-      </button>
+      </Button>
       {failed && (
         <p className={styles.problem} role="alert">
           {profile.logoutFailed}

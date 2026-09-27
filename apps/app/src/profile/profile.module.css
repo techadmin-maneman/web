@@ -152,34 +152,14 @@
   gap: var(--sp-10);
 }
 
-.primary,
-.secondary,
-.danger,
-.logout {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--sp-48);
-  padding: 0 var(--sp-18);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
+/*
+ * The profile's buttons (packages/ui/Button.tsx), all 48 px (size="control"). The outlined ones are edged
+ * in the paper's own line, lighter than the shared ink edge, as board G2 draws them.
+ */
 .primary {
   flex: 1;
   width: 100%;
   margin-top: var(--sp-14);
-  border: 0;
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.primary:disabled {
-  background: var(--paper-shade);
-  color: var(--text-quiet);
-  cursor: default;
 }
 
 .row .primary,
@@ -189,15 +169,12 @@
 
 .secondary {
   flex: 1;
-  border: var(--hairline) solid var(--paper-line);
-  background: none;
-  color: var(--text);
+  border-color: var(--paper-line);
 }
 
 /* The data card: a link that looks like its buttons, and a concern written in a few lines. */
 a.secondary {
   margin-top: var(--sp-16);
-  text-decoration: none;
 }
 
 .card > .secondary {
@@ -215,11 +192,10 @@ textarea.input {
   resize: vertical;
 }
 
+/* Deletion's first step is only as wide as its words. */
 .danger {
+  display: inline-flex;
   margin-top: var(--sp-16);
-  border: var(--hairline) solid var(--error-on-paper);
-  background: none;
-  color: var(--error-on-paper);
 }
 
 .row .danger {
@@ -359,9 +335,7 @@ textarea.input {
 
 .logout {
   width: 100%;
-  border: var(--hairline) solid var(--paper-line);
-  background: none;
-  color: var(--text);
+  border-color: var(--paper-line);
 }
 
 .failed {

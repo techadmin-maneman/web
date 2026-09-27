@@ -3,6 +3,7 @@
 // The fields an address cannot do without say they are required, and one left
 // out is marked, named by the error, and given the focus.
 
+import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useRef, useState } from "react";
 import { api, type Address } from "../api.ts";
@@ -211,12 +212,12 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
             </p>
           )}
           <div className={styles.row}>
-            <button className={styles.primary} type="submit" disabled={busy}>
+            <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>
               {copy.form.save}
-            </button>
-            <button className={styles.secondary} type="button" onClick={closeForm}>
+            </Button>
+            <Button variant="outline" size="control" className={styles.secondary} onClick={closeForm}>
               {copy.form.cancel}
-            </button>
+            </Button>
           </div>
         </form>
       )}

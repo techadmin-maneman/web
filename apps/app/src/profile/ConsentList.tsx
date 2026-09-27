@@ -5,6 +5,7 @@
 // and stays as it was, since a switch that looks off while the consent stands
 // would tell the client something untrue about their data.
 
+import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -85,24 +86,26 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
                     ))}
                   </ul>
                   <div className={styles.row}>
-                    <button
+                    <Button
+                      variant="primary"
+                      size="control"
                       className={styles.primary}
-                      type="button"
                       disabled={busy}
                       onClick={() => void switchTo(consent.purpose, true)}
                     >
                       {copy.referralCards.confirm}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="control"
                       className={styles.secondary}
-                      type="button"
                       onClick={() => {
                         setConfirming(null);
                         setFailed(null);
                       }}
                     >
                       {copy.referralCards.cancel}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
