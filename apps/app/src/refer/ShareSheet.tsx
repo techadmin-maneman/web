@@ -8,6 +8,7 @@
 // (docs/decisions/0048-referrals.md).
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Sheet } from "@maneman/ui/Sheet";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -253,9 +254,15 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
                 {problem}
               </p>
             )}
-            <button className={styles.primary} type="button" disabled={busy} onClick={continueToShare}>
+            <Button
+              variant="primary"
+              size="action"
+              className={styles.primary}
+              disabled={busy}
+              onClick={continueToShare}
+            >
               {refer.card.next}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -287,12 +294,24 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
               </p>
             )}
             <div className={styles.stack}>
-              <button className={styles.primary} type="button" disabled={busy} onClick={() => void makeTheirOwn(true)}>
+              <Button
+                variant="primary"
+                size="action"
+                className={styles.primary}
+                disabled={busy}
+                onClick={() => void makeTheirOwn(true)}
+              >
                 {refer.consent.allow}
-              </button>
-              <button className={styles.outline} type="button" disabled={busy} onClick={() => void useTheExample()}>
+              </Button>
+              <Button
+                variant="outline"
+                size="action"
+                className={styles.outline}
+                disabled={busy}
+                onClick={() => void useTheExample()}
+              >
                 {refer.consent.instead}
-              </button>
+              </Button>
             </div>
           </div>
         </>

@@ -7,6 +7,7 @@
 // fitted") would not be true: board B2 draws Refer for a lead as reachable but empty.
 
 import { ICONS_P2 } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
@@ -48,16 +49,17 @@ export function ShareButton({
   const [sharing, setSharing] = useState(false);
   return (
     <>
-      <button
+      <Button
+        variant="primary"
+        size={small ? "control" : "action"}
         className={small ? styles.shareSmall : styles.share}
-        type="button"
         onClick={() => {
           setSharing(true);
         }}
       >
         {!small && <Icon d={ICONS_P2.share} size={19} />}
         {refer.share}
-      </button>
+      </Button>
       {sharing && (
         <ShareSheet
           refer={state}

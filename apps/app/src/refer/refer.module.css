@@ -75,40 +75,11 @@
   margin-top: auto;
 }
 
-.share,
-.shareSmall,
-.primary,
-.outline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: var(--ink);
-  font: inherit;
-  font-weight: 500;
-  color: var(--paper);
-  cursor: pointer;
-}
-
+/* The screens' buttons (packages/ui/Button.tsx): Share and each sheet's action 56 px across the column. */
 .share,
 .primary {
   gap: var(--sp-11);
   width: 100%;
-  min-height: var(--btn-lg);
-  font-size: var(--fs-16);
-}
-
-.primary:disabled,
-.shareSmall:disabled {
-  background: var(--paper-shade);
-  color: var(--text-quiet);
-  cursor: default;
-}
-
-.outline {
-  border: var(--hairline) solid var(--ink);
-  background: none;
-  color: var(--text);
 }
 
 /* Board F1's quiet way to the tracker, and F6's way to the revoke. */
@@ -215,10 +186,8 @@
 
 .shareSmall {
   align-self: flex-start;
-  min-height: var(--btn-md);
   margin-top: var(--sp-6);
   padding: 0 var(--sp-20);
-  font-size: var(--fs-15);
 }
 
 .tracker > .quiet {
@@ -271,11 +240,10 @@
   margin-top: var(--sp-18);
 }
 
+/* Side by side, both 48 px (size="control"). */
 .pair .primary,
 .pair .outline {
   flex: 1;
-  min-height: var(--btn-md);
-  font-size: var(--fs-15);
 }
 
 .problem {
@@ -564,11 +532,6 @@ img.card {
   flex-direction: column;
   gap: var(--sp-12);
   margin-top: var(--sp-24);
-}
-
-.stack .outline {
-  min-height: var(--btn-lg);
-  font-size: var(--fs-16);
 }
 
 /* Board F4: on the dark ground, exactly as the friend will receive it, and the ways to send it. */

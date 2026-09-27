@@ -8,6 +8,7 @@
 // visit has begun, or its window has passed while FSM still has it open, nothing is left to move: its card says
 // where it stands, and only a note can still be added.
 
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { VisitSummary } from "../api.ts";
@@ -49,22 +50,28 @@ function Reschedule(props: { what: string; date: string; changing: ChangingVisit
   const { me, offline } = useSession();
   if (offline) {
     return (
-      <button className={styles.action} type="button" disabled>
+      <Button variant="outlineOnInk" size="control" className={styles.action} disabled>
         {home.reschedule}
-      </button>
+      </Button>
     );
   }
   if (!me.booking.self_serve || props.changing === null) {
     return (
-      <a className={styles.action} href={whatsappWith(messages.reschedule(props.what, props.date))} rel="noopener">
+      <ButtonLink
+        variant="outlineOnInk"
+        size="control"
+        className={styles.action}
+        href={whatsappWith(messages.reschedule(props.what, props.date))}
+        rel="noopener"
+      >
         {home.reschedule}
-      </a>
+      </ButtonLink>
     );
   }
   return (
-    <button className={styles.action} type="button" onClick={props.onOpen}>
+    <Button variant="outlineOnInk" size="control" className={styles.action} onClick={props.onOpen}>
       {home.reschedule}
-    </button>
+    </Button>
   );
 }
 
@@ -85,23 +92,30 @@ function AddNote(props: { what: string; date: string; noting: NotingVisit | null
   const message = messages.note(props.what, props.date);
   if (!me.booking.self_serve || offline || props.noting === null) {
     return (
-      <a className={styles.action} href={whatsappWith(message)} rel="noopener">
+      <ButtonLink
+        variant="outlineOnInk"
+        size="control"
+        className={styles.action}
+        href={whatsappWith(message)}
+        rel="noopener"
+      >
         {home.note}
-      </a>
+      </ButtonLink>
     );
   }
   const noting = props.noting;
   return (
     <>
-      <button
+      <Button
+        variant="outlineOnInk"
+        size="control"
         className={styles.action}
-        type="button"
         onClick={() => {
           setOpen(true);
         }}
       >
         {home.note}
-      </button>
+      </Button>
       {open && (
         <NoteSheet
           visitId={noting.visitId}

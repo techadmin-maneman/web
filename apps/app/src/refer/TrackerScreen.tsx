@@ -2,6 +2,7 @@
 // what the client has earned and what is left. Whether an invite was opened is the friend's business, so it is
 // never shown here. Empty, it offers the invite (F6); the revoke of the client's own card sits at the foot.
 
+import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useState } from "react";
@@ -65,12 +66,19 @@ function RevokeCard({ onRevoked }: { onRevoked: () => void }) {
         </p>
       )}
       <div className={styles.pair}>
-        <button className={styles.primary} type="button" disabled={busy} onClick={() => void revoke()}>
+        <Button
+          variant="primary"
+          size="control"
+          className={styles.primary}
+          disabled={busy}
+          onClick={() => void revoke()}
+        >
           {copy.yes}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="control"
           className={styles.outline}
-          type="button"
           disabled={busy}
           onClick={() => {
             setAsking(false);
@@ -78,7 +86,7 @@ function RevokeCard({ onRevoked }: { onRevoked: () => void }) {
           }}
         >
           {copy.no}
-        </button>
+        </Button>
       </div>
     </section>
   );

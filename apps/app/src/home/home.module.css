@@ -99,23 +99,15 @@
   margin-top: var(--sp-20);
 }
 
+/* Reschedule and Add a note (packages/ui/Button.tsx, outlined on ink, 48 px), side by side. */
 .action {
-  display: flex;
   flex: 1;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--sp-48);
-  border: var(--hairline) solid var(--ink-line);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--paper);
-  text-decoration: none;
 }
 
-/* Offline (board B3): Reschedule waits for the connection. */
+/* Offline (board B3): Reschedule waits for the connection, drawn in the card's own quiet words. */
 .action:disabled {
+  border-color: var(--ink-line);
+  background: none;
   color: var(--ink-muted);
 }
 
