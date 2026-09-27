@@ -118,6 +118,12 @@ async function giveReference(db: D1Database, razorpayPaymentId: string, now: Dat
     .run();
 }
 
+/** Our refund's state from Razorpay's: processed and failed as they are, anything earlier still created. */
+function refundStateOf(status: string): "processed" | "failed" | "created" {
+  if (status === "processed" || status === "failed") return status;
+  return "created";
+}
+
 /** Writes a refund event, then the payment's refunded total and state from its processed refunds. */
 export async function recordRefund(db: D1Database, refund: RazorpayRefund, now: Date): Promise<boolean> {
   const at = now.toISOString();
@@ -128,7 +134,7 @@ export async function recordRefund(db: D1Database, refund: RazorpayRefund, now: 
   // A refund of a payment we have not heard of yet: Razorpay sends it again, and the payment comes first.
   if (payment === null) return false;
 
-  const status = refund.status === "processed" ? "processed" : refund.status === "failed" ? "failed" : "created";
+  const status = refundStateOf(refund.status);
   await db.batch([
     db
       .prepare(

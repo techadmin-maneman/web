@@ -31,7 +31,7 @@ import {
 } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
-import { consentRecordsOf, currentAddress } from "../domain/profile.ts";
+import { consentRecordsOf, currentAddress, type ConsentState } from "../domain/profile.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -307,6 +307,12 @@ function searchOf(typed: string): Search | null {
   return typed.length >= NAME_MIN ? { by: "name", text: typed } : null;
 }
 
+/** A purpose as the console shows it: given, never given, or given and then withdrawn. */
+function consentStateOf(consent: ConsentState): "given" | "not_given" | "withdrawn" {
+  if (consent.granted) return "given";
+  return consent.since === null ? "not_given" : "withdrawn";
+}
+
 /** A LIKE pattern for text anywhere in the column, with LIKE's own wildcards taken as themselves. */
 const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
 
@@ -535,11 +541,7 @@ export function registerOpsClients(app: App): void {
       {
         consents: consents.map((consent) => ({
           purpose: consent.purpose,
-          state: consent.granted
-            ? ("given" as const)
-            : consent.since === null
-              ? ("not_given" as const)
-              : ("withdrawn" as const),
+          state: consentStateOf(consent),
           notice_version: consent.noticeVersion,
           at: consent.since,
         })),

@@ -54,9 +54,9 @@ const ResultData = z.object({
   image: z.string().optional().catch(undefined),
 });
 
-/** The credit pools, a list or a single one; a balance that is not a number counts as none. */
+/** The credit pools, a list or a single one, read as a list; a balance that is not a number counts as none. */
 const Pool = z.object({ balance: z.coerce.number().catch(0) });
-const Credits = z.object({ data: z.union([z.array(Pool), Pool]).optional() });
+const Credits = z.object({ data: z.union([z.array(Pool), Pool.transform((pool) => [pool])]).optional() });
 
 export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeof fetch }): ImageProvider {
   const { apiKey, fetch } = options;
@@ -179,8 +179,7 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
         });
         const answer = Credits.safeParse(await response.json().catch(() => null));
         if (!response.ok || !answer.success) return null;
-        const { data } = answer.data;
-        const pools = data === undefined ? [] : Array.isArray(data) ? data : [data];
+        const pools = answer.data.data ?? [];
         return pools.reduce((total, pool) => total + pool.balance, 0);
       } catch {
         return null;
@@ -243,7 +242,7 @@ function resultUrlOf(body: ApiBody | null, endpoint: Endpoint): string | null {
  */
 function classify(httpStatus: number, body: ApiBody | null): Omit<RenderFailure, "detail"> {
   const codeAsStatus = Number(body?.error_code);
-  const status = httpStatus >= 400 ? httpStatus : codeAsStatus >= 400 && codeAsStatus < 600 ? codeAsStatus : httpStatus;
+  const status = httpStatus < 400 && codeAsStatus >= 400 && codeAsStatus < 600 ? codeAsStatus : httpStatus;
   const text = JSON.stringify([body?.error_msg ?? "", body?.error_detail ?? ""]);
 
   // Premium reports a wrong file-name extension as an "internal error" (7.2). It is not an outage.

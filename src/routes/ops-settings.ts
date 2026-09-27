@@ -16,7 +16,15 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
-import { allowed, checkValue, OPS_SETTINGS, settingNamed, PRICE_BOUNDS, PRICE_TIER } from "../config/ops-settings.ts";
+import {
+  allowed,
+  checkValue,
+  OPS_SETTINGS,
+  settingNamed,
+  PRICE_BOUNDS,
+  PRICE_TIER,
+  type OpsSetting,
+} from "../config/ops-settings.ts";
 import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
 import { checkPrice, PRICE_ITEMS, priceBook, setPrice, withdrawPrice } from "../domain/price-book.ts";
@@ -254,6 +262,12 @@ const setServiceAreaRoute = createRoute({
   },
 });
 
+/** The keys a setting takes: those ops name themselves ("open"), these, or none for a single number. */
+function keysOf(setting: OpsSetting): "open" | string[] | null {
+  if (setting.keys === "open" || setting.keys === null) return setting.keys;
+  return [...setting.keys];
+}
+
 const stateBody = (state: Awaited<ReturnType<typeof settingStates>>[number]) => ({
   name: state.setting.name,
   title: state.setting.title,
@@ -261,8 +275,7 @@ const stateBody = (state: Awaited<ReturnType<typeof settingStates>>[number]) => 
   unit: state.setting.unit,
   min: state.setting.min,
   max: state.setting.max,
-  keys:
-    state.setting.keys === "open" ? ("open" as const) : state.setting.keys === null ? null : [...state.setting.keys],
+  keys: keysOf(state.setting),
   value: state.value,
   default: state.setting.fallback,
   source: state.setting.source,

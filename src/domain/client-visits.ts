@@ -140,7 +140,8 @@ export type ClientState = (typeof CLIENT_STATES)[number];
  * app's Home card and the ops console's client page read the same rule.
  */
 export function clientStateOf(fitted: boolean, hasBooking: boolean): ClientState {
-  return fitted ? "fitted" : hasBooking ? "lead" : "nothing_booked";
+  if (fitted) return "fitted";
+  return hasBooking ? "lead" : "nothing_booked";
 }
 
 /** Whether the client has been fitted: a first fit, or any visit after one, has been done. */
