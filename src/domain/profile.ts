@@ -88,6 +88,37 @@ export async function currentAddress(db: D1Database, personId: string): Promise<
   return row === null ? null : fromRow(row);
 }
 
+const INSERT_ADDRESS = `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode,
+                                access_notes, building, flat, floor, tower, landmark, place_id, lat, lng, geocoded_at,
+                                geocode_source)`;
+
+/** The values INSERT_ADDRESS takes, as ?1 to ?19. */
+const ADDRESS_VALUES = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19";
+
+function addressValues(personId: string, address: Address, pin: AddressPin | null, at: string): unknown[] {
+  return [
+    crypto.randomUUID(),
+    personId,
+    at,
+    address.line1,
+    address.line2,
+    address.locality,
+    address.city,
+    address.pincode,
+    address.accessNotes,
+    address.building,
+    address.flat,
+    address.floor,
+    address.tower,
+    address.landmark,
+    address.placeId,
+    pin?.lat ?? null,
+    pin?.lng ?? null,
+    pin === null ? null : at,
+    pin?.source ?? null,
+  ];
+}
+
 /**
  * The new address becomes current; the old one is kept, marked replaced.
  *
@@ -107,34 +138,28 @@ export async function saveAddress(
   const at = now.toISOString();
   await db.batch([
     db.prepare("UPDATE addresses SET replaced_at = ?2 WHERE person_id = ?1 AND replaced_at IS NULL").bind(personId, at),
-    db
-      .prepare(
-        `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes,
-                                building, flat, floor, tower, landmark, place_id, lat, lng, geocoded_at, geocode_source)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)`,
-      )
-      .bind(
-        crypto.randomUUID(),
-        personId,
-        at,
-        address.line1,
-        address.line2,
-        address.locality,
-        address.city,
-        address.pincode,
-        address.accessNotes,
-        address.building,
-        address.flat,
-        address.floor,
-        address.tower,
-        address.landmark,
-        address.placeId,
-        pin?.lat ?? null,
-        pin?.lng ?? null,
-        pin === null ? null : at,
-        pin?.source ?? null,
-      ),
+    db.prepare(`${INSERT_ADDRESS} VALUES (${ADDRESS_VALUES})`).bind(...addressValues(personId, address, pin, at)),
   ]);
+}
+
+/**
+ * A person's first address, with no pin, for a batch it must stand or fall with: a booking from the site writes
+ * it with the slot. It is written only while the person has no address, and never replaces one: the write
+ * settles it, so two bookings at once cannot both write one (src/policy/site-booking.ts).
+ */
+export function firstAddressStatement(
+  db: D1Database,
+  personId: string,
+  address: Address,
+  now: Date,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `${INSERT_ADDRESS}
+       SELECT ${ADDRESS_VALUES}
+       WHERE NOT EXISTS (SELECT 1 FROM addresses WHERE person_id = ?2 AND replaced_at IS NULL)`,
+    )
+    .bind(...addressValues(personId, address, null, now.toISOString()));
 }
 
 export interface ConsentState {

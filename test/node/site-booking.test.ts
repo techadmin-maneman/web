@@ -1,6 +1,7 @@
 // The booking form's helpers.
 
 import { describe, expect, it } from "vitest";
+import { addressToSend, emptyAddress, missingParts } from "../../site/src/lib/address.ts";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
 import { consultationCalendar } from "../../site/src/lib/calendar.ts";
 import { keyPerRequest } from "../../site/src/lib/idempotency.ts";
@@ -62,5 +63,40 @@ describe("the calendar file", () => {
     const evening = consultationCalendar("2026-09-24", "evening", "Mane Man consultation", now);
     expect(evening).toContain("DTSTART:20260924T103000Z");
     expect(evening).toContain("DTEND:20260924T143000Z");
+  });
+});
+
+// The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
+describe("the address a consultation is at", () => {
+  it("starts in the city of the pincode checked, and asks for the building or street and the area", () => {
+    expect(missingParts(emptyAddress("Gurgaon"))).toEqual(["line1", "locality"]);
+    expect(missingParts(emptyAddress(null))).toEqual(["line1", "locality", "city"]);
+  });
+
+  it("counts a part filled with spaces as left out", () => {
+    const typed = { ...emptyAddress("Gurgaon"), line1: "  ", locality: "Sector 65", city: " " };
+    expect(missingParts(typed)).toEqual(["line1", "city"]);
+  });
+
+  it("is sent trimmed, in the pincode checked, with a part left blank as none", () => {
+    const typed = {
+      ...emptyAddress("Gurgaon"),
+      flat: " Flat 402 ",
+      line1: "Palm Grove Society ",
+      locality: "Sector 65",
+      accessNotes: "  ",
+    };
+    expect(addressToSend(typed, "122018")).toEqual({
+      flat: "Flat 402",
+      floor: null,
+      tower: null,
+      line1: "Palm Grove Society",
+      line2: null,
+      landmark: null,
+      locality: "Sector 65",
+      city: "Gurgaon",
+      pincode: "122018",
+      access_notes: null,
+    });
   });
 });

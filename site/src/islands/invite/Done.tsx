@@ -1,6 +1,7 @@
 // Board C4, the landing's confirmations: the consultation booked (or asked for, while self-serve booking is off),
 // the number on a waitlist, and the invite that has expired for this friend. The booked one also carries what no
-// board draws: the number we message, a calendar file for the window, and the way into the client app.
+// board draws: the number we message, that we come to the address already on the account where there was one, a
+// calendar file for the window, and the way into the client app.
 
 import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
@@ -71,6 +72,7 @@ export function Booked(props: { booking: Booking; heading: HeadingRef }) {
       </div>
       <div class={styles.doneAfter}>
         <p class={styles.doneNumber}>{fill(referral.booked.number, { mobile })}</p>
+        {result.address === "on_account" && <p class={styles.doneNote}>{referral.booked.addressOnAccount}</p>}
         {result.credits && <p class={styles.doneNote}>{referral.booked.credits}</p>}
         {result.invite === "expired" && <Expired />}
         <div class={styles.doneActions}>

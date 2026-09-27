@@ -8,6 +8,7 @@
 
 import { readFileSync } from "node:fs";
 import type { Page, Request } from "@playwright/test";
+import { fillAddress } from "./booking-area.ts";
 import { analyticsCommands, analyticsEvents, expect, fakeTurnstile, test, visit } from "./support.ts";
 
 const CODE = "RM4K7P";
@@ -59,6 +60,13 @@ async function mockApi(page: Page, answers: Answers = {}): Promise<Request[]> {
   return requests;
 }
 
+/** Everything a consultation needs but the agreement: the address, the name and the number. */
+async function fillForm(page: Page): Promise<void> {
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Friend");
+  await page.getByLabel("Mobile").fill("9810000000");
+}
+
 async function fillPerson(page: Page): Promise<void> {
   await page.getByLabel("Name").fill("Test Friend");
   await page.getByLabel("Mobile").fill("9810000000");
@@ -78,7 +86,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await expect(page.getByRole("heading", { name: "Book a free consultation" })).toBeVisible();
   await expect(page.getByText("Rohit is told when you are fitted. That is when the 3 visits land.")).toBeVisible();
 
-  await fillPerson(page);
+  await fillForm(page);
   // The radio itself is visually hidden, as the design has it: a person clicks its label.
   await page.getByText("Afternoon", { exact: true }).click();
   await expect(page.getByRole("radio", { name: /Afternoon/ })).toBeChecked();
@@ -89,6 +97,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "afternoon", consent: true, mobile: "9810000000" });
+  expect(sent.address).toMatchObject({ line1: "Palm Grove Society", city: SERVED.city, pincode: SERVED.pincode });
   expect(sent.turnstile_token).toBeTruthy();
 });
 
@@ -99,7 +108,7 @@ test("a booking through the invite is counted, with nothing personal and no code
   await visit(page, `/r/${CODE}`);
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  await fillPerson(page);
+  await fillForm(page);
   await page.getByText("Afternoon", { exact: true }).click();
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
@@ -136,6 +145,8 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   await expect(page.getByText("We are not in Bandra yet")).toBeVisible();
   await expect(page.getByLabel("Pincode", { exact: true })).toBeHidden();
   await expect(page.getByText("For 400050, Bandra")).toBeVisible();
+  // Nothing is booked, so nothing asks where (ADR 0081).
+  await expect(page.getByLabel("Building, society or street")).toHaveCount(0);
 
   await fillPerson(page);
   await page.getByText("You may contact me about this request.").click();
@@ -178,7 +189,7 @@ test("a code we do not know still books, without the invite's visits", async ({ 
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
   await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 
-  await fillPerson(page);
+  await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Consultation booked")).toBeVisible();
@@ -270,7 +281,7 @@ test("a consultation nobody can book outright is confirmed as a request", async 
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  await fillPerson(page);
+  await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
@@ -305,7 +316,7 @@ test("a window that has just gone says so, and the form stays", async ({ page })
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  await fillPerson(page);
+  await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
@@ -327,7 +338,7 @@ test("the page does not scroll sideways, whatever the pincode says", async ({ pa
   }
 });
 
-test("the form will not send without a name, a number and the agreement", async ({ page }) => {
+test("the form will not send without the address, a name, a number and the agreement", async ({ page }) => {
   const requests = await mockApi(page);
   await visit(page, `/r/${CODE}`);
 
@@ -338,6 +349,8 @@ test("the form will not send without a name, a number and the agreement", async 
   await expect(page.getByText("Please tell us your name.")).toBeVisible();
   await expect(page.getByText("Please enter a ten-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
+  await expect(page.getByText("Please give the building, society or street.")).toBeVisible();
+  await expect(page.getByText("Please give the sector or area.")).toBeVisible();
   expect(requests).toHaveLength(0);
 });
 
@@ -370,6 +383,12 @@ test("the fields the form needs are marked as required", async ({ page }) => {
   await expect(page.getByLabel("Name")).toHaveAttribute("aria-required", "true");
   await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-required", "true");
   await expect(page.getByRole("checkbox")).toHaveAttribute("aria-required", "true");
+  for (const part of ["Building, society or street", "Sector or area", "City"]) {
+    await expect(page.getByLabel(part)).toHaveAttribute("aria-required", "true");
+  }
+  for (const part of ["Flat or house number", "Floor (optional)", "Access notes (optional)"]) {
+    await expect(page.getByLabel(part)).not.toHaveAttribute("aria-required");
+  }
 });
 
 /**
@@ -401,6 +420,9 @@ test("a keyboard user sees which day, window and agreement has focus", async ({ 
   await page.keyboard.press("Tab"); // the windows
   await expect(page.getByRole("radio", { name: /Morning/ })).toBeFocused();
   expect(await outlineOf(page, "label")).toBe("solid 2px");
+  // The address: flat, floor, tower, building or street, street, landmark, area, city and access notes.
+  for (let field = 0; field < 9; field += 1) await page.keyboard.press("Tab");
+  await expect(page.getByLabel("Access notes (optional)")).toBeFocused();
   await page.keyboard.press("Tab"); // name
   await page.keyboard.press("Tab"); // mobile
   await page.keyboard.press("Tab"); // the agreement
@@ -428,7 +450,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   await visit(page, `/r/${CODE}`);
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  await fillPerson(page);
+  await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Something went wrong at our end. Please try again.")).toBeVisible();
@@ -459,7 +481,7 @@ test("Turnstile that failed to load is tried again when the form is sent", async
 async function bookThrough(page: Page): Promise<void> {
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  await fillPerson(page);
+  await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 }
@@ -538,8 +560,10 @@ test("the desktop page is board C5's two columns, and its fields keep to their c
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  const name = await page.getByLabel("Name").boundingBox();
-  expect(name?.width ?? 0).toBeLessThanOrEqual(width / 2);
+  for (const field of ["Building, society or street", "Name"]) {
+    const box = await page.getByLabel(field).boundingBox();
+    expect(box?.width ?? 0, field).toBeLessThanOrEqual(width / 2);
+  }
 });
 
 // A11Y-03: at 320 px, the narrowest phone WCAG asks for, nothing is cut off and the page does not scroll sideways.
@@ -551,7 +575,7 @@ test("the form fits a 320 px screen", async ({ page }) => {
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  for (const field of ["Name", "Mobile"]) {
+  for (const field of ["Building, society or street", "Access notes (optional)", "Name", "Mobile"]) {
     const box = await page.getByLabel(field).boundingBox();
     expect((box?.x ?? 0) + (box?.width ?? 0), field).toBeLessThanOrEqual(320);
   }

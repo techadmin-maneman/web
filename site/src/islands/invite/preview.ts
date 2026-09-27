@@ -28,6 +28,7 @@ export function sampleBooking(state: "booked" | "requested" | "expired"): Bookin
     area: SAMPLE.served.area,
     credits: state !== "expired",
     invite: state === "expired" ? "expired" : "valid",
+    address: "saved",
   };
   return { result, mobile: SAMPLE.mobile, place: placeOf(SAMPLE.served) };
 }

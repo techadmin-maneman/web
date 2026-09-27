@@ -54,6 +54,17 @@ const post = (body: object) => ({
 
 const FRIEND = { name: "Karan Bhatia", mobile: "98100 00002", turnstile_token: "token" };
 
+/** Where the friend's consultation is, typed in full as the landing takes it (ADR 0081). */
+const ADDRESS = {
+  flat: "Flat 402",
+  line1: "Palm Grove Society",
+  line2: null,
+  locality: "Sector 65",
+  city: "Gurgaon",
+  pincode: "122018",
+  access_notes: null,
+};
+
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
@@ -181,7 +192,7 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { FSM_QUEUE: queue },
     );
     expect(answer.status).toBe(201);
@@ -192,6 +203,7 @@ describe("POST /api/r/:code/consultation", () => {
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
+      address: "saved",
     });
     expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     const friend = await env.DB.prepare(
@@ -224,6 +236,7 @@ describe("POST /api/r/:code/consultation", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        address: ADDRESS,
       }),
       { FSM_QUEUE: fakeQueue() },
     );
@@ -231,7 +244,7 @@ describe("POST /api/r/:code/consultation", () => {
     const unknown = await request(
       site(),
       "/api/r/ZZ9999/consultation",
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "afternoon", consent: true }),
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "afternoon", consent: true, address: ADDRESS }),
       { FSM_QUEUE: fakeQueue() },
     );
     expect(await unknown.json()).toMatchObject({ state: "booked", credits: false, invite: "unknown" });
@@ -259,7 +272,7 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
@@ -268,13 +281,13 @@ describe("POST /api/r/:code/consultation", () => {
     expect(kept).toEqual({ grant_state: "expired" });
   });
 
-  it("reaches FSM, using the invite's pincode for the city the friend's booking never asks for", async () => {
+  it("reaches FSM, with the address the friend gave and the city of the pincode they booked at", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { FSM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
@@ -285,11 +298,12 @@ describe("POST /api/r/:code/consultation", () => {
       ...EMPTY_FSM,
       items: [{ id: "item-consult", name: "Consultation", type: "Service", price: null }],
     });
-    // The friend has no saved address yet, so the city comes from the invite's pincode.
     expect(await confirmBooking(env.DB, fsm, createStubPayments(), hold?.id ?? "", NOW, { labelAsTest: true })).toBe(
       "booked",
     );
-    expect(fsm.made.contacts).toMatchObject([{ city: "Gurgaon", lastName: "Bhatia" }]);
+    expect(fsm.made.contacts).toMatchObject([
+      { city: "Gurgaon", lastName: "Bhatia", street: { street1: "Palm Grove Society", street2: "Sector 65" } },
+    ]);
     expect(fsm.made.visits).toHaveLength(1);
     // The attribution names the consultation it produced, for ops' record.
     const attributed = await env.DB.prepare(
@@ -301,10 +315,52 @@ describe("POST /api/r/:code/consultation", () => {
     expect(attributed).toEqual({ type: "consultation" });
   });
 
+  // The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
+  it("asks for the address, in the pincode checked, and makes it the friend's", async () => {
+    await pincode("122018", "Gurgaon South City II", true);
+    const code = await codeOf();
+    const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
+    const bindings = { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() };
+
+    const without = await request(site(), `/api/r/${code}/consultation`, post(body), bindings);
+    expect(without.status).toBe(400);
+    expect(await without.json()).toMatchObject({ error: { code: "invalid_request", fields: ["address"] } });
+
+    const elsewhere = { ...body, address: { ...ADDRESS, pincode: "122017" } };
+    const mismatched = await request(site(), `/api/r/${code}/consultation`, post(elsewhere), bindings);
+    expect(mismatched.status).toBe(422);
+    expect(await mismatched.json()).toMatchObject({
+      error: { code: "invalid_request", fields: ["address.pincode"] },
+    });
+
+    const booked = await request(site(), `/api/r/${code}/consultation`, post({ ...body, address: ADDRESS }), bindings);
+    expect(booked.status).toBe(201);
+    const friend = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = '+919810000002'").first<{
+      id: string;
+    }>();
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: friend?.id ?? "", deviceLabel: null, now: NOW })}`;
+    const profile = await request(client(), "/api/profile", { headers: { Cookie: cookie } });
+    expect((await profile.json<{ address: unknown }>()).address).toEqual({
+      ...ADDRESS,
+      building: null,
+      floor: null,
+      tower: null,
+      landmark: null,
+      place_id: null,
+    });
+  });
+
   it("refuses an unserved pincode or a day out of range", async () => {
     await pincode("400050", "Bandra", false);
     const code = await codeOf();
-    const body = { ...FRIEND, pincode: "400050", date: "2026-09-23", window: "morning", consent: true };
+    const body = {
+      ...FRIEND,
+      pincode: "400050",
+      date: "2026-09-23",
+      window: "morning",
+      consent: true,
+      address: ADDRESS,
+    };
     expect((await request(site(), `/api/r/${code}/consultation`, post(body))).status).toBe(422);
     await pincode("122018", "Gurgaon South City II", true);
     const late = { ...body, pincode: "122018", date: "2026-10-30" };
@@ -318,7 +374,7 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { FSM_QUEUE: fakeQueue(), CRM_QUEUE: crm },
     );
 
@@ -346,7 +402,7 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site({ selfServeBooking: false }),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { FSM_QUEUE: fsm, CRM_QUEUE: crm },
     );
 
@@ -358,6 +414,7 @@ describe("POST /api/r/:code/consultation", () => {
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
+      address: "saved",
     });
     // Nothing is held and FSM is not told; the lead and the invite still stand.
     expect(fsm.sent).toEqual([]);
@@ -418,7 +475,14 @@ describe("POST /api/r/:code/*: the Idempotency-Key", () => {
   it("answers a consultation sent again with its first answer, and books it once", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
-    const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
+    const body = {
+      ...FRIEND,
+      pincode: "122018",
+      date: "2026-09-23",
+      window: "morning",
+      consent: true,
+      address: ADDRESS,
+    };
     const bindings = { FSM_QUEUE: fakeQueue() };
 
     const first = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"), bindings);
