@@ -567,7 +567,10 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   );
   await entry.close();
 
-  const lead = await openApp(browser, "/payments", { "/api/me": json(ME), "/api/payments": json({ entries: [], credits: [] }) });
+  const lead = await openApp(browser, "/payments", {
+    "/api/me": json(ME),
+    "/api/payments": json({ entries: [], credits: [] }),
+  });
   await lead.getByText("Nothing to pay yet.").waitFor();
   await pair(OUT, WIDTH, "e3-empty", await stateFrame(design, "Empty · lead", "Payments · states"), await shot(lead));
   await lead.close();
