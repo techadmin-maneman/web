@@ -105,9 +105,10 @@ export const referral = {
     toldUnnamed: "Whoever invited you is told when you are fitted. That is when the 3 visits land.",
   },
   /**
-   * PLACEHOLDER: no board draws an address on the consultation form. The owner ruled on 27 September 2026 that the
+   * Not drawn: no board puts an address on the consultation form. The owner ruled on 27 September 2026 that the
    * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields and
-   * their words are the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words.
+   * their words are the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words
+   * (open point 45).
    */
   address: {
     legend: "Where we come",
