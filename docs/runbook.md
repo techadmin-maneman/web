@@ -796,7 +796,7 @@ Once FSM answers again:
    WHERE fsm_write_state = 'rejected' AND received_at > '<the outage began, ISO>' ORDER BY appointment_id, received_at;
    ```
 
-   Where the first of each job's errors is FSM's unavailability (a 5xx, a timeout, `TOKEN_COOLING_DOWN`) and those after it say "the … before it did not reach FSM", put them back:
+   Where the first of each job's errors is FSM's unavailability (a 5xx, a timeout, `TOKEN_COOLING_DOWN`), those after it say "the … before it did not reach FSM", and ops have not entered them by hand already, put them back:
 
    ```sql
    UPDATE job_events SET fsm_write_state = 'pending', fsm_error = NULL, updated_at = '2000-01-01T00:00:00Z'
