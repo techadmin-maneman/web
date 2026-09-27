@@ -24,24 +24,23 @@
 // second consultation beside one still to happen. The person, their consent and
 // the slot are written in one batch: a slot that has gone leaves nothing behind
 // (docs/decisions/0068-a-paid-hold-is-kept.md).
+//
+// The number, the Turnstile token and the day's limits are checked by the
+// route's side (src/http/public-form.ts), which this is handed as checkPerson:
+// after the pincode and the day, so a form refused for those costs neither.
 
-import type { Context } from "hono";
-import type { AppEnv } from "../http/context.ts";
 import type { LossExtent } from "../config/booking.ts";
 import { CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
 import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
-import { saltedHash } from "../lib/hash.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
-import { toE164 } from "../lib/mobile.ts";
+import type { Logger } from "../log.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
-import { takeOne } from "./rate-limit.ts";
 import { priceOf } from "./price-book.ts";
 import { attribute, type Invite, type InviteState } from "./referrals.ts";
 import { bookableTypes, holdSlot, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
-import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 
 /** A pincode we know, and whether a technician works there. */
 export interface Pincode {
@@ -78,29 +77,21 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
   readonly booked?: LiveVisit;
 }
 
-type Checked = { readonly ok: true; readonly mobile: string; readonly ipHash: string } | Refusal<400 | 403 | 429 | 503>;
+/** The person a form is from, checked: their number as E.164 and their address's salted hash; or why not. */
+export type Checked =
+  { readonly ok: true; readonly mobile: string; readonly ipHash: string } | Refusal<400 | 403 | 429 | 503>;
 
-/** The number, the Turnstile check and the daily limits, the same for both pages. */
-export async function checkPerson(c: Context<AppEnv>, mobile: string, token: string): Promise<Checked> {
-  const mobileE164 = toE164(mobile);
-  if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request" };
-  const visitor = await visitorOf(c);
-  const turnstile = await checkTurnstile(c, token, visitor);
-  if (turnstile === "rejected") return { ok: false, status: 403, code: "turnstile_failed" };
-  if (turnstile === "unavailable") return { ok: false, status: 503, code: "unavailable" };
-  const { settings } = c.var.config;
-  const today = indiaDate(c.var.deps.now());
-  const db = c.env.DB;
-  const within =
-    (await takeOne(db, {
-      scope: "booking:mobile",
-      key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
-      window: today,
-      limit: settings.leadMobileDailyLimit,
-    })) &&
-    (await takeOne(db, { scope: "booking:ip", key: visitor.ipHash, window: today, limit: settings.leadIpDailyLimit }));
-  if (!within) return { ok: false, status: 429, code: "rate_limited" };
-  return { ok: true, mobile: mobileE164, ipHash: visitor.ipHash };
+/** What booking from a form needs of the request it arrived in. */
+export interface FormRequest {
+  readonly db: D1Database;
+  readonly queues: { readonly crm: Queue; readonly fsm: Queue; readonly messages: Queue };
+  readonly log: Logger;
+  readonly requestId: string;
+  readonly now: Date;
+  /** Clients book, and the slot is held, only while self-serve booking is on (ADR 0045). */
+  readonly selfServeBooking: boolean;
+  /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
+  readonly checkPerson: (mobile: string, turnstileToken: string) => Promise<Checked>;
 }
 
 /** The person a form is from, and the writes that record them and the consent they gave on the page. */
@@ -183,7 +174,7 @@ async function leadCity(db: D1Database, city: string): Promise<string | null> {
  * be absent; the date it does have is the one the person booked.
  */
 async function recordLead(
-  c: Context<AppEnv>,
+  form: FormRequest,
   input: {
     personId: string;
     name: string;
@@ -197,8 +188,7 @@ async function recordLead(
     now: Date;
   },
 ): Promise<string> {
-  const { log, requestId } = c.var;
-  const db = c.env.DB;
+  const { db, log, requestId } = form;
   const leadId = crypto.randomUUID();
   await saveBookingLead(db, {
     leadId,
@@ -218,7 +208,7 @@ async function recordLead(
     recordConsent: false,
   });
   try {
-    await c.env.CRM_QUEUE.send({ lead_id: leadId, request_id: requestId });
+    await form.queues.crm.send({ lead_id: leadId, request_id: requestId });
   } catch (error) {
     // The lead is safe in D1; the sweeper enqueues anything left pending.
     log.warn("crm_enqueue_failed", { lead_id: leadId, error });
@@ -227,11 +217,11 @@ async function recordLead(
 }
 
 /** Sends a message written with the form's batch to the messaging queue. One the queue drops, the sweeper sends. */
-async function queueMessage(c: Context<AppEnv>, messageId: string): Promise<void> {
+async function queueMessage(form: FormRequest, messageId: string): Promise<void> {
   try {
-    await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
+    await form.queues.messages.send({ message_id: messageId, request_id: form.requestId } satisfies MessagingMessage);
   } catch (error) {
-    c.var.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
+    form.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
   }
 }
 
@@ -300,17 +290,15 @@ export interface Booked {
 }
 
 /** Books the free consultation: the slot, the lead, and the invite's credits where they apply. */
-export async function bookConsultation(c: Context<AppEnv>, request: ConsultationRequest): Promise<Booked | Refusal> {
-  const { deps, log, requestId } = c.var;
-  const db = c.env.DB;
-  const now = deps.now();
+export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
+  const { db, log, requestId, now } = form;
 
   const first = addDays(indiaDate(now), 1);
   const pincode = await pincodeOf(db, request.pincode);
   if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
     return { ok: false, status: 422, code: "invalid_request" };
   }
-  const checked = await checkPerson(c, request.mobile, request.turnstileToken);
+  const checked = await form.checkPerson(request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
 
   const knownId = await personWithMobile(db, checked.mobile);
@@ -330,7 +318,7 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
   // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
   const price = await priceOf(db, "consultation", request.date);
   let holdId: string | null = null;
-  if (c.var.config.settings.selfServeBooking && price?.amount === 0) {
+  if (form.selfServeBooking && price?.amount === 0) {
     const hold = await holdSlot(
       db,
       {
@@ -348,7 +336,7 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
     );
     if (hold === null) return { ok: false, status: 409, code: "taken" };
     holdId = hold.id;
-    await c.env.FSM_QUEUE.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
+    await form.queues.fsm.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
   } else {
     const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
     await db.batch([...person.statements, requestStatement(db, { ...asked, invite: request.invite, now })]);
@@ -361,7 +349,7 @@ export async function bookConsultation(c: Context<AppEnv>, request: Consultation
     now,
   });
 
-  const leadId = await recordLead(c, {
+  const leadId = await recordLead(form, {
     personId: person.id,
     name: request.name,
     mobile: checked.mobile,
@@ -412,15 +400,13 @@ export interface Listed {
 
 /** Takes the number for a pincode we do not serve yet, with the launch alert if it was asked for. */
 export async function joinTheWaitlist(
-  c: Context<AppEnv>,
+  form: FormRequest,
   request: WaitlistRequest,
 ): Promise<Listed | Refusal<400 | 403 | 422 | 429 | 503>> {
-  const { deps } = c.var;
-  const db = c.env.DB;
-  const now = deps.now();
+  const { db, now } = form;
   const pincode = await pincodeOf(db, request.pincode);
   if (pincode?.served === 1) return { ok: false, status: 422, code: "invalid_request" };
-  const checked = await checkPerson(c, request.mobile, request.turnstileToken);
+  const checked = await form.checkPerson(request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
 
   const person = formPerson(db, {
@@ -465,7 +451,7 @@ export async function joinTheWaitlist(
     waitlistConfirmation(db, { personId, pincode: request.pincode, now }),
   ]);
   const confirmation = written.at(-1)?.results[0]?.id;
-  if (confirmation !== undefined) await queueMessage(c, confirmation);
+  if (confirmation !== undefined) await queueMessage(form, confirmation);
   const invited = await applyInvite(db, {
     invite: request.invite,
     personId,
@@ -474,7 +460,7 @@ export async function joinTheWaitlist(
     now,
   });
 
-  await recordLead(c, {
+  await recordLead(form, {
     personId,
     name: request.name,
     mobile: checked.mobile,

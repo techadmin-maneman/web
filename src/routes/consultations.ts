@@ -4,11 +4,11 @@
 //   POST /api/waitlist       the number, for a pincode we do not serve yet
 //
 // These are the referral landing's two routes without the invite, and they share
-// their whole path (src/domain/public-booking.ts): the same Turnstile check, the
-// same daily limits per number and address, the same consent notices, the same
-// held slot written to FSM, and the same lead behind it so the CRM funnel sees
-// every booking. Whether we come is decided by the pincode, which
-// GET /api/pincodes/{pin} answers for the form.
+// their whole path (src/domain/public-booking.ts, and src/http/public-form.ts for
+// the person): the same Turnstile check, the same daily limits per number and
+// address, the same consent notices, the same held slot written to FSM, and the
+// same lead behind it so the CRM funnel sees every booking. Whether we come is
+// decided by the pincode, which GET /api/pincodes/{pin} answers for the form.
 //
 // A number that already has a consultation still to happen is answered
 // already_booked, with its day and window, rather than booked twice; one past
@@ -22,6 +22,7 @@ import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
+import { formRequest } from "../http/public-form.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
 const PincodeSchema = z
@@ -157,7 +158,7 @@ export function registerConsultations(app: App): void {
     const key = c.req.valid("header")["idempotency-key"];
 
     const run = await onceForKey(c, { route: "POST /api/consultation", key, request: body }, async () => {
-      const booked = await bookConsultation(c, {
+      const booked = await bookConsultation(formRequest(c), {
         name: body.name,
         mobile: body.mobile,
         pincode: body.pincode,
@@ -189,7 +190,7 @@ export function registerConsultations(app: App): void {
     const key = c.req.valid("header")["idempotency-key"];
 
     const run = await onceForKey(c, { route: "POST /api/waitlist", key, request: body }, async () => {
-      const listed = await joinTheWaitlist(c, {
+      const listed = await joinTheWaitlist(formRequest(c), {
         name: body.name,
         mobile: body.mobile,
         pincode: body.pincode,

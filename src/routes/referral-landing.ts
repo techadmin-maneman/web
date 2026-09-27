@@ -22,6 +22,7 @@ import { liveCard } from "../domain/referral-cards.ts";
 import { inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
+import { formRequest } from "../http/public-form.ts";
 import { takenOrBooked } from "./consultations.ts";
 
 const CodeParams = z.object({ code: z.string().regex(/^[A-Za-z0-9]{4,12}$/) });
@@ -245,7 +246,7 @@ export function registerReferralLanding(app: App): void {
 
     const keyed = { route: "POST /api/r/:code/consultation", key, request: { code, ...body } };
     const run = await onceForKey(c, keyed, async () => {
-      const booked = await bookConsultation(c, {
+      const booked = await bookConsultation(formRequest(c), {
         name: body.name,
         mobile: body.mobile,
         pincode: body.pincode,
@@ -291,7 +292,7 @@ export function registerReferralLanding(app: App): void {
 
     const keyed = { route: "POST /api/r/:code/waitlist", key, request: { code, ...body } };
     const run = await onceForKey(c, keyed, async () => {
-      const listed = await joinTheWaitlist(c, {
+      const listed = await joinTheWaitlist(formRequest(c), {
         name: body.name,
         mobile: body.mobile,
         pincode: body.pincode,
