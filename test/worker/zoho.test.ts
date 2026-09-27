@@ -313,6 +313,33 @@ describe("Zoho record and note contents", () => {
     expect(record).not.toHaveProperty("Proposed_Visit_Date");
   });
 
+  // LIFE-11. Zoho refuses a pick-list value it does not have, so the fields wait for scripts/setup-crm.ts.
+  describe("an invited friend's booking", () => {
+    const invited = crmLead({ firstChoiceWindow: null, inviteCode: "RM7K2Q", askedWindow: "afternoon" });
+
+    it("names the source, the invite and the window, once the org has the fields", () => {
+      expect(recordFor(invited, "New", true, { referral: true })).toMatchObject({
+        Lead_Source: "Referral",
+        Referral_Code: "RM7K2Q",
+        Booked_Window: "Afternoon, 12 to 4 pm",
+      });
+    });
+
+    it("writes none of them while the org has not the fields, rather than have Zoho refuse the lead", () => {
+      const record = recordFor(invited, "New", true, { referral: false });
+      expect(record.Lead_Source).toBe("Booking form");
+      expect(record).not.toHaveProperty("Referral_Code");
+      expect(record).not.toHaveProperty("Booked_Window");
+    });
+
+    it("notes the window and the invite on a record the CRM already has, which needs no field", () => {
+      expect(noteFor(invited)).toEqual({
+        title: "New booking request",
+        content: "Asked for a visit in Gurgaon, afternoon, proposed 2026-09-23. Came through an invite.",
+      });
+    });
+  });
+
   it("writes notes without personal data", () => {
     for (const source of ["form", "waitlist", "tryon"] as const) {
       const note = JSON.stringify(noteFor(crmLead({ source })));

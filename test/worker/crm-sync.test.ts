@@ -132,6 +132,35 @@ describe("crm-sync: syncing a lead", () => {
     expect(await leadRow(leadId)).toMatchObject({ sync_state: "synced", last_sync_error: null });
   });
 
+  // LIFE-11: the CRM could not tell an invited friend from an organic booking, nor the window a Phase 2 form booked
+  // (ADR 0060 says marketing sees "the person, the source, the day and the invite").
+  it("sends the invite a friend came with, and the window their booking asked for", async () => {
+    const leadId = await bookLead();
+    const person = await env.DB.prepare("SELECT id FROM people").first<string>("id");
+    await env.DB.batch([
+      env.DB.prepare("UPDATE leads SET first_choice_window = NULL, proposed_visit_date = '2026-09-24'"),
+      env.DB.prepare(
+        `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('referrer-1', ?1, '+919810000009', 'Rohit Malhotra')`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES ('RM7K2Q', 'referrer-1', ?1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, created_at, updated_at)
+         VALUES ('referral-1', 'RM7K2Q', ?1, ?2, 'consultation', ?2, ?2)`,
+      ).bind(person, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+         VALUES ('request-1', ?1, '122018', '2026-09-24', 'afternoon', ?2)`,
+      ).bind(person, NOW.toISOString()),
+    ]);
+    const crm = recordingCrm();
+
+    await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);
+
+    expect(crm.calls[0]?.lead).toMatchObject({ inviteCode: "RM7K2Q", askedWindow: "afternoon" });
+  });
+
   it("posts a new-lead notice once the lead is in the CRM, with no personal data, and never twice", async () => {
     const leadId = await bookLead();
     const deps = fakeDependencies({ crm: recordingCrm() });

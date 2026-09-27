@@ -8,6 +8,7 @@ import {
   noShowWaitEnds,
   RULES,
   SERVER_CLOCK_RULE,
+  WAIVER_GIVES_BACK,
   waitEndsAt,
   type Evidence,
 } from "../../src/policy/no-show.ts";
@@ -51,5 +52,10 @@ describe("no-show", () => {
     expect(Object.keys(evidence)).toEqual(["checkedInAt", "distanceM", "messageDeliveredAt"]);
     expect(NO_SHOW_DECISIONS[0]).toBe("undecided");
     expect([...NO_SHOW_DECISIONS]).toEqual(["undecided", "charged", "waived"]);
+  });
+
+  // BIZ-28: the rule says what a charge keeps and nothing of what a waiver gives back, which is the owner's.
+  it("moves no money on a waiver until the owner rules what one gives back", () => {
+    expect(WAIVER_GIVES_BACK).toBe(false);
   });
 });

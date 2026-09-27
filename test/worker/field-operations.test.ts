@@ -349,6 +349,67 @@ describe("checking in", () => {
   });
 });
 
+// ADR 0047 promised the arrival WhatsApp, and the no-show evidence reads its receipt; nothing ever wrote one, so the
+// only evidence was the day-before reminder (BIZ-22). The consumer sends it only with the client's consent to
+// WhatsApp about visits, and records why when it does not.
+describe("the arrival WhatsApp", () => {
+  const arrivals = () =>
+    env.DB.prepare(
+      "SELECT id, subject_id, state, last_error FROM outbound_messages WHERE kind = 'arrival_notice' ORDER BY rowid",
+    ).all<{ id: string; subject_id: string; state: string; last_error: string | null }>();
+
+  it("is queued once, at the first check-in that passes", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, DOWN_THE_ROAD, "event-far-01");
+    expect((await arrivals()).results).toEqual([]);
+
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-near-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-near-02");
+
+    const { results } = await arrivals();
+    expect(results).toEqual([
+      { id: expect.any(String) as string, subject_id: TODAY_JOB, state: "queued", last_error: null },
+    ]);
+    expect(messageQueue.sent).toEqual([{ message_id: results[0]?.id, request_id: expect.any(String) as string }]);
+  });
+
+  it("is recorded as not sent when the check-in reaches us too late to tell the client anything", async () => {
+    // Checked in at the booked start with no signal, and heard of forty minutes on.
+    await postAt(
+      minutesAfterStart(40),
+      `/api/tech/jobs/${TODAY_JOB}/checkin`,
+      { ...AT_THE_DOOR, at: TODAY_START.toISOString() },
+      "event-checkin-01",
+    );
+
+    expect((await arrivals()).results).toEqual([
+      {
+        id: expect.any(String) as string,
+        subject_id: TODAY_JOB,
+        state: "skipped",
+        last_error: "the check-in reached us too late to tell the client",
+      },
+    ]);
+    expect(messageQueue.sent).toEqual([]);
+  });
+
+  it("is the message a no-show case reads the receipt of", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    const arrival = (await arrivals()).results[0]?.id;
+
+    // Sixteen minutes later the wait has run.
+    const closed = await postAt(
+      new Date(NOW.getTime() + 16 * 60_000),
+      `/api/tech/jobs/${TODAY_JOB}/no-show`,
+      undefined,
+      "event-ns-01",
+    );
+    expect(closed.status).toBe(200);
+
+    const opened = await env.DB.prepare("SELECT message_id FROM no_show_cases").first<{ message_id: string }>();
+    expect(opened?.message_id).toBe(arrival);
+  });
+});
+
 // A check-in's time is the evidence a no-show is charged on, and the phone's
 // clock is the technician's to set (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
 describe("the phone's clock", () => {

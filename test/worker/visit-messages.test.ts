@@ -148,6 +148,50 @@ describe("what a visit message says", () => {
     expect(await text("cancel_confirmation")).toBe("Hello Rohit, your service visit on Thu 24 Sep is cancelled.");
   });
 
+  // The cancel sheet says "Cancel inside 24 hours and the credit is gone"; the confirmation said only that the visit
+  // was cancelled, as though nothing were lost (LIFE-14).
+  describe("a cancel of a visit a credit paid for", () => {
+    async function cancelledOnCredit(notice: "free" | "late") {
+      await consent(true);
+      await visit("service", THURSDAY_NOON, "cancelled");
+      await env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+           VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
+        ).bind(PERSON, NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+           VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
+        ).bind(PERSON, VISIT, NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, created_at)
+           VALUES ('c1', ?1, ?2, 'cancelled', ?3, ?4, 0, ?5)`,
+        ).bind(VISIT, PERSON, notice, THURSDAY_NOON, NOW.toISOString()),
+      ]);
+    }
+
+    it("says the credit is back, when it was cancelled in time", async () => {
+      await cancelledOnCredit("free");
+      await env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+         VALUES ('restore-1', ?1, 'restore', 1, 'grant-1', 'appointment', ?2, ?3)`,
+      )
+        .bind(PERSON, VISIT, NOW.toISOString())
+        .run();
+      expect(await text("cancel_confirmation")).toBe(
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your visit credit is back.",
+      );
+    });
+
+    it("says the credit is gone, when it was cancelled inside 24 hours", async () => {
+      await cancelledOnCredit("late");
+      expect(await text("cancel_confirmation")).toBe(
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was inside 24 hours, so the visit credit " +
+          "it used is gone.",
+      );
+    });
+  });
+
   it("sends nothing without the client's consent to WhatsApp about visits, or once it is switched off", async () => {
     await visit();
     await paid();

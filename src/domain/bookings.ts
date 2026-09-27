@@ -251,8 +251,8 @@ async function bookNewVisit(
     db
       .prepare(
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
-           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at)
-         VALUES (?2, ?1, ?3, ?4, ?5, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11)
+           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
+         VALUES (?2, ?1, ?3, ?4, ?5, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11)
          ON CONFLICT (fsm_id) DO UPDATE SET
            service_city = COALESCE(appointments.service_city, excluded.service_city),
            service_pincode = COALESCE(appointments.service_pincode, excluded.service_pincode)`,

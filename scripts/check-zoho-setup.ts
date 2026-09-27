@@ -9,6 +9,7 @@
 // No secret is printed.
 
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../src/config/booking.ts";
+import { BOOKED_WINDOW_NAMES, REFERRAL_LEAD_SOURCE } from "../src/config/crm.ts";
 import { LEAD_STATUSES } from "../src/providers/crm.ts";
 import { LEAD_SOURCE_NAMES } from "../src/providers/zoho.ts";
 
@@ -23,7 +24,13 @@ interface ExpectedField {
 /** What src/providers/zoho.ts writes. The values come from the same constants it uses. */
 const EXPECTED_FIELDS: readonly ExpectedField[] = [
   { apiName: "Lead_Status", type: "picklist", values: LEAD_STATUSES },
-  { apiName: "Lead_Source", type: "picklist", values: Object.values(LEAD_SOURCE_NAMES) },
+  // "Referral" is written only once CRM_ORG_HAS_REFERRAL_FIELDS (src/config/crm.ts) is on; it is checked here so
+  // the org is proved ready before that.
+  {
+    apiName: "Lead_Source",
+    type: "picklist",
+    values: [...Object.values(LEAD_SOURCE_NAMES), REFERRAL_LEAD_SOURCE],
+  },
   { apiName: "First_Choice_Window", type: "picklist", values: Object.values(WINDOW_NAMES) },
   { apiName: "Loss_Extent", type: "picklist", values: Object.values(LOSS_EXTENT_NAMES) },
   { apiName: "Proposed_Visit_Date", type: "date" },
@@ -34,6 +41,9 @@ const EXPECTED_FIELDS: readonly ExpectedField[] = [
   { apiName: "D1_Person_ID", type: "text", unique: true },
   { apiName: "UTM_Source", type: "text" },
   { apiName: "UTM_Campaign", type: "text" },
+  // What CRM_ORG_HAS_REFERRAL_FIELDS (src/config/crm.ts) needs before it is turned on: scripts/setup-crm.ts makes them.
+  { apiName: "Referral_Code", type: "text" },
+  { apiName: "Booked_Window", type: "picklist", values: Object.values(BOOKED_WINDOW_NAMES) },
 ];
 
 interface ZohoField {

@@ -146,11 +146,8 @@ export function registerOpsReferrals(app: App): void {
       now,
     });
     if (outcome === null) return c.json(errorBody("not_found", requestId), 404);
-    if (outcome.messageId !== null) {
-      await c.env.MESSAGE_QUEUE.send({
-        message_id: outcome.messageId,
-        request_id: requestId,
-      } satisfies MessagingMessage);
+    for (const messageId of outcome.messageIds) {
+      await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
     }
     return c.json({ state: outcome.state }, 200);
   });

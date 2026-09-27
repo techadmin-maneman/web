@@ -121,6 +121,12 @@ function Detail({ entry }: { entry: EntryDetail }) {
         {entry.kind === "payment" && entry.charge !== null && (
           <Fact name={payments.charge} value={chargeEvidence(entry.charge)} />
         )}
+        {entry.kind === "payment" && entry.no_show !== null && (
+          <Fact
+            name={payments.noShow.label}
+            value={payments.noShow.fact(entry.no_show.waited_minutes, payments.noShow.decision[entry.no_show.decision])}
+          />
+        )}
         {entry.kind === "payment" && entry.reference !== null && (
           <Fact name={rows.reference} value={entry.reference} numeric />
         )}

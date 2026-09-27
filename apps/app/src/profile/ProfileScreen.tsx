@@ -47,7 +47,11 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
         <div className={styles.page}>
           <AddressSection address={loaded.address} onSaved={changed} />
           <ConsentList consents={loaded.consents} />
-          <NumberChangeCard change={loaded.number_change} onChanged={() => void load()} />
+          <NumberChangeCard
+            change={loaded.number_change}
+            decided={loaded.number_change_decided}
+            onChanged={() => void load()}
+          />
           <SupportCard />
           <DataCard />
           <DeletionCard deletion={loaded.deletion} onRequested={() => void load()} />

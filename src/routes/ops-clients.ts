@@ -31,6 +31,7 @@ import {
   visitOutcomes,
 } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
+import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
 import { consentRecordsOf, currentAddress } from "../domain/profile.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -61,8 +62,8 @@ const AddressSchema = z
 
 const ClientVisitSchema = VisitSummarySchema.extend({
   outcome: z
-    .union([z.enum(["done", "partial"]), z.null()])
-    .openapi({ description: "What FSM closed the visit as; null until it is closed." }),
+    .union([z.enum(VISIT_OUTCOMES), z.null()])
+    .openapi({ description: "What FSM closed the visit as, a no-show being its own; null until it is closed." }),
 }).openapi("ClientVisit");
 
 /**

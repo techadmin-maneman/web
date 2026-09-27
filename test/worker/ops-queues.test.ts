@@ -7,6 +7,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
+import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, request } from "./helpers.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
@@ -118,19 +119,8 @@ describe("a queue's deadline", () => {
     const set = await request(ops, "/api/settings/task_sla_hours", {
       method: "POST",
       headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
-      body: JSON.stringify({
-        value: {
-          untold_move: 4,
-          consultation_request: 48,
-          replacement_order: 48,
-          referral_review: 48,
-          no_show_decision: 48,
-          number_change: 48,
-          draft_invoice: 48,
-          erasure_unfinished: 48,
-          ...hours,
-        },
-      }),
+      // Every group's committed allowance, with the two this test changes.
+      body: JSON.stringify({ value: { ...TASK_SLA_HOURS, ...hours } }),
     });
     expect(set.status).toBe(200);
 

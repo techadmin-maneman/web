@@ -136,6 +136,113 @@ describe("GET /api/payments", () => {
   });
 });
 
+// LIFE-07 and LIFE-14: a no-show and a credit never appeared in Payments, though each took or kept something.
+describe("GET /api/payments, what else a visit took", () => {
+  interface Body {
+    entries: { id: string; no_show: unknown }[];
+    credits: { event: string; visits: number; visit: { id: string } | null; source: string | null; no_show: unknown }[];
+  }
+  const payments = async () => (await get("/api/payments")).json<Body>();
+
+  /** A visit Rohit was not home for, with the case the technician's close opened. */
+  async function notHome(decision: "undecided" | "charged" | "waived") {
+    await visit(VISIT, P1, null);
+    await env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET status = 'terminated', fsm_status = 'Terminated'"),
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
+         VALUES ('checkin-1', ?1, 't1', '2026-09-10T04:32:00.000Z', 28.4, 77.0, 200, 1, '2026-09-10T04:32:00.000Z')`,
+      ).bind(VISIT),
+      env.DB.prepare(
+        `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at,
+           decision, created_at)
+         VALUES ('case-1', 'checkin-1', ?1, '2026-09-10T04:32:00.000Z', '2026-09-10T04:47:00.000Z',
+           '2026-09-10T04:48:00.000Z', ?2, '2026-09-10T04:48:00.000Z')`,
+      ).bind(VISIT, decision),
+    ]);
+  }
+
+  async function credits(...entries: [id: string, kind: string, visits: number, source: string, sourceId: string][]) {
+    await env.DB.batch(
+      entries.map(([id, kind, visits, source, sourceId], index) =>
+        env.DB.prepare(
+          `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, expires_at,
+             created_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+        ).bind(
+          id,
+          P1,
+          kind,
+          visits,
+          kind === "grant" ? null : "grant-1",
+          source,
+          sourceId,
+          kind === "grant" ? "2027-09-01T18:29:59.999Z" : null,
+          `2026-09-0${String(index + 1)}T06:00:00.000Z`,
+        ),
+      ),
+    );
+  }
+
+  it("says of a visit's payment that nobody was home, how long we waited, and the ruling", async () => {
+    await notHome("charged");
+    await payment(PAY_OLD, P1, VISIT, "2026-09-01T06:00:00.000Z");
+    expect((await payments()).entries).toEqual([
+      expect.objectContaining({ id: PAY_OLD, no_show: { decision: "charged", waited_minutes: 16 } }),
+    ]);
+  });
+
+  it("lists every change to the credits, newest first, each with the visit it was for", async () => {
+    await visit(VISIT, P1, null);
+    await credits(["grant-1", "grant", 3, "referral", "referral-1"], ["redeem-1", "redeem", -1, "appointment", VISIT]);
+    expect((await payments()).credits).toEqual([
+      {
+        id: "redeem-1",
+        date: "2026-09-02",
+        event: "used",
+        visits: -1,
+        visit: { id: VISIT, date: "2026-09-10", type: "first_fit" },
+        source: null,
+        no_show: null,
+      },
+      { id: "grant-1", date: "2026-09-01", event: "added", visits: 3, visit: null, source: "referral", no_show: null },
+    ]);
+  });
+
+  it("says a credit is lost on a visit cancelled inside 24 hours, and back on one cancelled in time", async () => {
+    await visit(VISIT, P1, null);
+    await credits(["grant-1", "grant", 3, "referral", "referral-1"], ["redeem-1", "redeem", -1, "appointment", VISIT]);
+    await env.DB.prepare(
+      `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, created_at)
+       VALUES ('c1', ?1, ?2, 'cancelled', 'late', '2026-09-10T04:30:00.000Z', 0, ?3)`,
+    )
+      .bind(VISIT, P1, NOW.toISOString())
+      .run();
+    expect((await payments()).credits[0]).toMatchObject({ id: "redeem-1", event: "lost" });
+
+    await env.DB.prepare("UPDATE visit_changes SET notice = 'free'").run();
+    await env.DB.prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       VALUES ('restore-1', ?1, 'restore', 1, 'grant-1', 'appointment', ?2, '2026-09-05T06:00:00.000Z')`,
+    )
+      .bind(P1, VISIT)
+      .run();
+    expect((await payments()).credits.map((line) => line.event)).toEqual(["returned", "used", "added"]);
+  });
+
+  it("says a credit is lost on a no-show ops charged", async () => {
+    await notHome("charged");
+    await credits(["grant-1", "grant", 3, "referral", "referral-1"], ["redeem-1", "redeem", -1, "appointment", VISIT]);
+    expect((await payments()).credits[0]).toMatchObject({
+      event: "lost",
+      no_show: { decision: "charged", waited_minutes: 16 },
+    });
+  });
+});
+
 describe("GET /api/payments/:id/receipt", () => {
   const recorded = (id: string, booksPaymentId: string) =>
     env.DB.prepare("UPDATE payments SET books_payment_id = ?1 WHERE id = ?2").bind(booksPaymentId, id).run();

@@ -311,6 +311,23 @@
 
 /* ---- Leave, which the dispatch board and booking both read (ADR 0062) ----- */
 
+/* The jobs a leave just recorded falls on, behind the oxblood rule the console gives what needs doing (OPS-07). */
+.stranded {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  margin-top: var(--sp-14);
+  padding-left: var(--sp-14);
+  border-left: var(--rule-strong) solid var(--error-on-paper);
+}
+
+.strandedTitle {
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+
 .leaveList {
   margin: 0;
   padding: 0;

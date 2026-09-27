@@ -254,6 +254,21 @@ export const visits = {
       message: "Message us",
       // The owner's own words on 23 September 2026: a free visit says "No charge", and never promises a document.
       free: "No charge for this visit, so there is no invoice.",
+      // PLACEHOLDER: an invoice held back on purpose (ADR 0070): a credit visit's waits on the accountant's ruling
+      // (open point 97), and a draft whose total is not what the visit was sold for is checked before it is sent.
+      credit:
+        "A visit credit paid for this visit. We send its invoice once our accountant has settled how it is written.",
+      checking: "We are checking this invoice before we send it. Message us if you need it sooner.",
+    },
+    // PLACEHOLDER: the design draws no visit the client missed (LIFE-07). The reason ops gave stays with them.
+    noShow: {
+      label: "Not home",
+      line: (minutes: number) => `We came, and waited ${String(minutes)} minutes, but nobody was home.`,
+      decision: {
+        undecided: "We are looking at it. Nothing is charged until we have.",
+        charged: "Charged, as a cancel inside 24 hours would be.",
+        waived: "Not charged.",
+      },
     },
   },
 } as const;
@@ -352,6 +367,25 @@ export const booking = {
 } as const;
 
 /**
+ * A note on a visit to come, kept on it for the technician's card (REQ-04). PLACEHOLDER: the design draws the
+ * "Add a note" button and no sheet behind it.
+ */
+export const note = {
+  title: (technician: string | null) =>
+    technician === null ? "Add a note for your technician" : `Add a note for ${technician}`,
+  label: "What should they know at the door?",
+  save: "Save the note",
+  saving: "Saving",
+  saved: (technician: string | null) =>
+    technician === null
+      ? "Saved. Your technician reads it before your visit."
+      : `Saved. ${technician} reads it before your visit.`,
+  withOps: "Notes go to us on WhatsApp just now.",
+  failed: "That did not go through.",
+  whatsapp: "Send it on WhatsApp",
+};
+
+/**
  * Moving or cancelling a visit (boards C7 and C8; docs/decisions/0046-moving-and-cancelling.md). The consequence
  * shows before the client confirms. The design writes refunds as "three to five working days"; the owner ruled
  * the app says 5 to 7 (ADR 0025, item 28).
@@ -408,6 +442,11 @@ export const refer = {
   title: "Refer",
   promise: "When a friend you refer is fitted, you both get 3 service visits free.",
   credit: { label: "Your credit", expire: (date: string) => `Expire ${date}` },
+  // PLACEHOLDER: the board draws no line for the credits of the invite a client came with while ops review them.
+  inviteCredits: {
+    checking: "The 3 service visits from the invite you came with are being checked. We will message you.",
+    refused: "We could not give the service visits from the invite you came with. Message us to know why.",
+  },
   noOther: "No other discount applies.",
   share: "Share an invite",
   tracker: "See who has been fitted",
@@ -452,6 +491,8 @@ export const refer = {
     /** Board F5's two figures, each above its word. */
     earned: "visits earned",
     remaining: "remaining",
+    // PLACEHOLDER: a friend fitted before the grant kept first names, and erased since; never the erasure's word.
+    unnamed: "A friend",
     when: (month: string) => `Fitted ${month}`,
     each: (visits: number) => `${String(visits)} visits earned`,
     only: "Completed fits only. Whether an invite was opened is your friend's business.",
@@ -511,6 +552,46 @@ export const payments = {
   charge: "Charge",
   charged: "Charged",
   evidence: (change: "cancelled" | "moved", at: string, visit: string) => `${change} ${at}, visit was ${visit}`,
+  // PLACEHOLDER: the design draws no visit the client was not home for (LIFE-07).
+  noShow: {
+    meta: (note: { waited_minutes: number }) => `not home, we waited ${String(note.waited_minutes)} min`,
+    label: "Not home",
+    decision: { undecided: "under review", charged: "charged", waived: "not charged" },
+    fact: (minutes: number, decision: string) => `We waited ${String(minutes)} minutes · ${decision}`,
+  },
+  /**
+   * The service-visit credits among the payments (LIFE-14). Board E1 draws a visit a credit covered: "Service
+   * visit · 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: every other line.
+   */
+  credits: {
+    title: "Visit credits",
+    meta: {
+      used: "visit credit",
+      lost: "cancelled inside 24 hours",
+      returned: "cancelled in time",
+      expired: "past their date",
+      withdrawn: "the fit was refunded",
+      corrected: "corrected by us",
+      added: "added",
+    },
+    from: { referral: "a friend you invited was fitted", ops: "from us", import: "carried over" },
+    status: {
+      used: "Covered by credit",
+      lost: "Credit lost",
+      returned: "Credit returned",
+      expired: "Credits expired",
+      withdrawn: "Credits withdrawn",
+      corrected: "Credits corrected",
+      added: "Credits added",
+    },
+    count: (event: string, visits: number) => {
+      const credits = `${String(visits)} ${visits === 1 ? "credit" : "credits"}`;
+      if (event === "used") return `${credits} used`;
+      if (event === "lost") return `${credits} lost`;
+      if (event === "returned") return `${credits} back`;
+      return credits;
+    },
+  },
   refundTo: (method: string) => `refund to ${method}`,
   /** A payment's status, and a refund's. */
   status: {
@@ -676,6 +757,10 @@ export const profile = {
     withdraw: "Withdraw this change",
     failed: "That did not go through. Please try again.",
     limited: "You have started three changes today. Please try again tomorrow.",
+    // What ops decided about the last change, for 30 days after (OPS-09). The reason is ops' own words.
+    confirmed: (number: string, date: string) => `Your number was changed to ${number} on ${date}.`,
+    rejected: (number: string, date: string) => `On ${date} we did not change your number to ${number}.`,
+    why: (reason: string) => `Our reason: ${reason}`,
   },
   support: {
     label: "Support",

@@ -20,6 +20,7 @@ import { registerClientMe } from "./routes/client-me.ts";
 import { registerClientProfile } from "./routes/client-profile.ts";
 import { registerClientBooking } from "./routes/client-booking.ts";
 import { registerClientChanges } from "./routes/client-changes.ts";
+import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsClients } from "./routes/ops-clients.ts";
@@ -113,6 +114,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientPayments,
     registerClientBooking,
     registerClientChanges,
+    // After the changes: they put the session and the self-serve switch on every /api/appointments/* route.
+    registerClientNotes,
     registerClientRefer,
     registerClientData,
   ],

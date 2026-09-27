@@ -15,7 +15,7 @@ import { visitName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
-import { Actions, changingOf, hasBegun, VisitCard, whenText } from "./VisitCard.tsx";
+import { Actions, changingOf, hasBegun, notingOf, VisitCard, whenText, type NotingVisit } from "./VisitCard.tsx";
 import styles from "./home.module.css";
 
 export function HomeScreen() {
@@ -40,6 +40,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
         when={whenText(visit)}
         place={visit.place}
         changing={changingOf(visit, VISIT_TYPES.consultation)}
+        noting={notingOf(visit)}
         begun={hasBegun(visit)}
       />
     );
@@ -56,7 +57,9 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   }
   if (me.consultation !== null) {
     const { date, place } = me.consultation;
-    return <Consultation date={date} when={windowText(me.consultation.window)} place={place} changing={null} />;
+    return (
+      <Consultation date={date} when={windowText(me.consultation.window)} place={place} changing={null} noting={null} />
+    );
   }
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext me={me} />;
   return <NothingBooked me={me} offline={offline} />;
@@ -70,6 +73,8 @@ function Consultation(props: {
   place: string;
   /** Null for a booking's consultation, not yet in FSM: ops move it. */
   changing: ChangingVisit | null;
+  /** Null for a booking's consultation, not yet in FSM: a note goes to ops on WhatsApp. */
+  noting: NotingVisit | null;
   begun?: boolean;
 }) {
   const date = shortDate(props.date);
@@ -84,7 +89,13 @@ function Consultation(props: {
           <p className={styles.window}>{props.when}</p>
           {props.place !== "" && <p className={styles.place}>{props.place}</p>}
           <p className={styles.free}>{home.consultation.free}</p>
-          <Actions what={VISIT_TYPES.consultation} date={date} changing={props.changing} begun={props.begun} />
+          <Actions
+            what={VISIT_TYPES.consultation}
+            date={date}
+            changing={props.changing}
+            noting={props.noting}
+            begun={props.begun}
+          />
         </div>
       </section>
       <section className={styles.expect} aria-labelledby="expect">

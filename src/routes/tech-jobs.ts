@@ -48,6 +48,8 @@ import { noShowWaitEnds } from "../policy/no-show.ts";
 import { boundedPhoneTime } from "../policy/phone-clock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import type { MessagingMessage } from "../queues/messaging.ts";
+import { arrivalNotice } from "../domain/visit-messages.ts";
 import { PieceSchema } from "./tech-pieces.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
@@ -558,6 +560,7 @@ export function registerTechJobs(app: App): void {
 
     const landing = await land(c, job, "check_in", { at: arrival.at, distance_m: arrival.distanceM }, at);
     if (!landing.ok) return c.json(errorBody(landing.code, requestId, landing.fields), 409);
+    if (job.personId !== null) await tellOfArrival(c, { personId: job.personId, appointmentId: job.id, arrivedAt: at });
     return c.json(
       {
         passed: true,
@@ -733,6 +736,20 @@ type Landed =
  * bounds: the check-in passes its own, and any other write's comes from its
  * event ID.
  */
+/**
+ * The client's WhatsApp that his technician has arrived, the no-show's evidence (ADR 0047), once per visit. One
+ * the queue drops, the sweeper sends; the check-in has landed either way.
+ */
+async function tellOfArrival(c: Ctx, input: { personId: string; appointmentId: string; arrivedAt: Date }) {
+  const messageId = await arrivalNotice(c.env.DB, { ...input, now: c.var.deps.now() });
+  if (messageId === null) return;
+  try {
+    await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
+  } catch (error) {
+    c.var.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
+  }
+}
+
 async function land(
   c: Ctx,
   job: WorkableJob,
