@@ -281,6 +281,20 @@ describe("a job's use", () => {
     ).toBe(1);
   });
 
+  it("is written once for a step replayed after ops renamed the consumable", async () => {
+    await readyToRecord();
+    const step = { items: [{ code: "tape_strips", quantity: 4 }] };
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, step, "event-consumables-01");
+    await env.DB.prepare("UPDATE consumables SET name = 'Contour tape' WHERE code = 'tape_strips'").run();
+    const replayed = await job.post(`/api/tech/jobs/${JOB}/consumables`, step, "event-consumables-01");
+
+    expect(replayed.status).toBe(202);
+    expect((await env.DB.prepare("SELECT name, quantity FROM consumables_used").all()).results).toEqual([
+      { name: "Tape strips", quantity: 4 },
+    ]);
+    expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 8, low: false });
+  });
+
   it("is corrected by the difference when he sends the step again, and an older replay changes nothing", async () => {
     await readyToRecord();
     await job.post(

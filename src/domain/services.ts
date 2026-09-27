@@ -34,6 +34,11 @@ export interface Service {
   readonly updated_at: string;
 }
 
+/** A service with its price on a day, or null where the book prices it from no day up to then. */
+export interface ServiceOnDay extends Service {
+  readonly price: Price | null;
+}
+
 /** A service as a client is offered it: with its price on the day asked about. */
 export interface PricedService extends Service {
   readonly price: Price;
@@ -63,6 +68,50 @@ export function serviceOf(db: D1Database, kind: VisitType, tier: string): Promis
 }
 
 /**
+ * Every service, offered or retired, each with its price on a day, in the order the console lists them. The price is
+ * the book's row in force that day, read with its rate in one lookup a service, since the hourly catalogue check
+ * reads this inside the cron run's budget of rows (scripts/lib/free-tier-budget.ts).
+ */
+export async function servicesOnDay(db: D1Database, on: string): Promise<ServiceOnDay[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT s.kind, s.tier, s.name, s.minutes, s.sort, s.retired_date, s.fsm_item_id, s.updated_by, s.updated_at,
+         (SELECT json_array(b.amount_ex_gst, b.gst_percent) FROM price_book b
+           WHERE b.item = s.kind AND b.tier = s.tier AND b.valid_from <= ?1
+           ORDER BY b.valid_from DESC LIMIT 1) AS price
+       FROM services s`,
+    )
+    .bind(on)
+    .all<Service & { price: string | null }>();
+  return results
+    .map(({ price, ...service }) => {
+      if (price === null) return { ...service, price: null };
+      const [amountExGst, gstPercent] = JSON.parse(price) as [number, number];
+      return {
+        ...service,
+        price: { amount_ex_gst: amountExGst, amount: withGst(amountExGst, gstPercent), gst_percent: gstPercent },
+      };
+    })
+    .sort(inOrder);
+}
+
+/**
+ * Those of these services offered on their day in these kinds, in the order ops gave them. One with no price that
+ * day is left out: nothing is sold at no price at all.
+ */
+export function offeredAmong(
+  services: readonly ServiceOnDay[],
+  on: string,
+  kinds: readonly VisitType[] = VISIT_TYPES,
+): PricedService[] {
+  return services.flatMap(({ price, ...service }) =>
+    kinds.includes(service.kind) && isOffered(service.retired_date, on) && price !== null
+      ? [{ ...service, price }]
+      : [],
+  );
+}
+
+/**
  * The services offered on a day in these kinds, each with its price that day, in the order ops gave them. One with
  * no price that day is left out: nothing is sold at no price at all.
  */
@@ -71,30 +120,7 @@ export async function offeredServices(
   on: string,
   kinds: readonly VisitType[] = VISIT_TYPES,
 ): Promise<PricedService[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT s.kind, s.tier, s.name, s.minutes, s.sort, s.retired_date, s.fsm_item_id, s.updated_by, s.updated_at,
-         (SELECT b.amount_ex_gst FROM price_book b WHERE b.item = s.kind AND b.tier = s.tier AND b.valid_from <= ?1
-           ORDER BY b.valid_from DESC LIMIT 1) AS amount_ex_gst,
-         (SELECT b.gst_percent FROM price_book b WHERE b.item = s.kind AND b.tier = s.tier AND b.valid_from <= ?1
-           ORDER BY b.valid_from DESC LIMIT 1) AS gst_percent
-       FROM services s`,
-    )
-    .bind(on)
-    .all<Service & { amount_ex_gst: number | null; gst_percent: number | null }>();
-  return results
-    .filter((row) => kinds.includes(row.kind) && isOffered(row.retired_date, on))
-    .flatMap(({ amount_ex_gst: amountExGst, gst_percent: gstPercent, ...service }) =>
-      amountExGst === null || gstPercent === null
-        ? []
-        : [
-            {
-              ...service,
-              price: { amount_ex_gst: amountExGst, amount: withGst(amountExGst, gstPercent), gst_percent: gstPercent },
-            },
-          ],
-    )
-    .sort(inOrder);
+  return offeredAmong(await servicesOnDay(db, on), on, kinds);
 }
 
 /**

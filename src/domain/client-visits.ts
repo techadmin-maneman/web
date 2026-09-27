@@ -3,12 +3,12 @@
 // client's own rows are ever read; a visit or photograph of anyone else is
 // "not found".
 
-import { CHECKLIST } from "../config/job-sheet.ts";
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { indiaDate, indiaTime } from "../lib/india-time.ts";
 import { windowAt } from "../policy/windows.ts";
 import { signToken } from "../lib/signed-token.ts";
 import type { AppointmentStatus, VisitOutcome } from "./fsm-mirror.ts";
+import { jobSheet } from "./job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
@@ -261,9 +261,12 @@ async function invoiceHeld(
 }
 
 /**
- * What was done: the items of the job sheet's checklist (src/config/job-sheet.ts)
- * that the technician ticked, from the last checklist his phone sent that FSM
- * had not moved from under him. A visit closed in FSM's own screens has none.
+ * What was done: the items of the job sheet's checklist that the technician
+ * ticked, in the words ops gave them in the console, from the last checklist his
+ * phone sent that FSM had not moved from under him; an item ops have since taken
+ * off is still named, as FSM's summary names it (src/domain/job-sheet.ts). The
+ * committed list (src/config/job-sheet.ts) stands until ops save one. A visit
+ * closed in FSM's own screens has none.
  */
 async function whatWasDone(db: D1Database, visitId: string, type: VisitType | null): Promise<string[] | null> {
   if (type === null) return null;
@@ -277,7 +280,8 @@ async function whatWasDone(db: D1Database, visitId: string, type: VisitType | nu
   if (event === null) return null;
   const { done } = JSON.parse(event.body) as { done?: unknown };
   const ticked = new Set(Array.isArray(done) ? done : []);
-  return CHECKLIST[type].filter((item) => ticked.has(item.id)).map((item) => item.label);
+  const list = (await jobSheet(db)).checklists[type];
+  return [...list.items, ...list.retired].filter((item) => ticked.has(item.id)).map((item) => item.label);
 }
 
 /** One of the client's visits with its photographs; null for a visit that is not theirs. */

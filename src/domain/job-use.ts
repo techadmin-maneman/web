@@ -88,7 +88,9 @@ async function takenFor(db: D1Database, jobId: string, technicianId: string): Pr
 /**
  * Records a job's use as the technician's latest consumables step gives it:
  * a row of consumables_used for each consumable, with what the job's service
- * expected and what one cost that day, and the movements out of his kit.
+ * expected and what one cost that day, once for each event whatever the
+ * consumable is called when the event is read again, and the movements out of
+ * his kit.
  *
  * It reads the job's latest step, not the one just sent, so a replay of an
  * older step changes nothing; and it writes only what differs from what his
@@ -130,7 +132,7 @@ export async function recordJobUse(
           `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at,
              consumable_code, expected_quantity, unit_cost)
            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
-           ON CONFLICT (job_event_id, name) DO NOTHING`,
+           ON CONFLICT DO NOTHING`,
         )
         .bind(
           crypto.randomUUID(),

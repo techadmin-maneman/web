@@ -34,7 +34,15 @@ import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
 import type { PriceItem } from "./price-book.ts";
-import { allServices, keepFsmItem, offeredServices, serviceOf, type PricedService, type Service } from "./services.ts";
+import {
+  keepFsmItem,
+  offeredAmong,
+  serviceOf,
+  servicesOnDay,
+  type PricedService,
+  type Service,
+  type ServiceOnDay,
+} from "./services.ts";
 
 /** Whether two names are one, as FSM's catalogue and the services table compare them: whatever their case. */
 const sameName = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -62,12 +70,17 @@ interface Gap {
 }
 
 /**
- * Each service offered today whose FSM item differs from it, in the console's order: no item, another price before
- * GST, or another name. Each item found is kept on its service, so it is found by its ID from then on.
+ * Each of the services offered today whose FSM item differs from it, in the console's order: no item, another price
+ * before GST, or another name. Each item found is kept on its service, so it is found by its ID from then on.
  */
-async function gapsBetween(db: D1Database, items: readonly FsmItem[], today: string): Promise<Gap[]> {
+async function gapsBetween(
+  db: D1Database,
+  items: readonly FsmItem[],
+  services: readonly ServiceOnDay[],
+  today: string,
+): Promise<Gap[]> {
   const gaps: Gap[] = [];
-  for (const service of await offeredServices(db, today)) {
+  for (const service of offeredAmong(services, today)) {
     const item = itemOf(items, service);
     if (item !== undefined) await keepFsmItem(db, service, item.id);
     if (item?.price === service.price.amount_ex_gst && item.name === service.name) continue;
@@ -165,8 +178,11 @@ export async function checkCatalogue(
   if (!budget.spend(FSM_ITEM_PAGES)) return null;
 
   const items = await deps.fsm.items();
-  const gaps = await gapsBetween(db, items, indiaDate(now));
-  for (const service of await allServices(db)) {
+  const today = indiaDate(now);
+  // Every service, offered or retired, with its price today, read once: the alert of one no longer offered is closed.
+  const services = await servicesOnDay(db, today);
+  const gaps = await gapsBetween(db, items, services, today);
+  for (const service of services) {
     const gap = gaps.find((each) => each.service.kind === service.kind && each.service.tier === service.tier);
     // A service FSM has an item for closes the alert its bookings raised while it had none.
     if (gap?.item !== null) await deps.resolveAlert(fallbackKey(service.kind, service.tier));
@@ -204,10 +220,13 @@ export const PART_WRITES_A_PASS = 5;
 
 /**
  * Each consumable still offered, against FSM's parts: found by the ID it was
- * linked to, else by our name, which links it. With the push on, one missing
- * is added and one named otherwise renamed, within the pass's allowance. What
- * FSM holds is recorded only where it changed, so an hour with nothing new
- * writes nothing.
+ * linked to, else by our name, which links it. A part linked to one consumable
+ * is never matched to another by its name: ops may rename a consumable and give
+ * its old name to a new one, and the new one would otherwise take the renamed
+ * one's part, and the two rename it back and forth every hour. With the push on,
+ * one missing is added and one named otherwise renamed, within the pass's
+ * allowance. What FSM holds is recorded only where it changed, so an hour with
+ * nothing new writes nothing.
  */
 async function checkParts(
   db: D1Database,
@@ -215,8 +234,19 @@ async function checkParts(
   pass: { readonly items: readonly FsmItem[]; readonly push: boolean; readonly now: Date; readonly budget: CallBudget },
 ): Promise<void> {
   const { push, now, budget } = pass;
-  const offered = (await allConsumables(db)).filter((consumable) => isOffered(consumable, indiaDate(now)));
+  const consumables = await allConsumables(db);
+  const offered = consumables.filter((consumable) => isOffered(consumable, indiaDate(now)));
   const parts = pass.items.filter((item) => item.type === "Part");
+  /** Each part FSM holds that a consumable, retired or not, is linked to: by whose code. */
+  const linked = new Map(
+    consumables.flatMap((consumable) =>
+      consumable.fsmItemId !== null && parts.some((item) => item.id === consumable.fsmItemId)
+        ? [[consumable.fsmItemId, consumable.code] as const]
+        : [],
+    ),
+  );
+  /** A part no other consumable is linked to. */
+  const free = (item: FsmItem, code: string) => (linked.get(item.id) ?? code) === code;
   let writes = 0;
   /** Takes one write from the pass's allowance and the run's budget, if both have one left. */
   const mayWrite = (): boolean => {
@@ -229,10 +259,12 @@ async function checkParts(
   const changed: D1PreparedStatement[] = [];
   for (const consumable of offered) {
     let part =
-      parts.find((item) => item.id === consumable.fsmItemId) ?? parts.find((item) => item.name === consumable.name);
+      parts.find((item) => item.id === consumable.fsmItemId) ??
+      parts.find((item) => item.name === consumable.name && free(item, consumable.code));
     if (part === undefined && mayWrite()) part = await added(deps, consumable);
     else if (part !== undefined && part.name !== consumable.name && mayWrite())
       part = await renamed(deps, consumable, part);
+    if (part !== undefined) linked.set(part.id, consumable.code);
 
     if (part === undefined) unsettled.push(`"${consumable.name}" is not there`);
     else if (part.name !== consumable.name)
@@ -335,7 +367,7 @@ function gapMessage(gap: Gap, pushed: boolean): string {
  * nothing, and an item it made is found by its name if its answer never came.
  */
 export async function pushCatalogue(db: D1Database, fsm: FsmProvider, today: string): Promise<number> {
-  const gaps = await gapsBetween(db, await fsm.items(), today);
+  const gaps = await gapsBetween(db, await fsm.items(), await servicesOnDay(db, today), today);
   let written = 0;
   for (const { service, item } of gaps) {
     const wanted = { name: service.name, price: service.price.amount_ex_gst };

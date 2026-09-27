@@ -10,9 +10,18 @@ import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts"
 import { checkCatalogue, itemForService, PART_WRITES_A_PASS, pushCatalogue } from "../../src/domain/fsm-catalogue.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubFsm, EMPTY_FSM, FSM_ITEM_PAGES, type FsmItem, type StubFsm } from "../../src/providers/fsm.ts";
+import type { ZohoFsmSettings } from "../../src/config/settings.ts";
+import {
+  createFsmProvider,
+  createStubFsm,
+  EMPTY_FSM,
+  FSM_ITEM_PAGES,
+  type FsmItem,
+  type FsmProvider,
+} from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, request } from "./helpers.ts";
+import { FSM_API, ZOHO_TOKEN_URL } from "./fsm-fixtures.ts";
+import { appFor, captureLogs, fakeDependencies, fakeFetch, fakeQueue, json, markDatabase, request } from "./helpers.ts";
 
 /** 11:30 in India on 26 September 2026: the cron run on the hour, after the book's rows of the 22nd. */
 const ON_THE_HOUR = new Date("2026-09-26T06:00:00Z");
@@ -32,7 +41,7 @@ const AGREEING = CATALOGUE.map((item) => (item.name === "Replacement" ? { ...ite
 
 let alerted: string[];
 
-function check(fsm: StubFsm, options: { push: boolean; now?: Date; calls?: number }) {
+function check(fsm: FsmProvider, options: { push: boolean; now?: Date; calls?: number }) {
   const now = options.now ?? ON_THE_HOUR;
   const alert = (message: string) => {
     alerted.push(message);
@@ -417,6 +426,57 @@ describe("the consumables, as parts", () => {
 
   const agreeing = CATALOGUE.map((item) => (item.name === "Replacement" ? { ...item, price: 1_500_000 } : item));
 
+  // The review of 27 September 2026: a part past the catalogue's first page must still be found, or with the push on
+  // it would be added again every hour. Zoho's catalogue is read a page of 200 at a time, up to FSM_ITEM_PAGES
+  // (docs/decisions/0085-services-ops-can-edit.md), and the parts are checked against all of it.
+  it("finds a part on the catalogue's second page, and adds no second one with the push on", async () => {
+    await consumable("tape_strips", "Tape strips");
+    const record = (item: FsmItem) => ({
+      id: item.id,
+      Name: item.name,
+      Type: item.type,
+      Unit_Price: item.price === null ? null : item.price / 100,
+    });
+    const others: FsmItem[] = Array.from({ length: 200 - agreeing.length }, (_, n) => ({
+      id: `other-${String(n)}`,
+      name: `Other ${String(n)}`,
+      type: "Service",
+      price: 10_000,
+    }));
+    const http = fakeFetch({
+      [ZOHO_TOKEN_URL]: () => json({ access_token: "fsm-access-1", expires_in: 3600, token_type: "Bearer" }),
+      [`${FSM_API}/Service_And_Parts?page=1&`]: () =>
+        json({ data: [...agreeing, ...others].map(record), info: { more_records: true } }),
+      [`${FSM_API}/Service_And_Parts?page=2&`]: () =>
+        json({
+          data: [record({ id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 })],
+          info: { more_records: false },
+        }),
+    });
+    const settings: ZohoFsmSettings = {
+      clientId: "1000.FSMCLIENT",
+      clientSecret: "fsm-client-secret",
+      refreshToken: "1000.fsm-refresh",
+      accountsHost: "accounts.zoho.in",
+      apiHost: "www.zohoapis.in",
+      booksOrgId: "60088931635",
+      webhookToken: null,
+      booksRefundAccountId: null,
+    };
+    const zoho = createFsmProvider("zoho", settings, {
+      db: env.DB,
+      fetch: http.fetch,
+      now: () => ON_THE_HOUR,
+      log: createLogger(),
+    });
+
+    await check(zoho, { push: true }).done;
+
+    expect(http.calls.filter((call) => call.method !== "GET" && call.url.startsWith(FSM_API))).toEqual([]);
+    expect(await heldFor("tape_strips")).toMatchObject({ fsm_item_id: "fsm-part-tape", fsm_name: "Tape strips" });
+    expect(alerted).toEqual([]);
+  });
+
   it("links one FSM already holds by its name, and tells ops of one it does not, writing nothing to FSM", async () => {
     const fsm = createStubFsm({
       ...EMPTY_FSM,
@@ -523,6 +583,45 @@ describe("the consumables, as parts", () => {
     await check(fsm, { push: true, now: AN_HOUR_ON }).done;
     expect(fsm.made.parts).toEqual(["Solvent"]);
     expect((await heldFor("solvent"))?.fsm_item_id).toMatch(/^stub-part-/);
+  });
+
+  // A consumable renamed, and its old name given to a new one: the new one never takes the renamed one's part, which
+  // the two would otherwise rename back and forth every hour.
+  it("never gives a new consumable the part of one ops renamed, by the name it had", async () => {
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [...agreeing, { id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 }],
+    });
+    await consumable("tape_strips", "Contour tape", { id: "fsm-part-tape", name: "Tape strips" });
+    await consumable("tape_strips_2", "Tape strips");
+
+    await check(fsm, { push: true }).done;
+    expect(fsm.made.renamedItems).toEqual([{ itemId: "fsm-part-tape", name: "Contour tape" }]);
+    expect(fsm.made.parts).toEqual(["Tape strips"]);
+    const added = (await heldFor("tape_strips_2"))?.fsm_item_id;
+    expect(added).toMatch(/^stub-part-/);
+
+    // The next hour each has its own part, and nothing is written.
+    await check(fsm, { push: true, now: AN_HOUR_ON }).done;
+    expect(fsm.made.renamedItems).toHaveLength(1);
+    expect(fsm.made.parts).toHaveLength(1);
+    expect((await heldFor("tape_strips"))?.fsm_item_id).toBe("fsm-part-tape");
+    expect((await heldFor("tape_strips_2"))?.fsm_item_id).toBe(added);
+    expect(alerted).toEqual([]);
+  });
+
+  it("with the push off, tells ops the new one is missing rather than linking it to the renamed one's part", async () => {
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [...agreeing, { id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 }],
+    });
+    await consumable("tape_strips", "Contour tape", { id: "fsm-part-tape", name: "Tape strips" });
+    await consumable("tape_strips_2", "Tape strips");
+
+    await check(fsm, { push: false }).done;
+    expect((await heldFor("tape_strips_2"))?.fsm_item_id).toBeNull();
+    expect(alerted).toEqual([expect.stringContaining('"Tape strips" is not there')]);
+    expect(alerted[0]).toContain('part fsm-part-tape is "Tape strips", ours "Contour tape"');
   });
 
   it("leaves a retired consumable's part as it is, and closes the alert once each is FSM's", async () => {

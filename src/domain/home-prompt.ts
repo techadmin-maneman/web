@@ -9,7 +9,9 @@
 //      sheet opens pre-filled with, or the replacement instead where the piece
 //      falls due first;
 //   3. the piece in wear falling due, as a month and never a day (ADR 0059),
-//      which is booked in the app like any other visit;
+//      which is booked in the app like any other visit, while no replacement is
+//      booked or paid for: one already on its way is Home's card, and offering
+//      another would sell the client a second;
 //   4. an invoice issued in the last fortnight, ready to open.
 //
 // One statement answers the rest, so Home, the route the app calls every time it
@@ -56,6 +58,10 @@ const PROMPT = `SELECT
   EXISTS (SELECT 1 FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL) AS has_address,
   (SELECT MIN(replacement_due_at) FROM pieces
      WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replacement_due_at IS NOT NULL) AS due_on,
+  (EXISTS (SELECT 1 FROM appointments r WHERE r.person_id = ?1 AND r.deleted_at IS NULL AND r.type = 'replacement'
+      AND r.status IN ('scheduled', 'dispatched', 'in_progress'))
+    OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND h.type = 'replacement' AND h.state = 'held'
+      AND h.confirmed_at IS NOT NULL)) AS replacement_booked,
   invoiced.id AS invoiced_id, invoiced.type AS invoiced_type, invoiced.window_start AS invoiced_start
   FROM (SELECT 1) LEFT JOIN (
     SELECT id, type, window_start FROM appointments
@@ -66,6 +72,7 @@ const PROMPT = `SELECT
 interface Row {
   has_address: number;
   due_on: string | null;
+  replacement_booked: number;
   invoiced_id: string | null;
   invoiced_type: VisitType | null;
   invoiced_start: string | null;
@@ -96,7 +103,7 @@ export async function homePrompt(
   const kind = homePromptOf({
     address: row.has_address === 0 && standing.booked,
     next_visit: next !== null,
-    replacement_due: row.due_on !== null,
+    replacement_due: row.due_on !== null && row.replacement_booked === 0,
     invoice_ready: row.invoiced_id !== null && row.invoiced_start !== null,
   });
   switch (kind) {

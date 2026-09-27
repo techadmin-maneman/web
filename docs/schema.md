@@ -360,6 +360,7 @@ Made by `0026_field_operations.sql`; changed by `0049_consumables_and_stock.sql`
 Indexes:
 
 - `consumables_used_by_appointment`: on (`appointment_id`)
+- `consumables_used_by_event_and_code`: unique on (`job_event_id`, `consumable_code`), where `consumable_code IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`job_event_id`, `name`)
 
 ## counters

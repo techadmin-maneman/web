@@ -104,6 +104,12 @@ ALTER TABLE consumables_used ADD COLUMN consumable_code TEXT REFERENCES consumab
 ALTER TABLE consumables_used ADD COLUMN expected_quantity INTEGER;
 ALTER TABLE consumables_used ADD COLUMN unit_cost INTEGER;
 
+-- One row for each consumable an event recorded, whatever the consumable is
+-- called when the event is read again: a step replayed after ops renamed it
+-- would otherwise write a second row under the new name.
+CREATE UNIQUE INDEX consumables_used_by_event_and_code ON consumables_used (job_event_id, consumable_code)
+  WHERE consumable_code IS NOT NULL;
+
 -- The job sheet ops set in the console (docs/open-points.md, item 28): each
 -- kind of visit's checklist, and the reasons a job may be left partly done,
 -- which the technician app reads with the job. A kind with no rows takes the
