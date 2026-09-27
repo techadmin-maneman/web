@@ -77,6 +77,14 @@ interface Sending {
   readonly patience?: number;
 }
 
+/** What `request` sends: a body as it is or as JSON, and whether the answer is a file rather than JSON. */
+interface Asking extends Sending {
+  readonly body?: BodyInit;
+  readonly json?: unknown;
+  /** The answer is a file, as a photograph the console opens, and is kept as it came. */
+  readonly file?: boolean;
+}
+
 /** The options argument: required when the operation needs a path, a query or a body, and optional when not. */
 type OptionsArgument<Op> = object extends CallOptions<Op> ? [options?: CallOptions<Op>] : [options: CallOptions<Op>];
 
@@ -198,20 +206,16 @@ export interface Client<Paths, Code extends string> {
    * A request to a URL the document does not name as such -- a photograph's upload link, a
    * queued write replayed from the phone's store -- read as every other answer is.
    */
-  request<T>(
-    method: string,
-    url: string,
-    init?: { body?: BodyInit; json?: unknown } & Sending,
-  ): Promise<Answer<T, Code>>;
+  request<T>(method: string, url: string, init?: Asking): Promise<Answer<T, Code>>;
 }
 
 export function createClient<Paths, Code extends string = string>(options: ClientOptions = {}): Client<Paths, Code> {
   const sessionEnded = options.sessionEnded ?? isSessionEnded;
   const missingCode = options.missingCode ?? (() => "unknown");
 
-  async function read<T>(response: Response): Promise<Answer<T, Code>> {
+  async function read<T>(response: Response, file: boolean): Promise<Answer<T, Code>> {
     if (response.ok) {
-      const body = await bodyOf(response);
+      const body = file ? await response.blob() : await bodyOf(response);
       if (body === undefined) {
         options.onUnreached?.();
         return OFFLINE;
@@ -232,11 +236,7 @@ export function createClient<Paths, Code extends string = string>(options: Clien
     return { ok: false, status: response.status, code: said, fields: fields ?? [] };
   }
 
-  async function request<T>(
-    method: string,
-    url: string,
-    init: { body?: BodyInit; json?: unknown } & Sending = {},
-  ): Promise<Answer<T, Code>> {
+  async function request<T>(method: string, url: string, init: Asking = {}): Promise<Answer<T, Code>> {
     const headers: Record<string, string> = { ...init.headers };
     if (init.json !== undefined) headers["Content-Type"] = "application/json";
     const body = init.json === undefined ? init.body : JSON.stringify(init.json);
@@ -254,7 +254,7 @@ export function createClient<Paths, Code extends string = string>(options: Clien
       options.onUnreached?.();
       return OFFLINE;
     }
-    return read<T>(response);
+    return read<T>(response, init.file === true);
   }
 
   /** A typed call: the document's path filled in, its query added and its body sent as JSON. */

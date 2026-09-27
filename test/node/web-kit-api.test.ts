@@ -116,6 +116,21 @@ describe("a call", () => {
     const answer = await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
     expect(answer).toMatchObject({ ok: true, cached: true });
   });
+
+  // The console's photographs: a file, not JSON, refused and lapsed like any other call.
+  it("answers a file as it came, when asked for one", async () => {
+    answering(() => new Response(new Blob(["jpeg"], { type: "image/jpeg" }), { status: 200 }));
+    const answer = await createClient<Paths, Code>().request<Blob>("GET", "/api/photo", { file: true });
+    if (!answer.ok) throw new Error("refused");
+    expect(answer.body.type).toBe("image/jpeg");
+    expect(await answer.body.text()).toBe("jpeg");
+  });
+
+  it("reads a refused file's code as any other refusal's", async () => {
+    answering(() => refusal(404, "not_found"));
+    const answer = await createClient<Paths, Code>().request<Blob>("GET", "/api/photo", { file: true });
+    expect(answer).toMatchObject({ ok: false, status: 404, code: "not_found" });
+  });
 });
 
 describe("a refusal", () => {

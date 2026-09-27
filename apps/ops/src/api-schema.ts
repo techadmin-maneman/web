@@ -3219,7 +3219,8 @@ export interface components {
             skill: null;
         };
         OpsSetting: {
-            name: string;
+            /** @enum {string} */
+            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days";
             title: string;
             note: string;
             unit: string;

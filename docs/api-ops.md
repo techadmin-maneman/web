@@ -5173,7 +5173,14 @@ Who Access let through, and where signing out goes
   "type": "object",
   "properties": {
     "name": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "checkin_radius_m",
+        "no_show_wait_min",
+        "address_unlock_hour",
+        "task_sla_hours",
+        "piece_cycle_days"
+      ]
     },
     "title": {
       "type": "string"
