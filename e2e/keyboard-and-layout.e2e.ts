@@ -11,17 +11,29 @@ test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);
 });
 
+/** Room around a drawn control for a focus ring outside it: an outline and its offset. */
+const RING_ROOM = 8;
+
 /**
- * The control's drawing before and after it takes the keyboard's focus. A key
- * press first, so the browser treats the focus as the keyboard's, as it is for
- * someone tabbing, and draws :focus-visible.
+ * The control's drawing, with room around it, before and after it takes the
+ * keyboard's focus. A key press first, so the browser treats the focus as the
+ * keyboard's, as it is for someone tabbing, and draws :focus-visible.
  */
 async function drawnBeforeAndAfterFocus(page: Page, control: Locator, drawn: Locator): Promise<[Buffer, Buffer]> {
   await page.keyboard.press("Shift");
   await drawn.scrollIntoViewIfNeeded();
-  const before = await drawn.screenshot({ animations: "disabled" });
+  const box = await drawn.boundingBox();
+  if (box === null) throw new Error("the control is not drawn");
+  const clip = {
+    x: Math.max(0, box.x - RING_ROOM),
+    y: Math.max(0, box.y - RING_ROOM),
+    width: box.width + 2 * RING_ROOM,
+    height: box.height + 2 * RING_ROOM,
+  };
+  const before = await page.screenshot({ clip, animations: "disabled" });
   await control.focus();
-  const after = await drawn.screenshot({ animations: "disabled" });
+  expect(await control.evaluate((input) => input.matches(":focus-visible"))).toBe(true);
+  const after = await page.screenshot({ clip, animations: "disabled" });
   return [before, after];
 }
 

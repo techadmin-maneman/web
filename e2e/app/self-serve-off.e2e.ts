@@ -6,15 +6,21 @@
 // message ready, and a first consultation is booked on the public site (REQ-14).
 
 import type { Page } from "@playwright/test";
-import { API_ORIGIN } from "../../scripts/lib/local-stack.ts";
+import { API_ORIGIN, PORTS } from "../../scripts/lib/local-stack.ts";
 import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 
-/** Passes /api/me through with booking.self_serve false, and anything else `also` changes. */
+/**
+ * Passes /api/me through with booking.self_serve false, and anything else `also` changes. Only the browser resolves
+ * app.localhost, so the answer is fetched from the app's server by its address, on the app's own host.
+ */
 async function selfServeOff(page: Page, also: Record<string, unknown> = {}): Promise<void> {
   await page.route("**/api/me", async (route) => {
-    const answer = await route.fetch();
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}/api/me`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
     const me = (await answer.json()) as { booking: Record<string, unknown> };
     await route.fulfill({ response: answer, json: { ...me, ...also, booking: { ...me.booking, self_serve: false } } });
   });
