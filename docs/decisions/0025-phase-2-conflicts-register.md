@@ -175,7 +175,7 @@ The audit found these taken, and not in the register (REQ-13; REQ-10, REQ-11, RE
 
 The owner tried the client app on staging and ruled on four points of feedback.
 
-64. **Anyone signed in can refer.** The front-end prompt draws Refer for a lead as reachable but empty (board B2), since before a first fit the invite's own words, "Had my hair system fitted", are not true. **Ruled 27 September 2026 by the owner**, who had asked "How can a user refer someone? There is nothing in the referral page.": every signed-in client can share an invite (ADR 0083, amending ADR 0048). Before a first fit the invite carries the house card only, and a message true for someone not yet fitted, a placeholder until the owner gives the words (`docs/open-points.md`, item 145). The friend is still rewarded only once fitted, and the referrer's 3 visits arrive with the friend's. **Open, for the owner:** someone new can now refer themselves from a free consultation booked on a second number, which the fraud holds catch only when the two share an address, a UPI handle or a number (ADR 0083, "Consequences").
+64. **Refer stays with fitted clients.** The front-end prompt draws Refer for a lead as reachable but empty (board B2), since before a first fit the invite's own words, "Had my hair system fitted", are not true. The owner asked on 27 September 2026 "How can a user refer someone? There is nothing in the referral page." and first ruled that every signed-in client could share an invite (ADR 0083; PR #139, live on staging that day). **Withdrawn by the owner the same day:** "Revert to that." Refer shows the invite to fitted clients only, as the board and ADR 0048 have it, and ADR 0083 records the ruling and its withdrawal.
 
 ## Inputs still owed
 
