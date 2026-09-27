@@ -21,10 +21,11 @@
 // App says above every screen — is said here and can be taken again: it is not
 // a camera that failed.
 
+import { Button } from "@maneman/ui/Button";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
 import { capture as copy, job as jobCopy } from "../content.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { StepFrame, useSettled } from "../steps/StepFrame.tsx";
 import { useStep } from "../steps/useStep.ts";
@@ -131,12 +132,19 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
 
   const shutter = (
     <div className={styles.shutter}>
-      <button className={styles.retake} type="button" disabled={taken.length === 0} onClick={() => void retake()}>
+      <Button
+        variant="outlineOnInk"
+        size="action"
+        className={styles.retake}
+        disabled={taken.length === 0}
+        onClick={() => void retake()}
+      >
         {copy.retake}
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="gold"
+        size="action"
         className={styles.take}
-        type="button"
         disabled={!all && !canCapture}
         aria-disabled={!settled}
         onClick={() => {
@@ -146,7 +154,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         }}
       >
         {all ? copy.finish : copy.take}
-      </button>
+      </Button>
     </div>
   );
 
@@ -167,9 +175,9 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         {camera.state === "refused" ? (
           <div className={styles.unavailable} role="alert">
             <p className={styles.unavailableLine}>{copy.unavailable}</p>
-            <button className={styles.reopen} type="button" onClick={reopen}>
+            <Button variant="outlineOnInk" size="small" onClick={reopen}>
               {copy.retry}
-            </button>
+            </Button>
           </div>
         ) : (
           <>

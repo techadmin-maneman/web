@@ -8,13 +8,15 @@
 // launched what it served left its waitlist untold, and this is how they are
 // told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { Button } from "@maneman/ui/Button";
+import { Table } from "@maneman/ui/Table";
+import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Area, type Launch } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { BOOKING_URL, waitlist } from "../content.ts";
 import { settingsPath } from "../route.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./waitlist.module.css";
 
@@ -114,18 +116,19 @@ function LaunchPanel({
       {step !== "done" && (
         <div className={styles.actions}>
           {!nothingToSend && (
-            <button
+            <Button
+              variant="primary"
+              size="small"
               className={styles.send}
-              type="button"
               disabled={step === "sending" || launchOn === ""}
               onClick={onSend}
             >
               {step === "sending" ? copy.sending : copy.send(preview.alerts)}
-            </button>
+            </Button>
           )}
-          <button className={styles.quiet} type="button" onClick={onCancel}>
+          <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>
             {copy.cancel}
-          </button>
+          </Button>
         </div>
       )}
       {launching.code !== undefined && (
@@ -162,6 +165,49 @@ function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; o
       <td className={styles.referred}>{area.referred}</td>
       <td className={styles.alerts}>{area.alerts}</td>
     </tr>
+  );
+}
+
+/** Board C3's table: who waits where, the longest waits first; a line when nobody waits at all. */
+function Pincodes({
+  areas,
+  more,
+  thisYear,
+  onChoose,
+}: {
+  areas: readonly Area[];
+  more: boolean;
+  thisYear: number;
+  onChoose: (area: Area) => void;
+}) {
+  if (areas.length === 0) return <p className={styles.empty}>{waitlist.empty}</p>;
+  return (
+    <section className={styles.panel}>
+      <Table className={styles.table}>
+        <thead>
+          <tr>
+            {waitlist.columns.map((column, index) => (
+              <th key={column} scope="col" className={COLUMNS[index]}>
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {areas.map((area) => (
+            <AreaRow
+              key={area.pincode}
+              area={area}
+              thisYear={thisYear}
+              onChoose={() => {
+                onChoose(area);
+              }}
+            />
+          ))}
+        </tbody>
+      </Table>
+      {more && <p className={styles.more}>{waitlist.more}</p>}
+    </section>
   );
 }
 
@@ -207,33 +253,13 @@ export function WaitlistScreen() {
             {waitlist.launch.errors[refused] ?? waitlist.launch.errors.unknown}
           </p>
         )}
-        {loaded.state === "loading" ? (
-          <Loading />
-        ) : loaded.state === "failed" ? (
-          <PanelFailed onRetry={retry} />
-        ) : loaded.value.areas.length === 0 ? (
-          <p className={styles.empty}>{waitlist.empty}</p>
-        ) : (
-          <section className={styles.panel}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  {waitlist.columns.map((column, index) => (
-                    <th key={column} scope="col" className={COLUMNS[index]}>
-                      {column}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loaded.value.areas.map((area) => (
-                  <AreaRow key={area.pincode} area={area} thisYear={thisYear} onChoose={() => void choose(area)} />
-                ))}
-              </tbody>
-            </table>
-            {loaded.value.more && <p className={styles.more}>{waitlist.more}</p>}
-          </section>
-        )}
+        {whenLoaded(loaded, {
+          loading: <Loading />,
+          failed: <PanelFailed onRetry={retry} />,
+          loaded: ({ areas, more }) => (
+            <Pincodes areas={areas} more={more} thisYear={thisYear} onChoose={(area) => void choose(area)} />
+          ),
+        })}
         {launching !== null && (
           <LaunchPanel
             launching={launching}

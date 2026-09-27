@@ -5,6 +5,7 @@
 // (src/routes/ops-clients.ts). The matches are listed by name, each a way to
 // the client's page.
 
+import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
@@ -82,9 +83,15 @@ export function FindClientScreen() {
         <p className={styles.findHint} id="find-hint">
           {copy.hint}
         </p>
-        <button className={styles.primary} type="submit" disabled={finding.step === "finding" || text.trim() === ""}>
+        <Button
+          variant="primary"
+          size="small"
+          className={styles.primary}
+          type="submit"
+          disabled={finding.step === "finding" || text.trim() === ""}
+        >
           {finding.step === "finding" ? copy.finding : copy.submit}
-        </button>
+        </Button>
         {finding.step === "failed" && (
           <p className={styles.error} role="alert">
             {copy.errors[finding.code] ?? copy.errors.unknown}

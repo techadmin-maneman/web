@@ -6,11 +6,14 @@
 // first, and offers to send it. With no signal the session stays open and
 // nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
+import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { Mark } from "@maneman/ui/Mark";
+import { Link } from "@maneman/ui/router";
 import { useEffect, useState } from "react";
 import type { JobSummary } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
-import { Icon } from "../components/Icon.tsx";
-import { Mark } from "../components/Mark.tsx";
 import {
   atRisk as atRiskCopy,
   job as jobCopy,
@@ -19,13 +22,11 @@ import {
   titles,
   today as copy,
 } from "../content.ts";
-import { ICONS_P2 } from "@maneman/brand/icons";
-import { CHEVRON_DOWN } from "../icons.ts";
+import { STROKE } from "../icons.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia, where } from "../lib/when.ts";
-import { go } from "../route.ts";
 import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { keptClosedJobs } from "../store/jobs.ts";
@@ -119,9 +120,10 @@ export function TodayScreen() {
       <header className={styles.head}>
         <div className={styles.top}>
           <Mark className={styles.mark} />
-          <button
+          <Button
+            variant="outlineOnInk"
+            size="small"
             className={styles.account}
-            type="button"
             disabled={leaving === "going"}
             onClick={() => {
               if (unsentSets + unsentActions > 0) setLeaving("asking");
@@ -130,7 +132,7 @@ export function TodayScreen() {
           >
             <span className={styles.initials}>{me.initials}</span>
             <span className={styles.signOut}>{copy.signOut}</span>
-          </button>
+          </Button>
         </div>
         {day.state === "loaded" && jobs.length > 0 && (
           <>
@@ -149,19 +151,19 @@ export function TodayScreen() {
           <p className={styles.leaveTitle}>{leavingCopy.unsent(unsentSets, unsentActions)}</p>
           <p className={styles.leaveBody}>{leavingCopy.body}</p>
           <div className={styles.leaveActions}>
-            <button
-              className={styles.leaveButton}
-              type="button"
+            <Button
+              variant="outlineOnInk"
+              size="small"
               onClick={() => {
                 setLeaving(null);
                 void replay();
               }}
             >
               {leavingCopy.send}
-            </button>
-            <button className={styles.leaveButton} type="button" onClick={() => void leave()}>
+            </Button>
+            <Button variant="outlineOnInk" size="small" onClick={() => void leave()}>
               {leavingCopy.anyway}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -174,19 +176,12 @@ export function TodayScreen() {
       {offline && <Offline />}
 
       {(sending > 0 || unsentSets > 0) && (
-        <a
-          className={styles.waiting}
-          href="/waiting"
-          onClick={(event) => {
-            event.preventDefault();
-            go("/waiting");
-          }}
-        >
-          <Icon d={ICONS_P2.uploadQueue} size={20} className={styles.waitingIcon} />
+        <Link className={styles.waiting} to="/waiting">
+          <Icon d={ICONS_P2.uploadQueue} size={20} className={styles.waitingIcon} stroke={STROKE} />
           <span className={styles.waitingLine}>
             {unsentSets > 0 ? queueCopy.waiting(unsentSets) : queueCopy.events(sending)}
           </span>
-        </a>
+        </Link>
       )}
 
       {/*
@@ -237,7 +232,7 @@ export function TodayScreen() {
             }}
           >
             <span>{copy.tomorrow(tomorrowJobs.length)}</span>
-            <Icon className={styles.tomorrowIcon} d={CHEVRON_DOWN} size={19} />
+            <Icon className={styles.tomorrowIcon} d={ICONS.selectArrow} size={19} stroke={STROKE} />
           </button>
           {tomorrowOpen && (
             <ul className={styles.list}>

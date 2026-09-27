@@ -83,9 +83,9 @@ import DesignPicture from "../DesignPicture.astro";
   h3 {
     margin: 0;
     font-family: var(--font-serif);
-    font-weight: 400;
+    font-weight: var(--weight-regular);
     font-size: var(--fs-person);
-    line-height: 1.2;
+    line-height: var(--lh-120);
   }
   .stats {
     display: flex;
@@ -104,7 +104,7 @@ import DesignPicture from "../DesignPicture.astro";
     margin: 0;
     font-family: var(--font-serif);
     font-size: var(--fs-24);
-    line-height: 1;
+    line-height: var(--lh-100);
     font-variant-numeric: lining-nums;
   }
   dt {
@@ -115,7 +115,7 @@ import DesignPicture from "../DesignPicture.astro";
   .note {
     margin: 0;
     font-size: var(--fs-15);
-    line-height: 1.6;
+    line-height: var(--lh-160);
     color: var(--text-soft);
     text-wrap: pretty;
   }

@@ -1,0 +1,41 @@
+/* A page's states (./States.tsx): board B3's loading shape, and a failure's line above its retry. */
+
+@layer base, ui;
+
+@layer ui {
+  .loading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-14);
+    padding: var(--sp-28) var(--sp-20);
+  }
+
+  .line {
+    width: var(--skeleton-label);
+    height: var(--sp-15);
+  }
+
+  .card {
+    height: var(--skeleton-card);
+  }
+
+  .onPaper {
+    background: var(--paper-shade);
+  }
+
+  .onInk {
+    background: var(--ink-frame);
+  }
+
+  .failed {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-16);
+    padding: var(--sp-24) var(--sp-20);
+  }
+
+  .message {
+    margin: 0;
+  }
+}

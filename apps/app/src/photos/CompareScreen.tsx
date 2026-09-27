@@ -5,6 +5,9 @@
 // photographs against the latest.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { ARRIVE } from "@maneman/ui/motion";
+import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import {
   useCallback,
@@ -16,10 +19,8 @@ import {
   type PointerEvent,
 } from "react";
 import { api, type PhotoLink, type PhotoTimeline } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { photos } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { shownPhase } from "./PhotoRow.tsx";
@@ -28,7 +29,7 @@ import styles from "./compare.module.css";
 type Visit = PhotoTimeline["visits"][number];
 type CompareAngle = keyof typeof photos.compareAngles;
 const COMPARE_ANGLES = Object.keys(photos.compareAngles) as CompareAngle[];
-/** How long the angles cross-fade: the one curve's 300 ms (tokens.css, --ease). */
+/** How long the angles cross-fade: the house's quick 300 ms (tokens.css, --duration-quick). */
 const FADE_MS = 300;
 
 const photoOf = (visit: Visit, angle: CompareAngle): PhotoLink | undefined =>
@@ -46,13 +47,11 @@ export function CompareScreen() {
   }
   return (
     <Shell header={{ kind: "back", title: photos.compare, to: "/photos", label: photos.back }} tab="/photos">
-      {loaded.state === "loading" ? (
-        <Loading />
-      ) : loaded.state === "failed" ? (
-        <PageFailed onRetry={retry} />
-      ) : (
-        <p className={styles.none}>{photos.compareNone}</p>
-      )}
+      {whenLoaded(loaded, {
+        loading: <Loading />,
+        failed: <PageFailed onRetry={retry} />,
+        loaded: () => <p className={styles.none}>{photos.compareNone}</p>,
+      })}
     </Shell>
   );
 }
@@ -188,7 +187,7 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
           }}
         >
           {leaving !== null && <Sides from={from} to={to} angle={leaving} />}
-          <Sides key={angle} from={from} to={to} angle={angle} className={styles.arriving} />
+          <Sides key={angle} from={from} to={to} angle={angle} className={ARRIVE} />
           <div className={styles.divider} />
           <div
             className={styles.handle}

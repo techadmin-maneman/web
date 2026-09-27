@@ -9,7 +9,8 @@
     "./tokens-phase2.css": "./tokens-phase2.css",
     "./fonts.css": "./fonts.css",
     "./icons": "./icons.ts",
-    "./marks": "./marks.ts"
+    "./marks": "./marks.ts",
+    "./colours": "./colours.ts"
   },
   "dependencies": {
     "@fontsource/eb-garamond": "5.3.0",

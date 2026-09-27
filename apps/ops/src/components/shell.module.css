@@ -66,8 +66,8 @@
 }
 
 .section:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--gilt);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .body {
@@ -99,7 +99,7 @@
 .title {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-22);
 }
 
@@ -134,10 +134,9 @@
   color: var(--text);
 }
 
-.signOut:focus-visible,
-.reload:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+.signOut:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* A spent Access session, said once under the header and over whichever section is open. */
@@ -157,18 +156,6 @@
   margin: 0;
   font-size: var(--fs-14);
   color: var(--error-on-paper);
-}
-
-.reload {
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  border: 0;
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
 }
 
 /* Each section pads itself, as its board does. */

@@ -14,15 +14,17 @@
 // records ops' ruling under whoever Access says is signed in
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
+import { Button } from "@maneman/ui/Button";
+import { useLoad } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { api, type Charge, type NoShowCase } from "../api.ts";
+import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { noShows } from "../content.ts";
 import { Left } from "../lib/Left.tsx";
-import { rowId, useTargetRow } from "../lib/target.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./no-shows.module.css";
 
@@ -78,9 +80,9 @@ function Money() {
   const day = loaded.value;
   return (
     <section className={styles.panel} aria-labelledby="day-money">
-      <h2 className={styles.hiddenTitle} id="day-money">
+      <VisuallyHidden as="h2" id="day-money">
         {copy.title}
-      </h2>
+      </VisuallyHidden>
       <dl className={styles.figures}>
         <div className={styles.figure}>
           <dt className={styles.figureName}>{copy.figures.collected}</dt>
@@ -227,28 +229,18 @@ function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge:
         {copy.confirm(each.person?.name ?? copy.erased, day)}
       </p>
       <div className={styles.actions}>
-        <button className={styles.charge} type="button" onClick={onCharge}>
+        <Button variant="primary" size="small" className={styles.charge} onClick={onCharge}>
           {copy.confirmCharge}
-        </button>
-        <button className={styles.waive} type="button" onClick={onBack}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.waive} onClick={onBack}>
           {copy.back}
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-function Case({
-  each,
-  now,
-  targeted,
-  onDecided,
-}: {
-  each: NoShowCase;
-  now: Date;
-  targeted: boolean;
-  onDecided: () => void;
-}) {
+function Case({ each, now, onDecided }: { each: NoShowCase; now: Date; onDecided: () => void }) {
   const [ruling, setRuling] = useState<Ruling>({ step: "open" });
   const [reason, setReason] = useState("");
   const chargeButton = useRef<HTMLButtonElement>(null);
@@ -263,7 +255,7 @@ function Case({
   const sending = ruling.step === "sending";
   const noReason = reason.trim() === "";
   return (
-    <li className={targeted ? styles.targeted : styles.case} id={rowId("case", each.id)} tabIndex={-1}>
+    <>
       <div className={styles.caseHead}>
         <Client each={each} />
         <Left due={each.due} now={now} />
@@ -303,25 +295,27 @@ function Case({
         />
       ) : (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="primary"
+            size="small"
             ref={chargeButton}
             className={styles.charge}
-            type="button"
             disabled={sending || noReason}
             onClick={() => {
               setRuling({ step: "confirming" });
             }}
           >
             {sending ? copy.deciding : copy.charge}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            size="small"
             className={styles.waive}
-            type="button"
             disabled={sending || noReason}
             onClick={() => void decide("waived")}
           >
             {copy.waive}
-          </button>
+          </Button>
         </div>
       )}
       {ruling.step === "failed" && (
@@ -329,50 +323,27 @@ function Case({
           {copy.errors[ruling.code] ?? copy.errors.unknown}
         </p>
       )}
-    </li>
+    </>
   );
 }
 
 function Queue() {
   const [loaded, retry] = useLoad(api.noShows);
-  // A ruled case leaves the queue at once; the count follows it, and so does the keyboard.
-  const [ruled, setRuled] = useState<readonly string[]>([]);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const target = useTargetRow(loaded.state === "loaded");
-
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
   const now = new Date();
-  const waiting = loaded.value.cases.filter((each) => !ruled.includes(each.id));
   return (
-    <section className={styles.panel} aria-labelledby="no-shows">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="no-shows" ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h2>
-        <span className={styles.count}>{waiting.length}</span>
-      </div>
-      {waiting.length === 0 ? (
-        <p className={styles.empty}>{copy.empty}</p>
-      ) : (
-        <ul className={styles.cases}>
-          {waiting.map((each) => (
-            <Case
-              key={each.id}
-              each={each}
-              now={now}
-              targeted={target === rowId("case", each.id)}
-              onDecided={() => {
-                setRuled((already) => [...already, each.id]);
-                heading.current?.focus();
-              }}
-            />
-          ))}
-        </ul>
-      )}
-      <p className={styles.note}>{copy.note}</p>
-    </section>
+    <DecisionQueue
+      titleId="no-shows"
+      title={copy.title}
+      items={loaded.value.cases}
+      rowKind="case"
+      empty={copy.empty}
+      note={copy.note}
+    >
+      {(each, ruled) => <Case each={each} now={now} onDecided={ruled} />}
+    </DecisionQueue>
   );
 }
 

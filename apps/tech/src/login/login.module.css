@@ -22,8 +22,8 @@
   margin: var(--sp-36) 0 0;
   font-family: var(--font-serif);
   font-size: var(--fs-34);
-  font-weight: 400;
-  line-height: 1.1;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-110);
   color: var(--paper);
 }
 
@@ -61,7 +61,7 @@
 }
 
 .number:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
+  outline: var(--focus-width) solid var(--gilt);
   outline-offset: var(--focus-offset);
 }
 
@@ -120,41 +120,22 @@
   margin-top: var(--sp-18);
 }
 
+/* The resend's count runs in figures of one width, so the words beside it stay put. */
 .againButton {
-  display: flex;
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-17);
   font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-
-.againButton:disabled {
-  color: var(--ink-soft);
-  cursor: default;
-}
-
-.againButton:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
 }
 
 .note {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
 .error {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-ink);
 }
 
@@ -166,24 +147,4 @@
 
 .action {
   width: 100%;
-  height: var(--tech-primary);
-  border: 0;
-  background: var(--gilt);
-  font: inherit;
-  font-size: var(--fs-18);
-  font-weight: 500;
-  color: var(--ink-deep);
-  cursor: pointer;
-}
-
-/* Lighter than the board's #A8B2C2, which is 5.34:1 on this ground; this is 7.13:1 (ADR 0025, "The technician boards"). */
-.action:disabled {
-  background: var(--ink-disabled);
-  color: var(--ink-tag);
-  cursor: default;
-}
-
-.action:focus-visible {
-  outline: var(--rule-strong) solid var(--paper);
-  outline-offset: var(--focus-offset);
 }

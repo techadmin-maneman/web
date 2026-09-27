@@ -4,7 +4,7 @@
 // draw.
 
 import { WORDMARK_SMALL } from "@maneman/brand/marks";
-import { Mark } from "../components/Mark.tsx";
+import { Mark } from "@maneman/ui/Mark";
 import type { FirstFitPair } from "./card.ts";
 import houseCard from "./invite-house.jpg";
 import styles from "./refer.module.css";

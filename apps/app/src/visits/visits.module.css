@@ -5,7 +5,7 @@
   padding: var(--sp-22) var(--sp-20) var(--sp-12);
   font-family: var(--font-serif);
   font-size: var(--fs-15);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   color: var(--text-muted);
@@ -21,7 +21,7 @@
   margin: 0;
   padding: 0 var(--sp-20);
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -112,24 +112,9 @@
   color: var(--text-muted);
 }
 
+/* Board C1's "Book your next visit" (packages/ui/Button.tsx), the width of the page. */
 .book {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  height: var(--btn-lg);
-  border: 0;
-  background: var(--ink);
-  font: inherit;
-  font-size: var(--fs-16);
-  font-weight: 500;
-  color: var(--paper);
-  text-decoration: none;
-}
-
-.book:disabled {
-  background: var(--paper-shade);
-  color: var(--text-quiet);
 }
 
 /* The client's own record, beneath board C1's lists; the board draws none. */
@@ -150,13 +135,13 @@
 .dueLine {
   margin: 0;
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 
 .dueNote {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -224,7 +209,7 @@
 
 .done dd {
   margin: 0;
-  line-height: 1.65;
+  line-height: var(--lh-165);
 }
 
 /* An upcoming visit's own page: its card, as Home draws the next one, 24 px under the header as C9's page is. */
@@ -247,7 +232,7 @@
   padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--ink);
   font-size: var(--fs-15);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--text);
   text-decoration: none;
 }
@@ -275,7 +260,7 @@
 .invoiceLine {
   margin: 0;
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 
 /* A visit the client was not home for, above what the visit's page says of it (LIFE-07; the board draws none). */
@@ -288,15 +273,5 @@
 .noShowLine {
   margin: 0;
   font-size: var(--fs-16);
-  line-height: 1.55;
-}
-
-/* Said to a screen reader only: the link leaves the app for a PDF. */
-.away {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  line-height: var(--lh-155);
 }

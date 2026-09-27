@@ -3,6 +3,8 @@
 // sheet, so the sheet is ours, in the change sheet's frame, with placeholder words (docs/fidelity-method.md).
 // Should the app be told booking is with ops after all, the note goes to them on WhatsApp, as it did before.
 
+import { Button, ButtonLink } from "@maneman/ui/Button";
+import { Sheet } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
 import { booking, note as copy } from "../content.ts";
@@ -33,10 +35,6 @@ export function NoteSheet(props: {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
-
-  useEffect(() => {
     focusIfLost(dialog.current?.querySelector<HTMLElement>("#note-title") ?? null);
   }, [step.kind]);
 
@@ -51,15 +49,7 @@ export function NoteSheet(props: {
   };
 
   return (
-    <dialog
-      ref={dialog}
-      className={styles.dialog}
-      aria-labelledby="note-title"
-      onClose={props.onClose}
-      onClick={(event) => {
-        if (event.target === dialog.current) close();
-      }}
-    >
+    <Sheet ref={dialog} className={styles.dialog} labelledBy="note-title" onClose={props.onClose}>
       <button className={styles.close} type="button" onClick={close}>
         {booking.close}
       </button>
@@ -88,9 +78,16 @@ export function NoteSheet(props: {
                 }}
               />
             </label>
-            <button className={styles.primary} type="submit" disabled={busy || text.trim() === ""}>
+            <Button
+              variant="primary"
+              size="action"
+              className={styles.primary}
+              type="submit"
+              disabled={busy || text.trim() === ""}
+              busy={busy}
+            >
               {busy ? copy.saving : copy.save}
-            </button>
+            </Button>
           </form>
         )}
         {step.kind === "saved" && (
@@ -98,9 +95,9 @@ export function NoteSheet(props: {
             <h2 className={styles.outcome} id="note-title">
               {copy.saved(props.technician)}
             </h2>
-            <button className={styles.secondary} type="button" onClick={close}>
+            <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
               {booking.close}
-            </button>
+            </Button>
           </div>
         )}
         {(step.kind === "with_ops" || step.kind === "failed") && (
@@ -108,12 +105,18 @@ export function NoteSheet(props: {
             <h2 className={styles.outcome} id="note-title">
               {step.kind === "with_ops" ? copy.withOps : copy.failed}
             </h2>
-            <a className={styles.secondary} href={whatsappWith(`${props.message}${text.trim()}`)} rel="noopener">
+            <ButtonLink
+              variant="outline"
+              size="control"
+              className={styles.secondary}
+              href={whatsappWith(`${props.message}${text.trim()}`)}
+              rel="noopener"
+            >
               {copy.whatsapp}
-            </a>
+            </ButtonLink>
           </div>
         )}
       </div>
-    </dialog>
+    </Sheet>
   );
 }

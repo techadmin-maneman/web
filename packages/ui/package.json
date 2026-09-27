@@ -1,0 +1,32 @@
+{
+  "name": "@maneman/ui",
+  "private": true,
+  "version": "0.0.0",
+  "description": "The React parts the Phase 2 apps share: the base stylesheet, the icon and the mark, buttons, sheets, fields, rows, tables, tabs, a page's states, and the hooks behind them. Each app brings its own React.",
+  "type": "module",
+  "exports": {
+    "./base.css": "./base.css",
+    "./Button": "./Button.tsx",
+    "./Caps": "./Caps.tsx",
+    "./classes": "./classes.ts",
+    "./cssToken": "./cssToken.ts",
+    "./Dialog": "./Dialog.tsx",
+    "./ErrorBoundary": "./ErrorBoundary.tsx",
+    "./Field": "./Field.tsx",
+    "./Icon": "./Icon.tsx",
+    "./Mark": "./Mark.tsx",
+    "./motion": "./motion.ts",
+    "./Panel": "./Panel.tsx",
+    "./router": "./router.tsx",
+    "./Sheet": "./Sheet.tsx",
+    "./States": "./States.tsx",
+    "./Table": "./Table.tsx",
+    "./Tabs": "./Tabs.tsx",
+    "./useLoad": "./useLoad.ts",
+    "./useOneAtATime": "./useOneAtATime.ts",
+    "./VisuallyHidden": "./VisuallyHidden.tsx"
+  },
+  "dependencies": {
+    "@maneman/brand": "0.0.0"
+  }
+}

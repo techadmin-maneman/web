@@ -3,11 +3,10 @@
 // our API made. Checkout tells the page whether the client paid; the booking
 // itself waits for Razorpay's webhook, which the page then polls for.
 
+import { cssToken } from "@maneman/ui/cssToken";
 import type { Booking } from "../api.ts";
 
 const SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
-/** The brand's ink (tokens.css --ink), for Checkout's own buttons. */
-const INK = "#16233a";
 /**
  * How long the script may take before the payment counts as failed (board C6):
  * a script that never arrives would otherwise hold the sheet busy for ever.
@@ -66,7 +65,8 @@ export function pay(checkout: NonNullable<Booking["checkout"]>, method: PayMetho
       name: checkout.name,
       description: checkout.description,
       prefill: { ...checkout.prefill, method },
-      theme: { color: INK },
+      // The brand's ink, for Checkout's own buttons.
+      theme: { color: cssToken("--ink") },
       // A failure comes back to the app's own screen (board C6), not Checkout's retry.
       retry: { enabled: false },
       handler: () => {

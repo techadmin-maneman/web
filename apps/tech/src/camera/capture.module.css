@@ -70,26 +70,9 @@
 .unavailableLine {
   margin: 0;
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   text-align: center;
   color: var(--paper);
-}
-
-/* Asking the phone for its camera again: outlined, since Capture stays the one gold action. */
-.reopen {
-  min-height: var(--tech-min);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-17);
-  cursor: pointer;
-}
-
-.reopen:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
 }
 
 .tiles {
@@ -138,44 +121,14 @@
   gap: var(--sp-12);
 }
 
-.retake,
-.take {
-  height: var(--tech-primary);
-  border: 0;
-  font: inherit;
-  font-size: var(--fs-18);
-  font-weight: 500;
-  cursor: pointer;
-}
-
+/* Retake is drawn in the medium weight beside Capture, though it is outlined. */
 .retake {
   flex-shrink: 0;
   width: var(--tech-retake);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  color: var(--paper);
+  padding: 0;
+  font-weight: var(--weight-medium);
 }
 
 .take {
   flex: 1;
-  background: var(--gilt);
-  color: var(--ink-deep);
-}
-
-.retake:disabled,
-.take:disabled {
-  border-color: var(--ink-disabled);
-  background: var(--ink-disabled);
-  color: var(--ink-tag);
-  cursor: default;
-}
-
-.retake:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
-}
-
-.take:focus-visible {
-  outline: var(--rule-strong) solid var(--paper);
-  outline-offset: var(--focus-offset);
 }

@@ -1,0 +1,715 @@
+.flow {
+  background: var(--ink-deep);
+  min-height: calc(100vh - var(--header-h));
+}
+
+/* ---- Progress and the top line ----------------------------------------- */
+
+.track {
+  height: var(--rule-strong);
+  background: var(--ink-rule);
+  position: relative;
+}
+.progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--gilt);
+  transition: width var(--duration-travel) var(--ease-house);
+}
+.progress-upload {
+  width: 14%;
+}
+.progress-consent,
+.progress-error {
+  width: 28%;
+}
+.progress-stage {
+  width: 44%;
+}
+.progress-looks {
+  width: 60%;
+}
+.progress-processing {
+  width: 78%;
+}
+.progress-gate {
+  width: 90%;
+}
+.progress-result {
+  width: 100%;
+}
+
+.inner {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--flow-pad-top) var(--gutter) var(--flow-pad-bottom);
+}
+/* On a narrow phone the step label goes beneath Back, whole, rather than either breaking in two. */
+.topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--sp-20);
+  margin-bottom: var(--flow-topline-gap);
+}
+.back,
+.stepLabel {
+  white-space: nowrap;
+}
+.back {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-9);
+  min-height: var(--tap);
+}
+.stepLabel {
+  letter-spacing: var(--tracking-16);
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
+}
+
+/* ---- Shared ------------------------------------------------------------- */
+
+.title,
+.titleLarge,
+.resultTitle,
+.errorTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  color: var(--paper);
+}
+.title {
+  font-size: var(--fs-flow-title);
+  line-height: var(--lh-105);
+  letter-spacing: var(--tracking-title);
+  text-wrap: balance;
+}
+.titleLarge {
+  font-size: var(--fs-upload-title);
+  line-height: var(--lh-103);
+  letter-spacing: var(--tracking-title);
+  max-width: var(--measure-upload-title);
+  text-wrap: balance;
+}
+.title:focus,
+.titleLarge:focus,
+.resultTitle:focus,
+.errorTitle:focus {
+  outline: none;
+}
+.body {
+  margin: var(--sp-20) 0 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-165);
+  color: var(--ink-soft);
+  max-width: var(--measure-short);
+  text-wrap: pretty;
+}
+.split .body {
+  margin-top: var(--sp-24);
+}
+.choices {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.next {
+  height: var(--btn-lg);
+  width: 100%;
+  max-width: var(--flow-button-max);
+  margin-top: var(--sp-28);
+  border: 0;
+  font-size: var(--fs-16);
+  font-weight: var(--weight-medium);
+  transition: background-color var(--duration-quick) var(--ease-house);
+}
+.nextSpaced {
+  margin-top: var(--sp-32);
+}
+.nextOn {
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.nextOff {
+  background: var(--ink-disabled);
+  color: var(--ink-soft);
+  cursor: default;
+}
+.small {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+  line-height: var(--lh-160);
+}
+.inlineLink,
+.inlineLink:hover {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--ink-line);
+  text-underline-offset: var(--sp-3);
+}
+
+/* ---- Upload ------------------------------------------------------------- */
+
+.split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-wide)), 1fr));
+  gap: var(--flow-split-gap);
+  align-items: center;
+}
+.guidelines {
+  list-style: none;
+  padding: 0;
+  margin: var(--flow-guidelines-gap) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-18);
+}
+.guideline {
+  display: flex;
+  gap: var(--sp-16);
+  align-items: flex-start;
+  border-top: var(--hairline) solid var(--ink-rule);
+  padding-top: var(--sp-18);
+}
+.guidelineNumber {
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  color: var(--ink-muted);
+  font-variant-numeric: oldstyle-nums;
+  flex-shrink: 0;
+}
+.guidelineTitle {
+  font-size: var(--fs-17);
+  color: var(--paper);
+  line-height: var(--lh-140);
+}
+.guidelineBody {
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
+  margin-top: var(--sp-5);
+  line-height: var(--lh-155);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-14);
+  margin-top: var(--flow-actions-gap);
+}
+.preview {
+  width: 100%;
+  height: var(--preview-h);
+  background: var(--ink-frame);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.oval {
+  width: 70%;
+  max-width: var(--oval-max);
+}
+.previewCaption {
+  position: absolute;
+  left: var(--sp-24);
+  right: var(--sp-24);
+  bottom: var(--sp-24);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+  line-height: var(--lh-155);
+}
+.previewPhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---- Consent ------------------------------------------------------------ */
+
+.narrow {
+  max-width: var(--measure-lead);
+}
+.rows {
+  margin: var(--flow-rows-gap) 0 0;
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8) var(--sp-18);
+  padding: var(--sp-15) 0;
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+.rowKey {
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-16);
+  color: var(--ink-muted);
+  width: var(--consent-key-w);
+  flex-shrink: 0;
+}
+.rowValue {
+  margin: 0;
+  font-size: var(--fs-16);
+  color: var(--paper);
+  line-height: var(--lh-150);
+}
+.agree {
+  margin-top: var(--sp-28);
+  display: flex;
+  gap: var(--sp-14);
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: var(--fs-16);
+  line-height: var(--lh-160);
+  color: var(--paper);
+}
+.box {
+  width: var(--sp-22);
+  height: var(--sp-22);
+  flex-shrink: 0;
+  margin-top: var(--sp-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* A checkbox's and a field's edge on ink is 3:1 or more (WCAG 1.4.11; ADR 0022, item 37). */
+  border: var(--hairline) solid var(--ink-line-strong);
+  color: var(--ink);
+  transition:
+    background-color var(--duration-quick) var(--ease-house),
+    border-color var(--duration-quick) var(--ease-house);
+}
+.boxOn {
+  background: var(--paper);
+  border-color: var(--paper);
+}
+.agree:has(input:focus-visible) .box {
+  outline: var(--focus-width) solid var(--paper);
+  outline-offset: var(--focus-offset);
+}
+
+/* ---- Stage and looks ---------------------------------------------------- */
+
+.medium {
+  max-width: var(--flow-medium-max);
+}
+.stageGrid {
+  margin-top: var(--flow-choices-gap);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--stage-min)), 1fr));
+  gap: var(--sp-14);
+}
+.stage {
+  padding: var(--sp-20) var(--sp-18);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  cursor: pointer;
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  color: var(--ink-soft);
+  transition:
+    border-color var(--duration-quick) var(--ease-house),
+    background-color var(--duration-quick) var(--ease-house);
+}
+.stage.picked {
+  border-color: var(--paper);
+  background: var(--ink);
+  color: var(--paper);
+}
+.stageTitle {
+  display: block;
+  font-size: var(--fs-17);
+  line-height: var(--lh-130);
+}
+.stageSub {
+  display: block;
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+  margin-top: var(--sp-6);
+  line-height: var(--lh-150);
+}
+.lookGrid {
+  margin-top: var(--flow-choices-gap);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--look-min)), 1fr));
+  gap: var(--sp-14);
+}
+.look {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  border: var(--hairline) solid var(--ink-line);
+  color: var(--ink-soft);
+  transition: border-color var(--duration-quick) var(--ease-house);
+}
+.look.picked {
+  border-color: var(--paper);
+  color: var(--paper);
+}
+/* Once the render has started, the looks not chosen stand back. */
+.lookOff {
+  cursor: default;
+  color: var(--ink-muted);
+}
+.thumb {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--sp-10);
+  background: var(--ink-frame);
+  transition: background-color var(--duration-quick) var(--ease-house);
+}
+.look.picked .thumb {
+  background: var(--ink-raised);
+}
+.thumbLabel {
+  font-size: var(--fs-13);
+  color: var(--ink-muted);
+}
+.lookText {
+  display: block;
+  padding: var(--sp-12) var(--sp-14) var(--sp-14);
+}
+.lookDensity {
+  display: block;
+  font-size: var(--fs-15);
+}
+.lookDetail {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--ink-muted);
+  margin-top: var(--sp-4);
+  line-height: var(--lh-145);
+}
+.stage:has(input:focus-visible),
+.look:has(input:focus-visible) {
+  outline: var(--focus-width) solid var(--paper);
+  outline-offset: var(--focus-offset);
+}
+
+/* ---- Processing --------------------------------------------------------- */
+
+.processing {
+  max-width: var(--measure-note);
+  padding: var(--processing-pad) 0;
+}
+.ticks {
+  list-style: none;
+  padding: 0;
+  margin: var(--processing-gap) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+.tick {
+  display: flex;
+  gap: var(--sp-14);
+  align-items: center;
+  font-size: var(--fs-17);
+  color: var(--ink-muted);
+}
+.tick svg {
+  flex-shrink: 0;
+  color: var(--ink-line);
+}
+.tickDone {
+  color: var(--paper);
+}
+.tickDone svg {
+  color: var(--gilt);
+}
+.countdown {
+  margin-top: var(--processing-gap);
+  font-family: var(--font-serif);
+  font-size: var(--fs-countdown);
+  line-height: var(--lh-100);
+  /* v2's --ink-disabled is 1.6:1 here; this is 4.2:1, over WCAG's 3:1 for large text (ADR 0022, item 30). */
+  color: var(--ink-line-strong);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* ---- Gate --------------------------------------------------------------- */
+
+.gate {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-mid)), 1fr));
+  gap: var(--flow-split-gap);
+  align-items: center;
+}
+@media (max-width: 760px) {
+  .gateImage {
+    order: 2;
+  }
+}
+.gateFrame {
+  width: 100%;
+  height: var(--gate-frame-h);
+  background: var(--ink-frame);
+  position: relative;
+  display: flex;
+}
+.gateLeft {
+  flex: 1;
+  border-right: var(--hairline) solid var(--gilt);
+}
+.gateRight {
+  flex: 1;
+  background: var(--ink-raised);
+  filter: blur(var(--gate-blur));
+}
+.gateReady {
+  position: absolute;
+  left: var(--sp-20);
+  bottom: var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
+}
+.gateCaption {
+  margin: var(--sp-20) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-170);
+  color: var(--ink-muted);
+  max-width: var(--measure-form);
+  text-wrap: pretty;
+}
+.fields {
+  margin-top: var(--flow-choices-gap);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--measure-form);
+}
+.fieldLabel {
+  display: block;
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+  margin-bottom: var(--sp-8);
+}
+.input {
+  height: var(--btn-lg);
+  width: 100%;
+  border: var(--hairline) solid var(--ink-line-strong);
+  background: transparent;
+  padding: 0 var(--sp-15);
+  font-size: var(--fs-16);
+  color: var(--paper);
+}
+.mobile {
+  height: var(--btn-lg);
+  display: flex;
+  border: var(--hairline) solid var(--ink-line-strong);
+}
+.inputBad {
+  border-color: var(--error-on-ink);
+}
+.prefix {
+  padding: 0 var(--sp-14);
+  color: var(--ink-muted);
+  border-right: var(--hairline) solid var(--ink-line);
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-16);
+  font-variant-numeric: tabular-nums;
+}
+.mobileInput {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0 var(--sp-14);
+  font-size: var(--fs-16);
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.mobileInput:focus-visible {
+  outline: none;
+}
+.mobile:has(.mobileInput:focus-visible) {
+  outline: var(--focus-width) solid var(--paper);
+  outline-offset: var(--focus-offset);
+}
+.error {
+  font-size: var(--fs-14);
+  color: var(--error-on-ink);
+  margin-top: var(--sp-8);
+}
+.gateFailure {
+  margin-top: var(--sp-20);
+  max-width: var(--measure-form);
+}
+.gateSubmit {
+  width: 100%;
+  max-width: var(--measure-form);
+  margin-top: var(--sp-26);
+}
+.reassurance {
+  margin-top: var(--sp-16);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+  line-height: var(--lh-165);
+  max-width: var(--measure-form);
+}
+
+/* ---- Result ------------------------------------------------------------- */
+
+.result {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-mid)), 1fr));
+  gap: var(--result-gap);
+  align-items: start;
+}
+/* A returning visitor's look: the result alone, in the result frame's size. */
+.solo {
+  /* The photograph's own shape, as on the slider's frame (site/src/lib/frame-aspect.ts). */
+  --frame-aspect: 4 / 3;
+
+  position: relative;
+  /* As tall as the cap at most, narrowing to keep the photograph's shape, so it is never letterboxed. */
+  width: min(100%, calc(var(--result-frame-max-h) * var(--frame-aspect)));
+  aspect-ratio: var(--frame-aspect);
+  background: var(--ink-frame);
+  overflow: hidden;
+}
+.solo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.solo .soloLabel {
+  position: absolute;
+  top: var(--sp-18);
+  right: var(--sp-18);
+  font-size: var(--fs-15);
+}
+.returningNote {
+  margin: var(--sp-18) 0 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-165);
+  color: var(--ink-soft);
+}
+/* The after side while the render is still running, in the gate's colours. Beside the photograph, BeforeAfter
+   keeps its words in the part left showing (CLI-28), where they may take two lines. */
+.pending {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-14);
+  text-align: center;
+  background: var(--ink-raised);
+  color: var(--ink-muted);
+  font-size: var(--fs-15);
+  letter-spacing: var(--tracking-12);
+}
+.chosen {
+  letter-spacing: var(--tracking-16);
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
+}
+.resultTitle {
+  margin-top: var(--sp-18);
+  font-size: var(--fs-closing);
+  line-height: var(--lh-106);
+}
+.disclaimer {
+  margin-top: var(--sp-26);
+  border: var(--hairline) solid var(--ink-line);
+  padding: var(--sp-18) var(--sp-20);
+  font-size: var(--fs-15);
+  line-height: var(--lh-165);
+  color: var(--ink-soft);
+}
+.resultActions {
+  margin-top: var(--sp-28);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-13);
+  max-width: var(--measure-form);
+}
+.pair {
+  display: flex;
+  gap: var(--sp-13);
+}
+.half {
+  flex: 1;
+  height: var(--btn-result);
+  font-size: var(--fs-15);
+  gap: var(--sp-9);
+}
+.copy {
+  margin-top: var(--sp-22);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+  line-height: var(--lh-160);
+}
+.number {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Error -------------------------------------------------------------- */
+
+.errorScreen {
+  max-width: var(--measure-note);
+}
+.errorFrame {
+  border: var(--hairline) solid var(--ink-line);
+  width: 100%;
+  height: var(--error-frame-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-14);
+  padding: var(--sp-24);
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: var(--fs-15);
+}
+.errorTitle {
+  margin-top: var(--error-title-gap);
+  font-size: var(--fs-error-title);
+  line-height: var(--lh-110);
+  text-wrap: balance;
+}
+.errorBody {
+  margin: var(--sp-18) 0 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-170);
+  color: var(--ink-soft);
+  max-width: var(--measure-error);
+  text-wrap: pretty;
+}
+.errorActions {
+  margin-top: var(--sp-32);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-13);
+  max-width: var(--measure-button-column);
+}
+
+/* Turnstile shows only if Cloudflare needs the visitor to act. */
+.turnstile {
+  margin-top: var(--sp-16);
+}
+.turnstile:empty {
+  display: none;
+}

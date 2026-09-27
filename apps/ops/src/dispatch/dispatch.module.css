@@ -83,7 +83,7 @@
 }
 
 .fieldLabel {
-  line-height: 1.25;
+  line-height: var(--lh-125);
 }
 
 .select,
@@ -101,8 +101,8 @@
 .tool:focus-visible,
 .select:focus-visible,
 .input:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* ---- Board A1: technicians down, seven days across ----------------------- */
@@ -120,7 +120,7 @@
 .tech {
   width: var(--ops-tech);
   padding: var(--sp-9) var(--sp-10);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   text-align: left;
   vertical-align: top;
 }
@@ -151,7 +151,7 @@
 .day {
   padding: var(--sp-9) var(--sp-8);
   border-left: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   text-align: left;
   vertical-align: top;
 }
@@ -271,7 +271,7 @@
 .who,
 .what {
   display: block;
-  line-height: 1.25;
+  line-height: var(--lh-125);
   overflow-wrap: anywhere;
 }
 
@@ -285,8 +285,8 @@
 }
 
 .block:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .fit:focus-visible {
@@ -321,8 +321,8 @@
 }
 
 .target:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 /* A day the job in hand has no room on: nothing to drop on, and it says so. */
@@ -380,7 +380,7 @@
   padding: var(--sp-10) var(--sp-14);
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-14);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 
 .noticeText {
@@ -404,7 +404,7 @@
   padding: var(--sp-11) var(--sp-14);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-13);
-  line-height: 1.4;
+  line-height: var(--lh-140);
   color: var(--text-muted);
 }
 
@@ -433,7 +433,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-variant-caps: all-small-caps;
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
   color: var(--text-muted);
@@ -485,7 +485,7 @@
 .trayLine,
 .trayOffered {
   display: block;
-  line-height: 1.4;
+  line-height: var(--lh-140);
   color: var(--text-muted);
 }
 
@@ -503,8 +503,8 @@
 }
 
 .trayJob:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 /* ---- Boards A2 and A3: the panels a job opens, each a modal dialog -------- */
@@ -539,9 +539,9 @@
 .pickerTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-24);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .pickerWhen {
@@ -555,15 +555,6 @@
   padding: 0;
   border: 0;
   border-top: var(--hairline) solid var(--text);
-}
-
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 .reason {
@@ -594,8 +585,8 @@
 }
 
 .radio:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* What the move does, behind the board's brass rule. */
@@ -604,7 +595,7 @@
   padding-left: var(--sp-14);
   border-left: var(--rule-strong) solid var(--brass);
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .actions {
@@ -612,44 +603,6 @@
   flex-wrap: wrap;
   gap: var(--sp-10);
   margin-top: var(--sp-20);
-}
-
-.send,
-.quiet {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-10);
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.send {
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.quiet {
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-}
-
-.send:disabled,
-.quiet:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.send:focus-visible,
-.quiet:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
 }
 
 /* ---- Board A3: the drawer ------------------------------------------------ */
@@ -666,7 +619,7 @@
 .drawerTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-22);
 }
 
@@ -726,7 +679,7 @@
 .untoldLine {
   margin: 0;
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .drawerActions {
@@ -761,7 +714,7 @@
 
   .scroll {
     flex: none;
-    max-height: 70dvh;
+    max-height: var(--ops-scroll-max-h);
   }
 
   .tray {

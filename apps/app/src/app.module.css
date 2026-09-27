@@ -1,6 +1,6 @@
-/* While the session is checked. */
+/* While the session is checked: board B3's loading, on paper. */
 
 .checking {
   flex: 1;
-  background: var(--ink);
+  background: var(--paper);
 }

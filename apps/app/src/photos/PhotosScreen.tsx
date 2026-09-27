@@ -2,14 +2,15 @@
 // there are two visits to compare. Before the first fit, board D3's empty
 // state. A photograph opens in a sheet, to download.
 
+import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api } from "../api.ts";
+import { api, type PhotoTimeline } from "../api.ts";
 import { empty, photos, states } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { EmptyState } from "../home/TabScreens.tsx";
 import { TAB_ICONS } from "../icons.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { visitName } from "../lib/visit.ts";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ANGLES, PhotoRow, type OpenPhoto } from "./PhotoRow.tsx";
@@ -20,12 +21,32 @@ import styles from "./photos.module.css";
 function PhotosLoading() {
   return (
     <div className={styles.timeline} role="status">
-      <span className={styles.hidden}>{states.loading}</span>
+      <VisuallyHidden>{states.loading}</VisuallyHidden>
       <div className={styles.row}>
         {ANGLES.map((angle) => (
           <div key={angle} className={styles.cell} />
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Board D1: each visit's photographs, newest first; before the first fit, board D3's empty state. */
+function Timeline({ visits, onOpen }: { visits: PhotoTimeline["visits"]; onOpen: (photo: OpenPhoto) => void }) {
+  if (visits.length === 0) return <EmptyState lines={empty.photos.lines} icon={TAB_ICONS.photos} />;
+  return (
+    <div className={styles.timeline}>
+      {visits.map((visit) => (
+        <section key={visit.visit_id} aria-labelledby={`visit-${visit.visit_id}`}>
+          <div className={styles.group}>
+            <h2 className={styles.groupDate} id={`visit-${visit.visit_id}`}>
+              {fullDate(visit.date)}
+            </h2>
+            <p className={styles.groupWhat}>{visitName(visit.type)}</p>
+          </div>
+          <PhotoRow set={visit.photos} date={visit.date} onOpen={onOpen} />
+        </section>
+      ))}
     </div>
   );
 }
@@ -43,27 +64,11 @@ export function PhotosScreen() {
 
   return (
     <Shell header={{ kind: "tab", title: photos.title, action: compare }} tab="/photos">
-      {loaded.state === "loading" ? (
-        <PhotosLoading />
-      ) : loaded.state === "failed" ? (
-        <PageFailed onRetry={retry} />
-      ) : visits.length === 0 ? (
-        <EmptyState lines={empty.photos.lines} icon={TAB_ICONS.photos} />
-      ) : (
-        <div className={styles.timeline}>
-          {visits.map((visit) => (
-            <section key={visit.visit_id} aria-labelledby={`visit-${visit.visit_id}`}>
-              <div className={styles.group}>
-                <h2 className={styles.groupDate} id={`visit-${visit.visit_id}`}>
-                  {fullDate(visit.date)}
-                </h2>
-                <p className={styles.groupWhat}>{visitName(visit.type)}</p>
-              </div>
-              <PhotoRow set={visit.photos} date={visit.date} onOpen={setOpen} />
-            </section>
-          ))}
-        </div>
-      )}
+      {whenLoaded(loaded, {
+        loading: <PhotosLoading />,
+        failed: <PageFailed onRetry={retry} />,
+        loaded: (timeline) => <Timeline visits={timeline.visits} onOpen={setOpen} />,
+      })}
       {open !== null && (
         <PhotoSheet
           photo={open}

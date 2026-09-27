@@ -1,0 +1,13 @@
+/*
+ * Out of sight, but read out: the one recipe for it. Unlike the other shared
+ * parts it is not in the `ui` layer, so no screen's rule can bring it back into view.
+ */
+
+.hidden {
+  position: absolute;
+  width: var(--sr-only-size);
+  height: var(--sr-only-size);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

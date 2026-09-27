@@ -43,6 +43,7 @@ export default defineConfig(
           "./apps/ops/tsconfig.json",
           "./apps/tech/tsconfig.json",
           "./apps/tech/sw/tsconfig.json",
+          "./packages/ui/tsconfig.json",
         ],
         tsconfigRootDir: import.meta.dirname,
       },
@@ -76,5 +77,10 @@ export default defineConfig(
   {
     files: ["test/**/*.ts", "e2e/**/*.ts"],
     rules: { "no-console": "off" },
+  },
+  {
+    // A screen that picks between three things says so in a function that returns early (FEA-41, FEO-32).
+    files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
+    rules: { "no-nested-ternary": "error" },
   },
 );

@@ -58,7 +58,7 @@ const [standard, premium] = prices.columns;
   }
   .label-title {
     margin: 0;
-    font-weight: 400;
+    font-weight: var(--weight-regular);
     font-size: var(--fs-16);
     color: var(--text-muted);
   }
@@ -98,13 +98,13 @@ const [standard, premium] = prices.columns;
     font-size: var(--fs-14);
     color: var(--text-muted);
     margin-top: var(--sp-5);
-    line-height: 1.5;
+    line-height: var(--lh-150);
   }
   .amount {
     padding-left: var(--price-cell-pad);
     font-family: var(--font-serif);
     font-size: var(--fs-price);
-    line-height: 1;
+    line-height: var(--lh-100);
     font-variant-numeric: lining-nums tabular-nums;
   }
   .lines {
@@ -114,7 +114,7 @@ const [standard, premium] = prices.columns;
     margin-top: var(--sp-28);
     font-size: var(--fs-15);
     color: var(--text-muted);
-    line-height: 1.6;
+    line-height: var(--lh-160);
   }
   .actions {
     display: flex;

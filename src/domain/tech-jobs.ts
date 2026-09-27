@@ -132,6 +132,8 @@ interface JobRow {
   status: AppointmentStatus;
   person_id: string | null;
   service_city: string | null;
+  /** The area of the pincode the visit is booked for, where the service area names it. */
+  pincode_area: string | null;
   /** The client's note from the app (src/domain/client-notes.ts). */
   client_note: string | null;
   client_name: string | null;
@@ -157,6 +159,7 @@ interface JobRow {
 // charges nothing, as it does a consultation.
 const SELECT_JOB = `
   SELECT a.id, a.window_start, a.window_end, a.type, a.status, a.person_id, a.service_city, a.client_note,
+    sp.area AS pincode_area,
     p.name AS client_name, p.mobile_e164 AS client_mobile,
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
     d.access_notes, d.lat, d.lng,
@@ -167,6 +170,7 @@ const SELECT_JOB = `
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
+  LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
   WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
 
 /** The jobs on one India date, in time order. Statuses the technician can still act on, and what he closed today. */
@@ -375,8 +379,9 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
     ends_at: row.window_end,
     window_label: windowAt(indiaTime(starts)),
     type: row.type,
-    // "only time, type and sector": the area, never the street, whether the job is unlocked or not.
-    sector: row.locality ?? row.service_city,
+    // "only time, type and sector": the area, never the street, whether the job is unlocked or not. The visit's
+    // pincode names it first, as the dispatch board does (ADR 0069).
+    sector: row.pincode_area ?? row.locality ?? row.service_city,
     status: row.status,
     badge: badgeOf(row),
     slots: row.type === null ? null : VISIT_BLOCKS[row.type].units / 2,

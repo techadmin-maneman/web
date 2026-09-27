@@ -24,7 +24,7 @@
 .promise {
   font-family: var(--font-serif);
   font-size: var(--fs-30);
-  line-height: 1.18;
+  line-height: var(--lh-118);
 }
 
 /* Board F1's credit tile, ruled above and below. */
@@ -51,20 +51,20 @@
 .creditCount {
   font-family: var(--font-serif);
   font-size: var(--fs-34);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums;
 }
 
 .noOther {
   font-size: var(--fs-16);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--text-soft);
 }
 
 /* Where the credits of the invite the client came with stand, while they are not in the balance. */
 .inviteCredits {
   font-size: var(--fs-16);
-  line-height: 1.65;
+  line-height: var(--lh-165);
 }
 
 /* The two ways on, at the foot of the screen (board F1). */
@@ -75,40 +75,11 @@
   margin-top: auto;
 }
 
-.share,
-.shareSmall,
-.primary,
-.outline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: var(--ink);
-  font: inherit;
-  font-weight: 500;
-  color: var(--paper);
-  cursor: pointer;
-}
-
+/* The screens' buttons (packages/ui/Button.tsx): Share and each sheet's action 56 px across the column. */
 .share,
 .primary {
   gap: var(--sp-11);
   width: 100%;
-  min-height: var(--btn-lg);
-  font-size: var(--fs-16);
-}
-
-.primary:disabled,
-.shareSmall:disabled {
-  background: var(--paper-shade);
-  color: var(--text-quiet);
-  cursor: default;
-}
-
-.outline {
-  border: var(--hairline) solid var(--ink);
-  background: none;
-  color: var(--text);
 }
 
 /* Board F1's quiet way to the tracker, and F6's way to the revoke. */
@@ -149,7 +120,7 @@
 .figureCount {
   font-family: var(--font-serif);
   font-size: var(--fs-34);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums;
 }
 
@@ -190,7 +161,7 @@
 .tracker .only {
   margin-top: var(--sp-24);
   font-size: var(--fs-15);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--text-muted);
 }
 
@@ -204,21 +175,19 @@
 .nobodyTitle {
   font-family: var(--font-serif);
   font-size: var(--fs-25);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .nobodyLine {
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
 .shareSmall {
   align-self: flex-start;
-  min-height: var(--btn-md);
   margin-top: var(--sp-6);
   padding: 0 var(--sp-20);
-  font-size: var(--fs-15);
 }
 
 .tracker > .quiet {
@@ -254,7 +223,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .panel .panelBody {
@@ -262,7 +231,7 @@
   padding-top: var(--sp-14);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .pair {
@@ -271,16 +240,15 @@
   margin-top: var(--sp-18);
 }
 
+/* Side by side, both 48 px (size="control"). */
 .pair .primary,
 .pair .outline {
   flex: 1;
-  min-height: var(--btn-md);
-  font-size: var(--fs-15);
 }
 
 .problem {
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-paper);
 }
 
@@ -289,36 +257,12 @@
 }
 
 /*
- * The share sheet (boards F2 to F4). The dialog fills the screen and is clear: F2 and F4 fill it, as drawn, and
- * F3 sits at its foot over the dark ground, with Close above it, where anyone can see it and reach it.
+ * The share sheet (boards F2 to F4; packages/ui/Sheet.tsx). The frame fills the screen and is clear: F2 and F4
+ * fill it, as drawn, and F3 sits at its foot over the dark ground, with Close above it, where anyone can see it
+ * and reach it.
  */
 .dialog {
-  width: 100%;
-  max-width: var(--app-column);
-  height: 100dvh;
-  max-height: 100dvh;
-  margin: 0 auto;
-  padding: 0;
-  border: 0;
-  background: none;
   --focus-colour: var(--paper);
-}
-
-.dialog[open] {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  animation: rise var(--ease-progress);
-}
-
-.dialog::backdrop {
-  background: var(--ink-night);
-}
-
-@keyframes rise {
-  from {
-    transform: translateY(100%);
-  }
 }
 
 .screen {
@@ -372,7 +316,7 @@
 
 .lead {
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-soft);
 }
 
@@ -545,7 +489,7 @@ img.card {
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-26);
-  line-height: 1.18;
+  line-height: var(--lh-118);
 }
 
 .lines {
@@ -562,7 +506,7 @@ img.card {
   padding: var(--sp-15) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 
 .bullet {
@@ -588,11 +532,6 @@ img.card {
   flex-direction: column;
   gap: var(--sp-12);
   margin-top: var(--sp-24);
-}
-
-.stack .outline {
-  min-height: var(--btn-lg);
-  font-size: var(--fs-16);
 }
 
 /* Board F4: on the dark ground, exactly as the friend will receive it, and the ways to send it. */
@@ -648,7 +587,7 @@ img.card {
 
 .bubbleTitle {
   font-size: var(--fs-14);
-  line-height: 1.35;
+  line-height: var(--lh-135);
 }
 
 .bubble .bubbleLine,
@@ -659,7 +598,7 @@ img.card {
 
 .bubble .bubbleLine {
   margin-top: var(--sp-4);
-  line-height: 1.4;
+  line-height: var(--lh-140);
 }
 
 .bubble .bubbleDomain {
@@ -669,19 +608,19 @@ img.card {
 .bubble .bubbleMessage {
   padding: var(--sp-8) var(--sp-4) var(--sp-2);
   font-size: var(--fs-15);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   overflow-wrap: anywhere;
 }
 
 .inkProblem {
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-ink);
 }
 
 .failed p + p {
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .retry {
@@ -694,7 +633,7 @@ img.card {
   background: none;
   font: inherit;
   font-size: var(--fs-15);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--text);
   cursor: pointer;
 }

@@ -1,31 +1,33 @@
 /*
  * The technician app's base: the brand tokens, the Phase 2 layer and the fonts
- * (packages/brand), and the one column the design is drawn at. The ground is
- * ink on every screen, with off-white text and gold on the one primary action,
- * as the design opens by saying. Components style themselves in their own
- * .module.css, with tokens only.
+ * (packages/brand), the page every app starts from (packages/ui), and the one
+ * column the design is drawn at. The ground is ink on every screen, with
+ * off-white text and gold on the one primary action, as the design opens by
+ * saying. Components style themselves in their own .module.css, with tokens only.
  */
 
 @import "@maneman/brand/tokens.css";
 @import "@maneman/brand/tokens-phase2.css";
 @import "@maneman/brand/fonts.css";
+@import "@maneman/ui/base.css";
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html,
+/*
+ * Keyboard focus is gold on this app's ink, as the board draws its one accent.
+ * Its buttons are the board's "Targets": the one primary action 64 px, the
+ * others 56, nothing under 48, their words larger and in the regular weight.
+ */
 body {
-  margin: 0;
-}
+  --focus-colour: var(--gilt);
+  --action-height: var(--tech-primary);
+  --action-text: var(--fs-18);
+  --control-height: var(--tech-stepper);
+  --control-text: var(--fs-17);
+  --control-weight: var(--weight-regular);
+  --small-height: var(--tech-min);
+  --small-text: var(--fs-17);
 
-body {
   background: var(--ink-deep);
   color: var(--paper);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
 }
 
 /* On a wider screen the design's column is centred, not stretched. */
@@ -40,14 +42,4 @@ body {
 /* Gloved use: nothing responds to a drag or a pinch that is not meant to. */
 button {
   touch-action: manipulation;
-}
-
-/* The steps slide on the house curve (../steps/steps.module.css); under prefers-reduced-motion nothing moves. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition: none !important;
-    animation: none !important;
-  }
 }

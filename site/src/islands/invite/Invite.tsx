@@ -1,0 +1,192 @@
+// The referral landing at /r/:code (design/phase2/Referral and Waitlist, boards
+// C1 to C5), and the site's own /book, which is the same page without the
+// invite. One island holds the whole page, because the pincode decides what
+// the page is: a consultation form where we come, a waitlist where we do not.
+//
+// The invite arrives in the page itself: the mm-site Worker writes it onto
+// #invite, so the referrer's name is there before any JavaScript runs and the
+// preview WhatsApp fetches is the referrer's own card (site/src/worker.ts).
+// Where it is missing — local dev, a page served straight from the assets, or
+// mm-api not answering the Worker — the island fetches it, and any code books.
+// The prices arrive the same way, from the price book, onto <body>, and are
+// fetched where they did not (docs/decisions/0073-prices-from-the-price-book.md).
+//
+// The pincode check is usePincode.ts, the two forms Consultation.tsx and
+// Waitlist.tsx, which send through useTurnstileForm.ts, and the confirmations
+// Done.tsx. Outside production, ?state= opens each state directly (preview.ts).
+
+import { useEffect, useRef, useState } from "preact/hooks";
+import { referral } from "../../content/referral.ts";
+import { booking } from "../../content/site.ts";
+import { fetchInvite, fetchPublishedPrices, type Invite as InviteAnswer } from "../../lib/api.ts";
+import { cardPath, HOUSE_CARD, isInvite } from "../../lib/invite.ts";
+import { BUILT_WORDS, isPublishedPrices, priceWords, standardOf, type PriceWords } from "../../lib/prices.ts";
+import { fill } from "../../lib/text.ts";
+import { Consultation } from "./Consultation.tsx";
+import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
+import { HowItWorks } from "./HowItWorks.tsx";
+import styles from "./Invite.module.css";
+import { codeInPath, inviteInPage, pricesInPage } from "./page.ts";
+import { PincodePanel } from "./PincodePanel.tsx";
+import { Prices } from "./Prices.tsx";
+import { previewNamed, SAMPLE, sampleBooking } from "./preview.ts";
+import { usePincode } from "./usePincode.ts";
+import { Waitlist } from "./Waitlist.tsx";
+
+interface Props {
+  turnstileSiteKey: string;
+  /** Outside production only: ?state= opens a state directly. */
+  allowStateSwitch: boolean;
+  /**
+   * "invited" is /r/:code, where a friend arrives with someone's invite. "public"
+   * is the site's own /book, which shows no card and no invite, asks where the
+   * hair loss is as Phase 1's form did, and books without one
+   * (docs/decisions/0051-booking-from-the-site.md).
+   */
+  mode?: "invited" | "public";
+}
+
+type State = "arrival" | "booked" | "listed";
+
+/** The card the page shows: the referrer's own while it is live, else our house one. */
+const CARD = { width: 1200, height: 630 };
+
+export default function Invite(props: Props) {
+  // Null until the invite is known: the page then says only what is true of every invite.
+  const [invite, setInvite] = useState<InviteAnswer | null>(null);
+  // Read before the first draw, so hydrating keeps the figures the Worker wrote into the page.
+  const [prices, setPrices] = useState<PriceWords>(() => pricesInPage() ?? BUILT_WORDS);
+  const [state, setState] = useState<State>("arrival");
+  const [booked, setBooked] = useState<Booking | null>(null);
+  const [listed, setListed] = useState<Listing | null>(null);
+  const pincode = usePincode();
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  const invited = (props.mode ?? "invited") === "invited";
+  const name = invited ? (invite?.referrer_first_name ?? null) : null;
+  // Only a valid invite carries the 3 visits; the API books any other without them.
+  const credits = invited && invite?.state === "valid";
+
+  // The invite: from the page where the Worker wrote it, otherwise from the API.
+  useEffect(() => {
+    if (!invited) return;
+    const written = inviteInPage();
+    if (written !== null) {
+      setInvite(written);
+      return;
+    }
+    const code = codeInPath();
+    if (code === "") return;
+    void fetchInvite(code).then((found) => {
+      if (found.ok && isInvite(found.body)) setInvite(found.body);
+    });
+  }, [invited]);
+
+  // The prices: from the page where the Worker wrote them, otherwise from the API.
+  useEffect(() => {
+    if (pricesInPage() !== null) return;
+    void fetchPublishedPrices().then((found) => {
+      if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(standardOf(found.body)));
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!props.allowStateSwitch) return;
+    const found = previewNamed(new URLSearchParams(location.search).get("state"));
+    if (found === undefined || found === "arrival") return;
+    if (found === "served") pincode.setAnswer(SAMPLE.served);
+    if (found === "unserved") pincode.setAnswer(SAMPLE.unserved);
+    if (found === "booked" || found === "requested" || found === "expired") {
+      setBooked(sampleBooking(found));
+      setState("booked");
+    }
+    if (found === "listed") {
+      setListed({ area: SAMPLE.unserved.area, credits: true, invite: "valid" });
+      setState("listed");
+    }
+  }, [props.allowStateSwitch]);
+
+  useEffect(() => {
+    if (state !== "arrival") {
+      globalThis.scrollTo(0, 0);
+      heading.current?.focus();
+    }
+  }, [state]);
+
+  const formProps = {
+    name,
+    invited,
+    credits,
+    turnstileSiteKey: props.turnstileSiteKey,
+    onChangePincode: pincode.change,
+  };
+
+  if (state === "booked" && booked !== null) return <Booked booking={booked} heading={heading} />;
+  if (state === "listed" && listed !== null) return <Listed listing={listed} name={name} heading={heading} />;
+  const { answer } = pincode;
+  return (
+    <section class={styles.arrival}>
+      <div class={`${styles.inner} ${styles.grid}`}>
+        <div class={styles.lead}>
+          {invited && (
+            <div class={`caps ${styles.from}`}>
+              {name === null ? referral.arrival.unnamed : fill(referral.arrival.invited, { name })}
+            </div>
+          )}
+          <h1 ref={heading} tabIndex={-1} class={styles.title}>
+            {invited ? referral.arrival.title : booking.title}
+          </h1>
+          <div class={styles.offer}>
+            {!invited && <p>{booking.intro}</p>}
+            {credits && <p>{referral.arrival.offer}</p>}
+            {invited && invite !== null && !credits && (
+              <p>
+                <span class={styles.unknownTitle}>{referral.arrival.unknown.title}</span>
+                <span class={styles.unknownBody}>{referral.arrival.unknown.body}</span>
+              </p>
+            )}
+          </div>
+          <Prices words={prices} />
+          <PincodePanel check={pincode} />
+
+          {answer?.served === true && (
+            <Consultation
+              {...formProps}
+              answer={answer}
+              onBooked={(result) => {
+                setBooked(result);
+                setState("booked");
+              }}
+            />
+          )}
+          {answer?.served === false && (
+            <Waitlist
+              {...formProps}
+              answer={answer}
+              onListed={(result) => {
+                setListed(result);
+                setState("listed");
+              }}
+            />
+          )}
+        </div>
+
+        <div class={styles.aside}>
+          {invited && (
+            <img
+              class={styles.inviteCard}
+              src={invite === null ? HOUSE_CARD : cardPath(invite, codeInPath())}
+              width={CARD.width}
+              height={CARD.height}
+              alt=""
+              onError={(event) => {
+                event.currentTarget.src = HOUSE_CARD;
+              }}
+            />
+          )}
+          <HowItWorks />
+        </div>
+      </div>
+    </section>
+  );
+}

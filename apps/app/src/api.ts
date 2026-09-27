@@ -1,7 +1,12 @@
-// The client app's calls to mm-api (docs/openapi-client.json). Every call is
-// same-origin, so the session cookie goes with it and the Origin matches.
+// The client app's calls to mm-api (docs/openapi-client.json), made with the
+// one client the apps share (packages/web-kit/api.ts). Each call's path, query,
+// body and answer are checked against ./api-schema.ts, which `npm run openapi`
+// writes from the schemas that serve the routes (FEA-30).
+//
+// Every call is same-origin, so the session cookie goes with it and the Origin matches.
 
-import type { components } from "./api-schema.ts";
+import { createClient, type Answer as Answered, type OperationAt, type Success } from "@maneman/web-kit/api";
+import type { components, paths } from "./api-schema.ts";
 import { heardFromApi } from "./lib/clock.ts";
 
 type Schemas = components["schemas"];
@@ -34,13 +39,14 @@ export type Refer = Schemas["Refer"];
 export type BookableType = Me["booking"]["types"][number];
 export type BookingWindow = Hold["window"];
 
+/** The codes the API refuses with, as its document writes them. */
+export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
+
 /**
  * A failed call carries the API's error code, or "offline" when it never reached
  * the API. `cached` is true for a Home the service worker kept (apps/app/sw/sw.ts).
  */
-export type Answer<T> =
-  | { readonly ok: true; readonly status: number; readonly body: T; readonly cached: boolean }
-  | { readonly ok: false; readonly status: number; readonly code: string };
+export type Answer<T> = Answered<T, ErrorCode>;
 
 /** Named as in apps/app/sw/sw.ts. */
 const HOME_CACHE = "mm-app-home";
@@ -59,9 +65,6 @@ export async function keptHome(): Promise<Me | null> {
   return kept === undefined ? null : ((await kept.json()) as Me);
 }
 
-/** A call that never reached the API: no connection, or something else answering in its place. */
-const OFFLINE = { ok: false, status: 0, code: "offline" } as const;
-
 const sessionListeners = new Set<() => void>();
 
 /**
@@ -76,114 +79,77 @@ export function onSessionEnded(listener: () => void): () => void {
   };
 }
 
-async function answerOf<T>(response: Response): Promise<Answer<T>> {
-  if (!response.ok) {
-    const error = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
-    if (response.status === 401) for (const listener of sessionListeners) listener();
-    return { ok: false, status: response.status, code: error?.error?.code ?? "unknown" };
-  }
-  const cached = response.headers.get(SERVED_FROM) === "cache";
-  if (!cached) heardFromApi(response.headers.get("Date"));
-  let value: unknown = null;
-  if (response.status !== 204) {
-    try {
-      value = await response.json();
-    } catch {
-      // An answer that is not JSON is not ours (a Wi-Fi sign-in page, say), so the API was not reached.
-      return OFFLINE;
-    }
-  }
-  return { ok: true, status: response.status, body: value as T, cached };
-}
-
-async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<Answer<T>> {
-  let response: Response;
-  try {
-    response = await fetch(path, {
-      method,
-      credentials: "same-origin",
-      headers: body === undefined ? {} : { "Content-Type": "application/json" },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-  } catch {
-    return OFFLINE;
-  }
-  return answerOf<T>(response);
-}
+const client = createClient<paths, ErrorCode>({
+  onSessionEnded: () => {
+    for (const listener of sessionListeners) listener();
+  },
+  // A hold is counted on the API's clock. The Home the phone kept is as old as the day it was kept, so it is not asked.
+  onAnswer: (response) => {
+    if (response.ok && response.headers.get(SERVED_FROM) !== "cache") heardFromApi(response.headers.get("Date"));
+  },
+});
 
 export const api = {
-  sendCode: (mobile: string) => call<LoginChallenge>("POST", "/api/auth/otp", { mobile }),
-  resendCode: (challengeId: string) =>
-    call<LoginChallenge>("POST", "/api/auth/otp/resend", { challenge_id: challengeId }),
-  smsCode: (challengeId: string) => call<LoginChallenge>("POST", "/api/auth/otp/sms", { challenge_id: challengeId }),
+  sendCode: (mobile: string) => client.post("/api/auth/otp", { body: { mobile } }),
+  resendCode: (challengeId: string) => client.post("/api/auth/otp/resend", { body: { challenge_id: challengeId } }),
+  smsCode: (challengeId: string) => client.post("/api/auth/otp/sms", { body: { challenge_id: challengeId } }),
   verify: (challengeId: string, code: string) =>
-    call<LoginVerify>("POST", "/api/auth/verify", { challenge_id: challengeId, code }),
-  logout: () => call<null>("POST", "/api/auth/logout"),
-  me: () => call<Me>("GET", HOME_PATH),
-  profile: () => call<Profile>("GET", "/api/profile"),
-  saveAddress: (address: AddressSave) => call<Address>("PATCH", "/api/profile/address", address),
+    client.post("/api/auth/verify", { body: { challenge_id: challengeId, code } }),
+  logout: () => client.post("/api/auth/logout"),
+  me: () => client.get(HOME_PATH),
+  profile: () => client.get("/api/profile"),
+  saveAddress: (address: AddressSave) => client.patch("/api/profile/address", { body: address }),
   /** One session token for every keystroke of a search, so Google bills the session and not the letters. */
   addressSuggestions: (query: string, session: string) =>
-    call<Schemas["AddressSuggestions"]>("POST", "/api/address/suggestions", { q: query, session }),
+    client.post("/api/address/suggestions", { body: { q: query, session } }),
   switchConsent: (purpose: ConsentPurpose, granted: boolean) =>
-    call<{ purpose: ConsentPurpose; granted: boolean; since: string }>("PATCH", `/api/consents/${purpose}`, {
-      granted,
-    }),
-  startNumberChange: (newMobile: string) =>
-    call<{ request_id: string; expires_in_s: number }>("POST", "/api/number-change", { new_mobile: newMobile }),
+    client.patch("/api/consents/{purpose}", { path: { purpose }, body: { granted } }),
+  startNumberChange: (newMobile: string) => client.post("/api/number-change", { body: { new_mobile: newMobile } }),
   verifyNumberChange: (requestId: string, number: "old" | "new", code: string) =>
-    call<NumberChange & { attempts_left: number | null }>("POST", "/api/number-change/verify", {
-      request_id: requestId,
-      number,
-      code,
-    }),
-  withdrawNumberChange: () => call<null>("DELETE", "/api/number-change"),
-  requestDeletion: () => call<{ state: "requested"; requested_at: string }>("POST", "/api/deletion-request"),
-  raiseGrievance: (text: string) => call<{ id: string; state: "open" }>("POST", "/api/grievances", { text }),
-  refer: () => call<Refer>("GET", "/api/refer"),
-  revokeCard: () => call<null>("DELETE", "/api/refer/card"),
-  visits: () => call<Visits>("GET", "/api/visits"),
-  visit: (id: string) => call<VisitDetail>("GET", `/api/visits/${id}`),
-  photos: () => call<PhotoTimeline>("GET", "/api/photos"),
-  payments: () => call<{ entries: Entry[]; credits: CreditLine[] }>("GET", "/api/payments"),
-  entry: (id: string) => call<EntryDetail>("GET", `/api/payments/${id}`),
+    client.post("/api/number-change/verify", { body: { request_id: requestId, number, code } }),
+  withdrawNumberChange: () => client.delete("/api/number-change"),
+  requestDeletion: () => client.post("/api/deletion-request"),
+  raiseGrievance: (text: string) => client.post("/api/grievances", { body: { text } }),
+  refer: () => client.get("/api/refer"),
+  revokeCard: () => client.delete("/api/refer/card"),
+  visits: () => client.get("/api/visits"),
+  visit: (id: string) => client.get("/api/visits/{id}", { path: { id } }),
+  photos: () => client.get("/api/photos"),
+  payments: () => client.get("/api/payments"),
+  entry: (id: string) => client.get("/api/payments/{id}", { path: { id } }),
   availability: (type: BookableType, moving?: string) =>
-    call<Availability>("GET", `/api/availability?type=${type}${moving === undefined ? "" : `&moving=${moving}`}`),
+    client.get("/api/availability", { query: { type, ...(moving === undefined ? {} : { moving }) } }),
   hold: (type: BookableType, date: string, window: BookingWindow, moving?: string) =>
-    call<Hold>("POST", "/api/holds", { type, date, window, ...(moving === undefined ? {} : { moving }) }),
-  holdById: (id: string) => call<Hold>("GET", `/api/holds/${id}`),
-  releaseHold: (id: string) => call<null>("DELETE", `/api/holds/${id}`),
-  book: (holdId: string) => call<Booking>("POST", "/api/bookings", { hold_id: holdId }),
-  moveTerms: (visitId: string) => call<MoveTerms>("POST", `/api/appointments/${visitId}/reschedule`, {}),
+    client.post("/api/holds", { body: { type, date, window, ...(moving === undefined ? {} : { moving }) } }),
+  holdById: (id: string) => client.get("/api/holds/{id}", { path: { id } }),
+  releaseHold: (id: string) => client.delete("/api/holds/{id}", { path: { id } }),
+  book: (holdId: string) => client.post("/api/bookings", { body: { hold_id: holdId } }),
+  // One path, two answers: sent no hold it gives the move's terms (200), sent one the booking (201).
+  moveTerms: (visitId: string) =>
+    client.post("/api/appointments/{id}/reschedule", { path: { id: visitId }, body: {} }) as Promise<Answer<MoveTerms>>,
   startMove: (visitId: string, holdId: string) =>
-    call<Booking>("POST", `/api/appointments/${visitId}/reschedule`, { hold_id: holdId }),
+    client.post("/api/appointments/{id}/reschedule", { path: { id: visitId }, body: { hold_id: holdId } }) as Promise<
+      Answer<Booking>
+    >,
   cancelTerms: (visitId: string) =>
-    call<CancelTerms>("POST", `/api/appointments/${visitId}/cancel`, { confirm: false }),
+    client.post("/api/appointments/{id}/cancel", { path: { id: visitId }, body: { confirm: false } }),
   cancel: (visitId: string, notice: CancelTerms["notice"]) =>
-    call<CancelTerms>("POST", `/api/appointments/${visitId}/cancel`, { confirm: true, notice }),
+    client.post("/api/appointments/{id}/cancel", { path: { id: visitId }, body: { confirm: true, notice } }),
   /** The client's note on a visit to come, for the technician's card; the latest replaces any before it. */
   note: (visitId: string, note: string) =>
-    call<{ note: string; noted_at: string }>("POST", `/api/appointments/${visitId}/note`, { note }),
+    client.post("/api/appointments/{id}/note", { path: { id: visitId }, body: { note } }),
 };
 
 /** A visit's tax invoice, as a PDF the browser opens itself. */
 export const documentUrl = (id: string) => `/api/documents/${id}`;
 export const receiptUrl = (paymentId: string) => `/api/payments/${paymentId}/receipt`;
-/** The client's own referral card, as the phone composed it. */
-export async function putCard(card: Blob): Promise<Answer<{ version: number }>> {
-  let response: Response;
-  try {
-    response = await fetch("/api/refer/card", {
-      method: "PUT",
-      credentials: "same-origin",
-      headers: { "Content-Type": "image/jpeg" },
-      body: card,
-    });
-  } catch {
-    return OFFLINE;
-  }
-  return answerOf<{ version: number }>(response);
-}
+
+/** The client's own referral card, as the phone composed it: a JPEG, not JSON, so it goes as it is. */
+export const putCard = (card: Blob) =>
+  client.request<Success<OperationAt<paths, "/api/refer/card", "put">>>("PUT", "/api/refer/card", {
+    body: card,
+    headers: { "Content-Type": "image/jpeg" },
+  });
 
 /** Everything held about the client, as a file the browser saves. */
 export const EXPORT_URL = "/api/me/export";

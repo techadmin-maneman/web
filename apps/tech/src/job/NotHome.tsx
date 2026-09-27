@@ -17,14 +17,16 @@
 // the tap. A no-show can close only once the API holds the check-in, since it
 // runs the wait on its own clock too (ADR 0065).
 
+import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState, type ReactNode } from "react";
 import type { CheckIn, Job } from "../api.ts";
 import { Confirm } from "../components/Confirm.tsx";
-import { Icon } from "../components/Icon.tsx";
 import { notHome as copy, job as jobCopy } from "../content.ts";
-import { TICK } from "../icons.ts";
+import { STROKE } from "../icons.ts";
 import { checkedIn, theWait } from "../lib/progress.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { clock, countdown, metres } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import { keepClosed, keptArrival } from "../store/jobs.ts";
@@ -132,16 +134,30 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
   function doorAction(): ReactNode {
     if (here) {
       return (
-        <button className={styles.action} type="button" disabled={asking} onClick={() => void start()}>
+        <Button
+          variant="gold"
+          size="action"
+          className={styles.action}
+          disabled={asking}
+          busy={asking}
+          onClick={() => void start()}
+        >
           {jobCopy.start}
-        </button>
+        </Button>
       );
     }
     if (failed) return null;
     return (
-      <button className={styles.action} type="button" disabled={asking} onClick={() => void arrive()}>
+      <Button
+        variant="gold"
+        size="action"
+        className={styles.action}
+        disabled={asking}
+        busy={asking}
+        onClick={() => void arrive()}
+      >
         {copy.arrived.action}
-      </button>
+      </Button>
     );
   }
 
@@ -169,9 +185,16 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
           </p>
           <p className={styles.stageNote}>{copy.failed.body}</p>
           {noPosition && <p className={styles.stageWarn}>{copy.arrived.noPosition}</p>}
-          <button className={styles.second} type="button" disabled={asking} onClick={() => void arrive()}>
+          <Button
+            variant="outlineOnInk"
+            size="control"
+            className={styles.second}
+            disabled={asking}
+            busy={asking}
+            onClick={() => void arrive()}
+          >
             {copy.failed.action}
-          </button>
+          </Button>
         </section>
       )}
 
@@ -183,7 +206,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
             {waitLine(wait.confirmed, mayClose, job.no_show_wait_min)}
           </p>
           <p className={styles.evidence}>
-            <Icon className={styles.evidenceIcon} d={TICK} size={20} />
+            <Icon className={styles.evidenceIcon} d={ICONS.tick} size={20} stroke={STROKE} />
             <span>{evidenceOf(job)}</span>
           </p>
           {refusedAsEarly(job.id) && (
@@ -191,16 +214,17 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
               {copy.waiting.early}
             </p>
           )}
-          <button
+          <Button
+            variant="outlineOnInk"
+            size="action"
             className={styles.outline}
-            type="button"
             disabled={!mayClose || asking}
             onClick={() => {
               setConfirming(true);
             }}
           >
             {copy.waiting.close}
-          </button>
+          </Button>
         </section>
       )}
 

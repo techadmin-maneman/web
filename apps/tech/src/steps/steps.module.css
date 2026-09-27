@@ -19,7 +19,7 @@
  * under prefers-reduced-motion nothing moves (../styles/global.css).
  */
 .sliding {
-  animation: var(--ease) backwards step-in;
+  animation: var(--duration-quick) var(--ease-house) backwards step-in;
 }
 
 @keyframes step-in {
@@ -56,7 +56,7 @@
 .title {
   margin: 0;
   font-size: var(--fs-17);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--paper);
 }
 
@@ -86,7 +86,7 @@
   border-top: var(--rule-strong) solid var(--error-on-ink);
   border-bottom: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--paper);
 }
 
@@ -94,16 +94,6 @@
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-/* Said to a screen reader and not drawn: a count as it changes. */
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 /* ---- Board B2: the checklist ---------------------------------------------- */
@@ -202,7 +192,7 @@
   margin: 0;
   padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
@@ -210,7 +200,7 @@
   margin: 0;
   padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-ink);
 }
 
@@ -229,7 +219,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--ink-muted);
 }
 
@@ -291,27 +281,13 @@
 .hint {
   margin: var(--sp-10) 0 0;
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--error-on-ink);
 }
 
 .second {
   width: 100%;
-  min-height: var(--tech-stepper);
   margin-top: var(--sp-14);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.second:disabled {
-  border-color: var(--ink-disabled);
-  background: var(--ink-disabled);
-  color: var(--ink-tag);
-  cursor: default;
 }
 
 /* The client's pieces, one 56 px row each, from the card. */
@@ -392,7 +368,7 @@
 .choiceOn {
   border: var(--rule-strong) solid var(--gilt);
   background: var(--ink-raised);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .reasons {
@@ -451,8 +427,8 @@
   margin: var(--sp-18) 0 var(--sp-14);
   font-family: var(--font-serif);
   font-size: var(--fs-28);
-  font-weight: 400;
-  line-height: 1.12;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-112);
   color: var(--paper);
 }
 
@@ -464,7 +440,7 @@
 .closeNote {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
@@ -478,23 +454,8 @@
 
 .action {
   width: 100%;
-  height: var(--tech-primary);
-  border: 0;
-  background: var(--gilt);
-  font: inherit;
-  font-size: var(--fs-18);
-  font-weight: 500;
-  color: var(--ink-deep);
-  cursor: pointer;
 }
 
-.action:disabled {
-  background: var(--ink-disabled);
-  color: var(--ink-tag);
-  cursor: default;
-}
-
-.action:focus-visible,
 .back:focus-visible,
 .step:focus-visible,
 .second:focus-visible,
@@ -504,15 +465,15 @@
 .reason:focus-visible,
 .reasonOn:focus-visible,
 .box64:focus-visible {
-  outline: var(--rule-strong) solid var(--paper);
+  outline: var(--focus-width) solid var(--paper);
   outline-offset: var(--focus-offset);
 }
 
 /* A full-width row inside the scrolling body draws its ring inside itself, so the body's edge never cuts it. */
 .check:focus-visible,
 .scan:focus-within {
-  outline: var(--rule-strong) solid var(--paper);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--paper);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .input:focus-visible {

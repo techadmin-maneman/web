@@ -20,7 +20,7 @@ import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
-import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
+import { pair, rest, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
 const APP_DIR = resolve("apps/app/dist/local");
@@ -130,6 +130,8 @@ const VISIT_DETAIL = {
   photos: photoSet("ink"),
   document_id: AUGUST.id,
   invoice_expected: true,
+  invoice_held: null,
+  no_show: null,
 };
 
 const timeline = (inks: readonly [string, string, string]) => ({
@@ -159,6 +161,7 @@ const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: strin
   refunded_amount: 0,
   purpose: "visit",
   charge: null,
+  no_show: null,
 });
 const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
 /** Board E1's entries that exist before booking (P2-M5): the charge and the credit arrive with it. */
@@ -181,6 +184,7 @@ const ENTRIES = {
     paid(3, PAST[2], 1500000, "upi", "MM-2027-0512"),
     paid(4, NOVEMBER, 3000000, "card", "MM-2026-0102"),
   ],
+  credits: [],
 };
 const ENTRY = { ...SERVICE_PAID, documents: { invoice: AUGUST.id, receipt: null } };
 /** The clock for the payments: in 2027, so its entries drop the year, as E1's do. */
@@ -221,6 +225,7 @@ const REFER = {
     { first_name: "Karan", month: "2027-08" },
     { first_name: "Vikram", month: "2027-05" },
   ],
+  invite_credits: null,
 };
 
 const IN_2030 = new Date("2030-09-16T05:00:00Z");
@@ -296,6 +301,7 @@ const PROFILE = {
     { purpose: "whatsapp_launches", granted: false, since: null },
   ],
   number_change: null,
+  number_change_decided: null,
   deletion: null,
 };
 
@@ -385,6 +391,7 @@ async function photographsIn(page: Page): Promise<void> {
 
 async function shot(page: Page): Promise<Buffer> {
   await page.evaluate(() => document.fonts.ready);
+  await rest(page);
   return page.screenshot();
 }
 
@@ -421,6 +428,8 @@ async function home(browser: Browser, design: Page): Promise<void> {
 
 async function states(browser: Browser, design: Page): Promise<void> {
   const loading = await openApp(browser, "/profile", { "/api/me": json(ME), "/api/profile": never });
+  // Signed in first: a cold start shows the same loading before there is a frame around it.
+  await loading.getByRole("navigation").waitFor();
   await loading.getByRole("status").filter({ hasText: "Loading" }).waitFor({ state: "attached" });
   await pair(OUT, WIDTH, "b3-loading", await stateFrame(design, "Loading"), await shot(loading));
   await loading.close();
@@ -456,6 +465,7 @@ async function profile(browser: Browser, design: Page): Promise<void> {
       .evaluate((element, which) => element.getBoundingClientRect()[which] + window.scrollY, side);
   const top = await edge("Change mobile number", "top");
   const bottom = await edge("Delete your account", "bottom");
+  await rest(app);
   const cards = await app.screenshot({ fullPage: true, clip: { x: 0, y: top, width: WIDTH, height: bottom - top } });
   await pair(OUT, WIDTH, "g2-account", await frame(design, "Profile · account", false), cards);
   await app.close();
@@ -557,7 +567,10 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   );
   await entry.close();
 
-  const lead = await openApp(browser, "/payments", { "/api/me": json(ME), "/api/payments": json({ entries: [] }) });
+  const lead = await openApp(browser, "/payments", {
+    "/api/me": json(ME),
+    "/api/payments": json({ entries: [], credits: [] }),
+  });
   await lead.getByText("Nothing to pay yet.").waitFor();
   await pair(OUT, WIDTH, "e3-empty", await stateFrame(design, "Empty · lead", "Payments · states"), await shot(lead));
   await lead.close();

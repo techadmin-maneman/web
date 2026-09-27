@@ -1,34 +1,4 @@
-/* Board B3: loading, offline and error, on paper. */
-
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-14);
-  padding: var(--sp-28) var(--sp-20);
-}
-
-.line,
-.card {
-  background: var(--paper-shade);
-}
-
-.line {
-  width: var(--skeleton-label);
-  height: var(--sp-15);
-}
-
-.card {
-  height: var(--skeleton-card);
-}
+/* Board B3: the error, on paper, and a page's own failure (its loading is packages/ui/States.tsx). */
 
 .failed {
   display: flex;
@@ -46,14 +16,14 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  font-weight: 400;
-  line-height: 1.2;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-120);
 }
 
 .booked {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -62,28 +32,10 @@
   gap: var(--sp-10);
 }
 
+/* Board B3's two ways on (packages/ui/Button.tsx), a little wider than the app's other small buttons. */
 .retry,
 .message {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
   padding: 0 var(--sp-20);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-}
-
-.retry {
-  border: 0;
-  background: var(--ink);
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.message {
-  border: var(--hairline) solid var(--ink);
-  color: var(--text);
-  text-decoration: none;
 }
 
 .pageFailed {

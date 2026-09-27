@@ -47,27 +47,44 @@ function stylesheets(dir: string): string[] {
   });
 }
 
+/**
+ * The shared buttons this app draws (packages/ui/Button.tsx): gold for the one
+ * action, outlined on ink for the others. Their rules are read with the app's own.
+ */
+const SHARED_BUTTONS = { file: "packages/ui/button.module.css", looks: [".gold", ".outlineOnInk"] } as const;
+
+/** Each rule of a stylesheet, as its selector and its declarations; a rule inside a layer or a query counts too. */
+function rulesOf(file: string): [string, string][] {
+  const css = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  return [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, selector = "", body = ""]) => [selector.trim(), body]);
+}
+
+/** The app's own rules, and the shared buttons' rules for the looks it draws. */
+function rulesDrawn(): [string, string][] {
+  const shared = rulesOf(SHARED_BUTTONS.file).filter(([selector]) =>
+    SHARED_BUTTONS.looks.some((look) => selector.includes(look)),
+  );
+  return [...stylesheets("apps/tech/src").flatMap(rulesOf), ...shared];
+}
+
 /** Every token each rule sets as a text colour and as a ground, and the rules that set both. */
 function coloursUsed(): { texts: Set<string>; grounds: Set<string>; both: [string, string, string][] } {
   const texts = new Set<string>();
   const grounds = new Set<string>();
   const both: [string, string, string][] = [];
-  for (const file of stylesheets("apps/tech/src")) {
-    const css = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-    for (const [, selector = "", body = ""] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-      let text: string | null = null;
-      let ground: string | null = null;
-      for (const declaration of body.split(";")) {
-        const [property = "", value = ""] = declaration.split(/:(.*)/s).map((part) => part.trim());
-        const token = /^var\((--[\w-]+)\)$/.exec(value)?.[1];
-        if (token === undefined) continue;
-        if (property === "color") text = token;
-        if (property === "background" || property === "background-color") ground = token;
-      }
-      if (text !== null) texts.add(text);
-      if (ground !== null) grounds.add(ground);
-      if (text !== null && ground !== null) both.push([selector.trim(), text, ground]);
+  for (const [selector, body] of rulesDrawn()) {
+    let text: string | null = null;
+    let ground: string | null = null;
+    for (const declaration of body.split(";")) {
+      const [property = "", value = ""] = declaration.split(/:(.*)/s).map((part) => part.trim());
+      const token = /^var\((--[\w-]+)\)$/.exec(value)?.[1];
+      if (token === undefined) continue;
+      if (property === "color") text = token;
+      if (property === "background" || property === "background-color") ground = token;
     }
+    if (text !== null) texts.add(text);
+    if (ground !== null) grounds.add(ground);
+    if (text !== null && ground !== null) both.push([selector, text, ground]);
   }
   return { texts, grounds, both };
 }
@@ -126,6 +143,8 @@ describe("what the stylesheets use", () => {
   it("reads every stylesheet's colours, so the checks below check something", () => {
     expect(used.texts.size).toBeGreaterThanOrEqual(6);
     expect(used.both.length).toBeGreaterThanOrEqual(5);
+    expect(used.both).toContainEqual([".gold", "--ink-deep", "--gilt"]);
+    expect(used.both).toContainEqual([".outlineOnInk:disabled", "--ink-tag", "--ink-disabled"]);
   });
 
   it("sets no text colour the pairings do not list", () => {

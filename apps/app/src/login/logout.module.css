@@ -3,6 +3,6 @@
 .problem {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-15);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--error-on-paper);
 }

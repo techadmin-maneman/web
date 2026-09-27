@@ -1,0 +1,189 @@
+/*
+ * The apps' buttons (./Button.tsx). Every look answers a press, a pointer
+ * resting on it where there is one, being unusable, and being busy (DS-22).
+ * The boards draw none of these, so each is the next ink down the ground's
+ * own ramp, or a ring where there is no darker ink: gold and oxblood.
+ *
+ * An outlined button's edge is a hairline. A filled one's is each app's own
+ * (--filled-edge, ./base.css): none in the client and technician apps, as
+ * their boards draw it, and a hairline in the console, whose filled and
+ * outlined buttons stand side by side at one width.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-10);
+    padding: 0 var(--sp-18);
+    border: var(--filled-edge) solid transparent;
+    background: transparent;
+    font: inherit;
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .button:disabled {
+    cursor: default;
+  }
+
+  .button[aria-busy="true"] {
+    cursor: progress;
+  }
+
+  /* ---- Sizes: each app's own (./base.css) ---------------------------------- */
+
+  .action {
+    min-height: var(--action-height);
+    font-size: var(--action-text);
+  }
+
+  .control {
+    min-height: var(--control-height);
+    font-size: var(--control-text);
+  }
+
+  .small {
+    min-height: var(--small-height);
+    font-size: var(--small-text);
+  }
+
+  /* ---- Filled ----------------------------------------------------------------- */
+
+  .primary {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .primary:active:not(:disabled) {
+    background: var(--ink-deep);
+  }
+
+  .primary:disabled {
+    background: var(--paper-shade);
+    color: var(--text-quiet);
+  }
+
+  .light {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .light:active:not(:disabled) {
+    background: var(--paper-shade);
+  }
+
+  .light:disabled {
+    background: var(--ink-disabled);
+    color: var(--ink-soft);
+  }
+
+  /* On the technician app's ink the ring is gold, which would vanish against this button. */
+  .gold {
+    --focus-colour: var(--paper);
+
+    background: var(--gilt);
+    color: var(--ink-deep);
+  }
+
+  .gold:active:not(:disabled) {
+    box-shadow: inset 0 0 0 var(--rule-strong) var(--ink-deep);
+  }
+
+  .gold:disabled {
+    background: var(--ink-disabled);
+    color: var(--ink-tag);
+  }
+
+  .destructive {
+    background: var(--error-on-paper);
+    color: var(--paper);
+  }
+
+  .destructive:active:not(:disabled) {
+    box-shadow: inset 0 0 0 var(--rule-strong) var(--ink-night);
+  }
+
+  .destructive:disabled {
+    background: var(--paper-shade);
+    color: var(--text-quiet);
+  }
+
+  /* ---- Outlined --------------------------------------------------------------- */
+
+  .outline,
+  .outlineOnInk,
+  .danger {
+    border-width: var(--hairline);
+    font-weight: var(--control-weight);
+  }
+
+  .outline {
+    border-color: var(--ink);
+    color: var(--text);
+  }
+
+  .outline:active:not(:disabled),
+  .danger:active:not(:disabled) {
+    background: var(--paper-shade);
+  }
+
+  .outline:disabled,
+  .danger:disabled {
+    border-color: var(--paper-line);
+    color: var(--text-quiet);
+  }
+
+  .outlineOnInk {
+    border-color: var(--ink-line);
+    color: var(--paper);
+  }
+
+  .outlineOnInk:active:not(:disabled) {
+    background: var(--ink-raised);
+  }
+
+  .outlineOnInk:disabled {
+    border-color: var(--ink-disabled);
+    background: var(--ink-disabled);
+    color: var(--ink-tag);
+  }
+
+  .danger {
+    border-color: var(--error-on-paper);
+    color: var(--error-on-paper);
+  }
+
+  /* ---- A pointer resting on it: at a desk, never a finger's lingering tap ----- */
+
+  @media (hover: hover) {
+    .primary:hover:not(:disabled) {
+      background: var(--ink-deep);
+    }
+
+    .light:hover:not(:disabled) {
+      background: var(--paper-shade);
+    }
+
+    .gold:hover:not(:disabled) {
+      box-shadow: inset 0 0 0 var(--hairline) var(--ink-deep);
+    }
+
+    .destructive:hover:not(:disabled) {
+      box-shadow: inset 0 0 0 var(--hairline) var(--ink-night);
+    }
+
+    .outline:hover:not(:disabled),
+    .danger:hover:not(:disabled) {
+      background: var(--paper-shade);
+    }
+
+    .outlineOnInk:hover:not(:disabled) {
+      background: var(--ink-raised);
+    }
+  }
+}

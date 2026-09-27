@@ -14,13 +14,14 @@
 // The board writes an owner in ops against every task. Nothing records one, so
 // the column is not drawn (docs/open-points.md, item 58).
 
+import { useLoad } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Task, type TaskGroup } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { dispatch, referrals, tasks } from "../content.ts";
 import { daysUntil } from "../lib/due.ts";
 import { rowPath } from "../lib/target.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./tasks.module.css";
@@ -121,10 +122,17 @@ function unnamedSubject(group: Group, task: Task): string {
   return group === "erasure_unfinished" ? tasks.erased(day) : tasks.visit(day);
 }
 
+/** How long is left to answer: the days over, today, or the days left. */
+function slaText(days: number): string {
+  if (days < 0) return tasks.sla.over(-days);
+  if (days === 0) return tasks.sla.today;
+  return tasks.sla.left(days);
+}
+
 function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
   const days = daysUntil(task.due, now);
   const overdue = days < 0;
-  const sla = overdue ? tasks.sla.over(-days) : days === 0 ? tasks.sla.today : tasks.sla.left(days);
+  const sla = slaText(days);
   const subject = task.person?.name ?? unnamedSubject(group, task);
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
@@ -145,7 +153,7 @@ function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
             <OpsLink className={styles.decide} to={where}>
               {action}
               {/* Every row of a group links the same words, so each says whose it is to a screen reader. */}
-              <span className={styles.hidden}>{` · ${subject}`}</span>
+              <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
             </OpsLink>
           </span>
         )}

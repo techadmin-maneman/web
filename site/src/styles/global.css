@@ -122,15 +122,15 @@ select {
 .section-title {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-h2);
-  line-height: 1.05;
+  line-height: var(--lh-105);
   letter-spacing: var(--tracking-heading);
 }
 
 .lead {
   font-size: var(--fs-lead);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-soft);
   max-width: var(--measure-lead);
   text-wrap: pretty;
@@ -144,12 +144,12 @@ select {
   justify-content: center;
   gap: var(--sp-12);
   border: 0;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   cursor: pointer;
   text-decoration: none;
   transition:
-    background-color var(--ease),
-    border-color var(--ease);
+    background-color var(--duration-quick) var(--ease-house),
+    border-color var(--duration-quick) var(--ease-house);
 }
 .btn--lg {
   height: var(--btn-lg);

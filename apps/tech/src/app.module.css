@@ -25,6 +25,6 @@
 .fullBody {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }

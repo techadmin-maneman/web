@@ -15,37 +15,6 @@
   border: var(--hairline) solid var(--paper-line);
 }
 
-.panelHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--sp-14) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
-.panelTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: var(--fs-22);
-}
-
-.hiddenTitle {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.count {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
 .panelBody {
   padding: var(--sp-20);
 }
@@ -58,29 +27,6 @@
 }
 
 /* ---- Board C1: one held grant ------------------------------------------- */
-
-.grants {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.grant,
-.targeted {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-/* The grant a task on the Tasks board led here, marked as the board marks a selection. */
-.targeted {
-  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
-}
-
-.grant:focus-visible,
-.targeted:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
-}
 
 .grantHead {
   display: flex;
@@ -102,8 +48,8 @@
 }
 
 .person:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .when,
@@ -140,85 +86,14 @@
   margin-top: var(--sp-14);
 }
 
-.approve,
-.reject,
-.quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.approve {
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.reject {
-  border: var(--hairline) solid var(--error-on-paper);
-  background: transparent;
-  color: var(--error-on-paper);
-}
-
-.quiet {
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-}
-
-.approve:disabled,
-.reject:disabled,
-.quiet:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.approve:focus-visible,
-.reject:focus-visible,
-.quiet:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
-}
-
 /* The reason board C1 asks for on either decision, for which it draws no field. */
 .reason {
   margin-top: var(--sp-14);
 }
 
-.reasonLabel {
-  display: block;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
+/* Board C1's field, as tall as the board draws it. */
 .reasonField {
-  display: block;
-  width: 100%;
   height: var(--skeleton-card);
-  margin-top: var(--sp-8);
-  padding: var(--sp-12) var(--sp-14);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--white);
-  font: inherit;
-  font-size: var(--fs-15);
-  color: var(--text);
-  resize: none;
-}
-
-.reasonField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
-}
-
-.reasonHint {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
 }
 
 .error {
@@ -229,28 +104,13 @@
 
 /* ---- Board C2: every referrer's figures ---------------------------------- */
 
+/* Board C2's figures (packages/ui/Table.tsx), in figures of one width. */
 .table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
 }
 
-.table th,
-.table td {
-  height: var(--ops-row);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
-}
-
-.table thead th {
-  border-bottom: var(--hairline) solid var(--text);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
 .name {
-  padding: var(--sp-8) var(--sp-8) var(--sp-8) 0;
+  padding-inline: 0 var(--sp-8);
   font-variant-numeric: normal;
   text-align: left;
 }
@@ -258,7 +118,7 @@
 .figure,
 .quietFigure {
   width: var(--ops-figure);
-  padding: var(--sp-8) var(--sp-4);
+  padding-inline: var(--sp-4);
   text-align: right;
 }
 
@@ -269,6 +129,6 @@
 .note {
   margin: var(--sp-14) 0 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }

@@ -10,15 +10,16 @@
 // not a second entry in the log.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Tabs, TAB } from "@maneman/ui/Tabs";
+import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useState } from "react";
 import { api, type ClientRecord } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
-import { whatsAppLink } from "../dispatch/job.ts";
 import { phoneWords } from "../lib/phone.ts";
 import type { ClientTab } from "../route.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";
@@ -47,7 +48,7 @@ function Head({ record, credits }: { record: ClientRecord; credits: Credits }) {
         <h2 className={styles.name}>{record.name}</h2>
         <a
           className={styles.whatsapp}
-          href={whatsAppLink(record.mobile)}
+          href={whatsappChat(record.mobile)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={clients.whatsappLabel(record.name)}
@@ -120,43 +121,47 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
 
   return (
     <Shell section="/clients" title={clients.title} flush>
-      {loaded.state === "loading" ? (
-        <div className={styles.waiting}>
-          <Loading />
-        </div>
-      ) : loaded.state === "failed" ? (
-        <div className={styles.waiting}>
-          <PanelFailed onRetry={retry} />
-        </div>
-      ) : (
-        <div className={styles.client}>
-          <Head record={loaded.value} credits={adjusted?.credits ?? loaded.value.credits} />
-          <nav className={styles.tabs} aria-label={loaded.value.name}>
-            {clients.tabs.map((each) => (
-              <OpsLink
-                key={each.tab}
-                className={styles.tab}
-                to={`/clients/${clientId}/${each.tab}`}
-                current={each.tab === tab}
-              >
-                {each.label}
-              </OpsLink>
-            ))}
-          </nav>
-          <div className={styles.panel}>
-            <Tab
-              clientId={clientId}
-              tab={tab}
-              record={loaded.value}
-              credits={adjusted?.credits ?? loaded.value.credits}
-              onCredits={(credits) => {
-                setAdjusted({ credits });
-              }}
-              photos={photos}
-            />
+      {whenLoaded(loaded, {
+        loading: (
+          <div className={styles.waiting}>
+            <Loading />
           </div>
-        </div>
-      )}
+        ),
+        failed: (
+          <div className={styles.waiting}>
+            <PanelFailed onRetry={retry} />
+          </div>
+        ),
+        loaded: (record) => (
+          <div className={styles.client}>
+            <Head record={record} credits={adjusted?.credits ?? record.credits} />
+            <Tabs className={styles.tabs} label={record.name}>
+              {clients.tabs.map((each) => (
+                <OpsLink
+                  key={each.tab}
+                  className={TAB}
+                  to={`/clients/${clientId}/${each.tab}`}
+                  current={each.tab === tab}
+                >
+                  {each.label}
+                </OpsLink>
+              ))}
+            </Tabs>
+            <div className={styles.panel}>
+              <Tab
+                clientId={clientId}
+                tab={tab}
+                record={record}
+                credits={adjusted?.credits ?? record.credits}
+                onCredits={(credits) => {
+                  setAdjusted({ credits });
+                }}
+                photos={photos}
+              />
+            </div>
+          </div>
+        ),
+      })}
     </Shell>
   );
 }

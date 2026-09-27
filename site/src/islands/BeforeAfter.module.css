@@ -44,6 +44,11 @@
 .before {
   clip-path: inset(0 calc(100% - var(--position)) 0 0);
 }
+/* A note in place of the after image, as the try-on shows while its render runs, sits in the part the before image
+   leaves showing, clear of the handle, and follows the handle as it moves (CLI-28). */
+.layer > [data-after-note] {
+  padding-inline: calc(var(--position) + var(--sp-26)) var(--sp-26);
+}
 
 /* Two classes, so the size wins over the global .label rule. */
 .frame .corner {

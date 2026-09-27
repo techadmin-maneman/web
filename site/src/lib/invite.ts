@@ -2,15 +2,11 @@
 // landing's island, which reads it back. Neither trusts an answer it cannot read: an invite that fails the check is
 // treated as one that did not arrive, and the island asks for it again.
 
+import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../../src/config/house-card.ts";
 import type { Invite } from "./api.ts";
 
-/**
- * The house card, with its version. The file is replaced at the same path when the owner supplies the real card
- * (docs/open-points.md, "The house referral card"), and chats cache a preview by its address, so a new card needs a
- * new version here. test/node/site-content.test.ts fails if the file changes and this does not.
- */
-export const HOUSE_CARD_VERSION = 2;
-export const HOUSE_CARD = `/images/invite-house.jpg?v=${String(HOUSE_CARD_VERSION)}`;
+/** The house card, with its version, which the API's preview redirects to as well (src/config/house-card.ts). */
+export { HOUSE_CARD, HOUSE_CARD_VERSION };
 
 /** Every state the API can answer. Listing them as keys makes a new state in the contract a type error here. */
 const STATES = { valid: true, unknown: true } satisfies Record<Invite["state"], true>;

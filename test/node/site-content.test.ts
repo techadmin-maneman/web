@@ -208,6 +208,8 @@ describe("site helpers", () => {
       "site/src/components/home",
       "site/src/layouts",
       "site/src/islands",
+      "site/src/islands/tryon",
+      "site/src/islands/invite",
       "site/src/pages",
     ].flatMap((dir) =>
       readdirSync(dir)

@@ -1,0 +1,19 @@
+/*
+ * The apps' one fade (./motion.ts): a page, or an image replacing another,
+ * arriving on the house curve. Under prefers-reduced-motion nothing moves
+ * (./base.css).
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .arrive {
+    animation: arrive var(--duration-quick) var(--ease-house);
+  }
+
+  @keyframes arrive {
+    from {
+      opacity: 0;
+    }
+  }
+}

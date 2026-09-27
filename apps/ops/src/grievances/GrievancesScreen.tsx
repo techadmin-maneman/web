@@ -8,15 +8,17 @@
 // the audit log under whoever Access says is signed in (ADR 0031). It messages
 // nobody: ops answer the client themselves, on the number shown.
 
+import { Button } from "@maneman/ui/Button";
+import { Field, TextArea } from "@maneman/ui/Field";
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { api, type Grievance } from "../api.ts";
+import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { grievances } from "../content.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
-import { rowId, useTargetRow } from "../lib/target.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./grievances.module.css";
 
@@ -26,17 +28,7 @@ type Answering =
 
 const copy = grievances.queue;
 
-function Open({
-  each,
-  now,
-  targeted,
-  onAnswered,
-}: {
-  each: Grievance;
-  now: Date;
-  targeted: boolean;
-  onAnswered: () => void;
-}) {
+function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswered: () => void }) {
   const [answering, setAnswering] = useState<Answering>({ step: "open" });
   const [response, setResponse] = useState("");
 
@@ -49,7 +41,7 @@ function Open({
 
   const sending = answering.step === "sending";
   return (
-    <li className={targeted ? styles.targeted : styles.grievance} id={rowId("grievance", each.id)} tabIndex={-1}>
+    <>
       <div className={styles.head}>
         <OpsLink className={styles.name} to={`/clients/${each.person_id}`}>
           {each.name}
@@ -60,28 +52,29 @@ function Open({
       {/* The client's own words, kept apart from ours so nobody answers a paraphrase. */}
       <blockquote className={styles.words}>{each.text}</blockquote>
       <div className={styles.answer}>
-        <label className={styles.answerLabel} htmlFor={`answer-${each.id}`}>
-          {copy.label}
-        </label>
-        <textarea
-          id={`answer-${each.id}`}
-          className={styles.answerField}
-          maxLength={2000}
-          value={response}
-          onChange={(event) => {
-            setResponse(event.target.value);
-          }}
-        />
-        <p className={styles.answerHint}>{copy.hint}</p>
+        <Field label={copy.label} hint={copy.hint}>
+          {(control) => (
+            <TextArea
+              {...control}
+              className={styles.answerField}
+              maxLength={2000}
+              value={response}
+              onChange={(event) => {
+                setResponse(event.target.value);
+              }}
+            />
+          )}
+        </Field>
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="primary"
+            size="small"
             className={styles.send}
-            type="button"
             disabled={sending || response.trim() === ""}
             onClick={() => void send()}
           >
             {sending ? copy.sending : copy.send}
-          </button>
+          </Button>
         </div>
       </div>
       {answering.step === "failed" && (
@@ -89,50 +82,27 @@ function Open({
           {copy.errors[answering.code] ?? copy.errors.unknown}
         </p>
       )}
-    </li>
+    </>
   );
 }
 
 function Queue() {
   const [loaded, retry] = useLoad(api.grievances);
-  // An answered grievance leaves the queue at once; the count follows it, and so does the keyboard.
-  const [answered, setAnswered] = useState<readonly string[]>([]);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const target = useTargetRow(loaded.state === "loaded");
-
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
   const now = new Date();
-  const open = loaded.value.grievances.filter((each) => !answered.includes(each.id));
   return (
-    <section className={styles.panel} aria-labelledby="grievances">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="grievances" ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h2>
-        <span className={styles.count}>{open.length}</span>
-      </div>
-      {open.length === 0 ? (
-        <p className={styles.empty}>{copy.empty}</p>
-      ) : (
-        <ul className={styles.grievances}>
-          {open.map((each) => (
-            <Open
-              key={each.id}
-              each={each}
-              now={now}
-              targeted={target === rowId("grievance", each.id)}
-              onAnswered={() => {
-                setAnswered((already) => [...already, each.id]);
-                heading.current?.focus();
-              }}
-            />
-          ))}
-        </ul>
-      )}
-      <p className={styles.note}>{copy.note(copy.answerDays)}</p>
-    </section>
+    <DecisionQueue
+      titleId="grievances"
+      title={copy.title}
+      items={loaded.value.grievances}
+      rowKind="grievance"
+      empty={copy.empty}
+      note={copy.note(copy.answerDays)}
+    >
+      {(each, answered) => <Open each={each} now={now} onAnswered={answered} />}
+    </DecisionQueue>
   );
 }
 

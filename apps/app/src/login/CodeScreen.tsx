@@ -1,9 +1,11 @@
 // A2: the code (design/phase2/Client App, board A2).
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LoginChallenge } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { login } from "../content.ts";
 import { BUBBLE } from "../icons.ts";
 import { apiNow } from "../lib/clock.ts";
@@ -28,6 +30,13 @@ interface Props {
   readonly onHelp: () => void;
 }
 
+/** What went wrong with the last code, in board A2's words; nothing while nothing has. */
+function problemLine(problem: CodeProblem | null): string | null {
+  if (problem === null) return null;
+  if (problem.kind === "mismatch") return login.code.mismatch(problem.left);
+  return problem.kind === "closed" ? login.code.expired : login.code.failed;
+}
+
 /** Asks the browser for the code in the SMS, where it can read one (WebOTP; Chrome on Android). */
 function useSmsCode(active: boolean, onCode: (code: string) => void): void {
   useEffect(() => {
@@ -45,6 +54,37 @@ function useSmsCode(active: boolean, onCode: (code: string) => void): void {
       controller.abort();
     };
   }, [active, onCode]);
+}
+
+/** The way to another code: a fresh one once this is closed, else a resend, counted down until it is offered. */
+function Another(props: {
+  closed: boolean;
+  resendIn: number;
+  busy: boolean;
+  onFresh: () => void;
+  onResend: () => void;
+}) {
+  const copy = login.code;
+  if (props.closed) {
+    return (
+      <button className={styles.link} type="button" onClick={props.onFresh} disabled={props.busy}>
+        <span>{copy.fresh}</span>
+      </button>
+    );
+  }
+  if (props.resendIn > 0) {
+    // Shown, not spoken: a screen reader is not told every second.
+    return (
+      <p className={styles.countdown} aria-live="off">
+        {copy.resendIn} {props.resendIn}s
+      </p>
+    );
+  }
+  return (
+    <button className={styles.link} type="button" onClick={props.onResend} disabled={props.busy}>
+      <span>{copy.resend}</span>
+    </button>
+  );
 }
 
 export function CodeScreen(props: Props) {
@@ -69,14 +109,7 @@ export function CodeScreen(props: Props) {
     if (problem !== null) field.current?.focus();
   }, [problem]);
 
-  const message =
-    problem === null
-      ? null
-      : problem.kind === "mismatch"
-        ? copy.mismatch(problem.left)
-        : problem.kind === "closed"
-          ? copy.expired
-          : copy.failed;
+  const message = problemLine(problem);
   const sent = challenge.channel === "sms" ? copy.sentSms : copy.sentWhatsapp;
   const offerSms = challenge.sms_in_s !== null && smsIn === 0 && challenge.channel !== "sms" && !closed;
 
@@ -117,32 +150,32 @@ export function CodeScreen(props: Props) {
               <span>{copy.sms}</span>
             </button>
           )}
-          {closed ? (
-            <button className={styles.link} type="button" onClick={props.onFresh} disabled={props.busy}>
-              <span>{copy.fresh}</span>
-            </button>
-          ) : resendIn > 0 ? (
-            // Shown, not spoken: a screen reader is not told every second.
-            <p className={styles.countdown} aria-live="off">
-              {copy.resendIn} {resendIn}s
-            </p>
-          ) : (
-            <button className={styles.link} type="button" onClick={props.onResend} disabled={props.busy}>
-              <span>{copy.resend}</span>
-            </button>
-          )}
+          <Another
+            closed={closed}
+            resendIn={resendIn}
+            busy={props.busy}
+            onFresh={props.onFresh}
+            onResend={props.onResend}
+          />
           <button className={styles.link} type="button" onClick={props.onHelp}>
             <span>{copy.noBooking}</span>
           </button>
         </div>
         {/* Said once, as the countdown runs out; the count itself is shown and not spoken. */}
-        <p className={styles.hidden} role="status">
+        <VisuallyHidden as="p" role="status">
           {resendIn === 0 && !closed ? copy.canResend : ""}
-        </p>
+        </VisuallyHidden>
         <div className={styles.foot}>
-          <button className={styles.primary} type="submit" disabled={code.length < 6 || props.busy || closed}>
+          <Button
+            variant="light"
+            size="action"
+            className={styles.primary}
+            type="submit"
+            disabled={code.length < 6 || props.busy || closed}
+            busy={props.busy}
+          >
             {copy.submit}
-          </button>
+          </Button>
         </div>
       </form>
     </main>

@@ -8,13 +8,14 @@
 // where it stands; "Got it" lets go of the job's work only once the technician
 // has said so a second time, since what it deletes never reaches us.
 
+import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
-import { ICONS_P2 } from "@maneman/brand/icons";
 import { Offline } from "../components/Banners.tsx";
 import { Confirm } from "../components/Confirm.tsx";
-import { Icon } from "../components/Icon.tsx";
 import { atRisk as atRiskCopy, queue as copy, whatStopped } from "../content.ts";
-import { BACK } from "../icons.ts";
+import { STROKE } from "../icons.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
@@ -35,6 +36,12 @@ const isInJobStep = (kind: EventKind): kind is InJobStep => kind in STEP_PATHS;
 function correctable(stopped: JobAccount["stopped"]): InJobStep | null {
   if (stopped?.state !== "refused" || !CORRECTABLE.has(stopped.kind)) return null;
   return isInJobStep(stopped.kind) ? stopped.kind : null;
+}
+
+/** Where a job's work stands: stopped, waiting for signal, or on its way. */
+function stateOf(stopped: boolean, offline: boolean): string {
+  if (stopped) return copy.states.failed;
+  return offline ? copy.states.waiting : copy.states.uploading;
 }
 
 function SetLine({ set }: { set: PhotoSet }) {
@@ -83,7 +90,7 @@ export function WaitingScreen() {
             go("/");
           }}
         >
-          <Icon d={BACK} size={24} />
+          <Icon d={ICONS.back} size={24} stroke={STROKE} />
         </button>
         <h1 className={styles.title} ref={heading} tabIndex={-1}>
           {copy.title}
@@ -103,7 +110,7 @@ export function WaitingScreen() {
             </div>
           )}
           <div className={styles.sets}>
-            <Icon className={styles.setsIcon} d={ICONS_P2.uploadQueue} size={20} />
+            <Icon className={styles.setsIcon} d={ICONS_P2.uploadQueue} size={20} stroke={STROKE} />
             <span className={styles.setsLine}>{copy.waiting(sets.length)}</span>
           </div>
           <ul className={styles.list}>
@@ -117,7 +124,7 @@ export function WaitingScreen() {
                   <div className={styles.jobTop}>
                     <span className={styles.who}>{name(id)}</span>
                     <span className={stopped === null ? styles.state : styles.stateStopped}>
-                      {stopped === null ? (offline ? copy.states.waiting : copy.states.uploading) : copy.states.failed}
+                      {stateOf(stopped !== null, offline)}
                     </span>
                   </div>
                   {sets
@@ -135,38 +142,41 @@ export function WaitingScreen() {
                       <p className={styles.stoppedLine}>{whatStopped(stopped)}</p>
                       <div className={styles.buttons}>
                         {toCorrect !== null && (
-                          <button
+                          <Button
+                            variant="outlineOnInk"
+                            size="small"
                             className={styles.button}
-                            type="button"
                             onClick={() => {
                               go(stepPath(id, toCorrect));
                             }}
                           >
                             {copy.correct}
-                          </button>
+                          </Button>
                         )}
-                        <button
+                        <Button
+                          variant="outlineOnInk"
+                          size="small"
                           className={styles.button}
-                          type="button"
                           onClick={() => {
                             setForgetting(id);
                           }}
                         >
                           {copy.read}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
                   {stopped === null && !offline && (
-                    <button
+                    <Button
+                      variant="outlineOnInk"
+                      size="small"
                       className={styles.button}
-                      type="button"
                       onClick={() => {
                         void replay();
                       }}
                     >
                       {copy.retry}
-                    </button>
+                    </Button>
                   )}
                 </li>
               );

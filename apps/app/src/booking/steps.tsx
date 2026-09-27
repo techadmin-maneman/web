@@ -4,10 +4,12 @@
 // sheet is named whatever it shows.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import type { Availability, BookingWindow, Hold, MoveTerms, Price } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { booking, change, messages, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
 import { CHECK, CLOCK } from "../icons.ts";
 import { lateFeeFigures } from "../lib/money.ts";
@@ -61,9 +63,9 @@ function Heading({ title, step, aside }: { title: string; step?: number; aside?:
  */
 function LastMinute({ left }: { left: number }) {
   return (
-    <p className={styles.hidden} role="status">
+    <VisuallyHidden as="p" role="status">
       {left > 0 && left <= 60 ? booking.lastMinute : ""}
-    </p>
+    </VisuallyHidden>
   );
 }
 
@@ -87,9 +89,9 @@ export function LateFee({ fee }: { fee: Price }) {
 export function LoadingStep() {
   return (
     <>
-      <h2 className={styles.hidden} id={TITLE_ID}>
+      <VisuallyHidden as="h2" id={TITLE_ID}>
         {states.loading}
-      </h2>
+      </VisuallyHidden>
       <div className={styles.loading} aria-busy="true" />
     </>
   );
@@ -146,9 +148,15 @@ export function DateStep(props: {
           {copy.full}
         </span>
       </div>
-      <button className={styles.primary} type="button" disabled={props.chosen === null} onClick={props.onNext}>
+      <Button
+        variant="primary"
+        size="action"
+        className={styles.primary}
+        disabled={props.chosen === null}
+        onClick={props.onNext}
+      >
         {copy.continue}
-      </button>
+      </Button>
     </>
   );
 }
@@ -211,14 +219,16 @@ export function WindowStep(props: {
           {props.problem}
         </p>
       )}
-      <button
+      <Button
+        variant="primary"
+        size="action"
         className={styles.primary}
-        type="button"
         disabled={props.chosen === null || props.busy}
+        busy={props.busy}
         onClick={props.onNext}
       >
         {copy.continue}
-      </button>
+      </Button>
     </>
   );
 }
@@ -238,6 +248,39 @@ function payLabel(hold: Hold, moving: MoveTerms | undefined): string {
 }
 
 /** Board C4, and C5's first fit: the held visit, what it costs, and how to pay. */
+/** The pay step's figure: nothing for a visit a credit covers, "Free" for one that costs nothing, else its price. */
+function amountLine(hold: Hold, covered: boolean, free: boolean): string {
+  if (covered) return booking.pay.credit.zero;
+  return free ? booking.pay.free : rupees(hold.price.amount_ex_gst);
+}
+
+/**
+ * What changing the visit later costs, beneath the pay step's lines: for a visit moved in place, that its
+ * payment carries over; for one booked late, the late fee; for any other, the hour it may be changed free
+ * until. A credit's own note, below, says what cancelling late costs, so a covered visit says nothing here.
+ */
+function ChangeTerms({ hold, moving, covered }: { hold: Hold; moving: MoveTerms | undefined; covered: boolean }) {
+  const line = `${styles.line ?? ""} ${styles.soft ?? ""}`;
+  if (moving !== undefined) {
+    return (
+      <p className={line}>{moving.paid > 0 ? change.move.free(rupees(moving.paid)) : change.move.freeNothingPaid}</p>
+    );
+  }
+  if (hold.late_fee !== null) {
+    return (
+      <p className={line}>
+        <LateFee fee={hold.late_fee} />
+      </p>
+    );
+  }
+  if (covered) return null;
+  return (
+    <p className={line}>
+      {booking.pay.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`)}
+    </p>
+  );
+}
+
 export function PayStep(props: {
   hold: Hold;
   moving?: MoveTerms | undefined;
@@ -275,9 +318,7 @@ export function PayStep(props: {
           </div>
           <div className={styles.money}>
             {covered && <p className={styles.was}>{rupees(hold.price.amount_ex_gst)}</p>}
-            <p className={styles.amount}>
-              {covered ? copy.credit.zero : free ? copy.free : rupees(hold.price.amount_ex_gst)}
-            </p>
+            <p className={styles.amount}>{amountLine(hold, covered, free)}</p>
             {!free && <p className={styles.incl}>{copy.incl(rupees(hold.price.amount))}</p>}
           </div>
         </div>
@@ -288,22 +329,7 @@ export function PayStep(props: {
           </p>
         )}
         {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
-        {inPlace ? (
-          <p className={`${styles.line} ${styles.soft}`}>
-            {moving.paid > 0 ? change.move.free(rupees(moving.paid)) : change.move.freeNothingPaid}
-          </p>
-        ) : hold.late_fee !== null ? (
-          <p className={`${styles.line} ${styles.soft}`}>
-            <LateFee fee={hold.late_fee} />
-          </p>
-        ) : (
-          // A credit's own note, below, says what cancelling late costs.
-          !covered && (
-            <p className={`${styles.line} ${styles.soft}`}>
-              {copy.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`)}
-            </p>
-          )
-        )}
+        <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
       </div>
       {offerPremium && (
         <a className={styles.quiet} href={whatsappWith(messages.premium(VISIT_TYPES[hold.type]))} rel="noopener">
@@ -351,9 +377,16 @@ export function PayStep(props: {
           {props.problem}
         </p>
       )}
-      <button className={styles.primary} type="button" disabled={props.busy || left === 0} onClick={props.onPay}>
+      <Button
+        variant="primary"
+        size="action"
+        className={styles.primary}
+        disabled={props.busy || left === 0}
+        busy={props.busy}
+        onClick={props.onPay}
+      >
         {payLabel(hold, moving)}
-      </button>
+      </Button>
       {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
       {covered && <p className={styles.creditNote}>{copy.credit.note}</p>}
     </>
@@ -380,12 +413,19 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
         <LastMinute left={left} />
       </div>
       <div className={styles.pair}>
-        <button className={styles.primary} type="button" disabled={busy} onClick={onRetry}>
+        <Button
+          variant="primary"
+          size="control"
+          className={styles.primary}
+          disabled={busy}
+          busy={busy}
+          onClick={onRetry}
+        >
           {copy.retry}
-        </button>
-        <button className={styles.secondary} type="button" disabled={busy} onClick={onAnother}>
+        </Button>
+        <Button variant="outline" size="control" className={styles.secondary} disabled={busy} onClick={onAnother}>
           {copy.another}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -399,9 +439,9 @@ export function ExpiredStep({ onPickAgain }: { onPickAgain: () => void }) {
       <h2 className={styles.outcome} id={TITLE_ID}>
         {booking.expired.title}
       </h2>
-      <button className={styles.primary} type="button" onClick={onPickAgain}>
+      <Button variant="primary" size="action" className={styles.primary} onClick={onPickAgain}>
         {booking.expired.pickAgain}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -466,9 +506,9 @@ export function WaitStep({ text, onClose }: { text: string; onClose?: () => void
         {text}
       </h2>
       {onClose !== undefined && (
-        <button className={styles.secondary} type="button" onClick={onClose}>
+        <Button variant="outline" size="control" className={styles.secondary} onClick={onClose}>
           {booking.close}
-        </button>
+        </Button>
       )}
     </div>
   );

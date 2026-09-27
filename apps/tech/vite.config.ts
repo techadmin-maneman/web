@@ -27,6 +27,8 @@ const identify: Plugin = {
 export default defineConfig({
   root: import.meta.dirname,
   plugins: [react(), identify, serviceWorker()],
+  // packages/ui imports React too, and from there would find the repository root's React 18; this bundles the app's.
+  resolve: { dedupe: ["react", "react-dom"] },
   define: { "import.meta.env.MM_ENV": JSON.stringify(environment) },
   build: {
     outDir: `dist/${environment}`,

@@ -11,7 +11,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-15);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   color: var(--text-muted);
@@ -31,7 +31,7 @@
 .date {
   font-family: var(--font-serif);
   font-size: var(--fs-app-title);
-  line-height: 1.08;
+  line-height: var(--lh-108);
   color: var(--paper);
 }
 
@@ -44,7 +44,7 @@
 .card .place {
   margin-top: var(--sp-18);
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
@@ -99,23 +99,15 @@
   margin-top: var(--sp-20);
 }
 
+/* Reschedule and Add a note (packages/ui/Button.tsx, outlined on ink, 48 px), side by side. */
 .action {
-  display: flex;
   flex: 1;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--sp-48);
-  border: var(--hairline) solid var(--ink-line);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--paper);
-  text-decoration: none;
 }
 
-/* Offline (board B3): Reschedule waits for the connection. */
+/* Offline (board B3): Reschedule waits for the connection, drawn in the card's own quiet words. */
 .action:disabled {
+  border-color: var(--ink-line);
+  background: none;
   color: var(--ink-muted);
 }
 
@@ -132,7 +124,7 @@
   padding: 0;
   list-style: none;
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 
 .step {
@@ -153,7 +145,7 @@
   flex-direction: column;
   gap: var(--sp-16);
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .nothing p {
@@ -165,8 +157,8 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-app-title);
-  font-weight: 400;
-  line-height: 1.1;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-110);
 }
 
 .book {
@@ -178,7 +170,7 @@
   background: var(--ink);
   font: inherit;
   font-size: var(--fs-16);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--paper);
   text-decoration: none;
 }
@@ -217,14 +209,14 @@
 .creditsCount {
   font-family: var(--font-serif);
   font-size: var(--fs-30);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums;
 }
 
 /* Board B1's one prompt: a line, and a quiet way on, underlined in brass. */
 .promptLine {
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 
 .promptLink {
@@ -240,14 +232,4 @@
 .promptLink span:first-child {
   padding-bottom: var(--sp-3);
   border-bottom: var(--hairline) solid var(--brass);
-}
-
-/* Said to a screen reader only: the link leaves the app for a PDF. */
-.away {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }

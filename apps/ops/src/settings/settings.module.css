@@ -20,30 +20,6 @@
   max-width: var(--ops-wide);
 }
 
-.tabs {
-  display: flex;
-  gap: var(--sp-24);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-.tab {
-  padding: var(--sp-12) 0;
-  border-bottom: var(--rule-strong) solid transparent;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-.tab[aria-current="page"] {
-  border-bottom-color: var(--ink);
-  color: var(--text);
-}
-
-.tab:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
-}
-
 .panel {
   min-width: 0;
   border: var(--hairline) solid var(--paper-line);
@@ -62,7 +38,7 @@
 .panelTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-22);
 }
 
@@ -70,7 +46,7 @@
 .hint {
   margin: var(--sp-8) var(--sp-20) 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -198,8 +174,8 @@
 .cellText:focus-visible,
 .cellDate:focus-visible,
 .box:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* The unit beside the box, so nobody has to guess whether 15 is minutes or hours. */
@@ -254,55 +230,15 @@
   margin-right: 0;
 }
 
-/* Ink carries the one primary action, as on boards C1 and D1. */
-.save {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-14);
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-/* A button not yet usable is shaded, as the client app's are, rather than faded (VIS-21). */
-.save:disabled {
-  border-color: var(--paper-shade);
-  background: var(--paper-shade);
-  color: var(--text-quiet);
-  cursor: default;
-}
-
-.quiet:disabled,
 .inline:disabled {
   border-color: var(--paper-line);
   color: var(--text-quiet);
   cursor: default;
 }
 
-.save:focus-visible,
-.quiet:focus-visible,
 .inline:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset-wide);
 }
 
 .saved {
@@ -344,22 +280,22 @@
 }
 
 .check:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .checkTitle {
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-22);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .checkLine,
 .checkWarning {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .checkWarning {
@@ -371,25 +307,19 @@
   padding: 0;
   list-style: none;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 /* ---- The tables: board C2's, 13 px heads over 14 px rows 34 px tall -------- */
 
+/* packages/ui/Table.tsx's rows; its cells hold controls, which make the row's height, so none has padding above or below. */
 .table {
-  width: 100%;
   margin-top: var(--sp-8);
-  border-collapse: collapse;
-  font-size: var(--fs-14);
 }
 
 .table th,
 .table td {
-  height: var(--ops-row);
   padding: 0 var(--sp-10);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
-  text-align: left;
   vertical-align: middle;
 }
 
@@ -404,9 +334,6 @@
 }
 
 .table thead th {
-  border-bottom: var(--hairline) solid var(--text);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -471,8 +398,8 @@
 }
 
 .city:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* A row's own boxes, as tall as the row allows. */
@@ -542,11 +469,16 @@
   color: var(--text);
   font: inherit;
   font-size: var(--fs-15);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   cursor: pointer;
 }
 
 .file:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+/* The rules' and service area's quieter buttons (packages/ui/Button.tsx) sit a little narrower than Save. */
+.quiet {
+  padding: 0 var(--sp-14);
 }

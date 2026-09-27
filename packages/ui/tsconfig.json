@@ -1,0 +1,11 @@
+{
+  // The shared React parts are compiled by each app's Vite, as the apps' own
+  // components are; this config only type-checks and lints them on their own.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["vite/client"]
+  },
+  "include": ["*.ts", "*.tsx"]
+}

@@ -31,26 +31,10 @@
 
 /* Fixed, so each column keeps the width the board draws it at and the area takes the rest, as its 1fr does. */
 .table {
-  width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
-  font-size: var(--fs-14);
 }
 
-.table th,
-.table td {
-  height: var(--ops-row);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
-}
-
-.table thead th {
-  border-bottom: var(--hairline) solid var(--text);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
-/* The cell's own padding sits on what it holds, so a row stays 34 px whether or not it is a control. */
+/* The pincode is a control, whose own padding makes the row's height (.choose), so the cell has none above or below. */
 .pincode {
   width: var(--ops-figure);
   padding: 0 var(--sp-6) 0 0;
@@ -59,11 +43,11 @@
 }
 
 .table thead .pincode {
-  padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
+  padding-block: var(--sp-7);
 }
 
 .area {
-  padding: var(--sp-8) var(--sp-6);
+  padding-inline: var(--sp-6);
   text-align: left;
 }
 
@@ -71,7 +55,7 @@
 .oldest,
 .referred,
 .alerts {
-  padding: var(--sp-8) var(--sp-4);
+  padding-inline: var(--sp-4);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -110,7 +94,7 @@
 .more {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-13);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -119,8 +103,9 @@
  * dense cannot spare a column for one. Its underline is the only sign, quiet
  * enough to leave the table reading as a table.
  */
+/* 7 px above and below, so the row it stands in is the table's 34 px (packages/ui/table.module.css). */
 .choose {
-  padding: var(--sp-8) 0;
+  padding: var(--sp-7) 0;
   border: 0;
   background: transparent;
   font: inherit;
@@ -138,8 +123,8 @@
 }
 
 .choose:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .live {
@@ -159,8 +144,8 @@
 
 /* The panel takes focus as it opens, so it is read from its head and scrolled into view. */
 .launch:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .launchLabel {
@@ -176,7 +161,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .figures {
@@ -208,7 +193,7 @@
   padding: var(--sp-12) var(--sp-14);
   background: var(--wa-dark);
   font-size: var(--fs-14);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--wa-dark-text);
 }
 
@@ -224,8 +209,8 @@
 }
 
 .named a:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* The day a technician starts coming, which the launch's API takes and the board does not draw (OPS-22). */
@@ -255,8 +240,8 @@
 }
 
 .launchDate:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .fieldHint {
@@ -269,41 +254,6 @@
   display: flex;
   gap: var(--sp-10);
   margin-top: var(--sp-16);
-}
-
-.send,
-.quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.send {
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.send:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.quiet {
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-}
-
-.send:focus-visible,
-.quiet:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
 }
 
 .done {
@@ -320,6 +270,6 @@
 .note {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-soft);
 }

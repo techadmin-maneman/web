@@ -5,9 +5,9 @@
 // loading state and never drops the board it has: the grid keeps its scroll,
 // and the keyboard keeps its place (FEO-14).
 
+import type { Loaded } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Board, type BoardQuery } from "../api.ts";
-import type { Loaded } from "../lib/useLoad.ts";
 
 /** How often the board is read again while it is open and nothing is in hand. */
 export const REFRESH_MS = 60_000;
@@ -37,7 +37,7 @@ export function useBoard(query: BoardQuery, paused: boolean): BoardData {
     const answer = await api.board({ from, city });
     if (mine !== reads.current) return null;
     if (!answer.ok) {
-      setLoaded((held) => (held.state === "loaded" ? held : { state: "failed" }));
+      setLoaded((held) => (held.state === "loaded" ? held : { state: "failed", notFound: answer.status === 404 }));
       return null;
     }
     setLoaded({ state: "loaded", value: answer.body });

@@ -1,0 +1,92 @@
+/*
+ * The page every Phase 2 app starts from, after the brand's tokens and fonts:
+ * the box model, the serif's one weight, keyboard focus, reduced motion, and
+ * each app's sizes for a button. Each app's global.css imports it, then sets
+ * its own ground and column.
+ *
+ * Cascade layers keep the order plain: this page first, the shared components
+ * above it (the `ui` layer), and every rule of an app's own, which is in no
+ * layer, above both. Every stylesheet in this package names the two layers
+ * first, so the order holds whichever of them a browser meets first.
+ */
+
+@layer base, ui;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+  }
+
+  /*
+   * Each app's sizes for a button, by what it is for (./Button.tsx): the
+   * screen's primary action, any other, and a small one inline. These are the
+   * client app's and the console's; the technician app sets its own on its
+   * body, larger for a gloved hand in the sun.
+   */
+  :root {
+    --action-height: var(--btn-lg);
+    --action-text: var(--fs-16);
+    --control-height: var(--btn-md);
+    --control-text: var(--fs-15);
+    --control-weight: var(--weight-medium);
+    --small-height: var(--tap);
+    --small-text: var(--fs-15);
+    /* A filled button's edge: none, unless the app draws its filled buttons edged as its outlined ones are. */
+    --filled-edge: 0;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Only the serif's 400 is loaded, so a browser's bold heading would be a made-up one. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  th {
+    font-weight: var(--weight-regular);
+  }
+
+  /*
+   * Keyboard focus. The designs draw none, so it follows the ground, as the
+   * public site's does: ink on paper by default. An app on another ground sets
+   * --focus-colour on its body, and a block on a ground of its own sets it there.
+   */
+  :root {
+    --focus-colour: var(--ink);
+  }
+
+  :focus-visible {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+
+  /*
+   * A heading takes focus as its screen opens, so a screen reader starts there;
+   * it is not a control, and has no ring. A panel that takes focus keeps its ring.
+   */
+  :is(h1, h2, h3, h4, h5, h6)[tabindex="-1"]:focus-visible {
+    outline: none;
+  }
+
+  /* Nothing moves for someone who has asked for less motion (docs/prompts/phase2-frontend.md, "Motion"). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}

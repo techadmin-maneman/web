@@ -8,13 +8,12 @@ import sharp from "sharp";
 import favicon16 from "../../../design/brand/favicon-16.svg?raw";
 import favicon from "../../../design/brand/favicon-32.svg?raw";
 import lockup from "../../../design/brand/lockup-gilt.svg?raw";
+import { colourOf } from "@maneman/brand/colours";
 import tokens from "@maneman/brand/tokens.css?raw";
 
 /** A colour from tokens.css, so the images use the site's one set of values. */
 export function token(name: string): string {
-  const found = new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`).exec(tokens);
-  if (found?.[1] === undefined) throw new Error(`no colour ${name} in tokens.css`);
-  return found[1];
+  return colourOf(name, tokens);
 }
 
 async function onInk(svg: string, size: { width: number; height: number }, artWidth: number): Promise<Buffer> {

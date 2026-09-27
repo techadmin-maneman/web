@@ -1,6 +1,6 @@
 # 0037. Shared packages: the brand first
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0077: the scales hold each value once, a role names the scale's token, and weights, leading and motion are tokens. Amended by ADR 0076: `packages/ui` is the apps' component layer, and `packages/web-kit` holds the typed API client, India's dates, rupees and WhatsApp's links, which every front end takes from there.
 - Date: 2026-09-22
 
 ## Context
@@ -40,11 +40,11 @@ The package owns its `@fontsource` dependencies. `fonts.css` finds them in the r
 - **Prototype only (dropped):** `#D8D2C4`, `#EFE7D6` and `#C4BFB2`. The spec boards overrule the Prototype.
 - **Not ours:** the WhatsApp greens and greys belong to the chat previews, which draw WhatsApp's interface. **Amended 25 September 2026:** where a board draws a message as WhatsApp will show it — the client app's invite preview (F4) and the ops console's launch message (C3) — the colours are WhatsApp's, so they are kept as their own group, `--wa-*` in `tokens-phase2.css`, and used nowhere else. The console's two had been named as inks of ours (`--ink-message`).
 
-The layer only adds names; the site uses none of them. **Amended 26 September 2026:** it holds the Phase 2 surfaces' sizes too, the apps' targets and the ops console's frame and density among them, each still a value a spec board draws (ADR 0071).
+The layer only adds names; the site uses none of them. **Amended 27 September 2026:** it holds seven colours now, four of them WhatsApp's own, and the Phase 2 sizes (`packages/brand/README.md`). **Amended 26 September 2026:** it holds the Phase 2 surfaces' sizes too, the apps' targets and the ops console's frame and density among them, each still a value a spec board draws (ADR 0071).
 
 **The brand kit's SVG files stay in `design/brand/`**, which is the owner's export, as the Phase 2 design README says. The package's `marks` hold the same path data, and a test checks it against every colour variant of the kit.
 
-**`packages/web-kit`** (the security headers builder, the API client, and the IST and rupee formatting) arrives with the first app, in P2-M1, under the same rules.
+**`packages/web-kit`** (the security headers builder, the API client, and the IST and rupee formatting) arrives with the first app, in P2-M1, under the same rules. **Amended 27 September 2026:** the API client arrived only with ADR 0076, which also adds `packages/ui`, the apps' components.
 
 ## Consequences
 

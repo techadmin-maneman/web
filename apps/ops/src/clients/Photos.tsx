@@ -9,6 +9,7 @@
 // asked for, since a client of some years has a great many. The opening is held
 // by the client's page, so leaving this tab and coming back is the same view.
 
+import { Button } from "@maneman/ui/Button";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Photo, type PhotoView, type PhotoVisit } from "../api.ts";
@@ -195,9 +196,9 @@ function Earlier({ waiting, fetching, onMore }: { waiting: number; fetching: boo
   if (waiting === 0) return null;
   if (fetching) return <Loading />;
   return (
-    <button className={styles.secondary} type="button" onClick={onMore}>
+    <Button variant="outline" size="small" className={styles.secondary} onClick={onMore}>
       {copy.earlier(Math.min(waiting, VISITS_AT_ONCE))}
-    </button>
+    </Button>
   );
 }
 
@@ -233,9 +234,9 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
       {state.step === "opening" ? (
         <Loading />
       ) : (
-        <button className={styles.primary} type="button" onClick={() => void open()}>
+        <Button variant="primary" size="small" className={styles.primary} onClick={() => void open()}>
           {copy.open}
-        </button>
+        </Button>
       )}
       {state.step === "failed" && (
         <p className={styles.error} role="alert">

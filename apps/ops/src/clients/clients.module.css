@@ -34,8 +34,8 @@
 }
 
 .findField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .findHint {
@@ -74,7 +74,7 @@
 .name {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-30);
 }
 
@@ -87,15 +87,15 @@
   padding: 0 var(--sp-18);
   border: var(--hairline) solid var(--ink);
   font-size: var(--fs-14);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--text);
   text-decoration: none;
 }
 
 .whatsapp:focus-visible,
 .metaLink:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset-wide);
 }
 
 /* The brand's WhatsApp glyph is a line, drawn as board A3's drawer draws it. */
@@ -140,29 +140,9 @@
   color: var(--brass-text);
 }
 
+/* Board B1's tabs (packages/ui/Tabs.tsx), set in from the page's edges as its head is. */
 .tabs {
-  display: flex;
-  gap: var(--sp-24);
   padding: 0 var(--sp-28);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-.tab {
-  padding: var(--sp-12) 0;
-  border-bottom: var(--rule-strong) solid transparent;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-.tab[aria-current="page"] {
-  border-bottom-color: var(--ink);
-  color: var(--text);
-}
-
-.tab:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
 }
 
 .panel {
@@ -201,8 +181,8 @@
 }
 
 .foundName:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .foundMobile {
@@ -245,7 +225,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -256,7 +236,7 @@
 .cell,
 .quietCell,
 .figureCell {
-  padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
+  padding-inline: 0 var(--sp-10);
 }
 
 .quietCell {
@@ -306,8 +286,8 @@
 }
 
 .numberField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 /* The reasons, set as board A2 sets a move's: a square that fills with ink when chosen. */
@@ -344,8 +324,8 @@
 }
 
 .radio:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .done {
@@ -358,7 +338,7 @@
 /* The board's own column widths; the failure and its reason take the slack. */
 .code {
   width: var(--ops-piece-code);
-  padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
+  padding-inline: 0 var(--sp-10);
   font-variant-numeric: tabular-nums;
 }
 
@@ -380,7 +360,7 @@
 .lot,
 .due,
 .failure {
-  padding: var(--sp-8) var(--sp-10);
+  padding-inline: var(--sp-10);
 }
 
 .lot {
@@ -421,15 +401,15 @@
 .photosTitle {
   margin: var(--sp-14) 0 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-24);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .warning {
   margin: var(--sp-14) 0 var(--sp-18);
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .visit {
@@ -499,37 +479,20 @@
   padding: var(--sp-22);
 }
 
-/* Fixed, so each column keeps the width the board draws it at and the purpose wraps as it does. */
+/* Fixed, so each column keeps the width the board draws it at and the purpose wraps as it does (packages/ui/Table.tsx). */
 .table {
-  width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
-  font-size: var(--fs-14);
-}
-
-.table th,
-.table td {
-  height: var(--ops-row);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-weight: 400;
-  text-align: left;
-}
-
-.table thead th {
-  border-bottom: var(--hairline) solid var(--text);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }
 
 .purpose {
   width: auto;
-  padding: var(--sp-9) var(--sp-10) var(--sp-9) 0;
+  padding-inline: 0 var(--sp-10);
 }
 
 .state,
 .date,
 .notice {
-  padding: var(--sp-9) var(--sp-10);
+  padding-inline: var(--sp-10);
 }
 
 .state {
@@ -559,14 +522,14 @@
 .deletion {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--error-on-paper);
 }
 
 .note {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -606,47 +569,6 @@
 
 /* ---- Shared ------------------------------------------------------------- */
 
-.primary {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-20);
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.primary:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.primary:focus-visible,
-.secondary:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
-}
-
-/* A second action, outlined, as the board draws every action but the one primary. */
-.secondary {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-  margin-top: var(--sp-16);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-}
-
 .empty {
   margin: 0;
   font-size: var(--fs-15);
@@ -657,4 +579,15 @@
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
   color: var(--error-on-paper);
+}
+
+/* The page's buttons (packages/ui/Button.tsx), as wide as their words. */
+.primary {
+  display: inline-flex;
+  padding: 0 var(--sp-20);
+}
+
+.secondary {
+  display: inline-flex;
+  margin-top: var(--sp-16);
 }

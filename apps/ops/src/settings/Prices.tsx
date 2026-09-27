@@ -10,12 +10,14 @@
 // 18% item GST-free without anyone seeing it
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { Button } from "@maneman/ui/Button";
+import { Table } from "@maneman/ui/Table";
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useEffect, useRef, useState } from "react";
 import { api, type Price } from "../api.ts";
 import { settings } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./settings.module.css";
 
@@ -117,12 +119,12 @@ function Check({
       )}
       {sameDay && <p className={styles.checkLine}>{form.confirm.sameDay}</p>}
       <div className={styles.actions}>
-        <button className={styles.save} type="button" disabled={busy} onClick={onSend}>
+        <Button variant="primary" size="small" className={styles.save} disabled={busy} onClick={onSend}>
           {busy ? form.saving : form.confirm.send}
-        </button>
-        <button className={styles.quiet} type="button" disabled={busy} onClick={onBack}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onBack}>
           {form.confirm.back}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -350,16 +352,17 @@ function Form({
       )}
       {!checking && (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="primary"
+            size="small"
             className={styles.save}
-            type="button"
             disabled={!ready}
             onClick={() => {
               setStep({ step: "checking" });
             }}
           >
             {form.save}
-          </button>
+          </Button>
         </div>
       )}
       {step.step === "saved" && (
@@ -402,12 +405,12 @@ function Withdraw({
         {copy.withdraw.question(longDate(withdrawing.price.valid_from))}
       </p>
       <div className={styles.actions}>
-        <button className={styles.save} type="button" disabled={busy} onClick={onSend}>
+        <Button variant="primary" size="small" className={styles.save} disabled={busy} onClick={onSend}>
           {busy ? copy.withdraw.taking : copy.withdraw.confirm}
-        </button>
-        <button className={styles.quiet} type="button" disabled={busy} onClick={onKeep}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onKeep}>
           {copy.withdraw.keep}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -444,7 +447,7 @@ export function Prices() {
         </h2>
       </div>
       <p className={styles.note}>{copy.note}</p>
-      <table className={styles.table}>
+      <Table className={styles.table}>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -486,7 +489,7 @@ export function Prices() {
             );
           })}
         </tbody>
-      </table>
+      </Table>
       {(withdrawing?.step === "asking" || withdrawing?.step === "sending") && (
         <Withdraw
           key={`${withdrawing.price.item}/${withdrawing.price.tier}/${withdrawing.price.valid_from}`}

@@ -84,7 +84,11 @@ const JobSummarySchema = z
     ends_at: z.union([z.iso.datetime(), z.null()]),
     window_label: z.enum(BOOKING_WINDOWS),
     type: z.union([z.enum(VISIT_TYPES), z.null()]),
-    sector: z.union([z.string(), z.null()]).openapi({ description: "The area, never the street." }),
+    sector: z.union([z.string(), z.null()]).openapi({
+      description:
+        "The area, never the street: the one the visit's pincode is in, from the service area; else the address's " +
+        "locality, or the city.",
+    }),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
     badge: z.enum(PAYMENT_BADGES).openapi({
       description:
