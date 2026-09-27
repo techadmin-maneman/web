@@ -160,4 +160,4 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
 
 ## Inputs still owed
 
-The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`. The FSM trial and licensing are in `docs/decisions/fsm-trial.md` and `docs/decisions/fsm-licensing.md`, both pending.
+The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`; what is still owed before production is `docs/open-points.md`. The FSM trial's findings are written up in `docs/decisions/fsm-trial.md`. The licence for our own apps was ruled by the owner on 23 September 2026, so P2-M4 went ahead (`docs/decisions/fsm-licensing.md`); Zoho's written answer is still wanted for the file (`docs/open-points.md`, item 15). (Corrected 27 September 2026: this said both were pending. Migration 0026's header still says P2-M4 waits on the licence; an applied migration is never edited, so `docs/migrations.md` records the correction.)

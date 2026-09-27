@@ -24,7 +24,7 @@ Every technician write takes an `X-Client-Event-Id` header and lands in `job_eve
 
 ### Writing to FSM
 
-**Through the `fsm-sync` queue, not in the request** (ADR 0032: synchronously where the client waits on the result, through the queue where it does not). The technician does not wait on FSM: he is on a phone, often on a weak line, and a refusal FSM will take a minute later must not lose his work. The route answers `202` with `fsm_write_state: "pending"`, and the consumer retries after 30 s, 1, 2 and 4 minutes; the fifth alerts and leaves the event for ops.
+**Through the `fsm-sync` queue, not in the request.** The rule for a write to FSM, set here: synchronously where the person waits on the result, through the queue where they do not. (Corrected 27 September 2026: this credited the rule to ADR 0032, which says nothing of it.) The technician does not wait on FSM: he is on a phone, often on a weak line, and a refusal FSM will take a minute later must not lose his work. The route answers `202` with `fsm_write_state: "pending"`, and the consumer retries after 30 s, 1, 2 and 4 minutes; the fifth alerts and leaves the event for ops.
 
 Dispatch is the other way round, and synchronous, because ops **do** wait on the result: a clash or a refusal has to be on the screen before the board shows the job moved.
 

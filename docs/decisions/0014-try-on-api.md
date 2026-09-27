@@ -1,6 +1,6 @@
 # 0014. The try-on API
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0018: one look per visitor, so there is no second look. Amended by ADR 0039: results are kept 14 days in production.
 - Date: 2026-09-21
 
 ## Context
@@ -24,13 +24,13 @@ The upload link's body gains `turnstile_token`, because the prompt puts Turnstil
 
 ### Jobs, looks and sessions
 
-> **Superseded in part by docs/decisions/0018:** the owner decided on one look per visitor, so there is no "try another look". The rest of this section stands.
+> **Superseded in part by docs/decisions/0018:** the owner decided on one look per visitor, so there is no "try another look". The two rules below that were about a second look say what is true since (corrected 27 September 2026).
 
-- **One job per render.** The first look of a photo is the job `upload-url` created. "Try another look" is a new job that shares the photo (`upload_key`) and points at the first look (`parent_job_id`).
+- **One job per render.** A photo's look is the job `upload-url` created. Until ADR 0018, "Try another look" was a new job that shared the photo (`upload_key`) and pointed at the first look (`parent_job_id`); the column stays, and nothing writes it.
 - **Deduplication.** A generate with the same photo, look and colour as a job that is queued, rendering, downloading or ready returns that job. Stage is not compared, because it does not change the render.
-- **Before the gate, only the first look.** A different look needs the `mm_tryon` session that owns the job (`403 session_required`); otherwise the gate could be skipped indefinitely.
+- **One look, before the gate and after it.** A different look for the same photo answers `403 look_limit_reached`, and so does a new upload link from a browser whose look has not failed (ADR 0018). Until then a different look needed the `mm_tryon` session that owned the job (`403 session_required`).
 - **The session** is the gate's `mm_tryon` cookie: `HttpOnly; Secure; SameSite=Strict`, 30 minutes, and `Path=/api/tryon`. A new upload link asked for with a valid cookie belongs to that session too.
-- **Status** is unauthenticated. Job IDs are random UUIDs, and it returns only the state and failure code.
+- **Status** is unauthenticated. Job IDs are random UUIDs, and it returns only the job's ID, its state and, once failed, its failure code.
 
 ### The gate (claim)
 
@@ -53,7 +53,7 @@ The upload link's body gains `turnstile_token`, because the prompt puts Turnstil
 - **New error codes:** `busy`, `photo_invalid_file`, `upload_already_received`, `upload_missing`, `session_required` and `job_not_claimable`.
 - **Result links.** `/api/result/{token}` serves the image for the link's life: 15 minutes for the browser, one hour for a WhatsApp copy, minted at send time. Its `Cache-Control` is `private, max-age=900`.
 - **Rate-limit windows.** Per-address limits count per India clock hour; per-number limits per India day.
-- **Result retention** is set by `RESULT_RETENTION_DAYS`: 30 in production, as the prompt and the photo notice say; 3 on staging, whose results only serve tests. Both count against the same R2 allowance. It may not exceed 30.
+- **Result retention** is set by `RESULT_RETENTION_DAYS`: 14 in production since ADR 0039 made room in R2 for Phase 2's photographs (it was 30, as the prompt says); 3 on staging, whose results only serve tests. Both count against the same R2 allowance. It may not exceed 30, the photo notice's promise.
 
 ### Staging and Cloudflare Access
 

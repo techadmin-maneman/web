@@ -1,6 +1,6 @@
 # 0048. Referrals and the waitlist
 
-- Status: accepted; the landing page and the app's Refer screens follow in P2-F3
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3.
 - Date: 2026-09-22
 
 ## Context
@@ -37,7 +37,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 - `POST /api/r/:code/consultation` books a free consultation straight into the schedule: a hold, then the queue, as a free booking in the app.
   - The page's line "You may contact me on WhatsApp about this consultation." is recorded as consent to WhatsApp about visits, on its own notice (`referral-consultation-v1`), so the confirmation and reminder reach them (ADR 0047).
   - It answers whether the invite's credits apply, and the invite's state for this friend: `expired` once the one held for them on a waitlist has lapsed, 12 months after their area launched (ADR 0068).
-  - While self-serve booking is off, it answers `409 ops_assisted` (open point 41).
+  - While self-serve booking is off, it books nothing and records a request for ops instead: the person, the consent, the invite's attribution, the lead and a `consultation_requests` row, answered `201` with `state: "requested"`. Until 24 September 2026 it answered `409 ops_assisted` ([ADR 0060](0060-an-invited-friend-reaches-ops-and-the-crm.md)).
 - `POST /api/r/:code/waitlist` records the person on the pincode's list.
   - It takes their required consent to be contacted about the request (`waitlist-v1`), and the optional launch alert (consent to WhatsApp about launches).
   - The invite is held for them, valid until 12 months after the area launches (`inviteLapsed`).
@@ -82,6 +82,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
   - Nobody is told twice: the entry keeps when it was alerted.
   - The launch is audited.
 - `GET /api/referrers` gives ops each referrer's figures: opens, consultations, fits, grants and the credits spent. Opens are counted on the invite; the referrer never sees them (the tracker shows fits only).
+  - **No "sent".** The front-end prompt's funnel for board C2 starts with it ("Sent, opens, consults, fits, granted, redeemed"), and nothing can count it: a client shares their link from their own phone, through WhatsApp or the share sheet, and nothing reaches us until a friend opens it. The console leaves the column out rather than show a count that is not one (recorded 27 September 2026; ADR 0025, item 57).
 
 **The pre-January log** is imported by `scripts/import-referrals.ts` from ops' CSV, into people, codes, attributions and the ledger. Credits imported expire 365 days after the import (ruling 6). Running it again writes nothing twice: a person and a referral keep the same IDs, from their numbers.
 

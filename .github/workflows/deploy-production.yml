@@ -10,10 +10,11 @@
 # (docs/decisions/0006-deployment-pipeline.md).
 #
 # Runs in the GitHub Environment "production". Required reviewers get added
-# there when the GitHub plan allows it (docs/decisions/0007-platform-constraints.md).
+# there when the GitHub plan allows it (docs/decisions/0008-owner-decisions-on-platform-constraints.md).
 #
-# Secret, on the GitHub Environment "production":
-#   CLOUDFLARE_API_TOKEN    production's deploy token (docs/runbook.md)
+# Secrets, on the GitHub Environment "production":
+#   CLOUDFLARE_API_TOKEN                            production's deploy token (docs/runbook.md)
+#   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET    Access service token, so the smoke suite gets past Access on the apps' hosts
 name: deploy-production
 
 on:
