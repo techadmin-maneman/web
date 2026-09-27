@@ -1,6 +1,6 @@
-// Refer in the app (boards F1 to F6) for the fitted client of e2e/app/fitted.ts, and for a client not yet fitted,
-// against the local mm-api. Neither has credits or anybody fitted yet, so this covers the invite, the card choice,
-// the preview and the empty tracker; the grant itself is covered in the worker tests.
+// Refer in the app (boards F1 to F6) for the fitted client of e2e/app/fitted.ts, against the local mm-api. The
+// client has no credits and nobody fitted yet, so this covers the invite, the card choice, the preview and the
+// empty tracker; the grant itself is covered in the worker tests.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
@@ -169,42 +169,12 @@ test("makes their own card, records one consent and stores one card, when Allow 
   expect(stored[0]).toBeLessThan(300 * 1024);
 });
 
-// The owner's ruling of 27 September 2026: everyone signed in can share an invite, where board B2 drew Refer empty
-// for a lead (ADR 0083). With no photographs of their own yet, the invite is the house card, in words true for them.
-test("a client not yet fitted shares the house card, in words true for them, and the link opens the landing", async ({
-  page,
-  request,
-}) => {
+// Board B2: before their first fit a client has nothing to vouch for, and the invite's own words would not be
+// true, so Refer is reachable but empty (CLI-07).
+test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page, request }) => {
   await signIn(page, request);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Refer" })).toBeVisible();
-  await expect(page.getByText("When a friend you refer is fitted, you both get 3 service visits free.")).toBeVisible();
-  await expect(page.getByText("No other discount applies.")).toBeVisible();
-  await scan(page);
-
-  await page.getByRole("button", { name: "Share an invite" }).click();
-  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
-  await expect(preview).toBeVisible();
-  await expect(preview.getByRole("radio")).toHaveCount(0);
-  await expect(preview.locator("img").first()).toHaveAttribute("src", /invite-house/);
-  await expect(
-    preview.getByText(/^These people fit hair systems at home, across Delhi NCR\. Worth a look — .*\/r\/[A-Z0-9]{6}$/),
-  ).toBeVisible();
-  await expect(preview.getByText(/Had my hair system fitted/)).toHaveCount(0);
-  await preview.getByRole("button", { name: "Copy link" }).click();
-  await expect(preview.getByRole("button", { name: "Link copied" })).toBeVisible();
-  const link = await page.evaluate(() => navigator.clipboard.readText());
-  expect(link).toMatch(/\/r\/[A-Z0-9]{6}$/);
-  await scan(page);
-
-  await preview.getByRole("button", { name: "Close" }).click();
-  await page.getByRole("link", { name: "See who has been fitted" }).click();
   await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Share an invite" })).toBeVisible();
-
-  // The landing reads a lead's invite as any other: valid, with the visits, and naming nobody without consent.
-  await page.goto(link);
-  await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeVisible();
-  await expect(page.getByText("We do not recognise this invite")).toHaveCount(0);
-  await expect(page.getByText(/sent you this/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Share an invite" })).toHaveCount(0);
+  await scan(page);
 });

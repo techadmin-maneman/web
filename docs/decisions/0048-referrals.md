@@ -1,6 +1,6 @@
 # 0048. Referrals and the waitlist
 
-- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3. Amended by ADR 0083 on 27 September 2026: every signed-in client can share an invite, not only a fitted one.
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3.
 - Date: 2026-09-22
 
 ## Context
