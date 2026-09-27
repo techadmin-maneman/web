@@ -540,6 +540,18 @@ export const photos = {
   photoOf: (angle: string, date: string) => `${angle} · ${date}`,
   // PLACEHOLDER
   close: "Close",
+  // PLACEHOLDER: no board draws the try-on the client made on the site (ADR 0025, item 63; ADR 0082).
+  tryOn: {
+    title: "Your try-on",
+    images: { photo: "Your photograph", look: "Your look" },
+    alt: (image: string, date: string) => `${image}, try-on of ${date}`,
+    // How long each is kept: the photograph an hour after the look was asked for, the look the days the site keeps it.
+    keptBoth: (photoUntil: string, lookUntil: string) =>
+      `Your photograph is kept until ${photoUntil}, the look until ${lookUntil}.`,
+    keptLook: (lookUntil: string) =>
+      `Your photograph was deleted within the hour. The look is kept until ${lookUntil}.`,
+    keptPhoto: (photoUntil: string) => `The look is still being made. Your photograph is kept until ${photoUntil}.`,
+  },
 } as const;
 
 export const payments = {

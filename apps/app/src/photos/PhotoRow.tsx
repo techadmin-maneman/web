@@ -8,25 +8,35 @@
 
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import type { Angle, PhotoLink, PhotoSet } from "../api.ts";
+import type { Angle, PhotoSet } from "../api.ts";
 import { photos } from "../content.ts";
 import styles from "./photos.module.css";
 
 export const ANGLES: readonly Angle[] = ["front", "top", "left", "right", "hair"];
 
-/** A photograph opened from a row, for the sheet. */
+/** What a thumbnail shows: a visit's photograph, or a try-on's image, whose size is not known. */
+export interface ImageLink {
+  readonly url: string;
+  readonly width?: number | null;
+  readonly height?: number | null;
+}
+
+/** A photograph opened from a row, as the sheet shows it. */
 export interface OpenPhoto {
-  readonly link: PhotoLink;
-  readonly phase: "before" | "after";
-  /** The visit's date, YYYY-MM-DD. */
-  readonly date: string;
+  readonly link: ImageLink;
+  /** What it shows, for a screen reader: "Front, after the visit, 22 Aug 2027". */
+  readonly alt: string;
+  /** Board D3's line above Download: "Front · 22 Aug 2027". */
+  readonly title: string;
+  /** The name it is saved under. */
+  readonly fileName: string;
 }
 
 /** The set a row shows: after the visit, or before it when no after was taken. */
 export const shownPhase = (set: PhotoSet) => (set.after.length > 0 ? "after" : "before");
 
 /** `eager` for the one photograph opened large, which is wanted now; a row's wait until they near the screen. */
-export function Thumb(props: { link: PhotoLink; alt: string; className?: string; eager?: boolean }) {
+export function Thumb(props: { link: ImageLink; alt: string; className?: string; eager?: boolean }) {
   const { link, alt, className } = props;
   const [arrived, setArrived] = useState(false);
   return (
@@ -52,14 +62,21 @@ export function PhotoRow({ set, date, onOpen }: { set: PhotoSet; date: string; o
       {ANGLES.map((angle) => {
         const link = set[phase].find((each) => each.angle === angle);
         if (link === undefined) return <div key={angle} className={styles.cell} />;
+        const alt = photos.alt(photos.angles[angle], phase, fullDate(date));
+        const opened: OpenPhoto = {
+          link,
+          alt,
+          title: photos.photoOf(photos.angles[angle], fullDate(date)),
+          fileName: `mane-man-${date}-${phase}-${angle}.jpg`,
+        };
         return (
           <button
             key={angle}
             className={styles.cell}
             type="button"
-            aria-label={photos.alt(photos.angles[angle], phase, fullDate(date))}
+            aria-label={alt}
             onClick={() => {
-              onOpen({ link, phase, date });
+              onOpen(opened);
             }}
           >
             <Thumb link={link} alt="" />

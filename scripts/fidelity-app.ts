@@ -144,6 +144,8 @@ const timeline = (inks: readonly [string, string, string]) => ({
     type: each.type,
     photos: photoSet(inks[index] ?? "ink"),
   })),
+  // No board draws a try-on (ADR 0082), so the boards' client has none.
+  try_ons: [],
 });
 /** Board D2 draws the earlier visit on ink-frame and the later on ink-raised. */
 const TIMELINE = timeline(["ink", "ink", "ink"]);
@@ -527,7 +529,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await pair(OUT, WIDTH, "d2-compare", await frame(design, "Photos · compare"), await shot(compare));
   await compare.close();
 
-  const none = await openApp(browser, "/photos", { ...me, "/api/photos": json({ visits: [] }) });
+  const none = await openApp(browser, "/photos", { ...me, "/api/photos": json({ visits: [], try_ons: [] }) });
   await none.getByText("Your photographs start at your first fit.").waitFor();
   await pair(
     OUT,
