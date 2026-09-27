@@ -1,6 +1,6 @@
 # @maneman/ui
 
-The React parts the three Phase 2 apps share: the client app, the ops console and the technician app. What they have in common is written here once, so a fix reaches all three (ADR 0037; the audit's DS-23 and FEA-40). The public site is Astro and Preact, and uses none of it.
+The React parts the three Phase 2 apps share: the client app, the ops console and the technician app. What they have in common is written here once, so a fix reaches all three (ADR 0075; the audit's DS-23 and FEA-40). The calls to the API, India's dates, rupees and WhatsApp's links are `@maneman/web-kit`'s. The public site is Astro and Preact, and uses none of it.
 
 | Import                       | What it holds                                                                                      |
 | ---------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -22,6 +22,7 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/useLoad`        | A page's data, fetched as it opens and again on "Try again"                                        |
 | `@maneman/ui/useOneAtATime`  | One thing at a time, so two taps on one intent start it once                                       |
 | `@maneman/ui/classes`        | `classes()`, which joins an element's class names                                                  |
+| `@maneman/ui/cssToken`       | A token's value as the page has it, for what is drawn outside a stylesheet: a canvas, a checkout   |
 
 ## Sizes by app
 
@@ -32,4 +33,5 @@ A button's size is what it is for, and each app says how big that is. `base.css`
 - **Tokens only.** Every colour, size and space comes from `@maneman/brand`, as in the apps; `test/node/app-tokens.test.ts` reads these stylesheets too.
 - **A screen's own class wins.** `base.css` is the `base` cascade layer and each component's stylesheet the `ui` layer, above it; an app's own rules are in no layer, so they beat both. A screen sets a shared component's margin or width with its own class, and nothing else is needed. Every stylesheet here names the two layers first (`@layer base, ui;`), so the order holds whichever a browser meets first. The visually-hidden recipe alone stays outside the layers, so no screen can bring its words into view.
 - **Each app brings its own React.** This package imports `react` but does not install it. Each app's `vite.config.ts` dedupes `react` and `react-dom`, since from here Node would find the repository root's React 18, kept for the fidelity runs (`docs/fidelity-method.md`).
+- **No copies in the apps.** `test/node/ui-package.test.ts` fails an app that keeps its own icon, mark, router, loader, tap guard or error boundary, hides words its own way, or calls `/api/` itself.
 - **Sources, not builds,** as `@maneman/brand`: each app's Vite compiles what it imports. `packages/ui/tsconfig.json` type-checks and lints the package on its own.

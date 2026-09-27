@@ -1,6 +1,6 @@
 # 0037. Shared packages: the brand first
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0075: `packages/ui` is the apps' component layer, and `packages/web-kit` holds the typed API client, India's dates, rupees and WhatsApp's links, which every front end takes from there.
 - Date: 2026-09-22
 
 ## Context
@@ -44,7 +44,7 @@ The layer only adds names; the site uses none of them. **Amended 26 September 20
 
 **The brand kit's SVG files stay in `design/brand/`**, which is the owner's export, as the Phase 2 design README says. The package's `marks` hold the same path data, and a test checks it against every colour variant of the kit.
 
-**`packages/web-kit`** (the security headers builder, the API client, and the IST and rupee formatting) arrives with the first app, in P2-M1, under the same rules.
+**`packages/web-kit`** (the security headers builder, the API client, and the IST and rupee formatting) arrives with the first app, in P2-M1, under the same rules. **Amended 27 September 2026:** the API client arrived only with ADR 0075, which also adds `packages/ui`, the apps' components.
 
 ## Consequences
 
