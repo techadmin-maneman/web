@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, JOB_ID, ROHITS_PIECE, type Fake } from "./fixtures.ts";
+import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, ROHITS_PIECE, type Fake, type Step } from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -13,7 +13,7 @@ const wcag = (page: Page) =>
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
 /** A job checked in, started, and through the steps named. */
-function startedThrough(fake: Fake, ...steps: string[]): void {
+function startedThrough(fake: Fake, ...steps: Step[]): void {
   fake.progress = {
     ...fake.progress,
     checked_in_at: ago(30),
@@ -35,8 +35,8 @@ test("a double tap on Start job starts the job once", async ({ page }) => {
   await page.getByRole("button", { name: "Start job" }).dblclick();
   await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeVisible();
   await expect.poll(() => writesTo(fake, "start").length).toBe(1);
-  // And nothing else was queued behind it.
-  await page.waitForTimeout(500);
+  // And nothing else was queued behind it: the phone holds nothing more to send.
+  await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
   expect(writesTo(fake, "start")).toHaveLength(1);
 });
 
@@ -62,7 +62,7 @@ test("a double tap on Next finishes one step, and never the step it opens", asyn
   await page.getByRole("button", { name: "Next" }).dblclick();
 
   await expect(page.getByRole("heading", { level: 1, name: "Consumables used" })).toBeVisible();
-  await page.waitForTimeout(800);
+  await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
   expect(writesTo(fake, "checklist")).toHaveLength(1);
   // The consumables' Next sits where the checklist's was, and the second tap did not reach it.
   expect(writesTo(fake, "consumables")).toHaveLength(0);

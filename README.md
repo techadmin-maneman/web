@@ -27,12 +27,12 @@ Node 24.11 or later (`.nvmrc`, and `engines` in package.json).
 
 ```sh
 npm ci
-npm run dev          # creates .dev.vars, migrates and marks the local D1, then mm-api on :8787
-npm run dev:site     # mm-site placeholder on :8788
-npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
+npm run db:seed:local   # clients, visits and a technician to sign in as
+npm run dev:all         # mm-api, the public site and the three apps; every login code is 246810
+npm run dev             # mm-api alone on :8787
 ```
 
-Locally every provider is a stub and Turnstile uses Cloudflare's test keys: send `"turnstile_token": "XXXX.DUMMY.TOKEN.XXXX"`. The local queue delivers leads to the stub CRM within a few seconds.
+`docs/getting-started.md` has the rest: the hosts each app is opened on, the commands that stand in for the cron, Razorpay and FSM locally, and moving a port. Locally every provider is a stub and Turnstile uses Cloudflare's test keys: send `"turnstile_token": "XXXX.DUMMY.TOKEN.XXXX"`.
 
 ## Checks (each is a CI job)
 
@@ -41,7 +41,7 @@ npm run verify              # all of these in one, the tests without coverage; b
 npm run typecheck && npm run check:types
 npm run lint
 npm run format:check
-npm run test:coverage       # Worker tests in workerd, script tests in Node; 85% lines on src/
+npm run test:coverage       # Worker tests in workerd, script tests in Node; 90% lines, 80% branches on src/
 npm run check:config        # environment isolation in both wrangler configs
 npm run check:migrations    # forward-only, contract steps need an ADR (docs/migrations.md)
 npm run build               # both Workers, every environment, dry run

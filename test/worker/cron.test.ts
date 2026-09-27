@@ -72,6 +72,21 @@ describe("runCronJobs", () => {
     expect(ran).toEqual(["fsm", "always"]);
     expect(outcomes.map((outcome) => outcome.job)).toEqual(["fsm", "always"]);
   });
+
+  // LIFE-17: the stub remembers no appointment, so locally the repair read every visit it looked at as one FSM had
+  // deleted, and each run took two more off the local mirror.
+  it("repairs the FSM mirror only against the real FSM, which is a record; the stub holds none", async () => {
+    const { ran, job } = recorder();
+    const jobs = [job("fsm_reconcile", "fsm_record"), job("fsm_catalogue", "fsm")];
+    const zoho = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" } };
+
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
+    expect(ran).toEqual(["fsm_catalogue"]);
+
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: zoho, log: createLogger() });
+    expect(ran).toEqual(["fsm_catalogue", "fsm_reconcile", "fsm_catalogue"]);
+    expect(CRON_JOBS.find((each) => each.name === "fsm_reconcile")?.needs).toBe("fsm_record");
+  });
 });
 
 describe("a job that keeps failing", () => {

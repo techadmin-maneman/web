@@ -26,6 +26,7 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import sharp from "sharp";
 import { randomMobile } from "../support.ts";
+import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -80,7 +81,8 @@ export async function seedFitted(): Promise<void> {
   const mobile = randomMobile();
   const now = new Date().toISOString();
   const id = () => crypto.randomUUID();
-  const [person, technician] = [id(), id()];
+  const person = id();
+  const technician = E2E_TECHNICIANS.fitted.id;
   const [next, service, firstFit, consultation] = [day(3), day(-20), day(-60), day(-90)];
   const visits = { next: id(), service: id(), firstFit: id(), consultation: id() };
   const [servicePaid, firstFitPaid, piece] = [id(), id(), id()];
@@ -116,8 +118,7 @@ export async function seedFitted(): Promise<void> {
 
   const sql = [
     `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${row(person, now, `+91${mobile}`, "Rohit Malhotra")};`,
-    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
-       VALUES ${row(technician, `e2e-${technician}`, "Imran Qureshi", "IQ", 1, now)};`,
+    ...technicianFor("fitted", now),
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        fsm_status, service_city, service_pincode, fsm_invoice_id, invoice_issued_at, fsm_modified_at,
        synced_at) VALUES

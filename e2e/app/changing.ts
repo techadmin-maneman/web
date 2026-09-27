@@ -10,6 +10,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomMobile } from "../support.ts";
+import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 import { row, wrangler } from "./fitted.ts";
 
 export interface Changing {
@@ -33,11 +34,8 @@ export function changingClients(): { free: Changing; late: Changing } {
 export async function seedChanging(): Promise<void> {
   const now = new Date();
   const at = now.toISOString();
-  const technician = crypto.randomUUID();
-  const sql = [
-    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
-       VALUES ${row(technician, `e2e-${technician}`, "Imran Qureshi", "IQ", 1, at)};`,
-  ];
+  const technician = E2E_TECHNICIANS.changing.id;
+  const sql = technicianFor("changing", at);
   const client = (starts: Date): Changing => {
     const [person, visit, payment] = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
     const mobile = randomMobile();

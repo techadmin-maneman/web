@@ -12,9 +12,23 @@ export default defineConfig({
     coverage: {
       provider: "istanbul",
       include: ["src/**/*.ts"],
-      exclude: ["src/**/*.d.ts"],
+      // "src/**" also matches the apps' and the site's own src/ folders, which the report then counted as mm-api's.
+      exclude: ["src/**/*.d.ts", "apps/**", "site/**", "packages/**"],
       reporter: ["text", "json-summary"],
-      thresholds: { lines: 85 },
+      /*
+       * Branches as well as lines: the integrations were where branches went untested behind a line figure
+       * that looked well (TCD-03). The files that speak to a vendor, or keep what it says was paid, have floors
+       * of their own, so a weak one cannot hide in the whole; each was below 70% on branches before its
+       * recorded-reply tests.
+       */
+      thresholds: {
+        lines: 90,
+        branches: 80,
+        "src/providers/**": { lines: 90, branches: 85 },
+        "src/providers/razorpay.ts": { lines: 95, branches: 95 },
+        "src/providers/fsm-zoho.ts": { lines: 95, branches: 90 },
+        "src/domain/payments.ts": { lines: 90, branches: 90 },
+      },
     },
     projects: [
       {

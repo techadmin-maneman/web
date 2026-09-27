@@ -1,12 +1,32 @@
 // The technician API, faked in the browser, at the shapes `docs/openapi-tech.json`
 // writes (apps/tech/src/api-schema.ts). No mm-api runs for these tests: the app
 // is driven through its own client, so what is checked is the app's behaviour,
-// not the backend's, which has its own suite.
+// not the backend's, which has its own suite. Each body here is typed against
+// the app's generated API types, and each reply the fake sends is checked
+// against the document as it goes (e2e/contract.ts), so the fake cannot answer
+// what mm-api never would.
 //
 // The people are the design's own invented ones. No real name, number or
 // photograph is used anywhere.
 
 import type { BrowserContext, Page, Route } from "@playwright/test";
+import type { paths } from "../../apps/tech/src/api-schema.ts";
+import { assertInContract, type Reply } from "../contract.ts";
+
+/** What `method path` answers with `status`, as the technician app's generated types have it. */
+type TechReply<Path extends keyof paths, Method extends keyof paths[Path] = "get", Status extends number = 200> = Reply<
+  paths,
+  Path,
+  Method,
+  Status
+>;
+
+type Card = TechReply<"/api/tech/jobs/{id}">;
+type Job = TechReply<"/api/tech/jobs">["jobs"][number];
+type VisitType = NonNullable<Job["type"]>;
+export type Progress = Card["progress"];
+export type Step = Progress["steps_done"][number];
+export type Piece = TechReply<"/api/tech/pieces/lookup">["piece"];
 
 export const ME = {
   name: "Imran Qureshi",
@@ -17,7 +37,7 @@ export const ME = {
     label: "Chrome on Android",
     enrolled_at: "2030-09-01T04:00:00.000Z",
   },
-};
+} satisfies TechReply<"/api/tech/me">;
 
 const CHALLENGE_ID = "c0000000-0000-4000-8000-000000000001";
 
@@ -45,99 +65,101 @@ const at = (date: string, time: string) => `${date}T${time}:00.000Z`;
 const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 
 /** The slots each type takes (src/config/scheduling.ts). */
-const SLOTS: Readonly<Record<string, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
+const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
 
-export function jobsToday(date: string, type = "service") {
-  return [
-    {
-      id: JOB_ID,
-      day: "today",
-      date,
-      starts_at: at(date, "04:00"),
-      ends_at: at(date, "05:30"),
-      window_label: "morning",
-      type,
-      sector: "Sector 65",
-      status: "scheduled",
-      badge: "prepaid",
-      slots: SLOTS[type] ?? 1,
-      unlocked: true,
-      unlocks_at: unlocksAt(date),
-    },
-    {
-      id: SECOND_JOB_ID,
-      day: "today",
-      date,
-      starts_at: at(date, "06:00"),
-      ends_at: at(date, "07:30"),
-      window_label: "morning",
-      type: "service",
-      sector: "DLF Phase 4",
-      status: "scheduled",
-      badge: "credit",
-      slots: 1,
-      unlocked: true,
-      unlocks_at: unlocksAt(date),
-    },
-    {
-      id: LOCKED_JOB_ID,
-      day: "later",
-      date,
-      starts_at: at(date, "08:30"),
-      ends_at: at(date, "11:30"),
-      window_label: "afternoon",
-      type: "first_fit",
-      sector: "Sector 43",
-      status: "scheduled",
-      badge: "prepaid",
-      slots: 2,
-      unlocked: false,
-      unlocks_at: unlocksAt(date),
-    },
-  ];
-}
+/** Rohit's visit this morning, the first of the day, of the type a test asks for. */
+const firstJob = (date: string, type: VisitType): Job => ({
+  id: JOB_ID,
+  day: "today",
+  date,
+  starts_at: at(date, "04:00"),
+  ends_at: at(date, "05:30"),
+  window_label: "morning",
+  type,
+  sector: "Sector 65",
+  status: "scheduled",
+  badge: "prepaid",
+  slots: SLOTS[type],
+  unlocked: true,
+  unlocks_at: unlocksAt(date),
+});
+
+const secondJob = (date: string): Job => ({
+  id: SECOND_JOB_ID,
+  day: "today",
+  date,
+  starts_at: at(date, "06:00"),
+  ends_at: at(date, "07:30"),
+  window_label: "morning",
+  type: "service",
+  sector: "DLF Phase 4",
+  status: "scheduled",
+  badge: "credit",
+  slots: 1,
+  unlocked: true,
+  unlocks_at: unlocksAt(date),
+});
+
+/** This afternoon's first fit, its card still locked as the list shows it. */
+const lockedJob = (date: string): Job => ({
+  id: LOCKED_JOB_ID,
+  day: "later",
+  date,
+  starts_at: at(date, "08:30"),
+  ends_at: at(date, "11:30"),
+  window_label: "afternoon",
+  type: "first_fit",
+  sector: "Sector 43",
+  status: "scheduled",
+  badge: "prepaid",
+  slots: 2,
+  unlocked: false,
+  unlocks_at: unlocksAt(date),
+});
 
 /** Tomorrow's one job, unlocked since 6 pm today: its card is open, and its door is not. */
-export function jobsTomorrow(today: string) {
+const tomorrowsJob = (today: string): Job => {
   const date = dayAfter(today);
-  return [
-    {
-      id: TOMORROW_JOB_ID,
-      day: "tomorrow",
-      date,
-      starts_at: at(date, "04:30"),
-      ends_at: at(date, "06:00"),
-      window_label: "morning",
-      type: "service",
-      sector: "Sector 50",
-      status: "scheduled",
-      badge: "free",
-      slots: 1,
-      unlocked: true,
-      unlocks_at: unlocksAt(date),
-    },
-  ];
+  return {
+    id: TOMORROW_JOB_ID,
+    day: "tomorrow",
+    date,
+    starts_at: at(date, "04:30"),
+    ends_at: at(date, "06:00"),
+    window_label: "morning",
+    type: "service",
+    sector: "Sector 50",
+    status: "scheduled",
+    badge: "free",
+    slots: 1,
+    unlocked: true,
+    unlocks_at: unlocksAt(date),
+  };
+};
+
+export function jobsToday(date: string, type: VisitType = "service"): Job[] {
+  return [firstJob(date, type), secondJob(date), lockedJob(date)];
 }
 
-const CHECKLIST = [
+export function jobsTomorrow(today: string): Job[] {
+  return [tomorrowsJob(today)];
+}
+
+const CHECKLIST: Card["checklist"] = [
   { id: "piece_removed", label: "PLACEHOLDER Piece removed" },
   { id: "scalp_cleaned", label: "PLACEHOLDER Scalp cleaned" },
   { id: "piece_cleaned", label: "PLACEHOLDER Piece cleaned" },
 ];
 
-const PARTIAL_REASONS = ["client_stopped_it", "piece_not_ready", "client_unwell", "more_time_needed"];
+const PARTIAL_REASONS: Card["partial_reasons"] = [
+  "client_stopped_it",
+  "piece_not_ready",
+  "client_unwell",
+  "more_time_needed",
+];
 
 /** The API's piece label (src/config/pieces.ts), which it refuses a write for. */
 const PIECE_LABEL = /^MM-[A-Z0-9]{2,6}-\d{2,8}-[A-Z]$/;
-
-export interface Progress {
-  checked_in_at: string | null;
-  wait_ends_at: string | null;
-  distance_m: number | null;
-  started_at: string | null;
-  steps_done: string[];
-  outcome: string | null;
-}
 
 export const NOTHING_DONE: Progress = {
   checked_in_at: null,
@@ -147,16 +169,6 @@ export const NOTHING_DONE: Progress = {
   steps_done: [],
   outcome: null,
 };
-
-export interface Piece {
-  readonly piece_code: string;
-  readonly base: string | null;
-  readonly supplier_lot: string | null;
-  readonly fitted_at: string | null;
-  readonly replacement_due_at: string | null;
-  readonly failed_at: string | null;
-  readonly failure_reason: string | null;
-}
 
 /** Rohit's piece on his head today, fitted in July. */
 export const ROHITS_PIECE: Piece = {
@@ -169,27 +181,29 @@ export const ROHITS_PIECE: Piece = {
   failure_reason: null,
 };
 
-const stepsFor = (type: string) =>
+const stepsFor = (type: VisitType): Step[] =>
   type === "replacement" || type === "first_fit"
     ? ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"]
     : ["before_photos", "checklist", "consumables", "after_photos", "outcome"];
 
+/** Parts of the address the client filled in beyond the fixture's two lines: flat, floor, tower, building, landmark. */
+type AddressParts = Partial<NonNullable<Card["address"]>>;
+
 export interface CardOptions {
   readonly pin?: boolean;
-  readonly type?: string;
+  readonly type?: VisitType;
   readonly waitMinutes?: number;
   readonly pieces?: readonly Piece[];
   readonly lastVisit?: boolean;
   readonly reminderDelivered?: string | null;
   /** Parts of the address the client filled in beyond the fixture's two lines: flat, floor, tower, building, landmark. */
-  readonly address?: Readonly<Record<string, string | null>>;
+  readonly address?: AddressParts;
 }
 
-export function card(date: string, progress: Progress, options: CardOptions = {}) {
+export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
   const type = options.type ?? "service";
-  const [first] = jobsToday(date, type);
   return {
-    ...first,
+    ...firstJob(date, type),
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
@@ -223,10 +237,9 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
 }
 
 /** A job further out: time, type and sector only, as the day-before unlock leaves it. */
-export function lockedCard(date: string) {
-  const locked = jobsToday(date)[2];
+export function lockedCard(date: string): Card {
   return {
-    ...locked,
+    ...lockedJob(date),
     address: null,
     access_notes: null,
     client: null,
@@ -242,9 +255,8 @@ export function lockedCard(date: string) {
 }
 
 /** Tomorrow's card: unlocked, so the address is there, and on a day that is not today. */
-function tomorrowCard(today: string) {
-  const [job] = jobsTomorrow(today);
-  return { ...card(today, NOTHING_DONE), ...job };
+function tomorrowCard(today: string): Card {
+  return { ...card(today, NOTHING_DONE), ...tomorrowsJob(today) };
 }
 
 export interface Write {
@@ -286,16 +298,22 @@ export interface Fake {
   tooEarly: boolean;
   /** What the check-in answers: pass, or a distance outside the radius. */
   checkIn: { passed: boolean; distance_m: number | null };
-  /** How long the no-show wait runs from the check-in, in minutes. */
+  /** How long the no-show wait runs from the check-in, in whole minutes, as ops set it. */
   waitMinutes: number;
+  /**
+   * Set to answer a passing check-in with only this many milliseconds of the wait
+   * left, so a test need not wait whole minutes. The API answers so for a check-in
+   * the phone made earlier and sent late, which keeps its claimed time (ADR 0065).
+   */
+  waitLeftMs: number | null;
   /** False for an address saved by typing, which has no coordinate for Navigate to take. */
   pin: boolean;
   /** The first job's type: a replacement or a first fit has the piece step. */
-  type: string;
+  type: VisitType;
   /** The client's pieces on the card. */
   pieces: Piece[];
   /** Parts of the address beyond the fixture's two lines. */
-  address: Record<string, string | null>;
+  address: AddressParts;
   /** Whether the client has a last visit with an after photograph. */
   lastVisit: boolean;
   /** The day-before WhatsApp: undefined when none was sent, null when it never arrived. */
@@ -310,17 +328,22 @@ export interface Fake {
   progress: Progress;
 }
 
-const accepted = (fake: Fake, eventId: string | null) => ({
+const accepted = (fake: Fake, eventId: string | null): TechReply<"/api/tech/jobs/{id}/start", "post", 202> => ({
   event_id: eventId ?? "",
   replayed: false,
   fsm_write_state: "pending",
   progress: fake.progress,
 });
 
-const refusal = (status: number, code: string, fields: readonly string[] = []) => ({
-  status,
-  json: { error: { code, request_id: "test", fields: [...fields] } },
-});
+/** Sends the fake's answer, once the contract says mm-api could have sent it (e2e/contract.ts). */
+function reply(route: Route, status: number, body?: unknown): Promise<void> {
+  const request = route.request();
+  assertInContract("tech", request.method(), new URL(request.url()).pathname, status, body);
+  return body === undefined ? route.fulfill({ status }) : route.fulfill({ status, json: body });
+}
+
+const refuse = (route: Route, status: number, code: string, fields: readonly string[] = []) =>
+  reply(route, status, { error: { code, request_id: "test", fields: [...fields] } });
 
 /** A 1×1 grey PNG: the last visit's photograph, which is nobody's. */
 const LAST_VISIT_PHOTO = Buffer.from(
@@ -338,7 +361,6 @@ const LAST_VISIT_PHOTO = Buffer.from(
  * pass the context instead (e2e/tech/offline.e2e.ts).
  */
 export async function fakeTech(page: Page, empty = false, on: Page | BrowserContext = page): Promise<Fake> {
-  const today = todayInIndia();
   const fake: Fake = {
     online: true,
     signedIn: true,
@@ -352,6 +374,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     tooEarly: false,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
+    waitLeftMs: null,
     pin: true,
     type: "service",
     pieces: [],
@@ -364,7 +387,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     progress: NOTHING_DONE,
   };
 
-  const jobCard = () =>
+  const jobCard = (today: string) =>
     card(today, fake.progress, {
       pin: fake.pin,
       type: fake.type,
@@ -383,59 +406,58 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     const headers = route.request().headers();
     const eventId = headers["x-client-event-id"] ?? null;
     const startsAt = headers["x-job-starts-at"] ?? null;
+    // Asked on every request, so a run that crosses midnight in India reads the new day as the app does.
+    const today = todayInIndia();
 
     // The sign-in: a code for any number, and any six digits right unless the code was closed.
     if (method === "POST" && path === "/api/tech/auth/otp") {
       const body = route.request().postDataJSON() as { mobile: string };
       fake.codesSent.push(body.mobile);
-      return route.fulfill({ status: 202, json: { challenge_id: CHALLENGE_ID, expires_in_s: 600 } });
+      return reply(route, 202, { challenge_id: CHALLENGE_ID, expires_in_s: 600 });
     }
     if (method === "POST" && path === "/api/tech/auth/verify") {
-      if (fake.codeClosed) return route.fulfill(refusal(410, "code_expired"));
+      if (fake.codeClosed) return refuse(route, 410, "code_expired");
       fake.signedIn = true;
-      return route.fulfill({ json: { verified: true, first_name: ME.first_name, device_id: ME.device.device_id } });
+      return reply(route, 200, { verified: true, first_name: ME.first_name, device_id: ME.device.device_id });
     }
-    if (fake.revoked) return route.fulfill(refusal(401, "device_revoked"));
-    if (!fake.signedIn) return route.fulfill(refusal(401, "session_required"));
+    if (fake.revoked) return refuse(route, 401, "device_revoked");
+    if (!fake.signedIn) return refuse(route, 401, "session_required");
 
     // The photograph itself: PUT to the link the API handed out.
     if (method === "PUT" && path.startsWith("/api/tech/photos/")) {
-      if (fake.moved) return route.fulfill(refusal(404, "not_found"));
+      if (fake.moved) return refuse(route, 404, "not_found");
       fake.photos.push(path.slice("/api/tech/photos/".length));
-      return route.fulfill({ status: 204 });
+      return reply(route, 204);
     }
 
     if (method === "POST") {
-      if (path === "/api/tech/auth/logout") return route.fulfill({ status: 204 });
+      if (path === "/api/tech/auth/logout") return reply(route, 204);
       if (path.endsWith("/photos/upload-url")) {
-        if (fake.moved) return route.fulfill(refusal(404, "not_found"));
+        if (fake.moved) return refuse(route, 404, "not_found");
         const body = route.request().postDataJSON() as { phase: string; angle: string };
-        return route.fulfill({
-          status: 201,
-          json: {
-            upload_url: `/api/tech/photos/${body.phase}-${body.angle}`,
-            expires_at: new Date(Date.now() + 900_000).toISOString(),
-          },
+        return reply(route, 201, {
+          upload_url: `/api/tech/photos/${body.phase}-${body.angle}`,
+          expires_at: new Date(Date.now() + 900_000).toISOString(),
         });
       }
 
-      if (fake.moved) return route.fulfill(refusal(409, "superseded", ["technician"]));
+      if (fake.moved) return refuse(route, 409, "superseded", ["technician"]);
       if (fake.movedTo !== null && startsAt !== null && startsAt !== fake.movedTo) {
-        return route.fulfill(refusal(409, "superseded", ["time"]));
+        return refuse(route, 409, "superseded", ["time"]);
       }
       const changed = fake.supersede;
-      if (changed !== null) return route.fulfill(refusal(409, "superseded", changed));
-      if (path.endsWith("/no-show") && fake.tooEarly) return route.fulfill(refusal(425, "too_early_to_close"));
+      if (changed !== null) return refuse(route, 409, "superseded", changed);
+      if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 425, "too_early_to_close");
 
       const body = route.request().postDataJSON() as { piece_code?: string } | null;
       if (path.endsWith("/piece") && !PIECE_LABEL.test(body?.piece_code ?? "")) {
-        return route.fulfill(refusal(400, "invalid_request", ["piece_code"]));
+        return refuse(route, 400, "invalid_request", ["piece_code"]);
       }
       fake.writes.push({ path, eventId, startsAt, body });
 
       if (path.endsWith("/checkin")) {
         const now = new Date();
-        const waitEnds = new Date(now.getTime() + fake.waitMinutes * 60_000).toISOString();
+        const waitEnds = new Date(now.getTime() + (fake.waitLeftMs ?? fake.waitMinutes * 60_000)).toISOString();
         if (fake.checkIn.passed) {
           fake.progress = {
             ...fake.progress,
@@ -444,32 +466,26 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
             distance_m: fake.checkIn.distance_m,
           };
         }
-        return route.fulfill({
-          status: 200,
-          json: {
-            passed: fake.checkIn.passed,
-            distance_m: fake.checkIn.distance_m,
-            radius_m: 200,
-            checked_in_at: now.toISOString(),
-            wait_ends_at: fake.checkIn.passed ? waitEnds : null,
-            accepted: fake.checkIn.passed ? accepted(fake, eventId) : null,
-          },
+        return reply(route, 200, {
+          passed: fake.checkIn.passed,
+          distance_m: fake.checkIn.distance_m,
+          radius_m: 200,
+          checked_in_at: now.toISOString(),
+          wait_ends_at: fake.checkIn.passed ? waitEnds : null,
+          accepted: fake.checkIn.passed ? accepted(fake, eventId) : null,
         });
       }
       if (path.endsWith("/start")) {
         fake.progress = { ...fake.progress, started_at: new Date().toISOString() };
-        return route.fulfill({ status: 202, json: accepted(fake, eventId) });
+        return reply(route, 202, accepted(fake, eventId));
       }
       if (path.endsWith("/no-show")) {
         fake.progress = { ...fake.progress, outcome: "no_show" };
-        return route.fulfill({
-          status: 200,
-          json: {
-            closed: true,
-            wait_ends_at: new Date().toISOString(),
-            case_id: "b0000000-0000-4000-8000-000000000001",
-            accepted: accepted(fake, eventId),
-          },
+        return reply(route, 200, {
+          closed: true,
+          wait_ends_at: new Date().toISOString(),
+          case_id: "b0000000-0000-4000-8000-000000000001",
+          accepted: accepted(fake, eventId),
         });
       }
       const step = stepOf(path, body as { phase?: string } | null);
@@ -479,51 +495,50 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
           const outcome = (body as { outcome?: string } | null)?.outcome ?? "done";
           fake.progress = { ...fake.progress, outcome };
         }
-        return route.fulfill({ status: 202, json: accepted(fake, eventId) });
+        return reply(route, 202, accepted(fake, eventId));
       }
-      return route.fulfill(refusal(404, "not_found"));
+      return refuse(route, 404, "not_found");
     }
 
-    if (path === "/api/tech/me") return route.fulfill({ json: ME });
+    if (path === "/api/tech/me") return reply(route, 200, ME);
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";
+      // Outside the contract on purpose: what a broken release might send, which the app must survive.
       if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
-      if (date === today) return route.fulfill({ json: { date, jobs: empty ? [] : jobsToday(date, fake.type) } });
-      if (date === dayAfter(today) && fake.tomorrow)
-        return route.fulfill({ json: { date, jobs: jobsTomorrow(today) } });
-      return route.fulfill({ json: { date, jobs: [] } });
+      if (date === today) return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type) });
+      if (date === dayAfter(today) && fake.tomorrow) return reply(route, 200, { date, jobs: jobsTomorrow(today) });
+      return reply(route, 200, { date, jobs: [] });
     }
     if (path === "/api/tech/pieces/lookup") {
       const code = url.searchParams.get("code") ?? "";
-      if (!PIECE_LABEL.test(code)) return route.fulfill(refusal(404, "not_found"));
-      return route.fulfill({
-        json: {
-          piece: { ...ROHITS_PIECE, piece_code: code },
-          belongs_to_this_job: code === ROHITS_PIECE.piece_code,
-        },
+      if (!PIECE_LABEL.test(code)) return refuse(route, 404, "not_found");
+      return reply(route, 200, {
+        piece: { ...ROHITS_PIECE, piece_code: code },
+        belongs_to_this_job: code === ROHITS_PIECE.piece_code,
       });
     }
     if (path === `/api/tech/jobs/${JOB_ID}/last-visit-photo`) {
-      if (fake.moved || !fake.lastVisit) return route.fulfill(refusal(404, "not_found"));
+      if (fake.moved || !fake.lastVisit) return refuse(route, 404, "not_found");
+      assertInContract("tech", method, path, 200);
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path === `/api/tech/jobs/${JOB_ID}`) {
-      return fake.moved ? route.fulfill(refusal(404, "not_found")) : route.fulfill({ json: jobCard() });
+      return fake.moved ? refuse(route, 404, "not_found") : reply(route, 200, jobCard(today));
     }
-    if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return route.fulfill({ json: lockedCard(today) });
+    if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return reply(route, 200, lockedCard(today));
     if (path === `/api/tech/jobs/${TOMORROW_JOB_ID}` && fake.tomorrow) {
-      return route.fulfill({ json: tomorrowCard(today) });
+      return reply(route, 200, tomorrowCard(today));
     }
-    return route.fulfill(refusal(404, "not_found"));
+    return refuse(route, 404, "not_found");
   });
 
   return fake;
 }
 
 /** The job event a POST stands for, so the fake's progress moves as the real one does. */
-function stepOf(path: string, body: { phase?: string } | null): string | null {
+function stepOf(path: string, body: { phase?: string } | null): Step | null {
   if (path.endsWith("/photos")) return body?.phase === "after" ? "after_photos" : "before_photos";
-  for (const step of ["checklist", "consumables", "piece", "outcome"]) {
+  for (const step of ["checklist", "consumables", "piece", "outcome"] as const) {
     if (path.endsWith(`/${step}`)) return step;
   }
   return null;

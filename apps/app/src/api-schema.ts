@@ -2427,7 +2427,31 @@ export interface components {
                 month: string;
             } | null;
         };
-        VisitDetail: components["schemas"]["VisitSummary"] & {
+        VisitDetail: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's calendar date.
+             */
+            date: string;
+            /** @enum {string} */
+            window_label: "morning" | "afternoon" | "evening";
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            length_minutes: number;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @enum {string} */
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /** @description For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it. */
+            stage: ("booked" | "in_progress" | "closing") | null;
+            /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
+            prepaid: boolean;
+            technician: components["schemas"]["Technician"] | null;
+            /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
+            place: string;
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
             /** @description Done, partly done, or a no-show: the client was not home. Null until FSM closes it. */
@@ -2619,29 +2643,109 @@ export interface components {
             source: ("referral" | "ops" | "import") | null;
             no_show: components["schemas"]["NoShowNote"] | null;
         };
-        PaymentDetail: components["schemas"]["PaymentEntry"] & {
+        PaymentDetail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "payment";
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's calendar date it was made.
+             */
+            date: string;
+            /** @description In paise, GST included. */
+            amount: number;
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description The GST rate the amount includes. */
+            gst_percent: number;
+            /** @description The visit it paid for, when known. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @enum {string} */
+            status: "authorized" | "captured" | "refunded" | "partially_refunded";
+            /** @description upi, card, netbanking and so on. */
+            method: string | null;
+            /** @description Ours, e.g. MM-2026-0841, once captured. */
+            reference: string | null;
+            /** @description In paise: refunds Razorpay has processed. */
+            refunded_amount: number;
+            /**
+             * @description What it paid for: the visit, or a late fee.
+             * @enum {string}
+             */
+            purpose: "visit" | "late_fee";
+            /** @description Kept under the 24-hour rule, with its evidence: "cancelled 9:14 am, visit was 10 am". */
+            charge: {
+                /** @enum {string} */
+                change: "cancelled" | "moved";
+                /**
+                 * Format: date-time
+                 * @description When the client cancelled or moved the visit.
+                 */
+                at: string;
+                /**
+                 * Format: date-time
+                 * @description When the visit was to start.
+                 */
+                visit_started_at: string;
+                /** @description In paise: what was kept. */
+                amount: number;
+            } | null;
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            no_show: components["schemas"]["NoShowNote"] | null;
             documents: {
                 /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it. */
                 invoice: string | null;
                 /** @description The payment's receipt, for GET /api/payments/{id}/receipt, once the payment is recorded in Books. */
                 receipt: string | null;
             };
-        } & {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            kind: "payment";
         };
-        RefundDetail: components["schemas"]["RefundEntry"] & {
-            /** @description The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3). */
-            voucher: null;
-        } & {
+        RefundDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "refund";
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            payment_id: string;
+            /**
+             * Format: date
+             * @description India's calendar date it was made.
+             */
+            date: string;
+            /** @description In paise, GST included. */
+            amount: number;
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description The GST rate the amount includes. */
+            gst_percent: number;
+            /** @description The visit it paid for, when known. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @enum {string} */
+            status: "created" | "processed" | "failed";
+            /** @description Where the money goes back to: the payment's method. */
+            destination: string | null;
+            /** @description normal (5 to 7 working days) or instant. */
+            speed: string | null;
+            /** @description The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3). */
+            voucher: null;
         };
         Availability: {
             /** @enum {string} */

@@ -1,29 +1,22 @@
 // wrangler dev reads local secrets from .dev.vars, which git ignores. Create it
 // from the committed example the first time; later, add any keys the example
-// has gained since. An existing value is never overwritten.
+// has gained since, and give a key left empty the example's value once it has
+// one (scripts/lib/dev-vars.ts). A value already set is never overwritten.
 
-import { appendFileSync, copyFileSync, existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { updatedDevVars } from "./lib/dev-vars.ts";
 
 const EXAMPLE = ".dev.vars.example";
 const LOCAL = ".dev.vars";
-
-const keysOf = (text: string): Set<string> =>
-  new Set(text.split(/\r?\n/).flatMap((line) => /^([A-Z0-9_]+)=/.exec(line)?.[1] ?? []));
 
 if (!existsSync(LOCAL)) {
   copyFileSync(EXAMPLE, LOCAL);
   console.log(`created ${LOCAL} from ${EXAMPLE}`);
 } else {
-  const have = keysOf(readFileSync(LOCAL, "utf8"));
-  const missing = readFileSync(EXAMPLE, "utf8")
-    .split(/\r?\n/)
-    .filter((line) => {
-      const key = /^([A-Z0-9_]+)=/.exec(line)?.[1];
-      return key !== undefined && !have.has(key);
-    });
-  if (missing.length > 0) {
-    const current = readFileSync(LOCAL, "utf8");
-    appendFileSync(LOCAL, `${current.endsWith("\n") ? "" : "\n"}${missing.join("\n")}\n`);
-    console.log(`added to ${LOCAL}: ${missing.map((line) => line.split("=")[0]).join(", ")}`);
+  const update = updatedDevVars(readFileSync(LOCAL, "utf8"), readFileSync(EXAMPLE, "utf8"));
+  if (update.added.length > 0 || update.filled.length > 0) {
+    writeFileSync(LOCAL, update.text);
+    if (update.added.length > 0) console.log(`added to ${LOCAL}: ${update.added.join(", ")}`);
+    if (update.filled.length > 0) console.log(`filled in ${LOCAL}: ${update.filled.join(", ")}`);
   }
 }

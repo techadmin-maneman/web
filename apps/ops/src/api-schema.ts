@@ -2513,7 +2513,31 @@ export interface components {
             /** @description For the technician: gate code, parking and the like. */
             access_notes: string | null;
         };
-        ClientVisit: components["schemas"]["VisitSummary"] & {
+        ClientVisit: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's calendar date.
+             */
+            date: string;
+            /** @enum {string} */
+            window_label: "morning" | "afternoon" | "evening";
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            length_minutes: number;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @enum {string} */
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /** @description For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it. */
+            stage: ("booked" | "in_progress" | "closing") | null;
+            /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
+            prepaid: boolean;
+            technician: components["schemas"]["Technician"] | null;
+            /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
+            place: string;
             /** @description What FSM closed the visit as, a no-show being its own; null until it is closed. */
             outcome: ("done" | "partial" | "no_show") | null;
         };
