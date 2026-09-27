@@ -1,9 +1,18 @@
 // The visitor's photograph, made ready in the browser before it is uploaded,
 // as the AILabTools harness does it: fit within 4090 px, re-encode as JPEG at
 // 0.92, and shrink further until it is under 5 MB. Drawing it through a canvas
-// drops its EXIF, the GPS location included. It is kept in memory only.
+// drops its EXIF, the GPS location included. It is kept in memory only. Under a
+// notice that keeps a client's try-on, a small copy of about 250 KB is made
+// too, as the technician's camera makes a visit photograph (ADR 0084).
 
-import { MAX_SIDE_PX, MAX_UPLOAD_BYTES, MIN_SIDE_PX, type HairColor } from "../../../src/config/tryon.ts";
+import { smallJpeg } from "@maneman/web-kit/small-jpeg";
+import {
+  MAX_COPY_BYTES,
+  MAX_SIDE_PX,
+  MAX_UPLOAD_BYTES,
+  MIN_SIDE_PX,
+  type HairColor,
+} from "../../../src/config/tryon.ts";
 import { DETECTOR_SIDE, detectHairColour } from "./hair-colour.ts";
 
 const QUALITY = 0.92;
@@ -17,6 +26,8 @@ export class PhotoRejected extends Error {}
 export interface PreparedPhoto {
   readonly blob: Blob;
   readonly hairColor: HairColor;
+  /** The small copy a client keeps as their before photo; null when none is asked for, or none came small enough. */
+  readonly copy: Blob | null;
 }
 
 /** The size that fits within `max` on the longer side, keeping the shape. */
@@ -46,8 +57,14 @@ function jpeg(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
-/** Resizes, re-encodes and reads the hair colour. Throws PhotoRejected if the API could not use it. */
-export async function preparePhoto(file: Blob): Promise<PreparedPhoto> {
+/** A copy the API will keep: at most 250 KB, or none. */
+async function smallCopy(image: ImageBitmap): Promise<Blob | null> {
+  const copy = await smallJpeg(image, image.width, image.height, MAX_COPY_BYTES);
+  return copy.blob.size <= MAX_COPY_BYTES ? copy.blob : null;
+}
+
+/** Resizes, re-encodes and reads the hair colour, and makes the small copy when asked. Throws PhotoRejected if the API could not use it. */
+export async function preparePhoto(file: Blob, withCopy: boolean): Promise<PreparedPhoto> {
   const image = await createImageBitmap(file).catch(() => {
     throw new PhotoRejected("the file is not an image this browser can read");
   });
@@ -66,7 +83,8 @@ export async function preparePhoto(file: Blob): Promise<PreparedPhoto> {
       ?.getImageData(0, 0, small.width, small.height).data;
     const hairColor = pixels === undefined ? "unknown" : detectHairColour(pixels, small.width, small.height);
 
-    return { blob, hairColor };
+    const copy = withCopy ? await smallCopy(image) : null;
+    return { blob, hairColor, copy };
   } finally {
     image.close();
   }

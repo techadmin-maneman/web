@@ -1,8 +1,17 @@
 // The try-on's calls to the API, chained. The upload starts as soon as the
 // visitor agrees to the photo notice, so it runs while they choose a stage and
 // a look; the render starts when they press Generate, once the upload is done.
+// Under a notice that keeps a client's try-on, the photograph's small copy
+// follows it; a copy refused leaves the try-on as it is (ADR 0084).
 
-import { generateLook, requestUploadUrl, uploadPhoto, type ErrorCode, type GenerateRequest } from "./api.ts";
+import {
+  generateLook,
+  requestUploadUrl,
+  uploadCopy,
+  uploadPhoto,
+  type ErrorCode,
+  type GenerateRequest,
+} from "./api.ts";
 import type { PreparedPhoto } from "./photo.ts";
 import { errorKindOf, jobProblem, type Failure } from "./tryon-errors.ts";
 import type { turnstileWidget } from "./turnstile.ts";
@@ -38,6 +47,7 @@ export async function startUpload(
 
   const sent = await uploadPhoto(link.body.upload_url, photo.blob);
   if (!sent.ok) return refused(sent.code);
+  if (photo.copy !== null) await uploadCopy(link.body.upload_url, photo.copy);
   return { ok: true, value: { jobId: link.body.job_id, hairColor: photo.hairColor } };
 }
 

@@ -19,7 +19,7 @@ const JOB = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
 const MOBILE = "9810000000";
 
-type Call = "uploadUrl" | "upload" | "generate" | "status" | "claim" | "result" | "image" | "look";
+type Call = "uploadUrl" | "upload" | "copy" | "generate" | "status" | "claim" | "result" | "image" | "look";
 interface Answer {
   readonly status: number;
   readonly json?: unknown;
@@ -31,6 +31,7 @@ interface Answer {
 function callOf(request: Request): Call | null {
   const path = new URL(request.url()).pathname;
   if (path === "/api/tryon/upload-url") return "uploadUrl";
+  if (path.startsWith("/api/tryon/upload/") && path.endsWith("/copy")) return "copy";
   if (path.startsWith("/api/tryon/upload/")) return "upload";
   if (path === "/api/tryon/generate") return "generate";
   if (path.startsWith("/api/tryon/status/")) return "status";
@@ -56,6 +57,7 @@ async function mockApi(page: Page, answers: Partial<Record<Call, Answer | Answer
       json: { job_id: JOB, upload_url: `/api/tryon/upload/${JOB}?token=signed`, expires_at: later },
     },
     upload: { status: 204 },
+    copy: { status: 204 },
     generate: { status: 202, json: { job_id: JOB, state: "queued" } },
     status: { status: 200, json: { job_id: JOB, state: "rendering" } },
     claim: { status: 201, json: { lead_id: LEAD, whatsapp_copy: true } },
@@ -117,16 +119,22 @@ test("the whole try-on: uploaded during the choices, the gate before the render 
   await throughToGenerate(page);
   await expect.poll(() => named(seen, "generate").length).toBe(1);
 
-  // The photograph went up before Generate was pressed, with the notice and a Turnstile token.
+  // The photograph went up before Generate was pressed, with the notice and a Turnstile token. Outside production
+  // the notice is the one awaiting counsel, which keeps a client's try-on, so its small copy followed (ADR 0084).
   const [uploadUrl] = named(seen, "uploadUrl");
   expect(uploadUrl?.postDataJSON()).toEqual({
     photo_consent: true,
-    notice_version: "photo-v1",
+    notice_version: "photo-v2",
     turnstile_token: DUMMY_TOKEN,
   });
   const [upload] = named(seen, "upload");
   expect(upload?.method()).toBe("PUT");
   expect(await upload?.headerValue("content-type")).toBe("image/jpeg");
+  const [copy] = named(seen, "copy");
+  expect(new URL(copy?.url() ?? "").pathname + new URL(copy?.url() ?? "").search).toBe(
+    `/api/tryon/upload/${JOB}/copy?token=signed`,
+  );
+  expect(await copy?.headerValue("content-type")).toBe("image/jpeg");
   expect(named(seen, "generate")[0]?.postDataJSON()).toEqual({
     job_id: JOB,
     stage: "crown",
@@ -148,6 +156,7 @@ test("the whole try-on: uploaded during the choices, the gate before the render 
     job_id: JOB,
     name: "Test Visitor",
     mobile: "98100 00000",
+    notice_version: "gate-v2",
     attribution: { landing_path: "/try" },
   });
   expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);
@@ -423,4 +432,13 @@ test("a large photograph with a location in it is uploaded smaller and without i
   expect(sent.length).toBeLessThanOrEqual(5 * 1024 * 1024);
   expect(meta.exif).toBeUndefined();
   expect(sent.includes("TestCamera")).toBe(false);
+
+  // Its small copy, which a client keeps as their before photo: a JPEG the API keeps, with no EXIF either (ADR 0084).
+  await expect.poll(() => named(seen, "copy").length, { timeout: 90_000 }).toBe(1);
+  const copy = named(seen, "copy")[0]?.postDataBuffer() ?? Buffer.alloc(0);
+  const copyMeta = await sharp(copy).metadata();
+  expect(copyMeta.format).toBe("jpeg");
+  expect(Math.max(copyMeta.width, copyMeta.height)).toBeLessThanOrEqual(1600);
+  expect(copy.length).toBeLessThanOrEqual(250 * 1024);
+  expect(copyMeta.exif).toBeUndefined();
 });

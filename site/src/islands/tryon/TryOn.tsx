@@ -16,7 +16,7 @@
 
 import { useEffect, useMemo, useReducer, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
-import { looks, notices, stageOptions, tryOn } from "../../content/site.ts";
+import { looks, stageOptions, tryOn, tryOnPromises, type TryOnPromiseName } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { claimResult, fetchLook, jobStatus, type Answer, type Look } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
@@ -46,9 +46,12 @@ interface Props {
   mockAfter: string;
   /** Allow ?state= to open a screen directly (never in production). */
   allowStateSwitch: boolean;
+  /** The notices this build shows, and so whether it sends the photograph's small copy (ADR 0084). */
+  promise: TryOnPromiseName;
 }
 
 export default function TryOn(props: Props) {
+  const promise = tryOnPromises[props.promise];
   const [state, send] = useReducer(step, START);
   const { screen, demo } = state;
   const [gateTouched, setGateTouched] = useState(false);
@@ -133,7 +136,7 @@ export default function TryOn(props: Props) {
   useReleased(rendered !== null && rendered.file !== null ? rendered.url : null);
 
   function choosePhoto(file: File) {
-    const prepared = demo ? null : preparePhoto(file);
+    const prepared = demo ? null : preparePhoto(file, promise.sendsCopy);
     preparing.current = prepared;
     uploading.current = null;
     rendering.current = null;
@@ -153,7 +156,7 @@ export default function TryOn(props: Props) {
     send({ type: "agreed" });
     const prepared = preparing.current;
     if (prepared === null || uploading.current !== null) return;
-    const upload = startUpload(prepared, turnstile.current, notices.photo.version);
+    const upload = startUpload(prepared, turnstile.current, promise.photo.version);
     uploading.current = upload;
     // A refusal shows at once, rather than after the visitor has chosen a look.
     void upload.then((outcome) => {
@@ -231,6 +234,7 @@ export default function TryOn(props: Props) {
       job_id: render.value,
       name: name.trim(),
       mobile,
+      notice_version: promise.gate.version,
       ...(attribution === undefined ? {} : { attribution }),
     };
     const answer = await claimResult(claim, keyFor(claim));
@@ -271,6 +275,7 @@ export default function TryOn(props: Props) {
         {screen === "upload" && <Upload photo={state.photo} heading={heading} onChoose={choosePhoto} />}
         {screen === "consent" && (
           <Consent
+            notice={promise.photo}
             consent={state.consent}
             heading={heading}
             onTick={(consent) => {
@@ -312,6 +317,7 @@ export default function TryOn(props: Props) {
         )}
         {screen === "gate" && (
           <Gate
+            notice={promise.gate}
             name={name}
             mobile={mobile}
             nameBad={nameBad}

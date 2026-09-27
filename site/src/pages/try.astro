@@ -3,7 +3,7 @@ import { getImage } from "astro:assets";
 import { pageDescriptions, pageTitles, teaserPair } from "../content/site.ts";
 import TryOn from "../islands/tryon/TryOn.tsx";
 import Site from "../layouts/Site.astro";
-import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
+import { ENVIRONMENT, IS_PRODUCTION, TRY_ON_PROMISE } from "../lib/build.ts";
 import { designImage } from "../lib/images.ts";
 import { TURNSTILE_SITE_KEYS } from "../lib/turnstile.ts";
 
@@ -24,5 +24,6 @@ const mockAfter = await standIn(teaserPair.after.file);
     mockBefore={mockBefore}
     mockAfter={mockAfter}
     allowStateSwitch={!IS_PRODUCTION}
+    promise={TRY_ON_PROMISE}
   />
 </Site>

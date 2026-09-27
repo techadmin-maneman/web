@@ -2,13 +2,14 @@
   "name": "@maneman/web-kit",
   "private": true,
   "version": "0.0.0",
-  "description": "What the Phase 2 apps share beyond the brand: the API client, their security headers, India's dates, rupees, and WhatsApp's links.",
+  "description": "What the Phase 2 apps share beyond the brand: the API client, their security headers, India's dates, rupees, WhatsApp's links, and small JPEGs made in the browser.",
   "type": "module",
   "exports": {
     "./api": "./api.ts",
     "./headers": "./headers.ts",
     "./dates": "./dates.ts",
     "./money": "./money.ts",
-    "./whatsapp": "./whatsapp.ts"
+    "./whatsapp": "./whatsapp.ts",
+    "./small-jpeg": "./small-jpeg.ts"
   }
 }
