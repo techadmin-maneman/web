@@ -220,19 +220,26 @@ test.describe("result", () => {
     await page.goto("/try?state=result&kind=pending");
     await page.waitForFunction(() => document.querySelectorAll("astro-island[ssr]").length === 0);
     const slider = page.getByRole("slider");
-    const words = page.getByText("Still working on it", { exact: true }).first();
-    await expect(words).toBeVisible();
+    await expect(page.getByText("Still working on it", { exact: true }).first()).toBeVisible();
     // Where the slider starts, and dragged towards the photograph: the words follow the handle.
     for (const position of ["50", "30"]) {
       await slider.fill(position);
-      // The handle is drawn just before the input that works it (BeforeAfter.tsx).
-      const frame = await slider.evaluate((input) => ({
-        handleRight: input.previousElementSibling?.getBoundingClientRect().right ?? 0,
-        right: input.getBoundingClientRect().right,
-      }));
-      const box = await words.boundingBox();
-      expect(box?.x ?? 0, `handle at ${position}%`).toBeGreaterThan(frame.handleRight);
-      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(frame.right);
+      // The frame takes the handle's place once the island has drawn it.
+      await expect
+        .poll(() => slider.evaluate((input) => input.parentElement?.style.getPropertyValue("--position")))
+        .toBe(`${position}%`);
+      // All measured at once. The handle is drawn just before the input that works it (BeforeAfter.tsx).
+      const drawn = await slider.evaluate((input) => {
+        const words = input.parentElement?.querySelector("[data-after-note] span")?.getBoundingClientRect();
+        return {
+          handleRight: input.previousElementSibling?.getBoundingClientRect().right ?? 0,
+          frameRight: input.getBoundingClientRect().right,
+          wordsLeft: words?.left ?? 0,
+          wordsRight: words?.right ?? 0,
+        };
+      });
+      expect(drawn.wordsLeft, `handle at ${position}%`).toBeGreaterThan(drawn.handleRight);
+      expect(drawn.wordsRight).toBeLessThanOrEqual(drawn.frameRight);
     }
   });
 });
