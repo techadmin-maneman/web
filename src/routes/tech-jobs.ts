@@ -284,6 +284,22 @@ const NoShowSchema = z
   .strict()
   .openapi("NoShowClose");
 
+/** A step that landed, or had landed before. */
+const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
+
+/** What every in-job write can be refused with. A route with more to say of a conflict says it after these. */
+const STEP_REFUSALS = {
+  400: errorResponse("invalid_request: see error.fields"),
+  401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
+  404: errorResponse("not_found: no such job"),
+  409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+};
+
+/** A check-in's or a start's conflict, which may also be on the wrong day. */
+const DAY_CONFLICT = errorResponse(
+  "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+);
+
 const jobsRoute = createRoute({
   method: "get",
   path: "/api/tech/jobs",
@@ -331,12 +347,8 @@ const checkinRoute = createRoute({
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(CheckInRequestSchema) } },
   responses: {
     200: { description: "Pass or fail, with the distance", ...json(CheckInSchema) },
-    400: errorResponse("invalid_request: see error.fields"),
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-    404: errorResponse("not_found: no such job"),
-    409: errorResponse(
-      "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
-    ),
+    ...STEP_REFUSALS,
+    409: DAY_CONFLICT,
   },
 });
 
@@ -346,13 +358,9 @@ const startRoute = createRoute({
   summary: "Start the job. The duration runs from here to the outcome",
   request: { params: jobId, headers: EventIdSchema },
   responses: {
-    202: { description: "Recorded", ...json(AcceptedSchema) },
-    400: errorResponse("invalid_request: see error.fields"),
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-    404: errorResponse("not_found: no such job"),
-    409: errorResponse(
-      "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
-    ),
+    202: RECORDED,
+    ...STEP_REFUSALS,
+    409: DAY_CONFLICT,
   },
 });
 
@@ -388,11 +396,8 @@ const photosRoute = createRoute({
   summary: "The phase's five photographs are in; attach them to FSM",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(PhotosRequestSchema) } },
   responses: {
-    202: { description: "Recorded", ...json(AcceptedSchema) },
-    400: errorResponse("invalid_request: see error.fields"),
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-    404: errorResponse("not_found: no such job"),
-    409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+    202: RECORDED,
+    ...STEP_REFUSALS,
   },
 });
 
@@ -402,11 +407,8 @@ const checklistRoute = createRoute({
   summary: "The service checklist, per visit type",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(ChecklistRequestSchema) } },
   responses: {
-    202: { description: "Recorded", ...json(AcceptedSchema) },
-    400: errorResponse("invalid_request: see error.fields"),
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-    404: errorResponse("not_found: no such job"),
-    409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+    202: RECORDED,
+    ...STEP_REFUSALS,
   },
 });
 
@@ -416,11 +418,8 @@ const consumablesRoute = createRoute({
   summary: "Consumables used, with quantities",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(ConsumablesRequestSchema) } },
   responses: {
-    202: { description: "Recorded", ...json(AcceptedSchema) },
-    400: errorResponse("invalid_request: see error.fields"),
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-    404: errorResponse("not_found: no such job"),
-    409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+    202: RECORDED,
+    ...STEP_REFUSALS,
   },
 });
 
@@ -430,11 +429,8 @@ const pieceRoute = createRoute({
   summary: "The piece: a replacement's and a first fit's step only",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(PieceRequestSchema) } },
   responses: {
-    202: { description: "Recorded", ...json(AcceptedSchema) },
-    400: errorResponse("invalid_request: see error.fields"),
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-    404: errorResponse("not_found: no such job"),
-    409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+    202: RECORDED,
+    ...STEP_REFUSALS,
   },
 });
 
@@ -444,11 +440,8 @@ const outcomeRoute = createRoute({
   summary: "Done, or partial with a reason",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(OutcomeRequestSchema) } },
   responses: {
-    202: { description: "Recorded", ...json(AcceptedSchema) },
-    400: errorResponse("invalid_request: see error.fields"),
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-    404: errorResponse("not_found: no such job"),
-    409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+    202: RECORDED,
+    ...STEP_REFUSALS,
   },
 });
 
@@ -459,9 +452,7 @@ const noShowRoute = createRoute({
   request: { params: jobId, headers: EventIdSchema },
   responses: {
     200: { description: "Closed, with the case ops will rule on", ...json(NoShowSchema) },
-    400: errorResponse("invalid_request: see error.fields"),
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-    404: errorResponse("not_found: no such job"),
+    ...STEP_REFUSALS,
     409: errorResponse(
       "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
     ),
@@ -520,7 +511,7 @@ export function registerTechJobs(app: App): void {
     const { deps, requestId } = c.var;
     const now = deps.now();
     const body = c.req.valid("json");
-    const job = await ownJob(c, c.req.valid("param").id);
+    const job = await namedJob(c, c.req.valid("param").id);
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
 
     const eventId = c.req.valid("header")["x-client-event-id"];
@@ -664,7 +655,7 @@ export function registerTechJobs(app: App): void {
   app.openapi(noShowRoute, async (c) => {
     const { requestId, deps } = c.var;
     const now = deps.now();
-    const job = await ownJob(c, c.req.valid("param").id);
+    const job = await namedJob(c, c.req.valid("param").id);
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
 
     const readiness = noShowReadiness(
@@ -704,14 +695,14 @@ type Ctx = Context<AppEnv>;
  * someone else is answered `superseded`, with what changed, so the phone can
  * tell him, rather than "not found".
  */
-const ownJob = (c: Ctx, id: string): Promise<WorkableJob | null> => workableJob(c.env.DB, id);
+const namedJob = (c: Ctx, id: string): Promise<WorkableJob | null> => workableJob(c.env.DB, id);
 
 /** What a step's handler returns: the event's body, or the fields that were wrong. */
 type StepBody = Record<string, unknown> | { invalid: string[] };
 
 /** One in-job step: check it, land it once, and put its FSM write on the queue. */
 async function step(c: Ctx, kind: JobEventKind, build: (job: WorkableJob) => StepBody | Promise<StepBody>) {
-  const job = await ownJob(c, c.req.param("id") ?? "");
+  const job = await namedJob(c, c.req.param("id") ?? "");
   if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
   const built = await build(job);
   if ("invalid" in built && Array.isArray(built.invalid)) {
@@ -805,6 +796,3 @@ async function land(
     },
   };
 }
-
-/** The header the phone sends its event ID in. */
-export const CLIENT_EVENT_ID_HEADER = EVENT_ID_HEADER;
