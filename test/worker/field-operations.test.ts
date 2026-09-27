@@ -236,6 +236,19 @@ describe("the day's jobs", () => {
     expect(JSON.stringify(job)).not.toContain("9810000001");
   });
 
+  // ADR 0069: the board names the area of the pincode a visit is booked for; the technician's card used the address.
+  it("names the area of the visit's pincode, as the dispatch board does", async () => {
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65 and 66', 'Gurgaon', 1)",
+    ).run();
+
+    const later = await (await get(`/api/tech/jobs/${LATER_JOB}`)).json<Record<string, unknown>>();
+    const listed = await (await get("/api/tech/jobs?date=2026-09-25")).json<{ jobs: Record<string, unknown>[] }>();
+
+    expect(later).toMatchObject({ unlocked: false, sector: "Sector 65 and 66" });
+    expect(listed.jobs[0]).toMatchObject({ id: LATER_JOB, sector: "Sector 65 and 66" });
+  });
+
   it("shows the address, access notes and client card from the day before", async () => {
     const job = await (await get(`/api/tech/jobs/${TODAY_JOB}`)).json<Record<string, unknown>>();
 

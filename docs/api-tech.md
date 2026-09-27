@@ -1142,7 +1142,7 @@ The piece a label names
           "type": "null"
         }
       ],
-      "description": "The area, never the street."
+      "description": "The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city."
     },
     "status": {
       "type": "string",

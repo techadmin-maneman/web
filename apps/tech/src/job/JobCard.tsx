@@ -6,10 +6,10 @@
 // The last visit's photograph is fetched each time the card is open and never
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
 
+import { Icon } from "@maneman/ui/Icon";
 import type { Job } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { job as copy } from "../content.ts";
-import { PIN } from "../icons.ts";
+import { PIN, STROKE } from "../icons.ts";
 import { addressLine, callLink, wayTo, whatsAppLink } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import styles from "./job.module.css";
@@ -102,7 +102,7 @@ export function JobCard({ job }: { job: Job }) {
         )}
         {/* A new tab, so a technician who has taken the route back still has the app open behind it. */}
         <a className={styles.navigate} href={wayTo(job.address)} target="_blank" rel="noopener noreferrer">
-          <Icon d={PIN} size={21} />
+          <Icon d={PIN} size={21} stroke={STROKE} />
           <span>{copy.navigate}</span>
         </a>
         {client !== null && (
