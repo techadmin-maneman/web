@@ -38,6 +38,35 @@ export interface PincodeRow {
   readonly launchedAt: string | null;
 }
 
+/** Everyone on a pincode's waitlist, and whether the pincode is served now: WAITING_QUERY's rows. */
+export interface Waiting {
+  readonly pincode: string;
+  readonly served: number;
+  readonly waiting: number;
+}
+
+export const WAITING_QUERY = `SELECT w.pincode, COALESCE(MAX(s.served), 0) AS served, COUNT(*) AS waiting
+FROM waitlist_entries w LEFT JOIN serviceable_pincodes s ON s.pincode = w.pincode
+GROUP BY w.pincode`;
+
+/**
+ * The pincodes the file would serve that are not served yet and have people waiting. The import tells nobody, so it
+ * must not launch these: the console's launch does, and tells those who asked
+ * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+ */
+export function launchesWithPeopleWaiting(
+  rows: readonly PincodeRow[],
+  waiting: readonly Waiting[],
+): { pincode: string; waiting: number }[] {
+  const unservedWithPeople = new Map(
+    waiting.filter((entry) => entry.served === 0).map((entry) => [entry.pincode, entry.waiting]),
+  );
+  return rows.flatMap((row) => {
+    const people = unservedWithPeople.get(row.pincode);
+    return row.served && people !== undefined ? [{ pincode: row.pincode, waiting: people }] : [];
+  });
+}
+
 const sqlText = (value: string | null) => (value === null ? "NULL" : `'${value.replaceAll("'", "''")}'`);
 
 /**
