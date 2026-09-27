@@ -56,7 +56,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0048](0048-referrals.md) | Referrals and the waitlist | 2026-09-22 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0071](0071-what-ops-see-before-a-setting-changes.md), [0074](0074-hand-offs-and-messages.md), [0083](0083-anyone-signed-in-can-refer.md) |
 | [0049](0049-dpdp.md) | DPDP readiness | 2026-09-22 | accepted | [0066](0066-erasure-all-or-nothing.md), [0074](0074-hand-offs-and-messages.md) |
 | [0050](0050-crm-in-the-real-org.md) | The CRM moves to the real Zoho org | 2026-09-22 | accepted | [0059](0059-a-clients-history.md), [0070](0070-vendor-correctness.md) |
-| [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) |
+| [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md) |
 | [0052](0052-technician-sessions.md) | Technician sessions, devices and the day-before unlock | 2026-09-23 | accepted |  |
 | [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted |  |
 | [0054](0054-address-capture.md) | Capturing an address: the fields, the pin, and the way to the door | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md) |
@@ -84,6 +84,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0076](0076-one-ui-layer-and-one-api-client.md) | One component layer and one API client for the front ends | 2026-09-27 | accepted |  |
 | [0077](0077-a-token-scale-written-once.md) | A token scale written once, and names for what a value is for | 2026-09-27 | accepted |  |
 | [0078](0078-the-queues-no-board-draws.md) | The console's queues that no board draws | 2026-09-27 | accepted |  |
+| [0081](0081-the-site-takes-the-address.md) | The site takes the address before it books | 2026-09-27 | accepted |  |
 | [0082](0082-try-ons-in-the-app.md) | A client's try-on in the app | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 |  |
 | [0083](0083-anyone-signed-in-can-refer.md) | Anyone signed in can refer | 2026-09-27 | accepted |  |
 

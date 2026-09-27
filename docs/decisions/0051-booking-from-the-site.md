@@ -1,6 +1,6 @@
 # 0051. Booking from the site is the landing's booking
 
-- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the page records a request for ops rather than refusing.
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the page records a request for ops rather than refusing. Amended by [ADR 0081](0081-the-site-takes-the-address.md): the consultation form takes the full address.
 - Date: 2026-09-23
 
 ## Context
@@ -8,7 +8,7 @@
 Two pages on the public site take someone who wants a visit:
 
 - **`/book`**, the site's own, which since Phase 1 has taken a name, a number, a city and a rough preference — weekday or weekend, morning or evening — and written a **lead**. Ops then fixed the hour on WhatsApp. It never booked anything: the "proposed visit date" it showed was a guess from `VISIT_LEAD_DAYS`.
-- **`/r/:code`**, the referral landing (ADR 0027), which since P2-M3 asks for a pincode and, where we come, books a real consultation: a date, a window from 9–12, 12–4 or 4–8, and a slot held for ten minutes while the form is filled in.
+- **`/r/:code`**, the referral landing (ADR 0027), which since P2-M3 asks for a pincode and, where we come, books a real consultation: a date, a window from 9–12, 12–4 or 4–8, and a slot held for ten minutes while the form is filled in. (Corrected 27 September 2026: nothing is held while the form is filled in. The slot is held when the form is sent, and confirmed as it is held; ADR 0081.)
 
 The owner asked on 22 September 2026 why the site still offered the four vague windows, and for the end-to-end test on staging to cover the public page. The answer was only history: `/book` predates self-serve booking, and at the time we knew a visitor's city but not their pincode, so we could not tell whether we served them.
 
@@ -37,4 +37,4 @@ We can now. `serviceable_pincodes` holds 198 NCR pincodes, and `GET /api/pincode
 ## What this does not do
 
 - It does not take payment. A consultation is free, and prepayment is for the fit, in the client app (ADR 0045).
-- It does not ask for an address. The pincode is enough to know whether we come; the technician takes the rest on WhatsApp, as before.
+- It does not ask for an address. The pincode is enough to know whether we come; the technician takes the rest on WhatsApp, as before. (Overruled 27 September 2026 by the owner: the consultation form takes the full address before it books, and it becomes the person's; ADR 0081.)
