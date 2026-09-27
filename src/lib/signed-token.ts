@@ -1,12 +1,12 @@
 // Signed tokens: the photo upload link, the result links, the mm_look
-// cookie, and the links to a client's own photographs. Signed with RESULT_SIGNING_KEY, and bound to a purpose so a token
-// made for one use cannot open another.
+// cookie, and the links to a client's own photographs and try-ons. Signed with RESULT_SIGNING_KEY, and bound to a
+// purpose so a token made for one use cannot open another.
 //
 //   <subject, base64url>.<expiry, Unix seconds>.<HMAC-SHA256, base64url>
 
 import { fromBase64Url, toBase64Url } from "./base64url.ts";
 
-export type TokenPurpose = "upload" | "result" | "look" | "photo" | "tech_photo";
+export type TokenPurpose = "upload" | "result" | "look" | "photo" | "tech_photo" | "tryon_photo" | "tryon_look";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
