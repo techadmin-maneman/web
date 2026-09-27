@@ -902,7 +902,7 @@ For a payment whose delivery Razorpay will not send again (past its 24 hours, or
 
 ## Try-on and WhatsApp
 
-The render consumer is the only caller of AILabTools and the messaging consumer the only caller of WhatsApp (`docs/decisions/0015-render-pipeline.md`). D1 records where every job and message stands:
+The render consumer is the only caller of AILabTools and the messaging consumer the only caller of WhatsApp (`docs/decisions/0015-render-pipeline.md`), but for login codes: those go straight to the provider once the response has gone (ADR 0030), and only the Worker's log records them, as `login_code_sent`, `login_code_not_sent` with its reason, or `login_code_failed`. D1 records where every job and message stands:
 
 ```sql
 SELECT state, failure_code, COUNT(*) AS jobs FROM tryon_jobs GROUP BY state, failure_code;

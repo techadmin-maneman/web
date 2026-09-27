@@ -54,7 +54,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
-- [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone (ADR 0032, ADR 0052).
+- [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which shows a visitor their result without the gate again (ADR 0014).
 - [visit_blackouts](#visit_blackouts): Days on which no visit is offered.
@@ -1103,9 +1103,9 @@ Indexes:
 
 ## technicians
 
-The mirror of FSM's technicians: name, initials, mobile number and zone (ADR 0032, ADR 0052).
+The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1117,6 +1117,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`.
 | `updated_at` | TEXT | no |  |  |
 | `zone` | TEXT | yes |  |  |
 | `mobile_e164` | TEXT | yes |  |  |
+| `hand_written` | INTEGER | no | `0` |  |
 
 Indexes:
 
