@@ -5137,6 +5137,53 @@
           }
         }
       },
+      "get": {
+        "summary": "The client's own card while it is live: the JPEG the invite shows",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The card's version, from GET /api/refer. The route does not read it: a new version is a new link, so the day the phone may keep the card never shows an older one."
+            },
+            "required": false,
+            "description": "The card's version, from GET /api/refer. The route does not read it: a new version is a new link, so the day the phone may keep the card never shows an older one.",
+            "name": "v",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The card",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no card of theirs is live: none made, taken down, the consent off, or erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "summary": "Take the client's card down: new opens show the house card",
         "responses": {

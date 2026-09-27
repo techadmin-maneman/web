@@ -1,16 +1,75 @@
 // Refer in the app (boards F1 to F6) for the fitted client of e2e/app/fitted.ts, against the local mm-api. The
 // client has no credits and nobody fitted yet, so this covers the invite, the card choice, the preview and the
 // empty tracker; the grant itself is covered in the worker tests.
+//
+// The share sheet is the phone's, which no desktop browser here has: the tests that share stand one in before the
+// app loads (stubShareSheet), taking files or not, as a phone's does.
 
+import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import sharp from "sharp";
+import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { expect, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { holdOpen } from "./one-tap.ts";
 import { logIn, signIn } from "./signed-in.ts";
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+
+/** What the stand-in share sheet was given: each file as its name, type and size, and the words. */
+interface Shared {
+  readonly files: readonly { readonly name: string; readonly type: string; readonly size: number }[];
+  readonly text: string | undefined;
+}
+
+/**
+ * A phone's share sheet, stood in before the app loads. With `files` it takes JPEGs (canShare); without, it has no
+ * canShare at all, as a phone that shares words only. Each share is kept, unless a refusal is waiting (refuseNext).
+ */
+async function stubShareSheet(page: Page, files: boolean): Promise<void> {
+  await page.addInitScript((takesFiles: boolean) => {
+    const shared: Shared[] = [];
+    const refusals: string[] = [];
+    Object.assign(window, { shared, refusals });
+    if (takesFiles) {
+      Object.defineProperty(Navigator.prototype, "canShare", {
+        configurable: true,
+        value: (data?: ShareData) => (data?.files ?? []).every((file) => file.type === "image/jpeg"),
+      });
+    } else {
+      Reflect.deleteProperty(Navigator.prototype, "canShare");
+    }
+    Object.defineProperty(Navigator.prototype, "share", {
+      configurable: true,
+      value: (data?: ShareData) => {
+        const refusal = refusals.shift();
+        if (refusal !== undefined) return Promise.reject(new DOMException("Not shared.", refusal));
+        const kept = (data?.files ?? []).map((file) => ({ name: file.name, type: file.type, size: file.size }));
+        shared.push({ files: kept, text: data?.text });
+        return Promise.resolve();
+      },
+    });
+  }, files);
+}
+
+/** Every share the stand-in sheet has taken. */
+const sharedSoFar = (page: Page) => page.evaluate(() => (window as unknown as { shared: Shared[] }).shared);
+
+/** The next share is refused with a DOMException of this name, as a phone refuses one or the client backs out. */
+const refuseNext = (page: Page, name: "NotAllowedError" | "AbortError") =>
+  page.evaluate((refusal) => {
+    (window as unknown as { refusals: string[] }).refusals.push(refusal);
+  }, name);
+
+/** The house card as the app bundles it (scripts/make-house-card.ts). */
+const HOUSE_CARD = readFileSync("apps/app/src/refer/invite-house.jpg");
+
+/** The invite's own card sent as a photograph, with the invite's words as its caption. */
+const cardWithInvite = (size: number) => ({
+  files: [{ name: "mane-man-invite.jpg", type: "image/jpeg", size }],
+  text: expect.stringMatching(/Worth a look — .*\/r\/[A-Z0-9]{6}$/) as unknown as string,
+});
 
 const scan = async (page: Page) => {
   const results = await new AxeBuilder({ page })
@@ -84,6 +143,118 @@ test("says when the link could not be shared, and tries again", async ({ page })
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
+/** From Refer to the preview (F4) with the house example chosen. */
+async function toTheExample(page: Page) {
+  await toRefer(page);
+  await page.getByRole("button", { name: "Share an invite" }).click();
+  await page.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await page.getByRole("button", { name: "Continue to share" }).click();
+  return page.getByRole("dialog", { name: "Preview · what your friend sees" });
+}
+
+// The owner's invites reached WhatsApp with no image: the app sent only words and a link, and the chat's preview
+// of the link is all a friend could see. Where the phone can, the card itself goes, captioned with the invite.
+test("sends the house card itself, captioned with the invite, where the phone shares files", async ({ page }) => {
+  await stubShareSheet(page, true);
+  const preview = await toTheExample(page);
+
+  await preview.getByRole("link", { name: "WhatsApp" }).click();
+  await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(HOUSE_CARD.byteLength)]);
+  // The share sheet took it: WhatsApp's link was not followed as well.
+  expect(page.context().pages()).toHaveLength(1);
+
+  await preview.getByRole("button", { name: "Other apps" }).click();
+  await expect.poll(() => sharedSoFar(page)).toHaveLength(2);
+  expect((await sharedSoFar(page))[1]).toEqual(cardWithInvite(HOUSE_CARD.byteLength));
+  await expect(preview.getByRole("alert")).toHaveCount(0);
+});
+
+test("keeps WhatsApp's link, with the words alone, where the phone shares no files", async ({ page }) => {
+  await stubShareSheet(page, false);
+  await page.context().route("https://wa.me/**", (route) => route.fulfill({ contentType: "text/html", body: "" }));
+  const preview = await toTheExample(page);
+
+  const whatsapp = preview.getByRole("link", { name: "WhatsApp" });
+  await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
+  // The link opens with no opener (rel="noopener"), so the context sees the new tab, not this page.
+  const opening = page.context().waitForEvent("page");
+  await whatsapp.click();
+  const opened = await opening;
+  await opened.waitForLoadState();
+  expect(opened.url()).toMatch(/^https:\/\/wa\.me\/\?text=Had%20my%20hair.*%2Fr%2F[A-Z0-9]{6}$/);
+
+  await preview.getByRole("button", { name: "Other apps" }).click();
+  await expect
+    .poll(() => sharedSoFar(page))
+    .toEqual([{ files: [], text: expect.stringMatching(/\/r\/[A-Z0-9]{6}$/) as unknown as string }]);
+});
+
+// A client who made their card earlier sees it, and sends it: the preview's own route answers only on the public
+// host, so the app reads the card from its own (GET /api/refer/card). The shared client has none, so it is answered.
+test("shows a client's stored card in the preview, and sends that card", async ({ page }) => {
+  const card = await sharp({ create: { width: 1200, height: 630, channels: 3, background: "#1a2740" } })
+    .jpeg()
+    .toBuffer();
+  // Only the browser resolves app.localhost, so the invite is fetched from the app's server by its address.
+  await page.route(
+    (url) => url.pathname === "/api/refer",
+    async (route) => {
+      const response = await route.fetch({
+        url: `http://127.0.0.1:${String(PORTS.app)}/api/refer`,
+        headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+      });
+      const refer = (await response.json()) as Record<string, unknown>;
+      await route.fulfill({ response, json: { ...refer, card: { state: "personal", version: 7, consented: true } } });
+    },
+  );
+  const asked: string[] = [];
+  await page.route(
+    (url) => url.pathname === "/api/refer/card",
+    (route) => {
+      asked.push(`${route.request().method()} ${new URL(route.request().url()).search}`);
+      return route.fulfill({ body: card, contentType: "image/jpeg" });
+    },
+  );
+  await stubShareSheet(page, true);
+
+  await toRefer(page);
+  await page.getByRole("button", { name: "Share an invite" }).click();
+  await expect(page.getByRole("radio", { name: /My before and after/ })).toBeChecked();
+  await page.getByRole("button", { name: "Continue to share" }).click();
+
+  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  const image = preview.locator("img").first();
+  await expect(image).toHaveAttribute("src", "/api/refer/card?v=7");
+  await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBe(1200);
+  await preview.getByRole("link", { name: "WhatsApp" }).click();
+  await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(card.byteLength)]);
+  expect([...new Set(asked)]).toEqual(["GET ?v=7"]);
+});
+
+// Board F6's "Share failed" is for a share that failed, not one the client backed out of.
+test("says when the phone refused the card's share, and nothing when the client backed out", async ({ page }) => {
+  await stubShareSheet(page, true);
+  const preview = await toTheExample(page);
+  const whatsapp = preview.getByRole("link", { name: "WhatsApp" });
+
+  await refuseNext(page, "NotAllowedError");
+  await whatsapp.click();
+  const failed = preview.getByRole("alert");
+  await expect(failed).toContainText("Share failed");
+  await expect(failed).toContainText("The link did not generate. Nothing was sent.");
+  await preview.getByRole("button", { name: "Try again" }).click();
+  await expect(preview.getByRole("alert")).toHaveCount(0);
+  await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(HOUSE_CARD.byteLength)]);
+
+  await refuseNext(page, "AbortError");
+  await whatsapp.click();
+  // The tap takes the refusal; by the second frame after it the sheet has drawn whatever it made of it.
+  await expect.poll(() => page.evaluate(() => (window as unknown as { refusals: string[] }).refusals)).toEqual([]);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await expect(preview.getByRole("alert")).toHaveCount(0);
+  expect(await sharedSoFar(page)).toHaveLength(1);
+});
+
 // "Without consent, the first option opens F3 instead of selecting." And nothing is agreed to for a card the
 // phone could not make: this client's first fit has an after photograph and no before (e2e/app/fitted.ts).
 test("asks for the consent before choosing their own card, and records none when the card cannot be made", async ({
@@ -151,6 +322,7 @@ test("makes their own card, records one consent and stores one card, when Allow 
       json: { purpose: "photos_referral_cards", granted: true, since: new Date().toISOString() },
     });
   });
+  await stubShareSheet(page, true);
 
   await toRefer(page);
   await page.getByRole("button", { name: "Share an invite" }).click();
@@ -167,6 +339,10 @@ test("makes their own card, records one consent and stores one card, when Allow 
   // A JPEG, and under the 300 KB WhatsApp takes.
   expect(stored[0]).toBeGreaterThan(0);
   expect(stored[0]).toBeLessThan(300 * 1024);
+
+  // The card just made is the one sent, kept as it was made: the page may not fetch its own blob: link.
+  await preview.getByRole("link", { name: "WhatsApp" }).click();
+  await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(stored[0] ?? 0)]);
 });
 
 // Board B2: before their first fit a client has nothing to vouch for, and the invite's own words would not be

@@ -58,6 +58,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 9. Triggers: the cron                          | done, and checked by the deploy                        | done                                                                                      |
 | 9. Triggers: the queue consumers               | done (all four); CI cannot read them, so check by hand | three; fsm-sync's once its queue exists                                                   |
 | 10. Access bypass for result links             | done                                                   | not applicable                                                                            |
+| 10b. Access bypass for invite previews         | not yet: the owner's (27 September 2026)               | not applicable                                                                            |
 | 11. Phase 2 hosts: DNS, Access                 | done                                                   | done (all three behind Access until go-live)                                              |
 | 11. Phase 2 surfaces switched on               | done (22 September 2026)                               | not yet: waits for the production go-ahead                                                |
 | 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                    | mm-app recorded as bootstrapped with no route (open point 83); mm-ops and mm-tech not yet |
@@ -322,6 +323,31 @@ A WhatsApp copy carries a link to `/api/result/…`, which the Evolution bridge 
 2. Policy: action **Bypass**, include **Everyone**.
 
 Access applies the most specific path, so the rest of staging stays behind the founders' login.
+
+### 10b. Invite previews through Access (staging only)
+
+Added 27 September 2026. An invite is a link to `https://staging.maneman.in/r/<code>`, and WhatsApp draws its preview from that page's Open Graph tags and the card they name. Its crawler has no Access login, so on staging it met the sign-in instead, and every invite shared from staging arrived with no image. Where the phone can share files the app now sends the card itself as well (ADR 0048, amended 27 September 2026), but the link's preview still needs the crawler to reach the page and the card:
+
+1. Zero Trust → Access → Applications → Add → Self-hosted, with three public hostnames, each domain `staging.maneman.in`: paths `r/`, `images/` and `api/og/`.
+2. Policy: action **Bypass**, include **Everyone**.
+
+**What it exposes**, to anyone with a code, and only what production serves anyone with the link:
+
+- the landing's HTML for any code, with the referrer's first name where they agreed to be named;
+- the house card, the one file under `images/`;
+- a referrer's own card, `api/og/<code>.jpg`, while it is live.
+
+The invite's API (`/api/r/*`), the pincode check (`/api/pincodes`), the page's scripts and styles (`/_astro/*`) and every other path stay behind the founders' login, so a visitor without it gets the page unstyled, and it does nothing. The crawler reads only the HTML.
+
+**Check it** from outside Access, as the crawler is:
+
+```sh
+npm run smoke -- --base https://staging.maneman.in --environment staging --link-preview <code>
+```
+
+It fetches `/r/<code>`, then the card its `og:image` names, with WhatsApp's user agent and never the Access token, even one in the environment. It passes on the page with an absolute `og:image` and a JPEG under 300 KB. It is not part of the deploys' smoke: it fails until this step is done, and would stop every staging deploy.
+
+Then share an invite on a handset. WhatsApp keeps a link's preview by its address, so a link it has already seen keeps showing none: add a query it has not seen, `https://staging.maneman.in/r/<code>?t=1`, then `?t=2`, and so on. The landing ignores the query.
 
 ### 11. Switching on a Phase 2 surface
 

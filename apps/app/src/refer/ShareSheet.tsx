@@ -1,11 +1,15 @@
 // Sharing an invite (boards F2 to F4): which card, the consent its own photographs need, and then the preview
-// exactly as the friend receives it. F2 and F4 fill the screen, as drawn; F3 is a sheet over the dark ground.
+// of the invite. F2 and F4 fill the screen, as drawn; F3 is a sheet over the dark ground.
 //
 // Choosing their own card without having agreed to the cards' lines opens those lines (F3) instead of choosing
 // it. Their card is composed first, then the consent recorded, then the card stored: nothing is agreed to for a
 // card the phone could not make. Every step that changes what the invite shows waits for the API's answer, and a
 // refusal says so and changes nothing: an invite must never carry photographs the client thinks are gone
 // (docs/decisions/0048-referrals.md).
+//
+// Where the phone can share files, WhatsApp and Other apps send the card itself, as a photograph captioned with the
+// invite's words; elsewhere WhatsApp's link sends the words, and the chat draws the card from the link (share.ts).
+// The card is made a file before the share step shows: a share must start on the tap, with nothing left to fetch.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -14,28 +18,51 @@ import { Sheet } from "@maneman/ui/Sheet";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whatsappShare } from "@maneman/web-kit/whatsapp";
 import { useEffect, useRef, useState } from "react";
-import { api, putCard, type Refer } from "../api.ts";
+import { api, cardUrl, putCard, storedCard, type Refer } from "../api.ts";
 import { profile, refer } from "../content.ts";
 import { CHECK, COPY_LINK, OTHER_APPS } from "../icons.ts";
 import { focusIfLost } from "../lib/arrival.ts";
 import { useSession } from "../session.ts";
 import { composeCard, firstFitPhotos, type FirstFitPair } from "./card.ts";
-import { CardPreview, type Shown } from "./CardPreview.tsx";
+import { CardPreview, houseCard, type Shown } from "./CardPreview.tsx";
+import { forOtherApps, inviteFile, withCard } from "./share.ts";
 import styles from "./refer.module.css";
 
 type Step = "choice" | "consent" | "composing" | "share";
 type Which = "mine" | "house";
 
+/**
+ * A card composed in this sheet: kept as it was made, to share as a file, and shown through a link to it. The link
+ * is for the image alone: the app's policy lets no request fetch it (packages/web-kit/headers.ts).
+ */
+interface Made {
+  readonly card: Blob;
+  readonly url: string;
+}
+
 const TITLE_ID = "share-title";
 const HOUSE: Shown = { kind: "house" };
 
 /** The card the friend will see: one just made, the client's stored one, or the house example. */
-function sentCard(state: Refer, made: string | null): Shown {
-  if (made !== null) return { kind: "made", url: made };
-  if (state.card.state === "personal") {
-    return { kind: "made", url: `/api/og/${state.code}.jpg?v=${String(state.card.version)}` };
-  }
+function sentCard(state: Refer, made: Made | null): Shown {
+  if (made !== null) return { kind: "made", url: made.url };
+  if (state.card.state === "personal") return { kind: "made", url: cardUrl(state.card.version) };
   return HOUSE;
+}
+
+/** The house example, read from the app's own files. */
+async function houseExample(): Promise<Blob | null> {
+  const response = await fetch(houseCard).catch(() => null);
+  return response?.ok === true ? response.blob() : null;
+}
+
+/** The card the friend is sent, to share as a file; null where it could not be read, and the words go alone. */
+async function cardToSend(which: Which, state: Refer, made: Made | null): Promise<Blob | null> {
+  if (which === "house") return houseExample();
+  if (made !== null) return made.card;
+  if (state.card.state !== "personal") return null;
+  const stored = await storedCard(state.card.version);
+  return stored.ok ? stored.body : null;
 }
 
 /** Board F2: one of the two cards, drawn, with its box ticked when chosen. */
@@ -90,7 +117,9 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   const [step, setStep] = useState<Step>("choice");
   const [which, setWhich] = useState<Which>(state.card.state === "personal" ? "mine" : "house");
   const [pair, setPair] = useState<FirstFitPair | null>(null);
-  const [made, setMade] = useState<string | null>(null);
+  const [made, setMade] = useState<Made | null>(null);
+  // The card the share step sends, made ready before it shows.
+  const [file, setFile] = useState<File | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [shareFailed, setShareFailed] = useState<(() => Promise<void>) | null>(null);
   const [copied, setCopied] = useState(false);
@@ -111,7 +140,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   // A card made here lives in the page until the sheet closes.
   useEffect(
     () => () => {
-      if (made !== null) URL.revokeObjectURL(made);
+      if (made !== null) URL.revokeObjectURL(made.url);
     },
     [made],
   );
@@ -124,8 +153,12 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   const close = () => dialog.current?.close();
   const message = refer.preview.message(state.link);
 
-  function toShare(card: "house" | "theirs", line: string | null) {
-    setWhich(card === "house" ? "house" : "mine");
+  /** The share step, once the card it sends is a file. */
+  async function toShare(card: "house" | "theirs", line: string | null, justMade: Made | null = made) {
+    const chosen = card === "house" ? "house" : "mine";
+    const sent = await cardToSend(chosen, state, justMade);
+    setFile(sent === null ? null : inviteFile(sent));
+    setWhich(chosen);
     setProblem(line);
     setStep("share");
   }
@@ -145,7 +178,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
       const photos = pair ?? (await api.photos().then((answer) => (answer.ok ? firstFitPhotos(answer.body) : null)));
       const card = photos === null ? null : await composeCard(photos);
       if (card === null) {
-        toShare("house", refer.cardFailed);
+        await toShare("house", refer.cardFailed);
         return;
       }
       if (consentToo) {
@@ -160,12 +193,13 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
       const stored = await putCard(card);
       if (!stored.ok) {
         if (consentToo) await changedInvite();
-        toShare("house", refer.cardFailed);
+        await toShare("house", refer.cardFailed);
         return;
       }
-      setMade(URL.createObjectURL(card));
+      const justMade = { card, url: URL.createObjectURL(card) };
+      setMade(justMade);
       await changedInvite();
-      toShare("theirs", null);
+      await toShare("theirs", null, justMade);
     });
 
   /** The example: any card of theirs comes down first, and until it has, nothing is shared. */
@@ -179,12 +213,12 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
         }
         await changedInvite();
       }
-      toShare("house", null);
+      await toShare("house", null);
     });
 
   function continueToShare() {
     if (which === "house") void useTheExample();
-    else if (state.card.state === "personal") toShare("theirs", null);
+    else if (state.card.state === "personal") void once(() => toShare("theirs", null));
     else void makeTheirOwn(false);
   }
 
@@ -202,8 +236,9 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
     setCopied(true);
   };
   const otherApps = async () => {
-    if (typeof navigator.share === "function") await navigator.share({ text: message });
-    else await copyLink();
+    const shared = forOtherApps(navigator, file, message);
+    if (shared === null) await copyLink();
+    else await navigator.share(shared);
   };
 
   const card = which === "house" ? HOUSE : sentCard(state, made);
@@ -233,7 +268,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
               <Choice
                 which="mine"
                 chosen={which === "mine"}
-                shown={made === null ? { kind: "mine", pair } : { kind: "made", url: made }}
+                shown={made === null ? { kind: "mine", pair } : { kind: "made", url: made.url }}
                 onChoose={() => {
                   // "Without consent, the first option opens F3 instead of selecting."
                   if (agreed) setWhich("mine");
@@ -350,6 +385,13 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
                   href={whatsappShare(message)}
                   rel="noopener"
                   target="_blank"
+                  onClick={(event) => {
+                    // The card itself, captioned with the words, where the phone can send it; else the link.
+                    const shared = withCard(navigator, file, message);
+                    if (shared === null) return;
+                    event.preventDefault();
+                    void sharing(() => navigator.share(shared));
+                  }}
                 >
                   <Icon d={ICONS.whatsapp} size={21} />
                   <span>{refer.preview.whatsapp}</span>

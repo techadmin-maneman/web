@@ -131,7 +131,7 @@ Boards C2 to C6, over self-serve booking (ADR 0045), on staging ahead of the res
 Boards F1 to F6, on the Refer tab (`apps/app/src/refer/`), against `GET /api/refer` (ADR 0048).
 
 - **F1** shows what a referral earns, the credit tile while there is a balance, and the two ways on: sharing, and who has been fitted.
-- **F2 to F4 are one sheet.** Which card, then the consent its own photographs need (the notice's own lines, F3), then the preview exactly as the friend receives it, with WhatsApp, other apps and copy.
+- **F2 to F4 are one sheet.** Which card, then the consent its own photographs need (the notice's own lines, F3), then the preview exactly as the friend receives it, with WhatsApp, other apps and copy. (Amended 27 September 2026: where the phone can share files, WhatsApp and other apps send the card itself, as a photograph captioned with the invite, so the preview is what the friend receives only where the phone cannot; a client's own card is read from `GET /api/refer/card`, since the preview's route answers only on the public host. ADR 0048, amended that day.)
   - **The card is composed on the phone** (`refer/card.ts`), from the first fit's front photographs, before on the left and after on the right, with the gilt rule between: same crop, no name, no words. It is sent to the API only when the client chooses their own. (Since 25 September 2026 it is composed in a Worker, to board A1: see below.)
   - Choosing the example takes any card of theirs down.
   - If the photographs cannot be read, or the API refuses the card, the sheet falls back to the house example and says so.

@@ -26,13 +26,25 @@ interface Props {
   noindex?: boolean;
   /** Schema.org objects, written as JSON-LD. Each is named, so the mm-site Worker can build it again. */
   structuredData?: readonly { readonly name: string; readonly data: object }[];
+  /**
+   * The card a shared link shows, at OG_IMAGE's size: the site's own unless a page has another. Its type and its
+   * HTTPS address go beside it, which a chat's crawler may look for before it fetches the card.
+   */
+  image?: { readonly path: string; readonly type: string };
 }
 
-const { title, description, home = false, noindex = false, structuredData = [] } = Astro.props;
+const {
+  title,
+  description,
+  home = false,
+  noindex = false,
+  structuredData = [],
+  image = { path: "/og.png", type: "image/png" },
+} = Astro.props;
 // /try is built as try.html; its address has no extension.
 const path = Astro.url.pathname.replace(/(index)?\.html$/, "").replace(/(.)\/$/, "$1");
 const canonical = new URL(path, SITE_ORIGIN).href;
-const ogImage = new URL("/og.png", SITE_ORIGIN).href;
+const ogImage = new URL(image.path, SITE_ORIGIN).href;
 ---
 
 <!doctype html>
@@ -54,6 +66,8 @@ const ogImage = new URL("/og.png", SITE_ORIGIN).href;
     {description !== undefined && <meta property="og:description" content={description} />}
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
+    <meta property="og:image:secure_url" content={ogImage} />
+    <meta property="og:image:type" content={image.type} />
     <meta property="og:image:width" content={String(OG_IMAGE.width)} />
     <meta property="og:image:height" content={String(OG_IMAGE.height)} />
     <meta property="og:image:alt" content={business.name} />

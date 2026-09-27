@@ -1,6 +1,9 @@
 // The smoke suite: the few requests that prove a deployment is the right code,
 // in the right environment, on the right database, with routing intact. Runs
 // after every staging and production deploy, and against wrangler dev in CI.
+//
+// Asked for an invite's code, it runs one check instead, which no deploy runs:
+// the invite as WhatsApp's crawler fetches it (linkPreview, below).
 
 import type { EnvironmentName, Surface } from "../../src/config/environments.ts";
 import { STATIC_WORKERS } from "./workers.ts";
@@ -15,8 +18,10 @@ export interface SmokeOptions {
   readonly versionId?: string;
   /** Require /api/health, and a surface's app at /, to report this upload tag (the git SHA). */
   readonly versionTag?: string;
-  /** Sent on every request, e.g. the Access service token or a version override. */
+  /** Sent on every request, e.g. the Access service token or a version override; never on the crawler's. */
   readonly headers?: Readonly<Record<string, string>>;
+  /** An invite's code: the run checks only that invite's link preview, as WhatsApp's crawler fetches it. */
+  readonly linkPreview?: string;
   readonly fetch?: typeof fetch;
   /** How many times a check that waits for a deploy to reach every edge tries. */
   readonly attempts?: number;
@@ -34,6 +39,8 @@ interface Target {
   readonly options: SmokeOptions;
   readonly api: (path: string) => Promise<Response>;
   readonly site: (path: string) => Promise<Response>;
+  /** A URL as a chat app's crawler fetches it: none of the options' headers, so no Access token, and no redirect. */
+  readonly crawl: (url: string) => Promise<Response>;
 }
 
 /** A check returns a one-line summary, or throws with the reason it failed. */
@@ -72,6 +79,11 @@ async function retried(options: SmokeOptions, attempt: () => Promise<string>): P
 /** The content of a page's `<meta name="…">`, or "none". */
 function metaContent(html: string, name: string): string {
   return new RegExp(`<meta name="${name}" content="([^"]*)"`).exec(html)?.[1] ?? "none";
+}
+
+/** The content of a page's `<meta property="…">`, its Open Graph tags, or "none". */
+function propertyContent(html: string, property: string): string {
+  return new RegExp(`<meta property="${property}" content="([^"]*)"`).exec(html)?.[1] ?? "none";
 }
 
 async function readJsonObject(response: Response): Promise<Record<string, unknown>> {
@@ -251,6 +263,44 @@ const appAtRoot: Check = ({ options, site }) =>
     return `${worker} serves the ${options.environment} build${of}`;
   });
 
+/** WhatsApp's crawler, as it names itself when it fetches a shared link to draw the link's preview. */
+const WHATSAPP_CRAWLER = "WhatsApp/2.23.20.0 A";
+
+/** The most WhatsApp takes as a preview's image (src/domain/referral-cards.ts). */
+const PREVIEW_MAX_BYTES = 300 * 1024;
+
+/** Where a redirect sent the crawler, for a failure's words: Access sends it to its sign-in. */
+function sentTo(response: Response): string {
+  const location = response.headers.get("location");
+  return location === null ? "" : ` to ${location}`;
+}
+
+/**
+ * An invite as WhatsApp's crawler reaches it, which it must to draw the invite's preview in a chat: the landing, with
+ * an absolute og:image, and the card that names, a JPEG under 300 KB. Each is fetched with WhatsApp's user agent, no
+ * Access token and no redirect followed. On staging, whose hosts are behind Access, it passes only once Access lets
+ * r/, images/ and api/og/ through (docs/runbook.md, step 10b), so it runs only when asked, never in a deploy's
+ * smoke.
+ */
+const linkPreview: Check = async ({ options, crawl }) => {
+  const path = `/r/${options.linkPreview ?? ""}`;
+  const page = await crawl(`${options.siteBase}${path}`);
+  assert(page.status === 200, `${path} answered ${String(page.status)}${sentTo(page)}`);
+  const pageType = page.headers.get("content-type") ?? "";
+  assert(pageType.startsWith("text/html"), `${path} is "${pageType}", not a page`);
+  const image = propertyContent(await page.text(), "og:image");
+  assert(image !== "none", `${path} has no og:image`);
+  assert(/^https?:\/\//.test(image), `${path} names its card "${image}", not by an absolute address`);
+
+  const card = await crawl(image);
+  assert(card.status === 200, `${image} answered ${String(card.status)}${sentTo(card)}`);
+  const cardType = card.headers.get("content-type") ?? "";
+  assert(cardType.startsWith("image/jpeg"), `${image} is "${cardType}", not a JPEG`);
+  const bytes = (await card.arrayBuffer()).byteLength;
+  assert(bytes < PREVIEW_MAX_BYTES, `${image} is ${String(bytes)} bytes, over the 300 KB WhatsApp takes`);
+  return `${path} names ${image}, a JPEG of ${String(Math.ceil(bytes / 1024))} KB`;
+};
+
 export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["mm-api /api/health", health],
   ["mm-api error shape", errorShape],
@@ -269,12 +319,21 @@ export const SURFACE_CHECKS: readonly (readonly [name: string, check: Check])[] 
   ["app at /", appAtRoot],
 ];
 
+/** Only when asked for, with an invite's code (`--link-preview`). */
+const LINK_PREVIEW_CHECKS: readonly (readonly [name: string, check: Check])[] = [["link preview", linkPreview]];
+
+/** What a run checks: an invite's link preview alone when one is asked for, else the host's own checks. */
+function checksFor(options: SmokeOptions): readonly (readonly [name: string, check: Check])[] {
+  if (options.linkPreview !== undefined) return LINK_PREVIEW_CHECKS;
+  return (options.surface ?? "public") === "public" ? CHECKS : SURFACE_CHECKS;
+}
+
 export async function runSmoke(options: SmokeOptions): Promise<SmokeResult[]> {
   const doFetch = options.fetch ?? fetch;
   const headers = { ...options.headers };
 
-  async function get(url: string): Promise<Response> {
-    const response = await doFetch(url, { headers });
+  async function get(url: string, init: RequestInit): Promise<Response> {
+    const response = await doFetch(url, init);
     // Cloudflare's bot protection or a WAF rule answered; the Worker never saw the request.
     if (response.headers.get("cf-mitigated") === "challenge") {
       const ray = response.headers.get("cf-ray") ?? "unknown";
@@ -285,12 +344,13 @@ export async function runSmoke(options: SmokeOptions): Promise<SmokeResult[]> {
 
   const target: Target = {
     options,
-    api: (path) => get(`${options.apiBase}${path}`),
-    site: (path) => get(`${options.siteBase}${path}`),
+    api: (path) => get(`${options.apiBase}${path}`, { headers }),
+    site: (path) => get(`${options.siteBase}${path}`, { headers }),
+    crawl: (url) => get(url, { headers: { "User-Agent": WHATSAPP_CRAWLER }, redirect: "manual" }),
   };
 
   const results: SmokeResult[] = [];
-  for (const [name, check] of (options.surface ?? "public") === "public" ? CHECKS : SURFACE_CHECKS) {
+  for (const [name, check] of checksFor(options)) {
     try {
       results.push({ name, ok: true, detail: await check(target) });
     } catch (error) {

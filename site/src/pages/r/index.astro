@@ -3,16 +3,24 @@
 // (site/src/worker.ts, docs/decisions/0027-referral-landing.md). One page
 // answers every code: the Worker rewrites the preview tags and writes the
 // invite onto #invite before the browser, or WhatsApp's crawler, sees it.
+// Its card is the house card, a JPEG, until the Worker names the referrer's
+// own, a JPEG of the same size: only the card's address changes.
 //
 // It is never indexed: an invite is one person's, and its address holds a code.
 import { inviteDescription, inviteTitle } from "../../content/referral.ts";
 import Invite from "../../islands/invite/Invite.tsx";
 import Site from "../../layouts/Site.astro";
 import { ENVIRONMENT, IS_PRODUCTION } from "../../lib/build.ts";
+import { HOUSE_CARD } from "../../lib/invite.ts";
 import { TURNSTILE_SITE_KEYS } from "../../lib/turnstile.ts";
 ---
 
-<Site title={inviteTitle(null)} description={inviteDescription(null)} noindex>
+<Site
+  title={inviteTitle(null)}
+  description={inviteDescription(null)}
+  noindex
+  image={{ path: HOUSE_CARD, type: "image/jpeg" }}
+>
   <!-- The next page is told the site it came from, not the invite's code (docs/decisions/0023-launch-hardening.md). -->
   <meta slot="head" name="referrer" content="strict-origin" />
   <!-- data-invite carries the invite the Worker looked up; empty where it could not, so the island asks. -->
