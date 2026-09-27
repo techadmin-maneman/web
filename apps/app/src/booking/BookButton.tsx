@@ -1,6 +1,7 @@
 // "Book your next visit" and its kin: the booking sheet where self-serve
 // booking is on, WhatsApp to ops with a message ready where it is off (ADR
-// 0043), and nothing offline. Once money has moved, Home is fetched again.
+// 0043), and nothing offline. Once money has moved, Home is fetched again. The
+// sheet offers every service open to the client (ADR 0085).
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -41,6 +42,7 @@ export function BookButton({ label, message, className }: { label: string; messa
       {open && (
         <BookingSheet
           type={type}
+          services={me.booking.services}
           onClose={(changed) => {
             setOpen(false);
             if (changed) refresh();

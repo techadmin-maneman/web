@@ -39,7 +39,24 @@ export type MoveTerms = Schemas["MoveTerms"];
 export type CancelTerms = Schemas["CancelTerms"];
 export type Refer = Schemas["Refer"];
 export type BookableType = Me["booking"]["types"][number];
+export type OfferedService = Me["booking"]["services"][number];
 export type BookingWindow = Hold["window"];
+
+/**
+ * The service a booking is for: its kind, and its code within the kind. Without a code, the API books the kind's
+ * standard service, and a move books its own visit's (docs/decisions/0085-services-ops-can-edit.md).
+ */
+export interface Wanted {
+  readonly type: BookableType;
+  readonly tier?: string;
+}
+
+/** A service's code, where one is named, and the visit moved, where there is one, as a query or a body takes them. */
+const serviceOf = (wanted: Wanted, moving: string | undefined) => ({
+  type: wanted.type,
+  ...(wanted.tier === undefined ? {} : { tier: wanted.tier }),
+  ...(moving === undefined ? {} : { moving }),
+});
 
 /** The codes the API refuses with, as its document writes them. */
 export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
@@ -119,10 +136,10 @@ export const api = {
   photos: () => client.get("/api/photos"),
   payments: () => client.get("/api/payments"),
   entry: (id: string) => client.get("/api/payments/{id}", { path: { id } }),
-  availability: (type: BookableType, moving?: string) =>
-    client.get("/api/availability", { query: { type, ...(moving === undefined ? {} : { moving }) } }),
-  hold: (type: BookableType, date: string, window: BookingWindow, moving?: string) =>
-    client.post("/api/holds", { body: { type, date, window, ...(moving === undefined ? {} : { moving }) } }),
+  availability: (wanted: Wanted, moving?: string) =>
+    client.get("/api/availability", { query: serviceOf(wanted, moving) }),
+  hold: (wanted: Wanted, date: string, window: BookingWindow, moving?: string) =>
+    client.post("/api/holds", { body: { ...serviceOf(wanted, moving), date, window } }),
   holdById: (id: string) => client.get("/api/holds/{id}", { path: { id } }),
   releaseHold: (id: string) => client.delete("/api/holds/{id}", { path: { id } }),
   /** `consents`: the photograph purposes whose lines the pay step showed, which the tap agrees to (ADR 0080). */

@@ -1,7 +1,8 @@
 ---
-// Published prices: the three-row table, the first-year example and payment.
-// The standard column and the example are the price book's; Premium's are the
-// owner's own (docs/decisions/0073-prices-from-the-price-book.md).
+// Published prices: the three-row table, the first-year example and payment,
+// all of them the price book's (docs/decisions/0073-prices-from-the-price-book.md).
+// Premium's column is built hidden and shown by mm-site's Worker once the book
+// prices a first fit coded premium (docs/decisions/0085-services-ops-can-edit.md).
 import { prices } from "../../content/site.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 
@@ -19,7 +20,7 @@ const [standard, premium] = prices.columns;
       <div class="column" role="columnheader">
         {standard}
       </div>
-      <div class="column" role="columnheader">
+      <div class="column" role="columnheader" data-premium hidden>
         {premium}
       </div>
     </div>
@@ -32,7 +33,7 @@ const [standard, premium] = prices.columns;
         <div class="amount" role="cell" data-price={priceTemplate(row.standard)}>
           {asBuilt(row.standard)}
         </div>
-        <div class="amount" role="cell" data-price={priceTemplate(row.premium)}>
+        <div class="amount" role="cell" data-price={priceTemplate(row.premium)} data-premium hidden>
           {asBuilt(row.premium)}
         </div>
       </div>
@@ -76,6 +77,10 @@ const [standard, premium] = prices.columns;
     align-items: baseline;
     padding: var(--price-row-pad) 0;
     border-bottom: var(--hairline) solid var(--paper-line);
+  }
+  /* Without Premium, the table is the standard column alone. */
+  .table:has([data-premium][hidden]) .row {
+    grid-template-columns: minmax(0, 1fr) var(--price-column);
   }
   .head {
     align-items: stretch;

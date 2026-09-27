@@ -147,8 +147,6 @@ export const messages = {
   lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,
   // PLACEHOLDER: a refund that has taken longer than Razorpay's working days.
   lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} has not arrived.`,
-  // PLACEHOLDER: the app books the standard tier only, until a client's tier is recorded (docs/open-points.md).
-  premium: (what: string) => `I would like to book a premium ${what.toLowerCase()}.`,
 } as const;
 
 export const home = {
@@ -278,6 +276,27 @@ export const visits = {
 /** Booking in the app (boards C2 to C6), while self-serve booking is on. */
 export const booking = {
   step: (n: number, of: number) => `Step ${String(n)} of ${String(of)}`,
+  /** How long a visit takes, as the choice of visit and the pay step say it: "3 hours", "1 hour 30 minutes". */
+  length: (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    const parts = [
+      hours === 0 ? "" : `${String(hours)} ${hours === 1 ? "hour" : "hours"}`,
+      rest === 0 ? "" : `${String(rest)} minutes`,
+    ];
+    return parts.filter((part) => part !== "").join(" ");
+  },
+  /**
+   * PLACEHOLDER: no board draws it. With more than one service open to them, the client chooses first: every one
+   * ops offer, a kind at a time, with how long it takes and what it costs (the owner's ruling of 27 September 2026,
+   * docs/decisions/0085-services-ops-can-edit.md). There is no message to send for any other.
+   */
+  service: {
+    title: "Pick a visit",
+    free: "Free",
+    incl: (amount: string) => `${amount} incl. GST`,
+    continue: "Continue",
+  },
   /**
    * PLACEHOLDER: no board draws it. A client who has given no address is asked for it before any slot (ADR 0079;
    * ADR 0025, item 60), under Profile's heading, "Where we come".
@@ -316,11 +335,7 @@ export const booking = {
     card: "Card",
     pay: (amount: string) => `Pay ${amount}`,
     neverHandlesMoney: (name: string) => `${name} never handles money.`,
-    firstFit: "First fit · standard",
-    firstFitBlock: "Two slots · 3 hours",
     guarantee: (name: string) => `If the fit is not right, ${name} stops and you are refunded in full.`,
-    // PLACEHOLDER: the app books the standard tier only, and a client measured for premium asks on WhatsApp.
-    premium: "Premium? Message us",
     // PLACEHOLDER: a free consultation has no payment; the design draws the credit board's button.
     free: "Free",
     confirm: "Confirm visit",

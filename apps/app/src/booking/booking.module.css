@@ -251,6 +251,24 @@
   color: var(--text-muted);
 }
 
+/*
+ * The visits to choose between, which no board draws (ADR 0085): each kind named as "Pay with" is, over its
+ * services drawn as the window step's rows. The first kind sits under the heading, as the windows do.
+ */
+.heading + .kind .label {
+  margin-top: 0;
+}
+
+.kind .windows {
+  margin-top: var(--sp-12);
+}
+
+/* A visit's price, where a window's note sits: the ex-GST figure, and the inclusive one muted beneath it. */
+.serviceMoney {
+  flex-shrink: 0;
+  text-align: right;
+}
+
 .regular {
   display: flex;
   align-items: center;
@@ -516,7 +534,7 @@
   border-left: var(--rule-strong) solid var(--error-on-paper);
 }
 
-/* Board C7's way to C8, and a first fit's way to ask for premium: quiet, and still a full target. */
+/* Board C7's way to C8: quiet, and still a full target. */
 .quiet {
   display: flex;
   align-items: center;

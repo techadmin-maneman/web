@@ -1,10 +1,13 @@
 // Booking in the app (boards C2 to C6) for the fitted client with an address of
 // e2e/app/booker.ts, against the local mm-api, with Razorpay faked
-// (e2e/app/checkout-fakes.ts): the address asked for first when there is none
-// (ADR 0079), and what booking also agrees to on the pay step (ADR 0080).
+// (e2e/app/checkout-fakes.ts): the visit picked first, since a service visit
+// and a replacement are both open to the client (ADR 0085); the address asked
+// for before the date when there is none (ADR 0079); and what booking also
+// agrees to on the pay step (ADR 0080).
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
+import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { expect, test } from "../support.ts";
 import { bookerClient } from "./booker.ts";
 import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
@@ -29,18 +32,82 @@ const LATE_FEE_LINE = "Moving inside 24 hours costs Rs. 4,000 (Rs. 4,720 incl. G
 
 type Hold = Record<string, unknown>;
 
-/** Opens the booking sheet from Visits. */
+/** A service ops added beside the service visit, which the local database does not hold, with GST as it will be. */
+const PREMIUM = {
+  type: "service",
+  tier: "premium",
+  name: "Premium service visit",
+  minutes: 120,
+  price: { amount_ex_gst: 300000, amount: 354000, gst_percent: 18 },
+};
+
+interface Offered {
+  readonly type: string;
+  readonly tier: string;
+}
+
+/**
+ * Passes one of the local mm-api's answers through, changed by `change`; `ask` changes the question first, where the
+ * local mm-api would refuse the page's own. Only the browser resolves app.localhost, so the answer is fetched from
+ * the app's server by its address, on the app's own host.
+ */
+async function passedThrough(
+  page: Page,
+  url: string | RegExp,
+  change: (answer: never, asked: URL) => unknown,
+  ask: (asked: URL) => URL = (asked) => asked,
+) {
+  await page.route(url, async (route) => {
+    const asked = new URL(route.request().url());
+    const sent = ask(new URL(asked));
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}${sent.pathname}${sent.search}`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    await route.fulfill({ response: answer, json: change((await answer.json()) as never, asked) });
+  });
+}
+
+/** The services open to the client, as `change` makes them from the booker's two. Signed out, Home is a refusal. */
+async function servicesAs(page: Page, change: (open: Offered[]) => unknown[]): Promise<void> {
+  await passedThrough(page, "**/api/me", (me: { booking?: { services: Offered[] } }) =>
+    me.booking === undefined ? me : { ...me, booking: { ...me.booking, services: change(me.booking.services) } },
+  );
+}
+
+/** Opens the booking sheet from Visits, on its first step: the visit to pick. */
 async function openSheet(page: Page): Promise<void> {
   await logIn(page, bookerClient().mobile);
   await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
   await page.getByRole("button", { name: "Book your next visit" }).click();
 }
 
+/** Picks a visit on the sheet's first step, and goes on. */
+async function pickVisit(page: Page, name = /^Service visit/): Promise<void> {
+  const visits = page.getByRole("dialog", { name: "Pick a visit" });
+  await visits.getByRole("radio", { name }).check();
+  await visits.getByRole("button", { name: "Continue" }).click();
+}
+
+/** Logs in and picks a service visit, as far as the date step. */
+async function toDates(page: Page): Promise<void> {
+  await openSheet(page);
+  await pickVisit(page);
+}
+
+/** From the date step, the first free day and a free window, as far as the pay step. */
+async function datesToPayment(page: Page): Promise<void> {
+  const dates = page.getByRole("dialog", { name: "Pick a date" });
+  await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
+  await dates.getByRole("button", { name: "Continue" }).click();
+  await continueToPayment(page);
+}
+
 /** Logs in and picks the first free day, as far as the window step. */
 async function toWindows(page: Page): Promise<void> {
-  await openSheet(page);
+  await toDates(page);
   const sheet = page.getByRole("dialog", { name: "Pick a date" });
-  await expect(sheet.getByText("Step 1 of 3")).toBeVisible();
+  await expect(sheet.getByText("Step 2 of 4")).toBeVisible();
   await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
   await sheet.getByRole("button", { name: "Continue" }).click();
 }
@@ -119,6 +186,7 @@ async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
     last = {
       id: crypto.randomUUID(),
       type: asked.type,
+      service: { tier: "standard", name: "Service visit", minutes: 90 },
       date: asked.date,
       window: asked.window,
       starts_at: `${asked.date}T06:30:00.000Z`,
@@ -265,8 +333,10 @@ test("asks a client with no address for it first, then books", async ({ page }) 
     return reads === 1 ? route.fulfill({ json: profileOf({ address: false }) }) : route.fallback();
   });
   await openSheet(page);
+  await expect(page.getByRole("dialog", { name: "Pick a visit" }).getByText("Step 1 of 5")).toBeVisible();
+  await pickVisit(page);
   const where = page.getByRole("dialog", { name: "Where we come" });
-  await expect(where.getByText("Step 1 of 4")).toBeVisible();
+  await expect(where.getByText("Step 2 of 5")).toBeVisible();
   await expect(where.getByText("Your address first, so we know where to come. Then pick a date.")).toBeVisible();
   await scanOf(page);
   await where.getByLabel("Building, society or street").fill("House 4417, Tower C");
@@ -276,18 +346,18 @@ test("asks a client with no address for it first, then books", async ({ page }) 
   await where.getByRole("button", { name: "Save and continue" }).click();
 
   const dates = page.getByRole("dialog", { name: "Pick a date" });
-  await expect(dates.getByText("Step 2 of 4")).toBeVisible();
+  await expect(dates.getByText("Step 3 of 5")).toBeVisible();
   await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
   await dates.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("dialog", { name: "Pick a window" }).getByText("Step 3 of 4")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Pick a window" }).getByText("Step 4 of 5")).toBeVisible();
   await continueToPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
 });
 
-test("takes a client who has given their address straight to the date, as board C2 draws it", async ({ page }) => {
-  await openSheet(page);
-  await expect(page.getByRole("dialog", { name: "Pick a date" }).getByText("Step 1 of 3")).toBeVisible();
+test("takes a client who has given their address from the visit straight to the date", async ({ page }) => {
+  await toDates(page);
+  await expect(page.getByRole("dialog", { name: "Pick a date" }).getByText("Step 2 of 4")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Where we come" })).toHaveCount(0);
 });
 
@@ -344,15 +414,97 @@ test("shows only the line of a purpose still undecided, and sends only that one"
   await expect.poll(() => sent).toMatchObject([{ consents: ["photos_own_record"] }]);
 });
 
-test("offers the standard tier, and a way to ask for premium on WhatsApp", async ({ page }) => {
-  await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: LATE_FEE });
+// The owner's ruling of 27 September 2026 (ADR 0085): "Clients should see all the available options. There should
+// be no message us for anything."
+test("offers every visit open to the client, a kind at a time, each with how long it takes and what it costs", async ({
+  page,
+}) => {
+  await openSheet(page);
+  const visits = page.getByRole("dialog", { name: "Pick a visit" });
+  await expect(visits.getByText("Step 1 of 4")).toBeVisible();
+  await expect(visits.getByRole("heading", { level: 3 })).toHaveText(["Service visit", "Replacement piece"]);
+  const service = visits.getByRole("radiogroup", { name: "Service visit" });
+  await expect(service.getByRole("radio")).toHaveCount(1);
+  await expect(service).toContainText("1 hour 30 minutes");
+  await expect(service).toContainText("Rs. 2,000");
+  const replacement = visits.getByRole("radiogroup", { name: "Replacement piece" });
+  await expect(replacement.getByRole("radio", { name: /^Replacement/ })).toBeVisible();
+  await expect(replacement).toContainText("2 hours 15 minutes");
+  await expect(replacement).toContainText("Rs. 15,000");
+  await expect(visits.getByRole("button", { name: "Continue" })).toBeDisabled();
+  await expect(visits.getByRole("link")).toHaveCount(0);
+});
+
+test("books a visit ops added beside the standard one, and names it on the pay step", async ({ page }) => {
+  await servicesAs(page, (open) =>
+    open.flatMap((each) => (each.type === "service" && each.tier === "standard" ? [each, PREMIUM] : [each])),
+  );
+  // The local database holds no premium service, so its days are the service visit's, under its own name.
+  const asked: string[] = [];
+  await passedThrough(
+    page,
+    /\/api\/availability\?/,
+    (days: Record<string, unknown>, url) => {
+      asked.push(url.searchParams.get("tier") ?? "");
+      return url.searchParams.get("tier") === "premium" ? { ...days, service: PREMIUM, price: PREMIUM.price } : days;
+    },
+    (url) => {
+      url.searchParams.delete("tier");
+      return url;
+    },
+  );
+  const held: unknown[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/api/holds")) held.push(request.postDataJSON());
+  });
+  await holdAs(page, { service: { tier: "premium", name: PREMIUM.name, minutes: 120 }, price: PREMIUM.price });
+
+  await openSheet(page);
+  const visits = page.getByRole("dialog", { name: "Pick a visit" });
+  const premium = visits.getByRole("radiogroup", { name: "Service visit" }).getByRole("radio", { name: /^Premium/ });
+  await expect(premium).toBeVisible();
+  await expect(visits.getByText("2 hours", { exact: true })).toBeVisible();
+  await expect(visits.getByText("Rs. 3,540 incl. GST")).toBeVisible();
+  await scanOf(page);
+  await pickVisit(page, /^Premium service visit/);
+  await datesToPayment(page);
+
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(pay.getByText("Premium service visit", { exact: true })).toBeVisible();
+  await expect(pay.getByText("Rs. 3,000", { exact: true })).toBeVisible();
+  expect(asked).toContain("premium");
+  expect(held).toMatchObject([{ type: "service", tier: "premium" }]);
+});
+
+test("goes straight to the date when only one visit is open to the client", async ({ page }) => {
+  await servicesAs(page, (open) => open.filter((each) => each.type === "service"));
+  const held: unknown[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/api/holds")) held.push(request.postDataJSON());
+  });
+  await holdAs(page, {});
+  await openSheet(page);
+  await expect(page.getByRole("dialog", { name: "Pick a date" }).getByText("Step 1 of 3")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pick a visit" })).toHaveCount(0);
+  await datesToPayment(page);
+  expect(held).toMatchObject([{ type: "service", tier: "standard" }]);
+});
+
+test("names a first fit's service and how long it takes, and sends no one to WhatsApp for another", async ({
+  page,
+}) => {
+  await holdAs(page, {
+    type: "first_fit",
+    service: { tier: "standard", name: "First fit", minutes: 180 },
+    price: FIRST_FIT,
+    late_fee: LATE_FEE,
+  });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText("First fit · standard")).toBeVisible();
-  await expect(pay.getByRole("link", { name: "Premium? Message us" })).toHaveAttribute(
-    "href",
-    /^https:\/\/wa\.me\/919007973247\?text=.*premium%20first%20fit/,
-  );
+  await expect(pay.getByText("First fit", { exact: true })).toBeVisible();
+  await expect(pay.getByText("3 hours", { exact: true })).toBeVisible();
+  await expect(pay.getByText("Premium? Message us")).toHaveCount(0);
+  await expect(pay.locator('a[href*="wa.me"]')).toHaveCount(0);
 });
 
 test("writes a first fit's late fee ex-GST, with the inclusive figure beside it", async ({ page }) => {
@@ -605,6 +757,9 @@ test("takes focus to each step's heading as the sheet moves on", async ({ page }
   await fakeCheckout(page, "paid");
   await openSheet(page);
   const sheet = page.getByRole("dialog");
+  await sheet.getByRole("radio", { name: /^Service visit/ }).check();
+  await sheet.getByRole("button", { name: "Continue" }).click();
+  await expect(sheet.getByRole("heading", { name: "Pick a date" })).toBeFocused();
   await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
   await sheet.getByRole("button", { name: "Continue" }).click();
   await expect(sheet.getByRole("heading", { name: "Pick a window" })).toBeFocused();
@@ -612,9 +767,21 @@ test("takes focus to each step's heading as the sheet moves on", async ({ page }
   await expect(sheet.getByRole("heading", { name: "Pay and confirm" })).toBeFocused();
 });
 
-test("makes the days, the windows and the ways to pay one tab stop each, with arrow keys between", async ({ page }) => {
+test("makes the visits, days, windows and ways to pay one tab stop each, with arrow keys between", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await openSheet(page);
+  // One choice among every kind's visits, so the arrow keys cross from one kind to the next.
+  const visits = page.getByRole("dialog", { name: "Pick a visit" }).getByRole("radio");
+  await visits.first().click();
+  await page.keyboard.press("ArrowDown");
+  await expect(visits.nth(1)).toBeChecked();
+  await expect(visits.nth(1)).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(visits.first()).toBeChecked();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Continue" })).toBeFocused();
+  await page.keyboard.press("Enter");
+
   const dates = page.getByRole("dialog", { name: "Pick a date" }).getByRole("radio").and(page.locator(":enabled"));
   await dates.first().click();
   await page.keyboard.press("ArrowRight");
@@ -634,7 +801,7 @@ test("makes the days, the windows and the ways to pay one tab stop each, with ar
 
 test("fits all fourteen days on a 320 px screen", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await openSheet(page);
+  await toDates(page);
   const sheet = page.getByRole("dialog", { name: "Pick a date" });
   const strip = await sheet.getByRole("radiogroup").boundingBox();
   const rights = await sheet
@@ -645,7 +812,7 @@ test("fits all fourteen days on a 320 px screen", async ({ page }) => {
 });
 
 test("has a Close anyone can see, a full target, ringed in paper on the ground it stands on", async ({ page }) => {
-  await openSheet(page);
+  await toDates(page);
   const sheet = page.getByRole("dialog", { name: "Pick a date" });
   const close = sheet.getByRole("button", { name: "Close" });
   await expect(close).toBeVisible();
@@ -711,6 +878,13 @@ test.describe("with motion, as most phones have it", () => {
     page,
   }) => {
     await openSheet(page);
+    const visits = page.getByRole("dialog", { name: "Pick a visit" });
+    await expect(visits).toBeVisible();
+    await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
+    await scanOf(page);
+    await expect.poll(() => visits.evaluate((sheet) => sheet.contains(document.activeElement))).toBe(true);
+
+    await pickVisit(page);
     const dates = page.getByRole("dialog", { name: "Pick a date" });
     await expect(dates).toBeVisible();
     await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
@@ -731,6 +905,9 @@ test("each booking step meets WCAG 2.2 AA", async ({ page }) => {
   const scan = () => scanOf(page);
   await fakeCheckout(page, "paid");
   await openSheet(page);
+  await expect(page.getByRole("dialog", { name: "Pick a visit" })).toBeVisible();
+  await scan();
+  await pickVisit(page);
   await expect(page.getByRole("dialog", { name: "Pick a date" })).toBeVisible();
   await scan();
   await page.getByRole("dialog").getByRole("radio").and(page.locator(":enabled")).first().click();

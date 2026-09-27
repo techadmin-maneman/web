@@ -5,7 +5,9 @@
 // Closed before paying, the hold is let go. Moving a visit (board C7) takes the
 // same steps, with its own technician and at what the move costs.
 //
-// A client who has given no address is asked for it first, since no slot is
+// With more than one service open to them, a client picks theirs first, from
+// every one ops offer (docs/decisions/0085-services-ops-can-edit.md). A client
+// who has given no address is asked for it before the date, since no slot is
 // held without one (ADR 0079). The pay step of a new visit says what booking
 // also agrees to, and its tap sends that on (ADR 0080).
 //
@@ -23,7 +25,9 @@ import {
   type BookingWindow,
   type Hold,
   type MoveTerms,
+  type OfferedService,
   type Profile,
+  type Wanted,
 } from "../api.ts";
 import { booking } from "../content.ts";
 import { focusIfLost } from "../lib/arrival.ts";
@@ -39,6 +43,7 @@ import {
   LoadingStep,
   paysNothing,
   PayStep,
+  ServiceStep,
   TITLE_ID,
   WaitStep,
   WindowStep,
@@ -49,6 +54,8 @@ type Step =
   | { readonly kind: "loading" }
   /** No address yet (ADR 0079). `refused`: the API refused a hold for want of one. */
   | { readonly kind: "address"; readonly refused: boolean }
+  /** More than one service is open to the client, and they pick one (ADR 0085). */
+  | { readonly kind: "service" }
   | { readonly kind: "date" }
   | { readonly kind: "window" }
   | { readonly kind: "pay"; readonly hold: Hold }
@@ -69,12 +76,25 @@ const POLL_FOR_MS = 60_000;
 const remindersOn = (profile: Profile) =>
   profile.consents.some((consent) => consent.purpose === "whatsapp_visits" && consent.granted);
 
+/**
+ * What a sheet with nothing to pick books: the one service open to the client, or else the kind's standard one;
+ * for a move, its visit's own, which the API knows.
+ */
+function onlyOne(type: BookableType, services: readonly OfferedService[], moving: MoveTerms | undefined): Wanted {
+  const [only] = services;
+  return moving === undefined && only !== undefined ? { type: only.type, tier: only.tier } : { type };
+}
+
 export function BookingSheet({
   type,
+  services = [],
   moving,
   onClose,
 }: {
+  /** The kind booked when there is nothing to pick: a move's own, or the one open to the client. */
   type: BookableType;
+  /** Every service open to the client, a kind at a time; with more than one, the client picks theirs first. */
+  services?: readonly OfferedService[];
   /** The visit being moved, and what moving it costs. */
   moving?: MoveTerms;
   /** `changed`: money moved or a visit was booked, so Home is out of date. */
@@ -83,6 +103,10 @@ export function BookingSheet({
   const movingId = moving?.visit_id;
   const dialog = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<Step>({ kind: "loading" });
+  // A new visit with more than one service open to it is picked first; anything else books the one there is.
+  const picking = moving === undefined && services.length > 1;
+  const [wanted, setWanted] = useState<Wanted | null>(() => (picking ? null : onlyOne(type, services, moving)));
+  const [picked, setPicked] = useState<OfferedService | null>(null);
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [date, setDate] = useState<string | null>(null);
   const [chosenWindow, setChosenWindow] = useState<BookingWindow | null>(null);
@@ -92,8 +116,10 @@ export function BookingSheet({
   /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
   const [reminders, setReminders] = useState<boolean | null>(null);
   const [remind, setRemind] = useState(false);
-  // True once the sheet has asked for the address, which makes its steps four rather than the boards' three.
+  // True once the sheet knows it asks for the address before the date, which adds a step to the boards' three.
   const [addressFirst, setAddressFirst] = useState(false);
+  // The profile had no address when it was last read, so the address comes before the date.
+  const addressMissing = useRef(false);
   /** The photograph purposes the client has never decided on, which booking a new visit also agrees to. */
   const [undecided, setUndecided] = useState<readonly BookingConsent[]>([]);
   // True once the client has paid, or booked without paying, so Home is fetched again when the sheet closes.
@@ -109,28 +135,54 @@ export function BookingSheet({
     setStep({ kind: "address", refused });
   };
 
-  const load = useCallback(async () => {
-    setStep({ kind: "loading" });
-    const [answer, profile] = await Promise.all([api.availability(type, movingId), api.profile()]);
-    if (!answer.ok) {
-      setStep({ kind: "broken" });
-      return;
-    }
-    setReminders(profile.ok ? remindersOn(profile.body) : null);
-    setUndecided(profile.ok ? undecidedOf(profile.body) : []);
-    setAvailability(answer.body);
+  /** The days of the visit wanted, and the step after them: the address if there is none yet, else the date. */
+  const showDays = (days: Availability) => {
+    setAvailability(days);
     setDate(null);
     setChosenWindow(null);
-    if (profile.ok && profile.body.address === null) {
-      askForAddress(false);
-      return;
-    }
-    setStep({ kind: "date" });
-  }, [type, movingId]);
+    if (addressMissing.current) askForAddress(false);
+    else setStep({ kind: "date" });
+  };
+
+  /**
+   * Reads the profile, and the days of the visit wanted once there is one, and goes to the first step still to take:
+   * picking the visit, the address, or the date.
+   */
+  const load = useCallback(
+    async (visit: Wanted | null) => {
+      setStep({ kind: "loading" });
+      const [answer, profile] = await Promise.all([
+        visit === null ? null : api.availability(visit, movingId),
+        api.profile(),
+      ]);
+      if (answer !== null && !answer.ok) {
+        setStep({ kind: "broken" });
+        return;
+      }
+      setReminders(profile.ok ? remindersOn(profile.body) : null);
+      setUndecided(profile.ok ? undecidedOf(profile.body) : []);
+      addressMissing.current = profile.ok && profile.body.address === null;
+      // Known now, so the step that picks the visit counts the address among the steps to come.
+      if (addressMissing.current) setAddressFirst(true);
+      if (answer === null) setStep({ kind: "service" });
+      else showDays(answer.body);
+    },
+    [movingId],
+  );
 
   useEffect(() => {
-    void load();
+    void load(wanted);
   }, [load]);
+
+  /** The client has picked their visit: its days, the profile already read. */
+  const pick = async (service: OfferedService) => {
+    const visit = { type: service.type, tier: service.tier };
+    setWanted(visit);
+    setStep({ kind: "loading" });
+    const answer = await api.availability(visit, movingId);
+    if (answer.ok) showDays(answer.body);
+    else setStep({ kind: "broken" });
+  };
 
   // Each step's heading takes the focus the last step's button took with it.
   useEffect(() => {
@@ -190,15 +242,15 @@ export function BookingSheet({
   const close = () => dialog.current?.close();
 
   const holdWindow = async () => {
-    if (date === null || chosenWindow === null) return;
+    if (wanted === null || date === null || chosenWindow === null) return;
     setBusy(true);
     setProblem(null);
-    const answer = await api.hold(type, date, chosenWindow, movingId);
+    const answer = await api.hold(wanted, date, chosenWindow, movingId);
     setBusy(false);
     if (answer.ok) setStep({ kind: "pay", hold: answer.body });
     else if (answer.code === "taken") {
       setProblem(booking.window.taken);
-      const fresh = await api.availability(type, movingId);
+      const fresh = await api.availability(wanted, movingId);
       if (fresh.ok) setAvailability(fresh.body);
       setChosenWindow(null);
     } else if (answer.code === "address_required") askForAddress(true);
@@ -262,6 +314,8 @@ export function BookingSheet({
   };
 
   const day = availability?.days.find((each) => each.date === date);
+  // The steps before the date, each of which puts the date and the window one step later.
+  const before = (picking ? 1 : 0) + (addressFirst ? 1 : 0);
   return (
     <Sheet
       ref={dialog}
@@ -282,10 +336,23 @@ export function BookingSheet({
       <div className={styles.sheet}>
         {step.kind === "loading" && <LoadingStep />}
         {step.kind === "broken" && <WaitStep text={booking.failedToStart} onClose={close} />}
-        {step.kind === "address" && <AddressStep refused={step.refused} onSaved={() => void load()} />}
+        {step.kind === "service" && (
+          <ServiceStep
+            before={before}
+            services={services}
+            chosen={picked}
+            onChoose={setPicked}
+            onNext={() => {
+              if (picked !== null) void pick(picked);
+            }}
+          />
+        )}
+        {step.kind === "address" && (
+          <AddressStep refused={step.refused} before={before} onSaved={() => void load(wanted)} />
+        )}
         {step.kind === "date" && availability !== null && (
           <DateStep
-            addressFirst={addressFirst}
+            before={before}
             days={availability.days}
             chosen={date}
             onChoose={setDate}
@@ -296,7 +363,7 @@ export function BookingSheet({
         )}
         {step.kind === "window" && day !== undefined && availability !== null && (
           <WindowStep
-            addressFirst={addressFirst}
+            before={before}
             day={day}
             regular={availability.regular}
             chosen={chosenWindow}
@@ -333,7 +400,7 @@ export function BookingSheet({
             }}
           />
         )}
-        {step.kind === "expired" && <ExpiredStep onPickAgain={() => void load()} />}
+        {step.kind === "expired" && <ExpiredStep onPickAgain={() => void load(wanted)} />}
         {step.kind === "confirming" && <WaitStep text={step.paidIn === true ? booking.paidIn : booking.confirming} />}
         {step.kind === "confirmed" && (
           <ConfirmedStep hold={step.hold} moved={moving !== undefined} reminded={reminders === true} onDone={close} />
