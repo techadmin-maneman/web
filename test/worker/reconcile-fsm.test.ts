@@ -4,7 +4,7 @@ import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts"
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmAppointment } from "../../src/providers/fsm.ts";
 import { PAGE_SIZE, reconcileFsm, UPCOMING_PER_RUN } from "../../src/scheduled/reconcile-fsm.ts";
-import { fakeDependencies, fakeQueue } from "./helpers.ts";
+import { captureLogs, fakeDependencies, fakeQueue } from "./helpers.ts";
 
 /** 11:30 am in India: no nightly pass. */
 const DAY = new Date("2026-09-22T06:00:00Z");
@@ -130,6 +130,39 @@ describe("the reconciliation, overnight", () => {
     const { summary, deps } = run([fsmAppointment("ap-1", "2026-09-23T01:28:00+05:30")], NIGHT);
     expect((await summary).queued).toBe(1);
     expect(deps.alerts).toEqual([]);
+  });
+
+  // With the night's first page comes FSM's technician list (ADR 0052). One it no longer names is stopped, and
+  // the log says who; one written by hand for a test on staging was never FSM's to name (migration 0046).
+  it("reads the technician list once a night, stops one FSM no longer lists, and logs whom it stopped", async () => {
+    await env.DB.prepare(
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, hand_written)
+       VALUES ('t-left', 'resource-1', 'Vikram Sethi', 'VS', 1, ?1, 0),
+              ('t-tester', 'tech-tester-1a2b3c4d', 'Test Technician', 'TT', 1, ?1, 1)`,
+    )
+      .bind(NIGHT.toISOString())
+      .run();
+    const logs = captureLogs();
+    const naveen = { id: "resource-9", userId: "user-9", name: "Naveen Rao", active: true, mobile: null, zone: null };
+    const deps = fakeDependencies({ fsm: createStubFsm({ ...EMPTY_FSM, technicians: [naveen] }), now: () => NIGHT });
+
+    const summary = await reconcileFsm(
+      { DB: env.DB, FSM_QUEUE: fakeQueue() },
+      deps,
+      createLogger(),
+      createCallBudget(Infinity),
+    );
+
+    expect(summary.nightPage).toBe(1);
+    const rows = await env.DB.prepare("SELECT fsm_id, active FROM technicians ORDER BY fsm_id").all();
+    expect(rows.results).toEqual([
+      { fsm_id: "resource-1", active: 0 },
+      { fsm_id: "resource-9", active: 1 },
+      { fsm_id: "tech-tester-1a2b3c4d", active: 1 },
+    ]);
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "technicians_deactivated", count: 1, fsm_ids: ["resource-1"] }),
+    );
   });
 
   it("starts a fresh pass the next night", async () => {

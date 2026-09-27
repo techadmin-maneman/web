@@ -27,17 +27,19 @@ Two of those three jobs are there for a reason. Today's and tomorrow's carry the
 
 ---
 
-## Does this need a Zoho FSM user? No.
+## Does this need a Zoho FSM user? Not for this test.
 
-You have been told that open point 27 — every technician needs an FSM user **with his mobile number on it** — blocks the technician app, and that only you can create one in Zoho. For production that is still true. **For this test it is not, and it never was.**
+You have been told that open point 27 — every technician needs an FSM user **with his mobile number on it** — blocks the technician app, and that only you can create one in Zoho. For production that is still true. **For this test it is not.**
 
 The sign-in reads one table in our own database, `technicians`, and nothing else. Its query is `WHERE mobile_e164 = ? AND active = 1` (`src/domain/technicians.ts`). FSM is asked only when that comes back empty, and then only as a refresh, so that a technician you added to FSM this morning does not have to wait for tonight's reconciliation (`src/routes/tech-auth.ts`). With a row already there, **no call to Zoho is made at all**.
 
 That is not a reading of the code; it was done. The technician above was written straight into staging's database with no Zoho record behind him, and the code request answered `202` and the code went out on WhatsApp.
 
-What the FSM user is really for is **how the row gets there in the ordinary way**. The mirror copies each technician's name, whether he is active, his territory and his mobile number out of FSM's user records, and in production that is the only thing that writes them. So open point 27 stands for production and for any technician other than this test one — but it does not stand between you and this test.
+**From 25 September 2026 FSM's list did decide whether that row stayed active.** Each read of FSM's technician list — the nightly reconciliation, or anybody's sign-in with a number the mirror did not know — made inactive every technician the list leaves out (ADR 0065). FSM lists only your own user, so the first such read would switch the test technician off. From then on the sign-in finds nobody on your number, answers as it always does, and sends nothing, while the screen still says a code is on its way: the likely reason your code stopped arriving. **Since 27 September 2026 a technician written by hand is marked so** (`hand_written`, migration 0046), and the list leaves him alone. A test technician switched off before then stays off: have it cleared and laid again ("When you are finished", below).
 
-One thing to watch, and the reason the test technician should be cleared when you are done: if you later put your own number on your own FSM user, the mirror will write a **second** technician row carrying the same number, and the sign-in takes whichever row it finds first. Clear the test technician before that happens.
+What the FSM user is really for is **how the row gets there in the ordinary way**. The mirror copies each technician's name, whether he is active, his territory and his mobile number out of FSM's user records, and in production that is the only thing that writes them. **It is also the supported way for you from now on:** put your own mobile number on your own FSM user (open point 27), and the mirror lists you as it will list every real technician.
+
+One thing to watch, and the reason the test technician should be cleared first: once your own FSM user carries your number, the mirror writes a **second** technician row with the same number, and the sign-in takes whichever row it finds first. The list no longer switches the test technician off, so nothing settles that for you. Clear the test technician before your number goes on your FSM user.
 
 ---
 
@@ -116,9 +118,11 @@ Work down this list. Most of it you can check yourself.
    Ask for another code while that is running. The line to look for names the event:
 
    - `login_code_sent` — the code went out, and the problem is between the provider and the handset.
-   - `login_code_skipped` — your number is not on staging's `MESSAGING_ALLOWLIST` after all, and the runbook's step 7 puts it there.
+   - `login_code_not_sent`, reason "number not on the allowlist" — your number is not on staging's `MESSAGING_ALLOWLIST` after all, and the runbook's step 7 puts it there.
    - `login_code_failed` — the WhatsApp provider refused it, and the line says why.
-   - **nothing at all** — the number does not match a technician in staging. The sign-in deliberately answers the same whether it knows a number or not, so the screen will never tell you this; the log is the only place it shows.
+   - `login_code_not_sent`, reason "no account holds the number" — no active technician in staging has your number: the test technician is not there, or was switched off before 27 September 2026 (above). The sign-in deliberately answers the same whether it knows a number or not, so the screen will never tell you this; the log is the only place it shows. A read of FSM's list that switches technicians off logs `technicians_deactivated`, with the FSM ID of each.
+
+   Before 27 September 2026 the second of these was `login_code_skipped`, and the last wrote nothing at all.
 
 **Do not ask anyone to read the code out of the database.** It is not stored — only a hash of it is, and that is the point.
 
@@ -144,7 +148,7 @@ Then have a developer take the fixture out of staging, which removes the technic
 TECH_TESTER_MOBILE=<your ten digits> node scripts/seed-technician-tester.ts --clear
 ```
 
-The same script lays it again, without `--clear`, when you want another run or the dates have gone stale. It takes the number from the environment and never writes it down, which is why it is not in the command above.
+The same script lays it again, without `--clear`, once the old one is cleared: when you want another run, when the dates have gone stale, or when the test technician was switched off before 27 September 2026. It refuses while any technician holds your number. It takes the number from the environment and never writes it down, which is why it is not in the command above.
 
 ---
 

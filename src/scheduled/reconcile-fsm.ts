@@ -20,7 +20,7 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
 import type { FsmAppointment } from "../providers/fsm.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import { syncTechnicians } from "../domain/fsm-mirror.ts";
+import { logDeactivated, syncTechnicians } from "../domain/fsm-mirror.ts";
 import { PHOTOS_PER_VISIT } from "../domain/visit-photos.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
@@ -77,10 +77,11 @@ export async function reconcileFsm(
     // The technician list, once a night: who FSM still lists as active, the number
     // each logs in with and his territory (docs/decisions/0052-technician-sessions.md).
     if (nightPage === 1 && budget.spend(1)) {
-      await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
+      const deactivated = await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
         log.warn("technician_sync_failed", { error });
-        return 0;
+        return [];
       });
+      logDeactivated(log, deactivated);
     }
   }
 

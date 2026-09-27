@@ -6,6 +6,7 @@
 import { visitTypeOfService, type VisitType } from "../config/visit-types.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { initialsOf } from "../lib/names.ts";
+import type { Logger } from "../log.ts";
 import type { FsmAppointment, FsmProvider } from "../providers/fsm.ts";
 import { minutesBetween } from "../lib/durations.ts";
 
@@ -32,6 +33,8 @@ export interface SyncResult {
   readonly appointmentId: string | null;
   /** The appointment's status as written; null when it is gone. */
   readonly status: AppointmentStatus | null;
+  /** FSM IDs of the technicians made inactive when the appointment named one new to us and the list was read again. */
+  readonly techniciansDeactivated: readonly string[];
 }
 
 /** Reads one appointment from FSM and makes the mirror match it. */
@@ -45,12 +48,12 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
       )
       .bind(fsmId, at)
       .first<{ id: string }>();
-    return { outcome: "gone", appointmentId: existing?.id ?? null, status: null };
+    return { outcome: "gone", appointmentId: existing?.id ?? null, status: null, techniciansDeactivated: [] };
   }
 
   const personId = appointment.contactId === null ? null : await personFor(db, fsm, appointment.contactId, at);
   const leadTechnician = appointment.technicianIds[0];
-  const technicianId = leadTechnician === undefined ? null : await technicianFor(db, fsm, leadTechnician, at);
+  const lead = leadTechnician === undefined ? null : await technicianFor(db, fsm, leadTechnician, at);
   const type = await visitTypeOf(db, fsm, appointment.serviceIds, at);
 
   const existing = await db
@@ -86,7 +89,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         type,
         utc(appointment.scheduledStart),
         utc(appointment.scheduledEnd),
-        technicianId,
+        lead?.id ?? null,
         status,
         appointment.status,
         appointment.serviceCity,
@@ -122,7 +125,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
     );
   }
   await db.batch(statements);
-  return { outcome: "written", appointmentId: id, status };
+  return { outcome: "written", appointmentId: id, status, techniciansDeactivated: lead?.deactivated ?? [] };
 }
 
 /** An instant as UTC, as every other time in D1 is kept. FSM sends India's offset. */
@@ -206,14 +209,22 @@ async function personFor(db: D1Database, fsm: FsmProvider, contactId: string, at
   return id;
 }
 
-/** Our technician for an FSM service resource, refreshing the list from FSM when it is new to us. */
-async function technicianFor(db: D1Database, fsm: FsmProvider, fsmId: string, at: string): Promise<string | null> {
+/**
+ * Our technician for an FSM service resource, refreshing the list from FSM when it is new to us, with the FSM IDs
+ * that refresh made inactive.
+ */
+async function technicianFor(
+  db: D1Database,
+  fsm: FsmProvider,
+  fsmId: string,
+  at: string,
+): Promise<{ id: string | null; deactivated: string[] }> {
   const known = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
-  if (known !== null) return known.id;
+  if (known !== null) return { id: known.id, deactivated: [] };
 
-  await syncTechnicians(db, fsm, at);
+  const deactivated = await syncTechnicians(db, fsm, at);
   const found = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
-  return found?.id ?? null;
+  return { id: found?.id ?? null, deactivated };
 }
 
 /**
@@ -223,14 +234,19 @@ async function technicianFor(db: D1Database, fsm: FsmProvider, fsmId: string, at
  *
  * FSM's list leaves out a user whose service resource was removed, so a
  * technician missing from it is one FSM no longer lists at all, and is made
- * inactive here too (ADR 0052). An empty list is taken as a failed read, never
- * as an org with nobody in it, and changes nothing.
+ * inactive here too (ADR 0052). A technician written by hand into staging's
+ * database for a test (`hand_written`, migration 0046) was never FSM's to list,
+ * so his absence from the list says nothing, and he is left alone. An empty list
+ * is taken as a failed read, never as an org with nobody in it, and changes
+ * nothing.
+ *
+ * Answers the FSM IDs of the technicians it made inactive, for the caller to log.
  */
-export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: string): Promise<number> {
+export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: string): Promise<string[]> {
   const technicians = await fsm.technicians();
-  if (technicians.length === 0) return 0;
+  if (technicians.length === 0) return [];
   const listed = JSON.stringify(technicians.map((technician) => technician.id));
-  await db.batch([
+  const results = await db.batch<{ fsm_id: string }>([
     ...technicians.map((technician) =>
       db
         .prepare(
@@ -254,11 +270,20 @@ export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: stri
     db
       .prepare(
         `UPDATE technicians SET active = 0, updated_at = ?2
-         WHERE active = 1 AND fsm_id NOT IN (SELECT value FROM json_each(?1))`,
+         WHERE active = 1 AND hand_written = 0 AND fsm_id NOT IN (SELECT value FROM json_each(?1))
+         RETURNING fsm_id`,
       )
       .bind(listed, at),
   ]);
-  return technicians.length;
+  return (results.at(-1)?.results ?? []).map((row) => row.fsm_id);
+}
+
+/**
+ * The one line each caller of syncTechnicians writes when it made anyone inactive, so a technician who can no
+ * longer sign in can be traced to the read that stopped him. FSM's IDs only: never a name or a number.
+ */
+export function logDeactivated(log: Logger, fsmIds: readonly string[]): void {
+  if (fsmIds.length > 0) log.info("technicians_deactivated", { count: fsmIds.length, fsm_ids: fsmIds });
 }
 
 /** The visit type of the first of an appointment's services that is one of ours. */

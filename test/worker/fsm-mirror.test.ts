@@ -4,7 +4,16 @@ import { statusOf, syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, type FsmAppointment, type FsmProvider, type StubFsmWorld } from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
-import { LOCAL_SETTINGS, NOW, appFor, fakeDependencies, fakeQueue, markDatabase, request } from "./helpers.ts";
+import {
+  LOCAL_SETTINGS,
+  NOW,
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  request,
+} from "./helpers.ts";
 
 const appointment = (overrides: Partial<FsmAppointment> = {}): FsmAppointment => ({
   id: "ap-1",
@@ -317,6 +326,38 @@ describe("the fsm-sync queue", () => {
     const nextNight = batchOf([{ fsm_id: "ap-1", request_id: "reconcile" }], 5);
     await handleFsmSyncBatch(nextNight as unknown as MessageBatch, env, deps, createLogger());
     expect(deps.alerts).toHaveLength(1);
+  });
+
+  // An appointment naming a technician new to the mirror reads FSM's list again, and that read stops anyone the
+  // list no longer names, as the sign-in's and the night's do; the line says who. One written by hand is left alone.
+  it("logs whom a read of the technician list stopped, and leaves a technician written by hand alone", async () => {
+    await env.DB.prepare(
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, hand_written)
+       VALUES ('t-left', 'sr-gone', 'Vikram Sethi', 'VS', 1, ?1, 0),
+              ('t-tester', 'tech-tester-1a2b3c4d', 'Test Technician', 'TT', 1, ?1, 1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const logs = captureLogs();
+    const batch = batchOf([{ fsm_id: "ap-1", request_id: "r1" }]);
+
+    await handleFsmSyncBatch(
+      batch as unknown as MessageBatch,
+      env,
+      fakeDependencies({ fsm: createStubFsm(world()) }),
+      createLogger(),
+    );
+
+    expect(batch.messages[0]?.ack).toHaveBeenCalled();
+    const rows = await env.DB.prepare("SELECT fsm_id, active FROM technicians ORDER BY fsm_id").all();
+    expect(rows.results).toEqual([
+      { fsm_id: "sr-1", active: 1 },
+      { fsm_id: "sr-gone", active: 0 },
+      { fsm_id: "tech-tester-1a2b3c4d", active: 1 },
+    ]);
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "technicians_deactivated", count: 1, fsm_ids: ["sr-gone"] }),
+    );
   });
 
   it("drops a message it cannot read", async () => {

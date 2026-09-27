@@ -1,7 +1,10 @@
 // The fixtures the technician app's real-wire proof runs on, written straight
 // into the **staging** database, the way e2e/app/fitted.ts writes the local one:
 //
-//   a technician   invented, with a random test mobile number
+//   a technician   invented, with a random test mobile number, and marked as
+//                  written by hand, since FSM's list never names him: the
+//                  code request for a number FSM does not list reads that list
+//                  again, and the sync leaves such a row alone (migration 0046)
 //   a client       invented, with a Gurgaon address that has coordinates
 //   three jobs     today, tomorrow and three days out, so the day-before unlock
 //                  can be seen from both sides
@@ -181,8 +184,8 @@ export async function seedStaging(): Promise<StagingFixture> {
   };
 
   await execute([
-    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, mobile_e164)
-       VALUES ${row(technicianId, `tech-proof-${tag}`, technicianName, "ST", 1, now, `+91${technicianMobile}`)};`,
+    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, mobile_e164, hand_written)
+       VALUES ${row(technicianId, `tech-proof-${tag}`, technicianName, "ST", 1, now, `+91${technicianMobile}`, 1)};`,
     `INSERT INTO people (id, created_at, mobile_e164, name, contactable)
        VALUES ${row(personId, now, `+91${clientMobile}`, clientName, 1)};`,
     `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes, lat, lng,

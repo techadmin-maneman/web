@@ -7,11 +7,11 @@ import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
+import { mobileDigits } from "@maneman/web-kit/mobile";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useState, type ReactNode } from "react";
 import { api, EXPORT_URL, type Answer, type NumberChange, type Profile } from "../api.ts";
 import { login, profile, whatsapp } from "../content.ts";
-import { mobileDigits } from "../login/mobile.ts";
 import styles from "./profile.module.css";
 
 type Which = "old" | "new";

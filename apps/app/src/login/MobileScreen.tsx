@@ -2,10 +2,10 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
+import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState } from "react";
 import { login } from "../content.ts";
 import styles from "./login.module.css";
-import { mobileDigits } from "./mobile.ts";
 
 interface Props {
   readonly initial: string;

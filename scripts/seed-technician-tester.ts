@@ -19,6 +19,9 @@
 //
 // Nothing is written to FSM, and nothing needs to be: the login reads
 // `technicians` in D1 and nowhere else (docs/decisions/0052-technician-sessions.md).
+// FSM's list never names this technician, so his row is marked `hand_written`,
+// and the sync, which makes inactive every technician FSM leaves out, leaves him
+// alone (migration 0046). Before that mark it switched him off within a night.
 // The jobs are mirror rows with no Zoho record behind them, so each job event's
 // write to FSM will fail; docs/technician-test-setup.md says what that looks
 // like and who sees it.
@@ -195,8 +198,8 @@ const appointment = (jobId: string, date: string) => {
 };
 
 await execute([
-  `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
-     VALUES ${row(technicianId, `${FSM_ID_PREFIX}${tag}`, "Test Technician", "TT", 1, ZONE, mobileE164, now)};`,
+  `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
+     VALUES ${row(technicianId, `${FSM_ID_PREFIX}${tag}`, "Test Technician", "TT", 1, ZONE, mobileE164, now, 1)};`,
   `INSERT INTO people (id, created_at, mobile_e164, name, contactable)
      VALUES ${row(personId, now, `+91${clientMobile}`, "Staging test", 1)};`,
   // No lat or lng, on purpose. An address with no coordinates cannot be measured
