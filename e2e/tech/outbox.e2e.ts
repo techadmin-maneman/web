@@ -17,6 +17,9 @@ async function intoTheBasement(page: Page, context: { setOffline: (offline: bool
   await page.goto(`/jobs/${JOB_ID}`);
   await page.getByRole("button", { name: "I have arrived" }).click();
   await expect(page.getByRole("button", { name: "Start job" })).toBeVisible();
+  // The check-in was made with signal: it has left the phone before the signal goes. Start job shows as soon as
+  // the phone records the check-in, which can be before its write lands, and a run under load then held two.
+  await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
 
   fake.online = false;
   await context.setOffline(true);
