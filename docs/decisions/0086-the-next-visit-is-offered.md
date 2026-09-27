@@ -59,7 +59,7 @@ The consultation form, on `/book` and on an invite's landing alike, begins with 
 
 1. **No address, while something is booked.** As before. A fitted client with nothing booked is no longer asked for one here: the sheet asks for it before any slot (ADR 0079).
 2. **The next service due and not booked**, `next_visit`: "Your next service visit is due on Tue 27 Oct, in the morning.", or the replacement's words where it is offered instead, with "Book it for then", which opens the sheet pre-filled. A first fit is Home's card, not this prompt.
-3. **The piece falling due**, as a month and never a day (ADR 0059), with "Book the replacement" once its month begins within the horizon (`bookable`), which opens the sheet at the replacement with the strip from that month, and "See what that involves".
+3. **The piece falling due**, as a month and never a day (ADR 0059), with "Book the replacement" once its month begins within the horizon (`bookable`), which opens the sheet at the replacement with the strip from that month, and "See what that involves". Not while a replacement is booked or paid for: Home's card shows that one, and the prompt would sell a second (amended in review, 27 September 2026).
 4. **An invoice issued** in the last `invoice_prompt` days, 14 to begin with.
 
 **"See what that involves" opens the app's own page**, `/replacement`, on what a replacement involves, with "Book the replacement" at its foot, in place of a WhatsApp message to us. No board draws it; every word is a placeholder in `apps/app/src/content.ts`.

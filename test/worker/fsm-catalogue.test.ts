@@ -330,6 +330,45 @@ describe("the consumables, as parts", () => {
     expect((await heldFor("solvent"))?.fsm_item_id).toMatch(/^stub-part-/);
   });
 
+  // A consumable renamed, and its old name given to a new one: the new one never takes the renamed one's part, which
+  // the two would otherwise rename back and forth every hour.
+  it("never gives a new consumable the part of one ops renamed, by the name it had", async () => {
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [...agreeing, { id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 }],
+    });
+    await consumable("tape_strips", "Contour tape", { id: "fsm-part-tape", name: "Tape strips" });
+    await consumable("tape_strips_2", "Tape strips");
+
+    await check(fsm, { push: true }).done;
+    expect(fsm.made.renamedItems).toEqual([{ itemId: "fsm-part-tape", name: "Contour tape" }]);
+    expect(fsm.made.parts).toEqual(["Tape strips"]);
+    const added = (await heldFor("tape_strips_2"))?.fsm_item_id;
+    expect(added).toMatch(/^stub-part-/);
+
+    // The next hour each has its own part, and nothing is written.
+    await check(fsm, { push: true, now: AN_HOUR_ON }).done;
+    expect(fsm.made.renamedItems).toHaveLength(1);
+    expect(fsm.made.parts).toHaveLength(1);
+    expect((await heldFor("tape_strips"))?.fsm_item_id).toBe("fsm-part-tape");
+    expect((await heldFor("tape_strips_2"))?.fsm_item_id).toBe(added);
+    expect(alerted).toEqual([]);
+  });
+
+  it("with the push off, tells ops the new one is missing rather than linking it to the renamed one's part", async () => {
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [...agreeing, { id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 }],
+    });
+    await consumable("tape_strips", "Contour tape", { id: "fsm-part-tape", name: "Tape strips" });
+    await consumable("tape_strips_2", "Tape strips");
+
+    await check(fsm, { push: false }).done;
+    expect((await heldFor("tape_strips_2"))?.fsm_item_id).toBeNull();
+    expect(alerted).toEqual([expect.stringContaining('"Tape strips" is not there')]);
+    expect(alerted[0]).toContain('part fsm-part-tape is "Tape strips", ours "Contour tape"');
+  });
+
   it("leaves a retired consumable's part as it is, and closes the alert once each is FSM's", async () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: agreeing });
     await consumable("solvent", "Solvent");

@@ -44,6 +44,7 @@ function world(appointments: FsmAppointment[]): StubFsmWorld {
     items: [
       { id: "item-service", name: "Service visit", type: "Service", price: null },
       { id: "item-consult", name: "Consultation", type: "Service", price: null },
+      { id: "item-replacement", name: "Replacement", type: "Service", price: null },
     ],
     attachments: {
       "ap-done": [
@@ -291,6 +292,27 @@ describe("GET /api/me's one prompt", () => {
     expect(await prompt()).toEqual({ kind: "replacement_due", month: "2027-03", bookable: false });
   });
 
+  it("offers to book the replacement once its month is within reach, and never while one is booked", async () => {
+    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await signIn();
+    await giveAddress();
+    await fitPiece("2026-10-05");
+    // A service visit is booked, and October is within the 45 days a visit may be booked ahead.
+    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2026-10", bookable: true });
+
+    // The replacement is booked: Home's card shows it, and the prompt no longer offers a second.
+    await mirror([
+      done("ap-done", "2026-09-10"),
+      fsmAppointment("ap-next"),
+      fsmAppointment("ap-replacement", {
+        serviceIds: ["item-replacement"],
+        scheduledStart: "2026-10-05T10:00:00+05:30",
+        scheduledEnd: "2026-10-05T12:15:00+05:30",
+      }),
+    ]);
+    expect(await prompt()).toBeNull();
+  });
+
   it("then says an invoice issued in the last fortnight is ready, and nothing once it is older", async () => {
     const ids = await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
     await signIn();
@@ -339,6 +361,47 @@ describe("what was done on a visit (board C9)", () => {
 
     const visit = await (await get(`/api/visits/${visitId}`)).json<{ what_was_done: string[] | null }>();
     expect(visit.what_was_done).toEqual(["PLACEHOLDER Piece removed", "PLACEHOLDER Piece refitted"]);
+  });
+
+  it("is in the words ops gave the checklist in the console, an item since taken off still named", async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    const visitId = ids["ap-done"] ?? "";
+    await env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t-1', 'sr-t1', 'T', 'T', 1, ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    // Ops renamed two of the committed items, added one, and took one off (docs/decisions/0087-consumables-and-stock.md).
+    const item = (code: string, label: string, position: number, retired: string | null) =>
+      env.DB.prepare(
+        `INSERT INTO checklist_items (visit_type, code, label, position, retired_at, set_by, set_at)
+         VALUES ('service', ?1, ?2, ?3, ?4, 'ops@maneman.in', ?5)`,
+      ).bind(code, label, position, retired, NOW.toISOString());
+    await env.DB.batch([
+      item("piece_removed", "Took the piece off", 0, null),
+      item("scalp_massaged", "Scalp massaged", 1, null),
+      item("piece_refitted", "Put the piece back on", 2, null),
+      item("scalp_cleaned", "Scalp cleaned", 3, NOW.toISOString()),
+    ]);
+    await env.DB.prepare(
+      `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+         superseded, updated_at) VALUES ('e-1', ?1, 'e-1', 't-1', 'checklist', ?2, ?3, ?3, 0, ?3)`,
+    )
+      .bind(
+        visitId,
+        JSON.stringify({ done: ["scalp_cleaned", "piece_refitted", "scalp_massaged", "piece_removed"] }),
+        NOW.toISOString(),
+      )
+      .run();
+
+    const visit = await (await get(`/api/visits/${visitId}`)).json<{ what_was_done: string[] | null }>();
+    expect(visit.what_was_done).toEqual([
+      "Took the piece off",
+      "Scalp massaged",
+      "Put the piece back on",
+      "Scalp cleaned",
+    ]);
   });
 
   it("is null for a visit with no checklist recorded, closed in FSM's own screens", async () => {

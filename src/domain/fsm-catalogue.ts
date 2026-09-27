@@ -120,10 +120,13 @@ export const PART_WRITES_A_PASS = 5;
 
 /**
  * Each consumable still offered, against FSM's parts: found by the ID it was
- * linked to, else by our name, which links it. With the push on, one missing
- * is added and one named otherwise renamed, within the pass's allowance. What
- * FSM holds is recorded only where it changed, so an hour with nothing new
- * writes nothing.
+ * linked to, else by our name, which links it. A part linked to one consumable
+ * is never matched to another by its name: ops may rename a consumable and give
+ * its old name to a new one, and the new one would otherwise take the renamed
+ * one's part, and the two rename it back and forth every hour. With the push on,
+ * one missing is added and one named otherwise renamed, within the pass's
+ * allowance. What FSM holds is recorded only where it changed, so an hour with
+ * nothing new writes nothing.
  */
 async function checkParts(
   db: D1Database,
@@ -131,8 +134,19 @@ async function checkParts(
   pass: { readonly items: readonly FsmItem[]; readonly push: boolean; readonly now: Date; readonly budget: CallBudget },
 ): Promise<void> {
   const { push, now, budget } = pass;
-  const offered = (await allConsumables(db)).filter((consumable) => isOffered(consumable, indiaDate(now)));
+  const consumables = await allConsumables(db);
+  const offered = consumables.filter((consumable) => isOffered(consumable, indiaDate(now)));
   const parts = pass.items.filter((item) => item.type === "Part");
+  /** Each part FSM holds that a consumable, retired or not, is linked to: by whose code. */
+  const linked = new Map(
+    consumables.flatMap((consumable) =>
+      consumable.fsmItemId !== null && parts.some((item) => item.id === consumable.fsmItemId)
+        ? [[consumable.fsmItemId, consumable.code] as const]
+        : [],
+    ),
+  );
+  /** A part no other consumable is linked to. */
+  const free = (item: FsmItem, code: string) => (linked.get(item.id) ?? code) === code;
   let writes = 0;
   /** Takes one write from the pass's allowance and the run's budget, if both have one left. */
   const mayWrite = (): boolean => {
@@ -145,10 +159,12 @@ async function checkParts(
   const changed: D1PreparedStatement[] = [];
   for (const consumable of offered) {
     let part =
-      parts.find((item) => item.id === consumable.fsmItemId) ?? parts.find((item) => item.name === consumable.name);
+      parts.find((item) => item.id === consumable.fsmItemId) ??
+      parts.find((item) => item.name === consumable.name && free(item, consumable.code));
     if (part === undefined && mayWrite()) part = await added(deps, consumable);
     else if (part !== undefined && part.name !== consumable.name && mayWrite())
       part = await renamed(deps, consumable, part);
+    if (part !== undefined) linked.set(part.id, consumable.code);
 
     if (part === undefined) unsettled.push(`"${consumable.name}" is not there`);
     else if (part.name !== consumable.name)
