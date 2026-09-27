@@ -26,7 +26,15 @@ export const MESSAGE_KINDS = [
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
-/** Whether the person's latest word on this purpose is yes. Consents are append-only, so the latest one stands. */
+/**
+ * The person's latest word on a purpose as a subquery: 1, 0, or NULL where they never gave one. `personColumn`
+ * names the person's ID in the query it sits in. Consents are append-only, so the latest one stands.
+ */
+export const latestConsentSql = (personColumn: string, purpose: NoticePurpose): string =>
+  `(SELECT c.granted FROM consents c WHERE c.person_id = ${personColumn} AND c.purpose = '${purpose}'
+    ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1)`;
+
+/** Whether the person's latest word on this purpose is yes. */
 export async function consentGiven(db: D1Database, personId: string, purpose: NoticePurpose): Promise<boolean> {
   const latest = await db
     .prepare(

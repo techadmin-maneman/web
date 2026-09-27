@@ -13,7 +13,7 @@ import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.t
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import { WAIVER_GIVES_BACK, type NoShowDecision } from "../policy/no-show.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
-import type { MessageKind } from "./messages.ts";
+import { consentGiven, type MessageKind } from "./messages.ts";
 import { windowAt } from "../policy/windows.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 import { firstNameOf } from "../lib/names.ts";
@@ -165,14 +165,7 @@ export async function composeVisitMessage(
   appointmentId: string,
   personId: string,
 ): Promise<Composed> {
-  const consent = await db
-    .prepare(
-      `SELECT granted FROM consents WHERE person_id = ?1 AND purpose = 'whatsapp_visits'
-       ORDER BY created_at DESC, rowid DESC LIMIT 1`,
-    )
-    .bind(personId)
-    .first<{ granted: number }>();
-  if (consent?.granted !== 1) return { skip: NO_VISITS_CONSENT };
+  if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
 
   const visit = await db
     .prepare(

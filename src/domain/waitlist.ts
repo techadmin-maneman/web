@@ -6,7 +6,7 @@ import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { consentGiven } from "./messages.ts";
+import { consentGiven, latestConsentSql } from "./messages.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 export interface WaitlistArea {
@@ -65,8 +65,7 @@ export async function waitlistByPincode(db: D1Database, limit: number): Promise<
  * and for the launch itself.
  */
 const TOLD_ON_LAUNCH = `w.launch_alert = 1 AND w.alerted_at IS NULL AND p.erased_at IS NULL
-  AND (SELECT c.granted FROM consents c WHERE c.person_id = w.person_id AND c.purpose = 'whatsapp_launches'
-       ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1) = 1`;
+  AND ${latestConsentSql("w.person_id", "whatsapp_launches")} = 1`;
 
 /** Those waiting for a pincode whom a launch would tell. */
 async function toAlert(db: D1Database, pincode: string): Promise<{ id: string; person_id: string }[]> {

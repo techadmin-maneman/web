@@ -4,6 +4,7 @@
 // new version, since WhatsApp caches a link's preview by its URL: a revoke only reaches new shares.
 
 import { inspectImage } from "../lib/image-bytes.ts";
+import { consentGiven } from "./messages.ts";
 
 export const CARD_WIDTH = 1200;
 export const CARD_HEIGHT = 630;
@@ -13,16 +14,8 @@ export const MAX_CARD_BYTES = 300 * 1024;
 const cardKey = (code: string, version: number) => `cards/${code}/v${String(version)}.jpg`;
 
 /** Whether the client's latest consent to photographs on referral cards is given. */
-async function cardConsent(db: D1Database, personId: string): Promise<boolean> {
-  const latest = await db
-    .prepare(
-      `SELECT granted FROM consents WHERE person_id = ?1 AND purpose = 'photos_referral_cards'
-       ORDER BY created_at DESC, rowid DESC LIMIT 1`,
-    )
-    .bind(personId)
-    .first<{ granted: number }>();
-  return latest?.granted === 1;
-}
+const cardConsent = (db: D1Database, personId: string): Promise<boolean> =>
+  consentGiven(db, personId, "photos_referral_cards");
 
 export type Stored = { readonly version: number } | { readonly problem: "no_consent" | "not_a_card" };
 
