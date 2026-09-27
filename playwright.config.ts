@@ -39,7 +39,7 @@ export default defineConfig({
     {
       // mm-api with the local login code, and the limits raised: the tests book, render and log in
       // run after run from one address on one local database (scripts/lib/local-stack.ts).
-      command: apiDevArgs().join(" "),
+      command: ["node", ...apiDevArgs()].join(" "),
       url: `${API_ORIGIN}/api/health`,
       reuseExistingServer: local,
       timeout: 120_000,

@@ -224,7 +224,8 @@ test.describe("reduced motion", () => {
 
   test("the hero footage stays paused and scrolling is instant", async ({ page }) => {
     await page.goto("/");
-    await page.waitForTimeout(500);
+    // The footage is started, if at all, by the page's load event: a frame after it, that has happened.
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
     expect(await page.locator("[data-hero-video]").evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
     // Paused already, so the control offers to play it.
