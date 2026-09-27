@@ -1,6 +1,6 @@
 # 0033. The credit ledger
 
-- Status: accepted; ops adjust a balance, and a credit lasts to the end of its day, in ADR 0068
+- Status: accepted. Amended by ADR 0068: ops adjust a balance, and a credit lasts to the end of its day.
 - Date: 2026-09-22
 
 ## Context

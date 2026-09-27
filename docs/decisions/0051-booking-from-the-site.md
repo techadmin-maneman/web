@@ -1,6 +1,6 @@
 # 0051. Booking from the site is the landing's booking
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the page records a request for ops rather than refusing.
 - Date: 2026-09-23
 
 ## Context
@@ -23,7 +23,7 @@ We can now. `serviceable_pincodes` holds 198 NCR pincodes, and `GET /api/pincode
 - The public page shows no card and no invite, and asks **where the hair loss is**, as Phase 1's form did, because that answer is worth having and an invited friend is never asked it.
 - **Every booking still leaves a lead**, so the CRM funnel sees what it saw in Phase 1. The lead carries the date the person actually booked, not a guess.
 
-`SELF_SERVE_BOOKING` still governs it. While the flag is off, the page answers `ops_assisted` and says booking goes through WhatsApp for now, exactly as the landing does.
+`SELF_SERVE_BOOKING` still governs it. While the flag is off, the page books nothing and records a request for ops, answered `201` with `state: "requested"`, and says ops will fix the hour on WhatsApp, exactly as the landing does. (Until 24 September 2026 it answered `409 ops_assisted`; [ADR 0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) changed both pages. Corrected 27 September 2026.)
 
 ## Consequences
 
