@@ -25,7 +25,7 @@ import {
   paymentEntry,
   receiptOf,
 } from "../domain/client-payments.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { NoShowNoteSchema } from "./client-visits.ts";
 
@@ -209,8 +209,7 @@ export function registerClientPayments(app: App): void {
   }
 
   app.openapi(paymentsRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const [entries, credits] = await Promise.all([
       paymentEntries(c.env.DB, session.subjectId),
       creditLines(c.env.DB, session.subjectId),
@@ -219,16 +218,14 @@ export function registerClientPayments(app: App): void {
   });
 
   app.openapi(entryRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const entry = await paymentEntry(c.env.DB, session.subjectId, c.req.valid("param").id);
     if (entry === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json(entry, 200);
   });
 
   app.openapi(receiptRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const payment = await receiptOf(c.env.DB, session.subjectId, c.req.valid("param").id);
     if (payment === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const pdf = payment.books_payment_id === null ? null : await c.var.deps.books.receiptPdf(payment.books_payment_id);
@@ -237,8 +234,7 @@ export function registerClientPayments(app: App): void {
   });
 
   app.openapi(documentRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     // A draft invoice answers "not ready", as it did before it was raised (ADR 0056).
     const visit = await issuedInvoiceOf(c.env.DB, session.subjectId, c.req.valid("param").id);
     if (visit === null) return c.json(errorBody("not_found", c.var.requestId), 404);

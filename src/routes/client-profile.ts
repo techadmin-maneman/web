@@ -36,7 +36,7 @@ import {
   type AddressPin,
 } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { queueContactSync } from "../http/contact-sync.ts";
@@ -371,7 +371,7 @@ export function registerClientProfile(app: App): void {
   });
 
   app.openapi(profileRoute, async (c) => {
-    const personId = c.var.clientSession?.subjectId ?? "";
+    const personId = clientOf(c).subjectId;
     const db = c.env.DB;
     const person = await db
       .prepare("SELECT name, mobile_e164 FROM people WHERE id = ?1 AND erased_at IS NULL")
@@ -425,7 +425,7 @@ export function registerClientProfile(app: App): void {
   });
 
   app.openapi(addressSuggestionsRoute, async (c) => {
-    const personId = c.var.clientSession?.subjectId ?? "";
+    const personId = clientOf(c).subjectId;
     const { q, session } = c.req.valid("json");
     const now = c.var.deps.now();
 
@@ -459,7 +459,7 @@ export function registerClientProfile(app: App): void {
   });
 
   app.openapi(addressRoute, async (c) => {
-    const personId = c.var.clientSession?.subjectId ?? "";
+    const personId = clientOf(c).subjectId;
     const body = c.req.valid("json");
     const now = c.var.deps.now();
 
@@ -513,7 +513,7 @@ export function registerClientProfile(app: App): void {
   });
 
   app.openapi(consentRoute, async (c) => {
-    const personId = c.var.clientSession?.subjectId ?? "";
+    const personId = clientOf(c).subjectId;
     const { purpose } = c.req.valid("param");
     const { granted } = c.req.valid("json");
     const now = c.var.deps.now();
@@ -537,7 +537,7 @@ export function registerClientProfile(app: App): void {
 
   app.openapi(numberChangeRoute, async (c) => {
     const { requestId, deps, config } = c.var;
-    const personId = c.var.clientSession?.subjectId ?? "";
+    const personId = clientOf(c).subjectId;
     const db = c.env.DB;
     const now = deps.now();
 
@@ -575,7 +575,7 @@ export function registerClientProfile(app: App): void {
   });
 
   app.openapi(numberChangeWithdrawRoute, async (c) => {
-    const personId = c.var.clientSession?.subjectId ?? "";
+    const personId = clientOf(c).subjectId;
     await withdrawNumberChange(c.env.DB, {
       personId,
       audit: audit(personId, c.var.requestId, { action: "number_change.withdraw" }),
@@ -586,7 +586,7 @@ export function registerClientProfile(app: App): void {
 
   app.openapi(numberChangeVerifyRoute, async (c) => {
     const { requestId, deps, config } = c.var;
-    const personId = c.var.clientSession?.subjectId ?? "";
+    const personId = clientOf(c).subjectId;
     const { request_id: id, number, code } = c.req.valid("json");
     const change = await openNumberChange(c.env.DB, personId);
     if (change?.id !== id) return c.json(errorBody("code_expired", requestId), 410);
@@ -604,7 +604,7 @@ export function registerClientProfile(app: App): void {
   });
 
   app.openapi(deletionRoute, async (c) => {
-    const personId = c.var.clientSession?.subjectId ?? "";
+    const personId = clientOf(c).subjectId;
     const now = c.var.deps.now();
     const { request } = await requestDeletion(
       c.env.DB,

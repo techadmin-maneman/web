@@ -12,7 +12,7 @@ import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
 import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
@@ -122,8 +122,7 @@ export function registerClientRefer(app: App): void {
   app.use("/api/refer/*", requireClientSession);
 
   app.openapi(cardRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
     if (Number(c.req.header("Content-Length") ?? "0") > MAX_CARD_BYTES) {
@@ -149,15 +148,13 @@ export function registerClientRefer(app: App): void {
   });
 
   app.openapi(revokeRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     await revokeCard(c.env.DB, c.env.REFERRAL_CARDS, session.subjectId, c.var.deps.now());
     return c.body(null, 204);
   });
 
   app.openapi(referRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
     const person = await db

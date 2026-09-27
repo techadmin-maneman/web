@@ -49,3 +49,10 @@ export const requireClientSession = createMiddleware<AppEnv>(async (c, next) => 
   c.set("clientSession", session);
   return next();
 });
+
+/** The signed-in client's session; requireClientSession has set it on every route that asks. */
+export function clientOf(c: Context<AppEnv>): Session {
+  const session = c.var.clientSession;
+  if (session === undefined) throw new Error("client routes run after requireClientSession");
+  return session;
+}

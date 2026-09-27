@@ -18,7 +18,7 @@ import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/clien
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
 import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { verifyToken } from "../lib/signed-token.ts";
 
@@ -251,8 +251,7 @@ export function registerClientVisits(app: App): void {
   }
 
   app.openapi(visitsRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const [visits, history] = await Promise.all([
       listVisits(c.env.DB, session.subjectId, c.var.deps.now()),
       clientHistory(c.env.DB, session.subjectId),
@@ -264,8 +263,7 @@ export function registerClientVisits(app: App): void {
   });
 
   app.openapi(visitRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const visit = await visitDetail(
       c.env.DB,
       session.subjectId,
@@ -278,8 +276,7 @@ export function registerClientVisits(app: App): void {
   });
 
   app.openapi(timelineRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const { past } = await listVisits(c.env.DB, session.subjectId, c.var.deps.now());
     const sets = await photoSets(
       c.env.DB,
@@ -295,8 +292,7 @@ export function registerClientVisits(app: App): void {
   });
 
   app.openapi(compareRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const { from, to, angle, phase } = c.req.valid("query");
     const { past } = await listVisits(c.env.DB, session.subjectId, c.var.deps.now());
     const [first, second] = [from, to].map((id) => past.find((visit) => visit.id === id));
@@ -316,8 +312,7 @@ export function registerClientVisits(app: App): void {
   });
 
   app.openapi(photoFileRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const photoId = await verifyToken(
       c.var.config.settings.tryon.linkSigningKey,
       "photo",

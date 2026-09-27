@@ -34,7 +34,7 @@ import {
   type Moving,
 } from "../domain/scheduling.ts";
 import { changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
@@ -285,8 +285,7 @@ export function registerClientBooking(app: App): void {
   }
 
   app.openapi(availabilityRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const { type, from, moving: movingId } = c.req.valid("query");
     const now = c.var.deps.now();
     const first = firstBookableDay(now);
@@ -321,8 +320,7 @@ export function registerClientBooking(app: App): void {
   });
 
   app.openapi(holdRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const { type, date, window, moving: movingId } = c.req.valid("json");
     const now = c.var.deps.now();
     const first = firstBookableDay(now);
@@ -364,24 +362,21 @@ export function registerClientBooking(app: App): void {
   });
 
   app.openapi(holdByIdRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const held = await clientHold(c.env.DB, c.req.valid("param").id, session.subjectId, c.var.deps.now());
     if (held === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json(held, 200);
   });
 
   app.openapi(bookingRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const booking = await startCheckout(c, c.req.valid("json").hold_id, session.subjectId);
     if (booking === null) return c.json(errorBody("hold_expired", c.var.requestId), 409);
     return c.json(booking, 201);
   });
 
   app.openapi(releaseRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     await releaseHold(c.env.DB, {
       holdId: c.req.valid("param").id,
       personId: session.subjectId,

@@ -16,7 +16,7 @@ import { homePrompt } from "../domain/home-prompt.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { currentAddress, liveName } from "../domain/profile.ts";
 import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { CreditsSchema } from "./client-refer.ts";
@@ -104,8 +104,7 @@ export const meRoute = createRoute({
 export function registerClientMe(app: App): void {
   app.use(meRoute.path, requireClientSession);
   app.openapi(meRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
 
     const db = c.env.DB;
     const name = await liveName(db, session.subjectId);

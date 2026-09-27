@@ -11,6 +11,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { CLIENT_NOTE_MAX_CHARS, saveClientNote } from "../domain/client-notes.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { clientOf } from "../http/client-session.ts";
 
 const NoteSchema = z
   .object({
@@ -42,8 +43,7 @@ const noteRoute = createRoute({
 
 export function registerClientNotes(app: App): void {
   app.openapi(noteRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
 
     const saved = await saveClientNote(c.env.DB, {
       personId: session.subjectId,

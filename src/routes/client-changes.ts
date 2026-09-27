@@ -13,7 +13,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelVisit, changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
@@ -140,8 +140,7 @@ export function registerClientChanges(app: App): void {
   app.use("/api/appointments/*", requireSelfServe);
 
   app.openapi(rescheduleRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const visitId = c.req.valid("param").id;
     const holdId = c.req.valid("json").hold_id;
     if (holdId === undefined) {
@@ -161,8 +160,7 @@ export function registerClientChanges(app: App): void {
   });
 
   app.openapi(cancelRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const { deps, requestId, log } = c.var;
     const now = deps.now();
     const visit = await changeableVisit(c.env.DB, session.subjectId, c.req.valid("param").id, now);
