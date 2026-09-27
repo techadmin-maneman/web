@@ -4,9 +4,12 @@ Everything runs locally with stub providers: no Zoho, no Razorpay, no WhatsApp a
 
 ```sh
 npm ci
+npm run db:local        # the local database, migrated and marked; the seed needs its tables
 npm run db:seed:local   # clients, visits and a technician to sign in as; prints their numbers
 npm run dev:all         # the whole stack; Ctrl+C stops it
 ```
+
+What each front end is, and how they reach mm-api: `docs/front-ends.md`.
 
 `dev:all` (scripts/dev-all.ts) creates `.dev.vars`, migrates and marks the local database, builds the public site once if it has never been built, then starts:
 
