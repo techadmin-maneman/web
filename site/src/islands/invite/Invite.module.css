@@ -457,6 +457,14 @@
   color: var(--ink-soft);
 }
 
+/* Beneath what to book: how the first fit asked for is booked and paid (ADR 0086). */
+.planNote {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}
+
 /* Where the hair loss is, on /book only (v2's booking board). */
 .extents {
   display: grid;

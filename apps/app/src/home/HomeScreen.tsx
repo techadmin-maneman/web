@@ -3,17 +3,19 @@
 // booking's consultation, not yet in FSM, shows as B2. A visit FSM has not closed stays here until it is, so Home
 // never says nothing is booked, nor offers the booking again, while one is under way.
 //
-// Beneath the card, B1's credit tile while there is a balance, and its one contextual prompt: an address to give,
-// the replacement falling due, an invoice just issued (src/domain/home-prompt.ts).
+// Beneath the card, B1's credit tile while there is a balance, and its one contextual prompt, in the owner's order:
+// an address to give, the next service due and not booked, the replacement falling due, an invoice just issued
+// (src/domain/home-prompt.ts). The next visit opens the booking sheet with its day and window chosen, and a
+// replacement is booked here like any other visit, with a page on what it involves (ADR 0086).
 
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
-import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
+import { BOOKING_URL, home, messages, VISIT_TYPES, visits, WINDOW_NAMES, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
+import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { visitName } from "../lib/visit.ts";
-import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
 import { Actions, changingOf, hasBegun, notingOf, VisitCard, whenText, type NotingVisit } from "./VisitCard.tsx";
@@ -62,7 +64,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
       <Consultation date={date} when={windowText(me.consultation.window)} place={place} changing={null} noting={null} />
     );
   }
-  if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext me={me} />;
+  if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext />;
   return <NothingBooked me={me} offline={offline} />;
 }
 
@@ -147,18 +149,53 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
           </AppLink>
         </div>
       );
+    case "next_visit":
+      return (
+        <div className={styles.prompt}>
+          <p className={styles.promptLine}>
+            {copy.nextVisit(
+              VISIT_TYPES[prompt.type],
+              shortDate(prompt.date),
+              prompt.window === null ? null : WINDOW_NAMES[prompt.window],
+            )}
+          </p>
+          <div className={styles.promptActions}>
+            <BookButton
+              quiet
+              className={styles.promptLink}
+              type={prompt.type}
+              offer={{ date: prompt.date, window: prompt.window }}
+              label={copy.bookNext}
+              message={prompt.type === "replacement" ? messages.bookReplacement : messages.book}
+            />
+            {prompt.type === "replacement" && <Involves />}
+          </div>
+        </div>
+      );
     case "replacement_due": {
       const now = new Date();
       const thisMonth = `${String(now.getFullYear())}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const month = listMonth(prompt.month, now.getFullYear());
+      const firstDay = `${prompt.month}-01`;
       return (
         <div className={styles.prompt}>
           <p className={styles.promptLine}>
             {prompt.month < thisMonth ? visits.record.overdue(month) : visits.record.due(month)}
           </p>
-          <a className={styles.promptLink} href={whatsappWith(messages.replacement)} rel="noopener">
-            <span>{copy.involves}</span>
-          </a>
+          <div className={styles.promptActions}>
+            {prompt.bookable && (
+              <BookButton
+                quiet
+                className={styles.promptLink}
+                type="replacement"
+                // The strip starts with the month the piece falls due, never on a day of it (ADR 0059).
+                {...(prompt.month > thisMonth ? { from: firstDay } : {})}
+                label={copy.bookReplacement}
+                message={messages.bookReplacement}
+              />
+            )}
+            <Involves />
+          </div>
         </div>
       );
     }
@@ -175,20 +212,27 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
   }
 }
 
-/** A client with no visit booked who may book the next: a service visit, or a first fit after the consultation. */
-function NothingNext({ me }: { me: Me }) {
-  const firstFit = me.booking.types.includes("first_fit");
+/** "See what that involves": the app's own page on a replacement, in place of a WhatsApp message to us. */
+function Involves() {
+  return (
+    <AppLink className={styles.promptLink} to="/replacement">
+      <span>{home.prompt.involves}</span>
+    </AppLink>
+  );
+}
+
+/**
+ * A client with no visit booked who may book the next: a first fit after the consultation, or a service visit or a
+ * replacement, in the sheet with the day and window the app offers chosen (ADR 0086).
+ */
+function NothingNext() {
   return (
     <section className={styles.nothing} aria-labelledby="next">
       <h1 className={styles.label} id="next">
         {home.next.label}
       </h1>
       <p>{home.next.none}</p>
-      <BookButton
-        className={styles.book}
-        label={firstFit ? home.next.bookFirstFit : home.next.book}
-        message={firstFit ? messages.bookFirstFit : messages.book}
-      />
+      <BookNext className={styles.book} otherClassName={styles.promptLink} />
     </section>
   );
 }

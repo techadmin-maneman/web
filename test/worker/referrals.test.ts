@@ -204,6 +204,7 @@ describe("POST /api/r/:code/consultation", () => {
       credits: true,
       invite: "valid",
       address: "saved",
+      first_fit: false,
     });
     expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     const friend = await env.DB.prepare(
@@ -415,6 +416,7 @@ describe("POST /api/r/:code/consultation", () => {
       credits: true,
       invite: "valid",
       address: "saved",
+      first_fit: false,
     });
     // Nothing is held and FSM is not told; the lead and the invite still stand.
     expect(fsm.sent).toEqual([]);
@@ -433,6 +435,33 @@ describe("POST /api/r/:code/consultation", () => {
       requested_window: "morning",
       referral_code: code,
     });
+  });
+
+  // An invited friend may ask for the first fit to follow as well, as the site's own form may (ADR 0086).
+  it("books the consultation with the first fit asked for, which the app offers once the consultation is done", async () => {
+    await pincode("122018", "Gurgaon South City II", true);
+    const code = await codeOf();
+    const answer = await request(
+      site(),
+      `/api/r/${code}/consultation`,
+      post({
+        ...FRIEND,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        address: ADDRESS,
+        first_fit: { window: "morning" },
+      }),
+      { FSM_QUEUE: fakeQueue() },
+    );
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: true, first_fit: true });
+    const asked = await env.DB.prepare(
+      `SELECT r.preferred_window FROM first_fit_requests r JOIN people p ON p.id = r.person_id
+       WHERE p.mobile_e164 = '+919810000002'`,
+    ).first();
+    expect(asked).toEqual({ preferred_window: "morning" });
   });
 });
 

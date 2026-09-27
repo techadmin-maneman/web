@@ -60,8 +60,8 @@ export const CRON_ROWS_READ_PER_QUIET_RUN = 100;
  * lookups of 100 and what it expires and deletes (about 1,600); the
  * reconciliation's page of 50, and on the hour the photographs of three days'
  * visits (about 1,700); erased people's files, 20 at a time (about 500); and
- * the referral, reminder, invoice, asked-window and Books passes of 5 to 20
- * each, with their joins (about 700).
+ * the referral, reminder, next-service reminder, invoice, asked-window and
+ * Books passes of 5 to 20 each, with their joins (about 700).
  */
 export const CRON_ROWS_READ_PER_BUSY_RUN = 5_000;
 /** The cron's share of the daily reads. The rest of the 80% is for requests. */

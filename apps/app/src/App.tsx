@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";
 import { titles } from "./content.ts";
 import { HomeScreen } from "./home/HomeScreen.tsx";
+import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
 import { focusIfLost, nameInTitle } from "./lib/arrival.ts";
 import { forgetSignedOut, rememberSignedOut, signedOutHere } from "./lib/signed-out.ts";
 import { ReferScreen } from "./refer/ReferScreen.tsx";
@@ -61,6 +62,8 @@ function pageFor(route: Route, onChanged: () => void) {
       return <TrackerScreen />;
     case "profile":
       return <ProfileScreen onChanged={onChanged} />;
+    case "replacement":
+      return <ReplacementScreen />;
   }
 }
 

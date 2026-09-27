@@ -7,6 +7,7 @@
 // mm-api.
 
 import { readFileSync } from "node:fs";
+import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
 import { analyticsCommands, analyticsEvents, expect, fakeTurnstile, test, visit } from "./support.ts";
@@ -414,8 +415,11 @@ test("a keyboard user sees which day, window and agreement has focus", async ({ 
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
 
   await page.keyboard.press("Tab"); // Change the pincode
+  await page.keyboard.press("Tab"); // what to book (ADR 0086)
+  await expect(page.getByRole("radio", { name: "A consultation" })).toBeFocused();
+  expect(await outlineOf(page, "label")).toBe("solid 2px");
   await page.keyboard.press("Tab"); // the date strip
-  await expect(page.getByRole("radio").first()).toBeFocused();
+  await expect(page.getByRole("group", { name: "Pick a date" }).getByRole("radio").first()).toBeFocused();
   expect(await outlineOf(page, "label")).toBe("solid 2px");
   await page.keyboard.press("Tab"); // the windows
   await expect(page.getByRole("radio", { name: /Morning/ })).toBeFocused();
@@ -535,6 +539,59 @@ test("a booked consultation names the number, and offers the calendar and the ap
   const calendar = readFileSync(await file.path(), "utf8");
   expect(calendar).toContain("DTSTART:20260925T033000Z");
   expect(calendar).toContain("DTEND:20260925T063000Z");
+});
+
+// The owner's ruling of 27 September 2026 (ADR 0025, item 68; docs/decisions/0086-the-next-visit-is-offered.md): the
+// form offers the consultation alone or with the first fit, which is asked for here and booked and paid in the app.
+test("offers the consultation alone or with the first fit, and sends the fit asked for, in its window", async ({
+  page,
+}) => {
+  const booked = {
+    state: "requested",
+    date: "2026-09-25",
+    window: "morning",
+    area: SERVED.area,
+    credits: true,
+    invite: "valid",
+    address: "saved",
+    first_fit: true,
+  };
+  const requests = await mockApi(page, { consultation: { status: 201, body: booked } });
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+
+  const plan = page.getByRole("group", { name: "What to book" });
+  await expect(plan.getByRole("radio", { name: "A consultation" })).toBeChecked();
+  const fit = page.getByRole("group", { name: "The fit, if you have a time in mind" });
+  await expect(fit).toHaveCount(0);
+  await plan.getByText("The consultation, then my first fit").click();
+  await expect(
+    plan.getByText("The fit is booked and paid for in the app once the consultation is done. Nothing is paid now."),
+  ).toBeVisible();
+  // Either, the morning or the afternoon: a first fit cannot start in the evening.
+  await expect(fit.getByRole("radio")).toHaveCount(3);
+  await expect(fit.getByRole("radio", { name: "Either" })).toBeChecked();
+  await fit.getByText("Morning").click();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await fillForm(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByText("Consultation requested")).toBeVisible();
+  const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
+  expect(sent.first_fit).toEqual({ window: "morning" });
+  // The consent recorded is the consultation's own line, unchanged.
+  expect(sent.consent).toBe(true);
+  await expect(
+    page.getByText(
+      "You asked for your first fit too. Once the consultation is done, you book the fit in the app and pay for it there.",
+    ),
+  ).toBeVisible();
 });
 
 test("a consultation asked for, not booked, offers no calendar and no app", async ({ page }) => {

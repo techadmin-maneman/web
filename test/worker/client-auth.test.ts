@@ -382,7 +382,8 @@ describe("the session", () => {
       credits: null,
       // A consultation is booked and no address given: board B1's prompt asks for one.
       prompt: { kind: "address" },
-      booking: { self_serve: true, types: ["consultation"] },
+      // Nothing is offered next while a visit is booked (ADR 0086).
+      booking: { self_serve: true, types: ["consultation"], next: null },
     });
   });
 

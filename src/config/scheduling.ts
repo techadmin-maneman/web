@@ -43,8 +43,25 @@ export const VISIT_BLOCKS: Readonly<Record<VisitType, { readonly units: number; 
   first_fit: { units: 4, minutes: 180 },
 };
 
-/** How far ahead the date strip reaches (board C2), from tomorrow. */
+/**
+ * How many days the date strip offers at once (board C2), from its first day, and so how far ahead the site's
+ * consultation form reaches from tomorrow. How far ahead a visit may be booked in the app is ops' to set, 45 days
+ * to begin with (`horizon`, src/policy/next-visit.ts).
+ */
 export const BOOKING_DAYS = 14;
+
+/**
+ * The windows a visit of this type can start in: those with a half-slot its block fits after, inside the day. A
+ * first fit's two slots and a replacement's slot and a half do not fit in the evening.
+ */
+export const windowsFor = (type: VisitType): BookingWindow[] =>
+  BOOKING_WINDOWS.filter((window) =>
+    WINDOW_SLOT_MAP[window].some((start) => start + VISIT_BLOCKS[type].units <= UNITS_PER_DAY),
+  );
+
+/** The windows a first fit can start in (windowsFor), which a request for one may name. */
+export const FIRST_FIT_WINDOWS = ["morning", "afternoon"] as const;
+export type FirstFitWindow = (typeof FIRST_FIT_WINDOWS)[number];
 
 /** How long a held slot waits for payment (board C4's countdown from 10:00). */
 export const HOLD_SECONDS = 600;

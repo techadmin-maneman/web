@@ -23,6 +23,12 @@ describe("the client app's routes", () => {
     expect(routeOf("/refer/fitted")).toEqual({ page: "fitted" });
   });
 
+  // Home's "See what that involves" opens it, in place of WhatsApp (docs/decisions/0086-the-next-visit-is-offered.md).
+  it("opens the page on what a replacement involves, under Home", () => {
+    expect(routeOf("/replacement")).toEqual({ page: "replacement" });
+    expect(tabOf({ page: "replacement" })).toBe("/");
+  });
+
   it("opens Home for a path it does not know", () => {
     expect(routeOf("/nowhere")).toEqual({ page: "home" });
     expect(routeOf("/visits/not-a-visit")).toEqual({ page: "home" });

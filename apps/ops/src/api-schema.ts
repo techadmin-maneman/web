@@ -2090,7 +2090,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
                 };
                 cookie?: never;
             };
@@ -3134,7 +3134,7 @@ export interface components {
             truncated: boolean;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "replacement_order" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
                 /** @description The longest wait first, at most 50. */
@@ -3153,7 +3153,7 @@ export interface components {
                 id: string;
                 name: string;
             } | null;
-            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact. */
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
             detail: string | null;
             /**
              * Format: date-time
@@ -3244,7 +3244,7 @@ export interface components {
         };
         OpsSetting: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
             title: string;
             note: string;
             unit: string;
@@ -3252,6 +3252,13 @@ export interface components {
             max: number;
             /** @description null for one number, a list where the keys are fixed, "open" where ops name them. */
             keys: string[] | "open" | null;
+            /** @description Each key's own bounds, where a keyed rule's figures measure different things; null where every figure takes min to max. */
+            bounds: {
+                [key: string]: {
+                    min: number;
+                    max: number;
+                };
+            } | null;
             value: number | {
                 [key: string]: number;
             };

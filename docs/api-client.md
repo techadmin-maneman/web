@@ -1822,17 +1822,69 @@ Request body:
             "kind": {
               "type": "string",
               "enum": [
+                "next_visit"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "service",
+                "replacement"
+              ],
+              "description": "The next service, or the replacement where the piece in wear falls due first."
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day it falls due: the last visit's day and the cadence; tomorrow once passed."
+            },
+            "window": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The last visit's window, where this kind of visit can start in it."
+            }
+          },
+          "required": [
+            "kind",
+            "type",
+            "date",
+            "window"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
                 "replacement_due"
               ]
             },
             "month": {
               "type": "string",
               "pattern": "^\\d{4}-\\d{2}$"
+            },
+            "bookable": {
+              "type": "boolean",
+              "description": "The month begins within how far ahead a visit may be booked, so it can be booked now."
             }
           },
           "required": [
             "kind",
-            "month"
+            "month",
+            "bookable"
           ],
           "additionalProperties": false
         },
@@ -1883,7 +1935,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Board B1's one contextual prompt, the first that applies: no address given while something is booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight. Null when none applies."
+      "description": "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies."
     },
     "booking": {
       "type": "object",
@@ -1904,11 +1956,59 @@ Request body:
             ]
           },
           "description": "What the client may book now."
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "India's day it is offered on."
+                },
+                "window": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "morning",
+                        "afternoon",
+                        "evening"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "date",
+                "window"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086)."
         }
       },
       "required": [
         "self_serve",
-        "types"
+        "types",
+        "next"
       ],
       "additionalProperties": false
     }

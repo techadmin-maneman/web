@@ -3,7 +3,12 @@ import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
 import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
-import { bookConsultation, bookPublicConsultation, type ReferralConsultation } from "../../lib/api.ts";
+import {
+  bookConsultation,
+  bookPublicConsultation,
+  type ConsultationRequest,
+  type ReferralConsultation,
+} from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
 import { mobileDigits } from "../../lib/phone.ts";
 import { fill } from "../../lib/text.ts";
@@ -16,16 +21,23 @@ import { codeInPath } from "./page.ts";
 import { useTurnstileForm } from "./useTurnstileForm.ts";
 
 type BookingWindow = ReferralConsultation["window"];
+/** The window a first fit is asked for in, or "any" for either (FirstFitRequest). */
+type FitWindow = "any" | NonNullable<NonNullable<ConsultationRequest["first_fit"]>["window"]>;
+type Plan = "consultation" | "first_fit";
 
 /** How far ahead the date strip reaches, from tomorrow: src/config/scheduling.ts, BOOKING_DAYS. */
 const DAYS = 14;
 
 /**
  * Board C2: the pincode is served, so the page books a free consultation. The form also takes the address the
- * consultation is at, which no board draws, so nothing is booked without one (ADR 0081).
+ * consultation is at, which no board draws, so nothing is booked without one (ADR 0081). It may ask for the first
+ * fit to follow, which no board draws either: the consultation is booked as ever, and the fit is booked and paid for
+ * in the app once the consultation is done (ADR 0086).
  */
 export function Consultation(props: FormProps & { onBooked: (booking: Booking) => void }) {
   const form = useTurnstileForm(props.turnstileSiteKey);
+  const [plan, setPlan] = useState<Plan>("consultation");
+  const [fitWindow, setFitWindow] = useState<FitWindow>("any");
   const [date, setDate] = useState(indiaTomorrow());
   const [window, setWindow] = useState<BookingWindow>("morning");
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
@@ -42,6 +54,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       date,
       window,
       address: addressToSend(address, pincode),
+      ...(plan === "first_fit" ? { first_fit: { window: fitWindow === "any" ? null : fitWindow } } : {}),
       consent: true as const,
     };
     // The site's own page carries where this visit came from and where the hair loss is; the invite, the invite.
@@ -66,6 +79,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
   }
 
   const { consultation } = referral;
+  const choices = consultation.plan;
   return (
     <form class={styles.form} onSubmit={submit} noValidate>
       <div>
@@ -74,6 +88,50 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         <p class={styles.formBody}>{consultation.body}</p>
         <ForPincode text={fill(consultation.forPincode, { pincode })} onChange={props.onChangePincode} />
       </div>
+
+      <fieldset class={styles.group}>
+        <legend class={`caps ${styles.legend}`}>{choices.legend}</legend>
+        <div class={styles.windows}>
+          {choices.options.map((option) => (
+            <label key={option.id} class={`${styles.window} ${plan === option.id ? styles.windowOn : ""}`}>
+              <input
+                type="radio"
+                name="plan"
+                class="visually-hidden"
+                checked={plan === option.id}
+                onChange={() => {
+                  setPlan(option.id as Plan);
+                }}
+              />
+              <span class={styles.windowLabel}>{option.label}</span>
+            </label>
+          ))}
+        </div>
+        {plan === "first_fit" && <p class={styles.planNote}>{choices.note}</p>}
+      </fieldset>
+
+      {plan === "first_fit" && (
+        <fieldset class={styles.group}>
+          <legend class={`caps ${styles.legend}`}>{choices.fitLegend}</legend>
+          <div class={styles.windows}>
+            {choices.fitWindows.map((option) => (
+              <label key={option.id} class={`${styles.window} ${fitWindow === option.id ? styles.windowOn : ""}`}>
+                <input
+                  type="radio"
+                  name="fit-window"
+                  class="visually-hidden"
+                  checked={fitWindow === option.id}
+                  onChange={() => {
+                    setFitWindow(option.id as FitWindow);
+                  }}
+                />
+                <span class={styles.windowLabel}>{option.label}</span>
+                {option.hours !== "" && <span class={styles.windowHours}>{option.hours}</span>}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <fieldset class={styles.group}>
         <legend class={`caps ${styles.legend}`}>{consultation.date}</legend>

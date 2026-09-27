@@ -55,26 +55,56 @@ test.describe("the rules", () => {
     await expect(wait).not.toContainText("first_fit");
   });
 
-  test("sends the figure ops typed, and says it saved", async ({ page }) => {
+  test("shows the old figure beside the new before it sends it, and says it saved", async ({ page }) => {
+    let sent = 0;
     await open(page, "/settings", {
-      "POST /api/settings/checkin_radius_m": json({
-        ...SETTINGS.settings[0],
-        value: 150,
-        set_by: "ops@maneman.in",
-        set_at: "2027-09-21T06:00:00.000Z",
-      }),
+      "POST /api/settings/checkin_radius_m": (route) => {
+        sent += 1;
+        return json({
+          ...SETTINGS.settings[0],
+          value: 150,
+          set_by: "ops@maneman.in",
+          set_at: "2027-09-21T06:00:00.000Z",
+        })(route);
+      },
     });
-    const sent = posted(page, "/api/settings/checkin_radius_m");
     await page.getByLabel("Check-in radius").fill("150");
     await page.getByRole("button", { name: "Save" }).first().click();
-    expect((await sent).postDataJSON()).toEqual({ value: 150 });
+
+    // ADR 0071's rule for a price, followed for a rule (docs/decisions/0086-the-next-visit-is-offered.md).
+    const check = page.getByRole("group", { name: "Check the change" });
+    await expect(check).toBeFocused();
+    await expect(check).toContainText("Check-in radius: 200 metres → 150 metres.");
+    expect(sent).toBe(0);
+
+    const request = posted(page, "/api/settings/checkin_radius_m");
+    await check.getByRole("button", { name: "Save" }).click();
+    expect((await request).postDataJSON()).toEqual({ value: 150 });
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   });
 
-  test("will not send an empty box, which would read as nought", async ({ page }) => {
+  test("goes back to the figures without sending when the change is not the one meant", async ({ page }) => {
     await open(page);
+    await page.getByLabel("Check-in radius").fill("150");
+    await page.getByRole("button", { name: "Save" }).first().click();
+    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Change it" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toHaveCount(0);
+    await expect(page.getByLabel("Check-in radius")).toHaveValue("150");
+  });
+
+  test("will not send an empty box, which would read as nought, nor a figure that has not changed", async ({
+    page,
+  }) => {
+    await open(page);
+    const save = page
+      .getByRole("listitem")
+      .filter({ has: page.getByLabel("Check-in radius") })
+      .getByRole("button", {
+        name: "Save",
+      });
+    await expect(save).toBeDisabled();
     await page.getByLabel("Check-in radius").fill("");
-    await expect(page.getByRole("button", { name: "Save" }).first()).toBeDisabled();
+    await expect(save).toBeDisabled();
   });
 
   // FEO-06: the refusal named its field and the console dropped it, so every refusal read the same.
@@ -85,9 +115,56 @@ test.describe("the rules", () => {
     const wait = page.getByRole("group", { name: "No-show wait" });
     await wait.getByLabel("First fit", { exact: true }).fill("90");
     await page.getByRole("listitem").filter({ has: wait }).getByRole("button", { name: "Save" }).click();
+    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("alert")).toHaveText(
       "First fit is outside what this rule allows. Nothing was changed.",
     );
+  });
+
+  // One input for the next visit's days, each box with its own range (docs/decisions/0086-the-next-visit-is-offered.md).
+  test("gives each of the next visit's days its own box and range, and sends the one changed", async ({ page }) => {
+    await open(page, "/settings", {
+      "POST /api/settings/booking_days": (route) => {
+        const days = SETTINGS.settings.find((rule) => rule.name === "booking_days");
+        const { value } = route.request().postDataJSON() as { value: unknown };
+        return json({ ...days, value, set_by: "ops@maneman.in" })(route);
+      },
+    });
+    const days = page.getByRole("group", { name: "Booking and the next visit" });
+    await expect(days.getByLabel("Between service visits")).toHaveValue("30");
+    await expect(days).toContainText("14 to 90 days, a whole number");
+    await expect(days.getByLabel("From a consultation to the first fit")).toHaveValue("0");
+    await expect(days).toContainText("0 to 30 days, a whole number");
+    await expect(days.getByLabel("How far ahead a visit may be booked")).toHaveValue("45");
+    await expect(days).not.toContainText("service_cadence");
+
+    // A horizon shorter than the fortnight the strip shows is not offered.
+    const rule = page.getByRole("listitem").filter({ has: days });
+    await days.getByLabel("How far ahead a visit may be booked").fill("10");
+    await expect(rule.getByRole("button", { name: "Save" })).toBeDisabled();
+    await days.getByLabel("How far ahead a visit may be booked").fill("45");
+
+    await days.getByLabel("Between service visits").fill("28");
+    await rule.getByRole("button", { name: "Save" }).click();
+    const check = page.getByRole("group", { name: "Check the change" });
+    await expect(check.getByRole("listitem")).toHaveText(["Between service visits: 30 days → 28 days."]);
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+    const request = posted(page, "/api/settings/booking_days");
+    await check.getByRole("button", { name: "Save" }).click();
+    expect((await request).postDataJSON()).toEqual({
+      value: {
+        first_fit_lead: 0,
+        service_cadence: 28,
+        reminder_before_due: 7,
+        at_risk_after_due: 7,
+        first_fit_to_book: 7,
+        horizon: 45,
+        invoice_prompt: 14,
+      },
+    });
+    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   });
 
   test("offers a base of its own on the open rule, and none where the keys are fixed", async ({ page }) => {

@@ -3,6 +3,7 @@
 // referral landing without the invite: e2e/refer-landing.e2e.ts covers that one,
 // and e2e/book-api.e2e.ts books against the real local API.
 
+import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
 import { analyticsEvents, expect, expectNoPersonalData, fakeTurnstile, test, visit } from "./support.ts";
@@ -10,7 +11,14 @@ import { analyticsEvents, expect, expectNoPersonalData, fakeTurnstile, test, vis
 const SERVED = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
 const UNSERVED = { pincode: "400050", served: false, area: "Bandra", city: "Mumbai" };
 
-const BOOKED = { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, address: "saved" };
+const BOOKED = {
+  state: "booked",
+  date: "2026-09-25",
+  window: "morning",
+  area: SERVED.area,
+  address: "saved",
+  first_fit: false,
+};
 
 /** Mocks the page's three calls; returns the requests it made. */
 async function mockApi(
@@ -65,8 +73,72 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "morning", consent: true, loss_extent: "receding" });
   expect(sent.turnstile_token).toBeTruthy();
+  // The consultation alone, as the form starts: no first fit is asked for (ADR 0086).
+  expect(sent).not.toHaveProperty("first_fit");
+  await expect(page.getByText(/You asked for your first fit too/)).toBeHidden();
   // The invite's three visits are the landing's; this page promises nothing of the kind.
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
+});
+
+// The owner's ruling of 27 September 2026 (ADR 0025, item 68; docs/decisions/0086-the-next-visit-is-offered.md): the
+// consultation is booked as ever, and the first fit asked for with it is booked and paid in the app afterwards.
+test("offers the consultation with the first fit to follow, and says where the fit is booked and paid", async ({
+  page,
+}) => {
+  const requests = await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, first_fit: true } } });
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+
+  const plan = page.getByRole("group", { name: "What to book" });
+  await expect(plan.getByRole("radio")).toHaveCount(2);
+  await plan.getByText("The consultation, then my first fit").click();
+  await expect(plan.getByRole("radio", { name: "The consultation, then my first fit" })).toBeChecked();
+  const fit = page.getByRole("group", { name: "The fit, if you have a time in mind" });
+  await fit.getByText("Afternoon").click();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
+  expect(sent).toMatchObject({ first_fit: { window: "afternoon" }, consent: true, loss_extent: "crown" });
+  await expect(
+    page.getByText(
+      "You asked for your first fit too. Once the consultation is done, you book the fit in the app and pay for it there.",
+    ),
+  ).toBeVisible();
+  // Nothing is paid on the site: the confirmation still says the consultation is free.
+  await expect(page.getByText(/· free$/)).toBeVisible();
+});
+
+test("asks for the fit in either window unless one is chosen, and drops it when the consultation alone is chosen", async ({
+  page,
+}) => {
+  const requests = await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  const plan = page.getByRole("group", { name: "What to book" });
+  await plan.getByText("The consultation, then my first fit").click();
+  await plan.getByText("A consultation", { exact: true }).click();
+  await expect(page.getByRole("group", { name: "The fit, if you have a time in mind" })).toHaveCount(0);
+  await plan.getByText("The consultation, then my first fit").click();
+
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect((requests[0]?.postDataJSON() as Record<string, unknown>).first_fit).toEqual({ window: null });
 });
 
 // The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).

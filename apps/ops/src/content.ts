@@ -834,7 +834,10 @@ export const tasks = {
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
     consultation_request: "Consultation request",
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).
+    first_fit_to_book: "First fit to book",
     replacement_order: "Replacement order",
+    at_risk_client: "At-risk client",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     partial_visit: "Visit left partly done",
     referral_review: "Referral review",
@@ -886,6 +889,25 @@ export const tasks = {
     address_to_confirm: (when: string) => `Visit ${when}; no address yet`,
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
+    /**
+     * PLACEHOLDER: "+ first fit, afternoon", after the consultation asked for: the site's form asked for the fit
+     * too, which the client books and pays for in the app once the consultation is done (ADR 0086).
+     */
+    withFirstFit: (when: string | null) => (when === null ? "+ first fit" : `+ first fit, ${when.toLowerCase()}`),
+    /**
+     * PLACEHOLDER: "Consultation Thu 10 Sep; first fit asked for in the morning". Nothing is booked since the
+     * consultation, and the task goes when the client books.
+     */
+    first_fit_to_book: (consulted: string, when: string | null) =>
+      when === null
+        ? `Consultation ${consulted}; first fit asked for`
+        : `Consultation ${consulted}; first fit asked for in the ${when.toLowerCase()}`,
+    /**
+     * "9 weeks since the last visit · due Sat 19 Sep", as board D2 writes "9 weeks since service": the day the next
+     * service fell due, from the cadence ops set. The task goes when the client books.
+     */
+    at_risk_client: (weeks: number, due: string) =>
+      `${String(weeks)} ${weeks === 1 ? "week" : "weeks"} since the last visit · due ${due}`,
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
     replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
     /** PLACEHOLDER: "The piece was not ready · 20 Sep": book the visit that finishes it. The technician's words. */
@@ -1211,7 +1233,31 @@ export const settings = {
     keyNames: {
       no_show_wait_min: dispatch.typeNames,
       task_sla_hours: tasks.groups,
+      // PLACEHOLDER: the days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
+      booking_days: {
+        first_fit_lead: "From a consultation to the first fit",
+        service_cadence: "Between service visits",
+        reminder_before_due: "Reminder, before the next service is due",
+        at_risk_after_due: "At-risk client, after it was due",
+        first_fit_to_book: "First fit to book, after the consultation",
+        horizon: "How far ahead a visit may be booked",
+        invoice_prompt: "A new invoice on Home",
+      },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
+    /**
+     * PLACEHOLDER: the check before a rule is sent, as a price's (docs/decisions/0071-what-ops-see-before-a-setting-
+     * changes.md): each figure that moves, the old beside the new.
+     */
+    confirm: {
+      title: "Check the change",
+      change: (label: string, was: number | null, now: number | null, unit: string) =>
+        `${label}: ${was === null ? "none" : `${String(was)} ${unit}`} → ${
+          now === null ? "the figure for every other base" : `${String(now)} ${unit}`
+        }.`,
+      standard: "This puts the standard figures back.",
+      send: "Save",
+      back: "Change it",
+    },
     /** The rule's name, or one of its boxes, and what the API said of it. */
     outside: (field: string) => `${field} is outside what this rule allows. Nothing was changed.`,
     errors: {
