@@ -1,6 +1,6 @@
 # 0023. Launch hardening: headers, analytics, budgets
 
-- Status: accepted, except item 2, which waits for the owner. Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
+- Status: accepted. Item 2 was settled by the owner on 22 September 2026: Bot Fight Mode is off, option a (ADR 0025, item 12). Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
 - Date: 2026-09-22
 
 ## Context
@@ -36,6 +36,8 @@ As built, the policy blocks the script. Each page then logs one policy error in 
 - **c. Stamp a nonce per request.** A Worker in front of the site's HTML would add a fresh nonce to the policy and to the page's scripts, and Cloudflare would stamp the same nonce onto its own script. That costs one Worker request per page view, counted against the free plan's 100,000 a day (ADR 0009), which the API shares.
 
 Staging runs as (b) until the owner decides.
+
+**Decided: a.** Bot Fight Mode was turned off on 21 September 2026, since it challenged CI's smoke tests (ADR 0008's update of that day), and the owner ruled it stays off on 22 September 2026 (ADR 0025, item 12). No script is blocked, on staging or in production.
 
 ### 3. Analytics
 

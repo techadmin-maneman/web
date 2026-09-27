@@ -28,7 +28,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0020](0020-production-on-the-zoho-test-org.md) | Production uses the Zoho test org, for now | 2026-09-21 | superseded by 0050 on 22 September 2026 | [0050](0050-crm-in-the-real-org.md) |
 | [0021](0021-public-site.md) | The public site: Astro in site/, on staging first | 2026-09-22 | accepted |  |
 | [0022](0022-site-departures-from-v2.md) | Where the site departs from v2 or the front-end prompt | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md) |
-| [0023](0023-launch-hardening.md) | Launch hardening: headers, analytics, budgets | 2026-09-22 | accepted, except item 2, which waits for the owner |  |
+| [0023](0023-launch-hardening.md) | Launch hardening: headers, analytics, budgets | 2026-09-22 | accepted |  |
 | [0024](0024-the-browsers-own-look.md) | The browser's own look: an optional gate, and a look shown again | 2026-09-22 | accepted, on the owner's review of 22 September 2026 |  |
 | [0025](0025-phase-2-conflicts-register.md) | Phase 2: the conflicts register | 2026-09-22 | accepted, and kept up to date |  |
 | [0026](0026-hosts-and-surfaces.md) | Hosts and surfaces | 2026-09-22 | accepted |  |

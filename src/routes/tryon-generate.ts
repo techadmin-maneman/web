@@ -1,6 +1,6 @@
 // POST /api/tryon/generate and GET /api/tryon/status/:job_id.
 //
-// One look per visitor (the owner's decision, docs/decisions/0014-try-on-api.md):
+// One look per visitor (the owner's decision, docs/decisions/0018-one-look-pro-only-lead-notices.md):
 // the first generate for an upload renders it; the same look asked for again
 // returns that job; any other look is refused, before or after the gate. The
 // mm_look cookie then keeps the browser from starting another photo.

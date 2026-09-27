@@ -50,7 +50,8 @@
         "queue": "mm-render-local",
         "max_batch_size": 5,
         "max_batch_timeout": 1,
-        // Polling a render is a delayed retry, so this allows 180 s of polls with room to spare.
+        // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
+        // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
         "max_retries": 100
       },
       {
@@ -157,7 +158,8 @@
             "queue": "mm-render-staging",
             "max_batch_size": 5,
             "max_batch_timeout": 1,
-            // Polling a render is a delayed retry, so this allows 180 s of polls with room to spare.
+            // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
+            // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
             "max_retries": 100
           },
           {
@@ -260,7 +262,8 @@
             "queue": "mm-render-prod",
             "max_batch_size": 5,
             "max_batch_timeout": 1,
-            // Polling a render is a delayed retry, so this allows 180 s of polls with room to spare.
+            // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
+            // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
             "max_retries": 100
           },
           {

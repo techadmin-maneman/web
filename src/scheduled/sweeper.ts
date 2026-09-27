@@ -12,7 +12,8 @@
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
 //   moves       a dispatch move still open after five minutes: its claimed time let go, the move closed
 //   hourly      the AILabTools balance, against AILAB_CREDIT_FLOOR
-//   expiry      abandoned uploads after an hour, results after 30 days, photos once their jobs are done
+//   expiry      abandoned uploads after an hour, results once RESULT_RETENTION_DAYS is up (14 in production,
+//               3 on staging), photos once their jobs are done
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
 //               try-on sessions once expired, and app sessions 30 days after they ended
 
