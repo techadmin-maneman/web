@@ -94,8 +94,8 @@ test("leaves a click that asks for a new tab to the browser", async ({ page, con
   const opened = context.waitForEvent("page");
   await page.getByRole("link", { name: "Waitlist" }).click({ modifiers: ["ControlOrMeta"] });
   const tab = await opened;
-  await tab.waitForLoadState();
-  expect(new URL(tab.url()).pathname).toBe("/waitlist");
+  // A new tab opens on about:blank and then goes to the link, so its first load can be the blank page's.
+  await tab.waitForURL((url) => url.pathname === "/waitlist");
   await expect(page.getByRole("heading", { level: 1, name: "Dispatch" })).toBeVisible();
   expect(new URL(page.url()).pathname).toBe("/");
 });
