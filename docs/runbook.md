@@ -1,46 +1,72 @@
 # Runbook
 
-Commands run from the repository root. `W` stands for `node node_modules/wrangler/bin/wrangler.js`. Always pass `--env staging` or `--env production`; the top level of each config is local only.
+Commands run from the repository root. `W` stands for `node node_modules/wrangler/bin/wrangler.js`. Always pass `--env staging` or `--env production`; the top level of each config is local only. `<env>` is `staging` or `production`, and `<t>` is `staging` or `prod`, as resource names have it.
 
 Everything lives in the Cloudflare account `Tech@maneman.in's Account` (`a2e185075b1b8eef3bee24b72f45ace3`), which holds the `maneman.in` zone.
 
-To run SQL against an environment's database: `W d1 execute maneman-<env> --env <env> --remote --command "<sql>"`, where `maneman-<env>` is `maneman-staging` or `maneman-prod`.
+To run SQL against an environment's database: `W d1 execute maneman-<env> --env <env> --remote --command "<sql>"`, where `maneman-<env>` is `maneman-staging` or `maneman-prod`. The SQL below is written for that command.
 
-The public site (`mm-site`) is built, edited and published as `docs/frontend.md` describes. Staging serves the site; production serves a placeholder page until the site goes live.
+Five Workers make up each environment: `mm-api` (every `/api/*` route, the database, the queues and the cron), `mm-site` (the public site, `docs/frontend.md`), and the three apps, `mm-app`, `mm-ops` and `mm-tech` (`docs/front-ends.md`). Staging serves all five. Production serves mm-api and a placeholder page from mm-site until the owner's go-ahead.
+
+## When something is wrong
+
+An alert in the alert space names what went wrong with IDs only; "What each alert means", under "Alerts and the cron", says where each one leads. Otherwise, start from the symptom:
+
+| Symptom                                                     | Section                                                             |
+| ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| Nobody can sign in, or messages stop                        | "WhatsApp (Evolution) is down", and "The WhatsApp number is banned" |
+| Visits stop reaching FSM, or FSM's changes stop reaching us | "FSM is down", "FSM's webhook has stopped"                          |
+| A paid booking was refunded, or a refund failed             | "A paid booking FSM would not take", "A refund that failed"         |
+| Clients pay and their bookings never confirm                | "Razorpay's webhook is not arriving"                                |
+| An invoice is still a draft, or Books refuses something     | "Invoices and Books"                                                |
+| Leads stop reaching the CRM                                 | "Leads and Zoho"                                                    |
+| Try-ons fail                                                | "Try-on and WhatsApp"                                               |
+| A technician lost a phone, or his work is stuck on it       | "A technician's lost phone", "Work stuck on a technician's phone"   |
+| Ops cannot get into the console                             | "Locked out of the ops console"                                     |
+| R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
+| Data is wrong or gone in D1                                 | "Restoring D1"                                                      |
+| A release is misbehaving                                    | "Rolling back a Worker version"                                     |
+| Personal data may have leaked                               | "A personal data breach"                                            |
 
 ---
 
 ## Provisioning an environment
 
-`<env>` is `staging` or `production`; `<t>` is `staging` or `prod`.
+### Where things stand, 27 September 2026
 
-### State on 21 September 2026
+Staging's column is as its deploy of 27 September 2026 found it: all five Workers took commit 16fde86 and passed the smoke tests. Production's is as last recorded: its last release was 268eaa4 on 21 September 2026, which deployed mm-api and mm-site. Nothing here was read from production for this table; "Before the first production release of Phase 2", below the steps, is how to check.
 
-| Step                                        | staging                                            | production                                      |
-| ------------------------------------------- | -------------------------------------------------- | ----------------------------------------------- |
-| 1. D1 database, queues                      | done                                               | done                                            |
-| 1. R2 buckets, 30-day expiry                | done                                               | done                                            |
-| 1. R2 buckets: photographs, referral cards  | done                                               | not yet: before the next release (below)        |
-| 2. DNS record                               | done                                               | exists (the apex record)                        |
-| 3. Access application and service token     | done                                               | not applicable                                  |
-| 4. Migrations and identity mark             | done                                               | done                                            |
-| 5. Bootstrap deploy of both Workers         | done                                               | done                                            |
-| 6. CI tokens and GitHub secrets, checked    | done                                               | done                                            |
-| 7. Worker secrets: Turnstile, IP salt       | done                                               | done                                            |
-| 7. Worker secrets: alert webhook            | done (Google Chat)                                 | done (the same Google Chat space)               |
-| 7. Worker secrets: AILabTools, link signing | done                                               | done (staging's AILabTools key, for now)        |
-| 7. Worker secrets: Evolution, allowlist     | done (poker-settle's bridge, for now)              | Evolution done (the same bridge; messaging off) |
-| 7. Worker secrets: erasure                  | done                                               | done                                            |
-| 8. Zoho org, fields, secrets                | done: the real org (ADR 0050)                      | done: the real org (ADR 0050)                   |
-| 9. Triggers (cron and all three consumers)  | done                                               | done                                            |
-| 10. Access bypass for result links          | done                                               | not applicable                                  |
-| 11. Phase 2 hosts: DNS, Access              | done                                               | done (all three behind Access until go-live)    |
-| 11. Phase 2 surfaces switched on            | done (22 September 2026)                           | not yet: waits for the production go-ahead      |
-| 11. The client app's Worker, bootstrapped   | done (22 September 2026)                           | not yet: waits for the production go-ahead      |
-| 11. The technician app's Worker (`mm-tech`) | not yet: bootstrap it, then add it to the CI token | not yet: waits for the production go-ahead      |
-| 7. Worker secrets: login code pepper        | done (22 September 2026)                           | not yet: with the client surface                |
-| 12. Evolution receipts: token, bypass       | done                                               | not yet                                         |
-| 12. Evolution receipts: the webhook         | open: the shared instance's webhook                | not yet                                         |
+| Step                                           | staging                                                | production                                                                                |
+| ---------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| 1. D1 database                                 | done                                                   | done                                                                                      |
+| 1. Queues: render, crm-sync, messaging         | done                                                   | done                                                                                      |
+| 1. Queue: fsm-sync                             | done                                                   | not yet (open point 32)                                                                   |
+| 1. R2 buckets, 30-day expiry                   | done                                                   | done                                                                                      |
+| 1. R2 buckets: photographs, referral cards     | done                                                   | not yet (open point 33)                                                                   |
+| 2. DNS record                                  | done                                                   | exists (the apex record)                                                                  |
+| 3. Access application and service token        | done                                                   | not applicable                                                                            |
+| 4. Migrations and identity mark                | done                                                   | done, to the migrations of 268eaa4                                                        |
+| 5. Bootstrap deploy of mm-api and mm-site      | done                                                   | done                                                                                      |
+| 6. CI tokens and GitHub secrets, checked       | done                                                   | done                                                                                      |
+| 7. Worker secrets: Turnstile, IP salt          | done                                                   | done                                                                                      |
+| 7. Worker secrets: alert webhook               | done (Google Chat)                                     | done (the same Google Chat space)                                                         |
+| 7. Worker secrets: AILabTools, link signing    | done                                                   | done (staging's AILabTools key, for now)                                                  |
+| 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                  | Evolution done (the same bridge; messaging off)                                           |
+| 7. Worker secrets: erasure                     | done                                                   | done                                                                                      |
+| 7. Worker secrets: login code pepper           | done (22 September 2026)                               | not yet: with the client surface                                                          |
+| 8. Zoho org, fields, secrets                   | done: the real org (ADR 0050)                          | done: the real org (ADR 0050)                                                             |
+| 9. Triggers: the cron                          | done, and checked by the deploy                        | done                                                                                      |
+| 9. Triggers: the queue consumers               | done (all four); CI cannot read them, so check by hand | three; fsm-sync's once its queue exists                                                   |
+| 10. Access bypass for result links             | done                                                   | not applicable                                                                            |
+| 11. Phase 2 hosts: DNS, Access                 | done                                                   | done (all three behind Access until go-live)                                              |
+| 11. Phase 2 surfaces switched on               | done (22 September 2026)                               | not yet: waits for the production go-ahead                                                |
+| 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                    | mm-app recorded as bootstrapped with no route (open point 29); mm-ops and mm-tech not yet |
+| 11b. FSM and Books                             | done                                                   | not yet: `FSM_PROVIDER` and `BOOKS_PROVIDER` are `none`                                   |
+| 11c. Razorpay                                  | done, test keys                                        | not yet: `PAYMENTS_PROVIDER` is `none`                                                    |
+| 12. Evolution receipts: token, bypass          | done                                                   | not yet                                                                                   |
+| 12. Evolution receipts: the webhook            | open: the shared instance's webhook                    | not yet                                                                                   |
+| 13. The address search (Google)                | `google`, and Google refuses the key (open point 26)   | not yet: `none`                                                                           |
+| 14. Cloudflare Web Analytics                   | not recorded: check it (step 14)                       | not recorded: check it (step 14)                                                          |
 
 ### 1. Resources
 
@@ -49,8 +75,11 @@ W d1 create maneman-<env> --location apac      # put the ID in wrangler.jsonc, e
 W queues create mm-render-<t>
 W queues create mm-crm-sync-<t>
 W queues create mm-messaging-<t>
+W queues create mm-fsm-sync-<t>
 npm run check:config -- --require-provisioned  # must pass before anything deploys
 ```
+
+`wrangler.jsonc` binds all four queues and all four buckets below in every environment, so an upload of mm-api fails until each exists. The release uploads before it migrates (ADR 0006), so a missing one stops it with the database untouched.
 
 R2 must be enabled on the account first (dashboard → Storage & databases → R2; it needs a payment method). Try-on photos and results must not outlive 30 days, so each bucket gets an expiry rule:
 
@@ -61,7 +90,7 @@ for bucket in mm-<t>-tryon-uploads mm-<t>-tryon-results; do
 done
 ```
 
-Phase 2's two buckets get no rule: a client's photograph is deleted only on purpose, and a referral card when its referrer or a revoke takes it down. `wrangler.jsonc` binds both in every environment, so a release fails at its first step, before any migration, until they exist.
+Phase 2's two buckets get no rule: a client's photograph is deleted only on purpose, and a referral card when its referrer or a revoke takes it down.
 
 ```sh
 W r2 bucket create mm-<t>-client-photos --location apac
@@ -387,16 +416,9 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 
    Set the secrets before deploying with the providers switched on: the guard refuses a Worker without them.
 
-5. **The bucket and the queue.** Create both once, before the first deploy that uses them. The photographs bucket (step 1) gets no lifecycle rule: a client's photograph is only deleted on purpose.
+5. **The buckets and the queue.** `mm-<t>-client-photos`, `mm-<t>-referral-cards` and `mm-fsm-sync-<t>` are step 1's, and must exist before any deploy, since `wrangler.jsonc` binds them whether FSM is on or not. Neither bucket gets a lifecycle rule: a client's photograph is only deleted on purpose. Once the code that consumes the queue is live, attach its consumer (step 9):
 
    ```sh
-   W r2 bucket create mm-<t>-client-photos --location apac
-   ```
-
-   Then attach the queue's consumer after that deploy (step 9):
-
-   ```sh
-   W queues create mm-fsm-sync-<t>
    npm run apply-triggers -- --env <env>
    ```
 
@@ -526,7 +548,7 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 8. **Check it.** Sign in to the staging client app, open the profile, and start typing a building into "Search for your building". Suggestions should appear within a second, with the words _Google Maps_ under the list. Choose one, fill in the flat, save, and confirm the coordinate landed:
 
    ```sh
-   W d1 execute mm-db --env staging --command \
+   W d1 execute maneman-staging --env staging --remote --command \
      "SELECT building, flat, place_id, lat, lng, geocode_source FROM addresses WHERE lat IS NOT NULL ORDER BY created_at DESC LIMIT 3"
    ```
 
@@ -539,9 +561,30 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 - **To stop all spending at once.** Set `"GEOCODE_DAILY_CEILING": "0"` in `wrangler.jsonc` and deploy, or set `"GEOCODE_PROVIDER": "none"`. Either way the form keeps working, typed.
 - **A charge appears at all.** Something is wrong, because the quotas in step 4 cannot reach the free allowance. Disable the key in **Credentials**, set `GEOCODE_PROVIDER` to `none`, and find out how before re-enabling it.
 
+### 14. Cloudflare Web Analytics
+
+The site counts its visits with Cloudflare Web Analytics, and its privacy notice says so. It needs no code: Cloudflare adds its beacon to each page at the edge, and the site's content security policy allows the beacon's two hosts (`site/src/lib/static-files.ts`). Nothing in the repository can tell whether it is switched on, so check each environment and write the answer in the table above.
+
+1. Cloudflare dashboard → **Web Analytics**. The site's hostname should be listed (`maneman.in`, and `staging.maneman.in` for staging). If it is not: **Add a site**, choose the hostname, and keep the automatic setup.
+2. Open a page of the site and view its source. It should load `https://static.cloudflareinsights.com/beacon.min.js`. On staging, sign in through Access first. Production serves its placeholder page until go-live, so check it again on the site's first day there.
+3. Within a few minutes the dashboard counts the visit.
+
+If the page carries no beacon, the automatic setup is not reaching the pages the Worker serves. The manual snippet, a `<script defer>` from `static.cloudflareinsights.com` with the site's token, then goes in `site/src/layouts/Site.astro`; the policy already allows its host.
+
+The client app's policy does not allow the beacon (`apps/app/headers.ts`), though ADR 0043 allows Web Analytics there. Switch it on for `app.maneman.in` only after the policy allows it.
+
+### Before the first production release of Phase 2
+
+Production runs 268eaa4, of 21 September 2026. The next release carries every migration since, and a Worker that binds what production has never had. Before starting `deploy-production.yml`:
+
+1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-fsm-sync-prod`, `mm-prod-client-photos` and `mm-prod-referral-cards` (open points 32 and 33). Then check every bucket with `node --env-file=.env.cf-read scripts/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
+2. **Vars and secrets.** `npm run check:config` holds each environment to 64 vars and secrets together (ADR 0009, rule 6). A secret the switched-on providers need must be set before the release (step 7): the Worker refuses to start without it, and Cloudflare refuses the upload.
+3. **The apps.** The release passes over an app whose surface is off in production and that has no Worker there; mm-ops and mm-tech have none yet (step 11).
+4. **After the release.** Attach the new consumer with `npm run apply-triggers -- --env production` and check it (step 9). Then the contract step ADR 0070 holds back, dropping the old Zoho token tables, may be merged (`docs/migrations.md`).
+
 ## The CI runner
 
-GitHub Actions jobs run on the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"). The machine must be on, with Docker Desktop running; the containers start with Docker.
+Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` sends them to the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"), and anything else to GitHub's own runners. **Since 23 September 2026 it is `github`** (`gh variable list` shows it), so every job runs on GitHub's runners and spends the plan's minutes; whether to move back is the owner's decision. The rest of this section is for the machine: it must be on, with Docker Desktop running, and the containers start with Docker.
 
 **There are two,** `maneman-runner` (`maneman-pc`) and `maneman-runner-2` (`maneman-pc-2`), each with its own volume. One runner meant a pull request, a deploy and a second pull request waited for each other, half an hour at a time; two run side by side on a twelve-core machine. They share the machine, so a job is slower when both are busy: that is why the worker tests allow thirty seconds each (`vitest.config.ts`), since they write to a real D1 and a slow one is working, not hanging. One CI run is itself six jobs now (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"), so a single pull request keeps both runners busy, and a third runner would shorten a run further.
 
@@ -567,7 +610,8 @@ GitHub Actions jobs run on the owner's machine, in containers (docs/decisions/00
 
 - **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
-- **Move the jobs back to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They are then within GitHub's free minutes, which a run spends about twice as fast as it used to: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). A merge whose files already passed CI as a pull request does not run it again before its staging deploy.
+- **Move the jobs to GitHub's runners:** `gh variable set CI_RUNNER --body github`, as it is now. They then spend GitHub's minutes, about twice as fast as one job did: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). When the minutes run out, GitHub starts no job: staging stops deploying and production cannot release. A merge whose files already passed CI as a pull request does not run it again before its staging deploy.
+- **Move them back to the machine:** check both runners are listening (above), then `gh variable set CI_RUNNER --body maneman`.
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
 
 ## Staying on the free tier
@@ -583,6 +627,33 @@ Once, in the Cloudflare dashboard:
 Cloudflare is not the only card now. The owner's own card is on Google Maps Platform for the address search, and Google bills past its free allowance rather than stopping. Its quotas and its kill switch are section 13, and its ceiling is `GEOCODE_DAILY_CEILING`.
 
 If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/free-tier-budget.test.ts` refuses any ceiling that could take R2 or Queues past 80% of the free allowance, counting the share set aside for Phase 2 (`docs/decisions/0015-render-pipeline.md`, `docs/decisions/0039-phase-2-budget.md`).
+
+### R2 storage growing
+
+R2's 10 GB a month is the account's, both environments together, and past it R2 bills. What fills it:
+
+| Bucket                  | What                                                                       | Kept                                                                                 |
+| ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `mm-<t>-tryon-uploads`  | Try-on photographs                                                         | Deleted within the hour; the bucket's 30-day rule behind that                        |
+| `mm-<t>-tryon-results`  | Try-on results                                                             | `RESULT_RETENTION_DAYS`: 3 on staging, 14 in production; the 30-day rule behind that |
+| `mm-<t>-client-photos`  | Visit photographs, ten a visit, from the technician app or copied from FSM | For good: deleted only by an erasure                                                 |
+| `mm-<t>-referral-cards` | One card for each referrer who made one                                    | Until its referrer revokes it or is erased                                           |
+
+ADR 0039 gives the photographs and the cards 4 GB, about 1,480 visits at 250 KB a photograph, which is what the technician app sends. Two things spend it faster: a photograph copied from FSM keeps FSM's size, several MB (open point 34), and the API takes one from the technician app up to 12 MB. The storage meter ADR 0039 planned, warning at 50% and 80% of the share, has not been built. The usage notifications above, at 5 GB, are the only warning.
+
+Where it stands: the dashboard's R2 page gives each bucket's size, which is the figure that bills. The photographs the database knows of:
+
+```sql
+SELECT COUNT(*) AS photographs, ROUND(SUM(bytes) / 1e9, 2) AS gb, ROUND(AVG(bytes) / 1e3) AS average_kb FROM photos;
+SELECT p.id, p.bytes, s.appointment_id FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id ORDER BY p.bytes DESC LIMIT 20;
+```
+
+A bucket much larger than its rows is holding files nothing points at any more; tell the developers.
+
+If the total nears 8 GB:
+
+1. Stop the try-on as above. Its results then leave over the retention days and give their share back.
+2. Never delete a client's photographs to make room: they are the client's record, promised kept. The owner decides between Workers Paid and keeping photographs in FSM (ADR 0039), and that decision is due before the share runs out.
 
 ---
 
@@ -605,6 +676,45 @@ SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_
 ```
 
 The other jobs run regardless. A run shares 40 outside calls between its jobs; a job that finds them spent stops and leaves the rest to the next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
+
+Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need both FSM and Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
+
+### What each alert means
+
+The chat shows the message; the `alerts` table keeps it under its key. Most alerts say what to do; this is where each leads. An alert whose "closes" is "by hand" stays open until you close it as above.
+
+| The alert says                                                           | Key                                                                                        | Closes                           | See                                             |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------- | ----------------------------------------------- |
+| The cron's _job_ job has failed _n_ runs in a row                        | `cron_job:<job>`                                                                           | when a run works                 | the job's own section; `cron_jobs` above        |
+| The WhatsApp bridge is not connected                                     | `whatsapp_bridge`                                                                          | when it is open                  | "WhatsApp (Evolution) is down"                  |
+| _n_ login codes failed to send in the last hour                          | `login_codes_failing`                                                                      | when a code goes                 | "WhatsApp (Evolution) is down"                  |
+| Message _id_ (_kind_) failed after _n_ attempts                          | none: told for each                                                                        | not kept                         | "Replaying a failed message"                    |
+| Lead _id_ did not reach the CRM                                          | none                                                                                       | not kept                         | "Replaying failed leads"                        |
+| Erasing person _id_ in the CRM failed                                    | none                                                                                       | not kept                         | "Erasure within the day", step 3                |
+| FSM would not anonymise contact _id_                                     | `fsm_erasure:<person>`                                                                     | by hand                          | "Erasure within the day"                        |
+| FSM sync gave up on appointment _id_                                     | `fsm_sync:<fsm id>`                                                                        | when it syncs                    | "FSM is down"                                   |
+| FSM reconciliation repaired _n_ appointment(s) tonight                   | none                                                                                       | not kept                         | "FSM's webhook has stopped"                     |
+| Lead _id_ did not reach FSM                                              | none                                                                                       | not kept                         | "FSM is down"                                   |
+| A technician's _step_ … has waited over an hour to reach FSM             | `job_event_pending:<job event>`                                                            | when it is written or given up   | "FSM is down"                                   |
+| A technician's _step_ did not reach FSM after _n_ attempts               | none                                                                                       | not kept                         | "FSM is down"                                   |
+| Booking _id_ was paid for … and is neither booked in FSM nor refunded    | `unbooked_hold:<hold>`                                                                     | when booked or given back        | "A paid booking FSM would not take"             |
+| Booking _id_ could not be written to FSM after _n_ attempts              | `booking_given_up:<hold>`                                                                  | when booked or given back        | "A paid booking FSM would not take"             |
+| Booking _id_: an earlier try may have made its work order in FSM         | `work_order_lookup_failed:<hold>`                                                          | by hand                          | cancel all but one work order, as it says       |
+| The client moved visit _id_ … and FSM would not cancel its work order    | `replaced_not_cancelled:<visit>`                                                           | by hand                          | cancel it in FSM, as it says                    |
+| The refund … for visit _id_, cancelled by the client (or waived), failed | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<visit>`                            | by hand                          | "A refund that failed"                          |
+| Invoice _id_ of visit _id_ is held as a draft, or is still a draft       | `invoice_draft:<visit>`                                                                    | when the invoice is issued       | "Invoices and Books"                            |
+| FSM refused to invoice, or the invoice pass has failed                   | `invoice_refused:<visit>`, `invoice_failed:<visit>`                                        | when the invoice is issued       | "Invoices and Books"                            |
+| Books refused, or has failed on, a payment, its application or a refund  | `books_payment_…`, `books_apply_…`, `books_refund_…` (`_refused:` or `_failed:` and an ID) | when it goes through             | "Invoices and Books"                            |
+| Payment _id_ … has nothing to be set against                             | `books_unapplied:<payment>`                                                                | by hand                          | "Invoices and Books"                            |
+| FSM's catalogue item … and the price book has …                          | `fsm_catalogue:<visit type>`                                                               | when the two agree               | step 11b, point 8                               |
+| Client _id_'s new number or address did not reach FSM (or the CRM)       | `fsm_contact_update:<person>`, `crm_contact_update:<person>`, `contact_sync:<person>`      | when a later update goes through | update the contact or lead by hand, as it says  |
+| AILabTools credits are down to _n_                                       | `ailab_credits_low`                                                                        | when topped up                   | "Credits are low"                               |
+| Try-on job _id_ failed, or its result was billed but never downloaded    | none                                                                                       | not kept                         | "Try-on and WhatsApp"                           |
+| The daily _name_ ceiling is reached                                      | none: told once a day                                                                      | not kept                         | "A ceiling was reached"; section 13 for geocode |
+| Google refused the address search                                        | `google_refused:<date>`                                                                    | by hand                          | section 13                                      |
+| Turnstile could not check _n_ visitors                                   | `turnstile_unavailable:<date>`                                                             | by hand                          | Cloudflare's status, and `TURNSTILE_SECRET`     |
+| _n_ account deletion request(s) have waited 5 days                       | none                                                                                       | not kept                         | the console's Deletion requests                 |
+| A client raised grievance _id_                                           | none                                                                                       | not kept                         | the console's Grievances                        |
 
 ---
 
@@ -660,6 +770,133 @@ The sweeper picks them up within five minutes. A replay never duplicates a Zoho 
 
 ---
 
+## FSM and Books
+
+FSM is the record of field work; D1 keeps a mirror of its appointments (ADR 0032). Everything mm-api writes to FSM goes through the fsm-sync queue, which tries each write five times, 30 seconds, 1, 2 and 4 minutes apart: about eight minutes, then it gives up. Books is written by the cron, once an hour for each record. Production has both switched off today (`FSM_PROVIDER` and `BOOKS_PROVIDER` are `none`).
+
+### FSM is down
+
+Symptoms: `fsm_sync_failed`, `booking_failed` and `job_event_write_failed` in Workers Logs with FSM's status (a 5xx, a timeout), then the alerts below, and `cron_job:fsm_reconcile` once the reconciliation has failed three runs. If calls fail with `Access Denied` or `TOKEN_COOLING_DOWN`, it is the token rather than FSM: "Zoho refused a new token", above, with `'fsm'` for the client. What follows is the same either way.
+
+What happens while it lasts, each once its eight minutes are spent:
+
+- **A paid booking** is given up: the work order FSM may hold for it is cancelled, the client is refunded in full, and ops are told what happened to each (`booking_given_up`, "A paid booking FSM would not take"). So every booking paid during an outage longer than about eight minutes is refunded. For a long one, stop taking them: set `SELF_SERVE_BOOKING` to `"false"` in `wrangler.jsonc` and deploy, and the app says booking goes through ops.
+- **A technician's step** is marked `rejected`, with every later step of the same job held back behind it, and ops are told to enter them in FSM by hand. (A step whose queue message was lost is a different thing: the sweeper sends it again after 15 minutes, and tells ops once if it has waited an hour, `job_event_pending`.)
+- **A lead from the site** is told to ops, to enter in FSM by hand.
+- **The mirror** stays as FSM last answered. FSM's webhook hints fail too, and a hint given up on is told (`fsm_sync`); the reconciliation catches up afterwards.
+- **Invoices and Books** wait: each visit or payment is tried again an hour later.
+
+Once FSM answers again:
+
+1. **Bookings given up** need nothing more than the client being asked to book again; the alert says whether each was refunded.
+2. **Technicians' steps** rejected because FSM could not be reached can be sent again instead of typed in. List them:
+
+   ```sql
+   SELECT id, appointment_id, kind, fsm_error, received_at FROM job_events
+   WHERE fsm_write_state = 'rejected' AND received_at > '<the outage began, ISO>' ORDER BY appointment_id, received_at;
+   ```
+
+   Where the first of each job's errors is FSM's unavailability (a 5xx, a timeout, `TOKEN_COOLING_DOWN`) and those after it say "the … before it did not reach FSM", put them back:
+
+   ```sql
+   UPDATE job_events SET fsm_write_state = 'pending', fsm_error = NULL, updated_at = '2000-01-01T00:00:00Z'
+   WHERE fsm_write_state = 'rejected' AND received_at > '<the outage began, ISO>';
+   ```
+
+   The sweeper sends each job's earliest step at its next run, and each step written sends the next. Sending one again sets FSM's fields to the same values, and finds photographs and pieces already attached rather than adding them (ADR 0070). A step FSM refused, with a 4xx, is entered in FSM by hand instead.
+
+3. **Leads** that did not reach FSM go again if they are under a day old: `UPDATE leads SET fsm_queued_at = NULL WHERE id = '<lead id>';`, and the sweeper sends each within five minutes. An older one, enter by hand.
+
+### FSM's webhook has stopped
+
+FSM calls `POST /api/hooks/fsm/<token>` for each appointment created, edited or deleted (step 11b, point 6). Without it the mirror still follows FSM, only more slowly: every cron run reads the 50 latest changes, two upcoming visits are read again each run, and the whole list is read between 1 and 5 am India time. That night's pass then alerts "FSM reconciliation repaired _n_ appointment(s) tonight that the webhook missed or FSM deleted". An occasional repair is FSM missing a call; one every night, or no hint for hours while FSM is busy, is the webhook.
+
+```sql
+SELECT COUNT(*) AS hints, MAX(received_at) AS last FROM webhook_inbox WHERE source = 'fsm';
+SELECT record_id, attempts, last_error, received_at FROM webhook_inbox WHERE processed_at IS NULL ORDER BY received_at DESC LIMIT 20;
+```
+
+In Workers Logs:
+
+- `fsm_hook_unauthorized`: the token in FSM's webhook URL is not `FSM_WEBHOOK_TOKEN`.
+- `fsm_hook_unreadable` or `fsm_hook_ignored`: the webhook's parameters are not the three step 11b names.
+- Nothing at all: FSM is not calling. Its workflow rule may be off, or, on staging, Access is stopping `/api/hooks/` (step 12, point 3). If `FSM_WEBHOOK_TOKEN` is not set, the route answers 404.
+- Hints taken but `last_error` filled: they reached us and reading the appointment failed; "FSM is down".
+
+### A paid booking FSM would not take
+
+A booking is written to FSM from the queue once Razorpay says the client paid (ADR 0068). Two alerts follow a booking FSM will not take:
+
+- **"… is neither booked in FSM nor refunded half an hour on"** (`unbooked_hold`): the cron has put it back on the queue. Nothing to do; if FSM still refuses it, the next alert follows.
+- **"Booking _id_ could not be written to FSM after _n_ attempts"** (`booking_given_up`). It says what happened to the money and to FSM, and each line has its action:
+
+  | The alert says                                                        | Do                                                                                                                                                         |
+  | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Razorpay payment _id_ is refunded in full                             | Tell the client, and ask them to book again once FSM is working                                                                                            |
+  | Razorpay payment _id_ had already been refunded                       | Nothing                                                                                                                                                    |
+  | Nothing was paid for it, so nothing is refunded                       | Nothing                                                                                                                                                    |
+  | It is booked, so nothing is refunded: a step after the booking failed | Check the visit in FSM and in the console                                                                                                                  |
+  | Razorpay refused to refund payment _id_                               | Refund it by hand in Razorpay's dashboard, in full, once. The hold keeps its time; once the refund reaches us the next try lets it go and closes the alert |
+  | Its work order _id_ is cancelled in FSM                               | Nothing                                                                                                                                                    |
+  | FSM would not cancel its work order _id_                              | Cancel it in FSM by hand, so no technician goes                                                                                                            |
+  | FSM may hold a work order for it whose answer never came              | Look in FSM's work orders for "(booking _id_)" and cancel it                                                                                               |
+  | Giving it up failed too, so nothing has been refunded yet             | Nothing yet: it is tried again in half an hour                                                                                                             |
+
+### Invoices and Books
+
+The cron raises each finished visit's invoice through FSM, which puts it in Books as a draft, and marks it sent once it totals what the client was sold the visit for (ADRs 0056 and 0070). Only then can the client open it. It records each payment and refund in Books and sets a visit's payment against its invoice. Nothing here ever sends a draft that already exists, so a draft ops correct is sent by ops.
+
+- **Held as a draft** (`invoice_draft`), the alert says why. The price differs: correct the draft in Books and send it there, and set FSM's catalogue price right (step 11b, point 8). Nothing says what the visit was sold for: check the draft and send it. Paid with a referral credit: leave it until the CA rules (open point 97).
+- **Still a draft an hour after the visit, or Books would not mark it sent** (`invoice_draft`, and `invoice_not_issued` in the logs): send it in Books. Within the hour the pass sees it sent, the client can open it, and the alert closes.
+- **FSM refused to invoice** (`invoice_refused`): raise it in FSM by hand, then send it in Books; the pass finds it, since FSM gives a work order one invoice however often it is asked.
+- **Books refused a payment, its application or a refund** (`books_…_refused`): the message says what; put it right in Books. It is asked again every hour, and the alert closes when it goes through. `books_…_failed` is Books failing three times in some other way, usually Books being down; nothing to do.
+- **Nothing to set a payment against** (`books_unapplied`): it stays in Books as the client's credit. Settle it by hand in Books; how a kept charge is invoiced waits for the CA (open point 79).
+- Refunds are recorded in Books only while `BOOKS_REFUND_ACCOUNT_ID` is set (step 11b, point 7).
+
+The console's Tasks board lists every draft invoice. From SQL:
+
+```sql
+SELECT id, window_end, fsm_invoice_id, invoice_checked_at FROM appointments
+WHERE status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL ORDER BY window_end;
+SELECT id, razorpay_payment_id, captured_at FROM payments WHERE captured_at IS NOT NULL AND books_payment_id IS NULL;
+SELECT id, razorpay_refund_id, created_at FROM refunds WHERE status = 'processed' AND books_refund_id IS NULL;
+```
+
+---
+
+## Razorpay
+
+Razorpay is the record of money. We learn of each payment and refund only from its webhook (ADR 0044): nothing reads them from Razorpay afterwards. Production has it switched off today (`PAYMENTS_PROVIDER` is `none`).
+
+### Razorpay's webhook is not arriving
+
+Symptoms: clients pay, their booking sheet never confirms, and the hold runs out; Razorpay's dashboard shows the payments captured, and D1 has not heard of them.
+
+```sql
+SELECT event, COUNT(*) AS events, MAX(received_at) AS last FROM razorpay_events GROUP BY event;
+SELECT id, person_id, razorpay_order_id, created_at FROM slot_holds
+WHERE razorpay_order_id IS NOT NULL AND confirmed_at IS NULL AND created_at > '<since, ISO>' ORDER BY created_at;
+```
+
+The second lists the holds whose Checkout opened and whose payment we never heard of. Look each order ID up in Razorpay's dashboard to see whether it was paid.
+
+The cause, from Workers Logs:
+
+- the route answers 404: `RAZORPAY_WEBHOOK_SECRET` is not set on the Worker (step 11c, point 2);
+- `razorpay_hook_unauthorized`: the secret in Razorpay's webhook is not the Worker's;
+- nothing at all: Razorpay is not calling. The webhook is disabled (Razorpay disables one that has failed for 24 hours, and e-mails the account), its URL is wrong, it is set up in the other mode from the keys (test or live), or, on staging, Access is stopping `/api/hooks/` (step 12, point 3);
+- `razorpay_hook_refund_early`, answered 409: a refund came before its payment. Razorpay sends it again; nothing is wrong.
+
+Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
+
+For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own webhook is then answered 409, since its payment was never recorded; that is expected.
+
+### A refund that failed
+
+"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a client's cancel, `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+
+---
+
 ## Try-on and WhatsApp
 
 The render consumer is the only caller of AILabTools and the messaging consumer the only caller of WhatsApp (`docs/decisions/0015-render-pipeline.md`). D1 records where every job and message stands:
@@ -699,11 +936,30 @@ Alert: "its result was billed but never downloaded, and its URL has expired". Th
 
 Symptoms: messages fail with `HTTP 5xx`, `unreachable` or `Connection Closed`, and an alert names each after four attempts. Every login code goes through the bridge too, so clients and technicians cannot sign in. Two alerts say so: the cron reads the bridge's connection state every five minutes and alerts when two readings in a row find it closed, and login codes alert when three fail to send in an hour. Both close once it works again. A message that failed with `delivery unconfirmed` is different: the bridge did not answer in time (20 s for a text, 60 s for an image), and the message may have arrived. It is never retried automatically.
 
+Whoever is signed in stays signed in: a client's or a technician's session lasts 90 days from its last use, and only a new sign-in needs a code. There is no other way in. SMS is off until a DLT-registered provider exists (open point 17), and the fixed code `dev:all` uses is refused anywhere but a laptop. So ask technicians not to sign out while it lasts.
+
 1. Check the bridge. `GET {EVOLUTION_API_URL}/instance/connectionState/{instance}` with the `apikey` header should say `"state": "open"`.
-2. If the WhatsApp session dropped, reconnect it in the bridge (scan the QR code again).
+2. If the WhatsApp session dropped, reconnect it in the bridge (scan the QR code again). If WhatsApp will not take the number back, see the next section.
 3. Replay the messages that failed (below).
 
-To turn WhatsApp copies off, set `MESSAGING_ENABLED` to `"false"` and deploy. The gate then stops promising a copy, and queued messages are skipped.
+**`MESSAGING_ENABLED`.** Set to `"false"` in `wrangler.jsonc` and deployed, it stops every message except login codes:
+
+- the try-on's WhatsApp copy, which the gate then stops promising;
+- every message about a visit: the booking confirmation, the payment receipt, the reminder the day before, a move, a cancel, the technician's arrival and a no-show ruling. The cron stops queuing reminders at all;
+- the referral messages, the waitlist's confirmation and a pincode's launch.
+
+A message queued while it is off is marked `skipped` rather than held, so switching it back on sends none of them. The technician's arrival message is a no-show's evidence (ADR 0047): with messaging off, a no-show has no delivery receipt to show. Login codes still go, as nobody could sign in otherwise; only stopping the bridge stops them. Production has messaging off today.
+
+### The WhatsApp number is banned
+
+The bridge drives an ordinary WhatsApp account, and WhatsApp can ban a number for sending automatically (ADR 0016). The bridge's connection then closes and will not open again with that number: the alerts are the ones above, and scanning the QR code fails, or WhatsApp on that phone says the number is banned.
+
+1. Nobody who is signed out can sign in (above). Tell ops, and ask technicians to stay signed in.
+2. Connect the bridge's instance to another WhatsApp number, by its QR code. The instance keeps its name and key, so the Worker's secrets stay as they are. If a new instance is made instead, set `EVOLUTION_INSTANCE_NAME`, and `EVOLUTION_API_KEY` if it has its own, with `W secret put` (a secret change is live at once), and point its receipts' webhook at us (step 12).
+3. Clients now hear from another number. The number the site and the apps ask clients to write to is `WHATSAPP_NUMBER` in `packages/web-kit/whatsapp.ts`; if that number is the banned one, change it and release the site and the apps.
+4. Replay the messages that failed (below).
+
+The lasting answers are a number of Mane Man's own (open point 18) and SMS (open point 17).
 
 ### Replaying a failed message
 
@@ -718,6 +974,59 @@ The sweeper sends them within five minutes. Every attempt mints a fresh link, so
 ### Stuck jobs
 
 The sweeper re-enqueues renders whose queue message was lost, and fails a submit that died part-way after 10 minutes, because submitting again could bill twice. Nothing to do by hand.
+
+---
+
+## The technician app
+
+A technician signs in on his phone with his number and a WhatsApp code; the session is bound to that phone, which ops can revoke (ADRs 0052 and 0053). The phone keeps today's and tomorrow's jobs, and every step he takes waits in its outbox until it reaches us.
+
+### A technician's lost phone
+
+1. **Revoke it.** In the ops console, Technicians, under Phones: each phone he has signed in on, and when it was last used. Revoke the lost one; its session ends at once. A technician who installed the app on an iPhone has two rows for one handset, the browser's copy and the installed app's (ADR 0053): revoke both.
+2. **What it still holds.** The phone keeps its jobs until it next reaches us: each client's name, number, address and gate code, and any photographs and steps not yet sent. At its next contact it wipes all of it, and `technician_devices.wiped_at` records that it has. A phone that never comes back online keeps it, and that is personal data on a lost device: follow "A personal data breach" to judge it.
+3. **What was only on the phone** is lost with it. Ops enter in FSM by hand what the technician did that did not reach us; what did reach us is in `job_events` ("Work stuck on a technician's phone", below).
+4. **A new phone.** He signs in on it with his number, and it enrols itself. If the number went with the phone, change it in FSM: a number we do not know is looked up in FSM at sign-in.
+
+```sql
+SELECT d.device_id, d.label, d.last_seen_at, d.revoked_at, d.wiped_at
+FROM technician_devices d JOIN technicians t ON t.id = d.technician_id
+WHERE t.name LIKE '%<name>%' ORDER BY d.last_seen_at DESC;
+```
+
+### Work stuck on a technician's phone
+
+The app sends the outbox one step at a time, oldest first, whenever it has signal and whenever it comes to the front. Its "Waiting to reach us" screen (`/waiting`) lists, for each job, the photo sets and steps still on the phone, since when, and what stopped the job's queue.
+
+- **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
+- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops enter it in FSM by hand; then he taps "Got it", which asks first and deletes that job's queue from the phone.
+- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step.
+- **Photographs failed**: "Retry".
+- **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
+
+A step that reached us and not FSM is on the server side: "FSM is down". What reached us for a visit:
+
+```sql
+SELECT kind, occurred_at, received_at, fsm_write_state, fsm_error FROM job_events
+WHERE appointment_id = '<visit id>' ORDER BY received_at;
+```
+
+---
+
+## Locked out of the ops console
+
+The console is behind Cloudflare Access in both environments, and mm-api checks the Access token again on every call (ADR 0031).
+
+- **Access will not let a person in.** Zero Trust → Access → Applications → the console's application (`ops.maneman.in`, `ops-staging.maneman.in`) → Policies: their e-mail must be in the Allow policy, and the login method they use must be switched on (Settings → Authentication). A change takes effect within a minute. It needs someone who can sign in to the Cloudflare account; if nobody can, that is Cloudflare's account recovery.
+- **The console opens, and every call fails with "access required"** (403). mm-api refused the token; Workers Logs say why, as `access_refused` with a reason:
+  - `wrong_audience`: the application's audience tag is not `ACCESS_OPS_AUD` in `wrangler.jsonc`. The tag changes when the application is deleted and made again: copy the new one (step 11, point 3) and deploy.
+  - `wrong_issuer`: `ACCESS_TEAM_DOMAIN` in `wrangler.jsonc` is not the team's domain, the `….cloudflareaccess.com` that Zero Trust's settings show.
+  - `missing`: the call reached mm-api without Access, so the host has no Access application: add it (step 11, point 2).
+  - `expired`: sign in again.
+- **Every call answers 503**, with `access_keys_unavailable` in the logs: mm-api could not fetch Access's signing keys. That is on Cloudflare's side, and each call tries again.
+- **The deploys' smoke tests stop getting through** to the Phase 2 hosts: the CI service token has expired or left a policy. Make a new one (step 3) and store it (step 6).
+
+While ops are locked out, nothing in the console can be done by SQL without losing its audit: every decision in the console is written to `audit_log` under the person who made it. Wait unless a deadline forces it (a deletion request's seven days, a refund); if it does, note what was done, when and to which rows in the alert space.
 
 ---
 
@@ -812,8 +1121,9 @@ The DPDP Act and its Rules require us to tell the Data Protection Board and each
      - rotate the secret (`W secret put … --env <env>`);
      - revoke the Zoho, Razorpay or Evolution key in its console;
      - sign out the ops user in Cloudflare Access;
+     - revoke a technician's phone in the console ("A technician's lost phone");
      - revoke client sessions with `UPDATE sessions SET revoked_at = '<now>' WHERE …`.
-   - Close the opening. Turn off a surface (`SURFACES` in `wrangler.jsonc`), and roll back a Worker version if a release caused it (below).
+   - Close the opening. To shut a host at once, put it behind an Access application that lets in only the founders (step 3): every request to it, `/api/*` included, then needs their login, with no release. Roll back a Worker version if a release caused it (below). Switching a surface off for good is step 11 in reverse, in a release: `ENABLED_SURFACES` in `src/config/environments.ts` and its route in `wrangler.jsonc`.
 2. **Keep the evidence.** Save `wrangler tail` output, the audit log rows (`SELECT * FROM audit_log WHERE created_at > …`), and the provider's own logs, to a private folder (`private/`, git-ignored). Never paste personal data into chat or email.
 3. **Assess.**
    - What data, whose, how many people, since when.
@@ -853,35 +1163,168 @@ A blackout changes only proposals made after it is added.
 
 ---
 
-## Restoring D1 to a point in time
+## Restoring D1
 
-D1 Time Travel restores a database to any minute in the last 7 days (the Workers Free plan's window; 30 on Paid). **It rolls back everything written since**, including leads that are already in Zoho. Prefer fixing rows by hand when you can.
+D1 Time Travel can put the database back to any minute in the last seven days (the Workers Free plan's window). A restore overwrites the whole database in place, cancels the queries running at the time, and undoes everything written since that minute. D1 is the only record of much of it, and the rest is in systems that will not send it again. So take the smallest repair that will do:
+
+1. **Fix the rows by hand**, when you know what they should hold, from the logs, `audit_log` or the vendors' own records.
+2. **Repair from an earlier minute**, when you need what the damaged rows held before: go back, copy the damaged tables, and come straight forward again. Every other table stays as it is now.
+3. **Restore the whole database**, only when the database itself is broken: tables dropped, or damage in more places than you can name. Everything since that minute is undone, and you carry back what can be trusted.
+
+The last two need `<T>`: the last good minute, in UTC, e.g. `2026-09-27T10:04:00Z`. `W d1 time-travel info maneman-<env> --env <env> --timestamp <T>` shows its bookmark. Work in `private/restore/`, which git ignores: what goes there holds personal data, and is deleted when you are done.
+
+Both run the Workers on the earlier database for a minute or two, so:
+
+- **Choose a quiet time**, with no technician at work and nobody likely to be paying: after 10 pm India time.
+- **Start just after a cron run, and finish within four minutes.** The cron runs at every minute that ends in 0 or 5; start at one ending in 1 or 6. On the earlier database its sweeper would send again the messages sent since `<T>`, and put back on the queue bookings FSM already has.
+- **Ask ops to stay out of the console** until you are done.
+- **Pause the queues** first, so no consumer acts on the earlier database, and resume them at the end:
+
+  ```sh
+  for queue in render crm-sync messaging fsm-sync; do W queues pause-delivery mm-$queue-<t>; done
+  for queue in render crm-sync messaging fsm-sync; do W queues resume-delivery mm-$queue-<t>; done
+  ```
+
+Anything written while the Workers are on the earlier database is lost when you leave it. Afterwards, look in Razorpay's dashboard for any payment or refund made in those minutes ("Razorpay's webhook is not arriving").
+
+### Repairing from an earlier minute
 
 ```sh
-W d1 time-travel info maneman-<env> --env <env> --timestamp 2026-09-21T10:00:00Z   # the bookmark for that moment
-W d1 time-travel restore maneman-<env> --env <env> --timestamp 2026-09-21T10:00:00Z
+mkdir -p private/restore
+# 1. Pause the queues (above).
+# 2. Go back. Keep the bookmark it prints after "To undo this operation": it is the database as it is now.
+W d1 time-travel restore maneman-<env> --env <env> --timestamp <T>
+# 3. Copy the damaged tables as they were then.
+W d1 export maneman-<env> --env <env> --remote --no-schema --table <table> --table <table> --output private/restore/at-T.sql
+# 4. Come straight back.
+W d1 time-travel restore maneman-<env> --env <env> --bookmark <the bookmark from step 2>
+# 5. Resume the queues.
 ```
 
-The restore prints a bookmark for the state it replaced, so the restore itself can be undone. Afterwards:
+If step 3 fails, go on with step 4 all the same: until step 4 has run, the Workers are on the earlier database.
 
-- run `node scripts/mark-database.ts <env>`; the identity row is older than any restore point, so it should still match;
-- run the smoke suite;
-- replay any leads that were in flight;
-- **repeat any erasure made after the restore point.** A restore brings erased people back. Before restoring, list them: `SELECT id FROM people WHERE erased_at >= '<restore timestamp>';`. After it, look up each one's number (`SELECT mobile_e164 FROM people WHERE id = '<id>';`) and erase it again.
+Then, with no hurry, load the copy beside the tables as they are now, each as `restore_<table>`:
+
+```sh
+tables='people leads'   # the damaged tables
+{
+  for table in $tables; do echo "CREATE TABLE restore_$table AS SELECT * FROM $table WHERE 0;"; done
+  sed -nE 's/^INSERT INTO "([a-z_0-9]+)"/INSERT INTO "restore_\1"/p' private/restore/at-T.sql
+} > private/restore/load.sql
+W d1 execute maneman-<env> --env <env> --remote --file private/restore/load.sql
+```
+
+Put right what was damaged, with SQL written for the damage. Rows deleted since `<T>`, say:
+
+```sql
+INSERT INTO leads SELECT * FROM restore_leads WHERE id NOT IN (SELECT id FROM leads);
+```
+
+Or a column overwritten:
+
+```sql
+UPDATE people SET name = (SELECT r.name FROM restore_people r WHERE r.id = people.id)
+WHERE erased_at IS NULL AND id IN (SELECT id FROM restore_people);
+```
+
+Leave alone what changed rightly since `<T>`: the second example passes over people erased since, whose name must stay "Erased". "What a restore undoes", below, is the list to think through. Then drop each `restore_` table and delete `private/restore`.
+
+### Restoring the whole database
+
+```sh
+mkdir -p private/restore
+# 1. Copy everything as it is now, if it can still be read. The export holds up other queries while it runs.
+W d1 export maneman-<env> --env <env> --remote --output private/restore/now.sql
+# 2. Build the carry-back file (below), then pause the queues (above).
+# 3. Go back. Keep the bookmark it prints: restoring to it undoes this.
+W d1 time-travel restore maneman-<env> --env <env> --timestamp <T>
+# 4. Carry back what can be trusted.
+W d1 execute maneman-<env> --env <env> --remote --file private/restore/carry.sql
+# 5. Check the database is still this environment's; resume the queues, and run the smoke suite.
+node scripts/mark-database.ts <env>
+```
+
+The carry-back file empties every table except the ones the restore is for, and fills it again as it was a moment ago. `consents`, `audit_log` and `credit_ledger` refuse a delete, as they are only ever added to, so they gain the rows they lack instead:
+
+```sh
+skip='photos|photo_sets'   # the tables the restore is for: they stay as they were at <T>
+never='d1_migrations|deployment_identity|sqlite_sequence|_cf_[A-Za-z_]+'
+kept='consents|audit_log|credit_ledger'
+{
+  echo 'PRAGMA defer_foreign_keys = true;'
+  grep -oE '^CREATE TABLE (IF NOT EXISTS )?"?[a-z_0-9]+' private/restore/now.sql | grep -oE '[a-z_0-9]+$' \
+    | grep -vxE "$skip|$never|$kept" | sed 's/.*/DELETE FROM "&";/'
+  grep -E '^INSERT INTO "' private/restore/now.sql | grep -vE "^INSERT INTO \"($skip|$never)\" " \
+    | sed -E "s/^INSERT INTO \"($kept)\" /INSERT OR IGNORE INTO \"\1\" /"
+} > private/restore/carry.sql
+```
+
+A table dropped since `<T>` is not in `now.sql`, so it stays as it was at `<T>`, named or not. The file runs whole or not at all. It fails, and changes nothing, when a migration ran after `<T>`, as its rows then name columns the restored tables lack (leave out the tables that migration changed), or when a table left at `<T>` points at a row a carried table no longer has (carry it too, or leave out the one it points at). Anything written between the restore and the carry-back is lost.
+
+Then:
+
+1. **A migration that ran after `<T>`** is undone with the rest, and the code serving expects it: roll mm-api back to the release before it ("Rolling back a Worker version"), or apply the migrations again once they are right.
+2. **For each table left at `<T>`**, put back what "What a restore undoes" says for it. Its rows as they were a moment ago are in `now.sql`: load them as `restore_` tables, as "Repairing from an earlier minute" does.
+3. Delete `private/restore`.
+
+If nothing is left worth carrying (the export failed, or nothing in it can be trusted), everything since `<T>` is lost, and the table below is the list of what to put back from elsewhere.
+
+### What a restore undoes
+
+What each group of tables means if it is left as it was at `<T>`, and how it is put back:
+
+| What                                          | Tables                                                                                                                                                | Left at `<T>`                                                                               | Put back by                                                                                                                                                                    |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Consents given and withdrawn                  | `consents`                                                                                                                                            | Someone who said stop is messaged again                                                     | Adding the rows since `<T>`: they are only ever added                                                                                                                          |
+| Revoked sessions and phones                   | `sessions`, `technician_devices`                                                                                                                      | A lost phone, or a session that was ended, works again                                      | Revoking again: a phone in the console, a client's session with `sessions.revoked_at`                                                                                          |
+| Erasures                                      | `people`, and what an erasure deletes: `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`                              | Erased people come back in D1. Their files stay gone, since R2 is not restored              | Erasing again ("Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';`                                                        |
+| Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances`                                                                                 | A client's new number stops working; a request, or its answer, is lost                      | Deciding each again in the console                                                                                                                                             |
+| Payments and refunds                          | `payments`, `refunds`, `razorpay_events`                                                                                                              | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again         | Adding the rows since `<T>`, checked against Razorpay's dashboard                                                                                                              |
+| Bookings and moves                            | `slot_holds`, `slot_claims`, `dispatch_moves`, `visit_changes`                                                                                        | The cron puts back on the queue bookings FSM has already, and FSM makes a second work order | The rows since `<T>`, before the cron's next run                                                                                                                               |
+| Messages                                      | `outbound_messages`                                                                                                                                   | The sweeper sends again what was sent since                                                 | The rows since `<T>`, before the cron's next run                                                                                                                               |
+| Technicians' steps and photographs            | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `photos`, `photo_sets`                                                       | The console and the phones lose what FSM has; a photograph's file is kept with no row       | The rows since `<T>`                                                                                                                                                           |
+| Referrals and credits                         | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `consultation_requests`                                               | A credit, a grant or a place on a waitlist disappears                                       | The rows since `<T>`. `credit_ledger` is only ever added to                                                                                                                    |
+| Ops' settings                                 | `ops_settings`, `price_book`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `cities`                                                 | A price, rule, area or day off set since goes back                                          | Setting it again in the console, which audits it                                                                                                                               |
+| The audit log                                 | `audit_log`                                                                                                                                           | Who did what since `<T>`                                                                    | Adding the rows since `<T>`: they are only ever added                                                                                                                          |
+| New people, leads, addresses and try-ons      | `people`, `leads`, `addresses`, `tryon_jobs`                                                                                                          | Bookings and leads made since are lost here; the CRM has the leads                          | The rows since `<T>`                                                                                                                                                           |
+| The FSM mirror                                | `appointments`, `technicians`, `pieces`, `fsm_items`                                                                                                  | Out of date until FSM is read again; a client's note on a visit is lost                     | Nothing: the cron reads FSM's 50 latest changes within five minutes, and every appointment between 1 and 5 am India time. Invoices are found again: FSM gives a work order one |
+| Housekeeping                                  | `alerts`, `cron_jobs`, `counters`, `idempotency`, `otp_challenges`, `tryon_sessions`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `events` | Nothing that lasts                                                                          | Nothing                                                                                                                                                                        |
 
 ---
 
 ## Rolling back a Worker version
 
-A production release rolls itself back when a smoke check or the soak fails: every Worker goes back to the version it served before the release, whichever step failed. To roll back by hand:
+A production release rolls itself back when a smoke check or the soak fails once traffic has started to move: every Worker goes back to the version it served before the release, whichever step failed. Staging has no automatic rollback. By hand, for any of the five Workers, in either environment:
 
-```sh
-node scripts/release.ts current --worker mm-api --env production    # what is serving now
-W versions list --env production                                     # versions, with tags (git SHAs)
-node scripts/release.ts deploy --worker mm-api --env production --split <good-version-id>@100 --message "rollback: <reason>"
-npm run smoke -- --base https://maneman.in --environment production --version-id <good-version-id>
-```
+1. **Find the version to go back to.** Each Worker's config is in `scripts/lib/workers.ts`: `wrangler.jsonc` for mm-api, `site/wrangler.jsonc` for mm-site, and `apps/app/wrangler.jsonc`, `apps/ops/wrangler.jsonc` and `apps/tech/wrangler.jsonc` for the apps.
 
-Use `--worker mm-site`, `mm-app`, `mm-ops` or `mm-tech` for the others, or put several back at once, each only if it no longer serves that version: `node scripts/release.ts restore --env production --to mm-api=<id> --to mm-app=<id>`. Rolling back code never rolls back D1: every migration works with the previous code (`docs/decisions/0006-deployment-pipeline.md`), so the previous version runs on the migrated schema.
+   ```sh
+   node scripts/release.ts current --worker <worker> --env <env>     # the version serving now
+   W deployments list --config <config> --env <env>                  # the last ten deployments, each with its versions
+   W versions list --config <config> --env <env>                     # every version, tagged with the commit it was built from
+   ```
 
-If a release stopped halfway through a rollout, `release.ts current` refuses to answer and prints the split. Deploy the good version at 100% as above.
+   The deployment before the bad one names the version to go back to.
+
+2. **Put it back.** One Worker or several in one command; a Worker already serving the version named is left alone, and every one is tried before the command fails:
+
+   ```sh
+   node scripts/release.ts restore --env <env> --message "rollback: <reason>" --to mm-api=<version id> --to mm-app=<version id>
+   ```
+
+3. **Smoke it.** The public host, and each switched-on Phase 2 host, which must serve mm-api and its own app:
+
+   ```sh
+   npm run smoke -- --base https://maneman.in --environment production --version-id <mm-api's version id>
+   npm run smoke -- --environment production --surfaces
+   ```
+
+   On staging the base is `https://staging.maneman.in`, and every host is behind Access: put an Access service token (step 3) in `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` first.
+
+What a rollback does not undo:
+
+- **The database.** Every migration works with the code of the release before it (ADR 0006), so mm-api's previous version runs on the migrated schema. Going back further than one release is not promised: a contract step (`docs/migrations.md`) drops what older code still reads. Data a bad release wrote wrongly is "Restoring D1".
+- **Triggers.** Cron schedules, queue consumers and routes are not part of a version. If the release was followed by `apply-triggers`, the older code runs with the newer triggers; attach the older ones by checking out the older commit and running `npm run apply-triggers -- --env <env>` from it.
+- **Staging's next merge.** A merge to `main` deploys every Worker again, so a rollback on staging lasts until then.
+
+An app's phones and browsers take the rolled-back version the next time they open it, when its service worker sees the change. If a release stopped halfway through a rollout, `release.ts current` refuses to answer and prints the split: put the good version back at 100% with `node scripts/release.ts deploy --worker <worker> --env <env> --split <version id>@100 --message "rollback: <reason>"`.
