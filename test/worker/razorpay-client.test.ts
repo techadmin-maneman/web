@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import { createLogger } from "../../src/log.ts";
-import { createPaymentsProvider, RazorpayError } from "../../src/providers/razorpay.ts";
+import { createPaymentsProvider } from "../../src/providers/payments.ts";
+import { RazorpayError } from "../../src/providers/razorpay.ts";
 import { fakeFetch, json } from "./helpers.ts";
 
 const API = "https://api.razorpay.com/v1";

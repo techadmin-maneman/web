@@ -16,7 +16,7 @@
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { canCloseAsNoShow, noShowWaitEnds, type NoShowDecision, type Waits } from "../policy/no-show.ts";
-import type { PaymentsProvider } from "../providers/razorpay.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import type { LatestArrival } from "./check-ins.ts";

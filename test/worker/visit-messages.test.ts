@@ -13,7 +13,7 @@ import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import type { MessagingProvider } from "../../src/providers/messaging.ts";
-import { createStubPayments } from "../../src/providers/razorpay.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
 import {
   appFor,

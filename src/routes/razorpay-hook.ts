@@ -13,8 +13,13 @@ import type { App } from "../http/context.ts";
 import { paymentStatusOf, recordPayment, recordRefund } from "../domain/payments.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { saltedHash, secretsMatch, sha256Hex } from "../lib/hash.ts";
-import { RazorpayPaymentSchema, RazorpayRefundSchema, type RazorpayPayment } from "../providers/razorpay.ts";
+import { sha256Hex } from "../lib/hash.ts";
+import {
+  RazorpayPaymentSchema,
+  RazorpayRefundSchema,
+  signedByRazorpay,
+  type RazorpayPayment,
+} from "../providers/razorpay.ts";
 
 const EventSchema = z.object({
   event: z.string(),
@@ -53,7 +58,7 @@ export function registerRazorpayHook(app: App): void {
 
     const body = await c.req.text();
     const signature = c.req.header("X-Razorpay-Signature") ?? "";
-    if (!(await secretsMatch(signature, await saltedHash(secret, body)))) {
+    if (!(await signedByRazorpay(secret, body, signature))) {
       log.warn("razorpay_hook_unauthorized");
       return c.json(errorBody("unauthorized", requestId), 401);
     }

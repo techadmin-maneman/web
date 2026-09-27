@@ -26,7 +26,7 @@ import { indiaIso } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { createLogger, type Logger } from "../log.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import type { PaymentsProvider } from "../providers/razorpay.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { redeemCredit } from "./credits.ts";

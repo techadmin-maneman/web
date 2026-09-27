@@ -29,7 +29,7 @@ import {
   type Notice,
 } from "../policy/moving-a-visit.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import type { PaymentsProvider } from "../providers/razorpay.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { windowAt } from "../policy/windows.ts";

@@ -13,7 +13,7 @@ import { createCrmProvider, type CrmProvider } from "./providers/crm.ts";
 import { createFsmProvider, type FsmProvider } from "./providers/fsm.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
-import { createPaymentsProvider, type PaymentsProvider } from "./providers/razorpay.ts";
+import { createPaymentsProvider, type PaymentsProvider } from "./providers/payments.ts";
 import { BACKGROUND_TIMEOUT_MS, WAITED_TIMEOUT_MS } from "./providers/zoho-http.ts";
 import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode.ts";
 

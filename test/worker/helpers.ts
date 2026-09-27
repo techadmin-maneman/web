@@ -1,4 +1,4 @@
-import { createStubPayments } from "../../src/providers/razorpay.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
 import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp } from "../../src/app.ts";

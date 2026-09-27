@@ -1,20 +1,20 @@
-// Razorpay, for taking payment and giving it back (docs/decisions/0045-self-serve-booking.md).
-// Only orders and refunds are made here; what happened to a payment arrives by
-// the signed webhook (docs/decisions/0044-payments-mirror.md), which is the
-// authority. Amounts are in paise.
+// Razorpay, for taking payment and giving it back (docs/decisions/0045-self-serve-booking.md), and what its
+// webhook carries. Only orders and refunds are made here; what happened to a payment arrives by the signed
+// webhook (docs/decisions/0044-payments-mirror.md), which is the authority. Amounts are in paise. Only
+// src/providers/payments.ts chooses this client.
 //
 //   POST https://api.razorpay.com/v1/orders                   { id }
 //   POST https://api.razorpay.com/v1/payments/{id}/refund     { id }
 
 import { z } from "zod";
 import type { RazorpaySettings } from "../config/settings.ts";
+import { saltedHash, secretsMatch } from "../lib/hash.ts";
 import type { Logger } from "../log.ts";
+import type { PaymentsProvider } from "./payments.ts";
 
-export interface PaymentsProvider {
-  /** An order for Checkout to pay; its notes come back on the payment. */
-  createOrder(order: { amount: number; receipt: string; notes: Record<string, string> }): Promise<{ id: string }>;
-  /** Gives a payment back, in full or part, to where it came from. */
-  refund(paymentId: string, refund: { amount: number; notes: Record<string, string> }): Promise<{ id: string }>;
+/** Whether a webhook body is Razorpay's: X-Razorpay-Signature is the HMAC-SHA256 of the raw body under the secret. */
+export async function signedByRazorpay(secret: string, body: string, signature: string): Promise<boolean> {
+  return secretsMatch(signature, await saltedHash(secret, body));
 }
 
 /** The fields of Razorpay's payment entity, as its webhook carries it, that the mirror reads. */
@@ -70,18 +70,10 @@ export class RazorpayError extends Error {
   }
 }
 
-export function createPaymentsProvider(
-  provider: string | undefined,
-  settings: RazorpaySettings | null,
+export function createRazorpay(
+  settings: RazorpaySettings,
   deps: { fetch: typeof fetch; log: Logger },
 ): PaymentsProvider {
-  if (provider === "razorpay" && settings !== null) return createRazorpay(settings, deps);
-  if (provider === "stub") return createStubPayments();
-  const off = () => Promise.reject(new Error("payments are not connected here (PAYMENTS_PROVIDER is none)"));
-  return { createOrder: off, refund: off };
-}
-
-function createRazorpay(settings: RazorpaySettings, deps: { fetch: typeof fetch; log: Logger }): PaymentsProvider {
   const authorization = `Basic ${btoa(`${settings.keyId}:${settings.keySecret}`)}`;
 
   async function post(step: string, path: string, body: object): Promise<{ id: string }> {
@@ -105,32 +97,5 @@ function createRazorpay(settings: RazorpaySettings, deps: { fetch: typeof fetch;
     createOrder: (order) => post("create_order", "/orders", { ...order, currency: "INR" }),
     refund: (paymentId, refund) =>
       post("refund", `/payments/${encodeURIComponent(paymentId)}/refund`, { ...refund, speed: "normal" }),
-  };
-}
-
-/** The stub, and what it was asked, for tests to read. */
-export interface StubPayments extends PaymentsProvider {
-  readonly made: {
-    readonly orders: { amount: number; receipt: string; notes: Record<string, string> }[];
-    readonly refunds: { paymentId: string; amount: number }[];
-  };
-}
-
-/** Local and test stand-in: takes no money and reaches nothing. Its IDs are unique, as a new stub answers each request. */
-export function createStubPayments(): StubPayments {
-  const made = {
-    orders: [] as { amount: number; receipt: string; notes: Record<string, string> }[],
-    refunds: [] as { paymentId: string; amount: number }[],
-  };
-  return {
-    made,
-    createOrder: (order) => {
-      made.orders.push(order);
-      return Promise.resolve({ id: `order_stub_${crypto.randomUUID()}` });
-    },
-    refund: (paymentId, refund) => {
-      made.refunds.push({ paymentId, amount: refund.amount });
-      return Promise.resolve({ id: `rfnd_stub_${crypto.randomUUID()}` });
-    },
   };
 }
