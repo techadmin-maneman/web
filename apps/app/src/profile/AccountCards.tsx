@@ -3,12 +3,12 @@
 // written in the same card, with placeholder words (apps/app/src/content.ts).
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, EXPORT_URL, type NumberChange, type Profile } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { login, profile, whatsapp } from "../content.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { mobileDigits } from "../login/mobile.ts";
 import styles from "./profile.module.css";
 

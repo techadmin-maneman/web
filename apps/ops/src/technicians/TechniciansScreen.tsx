@@ -12,13 +12,13 @@
 // covers are refused to self-serve booking and to the dispatch board alike,
 // which is why the form says so before it is sent.
 
+import { Dialog } from "@maneman/ui/Dialog";
+import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, listDate, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Device, type JobOnLeave, type Leave, type Technician, type TechnicianWork } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
-import { Dialog } from "../dispatch/Dialog.tsx";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./technicians.module.css";
 

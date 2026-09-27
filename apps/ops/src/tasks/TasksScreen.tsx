@@ -14,13 +14,13 @@
 // The board writes an owner in ops against every task. Nothing records one, so
 // the column is not drawn (docs/open-points.md, item 58).
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Task, type TaskGroup } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { dispatch, referrals, tasks } from "../content.ts";
 import { daysUntil } from "../lib/due.ts";
 import { rowPath } from "../lib/target.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./tasks.module.css";

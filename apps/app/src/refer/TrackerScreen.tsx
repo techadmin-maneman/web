@@ -2,14 +2,14 @@
 // what the client has earned and what is left. Whether an invite was opened is the friend's business, so it is
 // never shown here. Empty, it offers the invite (F6); the revoke of the client's own card sits at the foot.
 
+import { useLoad } from "@maneman/ui/useLoad";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useState } from "react";
 import { api, type Refer } from "../api.ts";
 import { empty, refer } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { EmptyState } from "../home/TabScreens.tsx";
-import { useLoad } from "../lib/useLoad.ts";
 import { CREDITS_PER_REFERRAL } from "../lib/referral.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";

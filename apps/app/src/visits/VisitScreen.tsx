@@ -5,15 +5,15 @@
 // client's says so, rather than offering to try again.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { messages, visits } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { VisitCard } from "../home/VisitCard.tsx";
 import { apiNow } from "../lib/clock.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { duration, invoiceState, visitName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { PhotoRow, type OpenPhoto } from "../photos/PhotoRow.tsx";

@@ -7,15 +7,15 @@
 // the client itself. A refund past its working days says it is late.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { messages, payments } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { apiNow } from "../lib/clock.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { Loading } from "../states/Loading.tsx";
 import { NotFound } from "../states/NotFound.tsx";

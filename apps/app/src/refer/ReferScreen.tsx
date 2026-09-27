@@ -6,15 +6,15 @@
 // Until their first fit a client has nothing to vouch for, and the invite's own words ("Had my hair system
 // fitted") would not be true: board B2 draws Refer for a lead as reachable but empty.
 
+import { ICONS_P2 } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { ICONS_P2 } from "@maneman/brand/icons";
 import { api, type Refer } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { empty, refer } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { EmptyState } from "../home/TabScreens.tsx";
-import { useLoad } from "../lib/useLoad.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
