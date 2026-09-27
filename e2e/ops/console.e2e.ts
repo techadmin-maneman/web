@@ -39,7 +39,7 @@ test("titles each page by what it is", async ({ page }) => {
   await page.getByRole("link", { name: "Waitlist" }).click();
   await expect(page).toHaveTitle("Waitlist · Mane Man operations");
   await page.goto("/settings/prices");
-  await expect(page).toHaveTitle("Prices · Settings · Mane Man operations");
+  await expect(page).toHaveTitle("Services and prices · Settings · Mane Man operations");
 });
 
 test("says who is signed in, as board A1 draws them at the header's right", async ({ page }) => {

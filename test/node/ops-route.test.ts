@@ -46,7 +46,7 @@ describe("the ops console's routes", () => {
 
   it("titles each page by what it is, never by whom, so no two sections share a title (WCAG 2.4.2)", () => {
     expect(titleOf(routeOf("/"))).toBe("Dispatch · Mane Man operations");
-    expect(titleOf(routeOf("/settings/prices"))).toBe("Prices · Settings · Mane Man operations");
+    expect(titleOf(routeOf("/settings/prices"))).toBe("Services and prices · Settings · Mane Man operations");
     expect(titleOf(routeOf(`/clients/${CLIENT}/consents`))).toBe("Consents · Clients · Mane Man operations");
     const titles = SECTIONS.map((section) => titleOf(routeOf(section.path)));
     expect(new Set(titles).size).toBe(SECTIONS.length);
