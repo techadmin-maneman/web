@@ -281,6 +281,7 @@ export interface paths {
                         date: string;
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
+                        address: components["schemas"]["TypedAddress"];
                         /**
                          * @description "You may contact me on WhatsApp about this consultation."
                          * @enum {boolean}
@@ -326,7 +327,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body */
+                /** @description invalid_request: the pincode is not served, or the day is not open, or the address is in another pincode (fields names address.pincode); not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -649,6 +650,7 @@ export interface paths {
                         date: string;
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
+                        address: components["schemas"]["TypedAddress"];
                         /**
                          * @description "You may contact me on WhatsApp about this consultation."
                          * @enum {boolean}
@@ -694,7 +696,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; invalid_request: the address is in another pincode (fields names address.pincode); idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1758,6 +1760,19 @@ export interface components {
                 /** @enum {string} */
                 window: "morning" | "afternoon" | "evening";
             };
+        };
+        TypedAddress: {
+            line1: string;
+            line2: string | null;
+            locality: string;
+            city: string;
+            pincode: string;
+            /** @description For the technician, from the day before the visit: gate code, parking. */
+            access_notes: string | null;
+            flat?: string | null;
+            floor?: string | null;
+            tower?: string | null;
+            landmark?: string | null;
         };
         Waitlist: {
             area: string | null;

@@ -9,9 +9,10 @@
 //   GET  /api/og/:code.jpg?v=         the invite's preview image: the referrer's card while it is live, else the
 //                                     house card; the version in the link is what makes a revoke reach new shares
 //
-// Posting takes a Turnstile token, and the same limits per number and address as the booking form. An unknown
-// code still books or waits, without an invite. The same submission sent again under its Idempotency-Key gets its
-// first answer.
+// Posting takes a Turnstile token, and the same limits per number and address as the booking form. A consultation
+// takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md).
+// An unknown code still books or waits, without an invite. The same submission sent again under its
+// Idempotency-Key gets its first answer.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -24,7 +25,8 @@ import { inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
-import { takenOrBooked } from "./consultations.ts";
+import { addressOf } from "./client-profile.ts";
+import { takenOrBooked, TypedAddressSchema } from "./consultations.ts";
 
 const CodeParams = z.object({ code: z.string().regex(/^[A-Za-z0-9]{4,12}$/) });
 
@@ -77,6 +79,7 @@ const ConsultationRequestSchema = z
     pincode: PincodeSchema,
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    address: TypedAddressSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -160,6 +163,7 @@ const consultationRoute = createRoute({
     409: takenOrBooked,
     422: errorResponse(
       "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; " +
+        "invalid_request: the address is in another pincode (fields names address.pincode); " +
         "idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
@@ -248,6 +252,7 @@ export function registerReferralLanding(app: App): void {
         name: body.name,
         mobile: body.mobile,
         pincode: body.pincode,
+        address: addressOf(body.address),
         date: body.date,
         window: body.window,
         lossExtent: null, // an invited friend is not asked where the hair loss is
@@ -277,9 +282,10 @@ export function registerReferralLanding(app: App): void {
     if (booked.booked !== undefined) {
       return c.json({ ...errorBody("already_booked", requestId), booked: booked.booked }, 409);
     }
-    // The landing has said all along whether we come, so a refused pincode reads as not bookable.
-    const code422 = booked.status === 422 ? "not_bookable" : booked.code;
-    return c.json(errorBody(code422, requestId), booked.status);
+    // The landing has said all along whether we come, so a refused pincode reads as not bookable. A field refused
+    // is named instead.
+    const code422 = booked.status === 422 && booked.fields === undefined ? "not_bookable" : booked.code;
+    return c.json(errorBody(code422, requestId, booked.fields), booked.status);
   });
 
   app.openapi(waitlistRoute, async (c) => {

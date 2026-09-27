@@ -488,6 +488,82 @@
         ],
         "additionalProperties": false
       },
+      "TypedAddress": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "line2": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
+          "locality": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "city": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "pincode": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          },
+          "access_notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "For the technician, from the day before the visit: gate code, parking."
+          },
+          "flat": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
+          },
+          "floor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20
+          },
+          "tower": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
+          },
+          "landmark": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "line1",
+          "line2",
+          "locality",
+          "city",
+          "pincode",
+          "access_notes"
+        ],
+        "additionalProperties": false
+      },
       "Waitlist": {
         "type": "object",
         "properties": {
@@ -1430,6 +1506,9 @@
                       "evening"
                     ]
                   },
+                  "address": {
+                    "$ref": "#/components/schemas/TypedAddress"
+                  },
                   "consent": {
                     "type": "boolean",
                     "enum": [
@@ -1446,6 +1525,7 @@
                   "turnstile_token",
                   "date",
                   "window",
+                  "address",
                   "consent"
                 ],
                 "additionalProperties": false
@@ -1502,7 +1582,7 @@
             }
           },
           "422": {
-            "description": "invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body",
+            "description": "invalid_request: the pincode is not served, or the day is not open, or the address is in another pincode (fields names address.pincode); not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {
@@ -1881,6 +1961,9 @@
                       "evening"
                     ]
                   },
+                  "address": {
+                    "$ref": "#/components/schemas/TypedAddress"
+                  },
                   "consent": {
                     "type": "boolean",
                     "enum": [
@@ -1896,6 +1979,7 @@
                   "pincode",
                   "date",
                   "window",
+                  "address",
                   "consent"
                 ],
                 "additionalProperties": false
@@ -1952,7 +2036,7 @@
             }
           },
           "422": {
-            "description": "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body",
+            "description": "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; invalid_request: the address is in another pincode (fields names address.pincode); idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {

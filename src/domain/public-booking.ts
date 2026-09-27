@@ -7,10 +7,13 @@
 //
 //   the slot,  held for the person and written to FSM from the fsm-sync queue;
 //   the lead,  so the CRM funnel sees every booking, as it did in Phase 1;
-//   the person and the consent they gave, under the notice they were shown.
+//   the person, the consent they gave, under the notice they were shown, and
+//              the address the visit is at, which is theirs from then on, as
+//              though they had saved it in the app
+//              (docs/decisions/0081-the-site-takes-the-address.md).
 //
 // The slot is what the client sees; the lead is what ops sees. A waitlist entry
-// leaves the lead and the entry, and no slot.
+// leaves the lead and the entry, and no slot or address.
 //
 // While self-serve booking is off, booking goes through WhatsApp. The slot is
 // then a request instead: the day and window the person asked for, waiting for
@@ -21,8 +24,9 @@
 //
 // These forms need no login, only a number, so they never rename the person
 // the number belongs to, never let go of a hold made in the app, and book no
-// second consultation beside one still to happen. The person, their consent and
-// the slot are written in one batch: a slot that has gone leaves nothing behind
+// second consultation beside one still to happen. The address they do replace:
+// it is where this visit goes. The person, their consent, their address and the
+// slot are written in one batch: a slot that has gone leaves nothing behind
 // (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // The number, the Turnstile token and the day's limits are checked by the
@@ -37,6 +41,7 @@ import type { Logger } from "../log.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { priceOf } from "./price-book.ts";
+import { addressStatements, type Address } from "./profile.ts";
 import { attribute, type Invite, type InviteState } from "./referrals.ts";
 import { bookableTypes, holdSlot, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
@@ -75,6 +80,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "already_booked";
   /** For already_booked: the consultation the number already has. */
   readonly booked?: LiveVisit;
+  /** For invalid_request: the field refused, where the request was well formed and did not add up. */
+  readonly fields?: readonly string[];
 }
 
 /** The person a form is from, checked: their number as E.164 and their address's salted hash; or why not. */
@@ -92,6 +99,8 @@ export interface FormRequest {
   readonly selfServeBooking: boolean;
   /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
   readonly checkPerson: (mobile: string, turnstileToken: string) => Promise<Checked>;
+  /** Sends a person's new address on to their FSM contact and CRM lead, as an edit in the app does. */
+  readonly syncContact: (personId: string) => Promise<void>;
 }
 
 /** The person a form is from, and the writes that record them and the consent they gave on the page. */
@@ -263,6 +272,8 @@ export interface ConsultationRequest {
   readonly name: string;
   readonly mobile: string;
   readonly pincode: string;
+  /** Where the consultation is, typed in full; it must be in the pincode. */
+  readonly address: Address;
   readonly date: string;
   readonly window: BookingWindow;
   readonly lossExtent: LossExtent | null;
@@ -298,6 +309,10 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
     return { ok: false, status: 422, code: "invalid_request" };
   }
+  // The technician goes to the address, so it must be where the pincode said we come.
+  if (request.address.pincode !== request.pincode) {
+    return { ok: false, status: 422, code: "invalid_request", fields: ["address.pincode"] };
+  }
   const checked = await form.checkPerson(request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
 
@@ -313,6 +328,8 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     ipHash: checked.ipHash,
     now,
   });
+  // Typed, never chosen from Google's suggestions, so the address has no pin.
+  const alongside = [...person.statements, ...addressStatements(db, person.id, request.address, null, now)];
 
   // A slot is held and FSM told only while self-serve booking is on and the consultation is free that day;
   // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
@@ -329,7 +346,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
         price,
         pincode: request.pincode,
         from: "site",
-        alongside: person.statements,
+        alongside,
       },
       now,
       HOLD_SECONDS,
@@ -339,8 +356,11 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     await form.queues.fsm.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
   } else {
     const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
-    await db.batch([...person.statements, requestStatement(db, { ...asked, invite: request.invite, now })]);
+    await db.batch([...alongside, requestStatement(db, { ...asked, invite: request.invite, now })]);
   }
+  // Someone we knew may be in FSM and the CRM already, with an older address or none. Someone new is added to
+  // both with this one, by the booking and its lead.
+  if (knownId !== null) await form.syncContact(person.id);
   const invited = await applyInvite(db, {
     invite: request.invite,
     personId: person.id,

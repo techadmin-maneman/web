@@ -34,6 +34,7 @@ import {
   maskedMobile,
   saveAddress,
   switchConsent,
+  type Address,
   type AddressPin,
 } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
@@ -101,7 +102,8 @@ const part = (max: number) => z.string().trim().max(max).nullish();
 
 const optional = (max: number) => z.string().trim().max(max).nullable();
 
-const AddressSchema = z
+/** The one address shape, which the site's booking forms take too (src/routes/consultations.ts). */
+export const AddressSchema = z
   .object({
     line1: z.string().trim().min(1).max(120),
     line2: z.string().trim().max(120).nullable(),
@@ -192,6 +194,24 @@ export const ProfileSchema = z
   })
   .strict()
   .openapi("Profile");
+
+/** An address as it was sent, a part left blank held as none. */
+export function addressOf(body: z.infer<typeof AddressSchema>): Address {
+  return {
+    line1: body.line1,
+    line2: blankToNull(body.line2),
+    locality: body.locality,
+    city: body.city,
+    pincode: body.pincode,
+    accessNotes: blankToNull(body.access_notes),
+    building: blankToNull(body.building),
+    flat: blankToNull(body.flat),
+    floor: blankToNull(body.floor),
+    tower: blankToNull(body.tower),
+    landmark: blankToNull(body.landmark),
+    placeId: blankToNull(body.place_id),
+  };
+}
 
 const signedIn = { 401: errorResponse("session_required") };
 
@@ -464,31 +484,17 @@ export function registerClientProfile(app: App): void {
     // A chosen building is geocoded here, once, and its coordinate kept. A typed
     // address has no Place ID and saves no pin: the geofence then measures
     // nothing rather than measuring zero (ADR 0036's honest degradation).
+    const address = addressOf(body);
     let pin: AddressPin | null = null;
-    const placeId = blankToNull(body.place_id);
-    if (placeId !== null && (await withinGeocodeCeiling(c, now))) {
+    if (address.placeId !== null && (await withinGeocodeCeiling(c, now))) {
       const resolved = await c.var.deps.geocode.resolve(
-        placeId,
+        address.placeId,
         blankToNull(body.session_token) ?? crypto.randomUUID(),
       );
       if (resolved.ok) pin = { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
       else await lookupFailed(c, "address_resolve_failed", resolved);
     }
 
-    const address = {
-      line1: body.line1,
-      line2: blankToNull(body.line2),
-      locality: body.locality,
-      city: body.city,
-      pincode: body.pincode,
-      accessNotes: blankToNull(body.access_notes),
-      building: blankToNull(body.building),
-      flat: blankToNull(body.flat),
-      floor: blankToNull(body.floor),
-      tower: blankToNull(body.tower),
-      landmark: blankToNull(body.landmark),
-      placeId,
-    };
     await saveAddress(c.env.DB, personId, address, pin, now);
     await queueContactSync(c, personId);
     return c.json(

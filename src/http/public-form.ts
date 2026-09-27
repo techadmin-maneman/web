@@ -8,6 +8,7 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
+import { queueContactSync } from "./contact-sync.ts";
 import type { AppEnv } from "./context.ts";
 import { checkTurnstile, visitorOf } from "./visitor.ts";
 
@@ -44,5 +45,6 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     now: c.var.deps.now(),
     selfServeBooking: c.var.config.settings.selfServeBooking,
     checkPerson: (mobile, token) => checkPerson(c, mobile, token),
+    syncContact: (personId) => queueContactSync(c, personId),
   };
 }

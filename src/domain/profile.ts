@@ -88,15 +88,7 @@ export async function currentAddress(db: D1Database, personId: string): Promise<
   return row === null ? null : fromRow(row);
 }
 
-/**
- * The new address becomes current; the old one is kept, marked replaced.
- *
- * The pin is written here rather than by a later mirror, so that the coordinate
- * and the address it belongs to are never out of step. It is the client's own
- * address row and no one else's: Google's Geocoding terms allow an indefinite
- * cache only where it is "logically isolated to the specific End User", so a
- * building's coordinate is never reused across clients (ADR 0054).
- */
+/** The new address becomes current, written on its own (addressStatements). */
 export async function saveAddress(
   db: D1Database,
   personId: string,
@@ -104,8 +96,29 @@ export async function saveAddress(
   pin: AddressPin | null,
   now: Date,
 ): Promise<void> {
+  await db.batch(addressStatements(db, personId, address, pin, now));
+}
+
+/**
+ * The new address becomes current; the old one is kept, marked replaced. As
+ * statements, for a batch the address must stand or fall with: a booking from
+ * the site writes it with the slot (ADR 0081).
+ *
+ * The pin is written here rather than by a later mirror, so that the coordinate
+ * and the address it belongs to are never out of step. It is the client's own
+ * address row and no one else's: Google's Geocoding terms allow an indefinite
+ * cache only where it is "logically isolated to the specific End User", so a
+ * building's coordinate is never reused across clients (ADR 0054).
+ */
+export function addressStatements(
+  db: D1Database,
+  personId: string,
+  address: Address,
+  pin: AddressPin | null,
+  now: Date,
+): D1PreparedStatement[] {
   const at = now.toISOString();
-  await db.batch([
+  return [
     db.prepare("UPDATE addresses SET replaced_at = ?2 WHERE person_id = ?1 AND replaced_at IS NULL").bind(personId, at),
     db
       .prepare(
@@ -134,7 +147,7 @@ export async function saveAddress(
         pin === null ? null : at,
         pin?.source ?? null,
       ),
-  ]);
+  ];
 }
 
 export interface ConsentState {

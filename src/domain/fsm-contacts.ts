@@ -95,8 +95,9 @@ async function addContact(
   const saved = await currentAddress(db, personId);
   const city = place?.city ?? saved?.city ?? person.lead_city ?? person.invited_city;
   if (city === null) throw new Error("the person has no city to give FSM");
-  // The saved address is the service address only where it is in the city the visit is in.
-  const address = saved?.city === city ? saved : null;
+  // The saved address is the service address only where it is in the city the visit is in. The booking's own
+  // pincode says so too, whether the client typed the city as Gurgaon or Gurugram.
+  const address = saved !== null && (saved.city === city || saved.pincode === place?.pincode) ? saved : null;
   const [first, ...rest] = person.name.trim().split(/\s+/);
   const state = STATES[city];
   return fsm.createContact({
