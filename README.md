@@ -76,12 +76,13 @@ npm test                                   # the Worker tests in workerd and the
 npm run test:coverage                      # the same, held to 90% of lines and 80% of branches in src/
 npm run check:config                       # environment isolation, and 64 vars and secrets at most
 npm run check:migrations                   # forward-only; a contract step names its ADR (docs/migrations.md)
+npm run check:open-points                  # one number a point, and every citation of one names a point that exists
 npm run check:dead                         # no file or export in src/ that nothing uses (knip.jsonc)
 npm run build                              # the site, the apps and every Worker, for every environment, as a dry run
 npm run test:e2e                           # the browser tests; build each surface first: npm run build:<site|app|ops|tech> -- --env local
 ```
 
-After changing a route's schema, run `npm run openapi`: it regenerates `docs/openapi*.json`, `docs/api*.md` and each front end's `api-schema.ts`, and the contract test fails until you do. After changing bindings, vars or the secrets listed in `.dev.vars.example`, run `npm run types`. After changing crons, queue consumers or routes, an operator runs `npm run apply-triggers -- --env <env>` once the code is deployed (ADR 0010).
+After changing a route's schema, run `npm run openapi`: it regenerates `docs/openapi*.json`, `docs/api*.md` and each front end's `api-schema.ts`, and the contract test fails until you do. After changing bindings, vars or the secrets listed in `.dev.vars.example`, run `npm run types`. After adding an ADR or changing its status, run `npm run adr-index`; after a migration adds or changes a table, run `npm run schema`; a test fails until each is run. After changing crons, queue consumers or routes, an operator runs `npm run apply-triggers -- --env <env>` once the code is deployed (ADR 0010).
 
 ## Deploys
 
@@ -124,23 +125,24 @@ docs/                 below
 
 ## Documents
 
-| Document                                                        | What it is                                                                               |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `docs/getting-started.md`                                       | The whole system on your laptop                                                          |
-| `docs/front-ends.md`                                            | The four front ends: how each is built, run, tested and deployed, and what they share    |
-| `docs/frontend.md`                                              | The public site in detail: its content, prices, notices, analytics and going live        |
-| `docs/runbook.md`                                               | Provisioning, incidents, alerts, restoring D1, rolling back                              |
-| `docs/decisions/`                                               | The ADRs; 0025 is the register of the owner's rulings and the departures from the briefs |
-| `docs/open-points.md`                                           | What is still owed before production, and what staging uses meanwhile                    |
-| `docs/prompts/`                                                 | The briefs, word for word                                                                |
-| `docs/glossary.md`                                              | Which word means what                                                                    |
-| `docs/migrations.md`                                            | How to write a migration D1 will take, and the contract steps waiting                    |
-| `docs/api.md`, `api-client.md`, `api-ops.md`, `api-tech.md`     | The API reference, one per surface, generated with `docs/openapi*.json`                  |
-| `docs/verification.md`                                          | Each milestone's definition of done, with its evidence                                   |
-| `docs/feature-inventory.md`, `docs/feature-inventory-phase2.md` | Every feature the front-end briefs list, and where it stands                             |
-| `docs/fidelity-method.md`, `docs/fidelity/`                     | How each screen is compared with its design, and the pairs                               |
-| `docs/phase2-inputs.md`                                         | What Phase 2 needed from the vendors and the owner, and how to get it                    |
-| `docs/tech-field-test.md`, `docs/technician-test-setup.md`      | The technician app's field test, and signing in to it on your own phone                  |
-| `docs/address-capture-scope.md`                                 | How addresses are taken, and what taking one on a map needed                             |
-| `docs/turnstile.md`                                             | The Turnstile site keys                                                                  |
-| `docs/reference/`                                               | The AILabTools API notes, verbatim                                                       |
+| Document                                                        | What it is                                                                                                                                            |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/getting-started.md`                                       | The whole system on your laptop                                                                                                                       |
+| `docs/front-ends.md`                                            | The four front ends: how each is built, run, tested and deployed, and what they share                                                                 |
+| `docs/frontend.md`                                              | The public site in detail: its content, prices, notices, analytics and going live                                                                     |
+| `docs/runbook.md`                                               | Provisioning, incidents, alerts, restoring D1, rolling back                                                                                           |
+| `docs/decisions/`                                               | The ADRs, indexed in `docs/decisions/README.md` (`npm run adr-index`); 0025 is the register of the owner's rulings and the departures from the briefs |
+| `docs/open-points.md`                                           | What is still owed before production, and what staging uses meanwhile                                                                                 |
+| `docs/prompts/`                                                 | The briefs, word for word                                                                                                                             |
+| `docs/glossary.md`                                              | Which word means what                                                                                                                                 |
+| `docs/migrations.md`                                            | How to write a migration D1 will take, and the contract steps waiting                                                                                 |
+| `docs/schema.md`                                                | Every table in D1, its columns, keys and indexes, and what it holds; written from the migrations by `npm run schema`                                  |
+| `docs/api.md`, `api-client.md`, `api-ops.md`, `api-tech.md`     | The API reference, one per surface, generated with `docs/openapi*.json`                                                                               |
+| `docs/verification.md`                                          | Each milestone's definition of done, with its evidence                                                                                                |
+| `docs/feature-inventory.md`, `docs/feature-inventory-phase2.md` | Every feature the front-end briefs list, and where it stands                                                                                          |
+| `docs/fidelity-method.md`, `docs/fidelity/`                     | How each screen is compared with its design, and the pairs                                                                                            |
+| `docs/phase2-inputs.md`                                         | What Phase 2 needed from the vendors and the owner, and how to get it                                                                                 |
+| `docs/tech-field-test.md`, `docs/technician-test-setup.md`      | The technician app's field test, and signing in to it on your own phone                                                                               |
+| `docs/address-capture-scope.md`                                 | How addresses are taken, and what taking one on a map needed                                                                                          |
+| `docs/turnstile.md`                                             | The Turnstile site keys                                                                                                                               |
+| `docs/reference/`                                               | The AILabTools API notes, verbatim                                                                                                                    |

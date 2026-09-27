@@ -39,7 +39,7 @@ Production has served no try-on, so no stored result is affected.
 - **the referral cards:** a thousand of them, at the 300 KB limit Open Graph images need;
 - **each visit's ten photographs**, re-encoded on the phone to about 250 KB each.
 
-Before the photographs pass that runway, the owner must decide between the paid plan and keeping photographs in FSM. A storage meter will warn at 50% and 80% of the share. It is built with the photographs (P2-M2), and it refuses uploads at 100%; queued photos then stay on the phone.
+Before the photographs pass that runway, the owner must decide between the paid plan and keeping photographs in FSM. A storage meter was to warn at 50% and 80% of the share, and refuse uploads at 100%, leaving queued photos on the phone. **It was not built** (corrected 27 September 2026): nothing counts what the photographs and cards hold, and nothing warns or refuses before R2 bills. It is `docs/open-points.md`, item 142; until then the only warning is Cloudflare's own usage notification at half of R2's allowance, set by hand (`docs/runbook.md`, "R2 storage growing").
 
 **Invoices are not copied to R2.** The prompt asks for Books' PDFs to be cached in `mm-{env}-client-docs` for eight years. Books keeps them for eight years itself, so each one is streamed from Books when it is opened.
 
@@ -57,6 +57,6 @@ Before the photographs pass that runway, the owner must decide between the paid 
 ## Consequences
 
 - **The budget test fails** if a try-on ceiling grows into Phase 2's share. It also fails if results go back to thirty days while the share is reserved.
-- **The owner owes a decision before about 1,480 visits:** the paid plan, or photographs in FSM. The storage meter gives notice.
+- **The owner owes a decision before about 1,480 visits:** the paid plan, or photographs in FSM. The storage meter that was to give notice is not built (open point 142); Cloudflare's usage notifications at half of each allowance, which the owner sets by hand, are the only warning today (`docs/runbook.md`, "R2 storage growing").
 - **The privacy page changed.** The owner approved the privacy and terms text on 22 September 2026. These two phrases are the only changes, and they bring it in line with the new retention.
 - **Staging still keeps results for three days,** as before.

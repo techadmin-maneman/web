@@ -9,7 +9,7 @@ The Phase 2 front-end prompt sets the client app's stack and bars:
 
 - **Stack:** "React with Vite, as a single-page PWA … TypeScript strict. No UI framework", on `app.maneman.in` as the Worker `mm-app` with static assets.
 - **Performance:** a first load under 150 KB of gzipped JavaScript.
-- **Security:** a content security policy of its own, allowing the backend (and Razorpay's hosts, once payment arrives), and no analytics but Cloudflare Web Analytics.
+- **Security:** a content security policy of its own, allowing the backend and Razorpay's hosts, and no analytics. (Corrected 27 September 2026: this said Cloudflare Web Analytics was allowed. The policy has never named its hosts, `apps/app/headers.ts`, so the app counts no visits; whether it should is `docs/open-points.md`, item 144.)
 - **Layout:** the design is drawn at 390 px, and wider screens centre that column.
 
 The API it calls is mm-api's client surface on the same host (ADR 0026). Only the public site and the staging surfaces are live.

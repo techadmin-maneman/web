@@ -68,7 +68,7 @@ A failed read is logged and the record made as before, so none of the reads can 
 
 ## Consequences
 
-- A client who pays inside the countdown is booked, however late the webhook, unless FSM refuses for half an hour; then the client is refunded and ops know exactly what happened to the money and to FSM.
+- A client who pays inside the countdown is booked, however late the webhook, unless FSM refuses five times running: the queue tries again after 30 seconds, then 1, 2 and 4 minutes, so the fifth refusal comes about 8 minutes after the first (`MAX_FSM_SYNC_ATTEMPTS`, `src/queues/fsm-sync.ts`; `retryWithBackoff`, `src/queues/backoff.ts`). Then the client is refunded and ops know exactly what happened to the money and to FSM. The half hour is the cron's, for a hold the queue lost (above). (Corrected 27 September 2026: this said FSM had to refuse for half an hour. Whether a short FSM outage should refund a paying client is the owner's to rule, `docs/open-points.md`, item 141.)
 - An unpaid hold's time is free to others two minutes after its countdown, not at once.
 - The app: a paid hold never reads `expired`; `DELETE /api/holds/{id}` leaves a paid hold alone; each day of `GET /api/availability` carries its own price.
 - The site: `409 already_booked` carries `booked: { date, window }`; the landing's answers carry `invite`. `GET /api/r/{code}` still answers valid or unknown: whether an invite has expired is a fact about the friend who was held under it, known only once they give their number (ADR 0025, item 40).
