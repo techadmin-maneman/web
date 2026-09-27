@@ -8,9 +8,15 @@
 // start. The due date follows from that moment and the group's allowance, and
 // is never later than the visit; nothing is written anywhere.
 
-import { indiaDate, indiaInstant } from "../lib/india-time.ts";
+import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { UNTOLD_MOVE } from "./dispatch.ts";
 import { LEAVE_ON_THE_DAY } from "./leave.ts";
+import {
+  atRiskIfDoneBy,
+  firstFitToBookIfConsultedBy,
+  NEXT_VISIT_DAYS,
+  type NextVisitDays,
+} from "../policy/next-visit.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
 import { MAX_SYNC_ATTEMPTS } from "../queues/crm-sync.ts";
 
@@ -21,8 +27,10 @@ export interface Task {
   readonly person: { readonly id: string; readonly name: string } | null;
   /**
    * The one fact the group turns on: the start a visit moved to, the day and
-   * window asked for, the piece's label, the fraud rule met, the technician who
-   * attended, the invoice in Books, the contact in FSM.
+   * window asked for (and the first fit asked for with them), the piece's
+   * label, the fraud rule met, the technician who attended, the invoice in
+   * Books, the contact in FSM, the last visit and the day its next service
+   * fell due, the consultation and the window a first fit was asked for in.
    */
   readonly detail: string | null;
   readonly since: string;
@@ -55,8 +63,10 @@ export const READ_CAP = 2000;
  * still to be told of while its visit is today or later. The second
  * needs the attempts after which the sweeper stops asking FSM, as `?1`. The third
  * holds the visits whose booking or closing left ops something to do, and needs
- * the moment ops look, as `?1`. Each takes READ_CAP last, which bounds what one
- * look at the board can cost.
+ * the moment ops look, as `?1`, and what the next visit's days make of it (`?3`
+ * to `?7`, below). Each takes READ_CAP as `?2`, which bounds what one look at the
+ * board can cost. All three hold five arms now: a group added next needs a
+ * fourth statement.
  */
 const OUTSTANDING = [
   `SELECT * FROM (
@@ -66,9 +76,12 @@ const OUTSTANDING = [
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}
   UNION ALL
-  SELECT 'consultation_request', r.id, r.person_id, pe.name, r.requested_date || ' ' || r.requested_window,
+  SELECT 'consultation_request', r.id, r.person_id, pe.name,
+         r.requested_date || ' ' || r.requested_window
+           || CASE WHEN f.id IS NULL THEN '' ELSE ' first_fit ' || COALESCE(f.preferred_window, 'any') END,
          r.created_at, NULL
     FROM consultation_requests r JOIN people pe ON pe.id = r.person_id
+    LEFT JOIN first_fit_requests f ON f.person_id = r.person_id
    WHERE pe.erased_at IS NULL
      AND NOT EXISTS (
        SELECT 1 FROM appointments a
@@ -129,6 +142,15 @@ const OUTSTANDING = [
   //
   // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it. A
   // no-show is its own outcome and group; one the Worker before migration 0044 stored as partial is left out too.
+  //
+  // An At-risk client is a fitted one with nothing booked since their last first fit, service or replacement, done
+  // on or before ?3's day in India: `at_risk_after_due` days past the day their next service fell due. It waits
+  // from that day (?4 on from the visit's own), names the visit and the day the service fell due (?7 on), and goes
+  // as soon as a visit is booked, paid for, or done after it (docs/decisions/0086-the-next-visit-is-offered.md).
+  //
+  // A First fit to book is a fit asked for on the site's form whose consultation was done on or before ?5's day,
+  // with nothing booked since. It waits from `first_fit_to_book` days after the consultation (?6 on from it), names
+  // the consultation's start and the window asked for, and goes as the at-risk task does.
   `SELECT * FROM (
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.window_start || ' ' || t.name AS detail,
@@ -155,6 +177,38 @@ const OUTSTANDING = [
        SELECT 1 FROM appointments later
         WHERE later.person_id = a.person_id AND later.deleted_at IS NULL
           AND later.status NOT IN ('cancelled', 'terminated') AND later.window_start > a.window_start)
+  UNION ALL
+  SELECT 'at_risk_client', a.id, a.person_id, pe.name,
+         a.window_start || ' ' || date(a.window_start, '+330 minutes', ?7),
+         date(a.window_start, '+330 minutes', ?4), NULL
+    FROM appointments a JOIN people pe ON pe.id = a.person_id
+   WHERE a.status = 'completed' AND a.type IN ('first_fit', 'service', 'replacement') AND a.deleted_at IS NULL
+     AND a.window_start < ?3 AND pe.erased_at IS NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM appointments later
+        WHERE later.person_id = a.person_id AND later.deleted_at IS NULL
+          AND (later.status IN ('scheduled', 'dispatched', 'in_progress')
+            OR (later.window_start > a.window_start AND later.status NOT IN ('cancelled', 'terminated'))))
+     AND NOT EXISTS (
+       SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
+  UNION ALL
+  SELECT 'first_fit_to_book', f.id, f.person_id, pe.name, f.consulted || ' ' || COALESCE(f.preferred_window, 'any'),
+         date(f.consulted, '+330 minutes', ?6), NULL
+    FROM (
+      SELECT r.id, r.person_id, r.preferred_window,
+             (SELECT MAX(c.window_start) FROM appointments c
+               WHERE c.person_id = r.person_id AND c.type = 'consultation' AND c.status = 'completed'
+                 AND c.deleted_at IS NULL) AS consulted
+        FROM first_fit_requests r) f
+    JOIN people pe ON pe.id = f.person_id
+   WHERE f.consulted < ?5 AND pe.erased_at IS NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM appointments later
+        WHERE later.person_id = f.person_id AND later.deleted_at IS NULL
+          AND (later.status IN ('scheduled', 'dispatched', 'in_progress')
+            OR (later.window_start > f.consulted AND later.status NOT IN ('cancelled', 'terminated'))))
+     AND NOT EXISTS (
+       SELECT 1 FROM slot_holds h WHERE h.person_id = f.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
 ) ORDER BY since LIMIT ?2`,
 ] as const;
 
@@ -186,12 +240,37 @@ export interface Outstanding {
   readonly truncated: boolean;
 }
 
-/** What ops still have to do, the longest wait first. */
-export async function outstandingTasks(db: D1Database, now: Date, sla: Slas): Promise<Outstanding> {
+/** SQLite's modifier for a date `days` on: "+37 days". */
+const daysOn = (days: number) => `+${String(days)} days`;
+
+/**
+ * What ops still have to do, the longest wait first. `days` are the next visit's figures ops set
+ * (src/policy/next-visit.ts), which At-risk client and First fit to book are counted by.
+ */
+export async function outstandingTasks(
+  db: D1Database,
+  now: Date,
+  sla: Slas,
+  days: NextVisitDays = NEXT_VISIT_DAYS,
+): Promise<Outstanding> {
+  const today = indiaDate(now);
+  // The first moment after each last day, as the instants the visits' starts are compared with.
+  const atRiskBefore = indiaInstant(addDays(atRiskIfDoneBy(today, days), 1), "00:00").toISOString();
+  const toBookBefore = indiaInstant(addDays(firstFitToBookIfConsultedBy(today, days), 1), "00:00").toISOString();
   const answers = await db.batch<Row>([
-    db.prepare(OUTSTANDING[0]).bind(indiaDate(now), READ_CAP),
+    db.prepare(OUTSTANDING[0]).bind(today, READ_CAP),
     db.prepare(OUTSTANDING[1]).bind(MAX_SYNC_ATTEMPTS, READ_CAP),
-    db.prepare(OUTSTANDING[2]).bind(now.toISOString(), READ_CAP),
+    db
+      .prepare(OUTSTANDING[2])
+      .bind(
+        now.toISOString(),
+        READ_CAP,
+        atRiskBefore,
+        daysOn(days.service_cadence + days.at_risk_after_due),
+        toBookBefore,
+        daysOn(days.first_fit_to_book),
+        daysOn(days.service_cadence),
+      ),
   ]);
   const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
   // Each statement sorted its own rows; the board wants one list, so they are merged on the same column.

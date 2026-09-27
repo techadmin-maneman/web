@@ -16,6 +16,8 @@ import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
+import { queueNextServiceReminders } from "../domain/next-visit.ts";
+import { readOpsInputs } from "../domain/ops-settings.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
@@ -146,6 +148,17 @@ async function remindersJob({ env, deps, log }: CronContext): Promise<void> {
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
 
+async function nextServiceRemindersJob({ env, deps, log }: CronContext): Promise<void> {
+  const now = deps.now();
+  // The figures ops set; the committed ones if the store cannot be read, which is said once in the log.
+  const inputs = await readOpsInputs(env.DB, now, (error) => {
+    log.error("ops_settings_unreadable", { error });
+  });
+  const reminders = await queueNextServiceReminders(env.DB, now, inputs.nextVisitDays);
+  await queueMessages(env.MESSAGE_QUEUE, reminders, "next-service-reminders");
+  if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
+}
+
 async function invoicesJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const done = await raiseInvoices(env.DB, deps, deps.now(), log, budget);
   if (done.raised + done.issued > 0) log.info("invoices_raised", done);
@@ -183,6 +196,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "dispatch_utilisation", needs: "nothing", run: utilisationJob },
   { name: "referrals", needs: "nothing", run: referralsJob },
   { name: "visit_reminders", needs: "messaging", run: remindersJob },
+  // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
+  { name: "next_service_reminders", needs: "messaging", run: nextServiceRemindersJob },
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets
   // a client's advance against the invoice once it is issued.
   { name: "invoices", needs: "fsm_and_books", run: invoicesJob },

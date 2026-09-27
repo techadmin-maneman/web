@@ -1434,7 +1434,7 @@ export interface paths {
             parameters: {
                 query: {
                     type: "consultation" | "first_fit" | "service" | "replacement";
-                    /** @description The first day; tomorrow if left out, or if earlier. */
+                    /** @description The first day; the first bookable day if left out, or if earlier. The 14 days end within how far ahead a visit may be booked, and a day outside it, or before a first fit may be booked, has no window open. */
                     from?: string;
                     /** @description One of the client's visits, to move: its own type. */
                     moving?: string;
@@ -2341,14 +2341,31 @@ export interface components {
             next_visit: components["schemas"]["VisitSummary"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
-            /** @description Board B1's one contextual prompt, the first that applies: no address given while something is booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight. Null when none applies. */
+            /** @description Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies. */
             prompt: {
                 /** @enum {string} */
                 kind: "address";
             } | {
                 /** @enum {string} */
+                kind: "next_visit";
+                /**
+                 * @description The next service, or the replacement where the piece in wear falls due first.
+                 * @enum {string}
+                 */
+                type: "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day it falls due: the last visit's day and the cadence; tomorrow once passed.
+                 */
+                date: string;
+                /** @description The last visit's window, where this kind of visit can start in it. */
+                window: ("morning" | "afternoon" | "evening") | null;
+            } | {
+                /** @enum {string} */
                 kind: "replacement_due";
                 month: string;
+                /** @description The month begins within how far ahead a visit may be booked, so it can be booked now. */
+                bookable: boolean;
             } | {
                 /** @enum {string} */
                 kind: "invoice_ready";
@@ -2366,6 +2383,17 @@ export interface components {
                 self_serve: boolean;
                 /** @description What the client may book now. */
                 types: ("consultation" | "first_fit" | "service" | "replacement")[];
+                /** @description What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086). */
+                next: {
+                    /** @enum {string} */
+                    type: "first_fit" | "service" | "replacement";
+                    /**
+                     * Format: date
+                     * @description India's day it is offered on.
+                     */
+                    date: string;
+                    window: ("morning" | "afternoon" | "evening") | null;
+                } | null;
             };
         };
         VisitSummary: {

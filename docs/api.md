@@ -239,6 +239,9 @@ Request body:
     "address": {
       "$ref": "#/components/schemas/TypedAddress"
     },
+    "first_fit": {
+      "$ref": "#/components/schemas/FirstFitRequest"
+    },
     "consent": {
       "type": "boolean",
       "enum": [
@@ -565,6 +568,9 @@ Request body:
     },
     "address": {
       "$ref": "#/components/schemas/TypedAddress"
+    },
+    "first_fit": {
+      "$ref": "#/components/schemas/FirstFitRequest"
     },
     "consent": {
       "type": "boolean",
@@ -1644,6 +1650,10 @@ Razorpay's webhook: payments and refunds
         "on_account"
       ],
       "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
+    },
+    "first_fit": {
+      "type": "boolean",
+      "description": "true: the first fit was asked for too, and the app offers it once the consultation is done."
     }
   },
   "required": [
@@ -1651,7 +1661,8 @@ Razorpay's webhook: payments and refunds
     "date",
     "window",
     "area",
-    "address"
+    "address",
+    "first_fit"
   ],
   "additionalProperties": false
 }
@@ -1847,6 +1858,36 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
+### FirstFitRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "window": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "morning",
+            "afternoon"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The window the fit is wanted in, or null for either. A first fit does not fit in the evening."
+    }
+  },
+  "required": [
+    "window"
+  ],
+  "additionalProperties": false,
+  "description": "Left out, the consultation alone. Sent, the first fit is asked for too: it is booked and paid for in the app once the consultation is done, and nothing is paid here."
+}
+```
+
 ### Waitlist
 
 ```json
@@ -2019,6 +2060,10 @@ Razorpay's webhook: payments and refunds
         "on_account"
       ],
       "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
+    },
+    "first_fit": {
+      "type": "boolean",
+      "description": "true: the first fit was asked for too, and the app offers it once the consultation is done."
     }
   },
   "required": [
@@ -2028,7 +2073,8 @@ Razorpay's webhook: payments and refunds
     "area",
     "credits",
     "invite",
-    "address"
+    "address",
+    "first_fit"
   ],
   "additionalProperties": false
 }

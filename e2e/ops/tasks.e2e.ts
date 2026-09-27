@@ -86,6 +86,77 @@ test("names the day and window a consultation was asked for", async ({ page }) =
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon");
 });
 
+// The next visit (docs/decisions/0086-the-next-visit-is-offered.md): board D2's own At-risk client, a first fit asked
+// for on the site and not booked, and a consultation asked for with the first fit to follow.
+test("names an At-risk client's weeks since the last visit, a first fit to book, and a fit asked for", async ({
+  page,
+}) => {
+  const body: OpsReply<"/api/tasks"> = {
+    overdue: 1,
+    truncated: false,
+    groups: [
+      {
+        group: "consultation_request",
+        count: 1,
+        tasks: [
+          {
+            id: "96000000-0000-4000-8000-000000000011",
+            person: { id: "22000000-0000-4000-8000-000000000011", name: "Neha Kapoor" },
+            detail: "2027-09-24 afternoon first_fit morning",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-23T06:00:00.000Z",
+          },
+        ],
+      },
+      {
+        group: "first_fit_to_book",
+        count: 1,
+        tasks: [
+          {
+            id: "96000000-0000-4000-8000-000000000012",
+            person: { id: "22000000-0000-4000-8000-000000000012", name: "Sanjay Arora" },
+            detail: "2027-09-10T04:30:00.000Z afternoon",
+            since: "2027-09-16T18:30:00.000Z",
+            due: "2027-09-18T18:30:00.000Z",
+          },
+        ],
+      },
+      {
+        group: "at_risk_client",
+        count: 1,
+        tasks: [
+          {
+            id: "96000000-0000-4000-8000-000000000013",
+            person: { id: "22000000-0000-4000-8000-000000000013", name: "Deepak Rao" },
+            detail: "2027-07-21T04:30:00.000Z 2027-08-20",
+            since: "2027-08-26T18:30:00.000Z",
+            due: "2027-08-28T18:30:00.000Z",
+          },
+        ],
+      },
+    ],
+  };
+  await open(page, body);
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText([
+    "Consultation request",
+    "First fit to book",
+    "At-risk client",
+  ]);
+  await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon + first fit, morning");
+  await expect(row(page, "Sanjay Arora")).toContainText(
+    "Consultation Fri 10 Sep; first fit asked for in the afternoon",
+  );
+  await expect(row(page, "Deepak Rao")).toContainText("9 weeks since the last visit · due Fri 20 Aug");
+  await expect(row(page, "Deepak Rao")).toContainText("Overdue 24");
+  // The client books; ops reach them from their page, on their visits.
+  await expect(row(page, "Deepak Rao").getByRole("link", { name: "Deepak Rao", exact: true })).toHaveAttribute(
+    "href",
+    "/clients/22000000-0000-4000-8000-000000000013/visits",
+  );
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
 // Two more groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
 test("names a draft invoice's visit, and heads an unfinished erasure with the day, never a client", async ({
   page,

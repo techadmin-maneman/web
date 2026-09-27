@@ -240,8 +240,9 @@ describe("a visit FSM has not closed", () => {
   });
 });
 
-// Board B1's one contextual prompt: an address to give, then a replacement falling due, then an invoice
-// just issued. One at a time, the first that applies (LIFE-08).
+// Board B1's one contextual prompt, in the owner's order of 27 September 2026 (src/policy/home-prompt.ts): an
+// address to give while something is booked, then the next service due and not booked, then a replacement falling
+// due, then an invoice just issued. One at a time, the first that applies (LIFE-08).
 describe("GET /api/me's one prompt", () => {
   const personId = async () =>
     (await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1").bind(MOBILE).first<{ id: string }>())?.id ??
@@ -273,16 +274,25 @@ describe("GET /api/me's one prompt", () => {
     expect(await prompt()).toEqual({ kind: "address" });
   });
 
-  it("then names the month the piece in wear falls due", async () => {
+  it("then offers the next service, due a month after the last visit, in its window, while nothing is booked", async () => {
     await mirror([done("ap-done", "2026-09-10")]);
     await signIn();
     await giveAddress();
     await fitPiece("2027-03-09");
-    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2027-03" });
+    expect(await prompt()).toEqual({ kind: "next_visit", type: "service", date: "2026-10-10", window: "morning" });
+  });
+
+  it("then names the month the piece in wear falls due, once the next visit is booked", async () => {
+    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await signIn();
+    await giveAddress();
+    await fitPiece("2027-03-09");
+    // March is past the 45 days a visit may be booked ahead, so the replacement cannot be booked yet.
+    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2027-03", bookable: false });
   });
 
   it("then says an invoice issued in the last fortnight is ready, and nothing once it is older", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
     await signIn();
     await giveAddress();
     await issueInvoice(ids["ap-done"] ?? "", 3);

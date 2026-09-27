@@ -4,8 +4,10 @@
 // undecided no-show, a number change, an erasure, a grievance, a piece past its
 // replacement date, an invoice still a draft, an erasure FSM would not finish,
 // a moved visit whose client has not heard of it, a visit left partly done, a
-// visit to come with no address, a job on its technician's day off — so it leaves the list when
-// that row is decided, on the section that decides it (src/policy/tasks.ts).
+// visit to come with no address, a job on its technician's day off, a client
+// past their next service with nothing booked, a first fit asked for and not
+// booked — so it leaves the list when that row is decided, on the section that
+// decides it, or when the client books (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
 // section that decides it. Each group's count is the whole queue's, and a group
@@ -27,6 +29,8 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./tasks.module.css";
 
 type Group = TaskGroup["group"];
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** The fraud rules, as board C1 letters them: a held grant is the same grant on both boards. */
 const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
@@ -53,7 +57,9 @@ const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   leave_conflict: "visits",
   address_to_confirm: "visits",
   consultation_request: "visits",
+  first_fit_to_book: "visits",
   replacement_order: "pieces",
+  at_risk_client: "visits",
   partial_visit: "visits",
   no_show_decision: "visits",
   draft_invoice: "payments",
@@ -70,8 +76,15 @@ function clientPath(group: Group, personId: string): string {
   return tab === undefined ? `/clients/${personId}` : `/clients/${personId}/${tab}`;
 }
 
+/** A window's name, as the dispatch board writes it, for the window a first fit was asked for in; null for either. */
+const fitWindow = (window: string | undefined): string | null =>
+  window === undefined || window === "any" ? null : (dispatch.windows[window] ?? window);
+
+/** Whole weeks from one instant to another. */
+const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime() - Date.parse(from)) / WEEK_MS);
+
 /** The second line: the one fact the group turns on. */
-function subOf(group: Group, task: Task): string {
+function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
   if (group === "untold_move") {
     // The start the visit moved to.
@@ -92,9 +105,23 @@ function subOf(group: Group, task: Task): string {
       : copy.address_to_confirm(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
   }
   if (group === "consultation_request") {
-    // The day and the window, as the request recorded them: both are always there.
-    const [day = "", when = ""] = task.detail?.split(" ") ?? [];
-    return copy.consultation_request(fullDate(indiaDate(day)), dispatch.windows[when] ?? when);
+    // The day and the window, as the request recorded them: both are always there. Then the first fit, where the
+    // site's form asked for it too, and the window it was wanted in.
+    const [day = "", when = "", fit, fitIn] = task.detail?.split(" ") ?? [];
+    const asked = copy.consultation_request(fullDate(indiaDate(day)), dispatch.windows[when] ?? when);
+    return fit === "first_fit" ? `${asked} ${copy.withFirstFit(fitWindow(fitIn))}` : asked;
+  }
+  if (group === "first_fit_to_book") {
+    // The consultation's start, and the window the fit was asked for in.
+    const [consulted = "", fitIn] = task.detail?.split(" ") ?? [];
+    if (consulted === "") return tasks.unknown;
+    return copy.first_fit_to_book(shortDate(indiaDate(consulted)), fitWindow(fitIn));
+  }
+  if (group === "at_risk_client") {
+    // The last visit's start, and the day its next service fell due.
+    const [last = "", due = ""] = task.detail?.split(" ") ?? [];
+    if (last === "" || due === "") return tasks.unknown;
+    return copy.at_risk_client(weeksBetween(last, now), shortDate(due));
   }
   if (group === "replacement_order") {
     return copy.replacement_order(task.detail ?? tasks.unknown, fullDate(indiaDate(task.since)));
@@ -147,7 +174,7 @@ function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
             {subject}
           </OpsLink>
         )}
-        <span className={styles.sub}>{subOf(group, task)}</span>
+        <span className={styles.sub}>{subOf(group, task, now)}</span>
         {where !== null && action !== undefined && (
           <span className={styles.sub}>
             <OpsLink className={styles.decide} to={where}>

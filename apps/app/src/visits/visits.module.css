@@ -117,6 +117,34 @@
   width: 100%;
 }
 
+/* The other kind of visit a fitted client may book, quietly beneath it (ADR 0086); the board draws one button. */
+.other {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--tap);
+  margin-top: var(--sp-8);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-15);
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.other span {
+  padding-bottom: var(--sp-3);
+  border-bottom: var(--hairline) solid var(--brass);
+}
+
+.other:disabled {
+  color: var(--text-quiet);
+  cursor: default;
+}
+
 /* The client's own record, beneath board C1's lists; the board draws none. */
 .record {
   padding-bottom: var(--sp-22);

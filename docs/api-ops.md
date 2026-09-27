@@ -4890,7 +4890,9 @@ Who Access let through, and where signing out goes
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",
+              "first_fit_to_book",
               "replacement_order",
+              "at_risk_client",
               "partial_visit",
               "referral_review",
               "no_show_decision",
@@ -4977,7 +4979,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
     },
     "since": {
       "type": "string",
@@ -5275,7 +5277,8 @@ Who Access let through, and where signing out goes
         "no_show_wait_min",
         "address_unlock_hour",
         "task_sla_hours",
-        "piece_cycle_days"
+        "piece_cycle_days",
+        "booking_days"
       ]
     },
     "title": {
@@ -5312,6 +5315,33 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "null for one number, a list where the keys are fixed, \"open\" where ops name them."
+    },
+    "bounds": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer"
+              },
+              "max": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Each key's own bounds, where a keyed rule's figures measure different things; null where every figure takes min to max."
     },
     "value": {
       "anyOf": [
@@ -5374,6 +5404,7 @@ Who Access let through, and where signing out goes
     "min",
     "max",
     "keys",
+    "bounds",
     "value",
     "default",
     "source",

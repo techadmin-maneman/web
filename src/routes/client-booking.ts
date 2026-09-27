@@ -3,6 +3,11 @@
 // minutes while the client pays (C4). Behind SELF_SERVE_BOOKING: off, every
 // route answers 409 ops_assisted and the app opens WhatsApp to ops instead.
 //
+// A visit may be booked from tomorrow as far ahead as ops' horizon, 45 days to
+// begin with, and a first fit no sooner than ops' lead time after the
+// consultation (docs/decisions/0086-the-next-visit-is-offered.md). The strip
+// is 14 days from the day asked for, within those.
+//
 //   GET    /api/availability?type=&from=   14 days of three windows, and who could come
 //   POST   /api/holds                      hold a window
 //   GET    /api/holds/:id                  a hold: lapsed, paid, or booked as a visit
@@ -43,13 +48,15 @@ import {
   type Moving,
 } from "../domain/scheduling.ts";
 import { changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
+import { bookableDays } from "../domain/next-visit.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { addDays, indiaDate } from "../lib/india-time.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
 import { LATE_FEES } from "../policy/moving-a-visit.ts";
+import { stripStart } from "../policy/next-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
@@ -154,7 +161,14 @@ const availabilityRoute = createRoute({
   request: {
     query: z.object({
       type: z.enum(VISIT_TYPES),
-      from: z.iso.date().optional().openapi({ description: "The first day; tomorrow if left out, or if earlier." }),
+      from: z.iso
+        .date()
+        .optional()
+        .openapi({
+          description:
+            "The first day; the first bookable day if left out, or if earlier. The 14 days end within how far ahead a " +
+            "visit may be booked, and a day outside it, or before a first fit may be booked, has no window open.",
+        }),
       moving: z.uuid().optional().openapi({ description: "One of the client's visits, to move: its own type." }),
     }),
   },
@@ -250,8 +264,9 @@ const releaseRoute = createRoute({
   },
 });
 
-/** The first day a client may book: tomorrow, in India. */
-const firstBookableDay = (now: Date) => addDays(indiaDate(now), 1);
+/** The days this client may book a visit of this type on, by the figures ops set (src/domain/next-visit.ts). */
+const rangeFor = async (c: Context<AppEnv>, personId: string, type: VisitType) =>
+  bookableDays(c.env.DB, personId, type, c.var.deps.now(), (await opsInputs(c)).nextVisitDays);
 
 /** Whether a client may book this kind of visit, and its price on that day. */
 async function bookable(c: Context<AppEnv>, personId: string, type: VisitType, on: string): Promise<Price | null> {
@@ -318,8 +333,8 @@ export function registerClientBooking(app: App): void {
     const session = clientOf(c);
     const { type, from, moving: movingId } = c.req.valid("query");
     const now = c.var.deps.now();
-    const first = firstBookableDay(now);
-    const start = from === undefined || from < first ? first : from;
+    const range = await rangeFor(c, session.subjectId, type);
+    const start = stripStart(from, range, BOOKING_DAYS);
     const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, start);
     if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
     const price = move === null ? await bookable(c, session.subjectId, type, start) : move.terms.move.price;
@@ -338,12 +353,18 @@ export function registerClientBooking(app: App): void {
       return (await priceOf(db, type, date)) ?? price;
     };
     const regular = technicians.find((technician) => technician.id === regularId);
+    // A day before the bookable days open, or past the last, is offered to nobody.
+    const offered = days.map((day) =>
+      day.date < range.opens || day.date > range.last
+        ? { ...day, windows: day.windows.map((each) => ({ ...each, with: null })) }
+        : day,
+    );
     return c.json(
       {
         type,
         price,
         regular: regular === undefined ? null : { name: regular.name, initials: regular.initials },
-        days: await Promise.all(days.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),
+        days: await Promise.all(offered.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),
       },
       200,
     );
@@ -353,11 +374,11 @@ export function registerClientBooking(app: App): void {
     const session = clientOf(c);
     const { type, date, window, moving: movingId } = c.req.valid("json");
     const now = c.var.deps.now();
-    const first = firstBookableDay(now);
     const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, date);
     if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
     const price = move === null ? await bookable(c, session.subjectId, type, date) : move.terms.move.price;
-    if (price === null || date < first || date > addDays(first, BOOKING_DAYS - 1)) {
+    const { opens, last } = await rangeFor(c, session.subjectId, type);
+    if (price === null || date < opens || date > last) {
       return c.json(errorBody("not_bookable", c.var.requestId), 422);
     }
     const address = await currentAddress(c.env.DB, session.subjectId);

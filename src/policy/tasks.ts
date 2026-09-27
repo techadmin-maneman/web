@@ -12,9 +12,9 @@
 // its own.
 //
 // The board draws four groups (Replacement order, At-risk client, Referral
-// review, Photo QA). Two of them have no record behind them, and four queues
-// the board does not draw do; what is built and what is not is open point 61 of
-// docs/open-points.md.
+// review, Photo QA). Photo QA has no record behind it and is not built, as the
+// owner ruled; queues the board does not draw do have one. What is built and
+// what is not is open point 61 of docs/open-points.md.
 //
 // The last two groups are ours, not the prompt's (docs/decisions/0067-alerts-and-silent-failures.md):
 // a finished visit whose invoice is still a draft in Books, which the client
@@ -47,6 +47,13 @@
 // ops need the full set because these drive the task queue." It waits with the
 // technician's reason until the client has another visit booked after it to
 // finish what was left. A no-show is its own outcome, and its own group.
+//
+// At-risk client is the board's own group, built as the owner ruled on 27
+// September 2026 (docs/decisions/0086-the-next-visit-is-offered.md): a fitted
+// client with nothing booked, days past the day their next service fell due
+// (src/policy/next-visit.ts). First fit to book is ours: a first fit asked for
+// on the site's form, still not booked days after the consultation. Both go as
+// soon as a later visit is booked, as a visit left partly done does.
 
 import { HOUR_MS } from "../lib/durations.ts";
 import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
@@ -64,7 +71,9 @@ export const TASK_GROUPS = [
   "leave_conflict",
   "address_to_confirm",
   "consultation_request",
+  "first_fit_to_book",
   "replacement_order",
+  "at_risk_client",
   "partial_visit",
   "referral_review",
   "no_show_decision",
@@ -92,7 +101,9 @@ export const TASK_SLA_HOURS: Slas = {
   leave_conflict: 48,
   address_to_confirm: 48,
   consultation_request: 48,
+  first_fit_to_book: 48,
   replacement_order: 48,
+  at_risk_client: 48,
   partial_visit: 48,
   referral_review: 48,
   no_show_decision: 48,

@@ -24,6 +24,7 @@ export const titles = {
   refer: "Refer",
   fitted: "Who has been fitted",
   profile: "Your profile",
+  replacement: "Replacement piece",
 } as const;
 
 export const whatsapp = {
@@ -140,9 +141,9 @@ export const messages = {
   book: "I would like to book my next visit.",
   // PLACEHOLDER
   bookFirstFit: "I would like to book my first fit.",
+  // PLACEHOLDER
+  bookReplacement: "I would like to book my replacement piece.",
   document: (what: string, reference: string) => `Please send me the ${what.toLowerCase()} for ${reference}.`,
-  // PLACEHOLDER: Home's prompt about a replacement, until the app has a page on what one involves.
-  replacement: "I would like to know what my replacement piece involves.",
   // PLACEHOLDER: a visit's invoice that has not come in the day it should have.
   lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,
   // PLACEHOLDER: a refund that has taken longer than Razorpay's working days.
@@ -165,13 +166,23 @@ export const home = {
     expire: (date: string) => `Expire ${date}`,
   },
   /**
-   * Board B1's one prompt, the first that applies (src/domain/home-prompt.ts). The replacement's line is the
-   * board's own, and Visits' record words it the same way. PLACEHOLDER: everything else here, and where "See what
-   * that involves" goes, since the app has no page on it yet.
+   * Board B1's one prompt, the first that applies, in the owner's order (src/domain/home-prompt.ts). The
+   * replacement's line and "See what that involves" are the board's own, and Visits' record words the line the same
+   * way; the link now opens the app's own page on what a replacement involves (ADR 0086). PLACEHOLDER: everything
+   * else here.
    */
   prompt: {
     address: "Add your address, so your technician can find the door.",
     addAddress: "Add your address",
+    /** PLACEHOLDER: "Your next service visit is due on Tue 27 Oct, in the morning." */
+    nextVisit: (what: string, date: string, window: string | null) =>
+      window === null
+        ? `Your next ${what.toLowerCase()} is due on ${date}.`
+        : `Your next ${what.toLowerCase()} is due on ${date}, in the ${window.toLowerCase()}.`,
+    /** PLACEHOLDER: the booking sheet, with the day and window chosen. */
+    bookNext: "Book it for then",
+    /** PLACEHOLDER: the booking sheet, at the replacement. */
+    bookReplacement: "Book the replacement",
     involves: "See what that involves",
     invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
     openInvoice: "Open the invoice",
@@ -183,9 +194,15 @@ export const home = {
     length: (what: string, minutes: number) => `${what} · ${String(minutes)} minutes`,
     // PLACEHOLDER: the design draws no Home for a fitted client with nothing booked.
     none: "No visit booked.",
+    /** Board C1's button, which Home's card and Visits both show. */
     book: "Book your next visit",
     // PLACEHOLDER: a lead whose consultation is done.
     bookFirstFit: "Book your first fit",
+    // PLACEHOLDER: a fitted client whose piece falls due before their next service would.
+    bookReplacement: "Book your replacement piece",
+    // PLACEHOLDER: the other kind of visit a fitted client may book, beside the one the app offers (ADR 0086).
+    orReplacement: "Or book a replacement piece",
+    orService: "Or book a service visit",
   },
   expect: {
     label: "What to expect",
@@ -203,13 +220,27 @@ export const home = {
   },
 } as const;
 
+/**
+ * PLACEHOLDER, every word: the page on what a replacement involves, which Home's prompt opens in place of a WhatsApp
+ * message to us (docs/open-points.md, item 46; ADR 0086). No board draws it.
+ */
+export const replacement = {
+  title: "What a replacement involves",
+  back: "Back to Home",
+  lines: [
+    "A replacement takes off the piece you wear now and fits a new one in its place, at home, by your technician.",
+    "The new piece is cut in and styled to match, as it was at your first fit.",
+    "It is booked here like any other visit, and paid for when you book it.",
+  ],
+  book: "Book the replacement",
+} as const;
+
 export const visits = {
   title: "Visits",
   upcoming: "Upcoming",
   past: "Past",
   // PLACEHOLDER
   none: "No visits booked.",
-  book: "Book your next visit",
   /** Board C1: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.

@@ -7,6 +7,7 @@
 //   /payments          payments and refunds (E1); /payments/:id, one entry (E2)
 //   /refer             the invite (F1); /refer/fitted, who has been fitted (F5 and F6)
 //   /profile
+//   /replacement       what a replacement involves, which Home's prompt opens (no board; ADR 0086)
 
 /** The router the apps share (packages/ui/router.tsx), so a page takes its routes and its way between them from here. */
 export { go, usePath } from "@maneman/ui/router";
@@ -21,7 +22,8 @@ export type Route =
   | { readonly page: "entry"; readonly id: string }
   | { readonly page: "refer" }
   | { readonly page: "fitted" }
-  | { readonly page: "profile" };
+  | { readonly page: "profile" }
+  | { readonly page: "replacement" };
 
 export const TABS = ["/", "/visits", "/photos", "/payments", "/refer"] as const;
 export type Tab = (typeof TABS)[number];
@@ -35,6 +37,7 @@ const TOP: ReadonlyMap<string, Route> = new Map([
   ["payments", { page: "payments" }],
   ["refer", { page: "refer" }],
   ["profile", { page: "profile" }],
+  ["replacement", { page: "replacement" }],
 ]);
 
 export function routeOf(path: string): Route {
@@ -52,6 +55,7 @@ export function routeOf(path: string): Route {
 export function tabOf(route: Route): Tab | null {
   switch (route.page) {
     case "home":
+    case "replacement":
       return "/";
     case "visits":
     case "visit":

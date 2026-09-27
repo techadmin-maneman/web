@@ -65,6 +65,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   dispatch_moves:
     "Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).",
   events: "What happened, for analysis, with no personal data in its payload.",
+  first_fit_requests:
+    "A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).",
   fsm_items:
     "FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).",
   grievances: "A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).",

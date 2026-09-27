@@ -6,8 +6,9 @@
 // read at the moment ops look: a held grant, an undecided no-show, a number
 // change waiting for ops, an erasure asked for, a grievance to answer, a piece
 // past its replacement date, an invoice still a draft, an erasure FSM would not
-// finish. Nothing here writes, and there is nothing to close: each task leaves
-// when the thing itself is done, wherever it is done.
+// finish, a client past their next service with nothing booked, a first fit
+// asked for and not booked. Nothing here writes, and there is nothing to close:
+// each task leaves when the thing itself is done, wherever it is done.
 //
 // Every count is the whole queue's. Each group lists its longest waits and no
 // more, since past that the section that decides them is the tool.
@@ -31,7 +32,10 @@ const TaskSchema = z
       .openapi({ description: "Null for an erased client, whose record is gone." }),
     detail: z.union([z.string(), z.null()]).openapi({
       description:
-        "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact.",
+        "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM " +
+        "contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, " +
+        '"first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit\'s start and ' +
+        "the day the next service fell due; for a first fit to book, the consultation's start and the window wanted.",
     }),
     since: z.iso.datetime().openapi({ description: "When it started waiting." }),
     due: z.iso.datetime().openapi({
@@ -75,7 +79,8 @@ const tasksRoute = createRoute({
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
-    const { tasks, truncated } = await outstandingTasks(c.env.DB, now, (await opsInputs(c)).taskSlaHours);
+    const inputs = await opsInputs(c);
+    const { tasks, truncated } = await outstandingTasks(c.env.DB, now, inputs.taskSlaHours, inputs.nextVisitDays);
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
     const groups = TASK_GROUPS.map((group) => {
       const waiting = tasks.filter((task) => task.group === group);

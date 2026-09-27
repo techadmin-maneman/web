@@ -282,6 +282,7 @@ export interface paths {
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
                         address: components["schemas"]["TypedAddress"];
+                        first_fit?: components["schemas"]["FirstFitRequest"];
                         /**
                          * @description "You may contact me on WhatsApp about this consultation."
                          * @enum {boolean}
@@ -651,6 +652,7 @@ export interface paths {
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
                         address: components["schemas"]["TypedAddress"];
+                        first_fit?: components["schemas"]["FirstFitRequest"];
                         /**
                          * @description "You may contact me on WhatsApp about this consultation."
                          * @enum {boolean}
@@ -1817,6 +1819,8 @@ export interface components {
              * @enum {string}
              */
             address: "saved" | "on_account";
+            /** @description true: the first fit was asked for too, and the app offers it once the consultation is done. */
+            first_fit: boolean;
         };
         AlreadyBooked: {
             error: {
@@ -1846,6 +1850,11 @@ export interface components {
             floor?: string | null;
             tower?: string | null;
             landmark?: string | null;
+        };
+        /** @description Left out, the consultation alone. Sent, the first fit is asked for too: it is booked and paid for in the app once the consultation is done, and nothing is paid here. */
+        FirstFitRequest: {
+            /** @description The window the fit is wanted in, or null for either. A first fit does not fit in the evening. */
+            window: ("morning" | "afternoon") | null;
         };
         Waitlist: {
             area: string | null;
@@ -1892,6 +1901,8 @@ export interface components {
              * @enum {string}
              */
             address: "saved" | "on_account";
+            /** @description true: the first fit was asked for too, and the app offers it once the consultation is done. */
+            first_fit: boolean;
         };
         ReferralWaitlist: {
             area: string | null;

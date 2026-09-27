@@ -18,11 +18,15 @@
 // A consultation is booked with the full address it is at, which becomes the
 // person's address unless they already have one; a waitlist entry takes none
 // (docs/decisions/0081-the-site-takes-the-address.md).
+//
+// A consultation may be booked with the first fit to follow: a request for the
+// fit, written with the booking, which the client books and pays for in the app
+// once the consultation is done (docs/decisions/0086-the-next-visit-is-offered.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
-import { BOOKING_WINDOWS } from "../config/scheduling.ts";
+import { BOOKING_WINDOWS, FIRST_FIT_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
@@ -73,12 +77,37 @@ export const TypedAddressSchema = AddressSchema.omit({ building: true, place_id:
   .strict()
   .openapi("TypedAddress");
 
+/** "The consultation, then my first fit": the fit asked for, in the window wanted if one was given. */
+export const FirstFitRequestSchema = z
+  .object({
+    window: z.union([z.enum(FIRST_FIT_WINDOWS), z.null()]).openapi({
+      description: "The window the fit is wanted in, or null for either. A first fit does not fit in the evening.",
+    }),
+  })
+  .strict()
+  .optional()
+  .openapi("FirstFitRequest", {
+    description:
+      "Left out, the consultation alone. Sent, the first fit is asked for too: it is booked and paid for in the app " +
+      "once the consultation is done, and nothing is paid here.",
+  });
+
+/** What a booking says of the first fit asked for with it. */
+export const FirstFitOutcomeSchema = z.boolean().openapi({
+  description: "true: the first fit was asked for too, and the app offers it once the consultation is done.",
+});
+
+/** The first fit a booking asked for, as the domain takes it: null for the consultation alone. */
+export const firstFitOf = (asked: z.infer<typeof FirstFitRequestSchema>) =>
+  asked === undefined ? null : { window: asked.window };
+
 const ConsultationRequestSchema = z
   .object({
     ...Person,
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
+    first_fit: FirstFitRequestSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -100,6 +129,7 @@ const ConsultationSchema = z
     window: z.enum(BOOKING_WINDOWS),
     area: z.string(),
     address: AddressOutcomeSchema,
+    first_fit: FirstFitOutcomeSchema,
   })
   .strict()
   .openapi("Consultation");
@@ -192,10 +222,11 @@ export function registerConsultations(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
         invite: null,
+        firstFit: firstFitOf(body.first_fit),
       });
       if (!booked.ok) return booked;
-      const { state, date, window, area, address } = booked;
-      return { ok: true, body: { state, date, window, area, address } };
+      const { state, date, window, area, address, firstFit } = booked;
+      return { ok: true, body: { state, date, window, area, address, first_fit: firstFit } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
     if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
