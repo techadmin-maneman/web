@@ -21,6 +21,7 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/router`         | `usePath`, `go`, `followsHere` and `Link`: moving between pages without a reload                   |
 | `@maneman/ui/useLoad`        | A page's data, fetched as it opens and again on "Try again"                                        |
 | `@maneman/ui/useOneAtATime`  | One thing at a time, so two taps on one intent start it once                                       |
+| `@maneman/ui/motion`         | `ARRIVE`, the apps' one fade, for a page or an image arriving                                      |
 | `@maneman/ui/classes`        | `classes()`, which joins an element's class names                                                  |
 | `@maneman/ui/cssToken`       | A token's value as the page has it, for what is drawn outside a stylesheet: a canvas, a checkout   |
 
