@@ -44,6 +44,7 @@ npm run format:check
 npm run test:coverage       # Worker tests in workerd, script tests in Node; 90% lines, 80% branches on src/
 npm run check:config        # environment isolation in both wrangler configs
 npm run check:migrations    # forward-only, contract steps need an ADR (docs/migrations.md)
+npm run check:dead          # no file or export in src that nothing uses (knip.jsonc)
 npm run build               # both Workers, every environment, dry run
 ```
 

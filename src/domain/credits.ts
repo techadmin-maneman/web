@@ -90,7 +90,6 @@ export async function redeemCredit(
 
 /** Why ops put a balance right by hand: a credit given or taken in error, or visits given to make up for something. */
 export const ADJUST_REASONS = ["correction", "goodwill"] as const;
-export type AdjustReason = (typeof ADJUST_REASONS)[number];
 
 /**
  * Ops putting a balance right by hand, with the audit entry in the same batch: a change that is not recorded

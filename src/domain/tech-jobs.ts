@@ -422,9 +422,3 @@ function outcomeOf(body: string): string | null {
   const parsed = JSON.parse(body) as { outcome?: unknown };
   return typeof parsed.outcome === "string" ? parsed.outcome : null;
 }
-
-/** The two days the app caches, and the dates beyond them the list still names. */
-export const jobDates = (now: Date): { today: string; tomorrow: string } => {
-  const today = indiaDate(now);
-  return { today, tomorrow: addDays(today, 1) };
-};

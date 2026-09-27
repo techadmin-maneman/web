@@ -99,6 +99,8 @@ jobs:
           fi
       - name: Format
         run: npm run format:check
+      - name: No dead code in mm-api
+        run: npm run check:dead
 
       - name: Every environment redeclares every binding
         run: npm run check:config

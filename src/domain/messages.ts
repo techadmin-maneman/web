@@ -1,6 +1,7 @@
 // What outbound_messages may hold (migrations/0006_outbound_messages_v2.sql).
-// The database leaves kind and subject_kind unchecked, so that a new kind needs
-// no table rebuild; these lists are where they are checked instead.
+// The database leaves kind and subject_kind unchecked, so that a new one needs
+// no table rebuild. The list below is every kind the code writes, and its type
+// is the check; subject_kind names the table a message's subject_id is in.
 
 import type { NoticePurpose } from "../config/notices.ts";
 
@@ -36,14 +37,3 @@ export async function consentGiven(db: D1Database, personId: string, purpose: No
     .first<{ granted: number }>();
   return latest?.granted === 1;
 }
-
-/** What a message is about: the table its subject_id is in. */
-export const MESSAGE_SUBJECTS = [
-  "tryon_job",
-  "appointment",
-  "referral",
-  "waitlist_entry",
-  "payment",
-  "pincode",
-] as const;
-export type MessageSubject = (typeof MESSAGE_SUBJECTS)[number];

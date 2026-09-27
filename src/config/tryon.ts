@@ -39,9 +39,7 @@ export const RUNNING_STATES: readonly JobState[] = ["queued", "rendering", "down
 export const FAILURE_CODES = ["photo_unreadable", "photo_invalid_file", "render_failed", "busy"] as const;
 export type FailureCode = (typeof FAILURE_CODES)[number];
 
-/** Upload limits: AILabTools' own (docs/reference/ailabtools-api-notes.md, sections 3 and 4). */
-export const UPLOAD_CONTENT_TYPES = ["image/jpeg", "image/png"] as const;
-export type UploadContentType = (typeof UPLOAD_CONTENT_TYPES)[number];
+/** The upload limit: AILabTools' own (docs/reference/ailabtools-api-notes.md, sections 3 and 4). */
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 /**
  * The largest result stored: WhatsApp takes images of 5 MB at most, and the cap
