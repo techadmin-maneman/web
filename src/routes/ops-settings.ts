@@ -14,9 +14,9 @@
 // does (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
+import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { allowed, checkValue, OPS_SETTINGS, settingNamed, PRICE_BOUNDS, PRICE_TIER } from "../config/ops-settings.ts";
-import { actorOf } from "../domain/audit.ts";
 import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
 import { checkPrice, PRICE_ITEMS, priceBook, setPrice, withdrawPrice } from "../domain/price-book.ts";
@@ -253,13 +253,6 @@ const setServiceAreaRoute = createRoute({
     403: errorResponse("access_required"),
   },
 });
-
-/** The Access identity, which requireAccess has already put in place on this surface. */
-function staffOf(c: { var: { accessIdentity?: Parameters<typeof actorOf>[0] } }) {
-  const identity = c.var.accessIdentity;
-  if (identity === undefined) throw new Error("ops routes run after requireAccess");
-  return actorOf(identity);
-}
 
 const stateBody = (state: Awaited<ReturnType<typeof settingStates>>[number]) => ({
   name: state.setting.name,

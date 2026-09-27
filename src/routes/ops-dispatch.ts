@@ -13,10 +13,10 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
+import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { actorOf } from "../domain/audit.ts";
 import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -278,10 +278,8 @@ export function registerOpsDispatch(app: App): void {
 
   app.openapi(toldRoute, async (c) => {
     const { requestId, deps } = c.var;
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
     const { id } = c.req.valid("param");
-    const actor = actorOf(identity);
+    const actor = staffOf(c);
     const recorded = await recordToldByPhone(c.env.DB, {
       moveId: id,
       actor: actor.id,
@@ -304,8 +302,7 @@ type MoveRequest = z.infer<typeof MoveRequestSchema>;
 /** Assigning and moving are the same write; only what ops change differs. */
 async function write(c: Context<AppEnv>, request: MoveRequest) {
   const { requestId, deps, config, log } = c.var;
-  const identity = c.var.accessIdentity;
-  if (identity === undefined) throw new Error("ops routes run after requireAccess");
+  const staff = staffOf(c);
 
   const input: MoveInput = {
     appointmentId: request.appointment_id,
@@ -313,7 +310,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     date: request.date ?? null,
     window: request.window ?? null,
     reason: request.reason,
-    actor: actorOf(identity).id,
+    actor: staff.id,
     expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
   };
   const outcome = await moveJob(

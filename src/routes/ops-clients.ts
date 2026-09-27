@@ -17,10 +17,9 @@
 // and what is kept of them is a record for the deletion queue, not a page to read.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { Context } from "hono";
-import type { App, AppEnv } from "../http/context.ts";
+import { staffOf } from "../http/audit.ts";
+import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { actorOf, type AuditActor } from "../domain/audit.ts";
 import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../domain/photo-views.ts";
 import {
   CLIENT_STATES,
@@ -310,13 +309,6 @@ function searchOf(typed: string): Search | null {
 
 /** A LIKE pattern for text anywhere in the column, with LIKE's own wildcards taken as themselves. */
 const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
-
-/** The member of staff behind the call; requireAccess has set it on every ops route. */
-function staffOf(c: Context<AppEnv>): AuditActor {
-  const identity = c.var.accessIdentity;
-  if (identity === undefined) throw new Error("ops routes run after requireAccess");
-  return actorOf(identity);
-}
 
 interface PersonRow {
   id: string;

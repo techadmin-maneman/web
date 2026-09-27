@@ -5,8 +5,8 @@
 // Each decision is audited under the member of staff who made it.
 
 import { createRoute, z } from "@hono/zod-openapi";
+import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
-import { actorOf } from "../domain/audit.ts";
 import { decideHeldReferral } from "../domain/referral-grants.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -126,9 +126,7 @@ export function registerOpsReferrals(app: App): void {
     if (needsReason("referral", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
     }
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
-    const staff = actorOf(identity);
+    const staff = staffOf(c);
     const now = deps.now();
     const outcome = await decideHeldReferral(c.env.DB, {
       id,

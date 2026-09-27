@@ -8,8 +8,8 @@
 // The console's form for it arrives with the client page's other screens.
 
 import { createRoute, z } from "@hono/zod-openapi";
+import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
-import { actorOf } from "../domain/audit.ts";
 import { ADJUST_REASONS, adjustCredits } from "../domain/credits.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 
@@ -66,8 +66,7 @@ const adjustRoute = createRoute({
 
 export function registerOpsCredits(app: App): void {
   app.openapi(adjustRoute, async (c) => {
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const staff = staffOf(c);
     const personId = c.req.valid("param").id;
     const { visits, reason } = c.req.valid("json");
     const db = c.env.DB;
@@ -82,7 +81,7 @@ export function registerOpsCredits(app: App): void {
       visits,
       audit: {
         surface: "ops",
-        actor: actorOf(identity),
+        actor: staff,
         action: "credit.adjust",
         subject: { kind: "person", id: personId },
         requestId: c.var.requestId,

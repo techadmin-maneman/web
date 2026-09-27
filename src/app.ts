@@ -5,7 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
 import type { Surface } from "./config/environments.ts";
 import { productionDependencies, type DependencyFactory } from "./dependencies.ts";
-import { auditCall } from "./domain/audit.ts";
+import { auditCall } from "./http/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
 import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops-settings.ts";
 import { requireAccess } from "./http/access.ts";
