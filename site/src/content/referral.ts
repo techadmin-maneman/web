@@ -166,6 +166,11 @@ export const referral = {
     back: "See the site",
     // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 45).
     number: "On WhatsApp to +91 {mobile}",
+    // Not drawn: the number already had an address, which the booking kept rather than the one typed (ADR 0081). It
+    // names no part of that address, since whoever typed the number may not be its owner. The owner approves the
+    // words (open point 45).
+    addressOnAccount:
+      "We come to the address already on your account, not the one given here. To change it, message us on WhatsApp.",
     calendar: "Add to calendar",
     calendarFile: "mane-man-consultation.ics",
     calendarTitle: "Mane Man consultation",

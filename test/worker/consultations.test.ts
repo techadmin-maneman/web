@@ -281,6 +281,47 @@ describe("the address the consultation is at", () => {
     expect(crm.sent).toContainEqual({ update_person_id: "p-known", request_id: expect.any(String) as string });
   });
 
+  // A contact FSM already holds for the number is linked, not added; the address saved before it was linked had no
+  // contact to go to (src/queues/fsm-sync.ts), so it goes as the link is made.
+  describe("with a contact FSM already holds for the number", () => {
+    const world = () => ({
+      ...EMPTY_FSM,
+      contacts: [{ id: "fsm-contact-9", name: "Karan Bhatia", mobile: "+919810000002", email: null }],
+      items: [{ id: "item-consult", name: "Consultation", type: "Service" as const, price: null }],
+    });
+    async function heldAndConfirmed(fsm: ReturnType<typeof createStubFsm>) {
+      const queue = fakeQueue();
+      expect((await book({ address: ADDRESS }, { FSM_QUEUE: queue })).status).toBe(201);
+      const [queued] = queue.sent as { hold_id: string }[];
+      return confirmBooking(env.DB, fsm, createStubPayments(), queued?.hold_id ?? "", NOW, { labelAsTest: true });
+    }
+
+    it("writes the address over it as it is linked", async () => {
+      const fsm = createStubFsm(world());
+      expect(await heldAndConfirmed(fsm)).toBe("booked");
+      expect(fsm.made.contacts).toEqual([]);
+      expect(fsm.made.contactUpdates).toEqual([
+        {
+          contactId: "fsm-contact-9",
+          mobile: "+919810000002",
+          address: { street1: "Palm Grove Society", street2: "Sector 65", city: "Gurgaon", pincode: "122018" },
+        },
+      ]);
+      const linked = await env.DB.prepare(
+        "SELECT fsm_contact_id FROM people WHERE mobile_e164 = '+919810000002'",
+      ).first();
+      expect(linked).toEqual({ fsm_contact_id: "fsm-contact-9" });
+    });
+
+    it("still books when FSM will not take the address, leaving the contact as it was", async () => {
+      const fsm = createStubFsm(world());
+      fsm.failNext("updateContact", "FSM answered 500");
+      expect(await heldAndConfirmed(fsm)).toBe("booked");
+      expect(fsm.made.contactUpdates).toEqual([]);
+      expect(fsm.made.visits).toHaveLength(1);
+    });
+  });
+
   it("reaches the contact FSM is given, with its street, however the city was typed", async () => {
     const queue = fakeQueue();
     expect((await book({ address: { ...ADDRESS, city: "Gurugram" } }, { FSM_QUEUE: queue })).status).toBe(201);

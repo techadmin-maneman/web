@@ -10,7 +10,7 @@ import { analyticsEvents, expect, expectNoPersonalData, fakeTurnstile, test, vis
 const SERVED = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
 const UNSERVED = { pincode: "400050", served: false, area: "Bandra", city: "Mumbai" };
 
-const BOOKED = { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area };
+const BOOKED = { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, address: "saved" };
 
 /** Mocks the page's three calls; returns the requests it made. */
 async function mockApi(
@@ -109,6 +109,38 @@ test("a booking without the address is stopped at the form, each part it needs m
     pincode: SERVED.pincode,
     access_notes: "Gate 2, visitor parking",
   });
+});
+
+// The form needs no login, so a number that already has an address keeps it, and the page says so without
+// naming any part of it (ADR 0081).
+test("a number with an address already is told the visit goes there, and shown nothing of it", async ({ page }) => {
+  await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, address: "on_account" } } });
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("We come to the address already on your account, not the one given here.")).toBeVisible();
+});
+
+test("a booking that saved the address given says nothing about an account", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText(/already on your account/)).toHaveCount(0);
 });
 
 // Nobody invited them, so nothing on this page may speak of an invite or of the
