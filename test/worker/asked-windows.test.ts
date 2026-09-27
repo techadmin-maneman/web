@@ -130,6 +130,73 @@ describe("the window the client asked for", () => {
     expect((await asked())?.asked_window).toBeNull();
   });
 
+  /*
+   * With self-serve booking off, which is production's setting, the site's form
+   * leaves a request with the day and window asked for, and no Request in FSM:
+   * ops put the consultation in FSM themselves. Every such visit once read
+   * "Asked · not recorded" though we held what was asked (BIZ-23).
+   */
+  describe("for a consultation the site's form asked for while self-serve booking was off", () => {
+    async function requested(window: string, createdAt = NOW.toISOString(), date = "2026-09-24") {
+      await env.DB.prepare(
+        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+         VALUES (?1, ?2, '122018', ?3, ?4, ?5)`,
+      )
+        .bind(crypto.randomUUID(), PERSON, date, window, createdAt)
+        .run();
+    }
+
+    it("reads the window from the request, where no lead of ours is behind the visit", async () => {
+      await visit();
+      await requested("afternoon");
+
+      expect(await pass(createStubFsm(EMPTY_FSM))).toEqual({ resolved: 1 });
+      expect(await asked()).toEqual({ asked_window: "afternoon", asked_checked_at: NOW.toISOString() });
+    });
+
+    it("reads the latest request, where the client asked more than once", async () => {
+      await visit();
+      await requested("morning", "2026-09-19T06:30:00.000Z", "2026-09-22");
+      await requested("evening", "2026-09-20T06:30:00.000Z", "2026-09-25");
+
+      await pass(createStubFsm(EMPTY_FSM));
+      expect((await asked())?.asked_window).toBe("evening");
+    });
+
+    it("reads it too where FSM refused to say, since the request is ours", async () => {
+      await visit();
+      await requested("afternoon");
+      const fsm = createStubFsm(EMPTY_FSM);
+      fsm.refuseNext("requestPreference", "NO_WORK_ORDER");
+
+      await pass(fsm);
+      expect((await asked())?.asked_window).toBe("afternoon");
+    });
+
+    it("prefers the lead's own window, where one is behind the visit's Request", async () => {
+      await visit();
+      await lead("weekday_am");
+      await requested("evening");
+      const fsm = createStubFsm(
+        world({
+          preferences: { "fsm-wo-1": { requestId: "fsm-req-1", preferredDate: null, preferenceNote: null } },
+        }),
+      );
+
+      await pass(fsm);
+      expect((await asked())?.asked_window).toBe("morning");
+    });
+
+    it("takes no request's window for a visit that is not a consultation", async () => {
+      await visit();
+      await env.DB.prepare("UPDATE appointments SET type = 'service'").run();
+      await requested("afternoon");
+
+      await pass(createStubFsm(EMPTY_FSM));
+      expect((await asked())?.asked_window).toBeNull();
+    });
+  });
+
   it("asks FSM once: a visit already looked at is left alone by the next pass", async () => {
     await visit();
     await lead("weekday_am");

@@ -9,13 +9,19 @@
 // receipt of the day-before or arrival WhatsApp to the client." Nothing here
 // charges anybody: "the charge is applied by ops from the evidence, never
 // automatically", so a case opens undecided and waits for a person.
+//
+// The ruling reaches the client: a WhatsApp about it, and their visit's page
+// and Payments say it (docs/decisions/0074-hand-offs-and-messages.md).
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { canCloseAsNoShow, noShowWaitEnds, type NoShowDecision, type Waits } from "../policy/no-show.ts";
+import type { PaymentsProvider } from "../providers/razorpay.ts";
+import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import type { LatestArrival } from "./check-ins.ts";
-import { NO_VISITS_CONSENT } from "./visit-messages.ts";
+import { visitPayment } from "./visit-changes.ts";
+import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
 
 /**
  * What became of the WhatsApp ops read the receipt of. A reminder that was never
@@ -87,20 +93,19 @@ function messageStateOf(row: CaseRow): MessageState {
   return "not_sent";
 }
 
-/** The WhatsApp ops read the receipt of: the day-before reminder, else the arrival notice. */
-async function evidenceMessage(
+/**
+ * The WhatsApp ops read the receipt of, as `?1` names the visit: of the day-before reminder and the arrival notice,
+ * one WhatsApp reported delivered, else the latest. The technician's card reads the same (src/domain/tech-jobs.ts).
+ */
+export const EVIDENCE_MESSAGE = `SELECT id, delivered_at FROM outbound_messages
+  WHERE subject_kind = 'appointment' AND subject_id = ?1 AND kind IN ('visit_reminder', 'arrival_notice')
+  ORDER BY delivered_at IS NULL, created_at DESC, rowid DESC LIMIT 1`;
+
+function evidenceMessage(
   db: D1Database,
   appointmentId: string,
 ): Promise<{ id: string; delivered_at: string | null } | null> {
-  const row = await db
-    .prepare(
-      `SELECT id, delivered_at FROM outbound_messages
-       WHERE subject_kind = 'appointment' AND subject_id = ?1 AND kind IN ('visit_reminder', 'arrival_notice')
-       ORDER BY created_at DESC LIMIT 1`,
-    )
-    .bind(appointmentId)
-    .first<{ id: string; delivered_at: string | null }>();
-  return row;
+  return db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<{ id: string; delivered_at: string | null }>();
 }
 
 export type Readiness =
@@ -161,6 +166,39 @@ export async function openNoShowCase(
   return stored.id;
 }
 
+/**
+ * What the client is told of a visit they were not home for (LIFE-07): that we waited, how long, and what ops
+ * ruled. The reason ops gave is theirs, and stays with the ruling.
+ */
+export interface NoShowNote {
+  readonly decision: NoShowDecision;
+  /** From the check-in to the close: how long the technician waited at the door. */
+  readonly waited_minutes: number;
+}
+
+/** The no-show note of each of these visits that has one: its latest case. */
+export async function noShowNotes(db: D1Database, appointmentIds: readonly string[]): Promise<Map<string, NoShowNote>> {
+  if (appointmentIds.length === 0) return new Map();
+  const placeholders = appointmentIds.map((_, index) => `?${String(index + 1)}`).join(", ");
+  const { results } = await db
+    .prepare(
+      `SELECT appointment_id, decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at
+       FROM no_show_cases WHERE appointment_id IN (${placeholders}) ORDER BY created_at`,
+    )
+    .bind(...appointmentIds)
+    .all<{ appointment_id: string; decision: NoShowDecision; wait_started_at: string; ended_at: string }>();
+  // Oldest first, so a later case of the same visit is the one kept.
+  return new Map(
+    results.map((row) => [
+      row.appointment_id,
+      {
+        decision: row.decision,
+        waited_minutes: Math.round((Date.parse(row.ended_at) - Date.parse(row.wait_started_at)) / 60_000),
+      },
+    ]),
+  );
+}
+
 /** The cases ops have still to rule on, oldest first, then the decided ones. */
 export async function listNoShowCases(
   db: D1Database,
@@ -215,9 +253,24 @@ export async function listNoShowCases(
   }));
 }
 
+/** A waived visit whose payment is to go back, once the ruling is written. */
+export interface WaivedVisit {
+  readonly appointmentId: string;
+  readonly personId: string;
+}
+
+export interface Ruled {
+  /** The client's WhatsApp about the ruling, to queue; null for a visit with no client on our records. */
+  readonly messageId: string | null;
+  /** A waiver that gives back what the visit took (WAIVER_GIVES_BACK): the visit whose payment to refund now. */
+  readonly refund: WaivedVisit | null;
+}
+
 /**
  * Ops charge or waive the visit, with their reason. Ruled once: a second ruling on the same case changes nothing.
- * The ruling's audit entry goes in the same batch (src/domain/audit.ts); the reason stays with the ruling.
+ * In the one batch: the ruling, its audit entry (src/domain/audit.ts), the client's message about it, and, for a
+ * waiver that gives back, the credit the visit used. The reason stays with the ruling and reaches no message. A
+ * charge moves nothing: the visit keeps what it took, as a cancel inside 24 hours does.
  */
 export async function decideNoShow(
   db: D1Database,
@@ -228,21 +281,89 @@ export async function decideNoShow(
     actor: string;
     audit: AuditEntry;
     now: Date;
+    /** Whether a waiver gives back the payment and the credit: the owner's ruling (src/policy/no-show.ts). */
+    waiverGivesBack: boolean;
   },
-): Promise<boolean> {
+): Promise<Ruled | null> {
   const open = await db
-    .prepare("SELECT 1 FROM no_show_cases WHERE id = ?1 AND decision = 'undecided'")
+    .prepare(
+      `SELECT n.appointment_id, p.id AS person_id FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
+       LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
+       WHERE n.id = ?1 AND n.decision = 'undecided'`,
+    )
     .bind(input.caseId)
-    .first();
-  if (open === null) return false;
+    .first<{ appointment_id: string; person_id: string | null }>();
+  if (open === null) return null;
+  const at = input.now.toISOString();
+  const message =
+    open.person_id === null
+      ? null
+      : visitMessage(db, {
+          personId: open.person_id,
+          appointmentId: open.appointment_id,
+          kind: "no_show_decided",
+          now: input.now,
+        });
+  const givesBack = input.decision === "waived" && input.waiverGivesBack;
   await db.batch([
     db
       .prepare(
         `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4, decision_reason = ?5
          WHERE id = ?1 AND decision = 'undecided'`,
       )
-      .bind(input.caseId, input.decision, input.actor, input.now.toISOString(), input.reason),
+      .bind(input.caseId, input.decision, input.actor, at, input.reason),
     auditStatement(db, input.audit, input.now),
+    ...(message === null ? [] : [message.statement]),
+    ...(givesBack ? [creditBack(db, open.appointment_id, input.now)] : []),
   ]);
-  return true;
+  return {
+    messageId: message?.id ?? null,
+    refund:
+      givesBack && open.person_id !== null ? { appointmentId: open.appointment_id, personId: open.person_id } : null,
+  };
+}
+
+/**
+ * The credit a waived visit used, back in its grant: once (the ledger's one-use index), and only to a grant that
+ * can still take it, neither clawed back nor expired, as a free cancel's is (src/policy/moving-a-visit.ts).
+ */
+function creditBack(db: D1Database, appointmentId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       SELECT ?1, r.person_id, 'restore', 1, r.grant_id, 'appointment', r.source_id, ?3
+       FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id
+       WHERE r.kind = 'redeem' AND r.source_id = ?2
+         AND NOT EXISTS (SELECT 1 FROM credit_ledger c WHERE c.grant_id = r.grant_id AND c.kind = 'clawback')
+         AND (g.expires_at IS NULL OR g.expires_at > ?3)
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(crypto.randomUUID(), appointmentId, now.toISOString());
+}
+
+/**
+ * Refunds what is left of a waived visit's payment, when a waiver gives back. A refund Razorpay refuses is left
+ * to ops, told once with the visit and the payment, as a cancel's is (src/domain/visit-changes.ts).
+ */
+export async function refundWaivedVisit(
+  db: D1Database,
+  deps: { payments: PaymentsProvider; alertOnce: AlertOnce },
+  visit: WaivedVisit,
+): Promise<void> {
+  const payment = await visitPayment(db, visit.appointmentId);
+  if (payment === null || payment.paid <= 0) return;
+  try {
+    await deps.payments.refund(payment.razorpayPaymentId, {
+      amount: payment.paid,
+      notes: { appointment_id: visit.appointmentId, reason: "no-show waived" },
+    });
+  } catch {
+    await deps.alertOnce({
+      key: `no_show_refund_failed:${visit.appointmentId}`,
+      message:
+        `The refund of Rs. ${String(payment.paid / 100)} for visit ${visit.appointmentId}, whose no-show was ` +
+        `waived, failed (Razorpay payment ${payment.razorpayPaymentId}). Refund it by hand in Razorpay, once.`,
+      link: `/clients/${visit.personId}`,
+    });
+  }
 }

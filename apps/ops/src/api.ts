@@ -61,6 +61,8 @@ export type Charge = DayMoney["charges"][number];
 export type Technician = Body<paths["/api/technicians"]["get"]>["technicians"][number];
 export type Device = Technician["devices"][number];
 export type Leave = Technician["leave"][number];
+export type LeaveRecorded = Body<paths["/api/technicians/{id}/leave"]["post"]>;
+export type JobOnLeave = LeaveRecorded["jobs"][number];
 export type TechniciansWork = Body<paths["/api/technicians/work"]["get"]>;
 export type TechnicianWork = TechniciansWork["technicians"][number];
 export type Board = Body<paths["/api/dispatch"]["get"]>;
@@ -272,7 +274,7 @@ export const api = {
     call<{ revoked_at: string }>("POST", `/api/technicians/${id}/devices/${encodeURIComponent(deviceId)}/revoke`),
   /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
   recordLeave: (id: string, leave: { from: string; to: string; note: string | null }) =>
-    call<{ id: string }>("POST", `/api/technicians/${id}/leave`, {
+    call<LeaveRecorded>("POST", `/api/technicians/${id}/leave`, {
       from: leave.from,
       to: leave.to,
       ...(leave.note === null ? {} : { note: leave.note }),

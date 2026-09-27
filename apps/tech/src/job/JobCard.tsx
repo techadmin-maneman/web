@@ -87,6 +87,8 @@ export function JobCard({ job }: { job: Job }) {
   }
 
   const client = job.client;
+  /** What the client asked the technician to know, from their app (REQ-04). */
+  const clientNote = client?.note ?? null;
   return (
     <>
       <section className={styles.address}>
@@ -95,6 +97,9 @@ export function JobCard({ job }: { job: Job }) {
           <p className={styles.access}>{copy.near(job.address.landmark)}</p>
         )}
         {job.access_notes !== null && <p className={styles.access}>{job.access_notes}</p>}
+        {client !== null && clientNote !== null && (
+          <p className={styles.access}>{copy.clientNote(firstName(client.name), clientNote)}</p>
+        )}
         {/* A new tab, so a technician who has taken the route back still has the app open behind it. */}
         <a className={styles.navigate} href={wayTo(job.address)} target="_blank" rel="noopener noreferrer">
           <Icon d={PIN} size={21} />

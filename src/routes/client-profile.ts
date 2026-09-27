@@ -19,6 +19,8 @@ import { auditStatement, type AuditEntry } from "../domain/audit.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { openDeletion, requestDeletion } from "../domain/deletion.ts";
 import {
+  DECISION_SHOWN_DAYS,
+  lastDecidedChange,
   openNumberChange,
   startNumberChange,
   verifyNumberChange,
@@ -164,6 +166,23 @@ export const ProfileSchema = z
       )
       .openapi({ description: "The five purposes, in order. Off until the client first switches one on." }),
     number_change: z.union([NumberChangeSchema, z.null()]),
+    number_change_decided: z
+      .union([
+        z
+          .object({
+            state: z.enum(["confirmed", "rejected"]),
+            new_mobile: z.string().openapi({ description: "Masked, as the design shows it: +91 98xxx x4417." }),
+            decided_at: z.iso.datetime(),
+            reason: z
+              .union([z.string(), z.null()])
+              .openapi({ description: "Ops' reason for a rejection, which they write knowing the client reads it." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description: `What ops decided about the client's latest change of number, for ${String(DECISION_SHOWN_DAYS)} days after, while no other change is under way. A rejection once vanished from the app (OPS-09).`,
+      }),
     deletion: z
       .object({ state: z.literal("requested"), requested_at: z.iso.datetime() })
       .strict()
@@ -360,10 +379,11 @@ export function registerClientProfile(app: App): void {
       .first<{ name: string; mobile_e164: string }>();
     if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
 
-    const [address, consents, change, deletion] = await Promise.all([
+    const [address, consents, change, decided, deletion] = await Promise.all([
       currentAddress(db, personId),
       consentsOf(db, personId),
       openNumberChange(db, personId),
+      lastDecidedChange(db, personId, c.var.deps.now()),
       openDeletion(db, personId),
     ]);
     return c.json(
@@ -389,6 +409,15 @@ export function registerClientProfile(app: App): void {
               },
         consents,
         number_change: change === null ? null : numberChangeBody(change),
+        number_change_decided:
+          change !== null || decided === null
+            ? null
+            : {
+                state: decided.state,
+                new_mobile: maskedMobile(decided.newMobileE164),
+                decided_at: decided.decidedAt,
+                reason: decided.reason,
+              },
         deletion: deletion === null ? null : { state: "requested" as const, requested_at: deletion.createdAt },
       },
       200,

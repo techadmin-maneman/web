@@ -15,6 +15,7 @@ const visit = (overrides: Partial<VisitDetail>): VisitDetail =>
     ends_at: "2030-09-19T08:00:00.000Z",
     document_id: null,
     invoice_expected: true,
+    invoice_held: null,
     ...overrides,
   }) as VisitDetail;
 
@@ -35,6 +36,13 @@ describe("a visit's invoice", () => {
   it("is not spoken of at all for a visit FSM did not complete", () => {
     expect(invoiceState(visit({ status: "terminated" }), ended)).toBe("none");
   });
+
+  // "Still generating" was said of an invoice held back on purpose (ADR 0070), however long it had been held.
+  it("says an invoice held back is being checked, or waits on a ruling for a credit visit, however long it has been", () => {
+    expect(invoiceState(visit({ invoice_held: "checking" }), ended + 2 * HOUR)).toBe("checking");
+    expect(invoiceState(visit({ invoice_held: "credit" }), ended + 48 * HOUR)).toBe("credit");
+    expect(invoiceState(visit({ invoice_held: "credit", document_id: "d" }), ended)).toBe("open");
+  });
 });
 
 const payment = (overrides: Record<string, unknown>) =>
@@ -44,6 +52,7 @@ const payment = (overrides: Record<string, unknown>) =>
     visit: { id: "v", date: "2030-09-19", type: "service" },
     purpose: "visit",
     charge: null,
+    no_show: null,
     ...overrides,
   }) as unknown as Extract<Entry, { kind: "payment" }>;
 

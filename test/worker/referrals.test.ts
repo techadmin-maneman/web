@@ -90,6 +90,7 @@ describe("referral codes", () => {
       credits: { visits: 0, earliest_expiry: null },
       card: { state: "house", version: 1, consented: false },
       fitted: [],
+      invite_credits: null,
     });
   });
 

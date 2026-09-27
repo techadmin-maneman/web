@@ -1136,7 +1136,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description One list of payments and refunds */
+                /** @description One list of payments and refunds, and one of the credits' changes */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1144,6 +1144,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             entries: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+                            /** @description Every change to the service-visit credits, newest first, which the app lists among the payments. */
+                            credits: components["schemas"]["CreditLine"][];
                         };
                     };
                 };
@@ -1827,6 +1829,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/appointments/{id}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave the technician a note on a visit to come */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VisitNote"];
+                };
+            };
+            responses: {
+                /** @description Kept on the visit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VisitNoted"];
+                    };
+                };
+                /** @description invalid_request: an empty note, or one over 500 characters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such visit of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_changeable: the visit is over or cancelled; or ops_assisted: self-serve booking is off */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/refer/card": {
         parameters: {
             query?: never;
@@ -2233,6 +2314,17 @@ export interface components {
                 since: string | null;
             }[];
             number_change: components["schemas"]["NumberChange"] | null;
+            /** @description What ops decided about the client's latest change of number, for 30 days after, while no other change is under way. A rejection once vanished from the app (OPS-09). */
+            number_change_decided: {
+                /** @enum {string} */
+                state: "confirmed" | "rejected";
+                /** @description Masked, as the design shows it: +91 98xxx x4417. */
+                new_mobile: string;
+                /** Format: date-time */
+                decided_at: string;
+                /** @description Ops' reason for a rejection, which they write knowing the client reads it. */
+                reason: string | null;
+            } | null;
             deletion: {
                 /** @enum {string} */
                 state: "requested";
@@ -2362,7 +2454,8 @@ export interface components {
             place: string;
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
-            outcome: ("done" | "partial") | null;
+            /** @description Done, partly done, or a no-show: the client was not home. Null until FSM closes it. */
+            outcome: ("done" | "partial" | "no_show") | null;
             /** @description The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded, as for a visit closed in FSM's own screens. */
             what_was_done: string[] | null;
             photos: components["schemas"]["PhotoSet"];
@@ -2370,6 +2463,10 @@ export interface components {
             document_id: string | null;
             /** @description Whether this visit is billed at all: false for a free visit, and for one that is not finished. With no document_id and this false, no invoice will ever exist. */
             invoice_expected: boolean;
+            /** @description Why a finished visit's invoice is held back rather than still to come (ADR 0070): credit, a visit credit paid for it and its invoice waits on the accountant's ruling; checking, a draft ops are checking before it is sent. Null otherwise. */
+            invoice_held: ("credit" | "checking") | null;
+            /** @description The client was not home for this visit: how long we waited, and what ops ruled. Null otherwise. */
+            no_show: components["schemas"]["NoShowNote"] | null;
         };
         /** @description Each angle in the order front, top, left, right, hair; missing angles left out. */
         PhotoSet: {
@@ -2383,6 +2480,15 @@ export interface components {
             url: string;
             width: number | null;
             height: number | null;
+        };
+        NoShowNote: {
+            /**
+             * @description What ops ruled: undecided while they look at the evidence, charged, or waived.
+             * @enum {string}
+             */
+            decision: "undecided" | "charged" | "waived";
+            /** @description How long the technician waited at the door. */
+            waited_minutes: number;
         };
         PhotoTimeline: {
             visits: {
@@ -2471,6 +2577,8 @@ export interface components {
                 /** @description In paise: what was kept. */
                 amount: number;
             } | null;
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            no_show: components["schemas"]["NoShowNote"] | null;
         };
         RefundEntry: {
             /**
@@ -2507,6 +2615,33 @@ export interface components {
             destination: string | null;
             /** @description normal (5 to 7 working days) or instant. */
             speed: string | null;
+        };
+        CreditLine: {
+            /** @description The ledger entry's. */
+            id: string;
+            /**
+             * Format: date
+             * @description India's calendar date it was made.
+             */
+            date: string;
+            /**
+             * @description added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that was cancelled inside 24 hours, or that the client was not home for and ops charged; returned: back after a cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand.
+             * @enum {string}
+             */
+            event: "added" | "used" | "lost" | "returned" | "expired" | "withdrawn" | "corrected";
+            /** @description Signed: what it added to the balance, or took from it. */
+            visits: number;
+            /** @description The visit it paid for, when known. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                date: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description Where credits added came from; null for any other entry. */
+            source: ("referral" | "ops" | "import") | null;
+            no_show: components["schemas"]["NoShowNote"] | null;
         };
         PaymentDetail: {
             /**
@@ -2565,6 +2700,8 @@ export interface components {
                 /** @description In paise: what was kept. */
                 amount: number;
             } | null;
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            no_show: components["schemas"]["NoShowNote"] | null;
             documents: {
                 /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it. */
                 invoice: string | null;
@@ -2746,6 +2883,15 @@ export interface components {
             /** @description false: the terms only; true: the visit is cancelled. */
             cancelled: boolean;
         };
+        VisitNoted: {
+            note: string;
+            /** Format: date-time */
+            noted_at: string;
+        };
+        VisitNote: {
+            /** @description What the technician should know at the door. Replaces any note before it. */
+            note: string;
+        };
         Refer: {
             code: string;
             /** @description The invite link to share: maneman.in/r/<code>. */
@@ -2762,10 +2908,13 @@ export interface components {
             };
             /** @description Friends whose first fit closed as done, most recent first. */
             fitted: {
-                first_name: string;
+                /** @description Kept with the referral when it was granted, so it stays after the friend is erased. Null for a friend erased before names were kept: never the word the erasure leaves. */
+                first_name: string | null;
                 /** @description YYYY-MM, in India. */
                 month: string;
             }[];
+            /** @description For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise. */
+            invite_credits: ("checking" | "refused") | null;
         };
         Grievance: {
             /** Format: uuid */

@@ -44,7 +44,8 @@ export const TECHNICIANS = {
   ],
 } satisfies Roster;
 
-export const LEAVE_RECORDED = { id: "89000000-0000-4000-8000-000000000002" } satisfies OpsReply<
+/** Leave recorded over no booked job; `jobs` lists those it falls on (OPS-07). */
+export const LEAVE_RECORDED = { id: "89000000-0000-4000-8000-000000000002", jobs: [] } satisfies OpsReply<
   "/api/technicians/{id}/leave",
   "post"
 >;

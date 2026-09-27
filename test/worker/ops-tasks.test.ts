@@ -15,6 +15,7 @@ import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } fro
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const REFERRED = "11111111-1111-4111-8111-111111111112";
+const OTHER = "11111111-1111-4111-8111-111111111113";
 const VISIT = "22222222-2222-4222-8222-222222222222";
 const PIECE = "33333333-3333-4333-8333-333333333331";
 const HELD = "33333333-3333-4333-8333-333333333332";
@@ -196,11 +197,41 @@ describe("GET /api/tasks", () => {
     )
       .bind(MAX_SYNC_ATTEMPTS, REFERRED)
       .run();
+    // A visit Rohit was left partly done on, and another client's job, with no address, on Chetan's day off.
+    await person(OTHER, "Karan Bhatia", "+919810000003");
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+           fsm_modified_at, synced_at)
+         VALUES ('partial-visit', 'fsm-appt-10', ?1, 'service', '2026-09-20T04:30:00.000Z',
+           '2026-09-20T06:00:00.000Z', 'terminated', 'Terminated', ?2, ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO visits (id, appointment_id, outcome, partial_reason, updated_at)
+         VALUES ('visit-row-10', 'partial-visit', 'partial', 'client_unwell', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t9', 'fsm-t9', 'Chetan Arora', 'CA', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+           fsm_status, fsm_modified_at, synced_at)
+         VALUES ('leave-job', 'fsm-appt-11', ?1, 'service', '2026-09-23T05:00:00.000Z', '2026-09-23T06:30:00.000Z',
+           't9', 'scheduled', 'Scheduled', ?2, ?2)`,
+      ).bind(OTHER, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+         VALUES ('leave-1', 't9', '2026-09-23', '2026-09-23', 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
 
     const body = await tasks();
     expect(groupNames(body)).toEqual([
+      "leave_conflict",
+      "address_to_confirm",
       "consultation_request",
       "replacement_order",
+      "partial_visit",
       "referral_review",
       "no_show_decision",
       "number_change",
@@ -209,7 +240,7 @@ describe("GET /api/tasks", () => {
       "draft_invoice",
       "erasure_unfinished",
     ]);
-    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("leaves out a group with nothing waiting, as the board draws none", async () => {
@@ -235,14 +266,15 @@ describe("GET /api/tasks", () => {
   it("drops a consultation request once that client has a consultation, unless it was cancelled", async () => {
     await consultationRequest();
     await consultationFor(PERSON, "scheduled");
-    expect(groupNames(await tasks())).toEqual([]);
+    // The consultation's own address, which no one has given yet, is another task (LIFE-04).
+    expect(groupNames(await tasks())).not.toContain("consultation_request");
 
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled'").run();
-    expect(groupNames(await tasks())).toEqual(["consultation_request"]);
+    expect(groupNames(await tasks())).toContain("consultation_request");
 
     // Somebody else's consultation is not theirs.
     await env.DB.prepare("UPDATE appointments SET status = 'scheduled', person_id = ?1").bind(REFERRED).run();
-    expect(groupNames(await tasks())).toEqual(["consultation_request"]);
+    expect(groupNames(await tasks())).toContain("consultation_request");
   });
 
   it("names the client, the piece and when the replacement fell due", async () => {
@@ -281,7 +313,8 @@ describe("GET /api/tasks", () => {
     )
       .bind(VISIT, PERSON, NOW.toISOString())
       .run();
-    expect(groupNames(await tasks())).toEqual([]);
+    // The booked visit's own address, which this client has not given, is another task (LIFE-04).
+    expect(groupNames(await tasks())).not.toContain("replacement_order");
 
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled'").run();
     expect(groupNames(await tasks())).toEqual(["replacement_order"]);
@@ -417,6 +450,102 @@ describe("GET /api/tasks", () => {
 
     await env.DB.prepare("UPDATE people SET fsm_erased_at = ?1").bind(NOW.toISOString()).run();
     expect(groupNames(await tasks())).toEqual([]);
+  });
+
+  // The brief: "ops need the full set because these drive the task queue". A visit left partly done made no task
+  // at all (BIZ-21).
+  describe("a visit left partly done", () => {
+    async function closed(outcome: "partial" | "no_show", reason: string | null) {
+      await env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+             fsm_modified_at, synced_at)
+           VALUES (?1, 'fsm-appt-5', ?2, 'service', '2026-09-20T04:30:00.000Z', '2026-09-20T06:00:00.000Z',
+             'terminated', 'Terminated', ?3, ?3)`,
+        ).bind(VISIT, PERSON, NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO visits (id, appointment_id, ended_at, outcome, partial_reason, updated_at)
+           VALUES ('visit-row-1', ?1, '2026-09-20T05:40:00.000Z', ?2, ?3, ?4)`,
+        ).bind(VISIT, outcome, reason, NOW.toISOString()),
+      ]);
+    }
+
+    it("waits with the technician's reason, from when he closed it", async () => {
+      await closed("partial", "piece_not_ready");
+      expect(tasksIn(await tasks(), "partial_visit")).toEqual([
+        {
+          id: VISIT,
+          person: { id: PERSON, name: "Rohit Malhotra" },
+          detail: "piece_not_ready",
+          since: "2026-09-20T05:40:00.000Z",
+          due: "2026-09-22T05:40:00.000Z",
+        },
+      ]);
+    });
+
+    it("leaves once the client has another visit booked after it, to finish what was left", async () => {
+      await closed("partial", "more_time_needed");
+      await consultationFor(PERSON, "cancelled");
+      await env.DB.prepare("UPDATE appointments SET type = 'service' WHERE id = ?1").bind(CONSULTATION).run();
+      expect(groupNames(await tasks())).toEqual(["partial_visit"]);
+
+      await env.DB.prepare("UPDATE appointments SET status = 'scheduled' WHERE id = ?1").bind(CONSULTATION).run();
+      expect(groupNames(await tasks())).not.toContain("partial_visit");
+    });
+
+    it("is not a no-show, which ops rule on in its own group", async () => {
+      await closed("no_show", null);
+      expect(groupNames(await tasks())).toEqual([]);
+    });
+  });
+
+  // A site booking reaches the technician with no place, and the app tells the client "We confirm it with you
+  // before your visit"; nobody owned that confirmation (LIFE-04).
+  describe("a visit to come whose client has given no address", () => {
+    /** Booked for tomorrow at 10 am in India; the mirror first had it this morning. */
+    async function booked(status = "scheduled", start = "2026-09-22T04:30:00.000Z") {
+      await env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+           fsm_modified_at, synced_at, first_seen_at)
+         VALUES (?1, 'fsm-appt-6', ?2, 'consultation', ?3, ?3, ?4, 'Scheduled', ?5, ?5, '2026-09-21T03:00:00.000Z')`,
+      )
+        .bind(VISIT, PERSON, start, status, NOW.toISOString())
+        .run();
+    }
+
+    it("waits from when we first had the visit, and falls due by the visit at the latest", async () => {
+      await booked();
+      expect(tasksIn(await tasks(), "address_to_confirm")).toEqual([
+        {
+          id: VISIT,
+          person: { id: PERSON, name: "Rohit Malhotra" },
+          detail: "2026-09-22T04:30:00.000Z",
+          since: "2026-09-21T03:00:00.000Z",
+          // Two days on would be after the visit: the technician needs the address before he sets out.
+          due: "2026-09-22T04:30:00.000Z",
+        },
+      ]);
+    });
+
+    it("leaves once the client has saved an address", async () => {
+      await booked();
+      await env.DB.prepare(
+        `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+         VALUES ('address-1', ?1, ?2, 'House 7', 'Sector 65', 'Gurgaon', '122018')`,
+      )
+        .bind(PERSON, NOW.toISOString())
+        .run();
+      expect(groupNames(await tasks())).toEqual([]);
+    });
+
+    it("leaves out a visit cancelled, or one already past", async () => {
+      await booked("cancelled");
+      expect(groupNames(await tasks())).toEqual([]);
+      await env.DB.prepare(
+        "UPDATE appointments SET status = 'scheduled', window_start = '2026-09-19T04:30:00.000Z'",
+      ).run();
+      expect(groupNames(await tasks())).toEqual([]);
+    });
   });
 
   it("counts the tasks whose day has passed, and no others", async () => {

@@ -283,6 +283,35 @@ test("records leave, saying first that nobody can be booked on those days, and s
   await expect(panel.getByText("12 Oct 2027 to 14 Oct 2027")).toBeVisible();
 });
 
+// OPS-07: leave recorded over a job already booked moved it nowhere and said nothing.
+test("lists the jobs already booked on the leave just recorded, with the way to move them", async ({ page }) => {
+  const overJobs = {
+    ...LEAVE_RECORDED,
+    jobs: [
+      {
+        appointment_id: "22000000-0000-4000-8000-000000000001",
+        starts_at: "2027-10-13T05:00:00.000Z",
+        type: "service",
+        client: "Rohit Malhotra",
+      },
+    ],
+  };
+  await open(page, undefined, json(overJobs));
+  const panel = await panelOf(page, "Imran Qureshi");
+  await panel.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
+  await panel.getByLabel("First day").fill("2027-10-12");
+  await panel.getByLabel("Last day").fill("2027-10-14");
+  await panel.getByRole("button", { name: "Record it" }).click();
+
+  const stranded = panel.getByRole("status");
+  await expect(stranded).toContainText("1 job is still booked on this leave. Recording it moved none.");
+  await expect(stranded).toContainText("Wed 13 Oct, 10:30 am · Rohit Malhotra");
+  await expect(stranded.getByRole("link", { name: "Move them on the dispatch board" })).toHaveAttribute(
+    "href",
+    "/dispatch",
+  );
+});
+
 test("says so when the dates do not make a period, and records nothing", async ({ page }) => {
   await open(page, undefined, fails(400, "invalid_request"));
   const panel = await panelOf(page, "Imran Qureshi");

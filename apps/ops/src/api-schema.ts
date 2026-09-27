@@ -1710,10 +1710,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /** Format: uuid */
-                            id: string;
-                        };
+                        "application/json": components["schemas"]["TechnicianLeaveRecorded"];
                     };
                 };
                 /** @description invalid_request: to is before from, or more than 365 days ahead */
@@ -2541,8 +2538,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
             place: string;
-            /** @description What FSM closed the visit as; null until it is closed. */
-            outcome: ("done" | "partial") | null;
+            /** @description What FSM closed the visit as, a no-show being its own; null until it is closed. */
+            outcome: ("done" | "partial" | "no_show") | null;
         };
         /** @description Display name and initials only. */
         Technician: {
@@ -2632,6 +2629,17 @@ export interface components {
                 /** @description In paise: what was kept. */
                 amount: number;
             } | null;
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            no_show: components["schemas"]["NoShowNote"] | null;
+        };
+        NoShowNote: {
+            /**
+             * @description What ops ruled: undecided while they look at the evidence, charged, or waived.
+             * @enum {string}
+             */
+            decision: "undecided" | "charged" | "waived";
+            /** @description How long the technician waited at the door. */
+            waited_minutes: number;
         };
         RefundEntry: {
             /**
@@ -3097,6 +3105,19 @@ export interface components {
             to: string;
             note: string | null;
         };
+        TechnicianLeaveRecorded: {
+            /** Format: uuid */
+            id: string;
+            /** @description The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07). */
+            jobs: {
+                /** Format: uuid */
+                appointment_id: string;
+                /** Format: date-time */
+                starts_at: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                client: string | null;
+            }[];
+        };
         TechnicianLeaveRequest: {
             /** Format: date */
             from: string;
@@ -3113,7 +3134,7 @@ export interface components {
             truncated: boolean;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "consultation_request" | "replacement_order" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "replacement_order" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
                 /** @description The longest wait first, at most 50. */

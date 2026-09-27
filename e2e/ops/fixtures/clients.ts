@@ -77,6 +77,7 @@ export const RECORD = {
       refunded_amount: 0,
       purpose: "visit",
       charge: null,
+      no_show: null,
     },
   ],
   /*

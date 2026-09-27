@@ -10,6 +10,7 @@
 
 import { z } from "zod";
 import type { LossExtent, VisitWindow } from "../config/booking.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { CrmLead, LeadSource } from "../providers/crm.ts";
@@ -129,7 +130,21 @@ interface LeadRow {
   zoho_lead_id: string | null;
   contactable: number;
   tried_on: number;
+  invite_code: string | null;
+  asked_window: BookingWindow | null;
 }
+
+/**
+ * The window a Phase 2 booking asked for, for lead `l`: the request the site's form left while self-serve booking
+ * is off, else the slot it held, for the day it proposed (LIFE-11). A Phase 1 lead carries its own choice instead.
+ */
+const ASKED_WINDOW = `(SELECT asked FROM (
+    SELECT requested_window AS asked, created_at FROM consultation_requests
+    WHERE person_id = l.person_id AND requested_date = l.proposed_visit_date
+    UNION ALL
+    SELECT window_label, created_at FROM slot_holds
+    WHERE person_id = l.person_id AND date = l.proposed_visit_date AND type = 'consultation'
+  ) ORDER BY created_at DESC LIMIT 1)`;
 
 /** `retrySoon` is true only when this was the lead's first attempt and it failed. */
 export async function syncLead(
@@ -144,7 +159,9 @@ export async function syncLead(
       `SELECT l.id AS lead_id, l.person_id, l.source, l.city, l.first_choice_window, l.loss_extent,
               l.proposed_visit_date, l.utm_source, l.utm_campaign, l.sync_state,
               p.erased_at, p.name, p.mobile_e164, p.email, p.zoho_lead_id, p.contactable,
-              EXISTS (SELECT 1 FROM leads t WHERE t.person_id = p.id AND t.source = 'tryon') AS tried_on
+              EXISTS (SELECT 1 FROM leads t WHERE t.person_id = p.id AND t.source = 'tryon') AS tried_on,
+              (SELECT r.code FROM referral_attributions r WHERE r.referred_person_id = p.id) AS invite_code,
+              ${ASKED_WINDOW} AS asked_window
        FROM leads l JOIN people p ON p.id = l.person_id
        WHERE l.id = ?1`,
     )
@@ -236,6 +253,8 @@ function toCrmLead(row: LeadRow): CrmLead {
     tryOn: row.tried_on === 1,
     utmSource: row.utm_source,
     utmCampaign: row.utm_campaign,
+    inviteCode: row.invite_code,
+    askedWindow: row.first_choice_window === null ? row.asked_window : null,
   };
 }
 

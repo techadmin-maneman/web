@@ -65,9 +65,10 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         // fsm_invoice_id is not written here: FSM leaves the appointment's own Invoice_Id
         // null, and the invoice pass fills the column with Books' ID (ADR 0055). Where FSM
         // holds no place for it yet, the visit keeps the one our booking gave it (ADR 0068).
+        // first_seen_at is the first sync's alone, so an update leaves it.
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
-           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
+           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
          ON CONFLICT (fsm_id) DO UPDATE SET
            fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id, type = excluded.type,
            window_start = excluded.window_start, window_end = excluded.window_end,
@@ -95,7 +96,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
   ];
   const visit = visitOf(appointment, status);
   if (visit !== null) {
-    const partialReason = visit.outcome === "partial" ? await partialReasonOf(db, id) : null;
+    const closed = visit.done ? { outcome: "done" as const, partialReason: null } : await terminatedAs(db, id);
     statements.push(
       db
         .prepare(
@@ -113,8 +114,8 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
           visit.startedAt,
           visit.endedAt,
           visit.durationMinutes,
-          visit.outcome,
-          partialReason,
+          closed.outcome,
+          closed.partialReason,
           at,
         ),
     );
@@ -128,23 +129,31 @@ function utc(instant: string | null): string | null {
   return instant === null ? null : new Date(instant).toISOString();
 }
 
-/** A closed appointment's visit: done when completed, partial when FSM terminated it. */
+/** How a closed visit ended: done, partly done with the technician's reason, or not at all, the client not home. */
+export const VISIT_OUTCOMES = ["done", "partial", "no_show"] as const;
+export type VisitOutcome = (typeof VISIT_OUTCOMES)[number];
+
+/** A closed appointment's visit, with its times: done when FSM completed it; otherwise FSM terminated it. */
 function visitOf(appointment: FsmAppointment, status: AppointmentStatus) {
   if (status !== "completed" && status !== "terminated") return null;
   const startedAt = utc(appointment.actualStart);
   const endedAt = utc(appointment.actualEnd);
   const durationMinutes =
     startedAt !== null && endedAt !== null ? Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / 60_000) : null;
-  return { startedAt, endedAt, durationMinutes, outcome: status === "completed" ? "done" : "partial" };
+  return { startedAt, endedAt, durationMinutes, done: status === "completed" };
 }
 
 /**
- * Why a visit ended partial: the reason the technician chose from the app's
- * list (src/config/job-sheet.ts), or `no_show` for a client who was not home.
- * FSM holds it only as prose in the closing note, so it comes from the job's
- * own outcome event. Null for a visit closed in FSM's own screen.
+ * How a visit FSM terminated ended: a no-show where the technician closed it
+ * as one (BIZ-21), else partial, with the reason he chose from the app's list
+ * (src/config/job-sheet.ts). FSM holds either only as prose in the closing
+ * note, so it comes from the job's own outcome event. A visit closed in FSM's
+ * own screen is partial with no reason.
  */
-async function partialReasonOf(db: D1Database, appointmentId: string): Promise<string | null> {
+async function terminatedAs(
+  db: D1Database,
+  appointmentId: string,
+): Promise<{ outcome: VisitOutcome; partialReason: string | null }> {
   const row = await db
     .prepare(
       `SELECT json_extract(body, '$.outcome') AS outcome, json_extract(body, '$.reason') AS reason FROM job_events
@@ -152,8 +161,8 @@ async function partialReasonOf(db: D1Database, appointmentId: string): Promise<s
     )
     .bind(appointmentId)
     .first<{ outcome: unknown; reason: unknown }>();
-  if (row?.outcome === "no_show") return "no_show";
-  return typeof row?.reason === "string" ? row.reason : null;
+  if (row?.outcome === "no_show") return { outcome: "no_show", partialReason: null };
+  return { outcome: "partial", partialReason: typeof row?.reason === "string" ? row.reason : null };
 }
 
 /**

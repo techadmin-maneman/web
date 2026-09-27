@@ -2,7 +2,8 @@
 // length, where, and Reschedule and Add a note. Home shows the next; an upcoming visit's own page shows its own.
 //
 // While self-serve booking is on, Reschedule opens the move sheet (C7), from which the visit can be cancelled
-// (C8). Until then, Reschedule and Add a note open WhatsApp to ops with a message ready
+// (C8), and Add a note keeps the note on the visit for the technician (NoteSheet.tsx). Until then, Reschedule and
+// Add a note open WhatsApp to ops with a message ready
 // (docs/prompts/phase2-backend.md, "Booking"). Offline, rescheduling waits for the connection (B3). Once the
 // visit has begun, or its window has passed while FSM still has it open, nothing is left to move: its card says
 // where it stands, and only a note can still be added.
@@ -12,6 +13,7 @@ import { useState } from "react";
 import type { VisitSummary } from "../api.ts";
 import { home, messages, windowText } from "../content.ts";
 import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
+import { NoteSheet } from "../booking/NoteSheet.tsx";
 import { firstName, visitName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
@@ -27,6 +29,12 @@ export function changingOf(visit: VisitSummary, what: string): ChangingVisit | n
     message: messages.reschedule(what, shortDate(visit.date)),
   };
 }
+
+/** A visit from FSM, which a note can be kept on, and its technician's first name. */
+export const notingOf = (visit: VisitSummary): NotingVisit => ({
+  visitId: visit.id,
+  technician: visit.technician === null ? null : firstName(visit.technician.name),
+});
 
 /** Under way or being closed: the visit has begun, and there is nothing left to move. */
 export const hasBegun = (visit: VisitSummary) => visit.stage === "in_progress" || visit.stage === "closing";
@@ -60,7 +68,61 @@ function Reschedule(props: { what: string; date: string; changing: ChangingVisit
   );
 }
 
-export function Actions(props: { what: string; date: string; changing: ChangingVisit | null; begun?: boolean }) {
+/** A visit in FSM a note can be kept on, and who reads it. */
+export interface NotingVisit {
+  readonly visitId: string;
+  /** The technician's first name; null while none is assigned. */
+  readonly technician: string | null;
+}
+
+/**
+ * Add a note: kept on the visit for the technician's card while self-serve booking is on (REQ-04), else sent to ops
+ * on WhatsApp, as ADR 0043 has it. Offline, WhatsApp keeps the note until the phone is back online.
+ */
+function AddNote(props: { what: string; date: string; noting: NotingVisit | null }) {
+  const { me, offline } = useSession();
+  const [open, setOpen] = useState(false);
+  const message = messages.note(props.what, props.date);
+  if (!me.booking.self_serve || offline || props.noting === null) {
+    return (
+      <a className={styles.action} href={whatsappWith(message)} rel="noopener">
+        {home.note}
+      </a>
+    );
+  }
+  const noting = props.noting;
+  return (
+    <>
+      <button
+        className={styles.action}
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {home.note}
+      </button>
+      {open && (
+        <NoteSheet
+          visitId={noting.visitId}
+          technician={noting.technician}
+          message={message}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+export function Actions(props: {
+  what: string;
+  date: string;
+  changing: ChangingVisit | null;
+  noting: NotingVisit | null;
+  begun?: boolean;
+}) {
   const { what, date, changing } = props;
   const { refresh } = useSession();
   const [open, setOpen] = useState(false);
@@ -76,9 +138,7 @@ export function Actions(props: { what: string; date: string; changing: ChangingV
           }}
         />
       )}
-      <a className={styles.action} href={whatsappWith(messages.note(what, date))} rel="noopener">
-        {home.note}
-      </a>
+      <AddNote what={what} date={date} noting={props.noting} />
       {open && changing !== null && (
         <ChangeSheet
           visit={changing}
@@ -113,7 +173,13 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
         </div>
       </div>
       {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
-      <Actions what={what} date={date} changing={changingOf(visit, what)} begun={hasBegun(visit)} />
+      <Actions
+        what={what}
+        date={date}
+        changing={changingOf(visit, what)}
+        noting={notingOf(visit)}
+        begun={hasBegun(visit)}
+      />
     </div>
   );
 }

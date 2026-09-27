@@ -96,6 +96,22 @@ interface CellProps {
   readonly onLand: (to: Target) => void;
 }
 
+/** The day's leave, and the jobs still booked on it, which the leave moved nowhere (OPS-07). */
+function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: string; blocks: readonly Block[] }) {
+  const copy = dispatch.board;
+  const stranded = blocks.filter((block) => block.status === "scheduled" || block.status === "dispatched").length;
+  const day = shortDate(date);
+  const marked = stranded === 0 ? styles.awayMark : `${styles.awayMark ?? ""} ${styles.stranded ?? ""}`;
+  return (
+    <span className={`${marked ?? ""} ${label.caps ?? ""}`}>
+      <span aria-hidden="true">{stranded === 0 ? copy.away : copy.stranded(stranded)}</span>
+      <span className={styles.hidden}>
+        {stranded === 0 ? copy.awayLabel(technician.name, day) : copy.strandedLabel(technician.name, day, stranded)}
+      </span>
+    </span>
+  );
+}
+
 /**
  * One technician's day: the blocks on it, and, while a job is in hand, the
  * windows it would land in. A day marked away still draws whatever it holds —
@@ -106,12 +122,7 @@ function Cell({ technician, date, blocks, away, inHand, onOpen, onTake, onLand }
   const windows = inHand === null || away ? null : inHand.windowsAt(technician.technician_id, date);
   return (
     <td className={away ? `${styles.cell ?? ""} ${styles.away ?? ""}` : styles.cell}>
-      {away && (
-        <span className={`${styles.awayMark ?? ""} ${label.caps ?? ""}`}>
-          <span aria-hidden="true">{dispatch.board.away}</span>
-          <span className={styles.hidden}>{dispatch.board.awayLabel(technician.name, shortDate(date))}</span>
-        </span>
-      )}
+      {away && <AwayMark technician={technician} date={date} blocks={blocks} />}
       {blocks.map((block) => (
         <BlockButton
           key={block.appointment_id}

@@ -3,7 +3,7 @@
 // written in the same card, with placeholder words (apps/app/src/content.ts).
 
 import { ICONS } from "@maneman/brand/icons";
-import { longDate } from "@maneman/web-kit/dates";
+import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, EXPORT_URL, type NumberChange, type Profile } from "../api.ts";
 import { Icon } from "../components/Icon.tsx";
@@ -15,7 +15,31 @@ import styles from "./profile.module.css";
 type Which = "old" | "new";
 
 /** "A code goes to both numbers, then we confirm with you before it takes effect." */
-export function NumberChangeCard({ change, onChanged }: { change: NumberChange | null; onChanged: () => void }) {
+/** What ops decided about the client's last change of number, with their reason for a rejection. */
+function Decided({ decided }: { decided: NonNullable<Profile["number_change_decided"]> }) {
+  const copy = profile.change;
+  const date = shortDate(indiaDate(decided.decided_at));
+  return (
+    <>
+      <p className={styles.cardBody}>
+        {decided.state === "confirmed"
+          ? copy.confirmed(decided.new_mobile, date)
+          : copy.rejected(decided.new_mobile, date)}
+      </p>
+      {decided.reason !== null && <p className={styles.cardBody}>{copy.why(decided.reason)}</p>}
+    </>
+  );
+}
+
+export function NumberChangeCard({
+  change,
+  decided,
+  onChanged,
+}: {
+  change: NumberChange | null;
+  decided: Profile["number_change_decided"];
+  onChanged: () => void;
+}) {
   const copy = profile.change;
   const [typed, setTyped] = useState("");
   const [codes, setCodes] = useState<Record<Which, string>>({ old: "", new: "" });
@@ -145,6 +169,7 @@ export function NumberChangeCard({ change, onChanged }: { change: NumberChange |
             void start();
           }}
         >
+          {decided !== null && <Decided decided={decided} />}
           <p className={styles.cardBody}>{copy.body}</p>
           <div className={styles.numberField}>
             <span className={styles.prefix} aria-hidden="true">

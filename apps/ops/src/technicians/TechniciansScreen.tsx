@@ -12,10 +12,10 @@
 // covers are refused to self-serve booking and to the dispatch board alike,
 // which is why the form says so before it is sent.
 
-import { fullDate, indiaDate, listDate, longDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, indiaDate, listDate, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Device, type Leave, type Technician, type TechnicianWork } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
+import { api, type Device, type JobOnLeave, type Leave, type Technician, type TechnicianWork } from "../api.ts";
+import { OpsLink, Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { Dialog } from "../dispatch/Dialog.tsx";
 import { useLoad } from "../lib/useLoad.ts";
@@ -147,6 +147,32 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
 const periodOf = (leave: Leave) => technicians.leave.period(fullDate(leave.from), fullDate(leave.to));
 
 /**
+ * The jobs already booked on the leave just recorded, which it moved nowhere (OPS-07): each also waits on the
+ * Tasks board, and the dispatch board marks its day.
+ */
+function Stranded({ jobs }: { jobs: readonly JobOnLeave[] }) {
+  const copy = technicians.leave.stranded;
+  return (
+    <div className={styles.stranded} role="status">
+      <p className={styles.strandedTitle}>{copy.title(jobs.length)}</p>
+      <ul className={styles.leaveList}>
+        {jobs.map((job) => (
+          <li className={styles.leaveRow} key={job.appointment_id}>
+            {copy.job(
+              `${shortDate(indiaDate(job.starts_at))}, ${indiaClock(job.starts_at)}`,
+              job.client ?? copy.noClient,
+            )}
+          </li>
+        ))}
+      </ul>
+      <OpsLink className={styles.quiet} to="/dispatch">
+        {copy.move}
+      </OpsLink>
+    </div>
+  );
+}
+
+/**
  * One technician's leave: what is recorded, and the form that records more.
  * Every change reads the roster again, because the dispatch board reads the
  * same rows and the two must not disagree.
@@ -156,6 +182,7 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
   const [form, setForm] = useState<{ from: string; to: string; note: string } | null>(null);
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  const [stranded, setStranded] = useState<readonly JobOnLeave[]>([]);
   /** Why it was refused, in the console's words; nothing was recorded either way. */
   const refusal = (code: string): string => {
     const errors: Readonly<Record<string, string | undefined>> = copy.errors;
@@ -178,6 +205,7 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
     await onChange();
     setSending(false);
     setForm(null);
+    setStranded(answer.body.jobs);
   };
 
   const take = async (leave: Leave) => {
@@ -296,6 +324,8 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
           </div>
         </form>
       )}
+
+      {stranded.length > 0 && <Stranded jobs={stranded} />}
 
       {failed !== null && (
         <p className={styles.error} role="alert">
