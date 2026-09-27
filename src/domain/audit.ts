@@ -48,6 +48,18 @@ export const AUDIT_ACTIONS = [
   "credit.adjust",
   // Ops calling a client about a move he had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).
   "dispatch.client_told",
+  // The consumables ops keep and what each service is expected to use, the job sheet the technician
+  // app reads, and the stock in each kit and the central store (docs/decisions/0087-consumables-and-stock.md).
+  "consumable.add",
+  "consumable.change",
+  "consumable.retire",
+  "consumable.restore",
+  "consumable.usage",
+  "job_sheet.set",
+  "stock.receive",
+  "stock.transfer",
+  "stock.count",
+  "stock.write_off",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

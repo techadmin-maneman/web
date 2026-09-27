@@ -1,0 +1,132 @@
+/*
+ * Settings' Consumables and Job sheet (docs/decisions/0087-consumables-and-stock.md).
+ * No board draws either, so both are built from what Settings already draws
+ * (settings.module.css): its panels, its 34 px table rows, its square boxes and
+ * its check before a change. These are the few things those panels lack: a
+ * unit beneath a name, a list whose items can be moved, and the row of a
+ * service's expected use.
+ */
+
+/* What one is counted in, beneath its name in the table's first column. */
+.unit {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: var(--weight-regular);
+  color: var(--text-muted);
+}
+
+/* A cell that carries its buttons after its words keeps them on the one line. */
+.actions {
+  white-space: nowrap;
+}
+
+/* A consumable FSM does not hold as ours, or one retired, reads quieter than one in order. */
+.quiet {
+  color: var(--text-muted);
+}
+
+/* ---- A list ops edit: its items in order, each with its own buttons ------ */
+
+.items {
+  margin: var(--sp-14) 0 0;
+  padding: 0 0 0 var(--sp-24);
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8);
+  margin-top: var(--sp-8);
+}
+
+.label {
+  flex: 1 1 var(--ops-area);
+  min-width: 0;
+  height: var(--tap);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+}
+
+.label:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+/* A button beside an item, as tall as the box: the same outlined ink as a row's own. */
+.move {
+  min-height: var(--tap);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--ink);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+
+.move:disabled {
+  border-color: var(--paper-line);
+  color: var(--text-quiet);
+  cursor: default;
+}
+
+.move:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset-wide);
+}
+
+.retired {
+  margin: var(--sp-16) 0 0;
+  padding-top: var(--sp-12);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.retiredTitle {
+  margin: 0;
+  font-size: var(--fs-14);
+  font-weight: var(--weight-medium);
+}
+
+.retiredList {
+  margin: var(--sp-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.retiredItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  min-height: var(--ops-row);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* ---- A service's expected use: one row a consumable ----------------------- */
+
+.uses {
+  margin: var(--sp-14) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.use {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-6) var(--sp-16);
+  padding: var(--sp-8) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.useLabel {
+  font-size: var(--fs-15);
+}

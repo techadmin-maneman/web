@@ -2,12 +2,17 @@
 // letters nothing inside (docs/decisions/0061-ops-editable-inputs.md). Three
 // panels, because the three hold their history differently: a rule applies from
 // the moment it is set, a price applies from a date and keeps every earlier
-// row, and a pincode's launch date is a promise the waitlist counts from.
+// row, and a pincode's launch date is a promise the waitlist counts from. Two
+// more hold what the technician app reads with a job: the consumables with
+// each service's expected use, and the job sheet
+// (docs/decisions/0087-consumables-and-stock.md).
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
+import { Consumables } from "./Consumables.tsx";
+import { JobSheet } from "./JobSheet.tsx";
 import { Prices } from "./Prices.tsx";
 import { Rules } from "./Rules.tsx";
 import { ServiceArea } from "./ServiceArea.tsx";
@@ -16,6 +21,8 @@ import styles from "./settings.module.css";
 function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "prices") return <Prices />;
   if (tab === "area") return <ServiceArea />;
+  if (tab === "consumables") return <Consumables />;
+  if (tab === "job-sheet") return <JobSheet />;
   return <Rules />;
 }
 

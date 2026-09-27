@@ -1797,6 +1797,470 @@ Request body:
 }
 ```
 
+### GET /api/consumables
+
+Every consumable, where each stands in FSM's catalogue, and what each service is expected to use
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables
+
+Add a consumable. The technician app offers it from now on
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewConsumable"
+}
+```
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**400**: invalid_request: fields names what was refused, such as a name already taken
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables/{code}
+
+Rename a consumable, or change its unit, its cost or its reorder levels. Only the fields sent change
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ConsumableChange"
+}
+```
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**400**: invalid_request: fields names what was refused, such as a name already taken
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such consumable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables/{code}/retire
+
+Stop offering a consumable from a day. Nothing already recorded moves
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ConsumableRetirement"
+}
+```
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**400**: invalid_request: fields names from, a day before today
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such consumable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables/{code}/restore
+
+Offer a retired consumable again
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such consumable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/service-usage
+
+What one service is expected to use. The whole list: a consumable left out is expected no more
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceUsage"
+}
+```
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**400**: invalid_request: fields names tier for a service the price book does not price, or items.N.code for a consumable nobody added or one named twice
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/job-sheet
+
+Each kind of visit's checklist and the partial reasons, as the technician app reads them
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/job-sheet/checklists/{visit_type}
+
+One kind of visit's checklist, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/job-sheet/partial-reasons
+
+The reasons a job may be left partly done, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/stock
+
+What each kit and the central store hold of each consumable, what is low, and the latest movements
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/deliveries
+
+Stock received into the central store
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockDelivery"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/transfers
+
+Stock moved from one place to another: out of one, into the other
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockTransfer"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names consumable_code, from, or to for the place it came from
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/counts
+
+What ops counted at a place. The ledger takes the difference from what it held
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockCount"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/write-offs
+
+A loss somebody saw at a place, with what happened
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockWriteOff"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/whoami
 
 Who Access let through, and where signing out goes
@@ -5675,6 +6139,1054 @@ Who Access let through, and where signing out goes
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Consumables
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Consumable"
+      },
+      "description": "Every consumable, retired ones too, by name."
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ServiceUse"
+      }
+    },
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "fsm_push": {
+      "type": "boolean",
+      "description": "Whether FSM's catalogue follows by itself (FSM_CATALOGUE_PUSH); off, ops set it there by hand."
+    },
+    "max_unit_cost": {
+      "type": "integer"
+    },
+    "max_expected": {
+      "type": "integer"
+    },
+    "max_reorder_level": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "consumables",
+    "services",
+    "today",
+    "fsm_push",
+    "max_unit_cost",
+    "max_expected",
+    "max_reorder_level"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Consumable
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "unit_cost": {
+      "type": "integer",
+      "description": "In paise, for one unit. Ours alone: no invoice carries it."
+    },
+    "reorder_kit": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A kit is low at or below this, in the consumable's unit; null for no level."
+    },
+    "reorder_central": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The central store is low at or below this; null for no level."
+    },
+    "retired_from": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The day in India it is no longer offered from; null while it is."
+    },
+    "offered": {
+      "type": "boolean",
+      "description": "Whether the technician app offers it today."
+    },
+    "fsm": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "linked",
+            "renamed",
+            "missing",
+            "unchecked"
+          ],
+          "description": "A part by this name; a part still under another name; no part by this name; or not read yet. The hourly check reads FSM's catalogue."
+        },
+        "item_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What FSM calls the part."
+        }
+      },
+      "required": [
+        "state",
+        "item_id",
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "unit",
+    "unit_cost",
+    "reorder_kit",
+    "reorder_central",
+    "retired_from",
+    "offered",
+    "fsm"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceUse
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string"
+    },
+    "expected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "quantity"
+        ],
+        "additionalProperties": false
+      },
+      "description": "What it is expected to use, by the consumable's name."
+    }
+  },
+  "required": [
+    "visit_type",
+    "tier",
+    "expected"
+  ],
+  "additionalProperties": false,
+  "description": "A service the price book prices: a kind of visit at a tier."
+}
+```
+
+### NewConsumable
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/+%-]{0,59}$/u",
+      "description": "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60."
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^\\p{L}[\\p{L} .]{0,19}$/u",
+      "description": "strip, ml, sachet: at most 20 letters."
+    },
+    "unit_cost": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000,
+      "description": "In paise."
+    },
+    "reorder_kit": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reorder_central": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "unit",
+    "unit_cost"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ConsumableChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/+%-]{0,59}$/u",
+      "description": "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60."
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^\\p{L}[\\p{L} .]{0,19}$/u",
+      "description": "strip, ml, sachet: at most 20 letters."
+    },
+    "unit_cost": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000,
+      "description": "In paise."
+    },
+    "reorder_kit": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reorder_central": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### ConsumableRetirement
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceUsage
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        },
+        "required": [
+          "code",
+          "quantity"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 50
+    }
+  },
+  "required": [
+    "visit_type",
+    "tier",
+    "items"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheet
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "checklists": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/JobSheetChecklist"
+      }
+    },
+    "partial_reasons": {
+      "$ref": "#/components/schemas/JobSheetList"
+    },
+    "max_checklist_items": {
+      "type": "integer"
+    },
+    "max_partial_reasons": {
+      "type": "integer"
+    },
+    "max_label": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "checklists",
+    "partial_reasons",
+    "max_checklist_items",
+    "max_partial_reasons",
+    "max_label"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheetChecklist
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "What the technician is offered, in order."
+    },
+    "retired": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null while the committed list stands."
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "visit_type",
+    "items",
+    "retired",
+    "set_by",
+    "set_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheetList
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "What the technician is offered, in order."
+    },
+    "retired": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null while the committed list stands."
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "items",
+    "retired",
+    "set_by",
+    "set_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheetListChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "An item already on the list, or retired from it, keeps its code; a new one sends none."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\p{Cc}]+$/u"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 20
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false,
+  "description": "The whole list, in its order. An item left out is retired."
+}
+```
+
+### Stock
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "retired": {
+            "type": "boolean",
+            "description": "No longer offered, and still held somewhere."
+          },
+          "reorder_kit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reorder_central": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unit",
+          "retired",
+          "reorder_kit",
+          "reorder_central"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A technician's kit, by the technician's ID; null for the central store."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The technician's; null for the store."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "technician_id",
+          "name",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The central store first, then each active technician's kit, and any other still holding stock."
+    },
+    "holdings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "technician_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A technician's kit, by the technician's ID; null for the central store."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "The sum of the place's rows; below nought is a gap."
+          },
+          "low": {
+            "type": "boolean",
+            "description": "At or below the level for its kind of place."
+          },
+          "counted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it was last counted there."
+          }
+        },
+        "required": [
+          "consumable_code",
+          "technician_id",
+          "quantity",
+          "low",
+          "counted_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "movements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "technician_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A technician's kit, by the technician's ID; null for the central store."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Into the place, positive; out of it, negative."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "received",
+              "transferred",
+              "used",
+              "counted",
+              "written_off"
+            ]
+          },
+          "by": {
+            "type": "string",
+            "description": "Who: ops' Access identity, or the technician's ID for a job's use."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "consumable_code",
+          "technician_id",
+          "quantity",
+          "reason",
+          "by",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The latest movements, newest first."
+    },
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "max_quantity": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "consumables",
+    "places",
+    "holdings",
+    "movements",
+    "today",
+    "max_quantity"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockDelivery
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "consumable_code",
+    "quantity"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockTransfer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "from": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's kit, by the technician's ID; null for the central store."
+    },
+    "to": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's kit, by the technician's ID; null for the central store."
+    }
+  },
+  "required": [
+    "consumable_code",
+    "quantity",
+    "from",
+    "to"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockCount
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's kit, by the technician's ID; null for the central store."
+    },
+    "counted": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "consumable_code",
+    "technician_id",
+    "counted"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockWriteOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's kit, by the technician's ID; null for the central store."
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "consumable_code",
+    "technician_id",
+    "quantity",
+    "note"
   ],
   "additionalProperties": false
 }

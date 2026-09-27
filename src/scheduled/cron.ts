@@ -118,7 +118,7 @@ async function reconcileJob({ env, deps, log, budget }: CronContext): Promise<vo
 async function catalogueJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const checked = await checkCatalogue(
     env.DB,
-    { fsm: deps.fsm, queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert },
+    { fsm: deps.fsm, queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert, log },
     { push: config.settings.fsmCataloguePush, now: deps.now(), budget },
   );
   if (checked !== null && checked.differs.length > 0) log.warn("fsm_catalogue_differs", { ...checked });
@@ -187,7 +187,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
   { name: "fsm_reconcile", needs: "fsm_record", run: reconcileJob },
   // Once an hour: FSM's catalogue against the price book, which it prices invoices by
-  // (docs/decisions/0073-prices-from-the-price-book.md).
+  // (docs/decisions/0073-prices-from-the-price-book.md), and against ops' consumables, which it holds
+  // as parts (docs/decisions/0087-consumables-and-stock.md).
   { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).

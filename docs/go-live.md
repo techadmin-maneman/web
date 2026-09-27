@@ -65,7 +65,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
   12. Give the client a credit in the console and book a service visit: "Credit covers it"; cancel it more than 24 hours out and the credit comes back.
   13. Read every open alert (RB, "Alerts and the cron"), check Razorpay's webhook deliveries all succeeded, and list every Zoho record the run made, for item 19's clean-up.
 - [ ] **The Zoho calls not yet tried on the org** (items 24 and 25), as each point lists them.
-- [ ] **A technician's writes reaching FSM** (item 57): one job each closed as done, partial and no-show, and one reassignment, read back in FSM. This needs your mobile on your FSM user (item 27).
+- [ ] **A technician's writes reaching FSM** (item 57): one job each closed as done, partial and no-show, and one reassignment, read back in FSM; the done job's consumables on FSM's summary and out of his kit on the Stock page (ADR 0087). This needs your mobile on your FSM user (item 27).
 - [ ] **The field test** (item 72) with the first technician and the owner, on his own phone: it tunes the check-in radius (item 56).
 - [ ] **A try-on on a mid-range Android phone over mobile data**, and staging's `alerts` read after a day (item 91).
 
@@ -100,7 +100,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 - [ ] The CA's answers, and GST on in Books with the real GSTIN, FSM and Books synced again (items 2, 3, 9, 14, 16, 17 and 26).
 - [ ] Counsel's answers (items 22, 23, 40, 41, 55, 63, 69 and 148).
 - [ ] The org clean of staging's records before production reads FSM (items 19 and 155).
-- [ ] The owner's prices and services in production's console (items 1 and 13), and the job sheet's lists (item 28).
+- [ ] The owner's prices and services in production's console (items 1 and 13); the job sheet's lists, the consumables with their costs, reorder levels and each service's use, and each kit's and the central store's opening count on the Stock page (item 28, ADR 0087).
 - [ ] The texts approved (items 39, 41 and 42), and the engineering the rulings still owe (`docs/implementation-plan-2026-09-27.md`).
 
 **Provisioning** (RB 7, 11, 11a, 11b, 11c, 12 and 13):
@@ -115,7 +115,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 
 **The release:** as the site's, then `npm run apply-triggers -- --env production` to attach the apps' routes (never `W deploy`, RB 11, point 5), and `npm run smoke -- --environment production --surfaces`.
 
-**The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked in FSM and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see `fsm_catalogue_pushed` in the logs and no `fsm_catalogue` alert an hour later (item 25).
+**The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked in FSM and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see `fsm_catalogue_pushed` in the logs and no `fsm_catalogue` alert an hour later (item 25). The same hour's check adds each consumable to FSM's catalogue as a part at Rs. 0: see `fsm_part_added` in the logs, each part in FSM, and Settings · Consumables saying "In FSM" beside each, with no `fsm_catalogue:consumables` alert (ADR 0087).
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
 

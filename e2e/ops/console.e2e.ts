@@ -15,7 +15,9 @@ test("opens on the dispatch board, with the console's sections beside it", async
   const sections = page.getByRole("navigation", { name: "Operations" });
   // The design's eight, with No-shows where it writes Payments
   // (docs/open-points.md, item 60). Settings is the eighth, built from ADR 0061.
-  // The three before it are drawn on no board at all (docs/fidelity-method.md).
+  // The three before it are drawn on no board at all (docs/fidelity-method.md),
+  // nor is Stock, beside the technicians whose kits it counts
+  // (docs/decisions/0087-consumables-and-stock.md).
   await expect(sections.getByRole("link")).toHaveText([
     "Dispatch",
     "Clients",
@@ -24,6 +26,7 @@ test("opens on the dispatch board, with the console's sections beside it", async
     "Waitlist",
     "Tasks",
     "Technicians",
+    "Stock",
     "Grievances",
     "Deletion requests",
     "Number changes",

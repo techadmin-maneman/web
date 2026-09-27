@@ -10,14 +10,22 @@
 // so the push is off everywhere until the owner switches it on in production. A price set in the console that is
 // in force today queues it at once; a price from a later day is found by the check on its day, which queues it
 // then. It is tried once: the next hour's check is its retry, and tells ops if FSM still differs.
+//
+// The same pass keeps ops' consumables in the catalogue as parts at Rs. 0 (docs/decisions/0087-consumables-and-stock.md).
+// It finds each one's part by our name, and remembers it by its ID, so the console can say where each stands. With
+// the push off it tells ops of each one missing or named otherwise; with it on it adds the part, or renames it, in
+// the pass itself, a few a pass, each a call from the cron run's budget, and tells ops only of one it still could not
+// settle an hour on. It never touches a part's price, and a retired consumable's part is left as it is.
 
 import { rupees } from "@maneman/web-kit/money";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { failureReason, type Logger } from "../log.ts";
 import type { FsmItem, FsmProvider } from "../providers/fsm.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
 import { priceOf, type PriceItem } from "./price-book.ts";
 
 /** A visit type whose FSM item does not carry the book's price. */
@@ -48,6 +56,8 @@ export interface CatalogueDeps {
   readonly queue: Queue;
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;
+  /** Where a part the push could not add or rename is logged. */
+  readonly log?: Logger;
 }
 
 /** What one check found: the visit types FSM differs on, and whether it queued the push. */
@@ -71,7 +81,8 @@ export async function checkCatalogue(
   if (now.getUTCMinutes() >= 5) return null;
   if (!budget.spend(1)) return null;
 
-  const gaps = await gapsBetween(db, await deps.fsm.items(), indiaDate(now));
+  const items = await deps.fsm.items();
+  const gaps = await gapsBetween(db, items, indiaDate(now));
   for (const type of VISIT_TYPES) {
     const gap = gaps.find((each) => each.type === type);
     if (gap === undefined) {
@@ -91,7 +102,108 @@ export async function checkCatalogue(
 
   const queued = push && gaps.length > 0;
   if (queued) await queueCatalogueSync(deps.queue, "fsm_catalogue");
+  await checkParts(db, deps, { items, push, now, budget });
   return { differs: gaps.map((gap) => gap.type), queued };
+}
+
+/** The one alert for every consumable FSM does not hold as ours; closed once each is. */
+export const PARTS_ALERT = "fsm_catalogue:consumables";
+
+/** Where ops keep the consumables. */
+const CONSUMABLES_LINK = "/settings/consumables";
+
+/**
+ * How many parts one pass may add or rename in FSM. Each is a call from the
+ * cron run's budget, on top of the list; the rest wait for the next hour.
+ */
+export const PART_WRITES_A_PASS = 5;
+
+/**
+ * Each consumable still offered, against FSM's parts: found by the ID it was
+ * linked to, else by our name, which links it. With the push on, one missing
+ * is added and one named otherwise renamed, within the pass's allowance. What
+ * FSM holds is recorded only where it changed, so an hour with nothing new
+ * writes nothing.
+ */
+async function checkParts(
+  db: D1Database,
+  deps: CatalogueDeps,
+  pass: { readonly items: readonly FsmItem[]; readonly push: boolean; readonly now: Date; readonly budget: CallBudget },
+): Promise<void> {
+  const { push, now, budget } = pass;
+  const offered = (await allConsumables(db)).filter((consumable) => isOffered(consumable, indiaDate(now)));
+  const parts = pass.items.filter((item) => item.type === "Part");
+  let writes = 0;
+  /** Takes one write from the pass's allowance and the run's budget, if both have one left. */
+  const mayWrite = (): boolean => {
+    if (!push || writes >= PART_WRITES_A_PASS || !budget.spend(1)) return false;
+    writes += 1;
+    return true;
+  };
+
+  const unsettled: string[] = [];
+  const changed: D1PreparedStatement[] = [];
+  for (const consumable of offered) {
+    let part =
+      parts.find((item) => item.id === consumable.fsmItemId) ?? parts.find((item) => item.name === consumable.name);
+    if (part === undefined && mayWrite()) part = await added(deps, consumable);
+    else if (part !== undefined && part.name !== consumable.name && mayWrite())
+      part = await renamed(deps, consumable, part);
+
+    if (part === undefined) unsettled.push(`"${consumable.name}" is not there`);
+    else if (part.name !== consumable.name)
+      unsettled.push(`part ${part.id} is "${part.name}", ours "${consumable.name}"`);
+
+    const id = part?.id ?? null;
+    const name = part?.name ?? null;
+    if (id !== consumable.fsmItemId || name !== consumable.fsmName || consumable.fsmCheckedAt === null) {
+      changed.push(
+        db
+          .prepare("UPDATE consumables SET fsm_item_id = ?2, fsm_name = ?3, fsm_checked_at = ?4 WHERE code = ?1")
+          .bind(consumable.code, id, name, now.toISOString()),
+      );
+    }
+  }
+  if (changed.length > 0) await db.batch(changed);
+
+  if (unsettled.length === 0) {
+    await deps.resolveAlert(PARTS_ALERT);
+    return;
+  }
+  const differs = `FSM's catalogue does not hold ${String(unsettled.length)} of the consumables as ours: ${unsettled.join("; ")}.`;
+  await deps.alertOnce({
+    key: PARTS_ALERT,
+    message: push
+      ? `${differs} It is still so an hour after the push tried: look for fsm_part_push_failed in the logs, and add or rename each in FSM by hand, as a part at Rs. 0.`
+      : `${differs} The push to FSM is off (FSM_CATALOGUE_PUSH): add each in FSM as a part at Rs. 0, or rename it there, exactly as the console names it; the next hourly check finds it by its name.`,
+    link: CONSUMABLES_LINK,
+    // With the push on, the pass that finds one tries it; ops hear only if the next pass still finds it.
+    after: push ? 2 : 1,
+  });
+}
+
+/** Adds the consumable's part at Rs. 0; undefined if FSM refused, to be tried again next hour. */
+async function added(deps: CatalogueDeps, consumable: Consumable): Promise<FsmItem | undefined> {
+  try {
+    const id = await deps.fsm.createPart(consumable.name);
+    deps.log?.info("fsm_part_added", { consumable: consumable.code, item_id: id });
+    return { id, name: consumable.name, type: "Part", price: 0 };
+  } catch (error) {
+    deps.log?.warn("fsm_part_push_failed", { consumable: consumable.code, reason: failureReason(error) });
+    return undefined;
+  }
+}
+
+/** Renames the part to the consumable's name; the part as it was if FSM refused. */
+async function renamed(deps: CatalogueDeps, consumable: Consumable, part: FsmItem): Promise<FsmItem> {
+  try {
+    await deps.fsm.renameItem(part.id, consumable.name);
+    deps.log?.info("fsm_part_renamed", { consumable: consumable.code, item_id: part.id });
+    return { ...part, name: consumable.name };
+  } catch (error) {
+    deps.log?.warn("fsm_part_push_failed", { consumable: consumable.code, reason: failureReason(error) });
+    return part;
+  }
 }
 
 /** What ops read: the item's ID and name and both figures, and what to do. Nothing about any client. */

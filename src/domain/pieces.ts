@@ -236,9 +236,19 @@ async function partItemId(db: D1Database, fsm: FsmProvider, base: string | null,
   return found;
 }
 
+/**
+ * A part a piece can be built on. The catalogue holds ops' consumables as parts
+ * too (docs/decisions/0087-consumables-and-stock.md), and a piece is never an
+ * asset of a sachet of shampoo, so none of theirs is taken.
+ */
 async function partIn(db: D1Database, base: string | null): Promise<string | null> {
   const row = await db
-    .prepare("SELECT fsm_id FROM fsm_items WHERE type = 'Part' AND (?1 IS NULL OR name = ?1) ORDER BY name LIMIT 1")
+    .prepare(
+      `SELECT fsm_id FROM fsm_items WHERE type = 'Part' AND (?1 IS NULL OR name = ?1)
+         AND fsm_id NOT IN (SELECT fsm_item_id FROM consumables WHERE fsm_item_id IS NOT NULL)
+         AND name NOT IN (SELECT name FROM consumables)
+       ORDER BY name LIMIT 1`,
+    )
     .bind(base)
     .first<{ fsm_id: string }>();
   return row?.fsm_id ?? null;

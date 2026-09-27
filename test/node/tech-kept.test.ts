@@ -88,6 +88,7 @@ const card = (id: string, date: string) =>
     steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
     checklist: [],
     partial_reasons: [],
+    consumables: [],
   }) as Job;
 
 const arrival = {
@@ -242,6 +243,20 @@ describe("a job's card", () => {
     await keepJob(card("a", TODAY));
     api({ "/api/tech/jobs/a": { status: 404, json: { error: { code: "not_found", request_id: "test" } } } });
     expect(await loadJob("a")).toEqual({ state: "failed" });
+  });
+
+  // Kept by a build from before ops set the job sheet and the consumables (docs/decisions/0087-consumables-and-stock.md):
+  // its reasons were ids alone and it carried no consumables. With no signal after the update, it still closes.
+  it("kept by an earlier build, is read in today's shape: each reason worded, and no consumables", async () => {
+    const { consumables: _none, ...earlier } = card("a", TODAY);
+    await keepJob({ ...earlier, partial_reasons: ["piece_not_ready", "client_unwell"] } as unknown as Job);
+
+    const kept = await keptJob("a");
+    expect(kept?.partial_reasons).toEqual([
+      { id: "piece_not_ready", label: "Piece not ready" },
+      { id: "client_unwell", label: "Client unwell" },
+    ]);
+    expect(kept?.consumables).toEqual([]);
   });
 });
 

@@ -31,6 +31,8 @@ export const shell = {
     waitlist: "Waitlist",
     tasks: "Tasks",
     technicians: "Technicians",
+    // PLACEHOLDER: no board draws stock; the owner ruled it is kept here (docs/decisions/0087-consumables-and-stock.md).
+    stock: "Stock",
     grievances: "Grievances",
     "deletion-requests": "Deletion requests",
     "number-changes": "Number changes",
@@ -910,14 +912,11 @@ export const tasks = {
       `${String(weeks)} ${weeks === 1 ? "week" : "weeks"} since the last visit · due ${due}`,
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
     replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
-    /** PLACEHOLDER: "The piece was not ready · 20 Sep": book the visit that finishes it. The technician's words. */
+    /**
+     * PLACEHOLDER: "The piece was not ready · 20 Sep": book the visit that finishes it. The reason is in the
+     * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).
+     */
     partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
-    partialReasons: {
-      client_stopped_it: "Client stopped it partway",
-      piece_not_ready: "The piece was not ready",
-      client_unwell: "Client unwell",
-      more_time_needed: "More time needed",
-    } as Readonly<Record<string, string>>,
     /** PLACEHOLDER: a visit closed partial in FSM's own screen, with no reason from the technician. */
     noReason: "No reason recorded",
     no_show_decision: (technician: string) => `${technician} attended`,
@@ -1210,7 +1209,14 @@ export const numberChanges = {
 export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
-  tabs: { rules: "Rules", prices: "Prices", area: "Service area" },
+  // PLACEHOLDER: the last two tabs' names; no board draws them (docs/decisions/0087-consumables-and-stock.md).
+  tabs: {
+    rules: "Rules",
+    prices: "Prices",
+    area: "Service area",
+    consumables: "Consumables",
+    "job-sheet": "Job sheet",
+  },
   rules: {
     title: "Rules",
     allowed: (min: number, max: number, unit: string) => `${String(min)} to ${String(max)} ${unit}, a whole number`,
@@ -1419,4 +1425,262 @@ export const settings = {
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
   },
+  /**
+   * PLACEHOLDER: every word of the consumables and of each service's expected
+   * use. No board draws them; the owner ruled on 27 September 2026 that both
+   * are set here (docs/decisions/0087-consumables-and-stock.md).
+   */
+  consumables: {
+    title: "Consumables",
+    // PLACEHOLDER
+    note: "What a technician may record using on a job, and what one costs us. The cost is ours alone: no client's invoice carries it.",
+    /** PLACEHOLDER: whether FSM's catalogue follows by itself (FSM_CATALOGUE_PUSH). */
+    fsmNote: {
+      on: "FSM's catalogue follows within the hour: a new consumable is added there as a part at Rs. 0, and a rename renames it.",
+      off: "FSM's catalogue does not follow by itself yet. Add each consumable in FSM as a part at Rs. 0, named exactly as here; the hourly check then finds it by its name.",
+    },
+    // PLACEHOLDER
+    columns: ["Consumable", "Cost of one", "Low at", "In FSM", "State"],
+    none: "No consumables yet. Add the first below.",
+    /** PLACEHOLDER: "Kit 5 · store 50", the levels a place is low at. */
+    levels: (kit: number | null, central: number | null) => {
+      if (kit === null && central === null) return "No level";
+      const parts = [kit === null ? null : `Kit ${String(kit)}`, central === null ? null : `store ${String(central)}`];
+      return parts.filter((part) => part !== null).join(" · ");
+    },
+    /** PLACEHOLDER: where each stands in FSM's catalogue, as the hourly check last read it. */
+    fsm: {
+      linked: "In FSM",
+      renamed: (name: string) => `In FSM as ${name}`,
+      missing: "Not in FSM",
+      unchecked: "Not checked yet",
+    },
+    // PLACEHOLDER
+    states: {
+      offered: "Offered",
+      retiring: (from: string) => `Offered until ${from}`,
+      retired: (from: string) => `Retired from ${from}`,
+    },
+    // PLACEHOLDER: the buttons in each row, named for the screen reader by the consumable.
+    change: "Change",
+    changeLabel: (name: string) => `Change ${name}`,
+    retire: "Retire",
+    retireLabel: (name: string) => `Retire ${name}`,
+    restore: "Restore",
+    restoreLabel: (name: string) => `Restore ${name}`,
+    form: {
+      // PLACEHOLDER
+      addTitle: "Add a consumable",
+      changeTitle: (name: string) => `Change ${name}`,
+      name: "Name",
+      nameHint: "As the technician reads it and FSM's catalogue names it: a letter or a digit first.",
+      unit: "Unit",
+      unitHint: "What one is counted in: strip, ml, sachet.",
+      cost: "Cost of one, in rupees",
+      costHint: (max: string) => `Up to ${max}, to the paisa. Ours alone: no invoice carries it.`,
+      kit: "A kit is low at",
+      central: "The central store is low at",
+      levelHint: "In its unit. Leave it empty for no alert.",
+      add: "Add this consumable",
+      save: "Save the change",
+      saving: "Saving",
+      cancel: "Not now",
+      added: "The consumable is added. The technician app offers it from now.",
+      saved: "The change is saved.",
+      /** PLACEHOLDER: the check before anything is sent, the old beside the new. */
+      confirm: {
+        title: "Check the change",
+        adding: (name: string, unit: string, cost: string) => `${name}, counted in ${unit}, at ${cost} each.`,
+        line: (field: string, was: string, now: string) => `${field}: ${was} → ${now}`,
+        fields: { name: "Name", unit: "Unit", cost: "Cost of one", kit: "Kit low at", central: "Store low at" },
+        noLevel: "no level",
+        renamed: "FSM's part keeps its old name until the push renames it, or you rename it there.",
+        send: "Save it",
+        back: "Change it",
+        nothing: "Nothing has changed.",
+      },
+    },
+    retiring: {
+      // PLACEHOLDER
+      title: (name: string) => `Retire ${name}`,
+      from: "No longer offered from",
+      fromHint: "Today or a day after it. What was recorded stays, and so does its stock.",
+      question: (name: string, from: string) =>
+        `The technician app stops offering ${name} from ${from}. A job that already recorded it keeps it.`,
+      send: "Retire it",
+      restore: (name: string) => `Offer ${name} to the technician app again?`,
+      restoreSend: "Restore it",
+      done: "Done.",
+    },
+    usage: {
+      // PLACEHOLDER
+      title: "What each service uses",
+      note: "The technician's steppers start at these on a job of the service. He can change them, and add any other consumable.",
+      service: "Service",
+      /** "Service visit, standard": a kind of visit at a tier of the price book. */
+      serviceName: (type: string, tier: string) => `${type}, ${tier}`,
+      quantity: (name: string, unit: string) => `${name}, ${unit} a visit`,
+      quantityHint: (max: number) => `A whole number up to ${String(max)}. Leave it empty if the service uses none.`,
+      noneOffered: "Add a consumable above before setting what a service uses.",
+      save: "Save this service's use",
+      confirm: {
+        title: "Check the change",
+        line: (name: string, was: string, now: string) => `${name}: ${was} → ${now}`,
+        none: "none",
+        send: "Save it",
+        back: "Change it",
+        nothing: "Nothing has changed.",
+      },
+      saved: "Saved. The technician app reads it with the next job it opens.",
+    },
+    /** PLACEHOLDER: a refusal, said of the box it names (src/routes/ops-consumables.ts). */
+    errors: {
+      name: "Another consumable has that name, or it does not start with a letter or a digit. Nothing was changed.",
+      unit: "A unit is a word of letters: strip, ml, sachet. Nothing was changed.",
+      unit_cost: "The cost is in rupees, inside the range under the field. Nothing was changed.",
+      reorder_kit: "A level is a whole number, or empty. Nothing was changed.",
+      reorder_central: "A level is a whole number, or empty. Nothing was changed.",
+      from: "A consumable is retired from today or a day after it. Nothing was changed.",
+      tier: "The price book no longer prices that service. Nothing was changed.",
+      items: "That names a consumable nobody added, or one twice. Nothing was changed.",
+      not_found: "That consumable is not in the list any more. Reload the page.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER: every word of the job sheet the technician app reads: each
+   * kind of visit's checklist and the partial reasons (docs/open-points.md,
+   * item 28). No board draws it.
+   */
+  jobSheet: {
+    title: "Job sheet",
+    // PLACEHOLDER
+    note: "What the technician ticks on each kind of visit, and the reasons he may pick when a job is left partly done. His phone reads them with each job it opens; a job already on it keeps the list it was given.",
+    kind: "Kind of visit",
+    checklist: (type: string) => `${type} checklist`,
+    reasons: "Partial reasons",
+    reasonsNote: "These drive the Tasks board: a job left partly done waits there with its reason.",
+    item: (position: number) => `Item ${String(position)}`,
+    reason: (position: number) => `Reason ${String(position)}`,
+    /** The buttons beside an item: each names the item after what it does, so a screen reader says which. */
+    upButton: "Move up",
+    up: (label: string) => `Move up: ${label}`,
+    downButton: "Move down",
+    down: (label: string) => `Move down: ${label}`,
+    removeButton: "Take off",
+    remove: (label: string) => `Take off: ${label}`,
+    unnamed: "the empty item",
+    add: "Add an item",
+    addReason: "Add a reason",
+    retired: "Taken off",
+    retiredNote: "A phone that recorded one of these before it was taken off is still understood.",
+    putBack: (label: string) => `Put back: ${label}`,
+    putBackButton: "Put back",
+    committed: "Nobody has set this, so the standard list stands.",
+    setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
+    hint: (most: number, longest: number) =>
+      `At least one, at most ${String(most)}, each up to ${String(longest)} characters and no two alike.`,
+    save: "Save this list",
+    saving: "Saving",
+    saved: "Saved. Each phone reads it with the next job it opens.",
+    confirm: {
+      title: "Check the change",
+      was: "Was",
+      now: "Now",
+      added: (label: string) => `Added: ${label}`,
+      renamed: (was: string, now: string) => `Renamed: ${was} → ${now}`,
+      takenOff: (label: string) => `Taken off: ${label}`,
+      moved: "The order changes.",
+      send: "Save it",
+      back: "Change it",
+      nothing: "Nothing has changed.",
+    },
+    errors: {
+      items: "A list holds at least one item and no more than the limit under it. Nothing was changed.",
+      label: "Each item needs words, no longer than the limit, and no two alike. Nothing was changed.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/**
+ * PLACEHOLDER: every word of Stock, which no board draws. The owner ruled on
+ * 27 September 2026 that stock is kept in our own ledger, per technician's
+ * kit and a central store (docs/decisions/0087-consumables-and-stock.md).
+ */
+export const stock = {
+  title: "Stock",
+  // PLACEHOLDER
+  sub: "What each kit and the central store hold. A job's use comes out of its technician's kit as he records it.",
+  onHand: "On hand",
+  central: "Central store",
+  /** PLACEHOLDER: a technician who has left, whose kit still holds stock. */
+  left: (name: string) => `${name} (left)`,
+  consumable: "Consumable",
+  /** PLACEHOLDER: "12 strip", and a mark for a place at or below its level. */
+  held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
+  low: "Low",
+  lowNote: "Low: at or below the level set for the consumable in Settings, Consumables.",
+  retired: "retired",
+  counted: (when: string) => `Counted ${when}`,
+  none: "No consumables yet. Add them in Settings, Consumables.",
+  record: {
+    // PLACEHOLDER
+    title: "Record a movement",
+    what: "What happened",
+    kinds: {
+      delivery: "A delivery into the central store",
+      transfer: "A transfer",
+      count: "A count",
+      write_off: "A loss",
+    } as Readonly<Record<string, string>>,
+    consumable: "Consumable",
+    quantity: "How many",
+    quantityHint: (unit: string, max: number) => `In ${unit}, a whole number up to ${String(max)}.`,
+    from: "From",
+    to: "To",
+    place: "Where",
+    counted: "How many were counted",
+    note: "Note",
+    noteHint: "The supplier's note, or what happened. No client's name.",
+    lossNote: "What was lost, and how",
+    check: "Check it",
+  },
+  confirm: {
+    // PLACEHOLDER: what the movement does to each place, the old beside the new.
+    title: "Check the movement",
+    line: (place: string, was: string, now: string) => `${place}: ${was} → ${now}`,
+    below: (place: string) =>
+      `${place} would hold less than nothing: record the delivery or the count that is missing.`,
+    same: "A count that agrees records only that it was counted.",
+    send: "Record it",
+    back: "Change it",
+  },
+  recorded: "Recorded.",
+  movements: {
+    // PLACEHOLDER
+    title: "Latest movements",
+    columns: ["When", "Consumable", "Where", "Change", "Why", "Who"],
+    reasons: {
+      received: "Delivered",
+      transferred: "Transfer",
+      used: "Used on a job",
+      counted: "Count",
+      written_off: "Loss",
+    } as Readonly<Record<string, string>>,
+    none: "Nothing has moved yet.",
+    change: (quantity: number) => (quantity > 0 ? `+${String(quantity)}` : String(quantity)),
+  },
+  /** PLACEHOLDER: a refusal, said of the box it names (src/routes/ops-stock.ts). */
+  errors: {
+    consumable_code: "That consumable is not in the list any more. Reload the page.",
+    from: "That kit is not one we know. Reload the page.",
+    to: "Stock moves from one place to another, not to the place it is in. Nothing was recorded.",
+    technician_id: "That kit is not one we know. Reload the page.",
+    note: "Say what happened, in up to 200 characters. Nothing was recorded.",
+    offline: "You are offline. Connect, then try again.",
+    unknown: "That did not go through. Nothing was recorded.",
+  } as Readonly<Record<string, string>>,
 } as const;
