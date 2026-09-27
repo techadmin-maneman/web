@@ -52,8 +52,8 @@ Each read takes from the day's result-read ceiling, as the site's result link do
 
 ## Consequences
 
-- **The photograph is in the app for an hour at most.** A client who books after a try-on usually signs in later than that, and then sees the look alone, with "Your photograph was deleted within the hour." Keeping the photograph as long as its look would keep the notices true, which promise thirty days. But it would cost R2 room ADR 0039's budget does not have: at production's upload ceiling, 80 photographs a day of up to 5 MB each, held 14 days, is up to 5.6 GB. The owner decides (`docs/open-points.md`, item 146).
-- **Counsel should confirm the notices cover this** (open point 145):
+- **The photograph is in the app for an hour at most.** A client who books after a try-on usually signs in later than that, and then sees the look alone, with "Your photograph was deleted within the hour." Keeping the photograph as long as its look would keep the notices true, which promise thirty days. But it would cost R2 room ADR 0039's budget does not have: at production's upload ceiling, 80 photographs a day of up to 5 MB each, held 14 days, is up to 5.6 GB. The owner decides (`docs/open-points.md`, item 147).
+- **Counsel should confirm the notices cover this** (open point 146):
   - the photo notice says the photograph is "Used for: Generating your simulation. Nothing else.";
   - the privacy page says a number given at the gate is used "to send you the result on WhatsApp and for nothing else".
 
