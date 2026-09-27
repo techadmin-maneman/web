@@ -15,14 +15,18 @@ export const technicianOf = (visit: VisitSummary): string[] =>
 /** A day after the visit, "usually ready within the hour" is no longer true of its invoice. */
 const INVOICE_LATE_MS = 24 * 60 * 60 * 1000;
 
+export type InvoiceState = "open" | "free" | "credit" | "checking" | "generating" | "late" | "none";
+
 /**
  * What a finished visit can say of its invoice (ADR 0056): here to open, never coming because the visit was free,
- * still generating, or late. Nothing at all for a visit FSM did not complete, which is billed by hand if at all.
+ * held back (ADR 0070) because a credit paid for the visit or because it is being checked, still generating, or
+ * late. Nothing at all for a visit FSM did not complete, which is billed by hand if at all.
  */
-export function invoiceState(visit: VisitDetail, now: number): "open" | "free" | "generating" | "late" | "none" {
+export function invoiceState(visit: VisitDetail, now: number): InvoiceState {
   if (visit.status !== "completed") return "none";
   if (visit.document_id !== null) return "open";
   if (!visit.invoice_expected) return "free";
+  if (visit.invoice_held !== null) return visit.invoice_held;
   return now - Date.parse(visit.ends_at) > INVOICE_LATE_MS ? "late" : "generating";
 }
 

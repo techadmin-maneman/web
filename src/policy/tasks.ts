@@ -32,17 +32,37 @@
 // client has been promised an answer within a time, as with an erasure, so it
 // is counted down on this board as the other requests about their data are.
 
+//
+// So is a job still booked on a day its technician is away (OPS-07): leave
+// recorded after a job was assigned moves nothing (ADR 0062), so it waits for
+// ops until they move it or take the leave back.
+//
+// So is a visit to come whose client has given no address
+// (docs/decisions/0074-hand-offs-and-messages.md): a booking from the site asks
+// for none, and the app tells the client "We confirm it with you before your
+// visit". Ops confirm it; the task goes when the client's address is saved, and
+// it falls due by the visit at the latest.
+//
+// A visit left partly done is the prompt's own (BIZ-21): "Partial reasons. …
+// ops need the full set because these drive the task queue." It waits with the
+// technician's reason until the client has another visit booked after it to
+// finish what was left. A no-show is its own outcome, and its own group.
+
 export const RULES = [
   "The replacement due date follows the per-base cycle config already defined in this prompt.",
   "GET /no-shows and POST /no-shows/:id/decision, for ops to charge or waive from the evidence.",
   "number-change confirmations and deletion-request processing",
+  "Partial reasons. Four in the design. The design says ops need the full set because these drive the task queue.",
 ] as const;
 
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [
   "untold_move",
+  "leave_conflict",
+  "address_to_confirm",
   "consultation_request",
   "replacement_order",
+  "partial_visit",
   "referral_review",
   "no_show_decision",
   "number_change",
@@ -65,8 +85,12 @@ export type Slas = Readonly<Record<TaskGroup, number>>;
 export const TASK_SLA_HOURS: Slas = {
   // A client who does not know his visit moved will not be home for it: a call the same day.
   untold_move: 4,
+  // These two are never later than the visit itself (src/domain/tasks.ts).
+  leave_conflict: 48,
+  address_to_confirm: 48,
   consultation_request: 48,
   replacement_order: 48,
+  partial_visit: 48,
   referral_review: 48,
   no_show_decision: 48,
   number_change: 48,

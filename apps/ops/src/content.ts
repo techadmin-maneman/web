@@ -131,6 +131,10 @@ export const dispatch = {
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
     away: "Away",
     awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
+    /** PLACEHOLDER: leave recorded over jobs already booked moves none of them; ops do (OPS-07). */
+    stranded: (jobs: number) => `Away · ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} to move`,
+    strandedLabel: (technician: string, date: string, jobs: number) =>
+      `${technician} is away on ${date}, with ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} still to move`,
     /** Beneath the board, saying where leave comes from, since it is ours and not FSM's. */
     leave: "Leave is recorded on the Technicians screen. A day marked Away takes no job.",
   },
@@ -418,7 +422,8 @@ export const clients = {
     },
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
     stages: { booked: "Booked", in_progress: "Under way", closing: "Being closed" },
-    outcomes: { done: "Done", partial: "Partial" },
+    // PLACEHOLDER: "Not home" is ours; the board draws Done and Partial.
+    outcomes: { done: "Done", partial: "Partial", no_show: "Not home" },
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
     /** Paid ahead, or covered by a credit: board C1 of the client app's own badge. */
     prepaid: "Prepaid",
@@ -796,8 +801,11 @@ export const noShows = {
     confirmCharge: "Charge the visit",
     back: "Back",
     deciding: "Deciding",
-    /** PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. */
-    note: "Charging records the decision. Nothing is taken from the client here.",
+    /**
+     * PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. A charge keeps what the visit
+     * took, as a cancel inside 24 hours does; what a waiver gives back waits for the owner (BIZ-28).
+     */
+    note: "Charging records the decision and keeps what the visit took. Waiving records it too, but refunds nothing and returns no credit yet: settle that with the client by hand. Either way the client is told on WhatsApp, never your note.",
     /** PLACEHOLDER: the board draws no empty queue. */
     empty: "No no-show is waiting for a decision.",
     errors: {
@@ -822,8 +830,13 @@ export const tasks = {
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
     untold_move: "Call about a move",
+    // PLACEHOLDER: two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
+    leave_conflict: "Job on a day off",
+    address_to_confirm: "Address to confirm",
     consultation_request: "Consultation request",
     replacement_order: "Replacement order",
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
+    partial_visit: "Visit left partly done",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
     number_change: "Number change",
@@ -849,6 +862,7 @@ export const tasks = {
    */
   decide: {
     untold_move: "Record the call in Dispatch",
+    leave_conflict: "Move it in Dispatch",
     referral_review: "Decide it in Referrals",
     no_show_decision: "Rule on it in No-shows",
     number_change: "Decide it in Number changes",
@@ -863,10 +877,27 @@ export const tasks = {
   subs: {
     /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the dispatch board. */
     untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
+    /** PLACEHOLDER: "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
+    leave_conflict: (when: string, technician: string) => `${when}, and ${technician} is away`,
+    /**
+     * PLACEHOLDER: "Visit Tue 22 Sep, 10 am; no address yet". Only the client can save one, in the app, whose Home
+     * asks for it; the task goes when they do.
+     */
+    address_to_confirm: (when: string) => `Visit ${when}; no address yet`,
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
     replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
+    /** PLACEHOLDER: "The piece was not ready · 20 Sep": book the visit that finishes it. The technician's words. */
+    partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
+    partialReasons: {
+      client_stopped_it: "Client stopped it partway",
+      piece_not_ready: "The piece was not ready",
+      client_unwell: "Client unwell",
+      more_time_needed: "More time needed",
+    } as Readonly<Record<string, string>>,
+    /** PLACEHOLDER: a visit closed partial in FSM's own screen, with no reason from the technician. */
+    noReason: "No reason recorded",
     no_show_decision: (technician: string) => `${technician} attended`,
     number_change: "Both numbers proven by code",
     erasure_request: "Asked for in the client's own app",
@@ -989,6 +1020,14 @@ export const technicians = {
     takeLabel: (period: string, technician: string) => `Take back ${technician}'s leave, ${period}`,
     taking: "Taking it back",
     effect: "Nobody can be booked or assigned on these days until the leave is taken back.",
+    // PLACEHOLDER: leave recorded over jobs already booked moves none of them (OPS-07).
+    stranded: {
+      title: (count: number) =>
+        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on this leave. Recording it moved none.`,
+      job: (when: string, client: string) => `${when} · ${client}`,
+      noClient: "No client on our records",
+      move: "Move them on the dispatch board",
+    },
     errors: {
       invalid_request:
         "Those dates do not work: the last day cannot come before the first, and leave runs a year at most.",
@@ -1123,7 +1162,8 @@ export const numberChanges = {
     reject: "Reject",
     reason: {
       label: "Why you are rejecting it",
-      hint: "Kept with the decision, under your name.",
+      // PLACEHOLDER: the client's profile shows this reason for thirty days (OPS-09).
+      hint: "Kept with the decision, under your name. The client reads it in the app.",
       confirm: "Reject the change",
       cancel: "Leave it waiting",
     },

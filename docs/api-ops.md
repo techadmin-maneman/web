@@ -1315,17 +1315,7 @@ Request body:
 
 ```json
 {
-  "type": "object",
-  "properties": {
-    "id": {
-      "type": "string",
-      "format": "uuid"
-    }
-  },
-  "required": [
-    "id"
-  ],
-  "additionalProperties": false
+  "$ref": "#/components/schemas/TechnicianLeaveRecorded"
 }
 ```
 
@@ -2241,14 +2231,15 @@ Who Access let through, and where signing out goes
               "type": "string",
               "enum": [
                 "done",
-                "partial"
+                "partial",
+                "no_show"
               ]
             },
             {
               "type": "null"
             }
           ],
-          "description": "What FSM closed the visit as; null until it is closed."
+          "description": "What FSM closed the visit as, a no-show being its own; null until it is closed."
         }
       },
       "required": [
@@ -2556,6 +2547,17 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "Kept under the 24-hour rule, with its evidence: \"cancelled 9:14 am, visit was 10 am\"."
+    },
+    "no_show": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/NoShowNote"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     }
   },
   "required": [
@@ -2571,7 +2573,36 @@ Who Access let through, and where signing out goes
     "reference",
     "refunded_amount",
     "purpose",
-    "charge"
+    "charge",
+    "no_show"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NoShowNote
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "undecided",
+        "charged",
+        "waived"
+      ],
+      "description": "What ops ruled: undecided while they look at the evidence, charged, or waived."
+    },
+    "waited_minutes": {
+      "type": "integer",
+      "description": "How long the technician waited at the door."
+    }
+  },
+  "required": [
+    "decision",
+    "waited_minutes"
   ],
   "additionalProperties": false
 }
@@ -4639,6 +4670,75 @@ Who Access let through, and where signing out goes
 }
 ```
 
+### TechnicianLeaveRecorded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "jobs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "appointment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "appointment_id",
+          "starts_at",
+          "type",
+          "client"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07)."
+    }
+  },
+  "required": [
+    "id",
+    "jobs"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### TechnicianLeaveRequest
 
 ```json
@@ -4691,8 +4791,11 @@ Who Access let through, and where signing out goes
             "type": "string",
             "enum": [
               "untold_move",
+              "leave_conflict",
+              "address_to_confirm",
               "consultation_request",
               "replacement_order",
+              "partial_visit",
               "referral_review",
               "no_show_decision",
               "number_change",

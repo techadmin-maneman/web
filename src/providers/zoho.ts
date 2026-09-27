@@ -11,6 +11,7 @@
 
 import { z } from "zod";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../config/booking.ts";
+import { BOOKED_WINDOW_NAMES, CRM_ORG_HAS_REFERRAL_FIELDS, REFERRAL_LEAD_SOURCE } from "../config/crm.ts";
 import type { ZohoSettings } from "../config/settings.ts";
 
 import type { CrmLead, CrmProvider, CrmSyncResult, LeadSource, LeadStatus } from "./crm.ts";
@@ -127,8 +128,24 @@ export const ERASED_RECORD: Readonly<Record<string, unknown>> = {
   Contact_Consent: false,
 };
 
+/** The source a new record names: a friend's invite, where the org can say so, else the page the lead came from. */
+function sourceOf(lead: CrmLead, fields: OrgFields): string {
+  if (lead.inviteCode !== null && fields.referral) return REFERRAL_LEAD_SOURCE;
+  return LEAD_SOURCE_NAMES[lead.source];
+}
+
+/** Which of the fields the org may not have yet it does have (src/config/crm.ts). */
+export interface OrgFields {
+  readonly referral: boolean;
+}
+
 /** The Zoho Leads fields for this lead. See docs/runbook.md, "Setting up Zoho", for the custom fields. */
-export function recordFor(lead: CrmLead, status: LeadStatus | null, isNew: boolean): Record<string, unknown> {
+export function recordFor(
+  lead: CrmLead,
+  status: LeadStatus | null,
+  isNew: boolean,
+  fields: OrgFields = { referral: CRM_ORG_HAS_REFERRAL_FIELDS },
+): Record<string, unknown> {
   const record: Record<string, unknown> = {
     Last_Name: lead.name,
     Mobile: lead.mobileE164,
@@ -137,7 +154,11 @@ export function recordFor(lead: CrmLead, status: LeadStatus | null, isNew: boole
     D1_Lead_ID: lead.leadId,
   };
   if (status !== null) record.Lead_Status = status;
-  if (isNew) record.Lead_Source = LEAD_SOURCE_NAMES[lead.source];
+  if (isNew) record.Lead_Source = sourceOf(lead, fields);
+  // An invited friend, and the window a Phase 2 booking asked for (ADR 0060: "Marketing sees the person, the
+  // source, the day and the invite").
+  if (fields.referral && lead.inviteCode !== null) record.Referral_Code = lead.inviteCode;
+  if (fields.referral && lead.askedWindow !== null) record.Booked_Window = BOOKED_WINDOW_NAMES[lead.askedWindow];
   if (lead.email !== null) record.Email = lead.email;
   if (lead.tryOn) record.Try_On = true;
   if (lead.utmSource !== null) record.UTM_Source = lead.utmSource;
@@ -153,14 +174,25 @@ export function recordFor(lead: CrmLead, status: LeadStatus | null, isNew: boole
   return record;
 }
 
-/** The note added to an existing record. City and dates only; no personal data. */
+/** The window a booking asked for, in the note's words: the Phase 1 form's own choice, else a Phase 2 window. */
+function windowWords(lead: CrmLead): string | null {
+  if (lead.firstChoiceWindow !== null) return WINDOW_NAMES[lead.firstChoiceWindow].toLowerCase();
+  return lead.askedWindow;
+}
+
+/**
+ * The note added to an existing record. City, dates and windows only; no personal data. A note needs no field of
+ * the org's, so the invite and the window reach a record here whether or not the referral fields exist.
+ */
 export function noteFor(lead: CrmLead): { title: string; content: string } {
   if (lead.source === "form") {
-    const window = lead.firstChoiceWindow === null ? "" : `, ${WINDOW_NAMES[lead.firstChoiceWindow].toLowerCase()}`;
+    const asked = windowWords(lead);
+    const window = asked === null ? "" : `, ${asked}`;
     const date = lead.proposedVisitDate === null ? "" : `, proposed ${lead.proposedVisitDate}`;
+    const invite = lead.inviteCode === null ? "" : " Came through an invite.";
     return {
       title: "New booking request",
-      content: `Asked for a visit in ${lead.city ?? "an unknown city"}${window}${date}.`,
+      content: `Asked for a visit in ${lead.city ?? "an unknown city"}${window}${date}.${invite}`,
     };
   }
   if (lead.source === "waitlist") {

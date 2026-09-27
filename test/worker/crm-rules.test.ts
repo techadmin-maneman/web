@@ -25,6 +25,8 @@ export function crmLead(overrides: Partial<CrmLead> = {}): CrmLead {
     tryOn: false,
     utmSource: null,
     utmCampaign: null,
+    inviteCode: null,
+    askedWindow: null,
     ...overrides,
   };
 }

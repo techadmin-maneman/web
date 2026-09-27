@@ -69,7 +69,13 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.next.date) })).toBeVisible();
   await expect(page.getByText("Afternoon, 12 to 4 pm")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reschedule" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Add a note" })).toBeVisible();
+
+  // With self-serve booking on, the note is kept on the visit for the technician, not sent to WhatsApp (REQ-04).
+  await page.getByRole("button", { name: "Add a note" }).click();
+  const sheet = page.getByRole("dialog");
+  await sheet.getByRole("textbox", { name: "What should they know at the door?" }).fill("The lift is out");
+  await sheet.getByRole("button", { name: "Save the note" }).click();
+  await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
 });
 
 // A visit that is not this client's, or a payment, says so rather than offering to try again for ever (CLI-33).
@@ -113,7 +119,7 @@ test("Home keeps a visit being closed, and shows the credit tile and the prompt 
   await page.reload();
   await expect(page.getByText("Being closed")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Add a note" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add a note" })).toBeVisible();
   await expect(page.getByText("2 visit credits")).toBeVisible();
   await expect(page.getByText("Expire 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());

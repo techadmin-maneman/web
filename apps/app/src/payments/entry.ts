@@ -1,7 +1,9 @@
-// A payment or a refund, as the payments screens write it (boards E1 to E3).
+// A payment or a refund, and a change to the service-visit credits, as the payments screens write them (boards E1
+// to E3).
 
 import { fullDate, indiaClock, indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
-import type { Entry } from "../api.ts";
+import { rupees } from "@maneman/web-kit/money";
+import type { CreditLine, Entry } from "../api.ts";
 import { payments } from "../content.ts";
 import { visitName } from "../lib/visit.ts";
 
@@ -22,9 +24,13 @@ export function methodName(method: string | null, form: "short" | "long"): strin
   return names === undefined ? method : names[form === "short" ? 0 : 1];
 }
 
-/** The list's line under the name: "22 Aug · UPI", "14 Sep · refund to UPI". */
+/**
+ * The list's line under the name: "22 Aug · UPI", "14 Sep · refund to UPI", and for a visit the client was not
+ * home for, "19 Sep · not home, we waited 16 min" (LIFE-07).
+ */
 export function entryMeta(entry: Entry, thisYear: number): string {
   const date = listDate(entry.date, thisYear);
+  if (entry.kind === "payment" && entry.no_show !== null) return `${date} · ${payments.noShow.meta(entry.no_show)}`;
   const method = methodName(entry.kind === "refund" ? entry.destination : entry.method, "short");
   if (method === null) return date;
   return `${date} · ${entry.kind === "refund" ? payments.refundTo(method) : method}`;
@@ -38,9 +44,17 @@ export function chargeEvidence(charge: NonNullable<Extract<Entry, { kind: "payme
   return payments.evidence(charge.change, when(charge.at), when(charge.visit_started_at));
 }
 
-/** "Paid", "Refund processing", "Charged"; on the entry's own page, with how long a refund takes. */
+/**
+ * "Paid", "Refund processing", "Charged"; on the entry's own page, with how long a refund takes. A visit the client
+ * was not home for is charged once ops charge it, and otherwise paid, with where the ruling stands.
+ */
 export function entryStatus(entry: Entry, withSpeed = false): string {
   if (entry.kind === "payment" && entry.charge !== null && entry.status === "captured") return payments.charged;
+  if (entry.kind === "payment" && entry.no_show !== null && entry.status === "captured") {
+    return entry.no_show.decision === "charged"
+      ? payments.charged
+      : `${payments.status.captured} · ${payments.noShow.decision[entry.no_show.decision]}`;
+  }
   const status = payments.status[entry.status];
   const speed =
     entry.kind === "refund" && entry.status === "created" && entry.speed !== null
@@ -77,11 +91,51 @@ export function missingInvoice(
 
 /**
  * A payment's documents: the visit's invoice and the receipt. A charge was kept for a visit that did not happen,
- * and a late fee is not the visit, so neither has the visit's invoice: only the receipt.
+ * as was a payment for a visit the client was not home for, and a late fee is not the visit, so none of them has
+ * the visit's invoice: only the receipt.
  */
 export function documentsOf(entry: Extract<Entry, { kind: "payment" }>): ("invoice" | "receipt")[] {
-  if (entry.charge !== null || entry.purpose === "late_fee") return ["receipt"];
+  if (entry.charge !== null || entry.no_show !== null || entry.purpose === "late_fee") return ["receipt"];
   return ["invoice", "receipt"];
+}
+
+/** A payment or refund, or a change to the credits, as one row of the Payments list. */
+export type PaymentsRow =
+  | { readonly kind: "entry"; readonly date: string; readonly entry: Entry }
+  | { readonly kind: "credit"; readonly date: string; readonly line: CreditLine };
+
+/**
+ * The payments and the credits' changes as one list, newest first, as board E1 lists a visit a credit covered
+ * among the payments. The sort keeps each list's own order, and on the same day a payment comes first.
+ */
+export function paymentsAndCredits(entries: readonly Entry[], credits: readonly CreditLine[]): PaymentsRow[] {
+  const rows: PaymentsRow[] = [
+    ...entries.map((entry) => ({ kind: "entry" as const, date: entry.date, entry })),
+    ...credits.map((line) => ({ kind: "credit" as const, date: line.date, line })),
+  ];
+  return rows.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/** What a credit's row is about: the visit it paid for, or the credits themselves. */
+export const creditWhat = (line: CreditLine) =>
+  line.visit === null ? payments.credits.title : visitName(line.visit.type);
+
+/** The list's line under the name: "25 Jul · visit credit", "19 Sep · a friend you invited was fitted". */
+export function creditMeta(line: CreditLine, thisYear: number): string {
+  const date = listDate(line.date, thisYear);
+  if (line.no_show !== null) return `${date} · ${payments.noShow.meta(line.no_show)}`;
+  if (line.event === "added") return `${date} · ${payments.credits.from[line.source ?? "ops"]}`;
+  return `${date} · ${payments.credits.meta[line.event]}`;
+}
+
+export const creditStatus = (line: CreditLine) => payments.credits.status[line.event];
+
+/** The figures a credit's row shows: Rs. 0 for a visit it covered, as board E1 does, and the credits it moved. */
+export function creditAmount(line: CreditLine): { amount: string | null; count: string } {
+  return {
+    amount: line.visit === null ? null : rupees(0),
+    count: payments.credits.count(line.event, Math.abs(line.visits)),
+  };
 }
 
 /** What a WhatsApp asking for a document names: the reference, else the entry and its date. */

@@ -2,6 +2,8 @@
 // The database leaves kind and subject_kind unchecked, so that a new kind needs
 // no table rebuild; these lists are where they are checked instead.
 
+import type { NoticePurpose } from "../config/notices.ts";
+
 /** Each kind of WhatsApp message we send a person. */
 export const MESSAGE_KINDS = [
   // Phase 1: the try-on result, with its image.
@@ -15,10 +17,25 @@ export const MESSAGE_KINDS = [
   "cancel_confirmation",
   "visit_moved", // ops moved the visit: the new window
   "arrival_notice", // the technician has arrived
+  "no_show_decided", // ops ruled on a visit the client was not home for
   "friend_fitted", // to the referrer
+  "friend_credited", // to the friend: the invite's credits are theirs
+  "referral_rejected", // to either side: ops refused a held grant
   "launch_alert", // the person's pincode went live
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
+
+/** Whether the person's latest word on this purpose is yes. Consents are append-only, so the latest one stands. */
+export async function consentGiven(db: D1Database, personId: string, purpose: NoticePurpose): Promise<boolean> {
+  const latest = await db
+    .prepare(
+      `SELECT granted FROM consents WHERE person_id = ?1 AND purpose = ?2
+       ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+    )
+    .bind(personId, purpose)
+    .first<{ granted: number }>();
+  return latest?.granted === 1;
+}
 
 /** What a message is about: the table its subject_id is in. */
 export const MESSAGE_SUBJECTS = [

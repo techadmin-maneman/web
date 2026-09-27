@@ -60,6 +60,40 @@ export async function openNumberChange(db: D1Database, personId: string): Promis
   return row === null ? null : changeOf(row);
 }
 
+/** How long the profile shows ops' decision on a change. PLACEHOLDER, until the owner says otherwise. */
+export const DECISION_SHOWN_DAYS = 30;
+
+export interface DecidedChange {
+  readonly state: "confirmed" | "rejected";
+  readonly newMobileE164: string;
+  readonly decidedAt: string;
+  /** Ops' reason, which the client is shown: given for a rejection, none for a confirmation. */
+  readonly reason: string | null;
+}
+
+/**
+ * The client's latest change ops decided, within DECISION_SHOWN_DAYS, so the profile can say what became of it
+ * rather than let it vanish (OPS-09). The profile shows it only while no change is under way.
+ */
+export async function lastDecidedChange(db: D1Database, personId: string, now: Date): Promise<DecidedChange | null> {
+  const since = new Date(now.getTime() - DECISION_SHOWN_DAYS * 86_400_000).toISOString();
+  const row = await db
+    .prepare(
+      `SELECT state, new_mobile_e164, decided_at, reason FROM number_change_requests
+       WHERE person_id = ?1 AND state IN ('confirmed', 'rejected') AND decided_at >= ?2
+       ORDER BY decided_at DESC LIMIT 1`,
+    )
+    .bind(personId, since)
+    .first<{ state: "confirmed" | "rejected"; new_mobile_e164: string; decided_at: string; reason: string | null }>();
+  if (row === null) return null;
+  return {
+    state: row.state,
+    newMobileE164: row.new_mobile_e164,
+    decidedAt: row.decided_at,
+    reason: row.state === "rejected" ? row.reason : null,
+  };
+}
+
 export async function findNumberChange(db: D1Database, id: string): Promise<NumberChange | null> {
   const row = await db.prepare(`SELECT ${COLUMNS} FROM number_change_requests WHERE id = ?1`).bind(id).first<Row>();
   return row === null ? null : changeOf(row);

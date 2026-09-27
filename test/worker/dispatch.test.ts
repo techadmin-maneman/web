@@ -842,3 +842,61 @@ describe("where a job in hand can go", () => {
     expect((await roomFor(FIT, "2026-09-22")).status).toBe(404);
   });
 });
+
+// OPS-07: leave recorded over jobs already booked flagged nothing. Chetan's Wednesday job sat unmarked on his Away
+// cell, stayed on his phone, and waited for nobody.
+describe("leave recorded over jobs already booked", () => {
+  /** Wednesday at 10:30 in India. */
+  const WEDNESDAY_MORNING = "2026-09-23T05:00:00.000Z";
+
+  interface LeaveAnswer {
+    id: string;
+    jobs: { appointment_id: string; starts_at: string; type: string; client: string | null }[];
+  }
+
+  const tasksOf = async (group: string) => {
+    const body = await (
+      await request(ops, "/api/tasks", {}, bindings())
+    ).json<{
+      groups: { group: string; tasks: { id: string; detail: string | null; since: string; due: string }[] }[];
+    }>();
+    return body.groups.find((each) => each.group === group)?.tasks ?? [];
+  };
+
+  it("names the jobs it falls on, and only those", async () => {
+    await insertJob(A, { type: "service", start: WEDNESDAY_MORNING, technician: SAMEER });
+    await insertJob(B, { type: "service", start: WEDNESDAY_MORNING, technician: IMRAN });
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["09:00"], technician: SAMEER });
+
+    const answer = await opsPost(`/api/technicians/${SAMEER}/leave`, { from: WEDNESDAY, to: WEDNESDAY });
+
+    expect(answer.status).toBe(200);
+    expect((await answer.json<LeaveAnswer>()).jobs).toEqual([
+      { appointment_id: A, starts_at: WEDNESDAY_MORNING, type: "service", client: "Rohit Malhotra" },
+    ]);
+  });
+
+  it("puts each on the Tasks board, due by the job, until it is moved or the leave taken back", async () => {
+    await insertJob(A, { type: "service", start: WEDNESDAY_MORNING, technician: SAMEER });
+    const { id: leave } = await (
+      await opsPost(`/api/technicians/${SAMEER}/leave`, { from: WEDNESDAY, to: WEDNESDAY })
+    ).json<LeaveAnswer>();
+
+    expect(await tasksOf("leave_conflict")).toEqual([
+      expect.objectContaining({
+        id: A,
+        detail: `${WEDNESDAY_MORNING} Sameer Bhatt`,
+        since: NOW.toISOString(),
+        // Two days on would be after the job itself.
+        due: WEDNESDAY_MORNING,
+      }),
+    ]);
+
+    await opsPost(`/api/technicians/${SAMEER}/leave/${leave}/cancel`, {});
+    expect(await tasksOf("leave_conflict")).toEqual([]);
+
+    await opsPost(`/api/technicians/${SAMEER}/leave`, { from: WEDNESDAY, to: WEDNESDAY });
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?1 WHERE id = ?2").bind(IMRAN, A).run();
+    expect(await tasksOf("leave_conflict")).toEqual([]);
+  });
+});

@@ -3,7 +3,8 @@
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a number change, an erasure, a grievance, a piece past its
 // replacement date, an invoice still a draft, an erasure FSM would not finish,
-// a moved visit whose client has not heard of it — so it leaves the list when
+// a moved visit whose client has not heard of it, a visit left partly done, a
+// visit to come with no address, a job on its technician's day off — so it leaves the list when
 // that row is decided, on the section that decides it (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
@@ -35,8 +36,9 @@ const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
  * (in FSM or Books), and reaches only the client's page.
  */
 const DECIDED_IN: Partial<Record<Group, { readonly page: string; readonly row: string | null }>> = {
-  // The dispatch board draws a week, not a list, so the call is recorded from the visit's own block.
+  // The dispatch board draws a week, not a list, so the call is recorded, and the job moved, from its own block.
   untold_move: { page: "/dispatch", row: null },
+  leave_conflict: { page: "/dispatch", row: null },
   referral_review: { page: "/referrals", row: "held" },
   no_show_decision: { page: "/no-shows", row: "case" },
   number_change: { page: "/number-changes", row: "change" },
@@ -47,8 +49,11 @@ const DECIDED_IN: Partial<Record<Group, { readonly page: string; readonly row: s
 /** The tab of the client's page each group is about; the page opens on Pieces otherwise. */
 const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   untold_move: "visits",
+  leave_conflict: "visits",
+  address_to_confirm: "visits",
   consultation_request: "visits",
   replacement_order: "pieces",
+  partial_visit: "visits",
   no_show_decision: "visits",
   draft_invoice: "payments",
 };
@@ -73,6 +78,18 @@ function subOf(group: Group, task: Task): string {
       ? tasks.unknown
       : copy.untold_move(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
   }
+  if (group === "leave_conflict") {
+    // The job's start, then the technician who is away that day.
+    const [start = "", ...technician] = task.detail?.split(" ") ?? [];
+    if (start === "") return tasks.unknown;
+    return copy.leave_conflict(`${shortDate(indiaDate(start))}, ${indiaClock(start)}`, technician.join(" "));
+  }
+  if (group === "address_to_confirm") {
+    // The visit's start.
+    return task.detail === null
+      ? tasks.unknown
+      : copy.address_to_confirm(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
+  }
   if (group === "consultation_request") {
     // The day and the window, as the request recorded them: both are always there.
     const [day = "", when = ""] = task.detail?.split(" ") ?? [];
@@ -80,6 +97,11 @@ function subOf(group: Group, task: Task): string {
   }
   if (group === "replacement_order") {
     return copy.replacement_order(task.detail ?? tasks.unknown, fullDate(indiaDate(task.since)));
+  }
+  if (group === "partial_visit") {
+    // The technician's reason, and the day he closed the visit.
+    const reason = copy.partialReasons[task.detail ?? ""] ?? copy.noReason;
+    return copy.partial_visit(reason, shortDate(indiaDate(task.since)));
   }
   if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);

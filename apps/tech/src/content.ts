@@ -198,6 +198,8 @@ export const job = {
   navigate: "Navigate",
   // PLACEHOLDER: the design draws no landmark line; the client app's words (ADR 0054).
   near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: the design draws no client's note; the client leaves one in their app (REQ-04).
+  clientNote: (who: string, note: string) => `${who}'s note: ${note}`,
   // PLACEHOLDER: the board draws no way to reach the client from the card.
   call: (who: string) => `Call ${who}`,
   whatsApp: (who: string) => `WhatsApp ${who}`,

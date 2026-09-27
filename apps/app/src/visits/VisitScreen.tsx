@@ -43,6 +43,19 @@ function Invoice({ visit }: { visit: VisitDetail }) {
       return <p className={styles.invoiceLine}>{copy.free}</p>;
     case "generating":
       return <p className={styles.invoiceLine}>{copy.generating}</p>;
+    case "credit":
+      return <p className={styles.invoiceLine}>{copy.credit}</p>;
+    case "checking": {
+      const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
+      return (
+        <div className={styles.late}>
+          <p className={styles.invoiceLine}>{copy.checking}</p>
+          <a className={styles.message} href={whatsappWith(message)} rel="noopener">
+            {copy.message}
+          </a>
+        </div>
+      );
+    }
     case "late": {
       const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
       return (
@@ -65,12 +78,27 @@ function Invoice({ visit }: { visit: VisitDetail }) {
   }
 }
 
+/** A visit the client was not home for (LIFE-07): that we came and waited, and what was ruled. */
+function NoShow({ note }: { note: NonNullable<VisitDetail["no_show"]> }) {
+  const copy = visits.detail.noShow;
+  return (
+    <section className={styles.noShow} aria-labelledby="no-show">
+      <h2 className={styles.label} id="no-show">
+        {copy.label}
+      </h2>
+      <p className={styles.noShowLine}>{copy.line(note.waited_minutes)}</p>
+      <p className={styles.noShowLine}>{copy.decision[note.decision]}</p>
+    </section>
+  );
+}
+
 function PastVisit({ visit }: { visit: VisitDetail }) {
   const [open, setOpen] = useState<OpenPhoto | null>(null);
   const copy = visits.detail;
   const photographed = visit.photos.before.length > 0 || visit.photos.after.length > 0;
   return (
     <div className={styles.detail}>
+      {visit.no_show !== null && <NoShow note={visit.no_show} />}
       {photographed && (
         <section aria-labelledby="photographs">
           <h2 className={styles.label} id="photographs">

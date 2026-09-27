@@ -46,4 +46,4 @@ A skipped message records why.
 
 - A client gets no visit messages until they switch on WhatsApp about visits in their profile. Nothing in the booking flow asks yet. Whether it should, and the final copy, are the owner's (`docs/open-points.md`, item 40).
 - On staging, only numbers on the allowlist receive them.
-- Ops' own messages (a visit ops moved, the technician's arrival) arrive with dispatch (P2-M4).
+- Ops' own messages (a visit ops moved, the technician's arrival) arrive with dispatch (P2-M4). The move's arrived with ADR 0069; the arrival notice, which nothing wrote until then, with ADR 0074: queued at the first check-in that passes, once a visit, and recorded as not sent when the check-in reaches us too late to tell the client.

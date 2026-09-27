@@ -263,6 +263,19 @@
   line-height: 1.55;
 }
 
+/* A visit the client was not home for, above what the visit's page says of it (LIFE-07; the board draws none). */
+.noShow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.noShowLine {
+  margin: 0;
+  font-size: var(--fs-16);
+  line-height: 1.55;
+}
+
 /* Said to a screen reader only: the link leaves the app for a PDF. */
 .away {
   position: absolute;

@@ -7,7 +7,12 @@
 // (docs/decisions/0034-clash-check.md), which is what makes a job on a day off
 // refused rather than merely discouraged: booking never offers the day, and
 // dispatch answers "on_leave" before anything is written to FSM.
+//
+// Leave recorded over jobs already booked moves none of them: ops are told
+// which, the board marks them, and each waits on the Tasks board until it is
+// moved (docs/decisions/0074-hand-offs-and-messages.md).
 
+import type { VisitType } from "../config/visit-types.ts";
 import { addDays } from "../lib/india-time.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 
@@ -32,8 +37,47 @@ export interface NewLeave {
   readonly actor: string;
 }
 
+/** A job still booked for a technician on a day he is now away: ops move it (OPS-07). */
+export interface JobOnLeave {
+  readonly appointment_id: string;
+  readonly starts_at: string;
+  readonly type: VisitType | null;
+  /** The client's name; null for a visit with no client on our records. */
+  readonly client: string | null;
+}
+
+/**
+ * Whether technician leave `l` covers the India day of appointment `a`: the leave the board draws and the Tasks
+ * board reads, as the clash check reads it (ADR 0062).
+ */
+export const LEAVE_ON_THE_DAY = `l.technician_id = a.technician_id AND l.cancelled_at IS NULL
+  AND l.from_date <= date(a.window_start, '+330 minutes') AND l.to_date >= date(a.window_start, '+330 minutes')`;
+
+/** The technician's jobs still booked on the days from `from` to `to`, soonest first. */
+export async function jobsOnLeave(
+  db: D1Database,
+  input: { technicianId: string; from: string; to: string },
+): Promise<JobOnLeave[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT a.id AS appointment_id, a.window_start AS starts_at, a.type, p.name AS client
+       FROM appointments a LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
+       WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+         AND date(a.window_start, '+330 minutes') BETWEEN ?2 AND ?3
+       ORDER BY a.window_start`,
+    )
+    .bind(input.technicianId, input.from, input.to)
+    .all<JobOnLeave>();
+  return results;
+}
+
 export type LeaveOutcome =
-  | { readonly kind: "recorded"; readonly id: string }
+  | {
+      readonly kind: "recorded";
+      readonly id: string;
+      /** The jobs already booked on those days, which the leave does not move: ops do (OPS-07). */
+      readonly jobs: JobOnLeave[];
+    }
   | { readonly kind: "no_such_technician" }
   /** The dates are the wrong way round, or reach further ahead than LEAVE_MAX_DAYS. */
   | { readonly kind: "bad_dates" };
@@ -95,7 +139,8 @@ export async function recordLeave(
       .bind(id, leave.technicianId, leave.from, leave.to, leave.note, leave.actor, now.toISOString()),
     auditStatement(db, audit, now),
   ]);
-  return { kind: "recorded", id };
+  const jobs = await jobsOnLeave(db, { technicianId: leave.technicianId, from: leave.from, to: leave.to });
+  return { kind: "recorded", id, jobs };
 }
 
 /**
