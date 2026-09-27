@@ -713,7 +713,7 @@ A photograph, through a link that lasts 15 minutes
 
 The client's payments and refunds, newest first
 
-**200**: One list of payments and refunds
+**200**: One list of payments and refunds, and one of the credits' changes
 
 ```json
 {
@@ -738,10 +738,18 @@ The client's payments and refunds, newest first
           }
         }
       }
+    },
+    "credits": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/CreditLine"
+      },
+      "description": "Every change to the service-visit credits, newest first, which the app lists among the payments."
     }
   },
   "required": [
-    "entries"
+    "entries",
+    "credits"
   ],
   "additionalProperties": false
 }
@@ -1189,6 +1197,58 @@ Request body:
 ```
 
 **503**: unavailable: FSM did not answer; nothing changed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/appointments/{id}/note
+
+Leave the technician a note on a visit to come
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/VisitNote"
+}
+```
+
+**200**: Kept on the visit
+
+```json
+{
+  "$ref": "#/components/schemas/VisitNoted"
+}
+```
+
+**400**: invalid_request: an empty note, or one over 500 characters
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable: the visit is over or cancelled; or ops_assisted: self-serve booking is off
 
 ```json
 {
@@ -2083,6 +2143,52 @@ Request body:
         }
       ]
     },
+    "number_change_decided": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "confirmed",
+                "rejected"
+              ]
+            },
+            "new_mobile": {
+              "type": "string",
+              "description": "Masked, as the design shows it: +91 98xxx x4417."
+            },
+            "decided_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ops' reason for a rejection, which they write knowing the client reads it."
+            }
+          },
+          "required": [
+            "state",
+            "new_mobile",
+            "decided_at",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What ops decided about the client's latest change of number, for 30 days after, while no other change is under way. A rejection once vanished from the app (OPS-09)."
+    },
     "deletion": {
       "type": [
         "object",
@@ -2113,6 +2219,7 @@ Request body:
     "address",
     "consents",
     "number_change",
+    "number_change_decided",
     "deletion"
   ],
   "additionalProperties": false
@@ -2635,13 +2742,15 @@ Request body:
               "type": "string",
               "enum": [
                 "done",
-                "partial"
+                "partial",
+                "no_show"
               ]
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Done, partly done, or a no-show: the client was not home. Null until FSM closes it."
         },
         "what_was_done": {
           "anyOf": [
@@ -2675,6 +2784,32 @@ Request body:
         "invoice_expected": {
           "type": "boolean",
           "description": "Whether this visit is billed at all: false for a free visit, and for one that is not finished. With no document_id and this false, no invoice will ever exist."
+        },
+        "invoice_held": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "credit",
+                "checking"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Why a finished visit's invoice is held back rather than still to come (ADR 0070): credit, a visit credit paid for it and its invoice waits on the accountant's ruling; checking, a draft ops are checking before it is sent. Null otherwise."
+        },
+        "no_show": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/NoShowNote"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The client was not home for this visit: how long we waited, and what ops ruled. Null otherwise."
         }
       },
       "required": [
@@ -2683,7 +2818,9 @@ Request body:
         "what_was_done",
         "photos",
         "document_id",
-        "invoice_expected"
+        "invoice_expected",
+        "invoice_held",
+        "no_show"
       ],
       "additionalProperties": false
     }
@@ -2765,6 +2902,34 @@ Request body:
     "url",
     "width",
     "height"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NoShowNote
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "undecided",
+        "charged",
+        "waived"
+      ],
+      "description": "What ops ruled: undecided while they look at the evidence, charged, or waived."
+    },
+    "waited_minutes": {
+      "type": "integer",
+      "description": "How long the technician waited at the door."
+    }
+  },
+  "required": [
+    "decision",
+    "waited_minutes"
   ],
   "additionalProperties": false
 }
@@ -3077,6 +3242,17 @@ Request body:
         }
       ],
       "description": "Kept under the 24-hour rule, with its evidence: \"cancelled 9:14 am, visit was 10 am\"."
+    },
+    "no_show": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/NoShowNote"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     }
   },
   "required": [
@@ -3092,7 +3268,8 @@ Request body:
     "reference",
     "refunded_amount",
     "purpose",
-    "charge"
+    "charge",
+    "no_show"
   ],
   "additionalProperties": false
 }
@@ -3221,6 +3398,121 @@ Request body:
     "status",
     "destination",
     "speed"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CreditLine
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "The ledger entry's."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's calendar date it was made."
+    },
+    "event": {
+      "type": "string",
+      "enum": [
+        "added",
+        "used",
+        "lost",
+        "returned",
+        "expired",
+        "withdrawn",
+        "corrected"
+      ],
+      "description": "added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that was cancelled inside 24 hours, or that the client was not home for and ops charged; returned: back after a cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand."
+    },
+    "visits": {
+      "type": "integer",
+      "description": "Signed: what it added to the balance, or took from it."
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it paid for, when known."
+    },
+    "source": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "referral",
+            "ops",
+            "import"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where credits added came from; null for any other entry."
+    },
+    "no_show": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/NoShowNote"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "event",
+    "visits",
+    "visit",
+    "source",
+    "no_show"
   ],
   "additionalProperties": false
 }
@@ -3863,6 +4155,48 @@ Request body:
 }
 ```
 
+### VisitNoted
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string"
+    },
+    "noted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "note",
+    "noted_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitNote
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "What the technician should know at the door. Replaces any note before it."
+    }
+  },
+  "required": [
+    "note"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### Refer
 
 ```json
@@ -3914,7 +4248,15 @@ Request body:
         "type": "object",
         "properties": {
           "first_name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Kept with the referral when it was granted, so it stays after the friend is erased. Null for a friend erased before names were kept: never the word the erasure leaves."
           },
           "month": {
             "type": "string",
@@ -3927,6 +4269,21 @@ Request body:
         ]
       },
       "description": "Friends whose first fit closed as done, most recent first."
+    },
+    "invite_credits": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "checking",
+            "refused"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise."
     }
   },
   "required": [
@@ -3935,7 +4292,8 @@ Request body:
     "named",
     "credits",
     "card",
-    "fitted"
+    "fitted",
+    "invite_credits"
   ],
   "additionalProperties": false
 }

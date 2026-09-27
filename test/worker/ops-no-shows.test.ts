@@ -9,8 +9,10 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/app.ts";
+import { decideNoShow, refundWaivedVisit } from "../../src/domain/no-shows.ts";
 import { NO_VISITS_CONSENT } from "../../src/domain/visit-messages.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { createStubPayments } from "../../src/providers/razorpay.ts";
+import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -38,6 +40,28 @@ const rule = (body: unknown) =>
     headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+
+/**
+ * The visit paid for ahead and partly with a credit, as no real visit is, so one waiver can show what happens to
+ * each: Rs. 2,000 captured for it, and a credit redeemed on it.
+ */
+async function paidAndCredited() {
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
+         status, captured_at, created_at, updated_at)
+       VALUES ('payment-1', 'MM-2026-0841', ?1, ?2, 'pay_visit', 200000, 'INR', 'upi', 'captured', ?3, ?3, ?3)`,
+    ).bind(PERSON, VISIT, NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+       VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
+    ).bind(PERSON, NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
+    ).bind(PERSON, VISIT, NOW.toISOString()),
+  ]);
+}
 
 /** The day-before reminder, as the messaging consumer left it. */
 async function reminder(state: string, extra: { delivered_at?: string; last_error?: string } = {}) {
@@ -149,6 +173,89 @@ describe("POST /api/no-shows/:id/decision", () => {
       expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["reason"] } });
     }
     expect((await cases())[0]?.decision).toBe("undecided");
+  });
+
+  // LIFE-07: the client was never told of the missed visit or of what ops decided.
+  it("queues the client's WhatsApp about the ruling with it", async () => {
+    const messages = fakeQueue();
+    const answer = await request(
+      ops,
+      `/api/no-shows/${CASE}/decision`,
+      {
+        method: "POST",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "charged", reason: "Nobody came to the door" }),
+      },
+      { MESSAGE_QUEUE: messages },
+    );
+    expect(answer.status).toBe(200);
+
+    const queued = await env.DB.prepare("SELECT id, person_id, kind, subject_id, state FROM outbound_messages").all();
+    expect(queued.results).toEqual([
+      {
+        id: expect.any(String) as string,
+        person_id: PERSON,
+        kind: "no_show_decided",
+        subject_id: VISIT,
+        state: "queued",
+      },
+    ]);
+    expect(messages.sent).toEqual([{ message_id: queued.results[0]?.id, request_id: expect.any(String) as string }]);
+  });
+
+  // BIZ-28: what a waiver does to the money waits for the owner; until then it moves none, and says so.
+  it("moves no money on a waiver while the owner has not ruled what one gives back", async () => {
+    const payments = createStubPayments();
+    const app = appFor("local", fakeDependencies({ payments }), {}, "ops");
+    await paidAndCredited();
+
+    const answer = await request(
+      app,
+      `/api/no-shows/${CASE}/decision`,
+      {
+        method: "POST",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "waived", reason: "The lift was out" }),
+      },
+      { MESSAGE_QUEUE: fakeQueue() },
+    );
+
+    expect(answer.status).toBe(200);
+    expect(payments.made.refunds).toEqual([]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'").first()).toEqual({
+      n: 0,
+    });
+  });
+
+  it("gives back the payment and the credit on a waiver, once the owner rules that it should", async () => {
+    const payments = createStubPayments();
+    await paidAndCredited();
+
+    const ruled = await decideNoShow(env.DB, {
+      caseId: CASE,
+      decision: "waived",
+      reason: "The lift was out",
+      actor: "ops@localhost",
+      audit: {
+        surface: "ops",
+        actor: { kind: "staff", id: "ops@localhost" },
+        action: "no_show.decide",
+        subject: { kind: "no_show_case", id: CASE },
+        requestId: "request-1",
+        detail: { decision: "waived" },
+      },
+      now: NOW,
+      waiverGivesBack: true,
+    });
+    expect(ruled?.refund).not.toBeNull();
+    if (ruled?.refund) {
+      await refundWaivedVisit(env.DB, { payments, alertOnce: () => Promise.resolve() }, ruled.refund);
+    }
+
+    expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 200000 })]);
+    expect(await env.DB.prepare("SELECT kind, visits FROM credit_ledger WHERE kind = 'restore'").all()).toMatchObject({
+      results: [{ kind: "restore", visits: 1 }],
+    });
   });
 
   it("keeps the reason with the ruling, under who made it, and out of the audit log", async () => {

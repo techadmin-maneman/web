@@ -165,6 +165,40 @@ describe("POST /api/waitlist", () => {
     expect(consents.results.map((row) => row.purpose)).toEqual(["contact", "whatsapp_launches"]);
   });
 
+  // ADR 0041 lists the waitlist confirmation among Phase 2's messages; nothing wrote one (REQ-03).
+  it("queues one WhatsApp confirming the place on the list, however often the number joins", async () => {
+    await pincode("400050", "Bandra", "Mumbai", false);
+    const messages = fakeQueue();
+    const join = () =>
+      request(
+        site(),
+        "/api/waitlist",
+        post({ ...VISITOR, pincode: "400050", contact_consent: true, launch_alert: false }),
+        {
+          CRM_QUEUE: fakeQueue(),
+          MESSAGE_QUEUE: messages,
+        },
+      );
+
+    expect((await join()).status).toBe(201);
+    expect((await join()).status).toBe(201);
+
+    const queued = await env.DB.prepare(
+      `SELECT m.id, m.kind, m.subject_kind, m.state, m.subject_id = w.id AS about_the_entry
+       FROM outbound_messages m JOIN waitlist_entries w ON w.person_id = m.person_id`,
+    ).all();
+    expect(queued.results).toEqual([
+      {
+        id: expect.any(String) as string,
+        kind: "waitlist_confirmation",
+        subject_kind: "waitlist_entry",
+        state: "queued",
+        about_the_entry: 1,
+      },
+    ]);
+    expect(messages.sent).toEqual([{ message_id: queued.results[0]?.id, request_id: expect.any(String) as string }]);
+  });
+
   it("refuses a pincode we do serve: that one books instead", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
     const answer = await request(

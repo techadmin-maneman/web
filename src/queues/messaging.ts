@@ -1,7 +1,8 @@
 // The messaging consumer: the only caller of the WhatsApp provider. It sends a
 // person the result they asked for at the gate, as the result template with a
-// signed result link that expires an hour after sending; and a client's messages
-// about their visits (src/domain/visit-messages.ts).
+// signed result link that expires an hour after sending; a client's messages
+// about their visits (src/domain/visit-messages.ts); and the referral, waitlist
+// and launch messages, each composed where its subject lives.
 //
 // Skipped, never sent: messaging off, a person erased, a number outside the
 // staging allowlist, or the daily cap reached. A transient failure is retried
@@ -18,8 +19,8 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
-import { composeFriendFitted } from "../domain/referral-grants.ts";
-import { composeLaunchAlert } from "../domain/waitlist.ts";
+import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
+import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
 import { scrubString, type Logger } from "../log.ts";
 
@@ -113,6 +114,18 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
   };
 }
 
+/** What a message of its kind says, as things stand now, or why it is not sent. */
+async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
+  if (row.kind === "tryon_result") return resultContent(db, config, row, now);
+  if (isVisitKind(row.kind)) return composeVisitMessage(db, row.kind, row.subject_id, row.person_id);
+  if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
+  if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
+  if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);
+  if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
+  if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
+  return { skip: "unknown kind" };
+}
+
 export async function sendMessage(
   db: D1Database,
   config: StaticConfig,
@@ -149,16 +162,7 @@ export async function sendMessage(
   if (row.erased_at !== null) return skip("person erased");
   if (!messaging.enabled) return skip("messaging is off");
   if (!onAllowlist(messaging, row.mobile_e164)) return skip("number not on the allowlist");
-  const content: Content =
-    row.kind === "tryon_result"
-      ? await resultContent(db, config, row, now)
-      : isVisitKind(row.kind)
-        ? await composeVisitMessage(db, row.kind, row.subject_id, row.person_id)
-        : row.kind === "friend_fitted"
-          ? await composeFriendFitted(db, row.subject_id, row.person_id)
-          : row.kind === "launch_alert"
-            ? await composeLaunchAlert(db, row.subject_id, row.person_id, config.environment)
-            : { skip: "unknown kind" };
+  const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
 
   // Claim this send; another delivery of the same message now leaves it alone.

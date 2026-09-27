@@ -496,6 +496,40 @@
 }
 
 /* Boards C7 and C8: the change, and what it costs. */
+/* Add a note (REQ-04), in the change sheet's frame: the design draws no sheet behind the button. */
+.noteForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+
+.noteField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.noteLabel {
+  font-size: var(--fs-16);
+  color: var(--text-soft);
+}
+
+.noteInput {
+  padding: var(--sp-12) var(--sp-15);
+  border: var(--hairline) solid var(--paper-control);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-16);
+  line-height: 1.5;
+  color: var(--text);
+  resize: vertical;
+}
+
+.noteInput:focus {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
 .changeTitle {
   font-family: var(--font-serif);
   font-size: var(--fs-24);

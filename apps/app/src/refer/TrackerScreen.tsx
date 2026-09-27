@@ -101,9 +101,9 @@ function Friends({ state }: { state: Refer }) {
       </div>
       <ul className={styles.friends}>
         {state.fitted.map((friend, index) => (
-          <li key={`${friend.first_name}-${friend.month}-${String(index)}`} className={styles.friend}>
+          <li key={`${friend.first_name ?? ""}-${friend.month}-${String(index)}`} className={styles.friend}>
             <div>
-              <p className={styles.friendName}>{friend.first_name}</p>
+              <p className={styles.friendName}>{friend.first_name ?? copy.unnamed}</p>
               <p className={styles.friendWhen}>{copy.when(monthName(friend.month))}</p>
             </div>
             <p className={styles.friendEarned}>{copy.each(CREDITS_PER_REFERRAL)}</p>

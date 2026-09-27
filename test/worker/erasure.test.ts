@@ -415,6 +415,93 @@ describe("erasure, all or nothing", () => {
   });
 });
 
+// A reason is ops' own words about a client, kept with the decision (docs/decisions/0072-ops-clients-and-queues.md):
+// "same flat as Rohit" is a personal detail, so it goes with the rest of what an erasure blanks.
+describe("erasure blanks what ops wrote about the client", () => {
+  const FRIEND = "friend-1";
+  const REFERRER = "referrer-1";
+
+  async function reasonsWritten(): Promise<void> {
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      ...[
+        [REFERRER, "+919810000011", "Vikram Sood"],
+        [FRIEND, "+919810000012", "Kabir Anand"],
+      ].map(([id, mobile, name]) =>
+        env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)").bind(
+          id,
+          at,
+          mobile,
+          name,
+        ),
+      ),
+      env.DB.prepare(
+        "INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES ('VSAB23', ?1, ?2, ?2)",
+      ).bind(REFERRER, at),
+      env.DB.prepare(
+        `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state,
+           review_reason, reviewed_by, reviewed_at, created_at, updated_at)
+         VALUES ('referral-1', 'VSAB23', ?1, ?2, 'consultation', 'rejected', 'Same flat as Vikram', 'ops@localhost',
+           ?2, ?2, ?2)`,
+      ).bind(FRIEND, at),
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
+           fsm_modified_at, synced_at)
+         VALUES ('visit-9', 'fsm-9', ?1, 'service', 'terminated', 'Terminated', '2026-09-19T03:30:00.000Z', 't1', ?2, ?2)`,
+      ).bind(FRIEND, at),
+      env.DB.prepare(
+        `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
+         VALUES ('checkin-9', 'visit-9', 't1', ?1, 28.4, 77.0, 200, 1, ?1)`,
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at, decision,
+           decided_by, decided_at, decision_reason, created_at)
+         VALUES ('case-9', 'checkin-9', 'visit-9', ?1, ?1, ?1, 'charged', 'ops@localhost', ?1,
+           'His wife said he forgets', ?1)`,
+      ).bind(at),
+    ]);
+  }
+
+  const reasons = () =>
+    env.DB.prepare(
+      `SELECT (SELECT review_reason FROM referral_attributions) AS review,
+         (SELECT decision_reason FROM no_show_cases) AS no_show`,
+    ).first();
+
+  it("blanks the reasons ops gave about the friend: the grant's review and the no-show ruling", async () => {
+    await reasonsWritten();
+
+    expect(await erasePerson(env, FRIEND, NOW, createLogger())).not.toBeNull();
+
+    expect(await reasons()).toEqual({ review: null, no_show: null });
+    // The decisions themselves stay, as records.
+    const ruled = await env.DB.prepare(
+      "SELECT (SELECT grant_state FROM referral_attributions) AS grant_state, (SELECT decision FROM no_show_cases) AS decision",
+    ).first();
+    expect(ruled).toEqual({ grant_state: "rejected", decision: "charged" });
+  });
+
+  it("blanks the grant's review reason when the referrer is the one erased", async () => {
+    await reasonsWritten();
+
+    await erasePerson(env, REFERRER, NOW, createLogger());
+
+    expect(await reasons()).toEqual({ review: null, no_show: "His wife said he forgets" });
+  });
+
+  it("blanks nothing when the database refuses the erasure", async () => {
+    await reasonsWritten();
+    await databaseRefusesErasure();
+
+    await expect(erasePerson(env, FRIEND, NOW, createLogger())).rejects.toThrow();
+
+    expect(await reasons()).toEqual({ review: "Same flat as Vikram", no_show: "His wife said he forgets" });
+  });
+});
+
 /** A visit still to happen, paid for, as a client's Monday service is. */
 async function bookedVisit(personId: string): Promise<void> {
   await env.DB.prepare(

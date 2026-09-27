@@ -61,6 +61,12 @@
   color: var(--text-soft);
 }
 
+/* Where the credits of the invite the client came with stand, while they are not in the balance. */
+.inviteCredits {
+  font-size: var(--fs-16);
+  line-height: 1.65;
+}
+
 /* The two ways on, at the foot of the screen (board F1). */
 .actions {
   display: flex;

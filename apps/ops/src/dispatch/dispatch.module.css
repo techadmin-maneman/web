@@ -207,6 +207,15 @@
   font-size: var(--fs-13);
 }
 
+/*
+ * A day off with jobs still booked on it (OPS-07): the same label, in the
+ * oxblood the board gives what needs doing. Two classes, so it outranks the
+ * shared label's muted ink whichever stylesheet loads last.
+ */
+.awayMark.stranded {
+  color: var(--error-on-paper);
+}
+
 /* ---- One job on the board ------------------------------------------------ */
 
 .block {
