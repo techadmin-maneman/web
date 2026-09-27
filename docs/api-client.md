@@ -731,6 +731,14 @@ A try-on's photograph or look, through a link that lasts 15 minutes
 }
 ```
 
+**503**: busy: today's result-read ceiling is reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/payments
 
 The client's payments and refunds, newest first

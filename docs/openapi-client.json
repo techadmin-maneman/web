@@ -4218,6 +4218,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "busy: today's result-read ceiling is reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }

@@ -14,6 +14,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
+import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../domain/client-try-ons.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
@@ -296,6 +297,7 @@ const tryOnFileRoute = createRoute({
     },
     401: errorResponse("session_required"),
     404: errorResponse("not_found: the link is wrong, expired, or not this client's, or the image is deleted"),
+    503: errorResponse("busy: today's result-read ceiling is reached"),
   },
 });
 
@@ -395,16 +397,20 @@ function registerTryOnImages(app: App): void {
   app.openapi(tryOnFileRoute, async (c) => {
     const session = clientOf(c);
     const { image, token } = c.req.valid("param");
-    const now = c.var.deps.now();
-    const jobId = await verifyToken(
-      c.var.config.settings.tryon.linkSigningKey,
-      TRY_ON_TOKEN_PURPOSES[image],
-      token,
-      now,
-    );
+    const { deps, requestId } = c.var;
+    const { tryon } = c.var.config.settings;
+    const now = deps.now();
+    const jobId = await verifyToken(tryon.linkSigningKey, TRY_ON_TOKEN_PURPOSES[image], token, now);
     const held = jobId === null ? null : await ownTryOnImage(c.env.DB, session.subjectId, jobId, image, now);
-    const object = held === null ? null : await c.env[TRY_ON_BUCKETS[image]].get(held.key);
-    if (held === null || object === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (held === null) return c.json(errorBody("not_found", requestId), 404);
+
+    // Counted as the site's result links are, so every read of the try-on's buckets stays under a ceiling (ADR 0014).
+    if (!(await takeFromCeiling(c.env.DB, "result_read", tryon.resultReadDailyCeiling, now))) {
+      await alertCeilingReached(c.env.DB, deps.alert, "result_read", tryon.resultReadDailyCeiling, now);
+      return c.json(errorBody("busy", requestId), 503);
+    }
+    const object = await c.env[TRY_ON_BUCKETS[image]].get(held.key);
+    if (object === null) return c.json(errorBody("not_found", requestId), 404);
     // Both buckets hold only JPEG and PNG, each checked on its way in (src/domain/photo.ts, src/queues/render.ts).
     const type: ImageType = object.httpMetadata?.contentType === "image/png" ? "image/png" : "image/jpeg";
     // The app names the download the same, less the extension, which only the file's type gives.

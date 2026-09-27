@@ -10,7 +10,7 @@ import type { App } from "../../src/http/context.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { loadJob } from "../../src/domain/tryon.ts";
 import { recordClaim, reserveJob } from "../../src/domain/tryon-claims.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request } from "./helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
 const CLIENT = "person-client";
@@ -220,6 +220,21 @@ describe("GET /api/photos/try-on/{image}/{token}", () => {
 
     const later = appFor("local", fakeDependencies({ now: () => new Date(NOW.getTime() + 16 * MINUTE) }), {}, "client");
     expect((await request(later, photoUrl, { headers: { Cookie: cookie } })).status).toBe(404);
+  });
+
+  // Every read of the try-on's buckets is counted by a ceiling, which is what holds its R2 budget (ADR 0014).
+  it("counts each image against the day's result-read ceiling, and answers busy past it", async () => {
+    const tryOn = await stored();
+    client = appFor(
+      "local",
+      fakeDependencies(),
+      { tryon: { ...LOCAL_SETTINGS.tryon, resultReadDailyCeiling: 1 } },
+      "client",
+    );
+    expect((await get(tryOn.photo?.url ?? "")).status).toBe(200);
+    const refused = await get(tryOn.look?.url ?? "");
+    expect(refused.status).toBe(503);
+    expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
   });
 
   it("opens a photograph no longer once it is deleted, nor a look past its day", async () => {
