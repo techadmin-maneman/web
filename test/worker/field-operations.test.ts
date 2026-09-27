@@ -499,6 +499,25 @@ describe("the outbox", () => {
     expect(fsmQueue.sent).toHaveLength(4);
   });
 
+  it("lands a step whose FSM write the queue refused, and leaves it pending for the sweeper to send", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    fsmQueue = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+
+    expect(answer.status).toBe(202);
+    expect(await answer.json()).toMatchObject({
+      event_id: "event-start-01",
+      replayed: false,
+      fsm_write_state: "pending",
+    });
+    const row = await env.DB.prepare(
+      "SELECT fsm_write_state, superseded FROM job_events WHERE event_id = 'event-start-01'",
+    ).first<{ fsm_write_state: string; superseded: number }>();
+    // What src/scheduled/sweeper.ts sends on once its grace has passed.
+    expect(row).toEqual({ fsm_write_state: "pending", superseded: 0 });
+  });
+
   it("refuses a step sent before the one ahead of it", async () => {
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-early-01");
 

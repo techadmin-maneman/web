@@ -732,11 +732,6 @@ type Landed =
     };
 
 /**
- * Records one event and queues its FSM write. Its time is the phone's, within
- * bounds: the check-in passes its own, and any other write's comes from its
- * event ID.
- */
-/**
  * The client's WhatsApp that his technician has arrived, the no-show's evidence (ADR 0047), once per visit. One
  * the queue drops, the sweeper sends; the check-in has landed either way.
  */
@@ -750,6 +745,23 @@ async function tellOfArrival(c: Ctx, input: { personId: string; appointmentId: s
   }
 }
 
+/**
+ * A landed event's FSM write. One the queue refuses stays pending, and the sweeper sends it on once its grace has
+ * passed (src/scheduled/sweeper.ts); the event has landed either way.
+ */
+async function queueFsmWrite(c: Ctx, jobEventId: string): Promise<void> {
+  try {
+    await c.env.FSM_QUEUE.send({ job_event_id: jobEventId, request_id: c.var.requestId } satisfies FsmSyncMessage);
+  } catch (error) {
+    c.var.log.warn("fsm_enqueue_failed", { job_event_id: jobEventId, error });
+  }
+}
+
+/**
+ * Records one event and queues its FSM write. Its time is the phone's, within
+ * bounds: the check-in passes its own, and any other write's comes from its
+ * event ID.
+ */
 async function land(
   c: Ctx,
   job: WorkableJob,
@@ -758,8 +770,7 @@ async function land(
   phoneTime?: Date,
 ): Promise<Landed> {
   const { technicianId, deviceRowId } = technicianOf(c);
-  const { requestId, deps } = c.var;
-  const now = deps.now();
+  const now = c.var.deps.now();
   const eventId = c.req.header(EVENT_ID_HEADER) ?? "";
   const heldStart = c.req.header(JOB_STARTS_AT_HEADER);
 
@@ -782,9 +793,7 @@ async function land(
   if (landing.kind === "not_today" || landing.kind === "already_started") return { ok: false, code: landing.kind };
 
   // A replay landed nothing new, so nothing new goes to FSM either.
-  if (!landing.replayed) {
-    await c.env.FSM_QUEUE.send({ job_event_id: landing.event.id, request_id: requestId } satisfies FsmSyncMessage);
-  }
+  if (!landing.replayed) await queueFsmWrite(c, landing.event.id);
   const { noShowWaitMin } = await opsInputs(c);
   return {
     ok: true,
