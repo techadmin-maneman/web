@@ -43,7 +43,12 @@ beforeEach(() => {
         scripts.push(script);
       },
     },
+    documentElement: {},
   });
+  // Checkout is drawn in the page's own ink, read from its stylesheet (DS-19).
+  vi.stubGlobal("getComputedStyle", () => ({
+    getPropertyValue: (name: string) => (name === "--ink" ? " #16233a" : ""),
+  }));
 });
 
 afterEach(() => {
@@ -147,6 +152,7 @@ describe("paying in Checkout", () => {
       currency: "INR",
       prefill: { name: "Rohit Malhotra", contact: "+919810000001", method: "card" },
       retry: { enabled: false },
+      theme: { color: "#16233a" },
     });
     razorpay.options().handler();
     expect(await paying).toBe("paid");
