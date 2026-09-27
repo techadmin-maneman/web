@@ -641,9 +641,9 @@ One of the client's visits, with its photographs
 
 ### GET /api/photos
 
-The client's photographs, by visit, newest first
+The client's photographs, by visit, newest first, and their try-ons
 
-**200**: Visits that have photographs
+**200**: Visits that have photographs, and try-ons still held
 
 ```json
 {
@@ -702,6 +702,28 @@ A photograph, through a link that lasts 15 minutes
 ```
 
 **404**: not_found: the link is wrong, expired, or not this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/photos/try-on/{image}/{token}
+
+A try-on's photograph or look, through a link that lasts 15 minutes
+
+**200**: The image
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the link is wrong, expired, or not this client's, or the image is deleted
 
 ```json
 {
@@ -3077,10 +3099,91 @@ Request body:
         ],
         "additionalProperties": false
       }
+    },
+    "try_ons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/TryOn"
+      },
+      "description": "The client's try-ons with a photograph or a look still held, newest first."
     }
   },
   "required": [
-    "visits"
+    "visits",
+    "try_ons"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TryOn
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "made_on": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date the look was asked for."
+    },
+    "photo": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TryOnLink"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The photograph the client uploaded on the site, while it is held; null once deleted, and on a second look of the same photograph, which shows it once."
+    },
+    "look": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TryOnLink"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The look made from it, once made and until it is deleted; null while it is still being made."
+    }
+  },
+  "required": [
+    "id",
+    "made_on",
+    "photo",
+    "look"
+  ],
+  "additionalProperties": false,
+  "description": "A try-on the site's gate claimed with the client's number (ADR 0082). A failed one is left out."
+}
+```
+
+### TryOnLink
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "Lasts 15 minutes; only the signed-in client can open it."
+    },
+    "kept_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the try-on's retention rule lets it go: a photograph an hour after the last look asked of it, a look the days the site keeps it for (RESULT_RETENTION_DAYS, ADR 0039). Deleted within minutes after."
+    }
+  },
+  "required": [
+    "url",
+    "kept_until"
   ],
   "additionalProperties": false
 }

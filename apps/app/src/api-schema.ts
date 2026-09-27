@@ -965,7 +965,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's photographs, by visit, newest first */
+        /** The client's photographs, by visit, newest first, and their try-ons */
         get: {
             parameters: {
                 query?: never;
@@ -975,7 +975,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Visits that have photographs */
+                /** @description Visits that have photographs, and try-ons still held */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1101,6 +1101,64 @@ export interface paths {
                     };
                 };
                 /** @description not_found: the link is wrong, expired, or not this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/photos/try-on/{image}/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A try-on's photograph or look, through a link that lasts 15 minutes */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    image: "photo" | "look";
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the link is wrong, expired, or not this client's, or the image is deleted */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2499,6 +2557,31 @@ export interface components {
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
                 photos: components["schemas"]["PhotoSet"];
             }[];
+            /** @description The client's try-ons with a photograph or a look still held, newest first. */
+            try_ons: components["schemas"]["TryOn"][];
+        };
+        /** @description A try-on the site's gate claimed with the client's number (ADR 0082). A failed one is left out. */
+        TryOn: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date
+             * @description India's date the look was asked for.
+             */
+            made_on: string;
+            /** @description The photograph the client uploaded on the site, while it is held; null once deleted, and on a second look of the same photograph, which shows it once. */
+            photo: components["schemas"]["TryOnLink"] | null;
+            /** @description The look made from it, once made and until it is deleted; null while it is still being made. */
+            look: components["schemas"]["TryOnLink"] | null;
+        };
+        TryOnLink: {
+            /** @description Lasts 15 minutes; only the signed-in client can open it. */
+            url: string;
+            /**
+             * Format: date-time
+             * @description When the try-on's retention rule lets it go: a photograph an hour after the last look asked of it, a look the days the site keeps it for (RESULT_RETENTION_DAYS, ADR 0039). Deleted within minutes after.
+             */
+            kept_until: string;
         };
         PhotoCompare: {
             /** @enum {string} */

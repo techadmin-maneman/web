@@ -3,9 +3,10 @@
 //
 //   GET /api/visits                 upcoming and past, with what they add up to
 //   GET /api/visits/:id             one visit, with its photographs
-//   GET /api/photos                 the timeline: each visit's photographs, newest first
+//   GET /api/photos                 the timeline: each visit's photographs, newest first, and the try-ons
 //   GET /api/photos/compare         one angle from two visits, side by side
 //   GET /api/photos/file/:token     a photograph itself, for the signed-in client
+//   GET /api/photos/try-on/:image/:token   a try-on's photograph or look (ADR 0082)
 //
 // Every photograph is served through a link that lasts 15 minutes, and only
 // to the client whose photograph it is.
@@ -14,12 +15,14 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { clientHistory } from "../domain/client-history.ts";
+import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../domain/client-try-ons.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
 import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { fileExtension, type ImageType } from "../lib/image-bytes.ts";
 import { verifyToken } from "../lib/signed-token.ts";
 
 const TechnicianSchema = z
@@ -149,6 +152,36 @@ const VisitsSchema = z
   .strict()
   .openapi("Visits");
 
+const TryOnLinkSchema = z
+  .object({
+    url: z.string().openapi({ description: "Lasts 15 minutes; only the signed-in client can open it." }),
+    kept_until: z.iso.datetime().openapi({
+      description:
+        "When the try-on's retention rule lets it go: a photograph an hour after the last look asked of it, a " +
+        "look the days the site keeps it for (RESULT_RETENTION_DAYS, ADR 0039). Deleted within minutes after.",
+    }),
+  })
+  .strict()
+  .openapi("TryOnLink");
+
+const TryOnSchema = z
+  .object({
+    id: z.uuid(),
+    made_on: z.iso.date().openapi({ description: "India's date the look was asked for." }),
+    photo: z.union([TryOnLinkSchema, z.null()]).openapi({
+      description:
+        "The photograph the client uploaded on the site, while it is held; null once deleted, and on a second " +
+        "look of the same photograph, which shows it once.",
+    }),
+    look: z.union([TryOnLinkSchema, z.null()]).openapi({
+      description: "The look made from it, once made and until it is deleted; null while it is still being made.",
+    }),
+  })
+  .strict()
+  .openapi("TryOn", {
+    description: "A try-on the site's gate claimed with the client's number (ADR 0082). A failed one is left out.",
+  });
+
 const TimelineSchema = z
   .object({
     visits: z.array(
@@ -161,6 +194,9 @@ const TimelineSchema = z
         })
         .strict(),
     ),
+    try_ons: z.array(TryOnSchema).openapi({
+      description: "The client's try-ons with a photograph or a look still held, newest first.",
+    }),
   })
   .strict()
   .openapi("PhotoTimeline");
@@ -201,9 +237,12 @@ const visitRoute = createRoute({
 const timelineRoute = createRoute({
   method: "get",
   path: "/api/photos",
-  summary: "The client's photographs, by visit, newest first",
+  summary: "The client's photographs, by visit, newest first, and their try-ons",
   responses: {
-    200: { description: "Visits that have photographs", content: { "application/json": { schema: TimelineSchema } } },
+    200: {
+      description: "Visits that have photographs, and try-ons still held",
+      content: { "application/json": { schema: TimelineSchema } },
+    },
     401: errorResponse("session_required"),
   },
 });
@@ -245,6 +284,24 @@ const photoFileRoute = createRoute({
   },
 });
 
+const tryOnFileRoute = createRoute({
+  method: "get",
+  path: "/api/photos/try-on/{image}/{token}",
+  summary: "A try-on's photograph or look, through a link that lasts 15 minutes",
+  request: { params: z.object({ image: z.enum(TRY_ON_IMAGES), token: z.string() }) },
+  responses: {
+    200: {
+      description: "The image",
+      content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
+    },
+    401: errorResponse("session_required"),
+    404: errorResponse("not_found: the link is wrong, expired, or not this client's, or the image is deleted"),
+  },
+});
+
+/** Where each try-on image is held: the photograph as the site uploaded it, the look as the render stored it. */
+const TRY_ON_BUCKETS = { photo: "UPLOADS", look: "RESULTS" } as const;
+
 export function registerClientVisits(app: App): void {
   for (const path of ["/api/visits", "/api/visits/*", "/api/photos", "/api/photos/*"]) {
     app.use(path, requireClientSession);
@@ -277,18 +334,21 @@ export function registerClientVisits(app: App): void {
 
   app.openapi(timelineRoute, async (c) => {
     const session = clientOf(c);
-    const { past } = await listVisits(c.env.DB, session.subjectId, c.var.deps.now());
+    const signingKey = c.var.config.settings.tryon.linkSigningKey;
+    const now = c.var.deps.now();
+    const { past } = await listVisits(c.env.DB, session.subjectId, now);
     const sets = await photoSets(
       c.env.DB,
       past.map((visit) => visit.id),
-      c.var.config.settings.tryon.linkSigningKey,
-      c.var.deps.now(),
+      signingKey,
+      now,
     );
     const visits = past.flatMap((visit) => {
       const photos = sets.get(visit.id);
       return photos === undefined ? [] : [{ visit_id: visit.id, date: visit.date, type: visit.type, photos }];
     });
-    return c.json({ visits }, 200);
+    const tryOns = await clientTryOns(c.env.DB, session.subjectId, signingKey, now);
+    return c.json({ visits, try_ons: tryOns }, 200);
   });
 
   app.openapi(compareRoute, async (c) => {
@@ -324,6 +384,37 @@ export function registerClientVisits(app: App): void {
     if (photo === null || object === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     return new Response(object.body, {
       headers: { "Content-Type": photo.contentType, "Cache-Control": "private, max-age=900" },
+    });
+  });
+
+  registerTryOnImages(app);
+}
+
+/** A try-on's photograph or look, through a link signed and checked against the session as a visit's photograph is. */
+function registerTryOnImages(app: App): void {
+  app.openapi(tryOnFileRoute, async (c) => {
+    const session = clientOf(c);
+    const { image, token } = c.req.valid("param");
+    const now = c.var.deps.now();
+    const jobId = await verifyToken(
+      c.var.config.settings.tryon.linkSigningKey,
+      TRY_ON_TOKEN_PURPOSES[image],
+      token,
+      now,
+    );
+    const held = jobId === null ? null : await ownTryOnImage(c.env.DB, session.subjectId, jobId, image, now);
+    const object = held === null ? null : await c.env[TRY_ON_BUCKETS[image]].get(held.key);
+    if (held === null || object === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    // Both buckets hold only JPEG and PNG, each checked on its way in (src/domain/photo.ts, src/queues/render.ts).
+    const type: ImageType = object.httpMetadata?.contentType === "image/png" ? "image/png" : "image/jpeg";
+    // The app names the download the same, less the extension, which only the file's type gives.
+    const filename = `mane-man-${held.madeOn}-try-on-${image}.${fileExtension(type)}`;
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": type,
+        "Content-Disposition": `inline; filename="${filename}"`,
+        "Cache-Control": "private, max-age=900",
+      },
     });
   });
 }
