@@ -86,6 +86,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0078](0078-the-queues-no-board-draws.md) | The console's queues that no board draws | 2026-09-27 | accepted |  |
 | [0079](0079-an-address-before-a-slot.md) | An address before any slot | 2026-09-27 | accepted |  |
 | [0080](0080-consents-given-by-booking.md) | The photograph consents, given by booking | 2026-09-27 | accepted, for counsel to confirm before production |  |
+| [0082](0082-try-ons-in-the-app.md) | A client's try-on in the app | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 |  |
 | [0083](0083-anyone-signed-in-can-refer.md) | Anyone signed in can refer | 2026-09-27 | accepted |  |
 
 ## Records beside them

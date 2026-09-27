@@ -51,6 +51,18 @@
   gap: var(--sp-6);
 }
 
+/* A try-on's two images, the photograph beside the look (TryOnGroup.tsx); no board draws them. */
+.pair {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.kept {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}
+
 /* The loading block each photograph fades in over; an angle not taken stays as it is. */
 .cell {
   display: block;

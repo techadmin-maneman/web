@@ -1565,10 +1565,81 @@
               ],
               "additionalProperties": false
             }
+          },
+          "try_ons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TryOn"
+            },
+            "description": "The client's try-ons with a photograph or a look still held, newest first."
           }
         },
         "required": [
-          "visits"
+          "visits",
+          "try_ons"
+        ],
+        "additionalProperties": false
+      },
+      "TryOn": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "made_on": {
+            "type": "string",
+            "format": "date",
+            "description": "India's date the look was asked for."
+          },
+          "photo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TryOnLink"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The photograph the client uploaded on the site, while it is held; null once deleted, and on a second look of the same photograph, which shows it once."
+          },
+          "look": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TryOnLink"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The look made from it, once made and until it is deleted; null while it is still being made."
+          }
+        },
+        "required": [
+          "id",
+          "made_on",
+          "photo",
+          "look"
+        ],
+        "additionalProperties": false,
+        "description": "A try-on the site's gate claimed with the client's number (ADR 0082). A failed one is left out."
+      },
+      "TryOnLink": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Lasts 15 minutes; only the signed-in client can open it."
+          },
+          "kept_until": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the try-on's retention rule lets it go: a photograph an hour after the last look asked of it, a look the days the site keeps it for (RESULT_RETENTION_DAYS, ADR 0039). Deleted within minutes after."
+          }
+        },
+        "required": [
+          "url",
+          "kept_until"
         ],
         "additionalProperties": false
       },
@@ -3951,10 +4022,10 @@
     },
     "/api/photos": {
       "get": {
-        "summary": "The client's photographs, by visit, newest first",
+        "summary": "The client's photographs, by visit, newest first, and their try-ons",
         "responses": {
           "200": {
-            "description": "Visits that have photographs",
+            "description": "Visits that have photographs, and try-ons still held",
             "content": {
               "application/json": {
                 "schema": {
@@ -4102,6 +4173,80 @@
           },
           "404": {
             "description": "not_found: the link is wrong, expired, or not this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/photos/try-on/{image}/{token}": {
+      "get": {
+        "summary": "A try-on's photograph or look, through a link that lasts 15 minutes",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "photo",
+                "look"
+              ]
+            },
+            "required": true,
+            "name": "image",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: the link is wrong, expired, or not this client's, or the image is deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: today's result-read ceiling is reached",
             "content": {
               "application/json": {
                 "schema": {

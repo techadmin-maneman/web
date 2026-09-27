@@ -25,6 +25,7 @@ export type VisitDetail = Schemas["VisitDetail"];
 export type PhotoLink = Schemas["PhotoLink"];
 export type PhotoSet = Schemas["PhotoSet"];
 export type PhotoTimeline = Schemas["PhotoTimeline"];
+export type TryOn = Schemas["TryOn"];
 export type Angle = PhotoLink["angle"];
 export type Entry = Schemas["PaymentEntry"] | Schemas["RefundEntry"];
 export type CreditLine = Schemas["CreditLine"];
