@@ -96,7 +96,9 @@ test.describe("upload", () => {
   test("a photograph too small for the API is refused before anything is sent", async ({ page }) => {
     const calls: string[] = [];
     page.on("request", (request) => {
-      if (request.url().includes("/api/tryon/")) calls.push(request.url());
+      // On arrival the page asks whether this browser has had its look (CLI-29); the photograph never leaves.
+      if (request.url().includes("/api/tryon/") && !request.url().endsWith("/api/tryon/look"))
+        calls.push(request.url());
     });
     await open(page, "upload");
     await page.locator('input[type="file"]').first().setInputFiles(TINY_JPEG);
@@ -211,6 +213,27 @@ test.describe("result", () => {
     await expect(page.getByRole("button", { name: "WhatsApp" })).toBeVisible();
     await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after fourteen days.")).toBeVisible();
     await expect(page.getByText("Try another look")).toHaveCount(0);
+  });
+
+  // CLI-28: the words were centred on the whole frame, so the photograph beside them and the handle hid half.
+  test("while the render runs, the after side's words show whole, clear of the handle", async ({ page }) => {
+    await page.goto("/try?state=result&kind=pending");
+    await page.waitForFunction(() => document.querySelectorAll("astro-island[ssr]").length === 0);
+    const slider = page.getByRole("slider");
+    const words = page.getByText("Still working on it", { exact: true }).first();
+    await expect(words).toBeVisible();
+    // Where the slider starts, and dragged towards the photograph: the words follow the handle.
+    for (const position of ["50", "30"]) {
+      await slider.fill(position);
+      // The handle is drawn just before the input that works it (BeforeAfter.tsx).
+      const frame = await slider.evaluate((input) => ({
+        handleRight: input.previousElementSibling?.getBoundingClientRect().right ?? 0,
+        right: input.getBoundingClientRect().right,
+      }));
+      const box = await words.boundingBox();
+      expect(box?.x ?? 0, `handle at ${position}%`).toBeGreaterThan(frame.handleRight);
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(frame.right);
+    }
   });
 });
 

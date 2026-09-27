@@ -2,7 +2,7 @@
 // AILabTools stub (playwright.config.ts): a drawn photograph goes up, is
 // rendered, and the gate is submitted while the render is still running.
 
-import { drawnHeadPhoto, expect, fakeTurnstile, randomMobile, test, throughToGenerate, visit } from "./support.ts";
+import { expect, fakeTurnstile, randomMobile, test, throughToGenerate, visit } from "./support.ts";
 
 // One at a time, as for bookings: each upload makes the API verify a Turnstile token.
 test.describe.configure({ mode: "serial" });
@@ -58,16 +58,16 @@ test("the browser that has had its look is shown it again, not a second render",
   await throughToGenerate(page);
   expect((await generated).status()).toBe(202);
 
-  // The render set the mm_look cookie; a second photograph is refused, and the first look shown.
+  // The render set the mm_look cookie, so the page asks on arrival and shows the first look before a photograph is
+  // chosen (CLI-29). The API's refusal of a second photograph is test/worker/tryon-api.test.ts's.
+  const uploads: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/api/tryon/upload-url")) uploads.push(request.url());
+  });
+  const asked = page.waitForResponse("**/api/tryon/look");
   await visit(page, "/try");
-  await page
-    .locator('input[type="file"]')
-    .first()
-    .setInputFiles(await drawnHeadPhoto());
-  await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  const refused = page.waitForResponse("**/api/tryon/upload-url");
-  await page.getByRole("button", { name: "Continue" }).click();
-  expect((await refused).status()).toBe(403);
+  expect((await asked).status()).toBe(200);
   await expect(page.getByRole("heading", { name: "The look you had." })).toBeVisible();
   await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible({ timeout: 90_000 });
+  expect(uploads).toEqual([]);
 });

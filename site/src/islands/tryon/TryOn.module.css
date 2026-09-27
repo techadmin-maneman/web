@@ -604,7 +604,8 @@
   line-height: 1.65;
   color: var(--ink-soft);
 }
-/* The after side while the render is still running, in the gate's colours. */
+/* The after side while the render is still running, in the gate's colours. Beside the photograph, BeforeAfter
+   keeps its words in the part left showing (CLI-28), where they may take two lines. */
 .pending {
   position: absolute;
   inset: 0;
@@ -613,6 +614,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--sp-14);
+  text-align: center;
   background: var(--ink-raised);
   color: var(--ink-muted);
   font-size: var(--fs-15);

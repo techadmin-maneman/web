@@ -18,6 +18,7 @@ const PAGES = [
   "/try?state=gate",
   "/try?state=result",
   "/try?state=result&kind=returning",
+  "/try?state=result&kind=pending",
   "/try?state=error",
   "/try?state=error&kind=lookLimit",
   "/book",

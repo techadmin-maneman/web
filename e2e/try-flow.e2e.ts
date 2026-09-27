@@ -201,10 +201,33 @@ test("the number is optional: an empty gate shows the result, and no lead is mad
   expect(named(seen, "claim")).toHaveLength(0);
 });
 
+const OWN_LOOK: Answer = {
+  status: 200,
+  json: { job_id: JOB, state: "ready", stage: "receding", preset: "light-natural-short" },
+};
+
+// CLI-29: the visitor used to choose a photograph and agree to its use before being told they had had their look.
+test("a visitor who has had their look is shown it on arrival, before choosing a photograph", async ({ page }) => {
+  const seen = await mockApi(page, {
+    look: OWN_LOOK,
+    result: {
+      status: 200,
+      json: { url: "/api/result/signed", expires_at: new Date(Date.now() + 300_000).toISOString() },
+    },
+  });
+  await visit(page, "/try");
+  await expect(page.getByRole("heading", { name: "The look you had." })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
+  await expect(page.getByText("Light density · Natural hairline · short")).toBeVisible();
+  expect(named(seen, "uploadUrl")).toHaveLength(0);
+  expect((await analyticsEvents(page)).map(([name]) => name)).toEqual([]);
+});
+
+// The look made after the page opened, in another tab: the upload is refused, and the look shown.
 test("a visitor who has had their look is shown it again", async ({ page }) => {
   const seen = await mockApi(page, {
     uploadUrl: refusal(403, "look_limit_reached"),
-    look: { status: 200, json: { job_id: JOB, state: "ready", stage: "receding", preset: "light-natural-short" } },
+    look: [refusal(404, "not_found"), OWN_LOOK],
     result: {
       status: 200,
       json: { url: "/api/result/signed", expires_at: new Date(Date.now() + 300_000).toISOString() },
