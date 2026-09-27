@@ -50,7 +50,7 @@ async function queuedJob(
 function job(id: string) {
   return env.DB.prepare(
     `SELECT state, failure_code, provider_task_id, provider_result_url, result_key, latency_ms, download_attempts,
-            provider_error_detail
+            provider_error_detail, expires_at
      FROM tryon_jobs WHERE id = ?`,
   )
     .bind(id)
@@ -99,6 +99,25 @@ describe("render: the happy path", () => {
     expect(done?.provider_result_url).toMatch(/^https:\/\/ailab-outputs\./);
     expect((await env.RESULTS.head("results/pro-job.png"))?.httpMetadata?.contentType).toBe("image/png");
     expect(submit).toHaveBeenCalledOnce();
+  });
+
+  // REQ-S2-03: nothing checked the date a result is deleted by, so a slip could keep one past what the notice promises.
+  it("keeps a ready result for the retention days set, counted from the moment it is ready and no longer", async () => {
+    for (const [id, days] of [
+      ["kept-3", 3],
+      ["kept-30", 30],
+    ] as const) {
+      const time = clock();
+      const deps = fakeDependencies({ now: time.now, image: countingImage(time.now).image });
+      await queuedJob(id);
+      await advanceJob(renderEnv(), deps, log, id, { resultRetentionDays: days });
+      time.advance(STUB_RENDER_MS.pro);
+      await advanceJob(renderEnv(), deps, log, id, { resultRetentionDays: days });
+
+      const ready = await job(id);
+      expect(ready?.state).toBe("ready");
+      expect(ready?.expires_at).toBe(new Date(time.now().getTime() + days * 24 * 60 * 60 * 1000).toISOString());
+    }
   });
 
   it("renders a Premium job with color=original", async () => {

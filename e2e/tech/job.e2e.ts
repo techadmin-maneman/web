@@ -130,7 +130,7 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
 
 test("keeps Close as no-show dim and outlined beside the gold Start job until the wait has run", async ({ page }) => {
   const fake = await fakeTech(page);
-  fake.waitMinutes = 4 / 60;
+  fake.waitLeftMs = 4_000;
   await arrive(page);
 
   const close = page.getByRole("button", { name: "Close as no-show" });
@@ -148,7 +148,7 @@ test("keeps Close as no-show dim and outlined beside the gold Start job until th
 
 test("asks before closing as a no-show, since ops may charge the client", async ({ page }) => {
   const fake = await fakeTech(page);
-  fake.waitMinutes = 1 / 60;
+  fake.waitLeftMs = 1_000;
   fake.reminderDelivered = new Date().toISOString();
   await arrive(page);
 
@@ -183,7 +183,7 @@ test("asks before closing as a no-show, since ops may charge the client", async 
 
 test("a no-show the API refuses as early stays open on the card, and never reads as done", async ({ page }) => {
   const fake = await fakeTech(page);
-  fake.waitMinutes = 1 / 60;
+  fake.waitLeftMs = 1_000;
   fake.tooEarly = true;
   await arrive(page);
 

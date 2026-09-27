@@ -301,8 +301,8 @@ test("starts one number change, and checks the codes once, however often each is
   await check.click();
   const checkLive = await check.isEnabled();
   await check.click({ force: true });
-  await expect.poll(checks.asked, { timeout: 15_000 }).toBeGreaterThanOrEqual(2);
-  await page.waitForTimeout(2_500); // a second pair, tapped the same second, would have landed by now
+  // Both numbers checked: a second pair, tapped the same second, was let go with the first (e2e/app/one-tap.ts).
+  await expect(page.getByText(/^We will confirm the change to /)).toBeVisible({ timeout: 15_000 });
 
   expect({ starts: starts.asked(), checks: checks.asked(), startLive, checkLive }).toEqual({
     starts: 1,

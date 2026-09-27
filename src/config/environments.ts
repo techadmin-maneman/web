@@ -91,9 +91,13 @@ export const OPS_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
   production: `https://${SURFACE_HOSTS.production.ops}`,
 };
 
-/** Where links in messages point, e.g. a WhatsApp copy's result link. */
+/**
+ * Where links in messages point, e.g. a WhatsApp copy's result link or an invite. Locally the site is on :4321
+ * (npm run dev:all, and the browser tests), which serves /r/:code and passes /api/* to mm-api; mm-api's own :8787
+ * has no pages.
+ */
 export const PUBLIC_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
-  local: "http://localhost:8787",
+  local: "http://localhost:4321",
   staging: "https://staging.maneman.in",
   production: "https://maneman.in",
 };

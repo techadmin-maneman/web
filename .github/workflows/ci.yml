@@ -119,10 +119,13 @@ jobs:
 
       - name: Dependency audit
         run: npm audit --audit-level=high
+      # npm now and then fails this with EMISSINGSIGNATUREKEY, a registry blip a re-run clears. So it tries once
+      # more after a failure, and a second failure fails the step (test/node/ci-workflow.test.ts).
       - name: Registry signatures
-        run: npm audit signatures
+        run: npm audit signatures || { echo "::warning::the signatures did not verify; trying once more"; sleep 15; npm audit signatures; }
 
-  # One run of the whole suite, so coverage still measures all of src/ at 85%.
+  # One run of the whole suite, so coverage still measures all of src/: 90% of lines and 80% of branches, with
+  # floors of their own for the vendor clients (vitest.config.ts).
   # It runs whatever changed: it covers src/ and the migrations, and a config
   # change can break it.
   tests:
@@ -134,7 +137,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Unit and contract tests, 85% line coverage on src/
+      - name: Unit and contract tests, coverage of lines and branches on src/
         run: npm run test:coverage
 
   # Migrations run before code, so the code now deployed runs on this branch's schema until the deploy, and

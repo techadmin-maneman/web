@@ -73,7 +73,8 @@ describe("messaging: sending a result", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun Mehta"] });
     const link = new URL(sent[0]?.mediaUrl ?? "");
-    expect(link.origin).toBe("http://localhost:8787");
+    // The site answers /api/* on its own origin, locally at :4321 as the browser tests serve it (LIFE-17).
+    expect(link.origin).toBe("http://localhost:4321");
     const token = link.pathname.replace("/api/result/", "");
     const key = LOCAL_SETTINGS.tryon.linkSigningKey;
     expect(await verifyToken(key, "result", token, new Date(NOW.getTime() + 59 * 60_000))).toBe("results/job.png");

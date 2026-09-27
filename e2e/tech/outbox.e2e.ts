@@ -46,6 +46,54 @@ test("holds a step taken with no signal, and replays it when the signal returns"
   await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
 });
 
+// REQ-14: a whole job worked with no signal, from Start job to the outcome, reaches the API in the order it was
+// done once the signal returns, each write once, with the photographs behind it.
+test("replays a whole job worked with no signal, in the order it was done, once the signal returns", async ({
+  page,
+  context,
+}) => {
+  const fake = await fakeTech(page);
+  await intoTheBasement(page, context, fake);
+  const capture = page.getByRole("button", { name: "Capture" });
+  const photograph = async () => {
+    await expect(capture).toBeEnabled();
+    for (let angle = 1; angle <= 5; angle += 1) {
+      await capture.click();
+      await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    }
+    await page.getByRole("button", { name: "Done" }).click();
+  };
+
+  await page.getByRole("button", { name: "Start job" }).click();
+  await photograph();
+  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  for (const item of await page.getByRole("button", { name: /PLACEHOLDER/ }).all()) await item.click();
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Consumables used" })).toBeVisible();
+  await page.getByRole("button", { name: "One more tape strips" }).click();
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+  await photograph();
+  await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByRole("button", { name: "Next" }).click();
+
+  // All of it is on the phone, and none of it has reached the API but the check-in made before the basement.
+  const sentBefore = fake.writes.map((write) => write.path);
+  expect(sentBefore).toEqual([`/api/tech/jobs/${JOB_ID}/checkin`]);
+  expect(await heldOnPhone(page)).toMatchObject({ outbox: 6, frames: 10 });
+
+  fake.online = true;
+  await context.setOffline(false);
+  await expect.poll(async () => (await heldOnPhone(page)).outbox, { timeout: 30_000 }).toBe(0);
+
+  const sent = fake.writes.map((write) => write.path.replace(`/api/tech/jobs/${JOB_ID}`, ""));
+  expect(sent).toEqual(["/checkin", "/start", "/photos", "/checklist", "/consumables", "/photos", "/outcome"]);
+  expect(new Set(fake.writes.map((write) => write.eventId)).size).toBe(fake.writes.length);
+  await expect.poll(() => fake.photos.length, { timeout: 30_000 }).toBe(10);
+  expect(fake.progress.outcome).toBe("done");
+});
+
 test("warns when the phone will not promise to keep the queue, and says how long it has waited", async ({
   page,
   context,

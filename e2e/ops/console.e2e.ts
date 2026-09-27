@@ -52,7 +52,7 @@ test("says who is signed in, as board A1 draws them at the header's right", asyn
 
 test("signs out through Access, where Access stands in front", async ({ page }) => {
   await answer(page, {
-    "/api/whoami": json({ signed_in_as: "aditya.kumar@maneman.in", sign_out: "/cdn-cgi/access/logout" }),
+    "GET /api/whoami": json({ signed_in_as: "aditya.kumar@maneman.in", sign_out: "/cdn-cgi/access/logout" }),
   });
   await page.goto("/");
   const header = page.getByRole("banner");

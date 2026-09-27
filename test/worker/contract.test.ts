@@ -12,6 +12,15 @@ import techDocument from "../../docs/openapi-tech.json";
 import publicDocument from "../../docs/openapi.json";
 import { buildOpenApiDocument, readResponse, renderApiMarkdown, type DocumentedSurface } from "../../src/openapi.ts";
 
+/** A schema as far as this test reads one: a reference, or an object's fields and whether it allows others. */
+interface Part {
+  readonly $ref?: string;
+  readonly properties?: Readonly<Record<string, unknown>>;
+  readonly additionalProperties?: unknown;
+}
+
+const refName = (ref: string) => ref.replace("#/components/schemas/", "");
+
 const COMMITTED: readonly [DocumentedSurface, unknown, string][] = [
   ["public", publicDocument, publicMarkdown],
   ["client", clientDocument, clientMarkdown],
@@ -43,5 +52,22 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
     expect(Object.keys(generated.components?.schemas ?? {})).toEqual(
       expect.arrayContaining(["Health", "ErrorResponse"]),
     );
+  });
+
+  it("describes no answer as closed parts joined by allOf, which no real answer could ever meet", () => {
+    // A closed part refuses every field another part adds, so a validator would reject each real response.
+    const generated = buildOpenApiDocument(surface);
+    const components: Readonly<Record<string, Part>> = generated.components?.schemas ?? {};
+    const resolve = (part: Part): Part => (part.$ref === undefined ? part : (components[refName(part.$ref)] ?? part));
+    const refuses = (closed: Part, other: Part) =>
+      closed.additionalProperties === false &&
+      Object.keys(other.properties ?? {}).some((field) => !(field in (closed.properties ?? {})));
+    const unmeetable: string[] = [];
+    JSON.stringify(generated, (key, value: unknown) => {
+      const parts = key === "allOf" && Array.isArray(value) ? (value as Part[]).map(resolve) : [];
+      if (parts.some((closed) => parts.some((other) => refuses(closed, other)))) unmeetable.push(JSON.stringify(value));
+      return value;
+    });
+    expect(unmeetable).toEqual([]);
   });
 });

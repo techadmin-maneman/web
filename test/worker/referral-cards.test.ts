@@ -198,7 +198,7 @@ describe("the waitlist and a launch", () => {
     expect(message).toEqual({ person_id: FRIEND, kind: "launch_alert", subject_id: "400050" });
     const composed = await composeLaunchAlert(env.DB, "400050", FRIEND, "local");
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Karan, we now come to Bandra. Your free consultation can be booked here: http://localhost:8787/book",
+      "Hello Karan, we now come to Bandra. Your free consultation can be booked here: http://localhost:4321/book",
     );
 
     // Launched again: nobody is told twice.

@@ -167,6 +167,41 @@ const indexing: Check = async ({ options, api, site }) => {
   return "noindex on site and API";
 };
 
+/**
+ * The pages the site's Worker answers before its assets (run_worker_first in site/wrangler.jsonc). It serves each
+ * through its assets binding, which keeps the rules of the site's _headers; nothing else would notice if a change to
+ * the Worker lost them. Any invite code will do: the Worker serves the built page for every one.
+ */
+const WORKER_PAGES = ["/", "/book", "/r/SMOKE0"] as const;
+
+/** The only words on the page production serves until the site goes live there, which has no _headers. */
+const PRODUCTION_PLACEHOLDER = "Placeholder for the production site";
+
+/** Each page the site's Worker answers first keeps the site's security headers, and outside production its noindex. */
+const siteSecurityHeaders: Check = async ({ options, site }) => {
+  for (const path of WORKER_PAGES) {
+    const response = await site(path);
+    const html = await response.text();
+    if (options.environment === "production" && html.includes(PRODUCTION_PLACEHOLDER)) {
+      return "production still serves its placeholder (docs/frontend.md, Going live in production)";
+    }
+    assert(response.status === 200, `${path} answered ${String(response.status)}`);
+    const headers = response.headers;
+    const policy = headers.get("content-security-policy") ?? "";
+    assert(
+      policy.includes("default-src 'self'") && policy.includes("frame-ancestors 'none'"),
+      `${path} has Content-Security-Policy "${policy}"`,
+    );
+    const transport = headers.get("strict-transport-security") ?? "";
+    assert(transport.includes("max-age="), `${path} has Strict-Transport-Security "${transport}"`);
+    const sniffing = headers.get("x-content-type-options") ?? "";
+    assert(sniffing === "nosniff", `${path} has X-Content-Type-Options "${sniffing}"`);
+    const robots = headers.get("x-robots-tag") ?? "";
+    assert(options.environment === "production" || robots.includes("noindex"), `${path} is not noindex`);
+  }
+  return `the policy, HSTS and nosniff on ${WORKER_PAGES.join(", ")}`;
+};
+
 /** A Phase 2 surface's host serves none of the public site's routes. */
 const publicRoutesAbsent: Check = async ({ api }) => {
   const response = await api("/api/cities");
@@ -222,6 +257,7 @@ export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["mm-api cities", cities],
   ["mm-site routing", siteRouting],
   ["indexing", indexing],
+  ["site security headers", siteSecurityHeaders],
 ];
 
 /** For the client, ops and technician hosts: mm-api on the host, and the app the host serves. */

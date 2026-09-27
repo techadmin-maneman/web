@@ -38,7 +38,8 @@ export default defineConfig({
   },
   server: {
     port: 5174,
-    // As Cloudflare routes /api/* on the console's host to mm-api, keeping the host.
-    proxy: { "/api": { target: "http://127.0.0.1:8787", changeOrigin: false } },
+    // As Cloudflare routes /api/* on the console's host to mm-api, keeping the host. MM_API_PORT moves mm-api
+    // (scripts/lib/local-stack.ts).
+    proxy: { "/api": { target: `http://127.0.0.1:${process.env.MM_API_PORT ?? "8787"}`, changeOrigin: false } },
   },
 });

@@ -5,6 +5,7 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
+import { API_ORIGIN } from "../../scripts/lib/local-stack.ts";
 import { holdOpen } from "./one-tap.ts";
 
 const CODE = "246810";
@@ -13,7 +14,7 @@ const WRONG = "135791";
 /** Books a consultation through the public site's API, so the number may log in. */
 async function booked(request: APIRequestContext, name = "Rohit Malhotra"): Promise<string> {
   const mobile = randomMobile();
-  const response = await request.post("http://127.0.0.1:8787/api/lead", {
+  const response = await request.post(`${API_ORIGIN}/api/lead`, {
     data: {
       name,
       mobile,

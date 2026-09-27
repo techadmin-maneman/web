@@ -69,7 +69,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 
 ### The reconciliation (P2-M2.3)
 
-The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcile-fsm.ts`, migration 0012). It runs with the sweeper on the existing five-minute cron, and adds no cron of its own. It only puts appointments on the `fsm-sync` queue: the consumer reads them afresh, as it does for a webhook.
+The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcile-fsm.ts`, migration 0012). It runs with the sweeper on the existing five-minute cron, and adds no cron of its own, and only against the real FSM: the stub keeps no appointment, so it would read every visit as deleted (ADR 0075). It only puts appointments on the `fsm-sync` queue: the consumer reads them afresh, as it does for a webhook.
 
 - **Every run** reads the first page of FSM's appointments, the 50 changed most recently, and queues each whose copy is missing or older than FSM's. A missed webhook is repaired within five minutes.
 - **Every run also** queues two upcoming visits, the ones read longest ago, so that an appointment deleted in FSM, which is on no page, leaves the mirror within hours rather than the next night (added 25 September 2026, audit finding INT-09). The consumer's read costs FSM about 580 calls a day.
