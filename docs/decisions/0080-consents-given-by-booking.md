@@ -1,6 +1,6 @@
 # 0080. The photograph consents, given by booking
 
-- Status: accepted, for counsel to confirm before production (`docs/open-points.md`, item 145)
+- Status: accepted, for counsel to confirm before production (`docs/open-points.md`, item 146)
 - Date: 2026-09-27
 - Amends [0042](0042-client-profile.md), whose consents were given only by the profile's switch, and [0048](0048-referrals.md), whose invite named a referrer only on the profile's notice; follows [0049](0049-dpdp.md) and records the owner's ruling of 27 September 2026 (ADR 0025, item 61)
 
@@ -35,7 +35,7 @@ Both lines read "By booking this visit, you also agree to …", the card's five 
 
 ## Consequences
 
-- **Counsel confirms this before production** (open point 145): whether a consent the booking cannot be made without is "free" and "unconditional" under s.6(1), or the pay step needs a way to decline each purpose; and the lines. The owner approves the words, placeholders in `apps/app/src/content.ts`.
+- **Counsel confirms this before production** (open point 146): whether a consent the booking cannot be made without is "free" and "unconditional" under s.6(1), or the pay step needs a way to decline each purpose; and the lines. The owner approves the words, placeholders in `apps/app/src/content.ts`.
 - A client who books in the app is named on their invite, and their card may carry their photographs, without opening the share sheet's F3; the lines telling them so were on the pay step.
 - A client who booked before this, or books on the site or through ops, is asked as before: in Profile, or in the share sheet.
 - The pay step is taller for a client who has decided neither purpose; boards C4 and C5 are shot with both decided and are unchanged (`docs/fidelity-method.md`).

@@ -7,11 +7,9 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useState } from "react";
 import { api, type Refer } from "../api.ts";
-import { empty, refer } from "../content.ts";
+import { refer } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
-import { EmptyState } from "../home/TabScreens.tsx";
 import { CREDITS_PER_REFERRAL } from "../lib/referral.ts";
-import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ShareButton } from "./ReferScreen.tsx";
@@ -148,10 +146,9 @@ function Tracker() {
 }
 
 export function TrackerScreen() {
-  const { me } = useSession();
   return (
     <Shell header={{ kind: "back", title: refer.fitted.title, to: "/refer", label: refer.fitted.back }} tab="/refer">
-      {me.state === "fitted" ? <Tracker /> : <EmptyState lines={empty.refer.lines} />}
+      <Tracker />
     </Shell>
   );
 }
