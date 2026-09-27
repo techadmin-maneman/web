@@ -26,7 +26,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { codeGate, countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { MAX_SENDS_PER_CHALLENGE, newCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
+import { MAX_SENDS_PER_CHALLENGE, newLoginCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 
 export const LoginChallengeSchema = z
@@ -170,7 +170,7 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   const sendsTo = person?.mobileE164 ?? null;
   if (!(await countCode(c, sendsTo, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = limits.fixedCode ?? newCode();
+  const code = limits.fixedCode ?? newLoginCode();
   const challenge = await createChallenge(db, { personId: person?.id ?? null, code, pepper: limits.codePepper, now });
   await sendCodeAfterResponse(c, sendsTo, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
@@ -195,7 +195,7 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   const sendsTo = await mobileOf(db, challenge.personId);
   if (!(await countCode(c, sendsTo, ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = config.settings.login.fixedCode ?? newCode();
+  const code = config.settings.login.fixedCode ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
   await sendCodeAfterResponse(c, sendsTo, channel, code);
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };

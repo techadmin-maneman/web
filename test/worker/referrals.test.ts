@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
-import { newCode } from "../../src/domain/referrals.ts";
+import { newReferralCode } from "../../src/domain/referrals.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/razorpay.ts";
@@ -67,11 +67,11 @@ beforeEach(async () => {
 
 describe("referral codes", () => {
   it("are the client's initials and four random characters, with none that look alike", () => {
-    const codes = Array.from({ length: 500 }, () => newCode("Rohit Malhotra"));
+    const codes = Array.from({ length: 500 }, () => newReferralCode("Rohit Malhotra"));
     expect(codes.every((code) => /^RM[A-HJ-NP-Z2-9]{4}$/.test(code))).toBe(true);
     expect(new Set(codes).size).toBeGreaterThan(450);
-    expect(newCode("")).toMatch(/^MM[A-HJ-NP-Z2-9]{4}$/);
-    expect(newCode("Ishaan Oberoi")).toMatch(/^XX/);
+    expect(newReferralCode("")).toMatch(/^MM[A-HJ-NP-Z2-9]{4}$/);
+    expect(newReferralCode("Ishaan Oberoi")).toMatch(/^XX/);
   });
 
   it("are made once, and give the invite link, the balance and the fitted friends", async () => {

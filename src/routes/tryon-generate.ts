@@ -15,7 +15,7 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { chooseRender } from "../domain/render-choice.ts";
 import { failJob, loadJob, type JobRow, type RenderChoice } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { setLookCookie } from "../http/session.ts";
+import { setLookCookie } from "../http/tryon-session.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaHour } from "../lib/india-time.ts";
 import type { RenderMessage } from "../queues/render.ts";

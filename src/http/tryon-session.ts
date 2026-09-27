@@ -6,7 +6,7 @@
 import type { Context } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import type { AppEnv } from "./context.ts";
-import { LOOK_COOKIE, LOOK_COOKIE_TTL_MS, SESSION_COOKIE, SESSION_TTL_MS } from "../config/tryon.ts";
+import { LOOK_COOKIE, LOOK_COOKIE_TTL_MS, SESSION_COOKIE, TRYON_SESSION_TTL_MS } from "../config/tryon.ts";
 import { loadSession, type SessionRow } from "../domain/tryon.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
 
@@ -25,7 +25,7 @@ export function setSessionCookie(c: Context<AppEnv>, sessionId: string): void {
     secure: true,
     sameSite: "Strict",
     path: "/api/tryon",
-    maxAge: SESSION_TTL_MS / 1000,
+    maxAge: TRYON_SESSION_TTL_MS / 1000,
   });
 }
 

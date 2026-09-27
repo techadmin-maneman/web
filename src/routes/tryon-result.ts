@@ -19,7 +19,7 @@ import {
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { loadJob } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { currentSession, lookCookieJob } from "../http/session.ts";
+import { currentSession, lookCookieJob } from "../http/tryon-session.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
 
 export const ResultReadySchema = z

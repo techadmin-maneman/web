@@ -1,12 +1,12 @@
 // The CRM, behind an interface. Callers use CrmProvider; only this file knows
-// which implementation runs, and only src/providers/zoho.ts knows Zoho.
+// which implementation runs, and only src/providers/zoho-crm.ts knows Zoho.
 
 import type { LossExtent, VisitWindow } from "../config/booking.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { ZohoSettings } from "../config/settings.ts";
 import type { Logger } from "../log.ts";
 import { assertStatusAllowed, statusForNewRecord, statusForUpdate } from "./crm-rules.ts";
-import { createZohoCrm } from "./zoho.ts";
+import { createZohoCrm } from "./zoho-crm.ts";
 import type { ZohoRequesterDependencies } from "./zoho-http.ts";
 
 export type LeadSource = "form" | "waitlist" | "tryon";

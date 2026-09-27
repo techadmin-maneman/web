@@ -35,7 +35,7 @@ import {
 } from "../http/technician-session.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { newCode } from "../policy/one-time-code.ts";
+import { newLoginCode } from "../policy/one-time-code.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
@@ -176,7 +176,7 @@ export function registerTechAuth(app: App): void {
     const sendsTo = technician?.mobileE164 ?? null;
     if (!(await countCode(c, sendsTo, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-    const code = limits.fixedCode ?? newCode();
+    const code = limits.fixedCode ?? newLoginCode();
     const challenge = await createTechnicianChallenge(db, {
       technicianId: technician?.id ?? null,
       code,

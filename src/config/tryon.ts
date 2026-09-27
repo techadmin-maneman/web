@@ -54,9 +54,9 @@ export const MIN_SIDE_PX = 200;
 export const MAX_SIDE_PX = 4090;
 
 /** How long the upload link from POST /api/tryon/upload-url works. */
-export const UPLOAD_LINK_TTL_MS = 5 * MINUTE_MS;
+export const TRYON_UPLOAD_LINK_TTL_MS = 5 * MINUTE_MS;
 /** The mm_tryon cookie and its session. */
-export const SESSION_TTL_MS = 30 * MINUTE_MS;
+export const TRYON_SESSION_TTL_MS = 30 * MINUTE_MS;
 export const SESSION_COOKIE = "mm_tryon";
 /** One look per visitor: the browser remembers its render this long, the photos' retention period. */
 export const LOOK_COOKIE = "mm_look";

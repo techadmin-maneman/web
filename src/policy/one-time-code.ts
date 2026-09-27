@@ -25,7 +25,7 @@ export const CODE_TTL_MS = 10 * MINUTE_MS;
 export const MAX_SENDS_PER_CHALLENGE = 5;
 
 /** Six random digits, each equally likely. */
-export function newCode(): string {
+export function newLoginCode(): string {
   const limit = 4_294_000_000; // the largest multiple of 1,000,000 under 2^32, so no code is likelier than another
   const value = new Uint32Array(1);
   do crypto.getRandomValues(value);

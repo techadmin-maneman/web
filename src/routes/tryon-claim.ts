@@ -13,12 +13,12 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
-import { SESSION_TTL_MS } from "../config/tryon.ts";
+import { TRYON_SESSION_TTL_MS } from "../config/tryon.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob, loadSession, recordEvent, type JobRow } from "../domain/tryon.ts";
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
-import { setSessionCookie } from "../http/session.ts";
+import { setSessionCookie } from "../http/tryon-session.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -189,7 +189,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
         ),
       db
         .prepare(`INSERT INTO tryon_sessions (id, person_id, created_at, expires_at) VALUES (?, ${personId}, ?, ?)`)
-        .bind(sessionId, mobileE164, at, new Date(now.getTime() + SESSION_TTL_MS).toISOString()),
+        .bind(sessionId, mobileE164, at, new Date(now.getTime() + TRYON_SESSION_TTL_MS).toISOString()),
       db
         .prepare(`UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, session_id = ? WHERE id = ?`)
         .bind(mobileE164, leadId, sessionId, job.id),
@@ -250,7 +250,7 @@ async function reclaim(c: Context<AppEnv>, job: JobRow, mobileE164: string): Pro
   await db.batch([
     db
       .prepare("INSERT INTO tryon_sessions (id, person_id, created_at, expires_at) VALUES (?1, ?2, ?3, ?4)")
-      .bind(sessionId, owner.id, now.toISOString(), new Date(now.getTime() + SESSION_TTL_MS).toISOString()),
+      .bind(sessionId, owner.id, now.toISOString(), new Date(now.getTime() + TRYON_SESSION_TTL_MS).toISOString()),
     db.prepare("UPDATE tryon_jobs SET session_id = ?1 WHERE id = ?2").bind(sessionId, job.id),
   ]);
   return {

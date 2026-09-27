@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   attemptsLeft,
   CODE_TTL_MS,
-  newCode,
+  newLoginCode,
   ONE_TIME_CODE,
   RULES,
   smsOfferedAt,
@@ -15,7 +15,7 @@ const AT = new Date("2026-09-22T10:00:00Z");
 
 describe("the one-time code", () => {
   it(RULES[0], () => {
-    const codes = Array.from({ length: 2_000 }, newCode);
+    const codes = Array.from({ length: 2_000 }, newLoginCode);
     expect(codes.every((code) => /^\d{6}$/.test(code))).toBe(true);
     expect(codes.some((code) => code.startsWith("0"))).toBe(true); // leading zeros are kept
     expect(new Set(codes).size).toBeGreaterThan(1_990);

@@ -2,7 +2,7 @@
 // to both numbers. The change then waits for ops to confirm, and takes effect
 // only after that confirmation." Each number's code is its own challenge.
 
-import { newCode } from "../policy/one-time-code.ts";
+import { newLoginCode } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { createChallenge, verifyCode, type Challenge, type Verification } from "./login.ts";
 import type { ChallengePurpose } from "./one-time-codes.ts";
@@ -138,7 +138,7 @@ export async function startNumberChange(
   ]);
 
   const codeFor = async (which: WhichNumber) => {
-    const code = options.fixedCode ?? newCode();
+    const code = options.fixedCode ?? newLoginCode();
     const challenge = await createChallenge(db, {
       personId: options.personId,
       code,

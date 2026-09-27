@@ -11,7 +11,7 @@ import { inviteLapsed } from "../policy/invites.ts";
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const RANDOM_LENGTH = 4;
 
-export function newCode(name: string): string {
+export function newReferralCode(name: string): string {
   const initials =
     name
       .split(/\s+/)
@@ -39,7 +39,7 @@ export async function referralCodeOf(db: D1Database, personId: string, name: str
         `INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)
          ON CONFLICT DO NOTHING RETURNING code`,
       )
-      .bind(newCode(name), personId, at)
+      .bind(newReferralCode(name), personId, at)
       .first<{ code: string }>();
     if (made !== null) return made.code;
     // Either the code was taken, or another request made this person's code meanwhile.
