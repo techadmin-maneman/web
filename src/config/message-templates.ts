@@ -31,15 +31,16 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // the minutes the technician waited. A charge keeps what was paid, as a cancel inside 24 hours does; a waiver
   // refunds the payment and returns the credit, as the owner ruled on 27 September 2026 (src/policy/no-show.ts,
   // WAIVER_GIVES_BACK), and the two texts that ask the client to message us stand only for the switch turned off.
-  // Never ops' reason, which stays with the ruling.
+  // Booking again is in the app, never a message to us: the owner ruled on 27 September 2026 that "Message us" is for
+  // problems only (ADR 0025, item 70). Never ops' reason, which stays with the ruling.
   no_show_missed_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. Message us to book again.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. You can book again in the Mane Man app.",
   no_show_charged_paid_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a cancel inside 24 hours, the {{6}} you paid for it is kept. Message us if this is wrong.",
   no_show_charged_credit_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a cancel inside 24 hours, the visit credit it used is gone. Message us if this is wrong.",
   no_show_waived_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us to book again.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. You can book again in the Mane Man app.",
   no_show_waived_paid_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the {{6}} you paid for it.",
   no_show_waived_credit_v1:

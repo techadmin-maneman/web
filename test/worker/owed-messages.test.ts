@@ -165,7 +165,9 @@ describe("the no-show ruling (LIFE-07)", () => {
   });
 
   it("says only that nobody was home, of a visit nothing was paid for", async () => {
-    expect((await send(await ruled("charged", "nothing"))).text).toBe(`${MISSED} Message us to book again.`);
+    expect((await send(await ruled("charged", "nothing"))).text).toBe(
+      `${MISSED} You can book again in the Mane Man app.`,
+    );
   });
 
   // A waiver gives back what the visit took, as the owner ruled on 27 September 2026 (BIZ-28).
@@ -183,7 +185,7 @@ describe("the no-show ruling (LIFE-07)", () => {
 
   it("says a waiver of a visit nothing was paid for charges nothing", async () => {
     expect((await send(await ruled("waived", "nothing"))).text).toBe(
-      `${MISSED} We are not charging you for it. Message us to book again.`,
+      `${MISSED} We are not charging you for it. You can book again in the Mane Man app.`,
     );
   });
 
