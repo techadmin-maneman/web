@@ -1,6 +1,6 @@
 # 0014. The try-on API
 
-- Status: accepted. Amended by ADR 0018: one look per visitor, so there is no second look. Amended by ADR 0039: results are kept 14 days in production.
+- Status: accepted. Amended by ADR 0018: one look per visitor, so there is no second look. Amended by ADR 0039: results are kept 14 days in production. Amended by ADR 0084: under the photo notice that keeps a client's try-on, a job writes the photograph's small copy too, once.
 - Date: 2026-09-21
 
 ## Context

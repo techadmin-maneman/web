@@ -1,6 +1,6 @@
 # 0082. A client's try-on in the app
 
-- Status: accepted, on the owner's ruling of 27 September 2026 (ADR 0025, item 63)
+- Status: accepted, on the owner's ruling of 27 September 2026 (ADR 0025, item 63). Amended the same day by [0084](0084-a-clients-try-on-is-kept.md): a client's try-on is kept, its photograph as a small copy and its look until their first fit is photographed (ADR 0025, item 65)
 - Date: 2026-09-27
 - Follows [0014](0014-try-on-api.md), [0018](0018-one-look-pro-only-lead-notices.md), [0019](0019-erasure.md), [0039](0039-phase-2-budget.md) and [0043](0043-client-app.md)
 
@@ -48,11 +48,11 @@ Each read takes from the day's result-read ceiling, as the site's result link do
 
 **Where it sits.** The try-ons stand above the visits. A client with no visit photographs yet sees the try-on and then D3's two lines, without its glyph. A client with neither sees board D3, and a fitted client without a try-on sees board D1, both unchanged.
 
-**The retention and erasure rules do not change.**
+**The retention and erasure rules do not change.** (Amended 27 September 2026 by ADR 0084: a client's try-on, under the photo notice that says so, is kept, and an erasure deletes what is kept.)
 
 ## Consequences
 
-- **The photograph is in the app for an hour at most.** A client who books after a try-on usually signs in later than that, and then sees the look alone, with "Your photograph was deleted within the hour." Keeping the photograph as long as its look would keep the notices true, which promise thirty days. But it would cost R2 room ADR 0039's budget does not have: at production's upload ceiling, 80 photographs a day of up to 5 MB each, held 14 days, is up to 5.6 GB. The owner decides (`docs/open-points.md`, item 147).
+- **The photograph is in the app for an hour at most.** (Settled 27 September 2026 by the owner, ADR 0084: a client keeps a small copy of it for good, and the look until their first fit is photographed. What follows was the case until then.) A client who books after a try-on usually signs in later than that, and then sees the look alone, with "Your photograph was deleted within the hour." Keeping the photograph as long as its look would keep the notices true, which promise thirty days. But it would cost R2 room ADR 0039's budget does not have: at production's upload ceiling, 80 photographs a day of up to 5 MB each, held 14 days, is up to 5.6 GB. The owner decided (`docs/open-points.md`, item 147, settled).
 - **Counsel should confirm the notices cover this** (open point 146):
   - the photo notice says the photograph is "Used for: Generating your simulation. Nothing else.";
   - the privacy page says a number given at the gate is used "to send you the result on WhatsApp and for nothing else".

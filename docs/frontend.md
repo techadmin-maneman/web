@@ -57,7 +57,7 @@ Every price on the site and the landing is the price book's, which ops set in th
 
 ## Approving a notice
 
-The site shows five consent notices, each the backend's, in `src/config/notices.ts`: the try-on's photograph and gate notices, the booking form's agreement on `/book` and `/r/:code`, and the waitlist's agreement and its optional launch alert (`notices` in `site/src/content/site.ts`). The page shows that text, and a consent row records its version.
+The site shows five consent notices, each the backend's, in `src/config/notices.ts`: the try-on's photograph and gate notices, the booking form's agreement on `/book` and `/r/:code`, and the waitlist's agreement and its optional launch alert (`notices` in `site/src/content/site.ts`). The page shows that text, and a consent row records its version. The try-on's two come in two versions (`tryOnPromises`, ADR 0084): production shows the approved pair, and every other build the pair that keeps a client's try-on, which awaits counsel (`TRY_ON_PROMISE`, `site/src/lib/build.ts`), with the privacy page's try-on sentences to match.
 
 - **Once counsel approves a notice,** add its version to `APPROVED_NOTICES` in `site.ts`.
 - **To change the wording,** add a new version in `src/config/notices.ts`, point `CURRENT_NOTICE` at it, and approve that version. A published version is never edited.
@@ -74,7 +74,7 @@ The site calls `mm-api` on its own host, `/api/*`. The request and response type
 - **Idempotency.** Each submission attempt sends a new `Idempotency-Key`.
 - **Attribution.** The first page of a visit stores its campaign tags, referring site and landing path in `sessionStorage` (`site/src/lib/attribution.ts`). Never a query string.
 
-- **The try-on.** `site/src/lib/tryon.ts` chains the calls. Continue on the consent screen prepares the photograph (`photo.ts`: resize, re-encode and the hair colour from `hair-colour.ts`) and uploads it; Generate starts the render once the upload is done; the gate, if the visitor gives a number, claims the result while it renders; the result screen asks for it every 3 seconds. A browser that has had its look is shown it again (`GET /api/tryon/look`, ADR 0024). `tryon-errors.ts` decides which error the visitor sees.
+- **The try-on.** `site/src/lib/tryon.ts` chains the calls. Continue on the consent screen prepares the photograph (`photo.ts`: resize, re-encode and the hair colour from `hair-colour.ts`) and uploads it, then, under the notice that keeps a client's try-on, its small copy (`@maneman/web-kit/small-jpeg`, ADR 0084); Generate starts the render once the upload is done; the gate, if the visitor gives a number, claims the result while it renders; the result screen asks for it every 3 seconds. A browser that has had its look is shown it again (`GET /api/tryon/look`, ADR 0024). `tryon-errors.ts` decides which error the visitor sees.
 
 The browser tests run the site against a local `mm-api` with stub providers (`playwright.config.ts`). Run `node scripts/ensure-dev-vars.ts && npm run db:local` once first.
 

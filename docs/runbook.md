@@ -632,20 +632,23 @@ If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RE
 
 R2's 10 GB a month is the account's, both environments together, and past it R2 bills. What fills it:
 
-| Bucket                  | What                                                                       | Kept                                                                                 |
-| ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `mm-<t>-tryon-uploads`  | Try-on photographs                                                         | Deleted within the hour; the bucket's 30-day rule behind that                        |
-| `mm-<t>-tryon-results`  | Try-on results                                                             | `RESULT_RETENTION_DAYS`: 3 on staging, 14 in production; the 30-day rule behind that |
-| `mm-<t>-client-photos`  | Visit photographs, ten a visit, from the technician app or copied from FSM | For good: deleted only by an erasure                                                 |
-| `mm-<t>-referral-cards` | One card for each referrer who made one                                    | Until its referrer revokes it or is erased                                           |
+| Bucket                            | What                                                                       | Kept                                                                                                                             |
+| --------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `mm-<t>-tryon-uploads`            | Try-on photographs                                                         | Deleted within the hour; the bucket's 30-day rule behind that                                                                    |
+| `mm-<t>-tryon-results`            | Try-on results                                                             | `RESULT_RETENTION_DAYS`: 3 on staging, 14 in production; the 30-day rule behind that                                             |
+| `mm-<t>-client-photos`            | Visit photographs, ten a visit, from the technician app or copied from FSM | For good: deleted only by an erasure                                                                                             |
+| `mm-<t>-client-photos`, `tryons/` | A try-on photograph's small copy, and a client's kept look (ADR 0084)      | The copy as long as its look; a client's for good, and their look until their first fit is photographed; an erasure deletes both |
+| `mm-<t>-referral-cards`           | One card for each referrer who made one                                    | Until its referrer revokes it or is erased                                                                                       |
 
-ADR 0039 gives the photographs and the cards 4 GB, about 1,480 visits at 250 KB a photograph, which is what the technician app sends. Two things spend it faster: a photograph copied from FSM keeps FSM's size, several MB (open point 125), and the API takes one from the technician app up to 12 MB. The storage meter ADR 0039 planned, warning at 50% and 80% of the share, has not been built. The usage notifications above, at 5 GB, are the only warning.
+ADR 0039 gives the photographs and the cards 4 GB, about 1,480 visits at 250 KB a photograph, which is what the technician app sends. A client's kept try-on is paid from the same share, and while its look is kept at full size, the share holds about 460 visits at worst (ADR 0084; open point 151). Two things spend it faster: a photograph copied from FSM keeps FSM's size, several MB (open point 125), and the API takes one from the technician app up to 12 MB. The storage meter ADR 0039 planned, warning at 50% and 80% of the share, has not been built. The usage notifications above, at 5 GB, are the only warning.
 
 Where it stands: the dashboard's R2 page gives each bucket's size, which is the figure that bills. The photographs the database knows of:
 
 ```sql
 SELECT COUNT(*) AS photographs, ROUND(SUM(bytes) / 1e9, 2) AS gb, ROUND(AVG(bytes) / 1e3) AS average_kb FROM photos;
 SELECT p.id, p.bytes, s.appointment_id FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id ORDER BY p.bytes DESC LIMIT 20;
+-- Clients' kept try-ons, and how many of their looks still wait for a first fit (ADR 0084).
+SELECT COUNT(*) AS kept_try_ons, SUM(kept_look_key IS NOT NULL) AS looks_waiting FROM tryon_jobs WHERE kept_at IS NOT NULL;
 ```
 
 A bucket much larger than its rows is holding files nothing points at any more; tell the developers.
