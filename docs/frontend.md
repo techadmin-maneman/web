@@ -1,15 +1,15 @@
 # The public site
 
-The site is an Astro build of the design (`design/Mane Man Site v2.dc.html`), served as static assets by the `mm-site` Worker, which answers first only on the pages that show a price and on the referral landing (`site/src/worker.ts`). Why it is built this way: `docs/decisions/0021-public-site.md`. Where it differs from v2: `docs/decisions/0022-site-departures-from-v2.md`.
+The site is an Astro build of the design (`design/Mane Man Site v2.dc.html`), served as static assets by the `mm-site` Worker, which answers first only on the pages that show a price and on the referral landing (`site/src/worker.ts`). Why it is built this way: `docs/decisions/0021-public-site.md`. Where it differs from v2: `docs/decisions/0022-site-departures-from-v2.md`. How it sits beside the three Phase 2 apps, and what they share: `docs/front-ends.md`.
 
 ## Running it
 
 ```sh
-npm run dev:site                       # the dev server, as local, at http://localhost:4321
-npm run build:site -- --env local      # or staging; output in site/dist/<env>
-npm run test:e2e                       # browser tests at 390 and 1440 px, against site/dist/local
-npm run fidelity                       # design and build side by side, into docs/fidelity/
-npm run check:site                     # type-checks the .astro templates
+npm run dev:site                                  # the dev server, as local, at http://localhost:4321
+npm run build:site -- --env local                 # or staging; output in site/dist/<env>
+npx playwright test --project=390 --project=1440  # the site's browser tests, against site/dist/local
+npm run fidelity                                  # design and build side by side, into docs/fidelity/
+npm run check:site                                # type-checks the .astro templates
 ```
 
 `npm run build` builds the site for local and staging before its dry runs. A production build is refused until the content is ready; see "Going live" below.
