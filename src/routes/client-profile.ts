@@ -30,6 +30,7 @@ import {
 import {
   consentsOf,
   currentAddress,
+  liveContact,
   maskedMobile,
   saveAddress,
   switchConsent,
@@ -373,10 +374,7 @@ export function registerClientProfile(app: App): void {
   app.openapi(profileRoute, async (c) => {
     const personId = clientOf(c).subjectId;
     const db = c.env.DB;
-    const person = await db
-      .prepare("SELECT name, mobile_e164 FROM people WHERE id = ?1 AND erased_at IS NULL")
-      .bind(personId)
-      .first<{ name: string; mobile_e164: string }>();
+    const person = await liveContact(db, personId);
     if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
 
     const [address, consents, change, decided, deletion] = await Promise.all([
@@ -389,7 +387,7 @@ export function registerClientProfile(app: App): void {
     return c.json(
       {
         name: person.name,
-        mobile: maskedMobile(person.mobile_e164),
+        mobile: maskedMobile(person.mobileE164),
         address:
           address === null
             ? null
@@ -542,10 +540,8 @@ export function registerClientProfile(app: App): void {
     const now = deps.now();
 
     const newMobile = toE164(c.req.valid("json").new_mobile);
-    const current = await db
-      .prepare("SELECT mobile_e164 FROM people WHERE id = ?1")
-      .bind(personId)
-      .first<string>("mobile_e164");
+    // A live session's person is never erased: the erasure ends their sessions.
+    const current = (await liveContact(db, personId))?.mobileE164 ?? null;
     if (newMobile === null || newMobile === current)
       return c.json(errorBody("invalid_request", requestId, ["new_mobile"]), 400);
 

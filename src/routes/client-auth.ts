@@ -20,6 +20,7 @@ import {
   verifyCode,
   type Challenge,
 } from "../domain/login.ts";
+import { liveContact } from "../domain/profile.ts";
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -147,10 +148,7 @@ function challengeBody(c: Ctx, challenge: Challenge, now: Date) {
 
 async function mobileOf(db: D1Database, personId: string | null): Promise<string | null> {
   if (personId === null) return null;
-  return db
-    .prepare("SELECT mobile_e164 FROM people WHERE id = ?1 AND erased_at IS NULL")
-    .bind(personId)
-    .first<string>("mobile_e164");
+  return (await liveContact(db, personId))?.mobileE164 ?? null;
 }
 
 const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
@@ -226,10 +224,8 @@ export function registerClientAuth(app: App): void {
       return c.json({ verified: false as const, attempts_left: verification.attemptsLeft }, 200);
     }
 
-    const name = await db
-      .prepare("SELECT name FROM people WHERE id = ?1")
-      .bind(verification.personId)
-      .first<string>("name");
+    // A code that verifies is never an erased person's: the erasure voids their codes.
+    const name = (await liveContact(db, verification.personId))?.name;
     const token = await openSession(db, {
       kind: "client",
       subjectId: verification.personId,

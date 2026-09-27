@@ -14,7 +14,7 @@ import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/cli
 import { creditBalance } from "../domain/credits.ts";
 import { homePrompt } from "../domain/home-prompt.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
-import { currentAddress, liveName } from "../domain/profile.ts";
+import { currentAddress, liveContact } from "../domain/profile.ts";
 import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -107,8 +107,9 @@ export function registerClientMe(app: App): void {
     const session = clientOf(c);
 
     const db = c.env.DB;
-    const name = await liveName(db, session.subjectId);
-    if (name === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const person = await liveContact(db, session.subjectId);
+    if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const { name } = person;
 
     const now = c.var.deps.now();
     const upcoming = await nextVisit(db, session.subjectId, now);
