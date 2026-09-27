@@ -3,7 +3,8 @@
 // typed address when there is not, and never a scheme an iPhone ignores.
 
 import { describe, expect, it } from "vitest";
-import { addressLine, callLink, wayTo, whatsAppLink } from "../../apps/tech/src/lib/navigate.ts";
+import { whatsappChat } from "../../packages/web-kit/whatsapp.ts";
+import { addressLine, callLink, wayTo } from "../../apps/tech/src/lib/navigate.ts";
 
 const WITH_PIN = {
   line1: "Tower C, 14th floor",
@@ -79,6 +80,6 @@ describe("the whole address the client saved", () => {
 describe("the way to the client", () => {
   it("calls the number on the card, and opens WhatsApp on it without the plus", () => {
     expect(callLink("+919810000000")).toBe("tel:+919810000000");
-    expect(whatsAppLink("+919810000000")).toBe("https://wa.me/919810000000");
+    expect(whatsappChat("+919810000000")).toBe("https://wa.me/919810000000");
   });
 });

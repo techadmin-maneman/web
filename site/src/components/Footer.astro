@@ -3,7 +3,7 @@
 // so it is the display cut (design/brand/README.md); v2 drew the small cut.
 import { business, footer, phone, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
-import { whatsappLink } from "../lib/whatsapp.ts";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 
 const { service, reach, legal } = footer.columns;
 const showWhatsapp = isShown(whatsapp);
@@ -34,7 +34,7 @@ const showPhone = isShown(phone);
           <div class="column">
             <span class="title caps">{reach.title}</span>
             {showWhatsapp && (
-              <a class="item number" href={whatsappLink(whatsapp.number)}>
+              <a class="item number" href={whatsappChat(whatsapp.number)}>
                 {whatsapp.label}
               </a>
             )}

@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
+import { whatsappShare } from "@maneman/web-kit/whatsapp";
+import { useEffect, useRef } from "preact/hooks";
 import { looks, tryOn } from "../../content/site.ts";
 import { downloadFile } from "../../lib/download.ts";
 import { fitFrameToPhotos } from "../../lib/frame-aspect.ts";
@@ -16,7 +17,7 @@ function shareOnWhatsApp(file: File | null) {
     return;
   }
   // Without file sharing, WhatsApp gets the words only; the image is never put in a link.
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+  window.open(whatsappShare(text), "_blank", "noopener");
 }
 
 /** The result: beside the photograph, or alone for a returning visitor, whose photograph is not kept. */

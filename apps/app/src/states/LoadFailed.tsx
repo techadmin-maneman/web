@@ -3,6 +3,7 @@
 // is still booked, and the screen says so.
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useEffect } from "react";
 import { states, whatsapp } from "../content.ts";
 import { nameInTitle } from "../lib/arrival.ts";
@@ -27,7 +28,7 @@ export function LoadFailed({ booked, onRetry }: { booked: boolean; onRetry: () =
           variant="outline"
           size="small"
           className={styles.message}
-          href={`https://wa.me/${whatsapp.number}`}
+          href={whatsappChat(whatsapp.number)}
           rel="noopener"
         >
           {copy.message}

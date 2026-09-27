@@ -7,10 +7,11 @@
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
 
 import { Icon } from "@maneman/ui/Icon";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import type { Job } from "../api.ts";
 import { job as copy } from "../content.ts";
 import { PIN, STROKE } from "../icons.ts";
-import { addressLine, callLink, wayTo, whatsAppLink } from "../lib/navigate.ts";
+import { addressLine, callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import styles from "./job.module.css";
 
@@ -112,7 +113,7 @@ export function JobCard({ job }: { job: Job }) {
             </a>
             <a
               className={styles.reachLink}
-              href={whatsAppLink(client.mobile)}
+              href={whatsappChat(client.mobile)}
               target="_blank"
               rel="noopener noreferrer"
             >

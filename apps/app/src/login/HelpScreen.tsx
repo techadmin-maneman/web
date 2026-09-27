@@ -5,6 +5,7 @@
 import { ICONS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { BOOKING_URL, login, whatsapp } from "../content.ts";
 import styles from "./login.module.css";
 
@@ -34,7 +35,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
             variant="outlineOnInk"
             size="action"
             className={styles.secondary}
-            href={`https://wa.me/${whatsapp.number}`}
+            href={whatsappChat(whatsapp.number)}
             rel="noopener"
           >
             <Icon d={ICONS.whatsapp} size={19} />

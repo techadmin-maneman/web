@@ -13,11 +13,11 @@ import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useState } from "react";
 import { api, type ClientRecord } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
-import { whatsAppLink } from "../dispatch/job.ts";
 import { phoneWords } from "../lib/phone.ts";
 import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -48,7 +48,7 @@ function Head({ record, credits }: { record: ClientRecord; credits: Credits }) {
         <h2 className={styles.name}>{record.name}</h2>
         <a
           className={styles.whatsapp}
-          href={whatsAppLink(record.mobile)}
+          href={whatsappChat(record.mobile)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={clients.whatsappLabel(record.name)}

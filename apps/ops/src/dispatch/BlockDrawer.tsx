@@ -14,11 +14,12 @@ import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { shortDate } from "@maneman/web-kit/dates";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { OpsLink } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
-import { firstNameOf, isMovable, nameOf, whatsAppLink, type BlockJob } from "./job.ts";
+import { firstNameOf, isMovable, nameOf, type BlockJob } from "./job.ts";
 
 interface Props {
   readonly job: BlockJob;
@@ -89,7 +90,7 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
               <ButtonLink
                 variant="outline"
                 size="small"
-                href={whatsAppLink(person.mobile)}
+                href={whatsappChat(person.mobile)}
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -2,6 +2,8 @@
 // component holds no copy of its own. Lines the design does not draw are
 // marked PLACEHOLDER, pending the owner's wording.
 
+import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
+
 export const app = {
   /** Last in the browser's title, after the screen's own name: "Visits · Mane Man". */
   name: "Mane Man",
@@ -26,7 +28,7 @@ export const titles = {
 
 export const whatsapp = {
   /** The business WhatsApp number, as the public site's footer and wa.me links use it. */
-  number: "919007973247",
+  number: WHATSAPP_NUMBER,
 } as const;
 
 /** The public site's booking page, for a number with no booking yet (board A3). */

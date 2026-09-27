@@ -14,6 +14,7 @@ import {
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { rupees, rupeeSign } from "../../packages/web-kit/money.ts";
+import { WHATSAPP_NUMBER, whatsappChat, whatsappShare } from "../../packages/web-kit/whatsapp.ts";
 
 describe("web-kit dates", () => {
   it.each([
@@ -102,6 +103,25 @@ describe("web-kit money", () => {
       .flatMap(sourcesUnder)
       .filter((path) => readFileSync(path, "utf8").includes("new Intl.NumberFormat("));
     expect(formatting).toEqual([]);
+  });
+});
+
+describe("web-kit WhatsApp links", () => {
+  it("opens a chat with a number, however it is written, with words ready to send if there are any", () => {
+    expect(whatsappChat("+91 98100 04417")).toBe("https://wa.me/919810004417");
+    expect(whatsappChat(WHATSAPP_NUMBER, "Hello & bye")).toBe("https://wa.me/919007973247?text=Hello%20%26%20bye");
+  });
+
+  it("shares words with whoever the sender picks", () => {
+    expect(whatsappShare("Look: https://maneman.in")).toBe("https://wa.me/?text=Look%3A%20https%3A%2F%2Fmaneman.in");
+  });
+
+  // FEA-40, FEO-29: the number was written three times and a link built seven ways.
+  it("is the one place the front ends write the number or build a link", () => {
+    const own = ["apps", "site/src", "packages/ui"]
+      .flatMap((root) => sourcesUnder(root))
+      .filter((path) => /https:\/\/wa\.me|9007973247/.test(readFileSync(path, "utf8")));
+    expect(own).toEqual([]);
   });
 });
 

@@ -7,6 +7,7 @@ import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useState, type ReactNode } from "react";
 import { api, EXPORT_URL, type Answer, type NumberChange, type Profile } from "../api.ts";
 import { login, profile, whatsapp } from "../content.ts";
@@ -230,7 +231,7 @@ export function SupportCard() {
       <h2 className={styles.cardLabel} id="support">
         {copy.label}
       </h2>
-      <a className={styles.whatsapp} href={`https://wa.me/${whatsapp.number}`} rel="noopener">
+      <a className={styles.whatsapp} href={whatsappChat(whatsapp.number)} rel="noopener">
         <Icon d={ICONS.whatsapp} size={21} />
         <span>{copy.message}</span>
       </a>

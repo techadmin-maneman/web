@@ -51,6 +51,3 @@ export function wayTo(address: Address): string {
 
 /** A call to the client, from the number on the card (E.164). */
 export const callLink = (mobile: string): string => `tel:${mobile}`;
-
-/** WhatsApp's own link to a number, which takes the digits alone. */
-export const whatsAppLink = (mobile: string): string => `https://wa.me/${mobile.replace(/\D/g, "")}`;

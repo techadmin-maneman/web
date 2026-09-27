@@ -5,10 +5,10 @@ import { faq, whatsapp } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import { ICONS } from "@maneman/brand/icons";
-import { whatsappLink } from "../../lib/whatsapp.ts";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 
 // One expression, so no line break can put a space before the full stop.
-const link = isShown(whatsapp) ? whatsappLink(whatsapp.number) : null;
+const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
 ---
 
 <section id="faq" class="container faq" data-section="faq">

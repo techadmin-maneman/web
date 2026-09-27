@@ -19,6 +19,7 @@
 // Images are file names in design/assets; src/lib/images.ts resolves them.
 // `{city}` and similar are filled in by the page.
 
+import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
 import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
 import { PRESETS } from "../../../src/config/presets.ts";
@@ -78,14 +79,14 @@ export const notices = {
 /** The business WhatsApp number: the footer's, and every wa.me link. */
 export const whatsapp = {
   publish: true,
-  number: "919007973247",
+  number: WHATSAPP_NUMBER,
   label: "WhatsApp · +91 90079 73247",
 };
 
 /** The footer's phone number: the business number, the owner's on 22 September 2026. */
 export const phone = {
   publish: true,
-  number: "+919007973247",
+  number: `+${WHATSAPP_NUMBER}`,
   label: "Phone · +91 90079 73247",
 };
 
