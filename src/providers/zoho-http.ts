@@ -16,6 +16,7 @@
 import { z } from "zod";
 import type { Logger } from "../log.ts";
 import { ProviderError } from "./provider-error.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /**
  * Nobody waits on most calls; queue consumers and the cron make them. On
@@ -26,9 +27,9 @@ export const BACKGROUND_TIMEOUT_MS = 20_000;
 /** A call a person waits on, a document opened or a visit moved, gives up sooner. */
 export const WAITED_TIMEOUT_MS = 8_000;
 /** Refresh a token this long before Zoho would expire it. */
-const TOKEN_MARGIN_MS = 60_000;
+const TOKEN_MARGIN_MS = MINUTE_MS;
 /** After Zoho refuses a new token, none is asked for this long. */
-export const TOKEN_COOL_DOWN_MS = 10 * 60 * 1000;
+export const TOKEN_COOL_DOWN_MS = 10 * MINUTE_MS;
 /** A caller waiting for another's token looks again this often. */
 const LEASE_POLL_MS = 250;
 

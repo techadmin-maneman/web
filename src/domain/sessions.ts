@@ -3,10 +3,11 @@
 // use, and can be revoked.
 
 import { sha256Hex } from "../lib/hash.ts";
+import { DAY_MS, HOUR_MS } from "../lib/durations.ts";
 
-export const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+export const SESSION_TTL_MS = 90 * DAY_MS;
 /** A session's expiry moves on at most this often, so a busy app is not a write per request. */
-export const SESSION_TOUCH_MS = 60 * 60 * 1000;
+export const SESSION_TOUCH_MS = HOUR_MS;
 
 export type SessionKind = "client" | "technician";
 

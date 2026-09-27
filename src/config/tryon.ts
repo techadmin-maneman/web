@@ -2,6 +2,7 @@
 // See docs/decisions/0014-try-on-api.md.
 
 import { LOSS_EXTENTS } from "./booking.ts";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 /** The three hair-loss stages the try-on asks about: the booking form's loss extents. */
 export const TRYON_STAGES = LOSS_EXTENTS;
@@ -49,20 +50,20 @@ export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
  */
 export const MAX_RESULT_BYTES = 5 * 1024 * 1024;
 /** An upload link lasts 5 minutes and a session 30; a photo is deleted an hour after its last look. */
-export const PHOTO_RETENTION_MS = 60 * 60 * 1000;
+export const PHOTO_RETENTION_MS = HOUR_MS;
 export const MIN_SIDE_PX = 200;
 /** Premium's documented maximum; Pro's is 4095. */
 export const MAX_SIDE_PX = 4090;
 
 /** How long the upload link from POST /api/tryon/upload-url works. */
-export const UPLOAD_LINK_TTL_MS = 5 * 60 * 1000;
+export const UPLOAD_LINK_TTL_MS = 5 * MINUTE_MS;
 /** The mm_tryon cookie and its session. */
-export const SESSION_TTL_MS = 30 * 60 * 1000;
+export const SESSION_TTL_MS = 30 * MINUTE_MS;
 export const SESSION_COOKIE = "mm_tryon";
 /** One look per visitor: the browser remembers its render this long, the photos' retention period. */
 export const LOOK_COOKIE = "mm_look";
-export const LOOK_COOKIE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export const LOOK_COOKIE_TTL_MS = 30 * DAY_MS;
 /** The link GET /api/tryon/result hands the browser. */
-export const RESULT_LINK_BROWSER_TTL_MS = 15 * 60 * 1000;
+export const RESULT_LINK_BROWSER_TTL_MS = 15 * MINUTE_MS;
 /** The link a WhatsApp message carries, minted at send time. */
-export const RESULT_LINK_MESSAGE_TTL_MS = 60 * 60 * 1000;
+export const RESULT_LINK_MESSAGE_TTL_MS = HOUR_MS;

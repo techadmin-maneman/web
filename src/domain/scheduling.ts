@@ -37,6 +37,7 @@ import { clashes } from "../policy/dispatch.ts";
 import { isFitted } from "./client-visits.ts";
 import { loadBlackouts } from "./leads.ts";
 import type { Price } from "./price-book.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /** What one technician's day already holds. */
 export interface Day {
@@ -434,5 +435,5 @@ export async function holdSlot(
 /** When a held visit starts and ends, as FSM books it. */
 export function visitTimes(date: string, startUnit: number, type: VisitType): { start: Date; end: Date } {
   const start = indiaInstant(date, UNIT_STARTS[startUnit] ?? WINDOW_TIMES.morning.start);
-  return { start, end: new Date(start.getTime() + VISIT_BLOCKS[type].minutes * 60_000) };
+  return { start, end: new Date(start.getTime() + VISIT_BLOCKS[type].minutes * MINUTE_MS) };
 }

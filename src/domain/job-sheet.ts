@@ -24,6 +24,7 @@ import { statusOf } from "./fsm-mirror.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
 import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";
 import { attachPhotosToFsm } from "./tech-photos.ts";
+import { minutesBetween } from "../lib/durations.ts";
 
 export interface JobForFsm {
   readonly id: string;
@@ -254,10 +255,7 @@ async function recordConsumables(db: D1Database, job: JobForFsm, event: JobEvent
 async function closingNote(db: D1Database, job: JobForFsm, event: JobEvent): Promise<string> {
   const events = await eventsOf(db, job.id);
   const start = events.find((candidate) => candidate.kind === "start");
-  const minutes =
-    start === undefined
-      ? null
-      : Math.max(0, Math.round((Date.parse(event.occurredAt) - Date.parse(start.occurredAt)) / 60_000));
+  const minutes = start === undefined ? null : Math.max(0, minutesBetween(start.occurredAt, event.occurredAt));
   const duration = minutes === null ? "" : ` Duration ${String(minutes)} minutes.`;
   return `${outcomeLine(event)}.${duration}`;
 }

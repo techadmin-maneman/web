@@ -7,6 +7,7 @@ import { visitTypeOfService, type VisitType } from "../config/visit-types.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { initialsOf } from "../lib/names.ts";
 import type { FsmAppointment, FsmProvider } from "../providers/fsm.ts";
+import { minutesBetween } from "../lib/durations.ts";
 
 export type AppointmentStatus =
   "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
@@ -138,8 +139,7 @@ function visitOf(appointment: FsmAppointment, status: AppointmentStatus) {
   if (status !== "completed" && status !== "terminated") return null;
   const startedAt = utc(appointment.actualStart);
   const endedAt = utc(appointment.actualEnd);
-  const durationMinutes =
-    startedAt !== null && endedAt !== null ? Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / 60_000) : null;
+  const durationMinutes = startedAt !== null && endedAt !== null ? minutesBetween(startedAt, endedAt) : null;
   return { startedAt, endedAt, durationMinutes, done: status === "completed" };
 }
 

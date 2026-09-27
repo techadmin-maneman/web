@@ -2,8 +2,9 @@
 // daylight saving. Dates are "YYYY-MM-DD" strings, which compare and sort
 // correctly as plain text.
 
-const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS, MINUTE_MS } from "./durations.ts";
+
+const IST_OFFSET_MS = (5 * 60 + 30) * MINUTE_MS;
 
 /** The calendar date in India at `instant`. */
 export function indiaDate(instant: Date): string {

@@ -33,14 +33,15 @@ import type { FsmInvoice, FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { priceOf } from "./price-book.ts";
+import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many a pass bills at most. */
 export const PER_PASS = 5;
-export const RECHECK_AFTER_MS = 60 * 60 * 1000;
+export const RECHECK_AFTER_MS = HOUR_MS;
 /** Outside calls one visit may cost: its work order, the invoice's create or read, Books, and an alert. */
 export const CALLS_PER_VISIT = 4;
 /** The client is told their invoice comes within the hour of the visit. */
-const DRAFT_ALERT_AFTER_MS = 60 * 60 * 1000;
+const DRAFT_ALERT_AFTER_MS = HOUR_MS;
 /** A failure other than a refusal is told once it has happened this many times, an hour apart. */
 const FAILURES_BEFORE_ALERT = 3;
 

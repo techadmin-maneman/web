@@ -9,13 +9,14 @@ import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "../app.ts";
 import type { AccessSettings } from "../config/settings.ts";
 import { errorBody } from "./errors.ts";
+import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 export const ACCESS_TOKEN_HEADER = "Cf-Access-Jwt-Assertion";
 
 /** Keys are fetched again after an hour; Access rotates them with weeks of overlap. */
-const KEY_TTL_MS = 60 * 60 * 1000;
+const KEY_TTL_MS = HOUR_MS;
 /** A token naming an unknown key may refetch the keys, but at most once a minute. */
-const UNKNOWN_KEY_REFETCH_MS = 60 * 1000;
+const UNKNOWN_KEY_REFETCH_MS = MINUTE_MS;
 /** Every ops request waits on the keys when they are due, so a slow Access fails it rather than holding it. */
 const KEYS_TIMEOUT_MS = 5_000;
 

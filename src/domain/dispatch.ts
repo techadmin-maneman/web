@@ -47,6 +47,7 @@ import {
   type Day,
 } from "./scheduling.ts";
 import { visitMessage } from "./visit-messages.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /** Seven days, as the board shows them. */
 export const BOARD_DAYS = 7;
@@ -550,7 +551,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
         job.id,
         technicianId,
         nowStart.toISOString(),
-        (times?.end ?? new Date(nowStart.getTime() + VISIT_BLOCKS[job.type].minutes * 60_000)).toISOString(),
+        (times?.end ?? new Date(nowStart.getTime() + VISIT_BLOCKS[job.type].minutes * MINUTE_MS)).toISOString(),
         at,
       ),
     // The mirror now holds the new time, so the claim on it goes in the same batch.

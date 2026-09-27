@@ -41,6 +41,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { FREE_CHANGE_NOTICE_HOURS, LATE_FEES } from "../policy/moving-a-visit.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import { HOUR_MS } from "../lib/durations.ts";
 
 export const PriceSchema = z
   .object({
@@ -272,7 +273,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     technician: { name: row.technician_name, initials: row.technician_initials },
     price: { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent },
     late_fee: await lateFeeOf(db, row),
-    free_until: new Date(windowStarts.getTime() - FREE_CHANGE_NOTICE_HOURS * 3_600_000).toISOString(),
+    free_until: new Date(windowStarts.getTime() - FREE_CHANGE_NOTICE_HOURS * HOUR_MS).toISOString(),
     expires_at: row.expires_at,
     state: hasLapsed(row, now) ? ("expired" as const) : row.state,
     paid: row.paid === 1,

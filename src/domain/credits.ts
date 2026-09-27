@@ -5,6 +5,7 @@
 
 import { creditExpiry } from "../policy/referral-reward.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
+import { DAY_MS } from "../lib/durations.ts";
 
 export type CreditSource = "referral" | "appointment" | "ops" | "import";
 
@@ -141,7 +142,7 @@ const EXPIRE_PER_PASS = 20;
  * How far back a pass looks for a grant to close. Every grant that ever expired would otherwise be read again on
  * every five-minute run; a week covers any outage the cron is likely to have.
  */
-const EXPIRE_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
+const EXPIRE_LOOKBACK_MS = 7 * DAY_MS;
 
 /**
  * Closes grants past their expiry: an expire entry takes whatever is left, or marks a spent one closed, so each

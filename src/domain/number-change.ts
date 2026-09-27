@@ -5,6 +5,7 @@
 import { newCode } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { createChallenge, verifyCode, type Challenge, type ChallengePurpose, type Verification } from "./login.ts";
+import { DAY_MS } from "../lib/durations.ts";
 
 export type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
 export type WhichNumber = "old" | "new";
@@ -76,7 +77,7 @@ export interface DecidedChange {
  * rather than let it vanish (OPS-09). The profile shows it only while no change is under way.
  */
 export async function lastDecidedChange(db: D1Database, personId: string, now: Date): Promise<DecidedChange | null> {
-  const since = new Date(now.getTime() - DECISION_SHOWN_DAYS * 86_400_000).toISOString();
+  const since = new Date(now.getTime() - DECISION_SHOWN_DAYS * DAY_MS).toISOString();
   const row = await db
     .prepare(
       `SELECT state, new_mobile_e164, decided_at, reason FROM number_change_requests

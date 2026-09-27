@@ -1,6 +1,8 @@
 // The login code (docs/prompts/phase2-backend.md, "Business rules, decided").
 // The rules as the prompt states them; their code arrives in P2-M1.
 
+import { MINUTE_MS } from "../lib/durations.ts";
+
 export const RULES = [
   "Six digits, sent on WhatsApp.",
   "After 30 seconds the client may choose SMS instead.",
@@ -16,7 +18,7 @@ export const ONE_TIME_CODE = {
 } as const;
 
 /** A code works for ten minutes ("Endpoints": "code lifetime of 10 minutes"). */
-export const CODE_TTL_MS = 10 * 60 * 1000;
+export const CODE_TTL_MS = 10 * MINUTE_MS;
 /** One challenge sends at most this many codes, whichever channel asks. */
 export const MAX_SENDS_PER_CHALLENGE = 5;
 

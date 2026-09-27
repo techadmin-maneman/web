@@ -23,13 +23,14 @@ import { composeFriendCredited, composeFriendFitted, composeReferralRejected } f
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
 import { scrubString, type Logger } from "../log.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 export const MessagingMessageSchema = z.object({ message_id: z.uuid(), request_id: z.string() });
 export type MessagingMessage = z.infer<typeof MessagingMessageSchema>;
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */
-export const SENDING_LEASE_MS = 2 * 60 * 1000;
+export const SENDING_LEASE_MS = 2 * MINUTE_MS;
 
 type Next = { readonly retryAfterSeconds?: number };
 

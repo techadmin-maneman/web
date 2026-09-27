@@ -6,8 +6,9 @@ import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { AppEnv } from "../app.ts";
 import { sha256Hex } from "../lib/hash.ts";
+import { DAY_MS } from "../lib/durations.ts";
 
-const TTL_MS = 24 * 60 * 60 * 1000;
+const TTL_MS = DAY_MS;
 
 /** The optional header a client names one submission with, so sending it again is answered, not done twice. */
 export const IdempotencyKeyHeaderSchema = z.object({ "idempotency-key": z.string().min(8).max(200).optional() });

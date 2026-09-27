@@ -28,6 +28,7 @@ import { fileExtension } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
 import type { RenderFailure } from "../providers/image.ts";
 import type { MessagingMessage } from "./messaging.ts";
+import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 
 export const RenderMessageSchema = z.object({ job_id: z.uuid(), request_id: z.string() });
 export type RenderMessage = z.infer<typeof RenderMessageSchema>;
@@ -42,8 +43,6 @@ export interface RenderOptions {
   /** Days a result is kept once ready (RESULT_RETENTION_DAYS). */
   readonly resultRetentionDays: number;
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** What the queue should do with the message: nothing more, or deliver it again after a delay. */
 type Next = { readonly retryAfterSeconds?: number };
@@ -221,7 +220,7 @@ async function poll(
   }
   if (!withinDeadline) {
     // Probably billed already: Premium bills while it renders. The task can still be polled by hand.
-    const detail = `no result ${String(Math.round(elapsed / 60_000))} min after submitting; task ${job.provider_task_id}`;
+    const detail = `no result ${String(Math.round(elapsed / MINUTE_MS))} min after submitting; task ${job.provider_task_id}`;
     return fail(env, deps, log, job, { code: "render_failed", transient: false, alert: true, detail });
   }
   return { retryAfterSeconds: pollDelay(elapsed) };

@@ -10,13 +10,14 @@
 // Anything else renders successfully.
 
 import { API_BASE_URL, CREDITS_PATH, ENDPOINT_PATHS, POLL_PATH } from "./ailabtools.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 export const STUB_API_KEY = "stub-ailab-key";
 export const STUB_RESULT_HOST = "https://ailab-outputs.oss-accelerate.aliyuncs.com";
 
 /** How long a stub render takes: Pro renders faster than Premium, as measured (7.6), but shortened. */
 export const STUB_RENDER_MS = { pro: 6_000, premium: 12_000 } as const;
-export const STUB_STALL_MS = 60_000;
+export const STUB_STALL_MS = MINUTE_MS;
 
 const SCENARIOS = ["refused-face", "file-type", "stall"] as const;
 type Scenario = (typeof SCENARIOS)[number] | "ok";

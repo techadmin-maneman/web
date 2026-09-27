@@ -48,6 +48,8 @@
 // technician's reason until the client has another visit booked after it to
 // finish what was left. A no-show is its own outcome, and its own group.
 
+import { HOUR_MS } from "../lib/durations.ts";
+
 export const RULES = [
   "The replacement due date follows the per-base cycle config already defined in this prompt.",
   "GET /no-shows and POST /no-shows/:id/decision, for ops to charge or waive from the evidence.",
@@ -108,4 +110,4 @@ export const TASK_SLA_HOURS: Slas = {
  * (docs/decisions/0061-ops-editable-inputs.md).
  */
 export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS): Date =>
-  new Date(since.getTime() + sla[group] * 3_600_000);
+  new Date(since.getTime() + sla[group] * HOUR_MS);

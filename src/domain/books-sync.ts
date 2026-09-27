@@ -29,10 +29,11 @@ import type { BooksProvider } from "../providers/books.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many of each a pass handles at most. */
 export const PER_PASS = 5;
-export const RECHECK_AFTER_MS = 60 * 60 * 1000;
+export const RECHECK_AFTER_MS = HOUR_MS;
 /** Outside calls one record may cost: FSM or Books, Books' look for it, Books' record, and the alert it may send. */
 export const CALLS_PER_RECORD = 4;
 /** A failure other than a refusal is told once it has happened this many times, an hour apart. */

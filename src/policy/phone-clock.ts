@@ -10,6 +10,7 @@
 // and keeps its own beside it.
 
 import { indiaDate } from "../lib/india-time.ts";
+import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 /** The prompt's rules this module serves (docs/prompts/phase2-backend.md). */
 export const RULES = [
@@ -43,8 +44,8 @@ export function boundedPhoneTime(claimed: Date | null, bounds: { visitStart: Dat
   if (claimed === null || Number.isNaN(claimed.getTime())) return bounds.receivedAt;
   const received = bounds.receivedAt.getTime();
   const earliest = Math.max(
-    bounds.visitStart.getTime() - EARLIEST_BEFORE_START_MIN * 60_000,
-    received - MAX_OFFLINE_HOURS * 3_600_000,
+    bounds.visitStart.getTime() - EARLIEST_BEFORE_START_MIN * MINUTE_MS,
+    received - MAX_OFFLINE_HOURS * HOUR_MS,
   );
   return new Date(Math.min(received, Math.max(earliest, claimed.getTime())));
 }

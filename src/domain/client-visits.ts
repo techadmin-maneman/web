@@ -12,12 +12,13 @@ import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
+import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
 /** The three windows the client app offers (docs/prompts/phase2-frontend.md), by the hour a visit starts in India. */
 export type VisitWindowLabel = "morning" | "afternoon" | "evening";
 
 /** A photograph's link lasts this long; the app asks again for a fresh one. */
-export const PHOTO_LINK_MS = 15 * 60 * 1000;
+export const PHOTO_LINK_MS = 15 * MINUTE_MS;
 
 export function windowOf(startsAt: string): VisitWindowLabel {
   const hour = Number(indiaHour(new Date(startsAt)).slice(11, 13));
@@ -102,7 +103,7 @@ function summaryOf(row: AppointmentRow, place: (row: AppointmentRow) => string, 
     window_label: windowOf(row.window_start),
     starts_at: row.window_start,
     ends_at: row.window_end,
-    length_minutes: Math.round((Date.parse(row.window_end) - Date.parse(row.window_start)) / 60_000),
+    length_minutes: minutesBetween(row.window_start, row.window_end),
     type: row.type,
     status: row.status,
     stage: stageOf(row, now),

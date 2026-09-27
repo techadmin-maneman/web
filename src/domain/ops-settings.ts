@@ -23,9 +23,10 @@ import type { Cycles } from "../config/pieces.ts";
 import type { Waits } from "../policy/no-show.ts";
 import type { Slas } from "../policy/tasks.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /** How long an isolate holds the store before reading it again. The staleness window. */
-export const SETTINGS_TTL_MS = 60_000;
+export const SETTINGS_TTL_MS = MINUTE_MS;
 
 /** Every ops-set input, resolved: what the store holds, or the committed default. */
 export interface OpsInputs {

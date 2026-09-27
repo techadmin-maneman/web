@@ -30,13 +30,14 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
 import type { FsmProvider, FsmRequestPreference } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
+import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many a pass looks up at most. */
 export const PER_PASS = 5;
 /** Outside calls one visit costs: its work order, then the Request it came from. */
 export const CALLS_PER_VISIT = 2;
 /** A visit FSM failed on is asked about again an hour later. */
-export const RECHECK_AFTER_MS = 60 * 60 * 1000;
+export const RECHECK_AFTER_MS = HOUR_MS;
 
 interface Visit {
   id: string;

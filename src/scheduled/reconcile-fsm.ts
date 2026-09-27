@@ -23,17 +23,18 @@ import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { syncTechnicians } from "../domain/fsm-mirror.ts";
 import { PHOTOS_PER_VISIT } from "../domain/visit-photos.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
+import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 
 export const PAGE_SIZE = 50;
 /** India hours of the nightly pass: from 1 am up to 5 am. */
 const NIGHT_START_HOUR = 1;
 const NIGHT_END_HOUR = 5;
 /** A copy this far behind FSM should have come by webhook; one fresher may be on its way. */
-const DRIFT_GRACE_MS = 10 * 60 * 1000;
+const DRIFT_GRACE_MS = 10 * MINUTE_MS;
 /** Copies FSM did not list, checked per run at the end of a pass. */
 const UNSEEN_LIMIT = 50;
 /** How long after a visit its photographs are looked for again, and how many visits an hour. */
-const PHOTO_RETRY_MS = 3 * 24 * 60 * 60 * 1000;
+const PHOTO_RETRY_MS = 3 * DAY_MS;
 const PHOTO_RETRY_LIMIT = 20;
 /**
  * Upcoming visits read again each run: 24 an hour, so each of a hundred upcoming

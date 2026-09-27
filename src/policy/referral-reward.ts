@@ -3,6 +3,7 @@
 // src/domain/credits.ts (docs/decisions/0048-referrals.md).
 
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
+import { DAY_MS } from "../lib/durations.ts";
 
 export const RULES = [
   "When a referred person's first fit closes as done, the referrer and the referred each get 3 service-visit credits.",
@@ -22,6 +23,6 @@ export const CREDIT_TTL_DAYS = 365;
  * later, the date the client is shown, so it can still be booked with all of that day.
  */
 export function creditExpiry(grantedAt: Date): Date {
-  const lastDay = indiaDate(new Date(grantedAt.getTime() + CREDIT_TTL_DAYS * 86_400_000));
+  const lastDay = indiaDate(new Date(grantedAt.getTime() + CREDIT_TTL_DAYS * DAY_MS));
   return new Date(indiaInstant(addDays(lastDay, 1), "00:00").getTime() - 1);
 }

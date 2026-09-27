@@ -26,8 +26,8 @@ import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { SENDING_LEASE_MS, type MessagingMessage } from "../queues/messaging.ts";
 import type { RenderMessage } from "../queues/render.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
-const MINUTE_MS = 60 * 1000;
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
 /** A booking not sent to FSM within a day is left to ops. */

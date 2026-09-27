@@ -14,6 +14,7 @@ import { WAIVER_GIVES_BACK, type NoShowDecision } from "../policy/no-show.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import type { MessageKind } from "./messages.ts";
 import { windowAt } from "./scheduling.ts";
+import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
 export type VisitMessageKind = Extract<
   MessageKind,
@@ -112,7 +113,7 @@ export async function arrivalNotice(
   db: D1Database,
   input: { personId: string; appointmentId: string; arrivedAt: Date; now: Date },
 ): Promise<string | null> {
-  const late = input.now.getTime() - input.arrivedAt.getTime() > ARRIVAL_NOTICE_WITHIN_MINUTES * 60_000;
+  const late = input.now.getTime() - input.arrivedAt.getTime() > ARRIVAL_NOTICE_WITHIN_MINUTES * MINUTE_MS;
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
   const written = await db
@@ -286,7 +287,7 @@ async function noShowRuling(db: D1Database, appointmentId: string, params: strin
     .first<{ decision: NoShowDecision; wait_started_at: string; ended_at: string }>();
   if (ruling === null || ruling.decision === "undecided") return { skip: "ops have not ruled on it" };
   // The ninth param, which only these templates take.
-  params.push(String(Math.round((Date.parse(ruling.ended_at) - Date.parse(ruling.wait_started_at)) / 60_000)));
+  params.push(String(minutesBetween(ruling.wait_started_at, ruling.ended_at)));
   const paid = await paidAhead(db, appointmentId);
   if (paid.kind === "payment") {
     params[5] = rupees(paid.amount);

@@ -4,6 +4,7 @@
 // and a person decides it.
 
 import type { VisitType } from "../config/visit-types.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 export const RULES = [
   "The wait timer starts at check-in and runs config NO_SHOW_WAIT_MIN (15) minutes.",
@@ -44,7 +45,7 @@ export const SERVER_CLOCK_RULE =
  * so every caller passes what is in force and the rule still stands on its own.
  */
 export const waitEndsAt = (checkedInAt: Date, type: VisitType, wait: Waits = NO_SHOW_WAIT_MIN): Date =>
-  new Date(checkedInAt.getTime() + wait[type] * 60_000);
+  new Date(checkedInAt.getTime() + wait[type] * MINUTE_MS);
 
 /** A check-in's two times: the phone's, held within bounds (src/policy/phone-clock.ts), and the server's. */
 export interface CheckInTimes {

@@ -6,6 +6,7 @@ import type { Logger } from "../log.ts";
 import { erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { erasePerson, erasureBlockers, type ErasureBlockers, type ErasureEnv } from "./erasure.ts";
+import { DAY_MS } from "../lib/durations.ts";
 
 export type DeletionState = "requested" | "done" | "rejected";
 
@@ -129,7 +130,7 @@ export async function decideDeletion(
 }
 
 /** Ops are told when a request has waited this long, so it is processed within its 7 days. */
-export const DELETION_ALERT_AFTER_MS = 5 * 24 * 60 * 60 * 1000;
+export const DELETION_ALERT_AFTER_MS = 5 * DAY_MS;
 
 /** Alerts ops, once per request, about deletion requests nearing the end of their 7 days. */
 export async function alertAgedDeletions(
