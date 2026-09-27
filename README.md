@@ -54,10 +54,13 @@ After changing a route schema, run `npm run openapi` to regenerate `docs/openapi
 ```
 src/                  mm-api
   config/             environments, settings, booking choices, notices, try-on presets and limits
-  domain/             leads, cities, visit dates, rate limits, ceilings, try-on jobs
-  providers/          CRM (Zoho), images (AILabTools), WhatsApp (Evolution), each with a stub; Turnstile, alerts
-  queues/             queue consumers: crm-sync, render, messaging
-  scheduled/          the sweeper
+  policy/             the business rules, each quoting the prompt, with a test that quotes it
+  domain/             what the rules act on: bookings, visits, payments, the FSM mirror; no HTTP here
+  http/               what a request carries: its types (context.ts), sessions, Access and the ops audit, idempotency
+  lib/                small helpers: India's time, durations, hashes, signed tokens
+  providers/          Zoho CRM, FSM and Books, AILabTools, Evolution, Razorpay, Google, each with a stub; alerts
+  queues/             queue consumers: crm-sync, render, messaging, fsm-sync
+  scheduled/          the cron's jobs, the sweeper among them
   guard.ts            startup and database-identity guard
   log.ts              the only logger; redacts personal data
   routes/             one module per route, zod schemas included
@@ -75,6 +78,7 @@ docs/reference/       AILabTools API notes (verbatim), and where the browser-sid
 
 - `docs/api.md`, `docs/openapi.json`: generated API reference
 - `docs/decisions/`: architecture decisions
+- `docs/glossary.md`: which word means what, where a visit, a window or a person goes by several names
 - `docs/migrations.md`: how to write a migration D1 will take, and delete rows other rows point at
 - `docs/runbook.md`: provisioning, Zoho setup, incidents, cities and blackouts, rollback
 - `docs/turnstile.md`: the Turnstile site keys for the front-end
