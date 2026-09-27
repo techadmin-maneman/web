@@ -1,6 +1,6 @@
 // Loads data/pincodes/ncr-pincodes.csv into serviceable_pincodes (docs/decisions/0048-referrals.md). Safe to run
 // again: each pincode's row is replaced by the file's, except an area name ops gave it in the console. Run after
-// migrations.
+// migrations. It refuses, and writes nothing, while the file would serve a pincode people wait for.
 //
 //   node scripts/import-pincodes.ts local
 //   node scripts/import-pincodes.ts staging --all-served-from 2026-09-22    (staging's placeholder, open point 21)
@@ -14,7 +14,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EXPECTED_DATABASE_NAME, isEnvironmentName } from "../src/config/environments.ts";
 import { indiaInstant } from "../src/lib/india-time.ts";
-import { areaOf, fields, pincodeUpsert, type PincodeRow } from "./lib/pincodes.ts";
+import {
+  areaOf,
+  fields,
+  launchesWithPeopleWaiting,
+  pincodeUpsert,
+  WAITING_QUERY,
+  type PincodeRow,
+  type Waiting,
+} from "./lib/pincodes.ts";
 
 const [environment, flag, allServedFrom] = process.argv.slice(2);
 if (!isEnvironmentName(environment) || (flag !== undefined && flag !== "--all-served-from")) {
@@ -43,21 +51,32 @@ const rows = lines.map((line): PincodeRow => {
   return { pincode, area: areaOf(at(row, "office_names"), city), city, served, launchedAt };
 });
 
-const sql = pincodeUpsert(rows);
+const target =
+  environment === "local"
+    ? ["DB", "--local", "--env="]
+    : [EXPECTED_DATABASE_NAME[environment], "--remote", "--env", environment];
+const d1Execute = ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...target];
+
+// The import tells nobody on a waitlist, so it serves no pincode people wait for: the console does, and tells them.
+const [answer] = JSON.parse(
+  execFileSync(process.execPath, [...d1Execute, "--command", WAITING_QUERY, "--json"], { encoding: "utf8" }),
+) as [{ results: Waiting[] } | undefined];
+const refused = launchesWithPeopleWaiting(rows, answer?.results ?? []);
+if (refused.length > 0) {
+  console.error(`import-pincodes: refused. The file serves ${String(refused.length)} pincode(s) people wait for:`);
+  for (const { pincode, waiting } of refused) console.error(`  ${pincode}: ${String(waiting)} waiting`);
+  console.error(
+    "Serve them from the console (Settings · Service area, or the waitlist's Mark live), which tells those who " +
+      "asked; then run the import again. Nothing was written.",
+  );
+  process.exit(1);
+}
 
 const folder = mkdtempSync(join(tmpdir(), "mm-pincodes-"));
 try {
   const file = join(folder, "pincodes.sql");
-  writeFileSync(file, sql);
-  const target =
-    environment === "local"
-      ? ["DB", "--local", "--env="]
-      : [EXPECTED_DATABASE_NAME[environment], "--remote", "--env", environment];
-  execFileSync(
-    process.execPath,
-    ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...target, "--file", file, "--yes"],
-    { stdio: "inherit" },
-  );
+  writeFileSync(file, pincodeUpsert(rows));
+  execFileSync(process.execPath, [...d1Execute, "--file", file, "--yes"], { stdio: "inherit" });
   console.log(`import-pincodes: ${String(rows.length)} pincodes into ${environment}`);
 } finally {
   rmSync(folder, { recursive: true, force: true });

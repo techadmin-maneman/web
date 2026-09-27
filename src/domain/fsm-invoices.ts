@@ -26,21 +26,22 @@ import { rupees } from "@maneman/web-kit/money";
 import type { VisitType } from "../config/visit-types.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { scrubString, type Logger } from "../log.ts";
+import { failureReason, type Logger } from "../log.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../policy/prepayment.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmInvoice, FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { priceOf } from "./price-book.ts";
+import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many a pass bills at most. */
 export const PER_PASS = 5;
-export const RECHECK_AFTER_MS = 60 * 60 * 1000;
+export const RECHECK_AFTER_MS = HOUR_MS;
 /** Outside calls one visit may cost: its work order, the invoice's create or read, Books, and an alert. */
 export const CALLS_PER_VISIT = 4;
 /** The client is told their invoice comes within the hour of the visit. */
-const DRAFT_ALERT_AFTER_MS = 60 * 60 * 1000;
+const DRAFT_ALERT_AFTER_MS = HOUR_MS;
 /** A failure other than a refusal is told once it has happened this many times, an hour apart. */
 const FAILURES_BEFORE_ALERT = 3;
 
@@ -243,7 +244,7 @@ async function tellFailure(pass: Pass, visit: Visit, error: unknown): Promise<vo
     return;
   }
   pass.log.warn("invoice_failed", { appointment_id: visit.id, error });
-  const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 200);
+  const reason = failureReason(error, 200);
   await pass.deps.alertOnce({
     key: `invoice_failed:${visit.id}`,
     message: `The invoice pass has failed ${String(FAILURES_BEFORE_ALERT)} times on ${workOrder}: ${reason}.`,

@@ -13,7 +13,7 @@
 // bound to it, so ops can revoke that phone and its cached jobs go with it.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { syncTechnicians } from "../domain/fsm-mirror.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { revokeSession, deviceLabel } from "../domain/sessions.ts";
@@ -25,8 +25,9 @@ import {
   verifyTechnicianCode,
 } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { initialsOf } from "../lib/names.ts";
-import { codeGate, countCode, sendCodeAfterResponse } from "../http/send-code.ts";
+import { json } from "../http/openapi.ts";
+import { firstNameOf, initialsOf } from "../lib/names.ts";
+import { countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import {
   clearTechnicianCookie,
   setTechnicianCookie,
@@ -34,12 +35,8 @@ import {
   technicianOf,
 } from "../http/technician-session.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { saltedHash } from "../lib/hash.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { newCode } from "../policy/one-time-code.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
+import { newLoginCode } from "../policy/one-time-code.ts";
 
 /**
  * FSM's technicians are read for a number the mirror does not know at most once
@@ -154,7 +151,7 @@ export function registerTechAuth(app: App): void {
 
   app.openapi(otpRoute, async (c) => {
     const { requestId, deps, config } = c.var;
-    const { login: limits, ipHashSalt } = config.settings;
+    const { login: limits } = config.settings;
     const db = c.env.DB;
     const now = deps.now();
 
@@ -162,25 +159,9 @@ export function registerTechAuth(app: App): void {
     if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
     const visitor = await visitorOf(c);
-    const gate = await codeGate(c, visitor.ipHash, now);
-    if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
-    if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
-
-    const withinAddress = await takeOne(db, {
-      scope: "tech:code:ip",
-      key: visitor.ipHash,
-      window: indiaHour(now),
-      limit: limits.codeIpHourlyLimit,
-    });
-    const withinNumber =
-      withinAddress &&
-      (await takeOne(db, {
-        scope: "tech:code:mobile",
-        key: await saltedHash(ipHashSalt, `mobile:${mobileE164}`),
-        window: indiaDate(now),
-        limit: limits.codeMobileDailyLimit,
-      }));
-    if (!withinNumber) return c.json(errorBody("rate_limited", requestId), 429);
+    const asked = await mayAskForCode(c, { surface: "tech", mobileE164, ipHash: visitor.ipHash, now });
+    if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+    if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
 
     // A technician FSM listed since the last sync is unknown to the mirror; read it, then look again.
     let technician = await findFieldTechnician(db, mobileE164);
@@ -194,7 +175,7 @@ export function registerTechAuth(app: App): void {
     const sendsTo = technician?.mobileE164 ?? null;
     if (!(await countCode(c, sendsTo, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-    const code = limits.fixedCode ?? newCode();
+    const code = limits.fixedCode ?? newLoginCode();
     const challenge = await createTechnicianChallenge(db, {
       technicianId: technician?.id ?? null,
       code,
@@ -238,10 +219,7 @@ export function registerTechAuth(app: App): void {
     });
     setTechnicianCookie(c, token);
     log.info("technician_logged_in", { technician_id: verification.technicianId, device_id: deviceId });
-    return c.json(
-      { verified: true as const, first_name: (name ?? "").trim().split(/\s+/)[0] ?? "", device_id: deviceId },
-      200,
-    );
+    return c.json({ verified: true as const, first_name: firstNameOf(name ?? ""), device_id: deviceId }, 200);
   });
 
   app.openapi(logoutRoute, async (c) => {
@@ -259,7 +237,7 @@ export function registerTechAuth(app: App): void {
     return c.json(
       {
         name: signedIn.name,
-        first_name: signedIn.name.trim().split(/\s+/)[0] ?? "",
+        first_name: firstNameOf(signedIn.name),
         initials: initialsOf(signedIn.name),
         device: { device_id: signedIn.deviceId, label: signedIn.label, enrolled_at: signedIn.enrolledAt },
       },

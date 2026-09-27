@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import { createLogger } from "../../src/log.ts";
-import { createPaymentsProvider, RazorpayError } from "../../src/providers/razorpay.ts";
+import { createPaymentsProvider } from "../../src/providers/payments.ts";
+import { RazorpayError } from "../../src/providers/razorpay.ts";
 import { fakeFetch, json } from "./helpers.ts";
 
 const API = "https://api.razorpay.com/v1";
@@ -66,8 +67,12 @@ describe("Razorpay: orders and refunds", () => {
     await expect(refused).rejects.toThrow("Razorpay 400 BAD_REQUEST_ERROR: The refund amount exceeds the payment");
   });
 
-  it("says so when a failure comes with no body it can read", async () => {
-    const { payments } = razorpay({ [`${API}/orders`]: () => new Response("Bad Gateway", { status: 502 }) });
+  it.each([
+    ["no body it can read", () => new Response("Bad Gateway", { status: 502 })],
+    ["an error with neither code nor description", () => json({ error: {} }, 502)],
+    ["an error that is not an object", () => json({ error: "down" }, 502)],
+  ])("says so when a failure comes with %s", async (_case, reply) => {
+    const { payments } = razorpay({ [`${API}/orders`]: reply });
     await expect(payments.createOrder({ amount: 1, receipt: "r", notes: {} })).rejects.toThrow(
       "Razorpay 502 UNKNOWN: no description",
     );

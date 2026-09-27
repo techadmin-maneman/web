@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import { REQUEST_ID_HEADER } from "../../src/app.ts";
+import { REQUEST_ID_HEADER } from "../../src/http/context.ts";
 import { ErrorResponseSchema } from "../../src/http/errors.ts";
 import { appFor, captureLogs, markDatabase, request } from "./helpers.ts";
 

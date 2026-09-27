@@ -15,6 +15,7 @@ import type { Dependencies } from "../dependencies.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { CrmLead, LeadSource } from "../providers/crm.ts";
 import { leadNotice } from "../domain/lead-notice.ts";
+import { retryWithBackoff } from "./backoff.ts";
 
 export const MAX_SYNC_ATTEMPTS = 10;
 export const QUICK_RETRY_DELAY_SECONDS = 30;
@@ -98,7 +99,7 @@ async function updateContact(
     const reason = describe(error);
     log.warn("crm_contact_update_failed", { person_id: personId, attempt: message.attempts, reason });
     if (message.attempts < MAX_CONTACT_UPDATE_ATTEMPTS) {
-      message.retry({ delaySeconds: QUICK_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      retryWithBackoff(message, QUICK_RETRY_DELAY_SECONDS);
       return;
     }
     await deps.alertOnce({

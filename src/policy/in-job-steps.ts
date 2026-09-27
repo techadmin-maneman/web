@@ -1,5 +1,9 @@
 // The steps of a job, one screen each (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
-// The rules as the prompt states them, and the order the steps run in.
+// The rules as the prompt states them, the order the steps run in, and the check that holds a phone to that order
+// (docs/decisions/0038-offline-writes.md). Each step lands in src/domain/job-events.ts and reaches FSM from
+// src/queues/fsm-sync.ts.
+
+import type { VisitType } from "../config/visit-types.ts";
 
 export const RULES = [
   "Five before photographs: front, top, left, right, hair.",
@@ -29,5 +33,39 @@ export type JobStep = (typeof JOB_STEPS)[number];
 export const JOB_EVENT_KINDS = ["check_in", "start", ...JOB_STEPS] as const;
 export type JobEventKind = (typeof JOB_EVENT_KINDS)[number];
 
-/** "The piece: replacement jobs only." */
+/**
+ * "The piece: replacement jobs only." A first fit takes the step as well, since it fits the client's first piece
+ * (docs/decisions/0038-offline-writes.md).
+ */
 export const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
+
+/** The steps this visit type runs, in order. */
+export function stepsFor(type: VisitType): JobStep[] {
+  const takesPiece = (PIECE_STEP_TYPES as readonly string[]).includes(type);
+  return JOB_STEPS.filter((step) => step !== "piece" || takesPiece);
+}
+
+/** Whether an event closes the job as a no-show (src/policy/no-show.ts). */
+export const isNoShow = (kind: JobEventKind, body: Record<string, unknown>): boolean =>
+  kind === "outcome" && body.outcome === "no_show";
+
+/**
+ * The step this one must follow, given the kinds the job has landed; null when it may land now. A check-in comes
+ * first, then the start, then the steps in their order. A no-show closes a job that was never started, so it needs
+ * only the check-in its wait ran from.
+ */
+export function stepBefore(
+  kind: JobEventKind,
+  type: VisitType,
+  done: ReadonlySet<string>,
+  body: Record<string, unknown>,
+): JobEventKind | null {
+  if (kind === "check_in") return null;
+  if (kind === "start" || isNoShow(kind, body)) return done.has("check_in") ? null : "check_in";
+  if (!done.has("start")) return "start";
+  const wanted: readonly JobEventKind[] = stepsFor(type);
+  const position = wanted.indexOf(kind);
+  if (position <= 0) return null;
+  const previous = wanted[position - 1];
+  return previous === undefined || done.has(previous) ? null : previous;
+}

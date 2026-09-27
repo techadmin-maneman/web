@@ -14,18 +14,25 @@
 // does (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
-import { allowed, checkValue, OPS_SETTINGS, settingNamed, PRICE_BOUNDS, PRICE_TIER } from "../config/ops-settings.ts";
-import { actorOf } from "../domain/audit.ts";
+import { staffOf } from "../http/audit.ts";
+import type { App } from "../http/context.ts";
+import {
+  allowed,
+  checkValue,
+  OPS_SETTINGS,
+  settingNamed,
+  PRICE_BOUNDS,
+  PRICE_TIER,
+  type OpsSetting,
+} from "../config/ops-settings.ts";
 import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
 import { checkPrice, PRICE_ITEMS, priceBook, setPrice, withdrawPrice } from "../domain/price-book.ts";
 import { serviceArea, setServiceArea } from "../domain/service-area.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 /** One number, or one per key: the two shapes a rule's value takes. */
 const ValueSchema = z.union([z.number().int(), z.record(z.string(), z.number().int())]);
@@ -257,11 +264,10 @@ const setServiceAreaRoute = createRoute({
   },
 });
 
-/** The Access identity, which requireAccess has already put in place on this surface. */
-function staffOf(c: { var: { accessIdentity?: Parameters<typeof actorOf>[0] } }) {
-  const identity = c.var.accessIdentity;
-  if (identity === undefined) throw new Error("ops routes run after requireAccess");
-  return actorOf(identity);
+/** The keys a setting takes: those ops name themselves ("open"), these, or none for a single number. */
+function keysOf(setting: OpsSetting): "open" | string[] | null {
+  if (setting.keys === "open" || setting.keys === null) return setting.keys;
+  return [...setting.keys];
 }
 
 const stateBody = (state: Awaited<ReturnType<typeof settingStates>>[number]) => ({
@@ -271,8 +277,7 @@ const stateBody = (state: Awaited<ReturnType<typeof settingStates>>[number]) => 
   unit: state.setting.unit,
   min: state.setting.min,
   max: state.setting.max,
-  keys:
-    state.setting.keys === "open" ? ("open" as const) : state.setting.keys === null ? null : [...state.setting.keys],
+  keys: keysOf(state.setting),
   value: state.value,
   default: state.setting.fallback,
   source: state.setting.source,

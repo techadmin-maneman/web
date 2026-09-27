@@ -94,17 +94,7 @@
     "SELF_SERVE_BOOKING": "true",
     "REFERRER_NAME_ON_INVITE": "true",
     "RAZORPAY_KEY_ID": "",
-    // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
-    "OTP_MOBILE_DAILY_LIMIT": "5",
-    "OTP_IP_HOURLY_LIMIT": "10",
-    "OTP_DAILY_CEILING": "300",
     "VISIT_LEAD_DAYS": "2",
-    "LEAD_MOBILE_DAILY_LIMIT": "5",
-    "LEAD_IP_DAILY_LIMIT": "20",
-    "TRYON_UPLOAD_IP_HOURLY_LIMIT": "5",
-    "TRYON_GENERATE_IP_HOURLY_LIMIT": "5",
-    "TRYON_CLAIM_MOBILE_DAILY_LIMIT": "3",
-    "RESULT_MESSAGE_MOBILE_DAILY_LIMIT": "3",
     // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
     "RENDER_DAILY_CEILING": "20",
     "UPLOAD_DAILY_CEILING": "40",
@@ -212,19 +202,8 @@
         "GEOCODE_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "true",
         "REFERRER_NAME_ON_INVITE": "true",
-        // Off: staging shares the owner's real FSM org, so the startup guard refuses it on (ADR 0073).
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
-        // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
-        "OTP_MOBILE_DAILY_LIMIT": "5",
-        "OTP_IP_HOURLY_LIMIT": "10",
-        "OTP_DAILY_CEILING": "300",
         "VISIT_LEAD_DAYS": "2",
-        "LEAD_MOBILE_DAILY_LIMIT": "5",
-        "LEAD_IP_DAILY_LIMIT": "20",
-        "TRYON_UPLOAD_IP_HOURLY_LIMIT": "5",
-        "TRYON_GENERATE_IP_HOURLY_LIMIT": "5",
-        "TRYON_CLAIM_MOBILE_DAILY_LIMIT": "3",
-        "RESULT_MESSAGE_MOBILE_DAILY_LIMIT": "3",
         // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
         "RENDER_DAILY_CEILING": "20",
         "UPLOAD_DAILY_CEILING": "40",
@@ -324,19 +303,8 @@
         "GEOCODE_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",
         "REFERRER_NAME_ON_INVITE": "true",
-        // Off until the owner switches it on, once this price book holds the owner's prices (ADR 0073).
         "RAZORPAY_KEY_ID": "",
-        // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
-        "OTP_MOBILE_DAILY_LIMIT": "5",
-        "OTP_IP_HOURLY_LIMIT": "10",
-        "OTP_DAILY_CEILING": "300",
         "VISIT_LEAD_DAYS": "2",
-        "LEAD_MOBILE_DAILY_LIMIT": "5",
-        "LEAD_IP_DAILY_LIMIT": "20",
-        "TRYON_UPLOAD_IP_HOURLY_LIMIT": "5",
-        "TRYON_GENERATE_IP_HOURLY_LIMIT": "5",
-        "TRYON_CLAIM_MOBILE_DAILY_LIMIT": "3",
-        "RESULT_MESSAGE_MOBILE_DAILY_LIMIT": "3",
         // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
         "RENDER_DAILY_CEILING": "40",
         "UPLOAD_DAILY_CEILING": "80",

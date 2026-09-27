@@ -9,6 +9,7 @@
 // the tab, and the console lettered the browser's clock as the time logged.
 
 import { recordAudit, type AuditActor } from "./audit.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /** How long one logged opening covers the photographs shown in it. */
 export const PHOTO_VIEW_MINUTES = 30;
@@ -44,7 +45,7 @@ export async function logPhotoView(
 
 /** Whether this member of staff has an opening of this client's photographs still in force. */
 export async function viewInForce(db: D1Database, personId: string, actor: AuditActor, now: Date): Promise<boolean> {
-  const since = new Date(now.getTime() - PHOTO_VIEW_MINUTES * 60_000).toISOString();
+  const since = new Date(now.getTime() - PHOTO_VIEW_MINUTES * MINUTE_MS).toISOString();
   const row = await db
     .prepare(`SELECT 1 FROM audit_log WHERE ${VIEWS_OF} AND actor_kind = ?2 AND actor = ?3 AND at > ?4 LIMIT 1`)
     .bind(personId, actor.kind, actor.id, since)

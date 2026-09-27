@@ -10,10 +10,13 @@ import { rupees } from "@maneman/web-kit/money";
 import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import { WAIVER_GIVES_BACK, type NoShowDecision } from "../policy/no-show.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
-import type { MessageKind } from "./messages.ts";
-import { windowAt } from "./scheduling.ts";
+import { consentGiven, type MessageKind } from "./messages.ts";
+import { windowAt } from "../policy/windows.ts";
+import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 export type VisitMessageKind = Extract<
   MessageKind,
@@ -83,7 +86,7 @@ export const ARRIVAL_NOTICE_WITHIN_MINUTES = 10;
 export const ARRIVAL_TOO_LATE = "the check-in reached us too late to tell the client";
 
 /** The day before a visit, reminders go from this time in India. */
-export const REMINDERS_FROM = "18:00";
+export const REMINDERS_FROM = `${String(DAY_BEFORE_REMINDER_HOUR)}:00`;
 /** How many reminders a cron pass queues, well inside its 50 outside calls. */
 const REMINDERS_PER_PASS = 20;
 
@@ -112,7 +115,7 @@ export async function arrivalNotice(
   db: D1Database,
   input: { personId: string; appointmentId: string; arrivedAt: Date; now: Date },
 ): Promise<string | null> {
-  const late = input.now.getTime() - input.arrivedAt.getTime() > ARRIVAL_NOTICE_WITHIN_MINUTES * 60_000;
+  const late = input.now.getTime() - input.arrivedAt.getTime() > ARRIVAL_NOTICE_WITHIN_MINUTES * MINUTE_MS;
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
   const written = await db
@@ -162,14 +165,7 @@ export async function composeVisitMessage(
   appointmentId: string,
   personId: string,
 ): Promise<Composed> {
-  const consent = await db
-    .prepare(
-      `SELECT granted FROM consents WHERE person_id = ?1 AND purpose = 'whatsapp_visits'
-       ORDER BY created_at DESC, rowid DESC LIMIT 1`,
-    )
-    .bind(personId)
-    .first<{ granted: number }>();
-  if (consent?.granted !== 1) return { skip: NO_VISITS_CONSENT };
+  if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
 
   const visit = await db
     .prepare(
@@ -191,11 +187,11 @@ export async function composeVisitMessage(
 
   const start = new Date(visit.window_start);
   const params = [
-    visit.name.split(" ")[0] ?? visit.name,
+    firstNameOf(visit.name),
     FSM_SERVICE_NAMES[visit.type].toLowerCase(),
     shortDate(indiaDate(start)),
     windowHours(start),
-    visit.technician?.split(" ")[0] ?? "our technician",
+    visit.technician === null ? "our technician" : firstNameOf(visit.technician),
     "",
     "",
     "",
@@ -286,7 +282,7 @@ async function noShowRuling(db: D1Database, appointmentId: string, params: strin
     .first<{ decision: NoShowDecision; wait_started_at: string; ended_at: string }>();
   if (ruling === null || ruling.decision === "undecided") return { skip: "ops have not ruled on it" };
   // The ninth param, which only these templates take.
-  params.push(String(Math.round((Date.parse(ruling.ended_at) - Date.parse(ruling.wait_started_at)) / 60_000)));
+  params.push(String(minutesBetween(ruling.wait_started_at, ruling.ended_at)));
   const paid = await paidAhead(db, appointmentId);
   if (paid.kind === "payment") {
     params[5] = rupees(paid.amount);

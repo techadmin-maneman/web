@@ -1,9 +1,9 @@
 // Who may log in to the client app, and the one-time-code challenges that let
 // them (docs/decisions/0030-one-time-codes.md).
 
-import { secretsMatch, saltedHash } from "../lib/hash.ts";
-import { attemptsLeft, CODE_TTL_MS, ONE_TIME_CODE } from "../policy/one-time-code.ts";
+import { CODE_TTL_MS } from "../policy/one-time-code.ts";
 import type { CodeChannel } from "../providers/codes.ts";
+import { checkCode, codeHashOf, type ChallengePurpose } from "./one-time-codes.ts";
 
 export interface EligiblePerson {
   readonly id: string;
@@ -27,9 +27,6 @@ export async function findEligiblePerson(db: D1Database, mobileE164: string): Pr
     .first<{ id: string }>();
   return row === null ? null : { id: row.id, mobileE164 };
 }
-
-/** What a code is for: logging in, or proving each of the two numbers in a number change. */
-export type ChallengePurpose = "login" | "number_change_old" | "number_change_new";
 
 export interface Challenge {
   readonly id: string;
@@ -65,10 +62,6 @@ function challengeOf(row: ChallengeRow): Challenge {
     expiresAt: new Date(row.expires_at),
   };
 }
-
-/** What a challenge stores instead of the code. The technician's login uses it too. */
-export const codeHashOf = (pepper: string, challengeId: string, code: string) =>
-  saltedHash(pepper, `${challengeId}:${code}`);
 
 /**
  * A new challenge. With a person, it holds the hash of `code`; without one (a
@@ -147,46 +140,11 @@ export type Verification =
   | { readonly outcome: "mismatch"; readonly attemptsLeft: number }
   | { readonly outcome: "closed" };
 
-/**
- * Checks `code`, counting the attempt first, so parallel guesses cannot share
- * one attempt. The fifth wrong code voids the challenge; a right one closes it.
- */
+/** Checks a client's code (src/domain/one-time-codes.ts): a login's, unless the purpose says otherwise. */
 export async function verifyCode(
   db: D1Database,
   options: { challengeId: string; code: string; pepper: string; now: Date; purpose?: ChallengePurpose },
 ): Promise<Verification> {
-  const counted = await db
-    .prepare(
-      `UPDATE otp_challenges SET attempts = attempts + 1
-       WHERE id = ?1 AND purpose = ?4 AND technician_login = 0
-         AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2 AND attempts < ?3
-       RETURNING person_id, code_hash, attempts`,
-    )
-    .bind(
-      options.challengeId,
-      options.now.toISOString(),
-      ONE_TIME_CODE.wrongAttemptsBeforeVoid,
-      options.purpose ?? "login",
-    )
-    .first<{ person_id: string | null; code_hash: string | null; attempts: number }>();
-  if (counted === null) return { outcome: "closed" };
-
-  const given = await codeHashOf(options.pepper, options.challengeId, options.code);
-  const right = counted.code_hash !== null && (await secretsMatch(given, counted.code_hash));
-  if (right && counted.person_id !== null) {
-    const closed = await db
-      .prepare("UPDATE otp_challenges SET verified_at = ?2 WHERE id = ?1 AND verified_at IS NULL RETURNING id")
-      .bind(options.challengeId, options.now.toISOString())
-      .first();
-    return closed === null ? { outcome: "closed" } : { outcome: "verified", personId: counted.person_id };
-  }
-
-  const left = attemptsLeft(counted.attempts);
-  if (left === 0) {
-    await db
-      .prepare("UPDATE otp_challenges SET voided_at = ?2 WHERE id = ?1")
-      .bind(options.challengeId, options.now.toISOString())
-      .run();
-  }
-  return { outcome: "mismatch", attemptsLeft: left };
+  const checked = await checkCode(db, { ...options, purpose: options.purpose ?? "login", holder: "person" });
+  return checked.outcome === "verified" ? { outcome: "verified", personId: checked.holderId } : checked;
 }

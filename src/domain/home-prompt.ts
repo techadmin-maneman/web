@@ -12,6 +12,7 @@
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { ClientState } from "./client-visits.ts";
+import { DAY_MS } from "../lib/durations.ts";
 
 /** How long a newly issued invoice is Home's prompt, before it is only on its visit's page. */
 export const INVOICE_PROMPT_DAYS = 14;
@@ -53,7 +54,7 @@ export async function homePrompt(
   state: ClientState,
   now: Date,
 ): Promise<HomePrompt | null> {
-  const since = new Date(now.getTime() - INVOICE_PROMPT_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const since = new Date(now.getTime() - INVOICE_PROMPT_DAYS * DAY_MS).toISOString();
   const row = await db.prepare(PROMPT).bind(personId, since).first<Row>();
   if (row === null) return null;
   if (row.has_address === 0 && state !== "nothing_booked") return { kind: "address" };

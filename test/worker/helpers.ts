@@ -1,14 +1,15 @@
-import { createStubPayments } from "../../src/providers/razorpay.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
 import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
-import { createApp, type App } from "../../src/app.ts";
+import { createApp } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { EXPECTED_DATABASE_NAME, type EnvironmentName, type Surface } from "../../src/config/environments.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/erasure.ts";
 import type { StaticConfig } from "../../src/guard.ts";
-import { createAccessVerifier } from "../../src/http/access.ts";
+import { createAccessVerifier } from "../../src/providers/cloudflare-access.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
 import { createImageProvider } from "../../src/providers/image.ts";

@@ -292,3 +292,60 @@ describe("a number the site already knows", () => {
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
   });
 });
+
+// The site sends one Idempotency-Key per submission, so pressing again after the answer was lost on the way gets the
+// first answer back rather than a second booking (FEO-21; docs/decisions/0011-lead-api.md).
+describe("the Idempotency-Key", () => {
+  const keyed = (body: object, key: string) => ({
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+    body: JSON.stringify(body),
+  });
+  const bindings = () => ({ FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() });
+  const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
+
+  it("answers a consultation sent again with its first answer, and books it once", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const body = { ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
+
+    const first = await request(site(), "/api/consultation", keyed(body, "key-consult-0001"), bindings());
+    const again = await request(site(), "/api/consultation", keyed(body, "key-consult-0001"), bindings());
+
+    expect(first.status).toBe(201);
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual(await first.json());
+    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);
+    expect(await count("SELECT COUNT(*) AS n FROM leads")).toBe(1);
+  });
+
+  it("answers a waitlist entry sent again with its first answer, and records one lead", async () => {
+    await pincode("400050", "Bandra", "Mumbai", false);
+    const body = { ...VISITOR, pincode: "400050", contact_consent: true, launch_alert: true };
+
+    const first = await request(site(), "/api/waitlist", keyed(body, "key-waitlist-0001"), bindings());
+    const again = await request(site(), "/api/waitlist", keyed(body, "key-waitlist-0001"), bindings());
+
+    expect(first.status).toBe(201);
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual({ area: "Bandra" });
+    expect(await count("SELECT COUNT(*) AS n FROM leads")).toBe(1);
+  });
+
+  it("refuses the key with a different submission, and frees it when the submission is refused", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const body = { ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
+    await request(site(), "/api/consultation", keyed(body, "key-consult-0002"), bindings());
+
+    const changed = { ...body, window: "evening" };
+    const reused = await request(site(), "/api/consultation", keyed(changed, "key-consult-0002"), bindings());
+    expect(reused.status).toBe(422);
+    expect(await reused.json()).toMatchObject({ error: { code: "idempotency_key_reused" } });
+
+    // A day outside the fortnight is refused, and the same submission is refused for itself again, not replayed.
+    const outside = { ...body, date: "2026-10-31" };
+    await request(site(), "/api/consultation", keyed(outside, "key-consult-0003"), bindings());
+    const again = await request(site(), "/api/consultation", keyed(outside, "key-consult-0003"), bindings());
+    expect(again.status).toBe(422);
+    expect(await again.json()).toMatchObject({ error: { code: "invalid_request" } });
+  });
+});

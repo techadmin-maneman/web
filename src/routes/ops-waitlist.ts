@@ -6,14 +6,13 @@
 // A launch is audited, and its alerts leave in a paced line.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
-import { actorOf } from "../domain/audit.ts";
+import { staffOf } from "../http/audit.ts";
+import type { App } from "../http/context.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../domain/waitlist.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 /** The pincodes the waitlist lists at once, the longest waits: far more than a launch is chosen from. */
 export const WAITLIST_AREAS = 200;
@@ -162,14 +161,13 @@ export function registerOpsWaitlist(app: App): void {
       const preview = await launchPreview(db, pin);
       return c.json({ pincode: pin, waiting: preview.waiting, alerts: preview.alerts, launched: false }, 200);
     }
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const staff = staffOf(c);
     const { alerts } = await launchPincode(db, {
       pincode: pin,
       launchOn: launchOn ?? indiaDate(now),
       audit: {
         surface: "ops",
-        actor: actorOf(identity),
+        actor: staff,
         action: "pincode.launch",
         subject: { kind: "pincode", id: pin },
         requestId: c.var.requestId,

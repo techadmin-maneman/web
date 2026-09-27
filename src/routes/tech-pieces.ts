@@ -9,7 +9,7 @@
 // No client's name or number here: a label says which piece, not whose.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { pieceWithOwner } from "../domain/pieces.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { requireTechnicianSession } from "../http/technician-session.ts";

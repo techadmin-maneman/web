@@ -4,6 +4,8 @@
 //
 //   <subject, base64url>.<expiry, Unix seconds>.<HMAC-SHA256, base64url>
 
+import { fromBase64Url, toBase64Url } from "./base64url.ts";
+
 export type TokenPurpose = "upload" | "result" | "look" | "photo" | "tech_photo";
 
 const encoder = new TextEncoder();
@@ -57,21 +59,4 @@ function importKey(secret: string): Promise<CryptoKey> {
     "sign",
     "verify",
   ]);
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function fromBase64Url(text: string): Uint8Array | null {
-  if (!/^[A-Za-z0-9_-]*$/.test(text)) return null;
-  const base64 = text.replace(/-/g, "+").replace(/_/g, "/");
-  try {
-    return Uint8Array.from(atob(base64 + "=".repeat((4 - (base64.length % 4)) % 4)), (char) => char.charCodeAt(0));
-  } catch {
-    return null;
-  }
 }

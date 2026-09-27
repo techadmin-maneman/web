@@ -33,7 +33,7 @@ const quote = (value: string | number | null) =>
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 /** The same shape as a code made in the app: initials and four random characters. */
-function newCode(name: string): string {
+function newReferralCode(name: string): string {
   const initials =
     name
       .split(/\s+/)
@@ -87,7 +87,7 @@ for (const line of lines) {
   const referredMobile = e164(at_(row, "referred_mobile"));
   const referrer = person(referrerMobile, at_(row, "referrer_name"));
   const referred = person(referredMobile, at_(row, "referred_name"));
-  const code = newCode(at_(row, "referrer_name"));
+  const code = newReferralCode(at_(row, "referrer_name"));
   sql.push(
     `INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES (${quote(code)}, ${referrer}, ${quote(at)}, ${quote(at)})
      ON CONFLICT (person_id) DO NOTHING;`,

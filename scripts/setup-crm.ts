@@ -18,7 +18,7 @@ import { parseArgs } from "node:util";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../src/config/booking.ts";
 import { BOOKED_WINDOW_NAMES, REFERRAL_LEAD_SOURCE } from "../src/config/crm.ts";
 import { LEAD_STATUSES } from "../src/providers/crm.ts";
-import { LEAD_SOURCE_NAMES } from "../src/providers/zoho.ts";
+import { LEAD_SOURCE_NAMES } from "../src/providers/zoho-crm.ts";
 
 interface NewField {
   /** The label Zoho shows, chosen so that the API name it derives is `apiName`. */
@@ -30,7 +30,7 @@ interface NewField {
   readonly unique?: true;
 }
 
-/** The custom fields src/providers/zoho.ts writes, with the values from the same constants. */
+/** The custom fields src/providers/zoho-crm.ts writes, with the values from the same constants. */
 const CUSTOM_FIELDS: readonly NewField[] = [
   {
     label: "First Choice Window",

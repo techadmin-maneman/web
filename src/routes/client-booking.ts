@@ -18,28 +18,28 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
-import { withGst } from "../config/gst.ts";
-import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS, WINDOW_TIMES } from "../config/scheduling.ts";
+import type { App, AppEnv } from "../http/context.ts";
+import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { startBooking } from "../domain/bookings.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { priceOf, type Price } from "../domain/price-book.ts";
-import { currentAddress } from "../domain/profile.ts";
+import { bookingPincode, checkoutHold, clientHold, releaseHold } from "../domain/holds.ts";
 import {
   activeTechnicians,
   availability,
   bookableTypes,
   holdSlot,
   regularTechnician,
-  visitTimes,
   type Moving,
 } from "../domain/scheduling.ts";
 import { changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
-import { FREE_CHANGE_NOTICE_HOURS, LATE_FEES } from "../policy/moving-a-visit.ts";
+import { requireSelfServe } from "../http/self-serve.ts";
+import { addDays, indiaDate } from "../lib/india-time.ts";
+import { LATE_FEES } from "../policy/moving-a-visit.ts";
+import { takesCredit } from "../policy/referral-reward.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
 export const PriceSchema = z
@@ -220,99 +220,8 @@ const releaseRoute = createRoute({
   },
 });
 
-interface HoldRow {
-  id: string;
-  type: VisitType;
-  date: string;
-  window_label: (typeof BOOKING_WINDOWS)[number];
-  start_unit: number;
-  amount: number;
-  amount_ex_gst: number;
-  gst_percent: number;
-  state: "held" | "booked" | "released";
-  expires_at: string;
-  confirmed_at: string | null;
-  late_fee_ex_gst: number | null;
-  late_fee_gst_percent: number | null;
-  technician_name: string;
-  technician_initials: string;
-  appointment_id: string | null;
-  moves_appointment_id: string | null;
-  use_credit: number;
-  person_id: string;
-  paid: number;
-}
-
-/** The late fee the hold was made under; for a hold made before it kept one, the price book's for its day. */
-async function lateFeeOf(db: D1Database, row: HoldRow): Promise<Price | null> {
-  const item = LATE_FEES[row.type];
-  if (item === undefined) return null;
-  if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) return priceOf(db, item, row.date);
-  return {
-    amount_ex_gst: row.late_fee_ex_gst,
-    amount: withGst(row.late_fee_ex_gst, row.late_fee_gst_percent),
-    gst_percent: row.late_fee_gst_percent,
-  };
-}
-
-/** A hold not paid for and past its ten minutes: the client may no longer pay for it. */
-const hasLapsed = (row: HoldRow, now: Date) =>
-  row.state === "held" && row.confirmed_at === null && row.expires_at <= now.toISOString();
-
-async function holdOf(db: D1Database, row: HoldRow, now: Date) {
-  const { start, end } = visitTimes(row.date, row.start_unit, row.type);
-  const windowStarts = indiaInstant(row.date, WINDOW_TIMES[row.window_label].start);
-  return {
-    id: row.id,
-    type: row.type,
-    date: row.date,
-    window: row.window_label,
-    starts_at: start.toISOString(),
-    ends_at: end.toISOString(),
-    technician: { name: row.technician_name, initials: row.technician_initials },
-    price: { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent },
-    late_fee: await lateFeeOf(db, row),
-    free_until: new Date(windowStarts.getTime() - FREE_CHANGE_NOTICE_HOURS * 3_600_000).toISOString(),
-    expires_at: row.expires_at,
-    state: hasLapsed(row, now) ? ("expired" as const) : row.state,
-    paid: row.paid === 1,
-    visit_id: row.appointment_id,
-    moves_visit_id: row.moves_appointment_id,
-    credit:
-      row.use_credit === 1
-        ? {
-            remaining: Math.max(
-              0,
-              (await creditBalance(db, row.person_id, now)).visits - (row.state === "held" ? 1 : 0),
-            ),
-          }
-        : null,
-  };
-}
-
-const HOLD_QUERY = `SELECT h.id, h.type, h.date, h.window_label, h.start_unit, h.amount, h.amount_ex_gst, h.gst_percent,
-    h.state, h.expires_at, h.confirmed_at, h.late_fee_ex_gst, h.late_fee_gst_percent,
-    t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
-    h.moves_appointment_id, h.use_credit, h.person_id,
-    EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
-  FROM slot_holds h JOIN technicians t ON t.id = h.technician_id WHERE h.id = ?1 AND h.person_id = ?2`;
-
 /** The first day a client may book: tomorrow, in India. */
 const firstBookableDay = (now: Date) => addDays(indiaDate(now), 1);
-
-/** Where the client's visit would be: their saved address's pincode, else the one their last booking gave. */
-async function bookingPincode(db: D1Database, personId: string): Promise<string | null> {
-  const address = await currentAddress(db, personId);
-  if (address !== null) return address.pincode;
-  const lastBooked = await db
-    .prepare(
-      `SELECT pincode FROM slot_holds WHERE person_id = ?1 AND pincode IS NOT NULL
-       ORDER BY created_at DESC LIMIT 1`,
-    )
-    .bind(personId)
-    .first<{ pincode: string }>();
-  return lastBooked?.pincode ?? null;
-}
 
 /** Whether a client may book this kind of visit, and its price on that day. */
 async function bookable(c: Context<AppEnv>, personId: string, type: VisitType, on: string): Promise<Price | null> {
@@ -350,19 +259,7 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
     await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
     return { hold_id: holdId, checkout: null };
   }
-  const row = await c.env.DB.prepare(
-    `SELECT h.type, h.amount, h.date, h.move_kind, p.name, p.mobile_e164
-     FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE h.id = ?1`,
-  )
-    .bind(holdId)
-    .first<{
-      type: VisitType;
-      amount: number;
-      date: string;
-      move_kind: "move" | "replace" | null;
-      name: string;
-      mobile_e164: string;
-    }>();
+  const row = await checkoutHold(c.env.DB, holdId);
   if (row === null) return null;
   const name = FSM_SERVICE_NAMES[row.type];
   const description =
@@ -384,15 +281,11 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
 export function registerClientBooking(app: App): void {
   for (const path of ["/api/availability", "/api/holds", "/api/holds/*", "/api/bookings"]) {
     app.use(path, requireClientSession);
-    app.use(path, async (c, next) => {
-      if (!c.var.config.settings.selfServeBooking) return c.json(errorBody("ops_assisted", c.var.requestId), 409);
-      return next();
-    });
+    app.use(path, requireSelfServe);
   }
 
   app.openapi(availabilityRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const { type, from, moving: movingId } = c.req.valid("query");
     const now = c.var.deps.now();
     const first = firstBookableDay(now);
@@ -427,8 +320,7 @@ export function registerClientBooking(app: App): void {
   });
 
   app.openapi(holdRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const { type, date, window, moving: movingId } = c.req.valid("json");
     const now = c.var.deps.now();
     const first = firstBookableDay(now);
@@ -442,11 +334,8 @@ export function registerClientBooking(app: App): void {
       move === null
         ? undefined
         : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
-    // A new service visit, or one replacing a moved one, is paid with a credit whenever the client has one.
     const useCredit =
-      type === "service" &&
-      moves?.kind !== "move" &&
-      (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
+      takesCredit(type, moves?.kind ?? null) && (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
     const lateFeeItem = LATE_FEES[type];
     const hold = await holdSlot(
       c.env.DB,
@@ -467,42 +356,32 @@ export function registerClientBooking(app: App): void {
     );
     if (hold === null) return c.json(errorBody("taken", c.var.requestId), 409);
     c.var.log.info("slot_held", { hold_id: hold.id, type, date, window });
-    const row = await c.env.DB.prepare(HOLD_QUERY).bind(hold.id, session.subjectId).first<HoldRow>();
-    if (row === null) return c.json(errorBody("taken", c.var.requestId), 409);
-    return c.json(await holdOf(c.env.DB, row, now), 201);
+    const held = await clientHold(c.env.DB, hold.id, session.subjectId, now);
+    if (held === null) return c.json(errorBody("taken", c.var.requestId), 409);
+    return c.json(held, 201);
   });
 
   app.openapi(holdByIdRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
-    const row = await c.env.DB.prepare(HOLD_QUERY).bind(c.req.valid("param").id, session.subjectId).first<HoldRow>();
-    if (row === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    return c.json(await holdOf(c.env.DB, row, c.var.deps.now()), 200);
+    const session = clientOf(c);
+    const held = await clientHold(c.env.DB, c.req.valid("param").id, session.subjectId, c.var.deps.now());
+    if (held === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    return c.json(held, 200);
   });
 
   app.openapi(bookingRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const booking = await startCheckout(c, c.req.valid("json").hold_id, session.subjectId);
     if (booking === null) return c.json(errorBody("hold_expired", c.var.requestId), 409);
     return c.json(booking, 201);
   });
 
   app.openapi(releaseRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
-    const db = c.env.DB;
-    const id = c.req.valid("param").id;
-    const at = c.var.deps.now().toISOString();
-    // Once paid for (or booked free) it is on its way to FSM, and only a booking or a refund ends it.
-    const mine =
-      "SELECT id FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND state = 'held' AND confirmed_at IS NULL";
-    await db.batch([
-      db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${mine})`).bind(id, session.subjectId),
-      db
-        .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?3 WHERE id IN (${mine})`)
-        .bind(id, session.subjectId, at),
-    ]);
+    const session = clientOf(c);
+    await releaseHold(c.env.DB, {
+      holdId: c.req.valid("param").id,
+      personId: session.subjectId,
+      now: c.var.deps.now(),
+    });
     return c.body(null, 204);
   });
 }

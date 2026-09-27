@@ -10,7 +10,7 @@ import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
-import { createStubPayments } from "../../src/providers/razorpay.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";

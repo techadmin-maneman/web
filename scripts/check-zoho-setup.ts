@@ -11,7 +11,7 @@
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../src/config/booking.ts";
 import { BOOKED_WINDOW_NAMES, REFERRAL_LEAD_SOURCE } from "../src/config/crm.ts";
 import { LEAD_STATUSES } from "../src/providers/crm.ts";
-import { LEAD_SOURCE_NAMES } from "../src/providers/zoho.ts";
+import { LEAD_SOURCE_NAMES } from "../src/providers/zoho-crm.ts";
 
 interface ExpectedField {
   readonly apiName: string;
@@ -21,7 +21,7 @@ interface ExpectedField {
   readonly unique?: true;
 }
 
-/** What src/providers/zoho.ts writes. The values come from the same constants it uses. */
+/** What src/providers/zoho-crm.ts writes. The values come from the same constants it uses. */
 const EXPECTED_FIELDS: readonly ExpectedField[] = [
   { apiName: "Lead_Status", type: "picklist", values: LEAD_STATUSES },
   // "Referral" is written only once CRM_ORG_HAS_REFERRAL_FIELDS (src/config/crm.ts) is on; it is checked here so

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
-import { createApp, type App } from "./app.ts";
+import { createApp } from "./app.ts";
+import type { App } from "./http/context.ts";
 import { ENABLED_SURFACES, type Surface } from "./config/environments.ts";
 import { productionDependencies } from "./dependencies.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";

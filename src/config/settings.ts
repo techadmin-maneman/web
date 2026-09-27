@@ -7,6 +7,7 @@ import { toE164 } from "../lib/mobile.ts";
 import type { EvolutionSettings } from "../providers/evolution.ts";
 import { RESULT_TEMPLATE } from "./message-templates.ts";
 import { ENABLED_SURFACES, FSM_CATALOGUE_PUSH, type EnvironmentName, type ProviderVar } from "./environments.ts";
+import { FIXED_LIMITS, type FixedLimit } from "./limits.ts";
 import { UNKNOWN_COLOR_ROUTE, type UnknownColorRoute } from "./tryon.ts";
 
 export interface TryonSettings {
@@ -251,6 +252,17 @@ class Reader {
     return value;
   }
 
+  /**
+   * A limit fixed in ./limits.ts. A var of the same name may raise it on a local run only, as the browser tests do
+   * (playwright.config.ts); anywhere else that var is refused.
+   */
+  fixedLimit(name: FixedLimit, isLocal: boolean): number {
+    if (this.optionalText(name) === null) return FIXED_LIMITS[name];
+    if (isLocal) return this.count(name);
+    this.problems.push(`${name} is fixed in src/config/limits.ts: only a local run may set it`);
+    return FIXED_LIMITS[name];
+  }
+
   /** A secret long enough to sign with. */
   key(name: string): string {
     const value = this.text(name);
@@ -280,14 +292,17 @@ class Reader {
   }
 }
 
+/** The provider vars as the guard read them, before it has refused any: one that failed its check is missing. */
+type ProvidersRead = Partial<Record<ProviderVar, string>>;
+
 export function readSettings(
   env: Env,
   environment: EnvironmentName | undefined,
-  providers: Partial<Record<ProviderVar, string>>,
+  providers: ProvidersRead,
 ): { settings: Settings; problems: string[] } {
   const read = new Reader(env);
   const isRemote = environment === "staging" || environment === "production";
-  const crmProvider = providers.CRM_PROVIDER;
+  const isLocal = environment === "local";
 
   const turnstileSecret = read.text("TURNSTILE_SECRET");
   if (environment === "production" && TURNSTILE_TEST_SECRETS.has(turnstileSecret)) {
@@ -316,89 +331,11 @@ export function readSettings(
     read.problems.push("LEAD_WEBHOOK_URL must be an https:// URL");
   }
 
-  let zoho: ZohoSettings | null = null;
-  if (crmProvider === "zoho") {
-    zoho = {
-      clientId: read.text("ZOHO_CLIENT_ID"),
-      clientSecret: read.text("ZOHO_CLIENT_SECRET"),
-      refreshToken: read.text("ZOHO_REFRESH_TOKEN"),
-      accountsHost: read.text("ZOHO_ACCOUNTS_HOST"),
-      apiHost: read.text("ZOHO_API_HOST"),
-      larId: read.optionalText("ZOHO_LAR_ID"),
-    };
-    for (const [name, host] of [
-      ["ZOHO_ACCOUNTS_HOST", zoho.accountsHost],
-      ["ZOHO_API_HOST", zoho.apiHost],
-    ] as const) {
-      if (host !== "" && !ZOHO_HOST.test(host)) read.problems.push(`${name} must be a Zoho hostname, without https://`);
-    }
-  }
-
-  let zohoFsm: ZohoFsmSettings | null = null;
-  if (providers.FSM_PROVIDER === "zoho" || providers.BOOKS_PROVIDER === "zoho") {
-    zohoFsm = {
-      clientId: read.text("ZOHO_FSM_CLIENT_ID"),
-      clientSecret: read.text("ZOHO_FSM_CLIENT_SECRET"),
-      refreshToken: read.text("ZOHO_FSM_REFRESH_TOKEN"),
-      accountsHost: read.text("ZOHO_FSM_ACCOUNTS_HOST"),
-      apiHost: read.text("ZOHO_FSM_API_HOST"),
-      booksOrgId: providers.BOOKS_PROVIDER === "zoho" ? read.text("ZOHO_BOOKS_ORG_ID") : null,
-      webhookToken: read.optionalText("FSM_WEBHOOK_TOKEN"),
-      booksRefundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
-    };
-    if (zohoFsm.webhookToken !== null && zohoFsm.webhookToken.length < 32) {
-      read.problems.push("FSM_WEBHOOK_TOKEN must be at least 32 characters");
-    }
-    for (const [name, host] of [
-      ["ZOHO_FSM_ACCOUNTS_HOST", zohoFsm.accountsHost],
-      ["ZOHO_FSM_API_HOST", zohoFsm.apiHost],
-    ] as const) {
-      if (host !== "" && !ZOHO_HOST.test(host)) read.problems.push(`${name} must be a Zoho hostname, without https://`);
-    }
-  }
-
-  let razorpay: RazorpaySettings | null = null;
-  if (providers.PAYMENTS_PROVIDER === "razorpay") {
-    razorpay = {
-      keyId: read.text("RAZORPAY_KEY_ID"),
-      keySecret: read.text("RAZORPAY_KEY_SECRET"),
-      webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET"),
-    };
-    // Test keys move no money; live keys must never be anywhere else.
-    if (environment === "production" && !razorpay.keyId.startsWith("rzp_live_") && razorpay.keyId !== "") {
-      read.problems.push("RAZORPAY_KEY_ID is not a live key in production");
-    }
-    if (environment !== "production" && razorpay.keyId.startsWith("rzp_live_")) {
-      read.problems.push("RAZORPAY_KEY_ID is a live key outside production: it would take real money");
-    }
-  } else if (providers.PAYMENTS_PROVIDER === "stub") {
-    razorpay = { keyId: "", keySecret: "", webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET") };
-  }
-
-  const geocode: GeocodeSettings = {
-    apiKey: providers.GEOCODE_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null,
-    dailyCeiling: read.count("GEOCODE_DAILY_CEILING"),
-  };
-  // A ceiling of nought is the runbook's kill switch and is deliberate; a
-  // ceiling this high is not, and it is the owner's card that pays for it.
-  if (geocode.dailyCeiling > GEOCODE_CEILING_MAX) {
-    read.problems.push(
-      `GEOCODE_DAILY_CEILING must be at most ${String(GEOCODE_CEILING_MAX)}: ` +
-        "a day above that could take a month past Google's free allowance",
-    );
-  }
-
-  let access: AccessSettings | null = null;
-  if (providers.ACCESS_PROVIDER === "cloudflare") {
-    const teamDomain = read.text("ACCESS_TEAM_DOMAIN");
-    if (teamDomain !== "" && !ACCESS_TEAM_DOMAIN.test(teamDomain)) {
-      read.problems.push("ACCESS_TEAM_DOMAIN must be a cloudflareaccess.com hostname, without https://");
-    }
-    const opsOn = environment !== undefined && ENABLED_SURFACES[environment].includes("ops");
-    access = { teamDomain, opsAudience: opsOn ? read.text("ACCESS_OPS_AUD") : read.optionalText("ACCESS_OPS_AUD") };
-  } else if (environment === "staging" && providers.ACCESS_PROVIDER === "stub") {
-    read.problems.push("ACCESS_PROVIDER is a stub in staging: staff identity is verified everywhere but locally");
-  }
+  const zoho = readZoho(read, providers);
+  const zohoFsm = readZohoFsm(read, providers);
+  const razorpay = readRazorpay(read, providers, environment);
+  const geocode = readGeocode(read, providers);
+  const access = readAccess(read, providers, environment);
 
   const clientOn = environment !== undefined && ENABLED_SURFACES[environment].includes("client");
   for (const variable of ["FSM_PROVIDER", "BOOKS_PROVIDER"] as const) {
@@ -406,18 +343,7 @@ export function readSettings(
       read.problems.push(`${variable} is "none" while the client surface is on: visits and documents come from Zoho`);
     }
   }
-  const login: LoginSettings = {
-    codePepper: clientOn ? read.key("OTP_PEPPER") : (read.optionalText("OTP_PEPPER") ?? ""),
-    codeMobileDailyLimit: read.count("OTP_MOBILE_DAILY_LIMIT"),
-    codeIpHourlyLimit: read.count("OTP_IP_HOURLY_LIMIT"),
-    codeDailyCeiling: read.count("OTP_DAILY_CEILING"),
-    fixedCode: read.optionalText("OTP_FIXED_CODE"),
-  };
-  if (login.fixedCode !== null && environment !== "local") {
-    read.problems.push("OTP_FIXED_CODE is set outside local: every login code would be known");
-  } else if (login.fixedCode !== null && !/^\d{6}$/.test(login.fixedCode)) {
-    read.problems.push("OTP_FIXED_CODE must be six digits");
-  }
+  const login = readLogin(read, environment, clientOn);
 
   const devRoutes = read.optionalText("DEV_ROUTES");
   if (devRoutes !== null && environment !== "local") {
@@ -426,55 +352,13 @@ export function readSettings(
     );
   }
 
-  const tryon: TryonSettings = {
-    uploadIpHourlyLimit: read.count("TRYON_UPLOAD_IP_HOURLY_LIMIT"),
-    generateIpHourlyLimit: read.count("TRYON_GENERATE_IP_HOURLY_LIMIT"),
-    claimMobileDailyLimit: read.count("TRYON_CLAIM_MOBILE_DAILY_LIMIT"),
-    resultMessageMobileDailyLimit: read.count("RESULT_MESSAGE_MOBILE_DAILY_LIMIT"),
-    renderDailyCeiling: read.count("RENDER_DAILY_CEILING"),
-    uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
-    resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
-    resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
-    unknownColorRoute: UNKNOWN_COLOR_ROUTE,
-    creditFloor: read.count("AILAB_CREDIT_FLOOR"),
-    linkSigningKey: read.key("RESULT_SIGNING_KEY"),
-    ailabApiKey: providers.IMAGE_PROVIDER === "ailabtools" ? read.text("AILAB_API_KEY") : null,
-  };
-
-  if (tryon.resultRetentionDays < 1 || tryon.resultRetentionDays > 30) {
-    read.problems.push("RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days");
-  }
-
-  let evolution: EvolutionSettings | null = null;
-  if (providers.MESSAGING_PROVIDER === "evolution") {
-    evolution = {
-      baseUrl: read.text("EVOLUTION_API_URL").replace(/\/+$/, ""),
-      apiKey: read.text("EVOLUTION_API_KEY"),
-      instance: read.text("EVOLUTION_INSTANCE_NAME"),
-      webhookToken: read.optionalText("EVOLUTION_WEBHOOK_TOKEN"),
-    };
-    if (evolution.webhookToken !== null && evolution.webhookToken.length < 32) {
-      read.problems.push("EVOLUTION_WEBHOOK_TOKEN must be at least 32 characters");
-    }
-    if (evolution.baseUrl !== "" && !evolution.baseUrl.startsWith("https://")) {
-      read.problems.push("EVOLUTION_API_URL must be an https:// URL");
-    }
-  }
-
-  const messaging: MessagingSettings = {
-    enabled: read.flag("MESSAGING_ENABLED"),
-    resultTemplate: RESULT_TEMPLATE,
-    allowlist: read.mobiles("MESSAGING_ALLOWLIST"),
-    evolution,
-  };
-  if (environment === "staging" && messaging.enabled && messaging.allowlist.length === 0) {
-    read.problems.push("MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging");
-  }
+  const tryon = readTryon(read, providers, isLocal);
+  const messaging = readMessaging(read, providers, environment);
 
   const settings: Settings = {
     visitLeadDays: read.count("VISIT_LEAD_DAYS"),
-    leadMobileDailyLimit: read.count("LEAD_MOBILE_DAILY_LIMIT"),
-    leadIpDailyLimit: read.count("LEAD_IP_DAILY_LIMIT"),
+    leadMobileDailyLimit: read.fixedLimit("LEAD_MOBILE_DAILY_LIMIT", isLocal),
+    leadIpDailyLimit: read.fixedLimit("LEAD_IP_DAILY_LIMIT", isLocal),
     turnstileSecret,
     acceptTurnstileTestToken,
     selfServeBooking,
@@ -495,4 +379,191 @@ export function readSettings(
     devRoutes: environment === "local" && devRoutes === "on",
   };
   return { settings, problems: read.problems };
+}
+
+/** Each Zoho host named, which must be a hostname without https://. */
+function checkZohoHosts(read: Reader, hosts: readonly (readonly [name: string, host: string])[]): void {
+  for (const [name, host] of hosts) {
+    if (host !== "" && !ZOHO_HOST.test(host)) read.problems.push(`${name} must be a Zoho hostname, without https://`);
+  }
+}
+
+/** The CRM's Zoho client, when CRM_PROVIDER is zoho. */
+function readZoho(read: Reader, providers: ProvidersRead): ZohoSettings | null {
+  if (providers.CRM_PROVIDER !== "zoho") return null;
+  const zoho: ZohoSettings = {
+    clientId: read.text("ZOHO_CLIENT_ID"),
+    clientSecret: read.text("ZOHO_CLIENT_SECRET"),
+    refreshToken: read.text("ZOHO_REFRESH_TOKEN"),
+    accountsHost: read.text("ZOHO_ACCOUNTS_HOST"),
+    apiHost: read.text("ZOHO_API_HOST"),
+    larId: read.optionalText("ZOHO_LAR_ID"),
+  };
+  checkZohoHosts(read, [
+    ["ZOHO_ACCOUNTS_HOST", zoho.accountsHost],
+    ["ZOHO_API_HOST", zoho.apiHost],
+  ]);
+  return zoho;
+}
+
+/** The Zoho client FSM and Books share, when either is zoho. */
+function readZohoFsm(read: Reader, providers: ProvidersRead): ZohoFsmSettings | null {
+  if (providers.FSM_PROVIDER !== "zoho" && providers.BOOKS_PROVIDER !== "zoho") return null;
+  const zohoFsm: ZohoFsmSettings = {
+    clientId: read.text("ZOHO_FSM_CLIENT_ID"),
+    clientSecret: read.text("ZOHO_FSM_CLIENT_SECRET"),
+    refreshToken: read.text("ZOHO_FSM_REFRESH_TOKEN"),
+    accountsHost: read.text("ZOHO_FSM_ACCOUNTS_HOST"),
+    apiHost: read.text("ZOHO_FSM_API_HOST"),
+    booksOrgId: providers.BOOKS_PROVIDER === "zoho" ? read.text("ZOHO_BOOKS_ORG_ID") : null,
+    webhookToken: read.optionalText("FSM_WEBHOOK_TOKEN"),
+    booksRefundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
+  };
+  if (zohoFsm.webhookToken !== null && zohoFsm.webhookToken.length < 32) {
+    read.problems.push("FSM_WEBHOOK_TOKEN must be at least 32 characters");
+  }
+  checkZohoHosts(read, [
+    ["ZOHO_FSM_ACCOUNTS_HOST", zohoFsm.accountsHost],
+    ["ZOHO_FSM_API_HOST", zohoFsm.apiHost],
+  ]);
+  return zohoFsm;
+}
+
+/** Razorpay's keys, when PAYMENTS_PROVIDER is razorpay; the stub's webhook secret, when it is the stub. */
+function readRazorpay(
+  read: Reader,
+  providers: ProvidersRead,
+  environment: EnvironmentName | undefined,
+): RazorpaySettings | null {
+  if (providers.PAYMENTS_PROVIDER === "stub") {
+    return { keyId: "", keySecret: "", webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET") };
+  }
+  if (providers.PAYMENTS_PROVIDER !== "razorpay") return null;
+  const razorpay: RazorpaySettings = {
+    keyId: read.text("RAZORPAY_KEY_ID"),
+    keySecret: read.text("RAZORPAY_KEY_SECRET"),
+    webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET"),
+  };
+  // Test keys move no money; live keys must never be anywhere else.
+  if (environment === "production" && !razorpay.keyId.startsWith("rzp_live_") && razorpay.keyId !== "") {
+    read.problems.push("RAZORPAY_KEY_ID is not a live key in production");
+  }
+  if (environment !== "production" && razorpay.keyId.startsWith("rzp_live_")) {
+    read.problems.push("RAZORPAY_KEY_ID is a live key outside production: it would take real money");
+  }
+  return razorpay;
+}
+
+/** The address search: its key when there is one, and its daily ceiling always. */
+function readGeocode(read: Reader, providers: ProvidersRead): GeocodeSettings {
+  const geocode: GeocodeSettings = {
+    apiKey: providers.GEOCODE_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null,
+    dailyCeiling: read.count("GEOCODE_DAILY_CEILING"),
+  };
+  // A ceiling of nought is the runbook's kill switch and is deliberate; a
+  // ceiling this high is not, and it is the owner's card that pays for it.
+  if (geocode.dailyCeiling > GEOCODE_CEILING_MAX) {
+    read.problems.push(
+      `GEOCODE_DAILY_CEILING must be at most ${String(GEOCODE_CEILING_MAX)}: ` +
+        "a day above that could take a month past Google's free allowance",
+    );
+  }
+  return geocode;
+}
+
+/** Cloudflare Access, when ACCESS_PROVIDER is cloudflare. A stub is refused in staging. */
+function readAccess(
+  read: Reader,
+  providers: ProvidersRead,
+  environment: EnvironmentName | undefined,
+): AccessSettings | null {
+  if (providers.ACCESS_PROVIDER !== "cloudflare") {
+    if (environment === "staging" && providers.ACCESS_PROVIDER === "stub") {
+      read.problems.push("ACCESS_PROVIDER is a stub in staging: staff identity is verified everywhere but locally");
+    }
+    return null;
+  }
+  const teamDomain = read.text("ACCESS_TEAM_DOMAIN");
+  if (teamDomain !== "" && !ACCESS_TEAM_DOMAIN.test(teamDomain)) {
+    read.problems.push("ACCESS_TEAM_DOMAIN must be a cloudflareaccess.com hostname, without https://");
+  }
+  const opsOn = environment !== undefined && ENABLED_SURFACES[environment].includes("ops");
+  return { teamDomain, opsAudience: opsOn ? read.text("ACCESS_OPS_AUD") : read.optionalText("ACCESS_OPS_AUD") };
+}
+
+/** The login codes: their pepper, their limits, and locally a fixed code. */
+function readLogin(read: Reader, environment: EnvironmentName | undefined, clientOn: boolean): LoginSettings {
+  const isLocal = environment === "local";
+  const login: LoginSettings = {
+    codePepper: clientOn ? read.key("OTP_PEPPER") : (read.optionalText("OTP_PEPPER") ?? ""),
+    codeMobileDailyLimit: read.fixedLimit("OTP_MOBILE_DAILY_LIMIT", isLocal),
+    codeIpHourlyLimit: read.fixedLimit("OTP_IP_HOURLY_LIMIT", isLocal),
+    codeDailyCeiling: read.fixedLimit("OTP_DAILY_CEILING", isLocal),
+    fixedCode: read.optionalText("OTP_FIXED_CODE"),
+  };
+  if (login.fixedCode !== null && !isLocal) {
+    read.problems.push("OTP_FIXED_CODE is set outside local: every login code would be known");
+  } else if (login.fixedCode !== null && !/^\d{6}$/.test(login.fixedCode)) {
+    read.problems.push("OTP_FIXED_CODE must be six digits");
+  }
+  return login;
+}
+
+/** The try-on's limits, ceilings, retention and keys. */
+function readTryon(read: Reader, providers: ProvidersRead, isLocal: boolean): TryonSettings {
+  const tryon: TryonSettings = {
+    uploadIpHourlyLimit: read.fixedLimit("TRYON_UPLOAD_IP_HOURLY_LIMIT", isLocal),
+    generateIpHourlyLimit: read.fixedLimit("TRYON_GENERATE_IP_HOURLY_LIMIT", isLocal),
+    claimMobileDailyLimit: read.fixedLimit("TRYON_CLAIM_MOBILE_DAILY_LIMIT", isLocal),
+    resultMessageMobileDailyLimit: read.fixedLimit("RESULT_MESSAGE_MOBILE_DAILY_LIMIT", isLocal),
+    renderDailyCeiling: read.count("RENDER_DAILY_CEILING"),
+    uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
+    resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
+    resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
+    unknownColorRoute: UNKNOWN_COLOR_ROUTE,
+    creditFloor: read.count("AILAB_CREDIT_FLOOR"),
+    linkSigningKey: read.key("RESULT_SIGNING_KEY"),
+    ailabApiKey: providers.IMAGE_PROVIDER === "ailabtools" ? read.text("AILAB_API_KEY") : null,
+  };
+  if (tryon.resultRetentionDays < 1 || tryon.resultRetentionDays > 30) {
+    read.problems.push("RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days");
+  }
+  return tryon;
+}
+
+/** Evolution's bridge, when MESSAGING_PROVIDER is evolution. */
+function readEvolution(read: Reader, providers: ProvidersRead): EvolutionSettings | null {
+  if (providers.MESSAGING_PROVIDER !== "evolution") return null;
+  const evolution: EvolutionSettings = {
+    baseUrl: read.text("EVOLUTION_API_URL").replace(/\/+$/, ""),
+    apiKey: read.text("EVOLUTION_API_KEY"),
+    instance: read.text("EVOLUTION_INSTANCE_NAME"),
+    webhookToken: read.optionalText("EVOLUTION_WEBHOOK_TOKEN"),
+  };
+  if (evolution.webhookToken !== null && evolution.webhookToken.length < 32) {
+    read.problems.push("EVOLUTION_WEBHOOK_TOKEN must be at least 32 characters");
+  }
+  if (evolution.baseUrl !== "" && !evolution.baseUrl.startsWith("https://")) {
+    read.problems.push("EVOLUTION_API_URL must be an https:// URL");
+  }
+  return evolution;
+}
+
+/** WhatsApp: whether it is on, the allowlist, and the bridge. */
+function readMessaging(
+  read: Reader,
+  providers: ProvidersRead,
+  environment: EnvironmentName | undefined,
+): MessagingSettings {
+  const evolution = readEvolution(read, providers);
+  const messaging: MessagingSettings = {
+    enabled: read.flag("MESSAGING_ENABLED"),
+    resultTemplate: RESULT_TEMPLATE,
+    allowlist: read.mobiles("MESSAGING_ALLOWLIST"),
+    evolution,
+  };
+  if (environment === "staging" && messaging.enabled && messaging.allowlist.length === 0) {
+    read.problems.push("MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging");
+  }
+  return messaging;
 }

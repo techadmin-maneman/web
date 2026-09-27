@@ -4,16 +4,15 @@ import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
 import type { Surface } from "./config/environments.ts";
-import { productionDependencies, type Dependencies, type DependencyFactory } from "./dependencies.ts";
-import { auditCall } from "./domain/audit.ts";
+import { productionDependencies, type DependencyFactory } from "./dependencies.ts";
+import { auditCall } from "./http/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
 import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops-settings.ts";
-import type { Session } from "./domain/sessions.ts";
-import { requireAccess, type AccessIdentity } from "./http/access.ts";
+import { requireAccess } from "./http/access.ts";
+import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
-import type { TechnicianSession } from "./http/technician-session.ts";
-import { createLogger, type Logger } from "./log.ts";
+import { createLogger } from "./log.ts";
 import { registerCities } from "./routes/cities.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
@@ -55,31 +54,6 @@ import { registerTryonClaim } from "./routes/tryon-claim.ts";
 import { registerTryonGenerate } from "./routes/tryon-generate.ts";
 import { registerTryonResult } from "./routes/tryon-result.ts";
 import { registerTryonUpload } from "./routes/tryon-upload.ts";
-
-/** What every handler can read from `c.env` and `c.var`. */
-export type AppEnv = {
-  Bindings: Env;
-  Variables: {
-    requestId: string;
-    log: Logger;
-    config: StaticConfig;
-    deps: Dependencies;
-    checkIdentity: IdentityCheck;
-    /** The business inputs ops set, cached per isolate (ADR 0061). */
-    readOpsInputs: ReadOpsInputs;
-    surface: Surface;
-    /** Set on the ops surface by requireAccess. */
-    accessIdentity?: AccessIdentity;
-    /** Set on the client surface's session routes by requireClientSession. */
-    clientSession?: Session;
-    /** Set on the technician surface's session routes by requireTechnicianSession. */
-    technicianSession?: TechnicianSession;
-  };
-};
-
-export type App = OpenAPIHono<AppEnv>;
-
-export const REQUEST_ID_HEADER = "X-Request-Id";
 
 /** Routes that report on the database themselves instead of being blocked by it. */
 const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);

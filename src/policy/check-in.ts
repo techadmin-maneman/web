@@ -1,9 +1,10 @@
 // Arriving at a job (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
 // The rules as the prompt states them, and the geofence they turn on.
 //
-// The address's coordinates come from the geocoder, which is still to be chosen
-// (docs/open-points.md, item 26). Until an address has them there is nothing to
-// measure against, and the route, not this module, decides what to do then.
+// The address's coordinates come from the geocoder, Google where one is connected
+// (docs/decisions/0054-address-capture.md). Until an address has them there is
+// nothing to measure against, and src/domain/check-ins.ts, not this module,
+// decides what to do then.
 
 export const RULES = [
   "I have arrived records the time and the device's position, and passes only within config CHECKIN_RADIUS_M (200 m) of the address.",

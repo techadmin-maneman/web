@@ -3,6 +3,7 @@
 // terms are worked out in src/domain/visit-changes.ts, and a move is booked in src/domain/bookings.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
+import { HOUR_MS } from "../lib/durations.ts";
 
 export const RULES = [
   "More than 24 hours before the window starts: moving or cancelling is free. The payment carries over, or is refunded to its source; a credit comes back.",
@@ -21,7 +22,7 @@ export type Notice = "free" | "late";
 
 /** Until when changing a visit is free. */
 export const freeUntil = (windowStarts: Date): Date =>
-  new Date(windowStarts.getTime() - FREE_CHANGE_NOTICE_HOURS * 3_600_000);
+  new Date(windowStarts.getTime() - FREE_CHANGE_NOTICE_HOURS * HOUR_MS);
 
 export const noticeAt = (windowStarts: Date, now: Date): Notice =>
   now.getTime() < freeUntil(windowStarts).getTime() ? "free" : "late";

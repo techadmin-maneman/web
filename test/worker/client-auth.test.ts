@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { UNKNOWN_NUMBERS_PER_ADDRESS_DAILY } from "../../src/http/send-code.ts";

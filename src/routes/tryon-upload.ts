@@ -6,14 +6,14 @@
 // API, each job writes to R2 exactly once.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { findNotice } from "../config/notices.ts";
-import { MAX_UPLOAD_BYTES, UPLOAD_LINK_TTL_MS } from "../config/tryon.ts";
+import { MAX_UPLOAD_BYTES, TRYON_UPLOAD_LINK_TTL_MS } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { currentSession, lookCookieJob } from "../http/session.ts";
+import { currentSession, lookCookieJob } from "../http/tryon-session.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { checkPhoto } from "../domain/photo.ts";
 import { indiaHour } from "../lib/india-time.ts";
@@ -127,7 +127,7 @@ export function registerTryonUpload(app: App): void {
       )
       .run();
 
-    const expiresAt = new Date(now.getTime() + UPLOAD_LINK_TTL_MS);
+    const expiresAt = new Date(now.getTime() + TRYON_UPLOAD_LINK_TTL_MS);
     const token = await signToken(tryon.linkSigningKey, "upload", jobId, expiresAt);
     c.var.log.info("tryon_upload_link", { job_id: jobId, session: session !== null });
     return c.json(

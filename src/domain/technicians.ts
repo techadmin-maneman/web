@@ -7,11 +7,11 @@
 // technician, so the number is looked up in the mirror of FSM's service
 // resources and nowhere else, and his session is bound to one phone.
 
-import { sha256Hex, secretsMatch } from "../lib/hash.ts";
-import { attemptsLeft, CODE_TTL_MS, ONE_TIME_CODE } from "../policy/one-time-code.ts";
+import { sha256Hex } from "../lib/hash.ts";
+import { CODE_TTL_MS } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { codeHashOf } from "./login.ts";
-import { SESSION_TTL_MS } from "./sessions.ts";
+import { checkCode, codeHashOf } from "./one-time-codes.ts";
+import { newSessionToken, SESSION_TTL_MS } from "./sessions.ts";
 
 export interface FieldTechnician {
   readonly id: string;
@@ -72,42 +72,13 @@ export type TechnicianVerification =
   | { readonly outcome: "mismatch"; readonly attemptsLeft: number }
   | { readonly outcome: "closed" };
 
-/**
- * Checks the code, counting the attempt first so parallel guesses cannot share
- * one. The fifth wrong code voids the challenge; a right one closes it.
- */
+/** Checks a technician's login code (src/domain/one-time-codes.ts). */
 export async function verifyTechnicianCode(
   db: D1Database,
   options: { challengeId: string; code: string; pepper: string; now: Date },
 ): Promise<TechnicianVerification> {
-  const counted = await db
-    .prepare(
-      `UPDATE otp_challenges SET attempts = attempts + 1
-       WHERE id = ?1 AND purpose = 'login' AND technician_login = 1
-         AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2 AND attempts < ?3
-       RETURNING technician_id, code_hash, attempts`,
-    )
-    .bind(options.challengeId, options.now.toISOString(), ONE_TIME_CODE.wrongAttemptsBeforeVoid)
-    .first<{ technician_id: string | null; code_hash: string | null; attempts: number }>();
-  if (counted === null) return { outcome: "closed" };
-
-  const given = await codeHashOf(options.pepper, options.challengeId, options.code);
-  if (counted.technician_id !== null && counted.code_hash !== null && (await secretsMatch(given, counted.code_hash))) {
-    const closed = await db
-      .prepare("UPDATE otp_challenges SET verified_at = ?2 WHERE id = ?1 AND verified_at IS NULL RETURNING id")
-      .bind(options.challengeId, options.now.toISOString())
-      .first();
-    return closed === null ? { outcome: "closed" } : { outcome: "verified", technicianId: counted.technician_id };
-  }
-
-  const left = attemptsLeft(counted.attempts);
-  if (left === 0) {
-    await db
-      .prepare("UPDATE otp_challenges SET voided_at = ?2 WHERE id = ?1")
-      .bind(options.challengeId, options.now.toISOString())
-      .run();
-  }
-  return { outcome: "mismatch", attemptsLeft: left };
+  const checked = await checkCode(db, { ...options, purpose: "login", holder: "technician" });
+  return checked.outcome === "verified" ? { outcome: "verified", technicianId: checked.holderId } : checked;
 }
 
 /** The phone a technician works from, as the technician_devices row holds it. */
@@ -132,7 +103,7 @@ export async function openTechnicianSession(
   db: D1Database,
   options: { technicianId: string; deviceId: string; label: string | null; now: Date },
 ): Promise<string> {
-  const token = newToken();
+  const token = newSessionToken();
   const sessionId = await sha256Hex(token);
   const at = options.now.toISOString();
   const expiresAt = new Date(options.now.getTime() + SESSION_TTL_MS).toISOString();
@@ -290,13 +261,4 @@ export async function devicesByTechnician(db: D1Database): Promise<Map<string, D
     devices.set(technicianId, [...(devices.get(technicianId) ?? []), device]);
   }
   return devices;
-}
-
-/** A 32-byte random cookie token, as src/domain/sessions.ts makes one. */
-function newToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
 }

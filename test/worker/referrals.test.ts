@@ -5,10 +5,10 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
-import { newCode } from "../../src/domain/referrals.ts";
+import { newReferralCode } from "../../src/domain/referrals.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
-import { createStubPayments } from "../../src/providers/razorpay.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const REFERRER = "11111111-1111-4111-8111-111111111111";
@@ -67,11 +67,11 @@ beforeEach(async () => {
 
 describe("referral codes", () => {
   it("are the client's initials and four random characters, with none that look alike", () => {
-    const codes = Array.from({ length: 500 }, () => newCode("Rohit Malhotra"));
+    const codes = Array.from({ length: 500 }, () => newReferralCode("Rohit Malhotra"));
     expect(codes.every((code) => /^RM[A-HJ-NP-Z2-9]{4}$/.test(code))).toBe(true);
     expect(new Set(codes).size).toBeGreaterThan(450);
-    expect(newCode("")).toMatch(/^MM[A-HJ-NP-Z2-9]{4}$/);
-    expect(newCode("Ishaan Oberoi")).toMatch(/^XX/);
+    expect(newReferralCode("")).toMatch(/^MM[A-HJ-NP-Z2-9]{4}$/);
+    expect(newReferralCode("Ishaan Oberoi")).toMatch(/^XX/);
   });
 
   it("are made once, and give the invite link, the balance and the fitted friends", async () => {
@@ -389,6 +389,44 @@ describe("POST /api/r/:code/waitlist", () => {
     await pincode("122018", "Gurgaon South City II", true);
     const body = { ...FRIEND, pincode: "122018", contact_consent: true, launch_alert: false };
     expect((await request(site(), "/api/r/ZZ9999/waitlist", post(body))).status).toBe(422);
+  });
+});
+
+// The landing sends one Idempotency-Key per submission (FEO-21): pressing again after the answer was lost on the way
+// gets the first answer back, and the friend is booked or listed once.
+describe("POST /api/r/:code/*: the Idempotency-Key", () => {
+  const keyed = (body: object, key: string) => ({
+    ...post(body),
+    headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.7", "Idempotency-Key": key },
+  });
+  const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
+
+  it("answers a consultation sent again with its first answer, and books it once", async () => {
+    await pincode("122018", "Gurgaon South City II", true);
+    const code = await codeOf();
+    const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
+    const bindings = { FSM_QUEUE: fakeQueue() };
+
+    const first = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"), bindings);
+    const again = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"), bindings);
+
+    expect(first.status).toBe(201);
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual(await first.json());
+    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);
+  });
+
+  it("answers a waitlist entry sent again with its first answer, and records one lead", async () => {
+    await pincode("400050", "Bandra", false);
+    const code = await codeOf();
+    const body = { ...FRIEND, pincode: "400050", contact_consent: true, launch_alert: true };
+
+    const first = await request(site(), `/api/r/${code}/waitlist`, keyed(body, "key-invite-0002"));
+    const again = await request(site(), `/api/r/${code}/waitlist`, keyed(body, "key-invite-0002"));
+
+    expect(first.status).toBe(201);
+    expect(await again.json()).toEqual({ area: "Bandra", credits: true, invite: "valid" });
+    expect(await count("SELECT COUNT(*) AS n FROM leads")).toBe(1);
   });
 });
 

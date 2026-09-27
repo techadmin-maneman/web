@@ -7,14 +7,15 @@
 //   DELETE /api/refer/card    the revoke: new opens show the house card
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
 import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
-import { requireClientSession } from "../http/client-session.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 export const CreditsSchema = z
   .object({
@@ -78,7 +79,7 @@ interface FittedRow {
 function friendName(friend: FittedRow): string | null {
   if (friend.friend_first_name !== null) return friend.friend_first_name;
   if (friend.erased_at !== null) return null;
-  return friend.name.split(" ")[0] ?? friend.name;
+  return firstNameOf(friend.name);
 }
 
 /** The invite a client came through, where its grant waits on ops or was refused by them. */
@@ -121,8 +122,7 @@ export function registerClientRefer(app: App): void {
   app.use("/api/refer/*", requireClientSession);
 
   app.openapi(cardRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
     if (Number(c.req.header("Content-Length") ?? "0") > MAX_CARD_BYTES) {
@@ -148,15 +148,13 @@ export function registerClientRefer(app: App): void {
   });
 
   app.openapi(revokeRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     await revokeCard(c.env.DB, c.env.REFERRAL_CARDS, session.subjectId, c.var.deps.now());
     return c.body(null, 204);
   });
 
   app.openapi(referRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
     const person = await db

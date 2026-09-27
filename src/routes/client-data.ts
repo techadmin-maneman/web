@@ -6,10 +6,10 @@
 // Each is audited under the client.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { auditStatementIfWritten, recordAudit } from "../domain/audit.ts";
-import { requireClientSession } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { errorResponse } from "../http/errors.ts";
 
 const exportRoute = createRoute({
   method: "get",
@@ -57,8 +57,7 @@ export function registerClientData(app: App): void {
   app.use("/api/grievances", requireClientSession);
 
   app.openapi(exportRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const db = c.env.DB;
     const id = session.subjectId;
     const now = c.var.deps.now();
@@ -131,8 +130,7 @@ export function registerClientData(app: App): void {
   });
 
   app.openapi(grievanceRoute, async (c) => {
-    const session = c.var.clientSession;
-    if (session === undefined) return c.json(errorBody("session_required", c.var.requestId), 401);
+    const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
     const { text } = c.req.valid("json");

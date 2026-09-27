@@ -15,9 +15,10 @@ import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { Angle, Phase } from "./visit-photos.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /** How long an upload link lasts. */
-export const UPLOAD_LINK_TTL_MS = 15 * 60 * 1000;
+export const PHOTO_UPLOAD_LINK_TTL_MS = 15 * MINUTE_MS;
 /** A photograph from a phone, at most. */
 export const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
 
@@ -33,7 +34,7 @@ export async function uploadLink(
   slot: PhotoSlot,
   now: Date,
 ): Promise<{ url: string; expiresAt: Date }> {
-  const expiresAt = new Date(now.getTime() + UPLOAD_LINK_TTL_MS);
+  const expiresAt = new Date(now.getTime() + PHOTO_UPLOAD_LINK_TTL_MS);
   const token = await signToken(secret, "tech_photo", `${slot.appointmentId}:${slot.phase}:${slot.angle}`, expiresAt);
   return { url: `/api/tech/photos/${token}`, expiresAt };
 }

@@ -4,14 +4,14 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  DAY_BEFORE_REMINDER_HOUR,
   jobDay,
-  OUTLINE_FIELDS,
   PAYMENT_BADGES,
   paymentBadge,
   RULES,
+  UNLOCK_HOUR,
   unlocked,
   unlocksAt,
-  visibleFields,
 } from "../../src/policy/job-visibility.ts";
 
 const NOW = new Date("2026-09-21T06:30:00Z");
@@ -39,11 +39,14 @@ describe("job visibility", () => {
     // It unlocks at 6 pm in India on Tuesday, the day before.
     expect(unlocksAt(wednesday)).toEqual(new Date("2026-09-22T12:30:00Z"));
     expect(unlocked(wednesday, NOW)).toBe(false);
-    expect(visibleFields(wednesday, NOW)).toEqual([...OUTLINE_FIELDS]);
 
     const tuesday = noon("2026-09-22");
     expect(unlocksAt(tuesday)).toEqual(new Date("2026-09-21T12:30:00Z"));
-    expect(visibleFields(tuesday, sixPm("2026-09-21"))).toContain("access_notes");
+    expect(unlocked(tuesday, sixPm("2026-09-21"))).toBe(true);
+  });
+
+  it("unlocks a job when the day-before WhatsApp tells the client someone is coming", () => {
+    expect(UNLOCK_HOUR).toBe(DAY_BEFORE_REMINDER_HOUR);
   });
 
   it("holds tomorrow's address back until 6 pm today, which is the point of the rule", () => {
@@ -73,10 +76,7 @@ describe("job visibility", () => {
   it(RULES[2], () => {
     // Board A1's Free on a visit that costs nothing is a badge too (ADR 0025, item 33).
     expect([...PAYMENT_BADGES]).toEqual(["prepaid", "credit", "free"]);
-    // Nothing a technician's job can carry is an amount.
-    for (const field of visibleFields(noon("2026-09-21"), NOW)) {
-      expect(field).not.toMatch(/amount|price|paise|fee/);
-    }
+    // No answer to a technician carries an amount: test/worker/field-operations.test.ts reads the API's own.
   });
 
   it("badges a visit a credit paid for as Credit, one that costs nothing as Free, and any other as Prepaid", () => {

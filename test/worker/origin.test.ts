@@ -2,7 +2,7 @@
 // (docs/decisions/0026-hosts-and-surfaces.md).
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import type { Surface } from "../../src/config/environments.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, request } from "./helpers.ts";
 

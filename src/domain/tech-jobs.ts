@@ -27,7 +27,8 @@ import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
-import { windowAt } from "./scheduling.ts";
+import { windowAt } from "../policy/windows.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 /** The statuses a job the technician still has work on can be in. */
 const LIVE = ["scheduled", "dispatched", "in_progress"] as const;
@@ -261,14 +262,12 @@ async function lastVisit(db: D1Database, job: JobRow): Promise<EarlierVisit | nu
     .first<EarlierVisit>();
 }
 
-const firstName = (name: string): string => name.trim().split(/\s+/)[0] ?? name;
-
 async function lastVisitOf(db: D1Database, row: JobRow): Promise<LastVisit | null> {
   const visit = await lastVisit(db, row);
   if (visit === null) return null;
   return {
     date: indiaDate(new Date(visit.window_start)),
-    technician: visit.technician === null ? null : firstName(visit.technician),
+    technician: visit.technician === null ? null : firstNameOf(visit.technician),
     photo_url: `/api/tech/jobs/${row.id}/last-visit-photo`,
   };
 }
@@ -427,9 +426,3 @@ function outcomeOf(body: string): string | null {
   const parsed = JSON.parse(body) as { outcome?: unknown };
   return typeof parsed.outcome === "string" ? parsed.outcome : null;
 }
-
-/** The two days the app caches, and the dates beyond them the list still names. */
-export const jobDates = (now: Date): { today: string; tomorrow: string } => {
-  const today = indiaDate(now);
-  return { today, tomorrow: addDays(today, 1) };
-};

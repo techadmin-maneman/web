@@ -29,17 +29,11 @@ const STUBS = {
 /** Vars and secrets every environment needs, with valid values. */
 const SETTINGS = {
   VISIT_LEAD_DAYS: "2",
-  LEAD_MOBILE_DAILY_LIMIT: "5",
-  LEAD_IP_DAILY_LIMIT: "20",
   TURNSTILE_SECRET: "0x4AAAAAAAreal-looking-secret",
   TURNSTILE_ACCEPT_TEST_TOKEN: "false",
   SELF_SERVE_BOOKING: "false",
   REFERRER_NAME_ON_INVITE: "true",
   IP_HASH_SALT: "a-salt-of-at-least-thirty-two-characters",
-  TRYON_UPLOAD_IP_HOURLY_LIMIT: "5",
-  TRYON_GENERATE_IP_HOURLY_LIMIT: "5",
-  TRYON_CLAIM_MOBILE_DAILY_LIMIT: "3",
-  RESULT_MESSAGE_MOBILE_DAILY_LIMIT: "3",
   RENDER_DAILY_CEILING: "20",
   UPLOAD_DAILY_CEILING: "40",
   RESULT_READ_DAILY_CEILING: "400",
@@ -52,9 +46,6 @@ const SETTINGS = {
   ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
   ACCESS_OPS_AUD: "ops-audience-tag",
   OTP_PEPPER: "a-login-code-pepper-of-at-least-thirty-two-chars",
-  OTP_MOBILE_DAILY_LIMIT: "5",
-  OTP_IP_HOURLY_LIMIT: "10",
-  OTP_DAILY_CEILING: "300",
 };
 const IMAGE = { AILAB_API_KEY: "ailab-key" };
 const EVOLUTION = {
@@ -233,9 +224,45 @@ describe("validateStaticConfig: settings and secrets", () => {
   });
 
   it("refuses limits that are not whole numbers", () => {
-    expect(problemsOf({ ...production, LEAD_MOBILE_DAILY_LIMIT: "five", VISIT_LEAD_DAYS: "-1" })).toEqual([
+    expect(problemsOf({ ...production, RENDER_DAILY_CEILING: "five", VISIT_LEAD_DAYS: "-1" })).toEqual([
+      "RENDER_DAILY_CEILING must be a whole number",
       "VISIT_LEAD_DAYS must be a whole number",
-      "LEAD_MOBILE_DAILY_LIMIT must be a whole number",
+    ]);
+  });
+});
+
+// docs/decisions/0009-stay-inside-cloudflare-free-tier.md, rule 6: a limit that is the same in every environment is
+// a constant, not one of the 64 vars and secrets a Worker may hold.
+describe("validateStaticConfig: the limits fixed in src/config", () => {
+  const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS };
+
+  it("reads each limit from src/config/limits.ts, not from a var", () => {
+    const { settings } = validateStaticConfig(production);
+    expect(settings.login).toMatchObject({ codeMobileDailyLimit: 5, codeIpHourlyLimit: 10, codeDailyCeiling: 300 });
+    expect(settings).toMatchObject({ leadMobileDailyLimit: 5, leadIpDailyLimit: 20 });
+    expect(settings.tryon).toMatchObject({
+      uploadIpHourlyLimit: 5,
+      generateIpHourlyLimit: 5,
+      claimMobileDailyLimit: 3,
+      resultMessageMobileDailyLimit: 3,
+    });
+  });
+
+  it("lets a local run raise one, as the browser tests do", () => {
+    const raised = validateStaticConfig({ ...local, OTP_IP_HOURLY_LIMIT: "10000", LEAD_IP_DAILY_LIMIT: "10000" });
+    expect(raised.settings.login.codeIpHourlyLimit).toBe(10_000);
+    expect(raised.settings.leadIpDailyLimit).toBe(10_000);
+    expect(problemsOf({ ...local, OTP_IP_HOURLY_LIMIT: "many" })).toEqual([
+      "OTP_IP_HOURLY_LIMIT must be a whole number",
+    ]);
+  });
+
+  it("refuses one set as a var anywhere but locally", () => {
+    expect(problemsOf({ ...production, OTP_DAILY_CEILING: "10000" })).toEqual([
+      "OTP_DAILY_CEILING is fixed in src/config/limits.ts: only a local run may set it",
+    ]);
+    expect(problemsOf({ ...stagingBase, TRYON_CLAIM_MOBILE_DAILY_LIMIT: "3" })).toEqual([
+      "TRYON_CLAIM_MOBILE_DAILY_LIMIT is fixed in src/config/limits.ts: only a local run may set it",
     ]);
   });
 });

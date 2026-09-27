@@ -12,13 +12,14 @@ import {
   PROVIDER_VARS,
   isEnvironmentName,
   type EnvironmentName,
+  type Providers,
   type ProviderVar,
 } from "./config/environments.ts";
 import { readSettings, type Settings } from "./config/settings.ts";
 
 export type StaticConfig = Readonly<{
   environment: EnvironmentName;
-  providers: Readonly<Record<ProviderVar, string>>;
+  providers: Providers;
   settings: Settings;
 }>;
 
@@ -63,7 +64,8 @@ export function validateStaticConfig(env: Readonly<Record<string, unknown>>): St
   problems.push(...settingProblems);
 
   if (environment === undefined || problems.length > 0) throw new ConfigError(problems);
-  return { environment, providers: providers as Record<ProviderVar, string>, settings };
+  // Each value was checked against PROVIDER_VARS above, and any that failed has thrown.
+  return { environment, providers: providers as Providers, settings };
 }
 
 export type DatabaseIdentity =

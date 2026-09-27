@@ -13,6 +13,8 @@
 //   moves       a dispatch move still open after five minutes: its claimed time let go, the move closed
 //   hourly      the AILabTools balance, against AILAB_CREDIT_FLOOR
 //   expiry      abandoned uploads after an hour, results after 30 days, photos once their jobs are done
+//   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
+//               try-on sessions once expired, and app sessions 30 days after they ended
 
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
@@ -26,8 +28,8 @@ import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { SENDING_LEASE_MS, type MessagingMessage } from "../queues/messaging.ts";
 import type { RenderMessage } from "../queues/render.ts";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
-const MINUTE_MS = 60 * 1000;
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
 /** A booking not sent to FSM within a day is left to ops. */
@@ -41,16 +43,16 @@ const JOB_EVENT_ALERT_AFTER_MS = 60 * MINUTE_MS;
 const SUBMIT_ABANDONED_MS = 10 * MINUTE_MS;
 /** Downloads are retried every sweep at first, then hourly until the URL expires. */
 const DOWNLOAD_RETRY_EARLY_MS = 5 * MINUTE_MS;
-const DOWNLOAD_RETRY_LATE_MS = 60 * MINUTE_MS;
+const DOWNLOAD_RETRY_LATE_MS = HOUR_MS;
 const DOWNLOAD_EARLY_ATTEMPTS = DOWNLOAD_QUEUE_RETRIES + 3;
 /** Most rows handled per kind per run; the next run takes the rest. */
 const BATCH_LIMIT = 100;
-const IDEMPOTENCY_TTL_MS = 24 * 60 * MINUTE_MS;
+const IDEMPOTENCY_TTL_MS = DAY_MS;
 /** Rate-limit windows are at most a day; keep two more for inspection. */
 const COUNTER_RETENTION_DAYS = 3;
 /** A login code is kept a day past its expiry, for the logs to be read against; a session 30 days past its end. */
-const CHALLENGE_RETENTION_MS = 24 * 60 * MINUTE_MS;
-const SESSION_RETENTION_MS = 30 * 24 * 60 * MINUTE_MS;
+const CHALLENGE_RETENTION_MS = DAY_MS;
+const SESSION_RETENTION_MS = 30 * DAY_MS;
 
 export type SweepEnv = Pick<
   Env,
@@ -69,6 +71,17 @@ export interface SweepSummary {
   readonly credits?: number | null;
 }
 
+/** One sweep's run: where it writes, what it calls, and the moment it counts from. */
+interface SweepRun {
+  readonly env: SweepEnv;
+  readonly db: D1Database;
+  readonly deps: Dependencies;
+  readonly log: Logger;
+  readonly now: Date;
+  /** The instant `ms` before now, as ISO. */
+  readonly before: (ms: number) => string;
+}
+
 export async function sweep(
   env: SweepEnv,
   deps: Dependencies,
@@ -82,10 +95,55 @@ export async function sweep(
   },
 ): Promise<SweepSummary> {
   const now = deps.now();
-  const before = (ms: number) => new Date(now.getTime() - ms).toISOString();
-  const db = env.DB;
+  const run: SweepRun = {
+    env,
+    db: env.DB,
+    deps,
+    log,
+    now,
+    before: (ms: number) => new Date(now.getTime() - ms).toISOString(),
+  };
 
-  // Leads that have not reached the CRM.
+  const leads = await requeueLeads(run);
+  const erasures = await requeueCrmErasures(run);
+  if (options.fsmConnected === true) await requeueFsmWork(run);
+  const jobEvents = await requeueJobEvents(run);
+  const messages = await requeueMessages(run);
+  const { renders, abandoned, downloads, lost } = await requeueTryons(run);
+  const jobsExpired = await expireJobs(env, now);
+  const photosDeleted = await deletePhotos(env, now);
+  await housekeep(run);
+  const credits = await checkCredits(run, options);
+
+  const summary: SweepSummary = {
+    leadsRequeued: leads.length,
+    erasuresRequeued: erasures.length,
+    messagesRequeued: messages.length,
+    rendersRequeued: renders.length,
+    downloadsRequeued: downloads.length,
+    jobsExpired,
+    photosDeleted,
+    ...(credits === undefined ? {} : { credits }),
+  };
+  log.info("sweep", {
+    leads_requeued: summary.leadsRequeued,
+    erasures_requeued: summary.erasuresRequeued,
+    job_events_requeued: jobEvents.length,
+    messages_requeued: summary.messagesRequeued,
+    renders_requeued: summary.rendersRequeued,
+    downloads_requeued: summary.downloadsRequeued,
+    submits_abandoned: abandoned.length,
+    results_lost: lost.length,
+    jobs_expired: jobsExpired,
+    photos_deleted: photosDeleted,
+    credits: credits ?? null,
+  });
+  return summary;
+}
+
+/** Leads that have not reached the CRM, sent to crm-sync again. */
+async function requeueLeads(run: SweepRun): Promise<string[]> {
+  const { db, env, before } = run;
   const leads = await ids(
     db
       .prepare(
@@ -99,8 +157,12 @@ export async function sweep(
     env.CRM_QUEUE,
     leads.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
   );
+  return leads;
+}
 
-  // Erased people whose CRM record is still to be blanked.
+/** Erased people whose CRM record is still to be blanked, sent to crm-sync again. */
+async function requeueCrmErasures(run: SweepRun): Promise<string[]> {
+  const { db, env, before } = run;
   const erasures = await ids(
     db
       .prepare(
@@ -114,45 +176,52 @@ export async function sweep(
     env.CRM_QUEUE,
     erasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
   );
+  return erasures;
+}
 
-  if (options.fsmConnected === true) {
-    // Bookings whose message to the fsm-sync queue never went (src/routes/lead.ts), sent now, once.
-    // One over a day old is left: past that, sending it would surprise ops, who have it from the CRM.
-    const bookings = await ids(
-      db
-        .prepare(
-          `UPDATE leads SET fsm_queued_at = ?1
-           WHERE id IN (
-             SELECT id FROM leads
-             WHERE fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form'
-               AND first_choice_window IS NOT NULL AND created_at > ?2 AND created_at < ?3
-             ORDER BY created_at LIMIT ?4)
-           RETURNING id`,
-        )
-        .bind(now.toISOString(), before(BOOKING_TO_FSM_WITHIN_MS), before(PENDING_GRACE_MS), BATCH_LIMIT),
-    );
-    await sendAll(
-      env.FSM_QUEUE,
-      bookings.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
-    );
-    if (bookings.length > 0) log.warn("bookings_sent_to_fsm_late", { lead_ids: bookings });
+/** Bookings and erasures FSM has not heard of, sent to fsm-sync: only where FSM is connected. */
+async function requeueFsmWork(run: SweepRun): Promise<void> {
+  const { db, env, now, before, log } = run;
+  // Bookings whose message to the fsm-sync queue never went (src/routes/lead.ts), sent now, once.
+  // One over a day old is left: past that, sending it would surprise ops, who have it from the CRM.
+  const bookings = await ids(
+    db
+      .prepare(
+        `UPDATE leads SET fsm_queued_at = ?1
+         WHERE id IN (
+           SELECT id FROM leads
+           WHERE fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form'
+             AND first_choice_window IS NOT NULL AND created_at > ?2 AND created_at < ?3
+           ORDER BY created_at LIMIT ?4)
+         RETURNING id`,
+      )
+      .bind(now.toISOString(), before(BOOKING_TO_FSM_WITHIN_MS), before(PENDING_GRACE_MS), BATCH_LIMIT),
+  );
+  await sendAll(
+    env.FSM_QUEUE,
+    bookings.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
+  );
+  if (bookings.length > 0) log.warn("bookings_sent_to_fsm_late", { lead_ids: bookings });
 
-    // Erased people whose FSM contact is still to be anonymised (docs/decisions/0049-dpdp.md).
-    const fsmErasures = await ids(
-      db
-        .prepare(
-          `SELECT id FROM people
-         WHERE erased_at < ?1 AND fsm_contact_id IS NOT NULL AND fsm_erased_at IS NULL AND fsm_erasure_attempts < ?2
-         ORDER BY erased_at LIMIT ?3`,
-        )
-        .bind(before(PENDING_GRACE_MS), MAX_SYNC_ATTEMPTS, BATCH_LIMIT),
-    );
-    await sendAll(
-      env.FSM_QUEUE,
-      fsmErasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
-    );
-  }
+  // Erased people whose FSM contact is still to be anonymised (docs/decisions/0049-dpdp.md).
+  const fsmErasures = await ids(
+    db
+      .prepare(
+        `SELECT id FROM people
+       WHERE erased_at < ?1 AND fsm_contact_id IS NOT NULL AND fsm_erased_at IS NULL AND fsm_erasure_attempts < ?2
+       ORDER BY erased_at LIMIT ?3`,
+      )
+      .bind(before(PENDING_GRACE_MS), MAX_SYNC_ATTEMPTS, BATCH_LIMIT),
+  );
+  await sendAll(
+    env.FSM_QUEUE,
+    fsmErasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
+  );
+}
 
+/** A technician's steps not written to FSM, sent to fsm-sync again, and ops told of one stuck an hour. */
+async function requeueJobEvents(run: SweepRun): Promise<string[]> {
+  const { db, env, now, before, deps } = run;
   // A technician's steps whose queue message was lost, or never sent. Only a job's earliest step
   // waiting for FSM: the consumer sends each next one on once the one before it is written. Each is
   // stamped as it is sent, so it is not sent again while its retries may still be running.
@@ -177,8 +246,12 @@ export async function sweep(
     jobEvents.map((id) => ({ job_event_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
   );
   await alertStuckJobEvents(db, deps, before(JOB_EVENT_ALERT_AFTER_MS));
+  return jobEvents;
+}
 
-  // Result messages that were queued and never sent.
+/** Result messages queued and never sent, sent to messaging again. */
+async function requeueMessages(run: SweepRun): Promise<string[]> {
+  const { db, env, before } = run;
   const messages = await ids(
     db
       .prepare(
@@ -192,7 +265,14 @@ export async function sweep(
     env.MESSAGE_QUEUE,
     messages.map((id) => ({ message_id: id, request_id: "sweeper" }) satisfies MessagingMessage),
   );
+  return messages;
+}
 
+/** Try-on renders and downloads whose queue message was lost, sent to render again; ones past saving failed. */
+async function requeueTryons(
+  run: SweepRun,
+): Promise<{ renders: string[]; abandoned: string[]; downloads: string[]; lost: string[] }> {
+  const { db, env, now, before, deps } = run;
   // Renders whose queue message was lost: never started, or silent past the give-up time.
   const renders = await ids(
     db
@@ -248,10 +328,12 @@ export async function sweep(
     env.RENDER_QUEUE,
     [...renders, ...downloads].map((id) => ({ job_id: id, request_id: "sweeper" }) satisfies RenderMessage),
   );
+  return { renders, abandoned, downloads, lost };
+}
 
-  const jobsExpired = await expireJobs(env, now);
-  const photosDeleted = await deletePhotos(env, now);
-
+/** Deletes what has outlived its use: idempotency keys, counters, sessions, spent login codes and stale claims. */
+async function housekeep(run: SweepRun): Promise<void> {
+  const { db, now, before } = run;
   const sessionsEnded = before(SESSION_RETENTION_MS);
   await db.batch([
     db.prepare("DELETE FROM idempotency WHERE created_at < ?1").bind(before(IDEMPOTENCY_TTL_MS)),
@@ -273,7 +355,14 @@ export async function sweep(
     // A client's hold can take a technician's time again once a move that never finished lets it go.
     ...unfinishedMovesLetGo(db, now),
   ]);
+}
 
+/** Once an hour, the AILabTools balance against its floor; undefined on the other runs. */
+async function checkCredits(
+  run: SweepRun,
+  options: { readonly creditFloor: number; readonly budget: CallBudget },
+): Promise<number | null | undefined> {
+  const { now, deps, log } = run;
   // Once an hour: an exhausted balance would otherwise fail every try-on quietly.
   let credits: number | null | undefined;
   if (now.getUTCMinutes() < 5 && options.budget.spend(1)) {
@@ -289,31 +378,7 @@ export async function sweep(
       await deps.resolveAlert("ailab_credits_low");
     }
   }
-
-  const summary: SweepSummary = {
-    leadsRequeued: leads.length,
-    erasuresRequeued: erasures.length,
-    messagesRequeued: messages.length,
-    rendersRequeued: renders.length,
-    downloadsRequeued: downloads.length,
-    jobsExpired,
-    photosDeleted,
-    ...(credits === undefined ? {} : { credits }),
-  };
-  log.info("sweep", {
-    leads_requeued: summary.leadsRequeued,
-    erasures_requeued: summary.erasuresRequeued,
-    job_events_requeued: jobEvents.length,
-    messages_requeued: summary.messagesRequeued,
-    renders_requeued: summary.rendersRequeued,
-    downloads_requeued: summary.downloadsRequeued,
-    submits_abandoned: abandoned.length,
-    results_lost: lost.length,
-    jobs_expired: jobsExpired,
-    photos_deleted: photosDeleted,
-    credits: credits ?? null,
-  });
-  return summary;
+  return credits;
 }
 
 /**

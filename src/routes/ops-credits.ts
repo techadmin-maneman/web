@@ -8,15 +8,14 @@
 // The console's form for it arrives with the client page's other screens.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
-import { actorOf } from "../domain/audit.ts";
+import { staffOf } from "../http/audit.ts";
+import type { App } from "../http/context.ts";
 import { ADJUST_REASONS, adjustCredits } from "../domain/credits.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 
 /** More than a year of monthly visits either way is not a correction. */
 const MOST_VISITS = 12;
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 const adjustRoute = createRoute({
   method: "post",
@@ -66,8 +65,7 @@ const adjustRoute = createRoute({
 
 export function registerOpsCredits(app: App): void {
   app.openapi(adjustRoute, async (c) => {
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const staff = staffOf(c);
     const personId = c.req.valid("param").id;
     const { visits, reason } = c.req.valid("json");
     const db = c.env.DB;
@@ -82,7 +80,7 @@ export function registerOpsCredits(app: App): void {
       visits,
       audit: {
         surface: "ops",
-        actor: actorOf(identity),
+        actor: staff,
         action: "credit.adjust",
         subject: { kind: "person", id: personId },
         requestId: c.var.requestId,

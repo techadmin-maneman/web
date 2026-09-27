@@ -2,14 +2,9 @@
 // "Pieces tab"). A piece is an asset in FSM; these are the figures our own
 // side computes from it.
 //
-// The prompt says the replacement due date "follows the per-base cycle config
-// already defined in this prompt", but no cycle is written anywhere in it. The
-// owner ruled the cycle on 24 September 2026: 180 days, the same for every base
-// (docs/open-points.md, "The per-base replacement cycle"). The bases themselves
-// are unnamed until the price book names them, so no base has a figure of its
-// own and every one falls through to the default. Ops name a base and give it
-// its own cycle in the console (Settings · Rules), which is also where a name
-// standing in for one would have been shown to them as if it were a base.
+// A piece falls due for replacement 180 days after it is fitted, whatever its
+// base, as the owner ruled (docs/open-points.md, "The per-base replacement
+// cycle"). Ops may give a base a cycle of its own in the console (Settings · Rules).
 
 /** How long a piece on each base lasts before it is due for replacement, in days. */
 export type Cycles = Readonly<Record<string, number>>;

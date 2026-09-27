@@ -34,9 +34,11 @@ import {
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { clashes } from "../policy/dispatch.ts";
+import { windowAt } from "../policy/windows.ts";
 import { isFitted } from "./client-visits.ts";
 import { loadBlackouts } from "./leads.ts";
 import type { Price } from "./price-book.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /** What one technician's day already holds. */
 export interface Day {
@@ -47,11 +49,6 @@ export interface Day {
 }
 
 const emptyDay = (): Day => ({ units: new Set(), windows: new Set(), onLeave: false });
-
-/** The window a time of day in India falls in. */
-export function windowAt(time: string): BookingWindow {
-  return time < WINDOW_TIMES.afternoon.start ? "morning" : time < WINDOW_TIMES.evening.start ? "afternoon" : "evening";
-}
 
 /** The half-slot a time of day in India falls in: the last one starting at or before it. */
 export function unitAt(time: string): number {
@@ -434,5 +431,5 @@ export async function holdSlot(
 /** When a held visit starts and ends, as FSM books it. */
 export function visitTimes(date: string, startUnit: number, type: VisitType): { start: Date; end: Date } {
   const start = indiaInstant(date, UNIT_STARTS[startUnit] ?? WINDOW_TIMES.morning.start);
-  return { start, end: new Date(start.getTime() + VISIT_BLOCKS[type].minutes * 60_000) };
+  return { start, end: new Date(start.getTime() + VISIT_BLOCKS[type].minutes * MINUTE_MS) };
 }

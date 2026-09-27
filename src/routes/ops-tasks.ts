@@ -13,13 +13,12 @@
 // more, since past that the section that decides them is the tool.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { outstandingTasks, overdueCount, READ_CAP } from "../domain/tasks.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;

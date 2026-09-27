@@ -4,7 +4,7 @@
 // message says only whose details changed.
 
 import type { Context } from "hono";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 

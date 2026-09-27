@@ -16,12 +16,13 @@
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { canCloseAsNoShow, noShowWaitEnds, type NoShowDecision, type Waits } from "../policy/no-show.ts";
-import type { PaymentsProvider } from "../providers/razorpay.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import type { LatestArrival } from "./check-ins.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
+import { minutesBetween } from "../lib/durations.ts";
 
 /**
  * What became of the WhatsApp ops read the receipt of. A reminder that was never
@@ -193,7 +194,7 @@ export async function noShowNotes(db: D1Database, appointmentIds: readonly strin
       row.appointment_id,
       {
         decision: row.decision,
-        waited_minutes: Math.round((Date.parse(row.ended_at) - Date.parse(row.wait_started_at)) / 60_000),
+        waited_minutes: minutesBetween(row.wait_started_at, row.ended_at),
       },
     ]),
   );
@@ -238,10 +239,7 @@ export async function listNoShowCases(
     received_at: row.received_at,
     window_start: row.window_start,
     window_end: row.window_end,
-    minutes_late:
-      row.window_start === null
-        ? null
-        : Math.round((Date.parse(row.checked_in_at) - Date.parse(row.window_start)) / 60_000),
+    minutes_late: row.window_start === null ? null : minutesBetween(row.window_start, row.checked_in_at),
     distance_m: row.distance_m,
     message_state: messageStateOf(row),
     message_delivered_at: row.message_delivered_at,

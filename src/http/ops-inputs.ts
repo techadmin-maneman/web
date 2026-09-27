@@ -6,7 +6,7 @@
 // changed is still the right number.
 
 import type { Context } from "hono";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import type { OpsInputs } from "../domain/ops-settings.ts";
 
 export function opsInputs(c: Context<AppEnv>): Promise<OpsInputs> {

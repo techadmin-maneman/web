@@ -4,7 +4,7 @@
 
 import { createAlertOnce, createResolveAlert, type AlertOnce, type ResolveAlert } from "./domain/alerts.ts";
 import type { StaticConfig } from "./guard.ts";
-import { createAccessVerifier, type AccessVerifier } from "./http/access.ts";
+import { createAccessVerifier, type AccessVerifier } from "./providers/cloudflare-access.ts";
 import type { Logger } from "./log.ts";
 import { createAlert, createLeadNotice, type Alert, type LeadNotice } from "./providers/alerts.ts";
 import { createBooksProvider, type BooksProvider } from "./providers/books.ts";
@@ -13,7 +13,7 @@ import { createCrmProvider, type CrmProvider } from "./providers/crm.ts";
 import { createFsmProvider, type FsmProvider } from "./providers/fsm.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
-import { createPaymentsProvider, type PaymentsProvider } from "./providers/razorpay.ts";
+import { createPaymentsProvider, type PaymentsProvider } from "./providers/payments.ts";
 import { BACKGROUND_TIMEOUT_MS, WAITED_TIMEOUT_MS } from "./providers/zoho-http.ts";
 import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode.ts";
 

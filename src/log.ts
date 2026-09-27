@@ -107,6 +107,14 @@ export function scrubString(value: string): string {
   return value.replace(EMAIL, REDACTED).replace(INDIAN_MOBILE, REDACTED);
 }
 
+/**
+ * A caught failure's message, fit to keep in a column or put in an alert: with no e-mail or mobile number a vendor
+ * echoed back, and no longer than `length`.
+ */
+export function failureReason(error: unknown, length = 300): string {
+  return scrubString(error instanceof Error ? error.message : "unknown error").slice(0, length);
+}
+
 /** Returns a copy of `value` that is safe to log. */
 export function redact(value: unknown): unknown {
   return redactValue(value, 0, new WeakSet());

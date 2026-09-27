@@ -1,5 +1,5 @@
 // WhatsApp through an Evolution API bridge (docs/decisions/0016-whatsapp-through-evolution.md).
-// Only src/providers/messaging.ts imports this module.
+// Only src/providers/messaging.ts sends through this module.
 //
 //   send   POST {base}/message/sendMedia/{instance}   { number, mediatype, mimetype, caption, media, fileName }
 //          POST {base}/message/sendText/{instance}    { number, text }
@@ -10,6 +10,7 @@
 // templates: a "template" here is one of the texts in src/config/message-templates.ts.
 // The bridge downloads the image itself, so mediaUrl must be publicly reachable.
 
+import { z } from "zod";
 import { renderMessage } from "../config/message-templates.ts";
 import type { Connection, MessagingProvider, SendResult } from "./messaging.ts";
 
@@ -109,32 +110,33 @@ export function createEvolutionMessaging(
 }
 
 /** Evolution 2 answers `{ instance: { state } }`; earlier versions answered `{ state }`. */
-function stateOf(reply: string): string {
-  try {
-    const answer = JSON.parse(reply) as { instance?: { state?: unknown }; state?: unknown };
-    const state = answer.instance?.state ?? answer.state;
-    return typeof state === "string" ? state : "unknown";
-  } catch {
-    return "unknown";
-  }
-}
+const State = z.union([z.object({ instance: z.object({ state: z.string() }) }), z.object({ state: z.string() })]);
+const Sent = z.object({ key: z.object({ id: z.string() }) });
+const Refused = z.object({ error: z.union([z.object({ code: z.string() }), z.string()]) });
 
-function messageIdOf(reply: string): string | null {
+/** The bridge's reply read as `schema`; null when it is not JSON, or not that shape. */
+function read<T>(schema: z.ZodType<T>, reply: string): T | null {
+  let json: unknown;
   try {
-    const id = (JSON.parse(reply) as { key?: { id?: unknown } }).key?.id;
-    return typeof id === "string" ? id : null;
+    json = JSON.parse(reply);
   } catch {
     return null;
   }
+  return schema.safeParse(json).data ?? null;
 }
+
+function stateOf(reply: string): string {
+  const answer = read(State, reply);
+  if (answer === null) return "unknown";
+  return "instance" in answer ? answer.instance.state : answer.state;
+}
+
+const messageIdOf = (reply: string): string | null => read(Sent, reply)?.key.id ?? null;
 
 /** The error code only; the message may echo the number. */
 function errorCodeOf(reply: string): string {
-  try {
-    const code = (JSON.parse(reply) as { error?: { code?: unknown } | string }).error;
-    if (typeof code === "object" && typeof code.code === "string") return code.code;
-    return typeof code === "string" ? code.slice(0, 60).replace(/\d/g, "#") : "";
-  } catch {
-    return "";
-  }
+  const error = read(Refused, reply)?.error;
+  if (error === undefined) return "";
+  if (typeof error === "string") return error.slice(0, 60).replace(/\d/g, "#");
+  return error.code;
 }

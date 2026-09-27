@@ -6,7 +6,7 @@
 //   GET /api/published-prices    the standard tier's first fit, service visit and replacement
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { priceOf } from "../domain/price-book.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";

@@ -16,23 +16,22 @@
 // the client is told on WhatsApp, with their consent to messages about visits.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import { staffOf } from "../http/audit.ts";
+import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { actorOf } from "../domain/audit.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES, refundWaivedVisit } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { NO_SHOW_DECISIONS, WAIVER_GIVES_BACK } from "../policy/no-show.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { dueAt } from "../policy/tasks.ts";
 import { PieceSchema } from "./tech-pieces.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 const NoShowCaseSchema = z
   .object({
@@ -260,8 +259,7 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(decisionRoute, async (c) => {
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const staff = staffOf(c);
     const { id } = c.req.valid("param");
     const { decision, reason } = c.req.valid("json");
     if (needsReason("no_show", decision) && (reason ?? "") === "") {
@@ -273,10 +271,10 @@ export function registerOpsField(app: App): void {
       caseId: id,
       decision,
       reason,
-      actor: actorOf(identity).id,
+      actor: staff.id,
       audit: {
         surface: "ops",
-        actor: actorOf(identity),
+        actor: staff,
         action: "no_show.decide",
         subject: { kind: "no_show_case", id },
         requestId: c.var.requestId,
@@ -353,20 +351,19 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(leaveRoute, async (c) => {
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const staff = staffOf(c);
     const { id } = c.req.valid("param");
     const { from, to, note } = c.req.valid("json");
     const now = c.var.deps.now();
 
     const outcome = await recordLeave(
       c.env.DB,
-      { technicianId: id, from, to, note: note ?? null, actor: actorOf(identity).id },
+      { technicianId: id, from, to, note: note ?? null, actor: staff.id },
       indiaDate(now),
       now,
       {
         surface: "ops",
-        actor: actorOf(identity),
+        actor: staff,
         action: "technician.leave",
         subject: { kind: "technician", id },
         requestId: c.var.requestId,
@@ -379,8 +376,7 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(cancelLeaveRoute, async (c) => {
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const staff = staffOf(c);
     const { id, leave } = c.req.valid("param");
     const now = c.var.deps.now();
 
@@ -389,10 +385,10 @@ export function registerOpsField(app: App): void {
       {
         technicianId: id,
         leaveId: leave,
-        actor: actorOf(identity).id,
+        actor: staff.id,
         audit: {
           surface: "ops",
-          actor: actorOf(identity),
+          actor: staff,
           action: "technician.leave_cancelled",
           subject: { kind: "technician", id },
           requestId: c.var.requestId,
@@ -406,18 +402,17 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(revokeRoute, async (c) => {
-    const identity = c.var.accessIdentity;
-    if (identity === undefined) throw new Error("ops routes run after requireAccess");
+    const staff = staffOf(c);
     const { id, device } = c.req.valid("param");
     const now = c.var.deps.now();
 
     const revoked = await revokeDevice(c.env.DB, {
       technicianId: id,
       deviceId: device,
-      actor: actorOf(identity).id,
+      actor: staff.id,
       audit: {
         surface: "ops",
-        actor: actorOf(identity),
+        actor: staff,
         action: "technician_device.revoke",
         subject: { kind: "technician", id },
         requestId: c.var.requestId,

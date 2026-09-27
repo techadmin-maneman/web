@@ -11,6 +11,14 @@ D1 runs each file in `migrations/` once, in order, in one transaction, with fore
 5. **Change a column on such a table by swapping it in place**, as migration 0031 does: add the new column, copy the values across, drop the old column, rename the new one. The table and every reference into it stay put. SQLite will not drop a column that is indexed, unique, a key, or named in a view, trigger or `CHECK` elsewhere: drop what depends on it first, and put it back after.
 6. **No filler in place of "not known".** A `NOT NULL` column needs a real value for every row, old and new. `checkins.distance_m` began as `NOT NULL`, so a check-in with no address to measure against stored 0, the console showed "0 m" for it until its read learnt to tell the two apart, and the column then had to be swapped for a nullable one. Where a value can be missing, make the column nullable from the start.
 
+## Contract steps waiting
+
+What a later release drops, once no deployed Worker reads it. Each waits for the release named, in **production** as well as staging.
+
+| What                                         | Replaced by                                   | Dropped once production has run               | ADR  |
+| -------------------------------------------- | --------------------------------------------- | --------------------------------------------- | ---- |
+| `zoho_token` (0002) and `zoho_tokens` (0010) | `zoho_access_tokens` (0041, seeded from both) | #125 (6ef2ddb): the code before it reads them | 0070 |
+
 ## Deleting rows
 
 Every foreign key here is `NO ACTION`: deleting a row that another row points at fails the statement, and the whole batch it is in. The sweeper's housekeeping once deleted a technician's old session while his phone's row still pointed at it, and that stopped every cron job after it; an erasure failed the same way on a check-in and on a number change's codes.

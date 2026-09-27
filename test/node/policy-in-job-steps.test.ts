@@ -1,0 +1,56 @@
+// The steps of a job (src/policy/in-job-steps.ts), each rule named by the prompt's own words.
+
+import { describe, expect, it } from "vitest";
+import { ANGLES } from "../../src/domain/visit-photos.ts";
+import { PHOTO_ANGLES, RULES, stepBefore, stepsFor } from "../../src/policy/in-job-steps.ts";
+
+const done = (...kinds: string[]): ReadonlySet<string> => new Set(kinds);
+
+describe("the steps of a job", () => {
+  it(`${RULES[0]} ${RULES[4]}`, () => {
+    expect(PHOTO_ANGLES).toEqual(["front", "top", "left", "right", "hair"]);
+    // The photographs the app takes, stores and shows are these five, in this order.
+    expect(ANGLES).toBe(PHOTO_ANGLES);
+    expect(stepsFor("service").at(0)).toBe("before_photos");
+    expect(stepsFor("service").at(-2)).toBe("after_photos");
+  });
+
+  it(`${RULES[1]} ${RULES[2]} ${RULES[5]}`, () => {
+    expect(stepsFor("service")).toEqual(["before_photos", "checklist", "consumables", "after_photos", "outcome"]);
+  });
+
+  it(RULES[3], () => {
+    expect(stepsFor("replacement")).toEqual([
+      "before_photos",
+      "checklist",
+      "consumables",
+      "piece",
+      "after_photos",
+      "outcome",
+    ]);
+    expect(stepsFor("service")).not.toContain("piece");
+    expect(stepsFor("consultation")).not.toContain("piece");
+  });
+
+  it("gives a first fit the piece step too: it fits the client's first piece (docs/decisions/0038-offline-writes.md)", () => {
+    expect(stepsFor("first_fit")).toContain("piece");
+  });
+
+  it("takes no step before the one ahead of it, so a job sheet cannot close from an empty screen", () => {
+    expect(stepBefore("check_in", "service", done(), {})).toBeNull();
+    expect(stepBefore("start", "service", done(), {})).toBe("check_in");
+    expect(stepBefore("before_photos", "service", done("check_in"), {})).toBe("start");
+    expect(stepBefore("checklist", "service", done("check_in", "start"), {})).toBe("before_photos");
+    expect(stepBefore("checklist", "service", done("check_in", "start", "before_photos"), {})).toBeNull();
+    // A service visit has no piece, so its after photographs follow the consumables.
+    const toConsumables = done("check_in", "start", "before_photos", "checklist", "consumables");
+    expect(stepBefore("after_photos", "service", toConsumables, {})).toBeNull();
+    expect(stepBefore("after_photos", "replacement", toConsumables, {})).toBe("piece");
+  });
+
+  it("closes a no-show from the check-in alone: the job was never started (src/policy/no-show.ts)", () => {
+    expect(stepBefore("outcome", "service", done("check_in"), { outcome: "no_show" })).toBeNull();
+    expect(stepBefore("outcome", "service", done(), { outcome: "no_show" })).toBe("check_in");
+    expect(stepBefore("outcome", "service", done("check_in"), { outcome: "done" })).toBe("start");
+  });
+});

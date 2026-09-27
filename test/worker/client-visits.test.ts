@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { findEligiblePerson } from "../../src/domain/login.ts";
 import { openSession } from "../../src/domain/sessions.ts";

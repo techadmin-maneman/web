@@ -11,7 +11,7 @@
 
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import {
   createChallenge,
   findEligiblePerson,
@@ -20,17 +20,17 @@ import {
   verifyCode,
   type Challenge,
 } from "../domain/login.ts";
-import { takeOne } from "../domain/rate-limit.ts";
+import { liveContact } from "../domain/profile.ts";
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { codeGate, countCode, sendCodeAfterResponse } from "../http/send-code.ts";
+import { json } from "../http/openapi.ts";
+import { codeGate, countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { saltedHash } from "../lib/hash.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { MAX_SENDS_PER_CHALLENGE, newCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
+import { MAX_SENDS_PER_CHALLENGE, newLoginCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
 import type { CodeChannel } from "../providers/codes.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 export const LoginChallengeSchema = z
   .object({
@@ -69,7 +69,6 @@ export const LoginVerifySchema = z
   ])
   .openapi("LoginVerify");
 
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const challengeAnswer = {
   description: "A code is on its way, if this number has a booking",
   ...json(LoginChallengeSchema),
@@ -149,15 +148,12 @@ function challengeBody(c: Ctx, challenge: Challenge, now: Date) {
 
 async function mobileOf(db: D1Database, personId: string | null): Promise<string | null> {
   if (personId === null) return null;
-  return db
-    .prepare("SELECT mobile_e164 FROM people WHERE id = ?1 AND erased_at IS NULL")
-    .bind(personId)
-    .first<string>("mobile_e164");
+  return (await liveContact(db, personId))?.mobileE164 ?? null;
 }
 
 const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   const { requestId, deps, config } = c.var;
-  const { login: limits, ipHashSalt } = config.settings;
+  const { login: limits } = config.settings;
   const db = c.env.DB;
   const now = deps.now();
 
@@ -165,31 +161,15 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
   const visitor = await visitorOf(c);
-  const gate = await codeGate(c, visitor.ipHash, now);
-  if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
-  if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
-
-  const withinAddress = await takeOne(db, {
-    scope: "login:code:ip",
-    key: visitor.ipHash,
-    window: indiaHour(now),
-    limit: limits.codeIpHourlyLimit,
-  });
-  const withinNumber =
-    withinAddress &&
-    (await takeOne(db, {
-      scope: "login:code:mobile",
-      key: await saltedHash(ipHashSalt, `mobile:${mobileE164}`),
-      window: indiaDate(now),
-      limit: limits.codeMobileDailyLimit,
-    }));
-  if (!withinNumber) return c.json(errorBody("rate_limited", requestId), 429);
+  const asked = await mayAskForCode(c, { surface: "login", mobileE164, ipHash: visitor.ipHash, now });
+  if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+  if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
 
   const person = await findEligiblePerson(db, mobileE164);
   const sendsTo = person?.mobileE164 ?? null;
   if (!(await countCode(c, sendsTo, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = limits.fixedCode ?? newCode();
+  const code = limits.fixedCode ?? newLoginCode();
   const challenge = await createChallenge(db, { personId: person?.id ?? null, code, pepper: limits.codePepper, now });
   await sendCodeAfterResponse(c, sendsTo, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
@@ -214,7 +194,7 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   const sendsTo = await mobileOf(db, challenge.personId);
   if (!(await countCode(c, sendsTo, ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = config.settings.login.fixedCode ?? newCode();
+  const code = config.settings.login.fixedCode ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
   await sendCodeAfterResponse(c, sendsTo, channel, code);
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };
@@ -244,10 +224,8 @@ export function registerClientAuth(app: App): void {
       return c.json({ verified: false as const, attempts_left: verification.attemptsLeft }, 200);
     }
 
-    const name = await db
-      .prepare("SELECT name FROM people WHERE id = ?1")
-      .bind(verification.personId)
-      .first<string>("name");
+    // A code that verifies is never an erased person's: the erasure voids their codes.
+    const name = (await liveContact(db, verification.personId))?.name;
     const token = await openSession(db, {
       kind: "client",
       subjectId: verification.personId,
@@ -256,7 +234,7 @@ export function registerClientAuth(app: App): void {
     });
     setClientCookie(c, token);
     log.info("client_logged_in", { person_id: verification.personId });
-    return c.json({ verified: true as const, first_name: (name ?? "").trim().split(/\s+/)[0] ?? "" }, 200);
+    return c.json({ verified: true as const, first_name: firstNameOf(name ?? "") }, 200);
   });
 
   app.openapi(logoutRoute, async (c) => {

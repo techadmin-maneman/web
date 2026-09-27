@@ -23,15 +23,16 @@ import {
   LATE_FEES,
   moveCost,
   noticeAt,
+  type CancelRefund,
   type CreditOnChange,
   type MoveCost,
   type Notice,
 } from "../policy/moving-a-visit.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import type { PaymentsProvider } from "../providers/razorpay.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { priceOf, type Price } from "./price-book.ts";
-import { windowAt } from "./scheduling.ts";
+import { windowAt } from "../policy/windows.ts";
 import { visitMessage } from "./visit-messages.ts";
 
 export interface ChangeableVisit {
@@ -109,6 +110,20 @@ export async function visitPayment(db: D1Database, visitId: string): Promise<Vis
 
 const ZERO = (gstPercent: number): Price => ({ amount_ex_gst: 0, amount: 0, gst_percent: gstPercent });
 
+/** What a move is paid with: the late fee, or the visit again, or nothing. */
+function movePriceOf(cost: MoveCost, prices: { lateFee: Price | null; visit: Price | null; gst: number }): Price {
+  if (cost === "late_fee") return prices.lateFee ?? ZERO(prices.gst);
+  if (cost === "charged") return prices.visit ?? ZERO(prices.gst);
+  return ZERO(prices.gst);
+}
+
+/** What cancelling gives back of what was paid, in paise. */
+function refundOf(refunding: CancelRefund, paid: number, lateFee: Price | null): number {
+  if (refunding === "all") return paid;
+  if (refunding === "all_but_fee") return Math.max(0, paid - (lateFee?.amount ?? 0));
+  return 0;
+}
+
 export interface ChangeTerms {
   readonly visit: ChangeableVisit;
   readonly notice: Notice;
@@ -181,12 +196,9 @@ export async function changeTerms(
   const gst = visitPrice?.gst_percent ?? 0;
 
   const cost = moveCost(visit.type, notice, "client");
-  const movePrice =
-    cost === "late_fee" ? (lateFee ?? ZERO(gst)) : cost === "charged" ? (visitPrice ?? ZERO(gst)) : ZERO(gst);
+  const movePrice = movePriceOf(cost, { lateFee, visit: visitPrice, gst });
 
-  const refunding = cancelRefund(visit.type, notice);
-  const refund =
-    refunding === "all" ? paid : refunding === "all_but_fee" ? Math.max(0, paid - (lateFee?.amount ?? 0)) : 0;
+  const refund = refundOf(cancelRefund(visit.type, notice), paid, lateFee);
   return {
     visit,
     notice,

@@ -39,10 +39,11 @@ import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { scrubString, type Logger } from "../log.ts";
+import { failureReason, type Logger } from "../log.ts";
 import type { FsmContactUpdate } from "../providers/fsm.ts";
 import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
 import type { MessagingMessage } from "./messaging.ts";
+import { retryWithBackoff } from "./backoff.ts";
 
 export const MAX_FSM_SYNC_ATTEMPTS = 5;
 const FIRST_RETRY_DELAY_SECONDS = 30;
@@ -163,7 +164,7 @@ export async function handleFsmSyncBatch(
       });
       message.ack();
     } catch (error) {
-      const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+      const reason = failureReason(error);
       if (inboxId !== undefined) await recordAttempt(db, inboxId, null, reason);
       messageLog.warn("fsm_sync_failed", { attempt: message.attempts, reason });
       if (message.attempts >= MAX_FSM_SYNC_ATTEMPTS) {
@@ -176,7 +177,7 @@ export async function handleFsmSyncBatch(
         });
         message.ack();
       } else {
-        message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+        retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
       }
     }
   }
@@ -196,7 +197,7 @@ async function bookHold(
   options: ConfirmOptions,
 ): Promise<void> {
   const retryLater = () => {
-    message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+    retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
   };
   try {
     const outcome = await confirmBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options);
@@ -211,7 +212,7 @@ async function bookHold(
     await deps.resolveAlert(givenUpAlertKey(holdId));
     message.ack();
   } catch (error) {
-    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    const reason = failureReason(error);
     log.warn("booking_failed", { hold_id: holdId, attempt: message.attempts, reason });
     if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
       retryLater();
@@ -299,7 +300,7 @@ async function syncCatalogue(
     const written = await pushCatalogue(db, deps.fsm, indiaDate(deps.now()));
     log.info("fsm_catalogue_pushed", { written });
   } catch (error) {
-    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    const reason = failureReason(error);
     log.warn("fsm_catalogue_push_failed", { reason });
   }
   message.ack();
@@ -375,10 +376,10 @@ async function writeJobEvent(
     log.info("job_event_written", { appointment_id: job.id, kind: event.kind, outcome });
     message.ack();
   } catch (error) {
-    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    const reason = failureReason(error);
     log.warn("job_event_write_failed", { appointment_id: job.id, kind: event.kind, attempt: message.attempts, reason });
     if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
-      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
       return;
     }
     await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
@@ -457,7 +458,7 @@ async function eraseContact(
       .run();
     log.info("fsm_contact_erased", { person_id: personId });
   } catch (error) {
-    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    const reason = failureReason(error);
     const counted = await db
       .prepare(
         "UPDATE people SET fsm_erasure_attempts = fsm_erasure_attempts + 1 WHERE id = ?1 RETURNING fsm_erasure_attempts",
@@ -514,10 +515,10 @@ async function updateContact(
     log.info("fsm_contact_updated", { person_id: personId });
     message.ack();
   } catch (error) {
-    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    const reason = failureReason(error);
     log.warn("fsm_contact_update_failed", { person_id: personId, attempt: message.attempts, reason });
     if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
-      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
       return;
     }
     await deps.alertOnce({
@@ -564,7 +565,7 @@ async function sendLead(
     log.info("fsm_lead", { lead_id: leadId, outcome });
     message.ack();
   } catch (error) {
-    const reason = scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    const reason = failureReason(error);
     log.warn("fsm_lead_failed", { lead_id: leadId, attempt: message.attempts, reason });
     if (message.attempts >= MAX_FSM_SYNC_ATTEMPTS) {
       await deps.alert(
@@ -572,7 +573,7 @@ async function sendLead(
       );
       message.ack();
     } else {
-      message.retry({ delaySeconds: FIRST_RETRY_DELAY_SECONDS * 2 ** (message.attempts - 1) });
+      retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
     }
   }
 }

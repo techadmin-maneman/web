@@ -16,6 +16,7 @@
 import { z } from "zod";
 import type { Logger } from "../log.ts";
 import { ProviderError } from "./provider-error.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /**
  * Nobody waits on most calls; queue consumers and the cron make them. On
@@ -26,9 +27,9 @@ export const BACKGROUND_TIMEOUT_MS = 20_000;
 /** A call a person waits on, a document opened or a visit moved, gives up sooner. */
 export const WAITED_TIMEOUT_MS = 8_000;
 /** Refresh a token this long before Zoho would expire it. */
-const TOKEN_MARGIN_MS = 60_000;
+const TOKEN_MARGIN_MS = MINUTE_MS;
 /** After Zoho refuses a new token, none is asked for this long. */
-export const TOKEN_COOL_DOWN_MS = 10 * 60 * 1000;
+export const TOKEN_COOL_DOWN_MS = 10 * MINUTE_MS;
 /** A caller waiting for another's token looks again this often. */
 const LEASE_POLL_MS = 250;
 
@@ -75,6 +76,9 @@ export interface ZohoRequesterDependencies {
 /** A write: JSON for a module call, or multipart for a file upload. */
 export type ZohoWrite = { method: "POST" | "PUT"; body: unknown } | { method: "POST"; form: FormData };
 
+/** A write's body: a multipart form as it is, which sets its own Content-Type, or JSON. */
+const bodyOf = (write: ZohoWrite): FormData | string => ("form" in write ? write.form : JSON.stringify(write.body));
+
 /** One authorised call to a path on the API host. A failed one throws a ZohoError. */
 export type ZohoRequest = (step: string, path: string, write?: ZohoWrite) => Promise<Response>;
 
@@ -89,7 +93,7 @@ export function createZohoRequester(
   async function send(step: string, path: string, token: string, write: ZohoWrite | undefined): Promise<Response> {
     // A multipart upload sets its own Content-Type, with the boundary.
     const isJson = write !== undefined && "body" in write;
-    const body = write === undefined ? undefined : "form" in write ? write.form : JSON.stringify(write.body);
+    const body = write === undefined ? undefined : bodyOf(write);
     return zohoSend(deps, timeoutMs, step, `https://${client.apiHost}${path}`, {
       headers: { Authorization: `Zoho-oauthtoken ${token}`, ...(isJson ? { "Content-Type": "application/json" } : {}) },
       ...(write === undefined ? {} : { method: write.method, body }),

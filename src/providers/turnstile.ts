@@ -1,9 +1,8 @@
 // Cloudflare Turnstile. Locally the secret is Cloudflare's always-pass test
 // secret, so the real endpoint is called everywhere and needs no stub.
 
-/** Cloudflare's dummy token, and the test secret that accepts it. Both are published. */
+/** Cloudflare's published dummy token, which its always-pass test secret accepts. */
 export const TURNSTILE_TEST_TOKEN = "XXXX.DUMMY.TOKEN.XXXX";
-export const TURNSTILE_ALWAYS_PASS_SECRET = "1x0000000000000000000000000000000AA";
 
 const SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TIMEOUT_MS = 5_000;

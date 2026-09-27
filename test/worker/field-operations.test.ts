@@ -12,7 +12,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createLogger } from "../../src/log.ts";
@@ -510,6 +510,25 @@ describe("the outbox", () => {
     expect(landed?.n).toBe(1);
     // And only the first put an FSM write on the queue: check-in, start, photos, checklist.
     expect(fsmQueue.sent).toHaveLength(4);
+  });
+
+  it("lands a step whose FSM write the queue refused, and leaves it pending for the sweeper to send", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    fsmQueue = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+
+    expect(answer.status).toBe(202);
+    expect(await answer.json()).toMatchObject({
+      event_id: "event-start-01",
+      replayed: false,
+      fsm_write_state: "pending",
+    });
+    const row = await env.DB.prepare(
+      "SELECT fsm_write_state, superseded FROM job_events WHERE event_id = 'event-start-01'",
+    ).first<{ fsm_write_state: string; superseded: number }>();
+    // What src/scheduled/sweeper.ts sends on once its grace has passed.
+    expect(row).toEqual({ fsm_write_state: "pending", superseded: 0 });
   });
 
   it("refuses a step sent before the one ahead of it", async () => {
@@ -1134,6 +1153,23 @@ describe("dispatch", () => {
       .bind(TODAY_JOB)
       .first<{ window_start: string }>();
     expect(unmoved?.window_start).toBe("2026-09-21T07:30:00.000Z");
+  });
+
+  it("keeps FSM's reason for a refused move without the number or e-mail it echoed", async () => {
+    fsm.failNext("rescheduleVisit", "FSM said 400: contact +919810000001 (rohit@example.com) is locked");
+
+    await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
+      date: "2026-09-22",
+      window: "morning",
+      reason: "running_over",
+    });
+
+    const move = await env.DB.prepare("SELECT fsm_error FROM dispatch_moves").first<{ fsm_error: string }>();
+    expect(move?.fsm_error).toContain("FSM said 400");
+    expect(move?.fsm_error).not.toContain("9810000001");
+    expect(move?.fsm_error).not.toContain("rohit@example.com");
   });
 });
 

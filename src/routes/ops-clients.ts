@@ -17,10 +17,9 @@
 // and what is kept of them is a record for the deletion queue, not a page to read.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import { staffOf } from "../http/audit.ts";
+import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { actorOf, type AuditActor } from "../domain/audit.ts";
 import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../domain/photo-views.ts";
 import {
   CLIENT_STATES,
@@ -32,17 +31,19 @@ import {
 } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
-import { consentRecordsOf, currentAddress } from "../domain/profile.ts";
+import { consentRecordsOf, currentAddress, type ConsentState } from "../domain/profile.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES } from "../policy/consents.ts";
 import { clientHistory } from "../domain/client-history.ts";
-import { EntrySchema, paymentEntries } from "./client-payments.ts";
+import { paymentEntries } from "../domain/client-payments.ts";
+import { latestProposal } from "../domain/proposed-visits.ts";
+import { EntrySchema } from "./client-payments.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const clientId = z.object({ id: z.uuid() });
 const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
 
@@ -308,15 +309,14 @@ function searchOf(typed: string): Search | null {
   return typed.length >= NAME_MIN ? { by: "name", text: typed } : null;
 }
 
+/** A purpose as the console shows it: given, never given, or given and then withdrawn. */
+function consentStateOf(consent: ConsentState): "given" | "not_given" | "withdrawn" {
+  if (consent.granted) return "given";
+  return consent.since === null ? "not_given" : "withdrawn";
+}
+
 /** A LIKE pattern for text anywhere in the column, with LIKE's own wildcards taken as themselves. */
 const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
-
-/** The member of staff behind the call; requireAccess has set it on every ops route. */
-function staffOf(c: Context<AppEnv>): AuditActor {
-  const identity = c.var.accessIdentity;
-  if (identity === undefined) throw new Error("ops routes run after requireAccess");
-  return actorOf(identity);
-}
 
 interface PersonRow {
   id: string;
@@ -396,10 +396,7 @@ export function registerOpsClients(app: App): void {
       paymentEntries(db, id),
       clientHistory(db, id),
       // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
-      db
-        .prepare("SELECT 1 FROM leads WHERE person_id = ?1 AND proposed_visit_date IS NOT NULL LIMIT 1")
-        .bind(id)
-        .first(),
+      latestProposal(db, id),
     ]);
     const outcomes = await visitOutcomes(
       db,
@@ -543,11 +540,7 @@ export function registerOpsClients(app: App): void {
       {
         consents: consents.map((consent) => ({
           purpose: consent.purpose,
-          state: consent.granted
-            ? ("given" as const)
-            : consent.since === null
-              ? ("not_given" as const)
-              : ("withdrawn" as const),
+          state: consentStateOf(consent),
           notice_version: consent.noticeVersion,
           at: consent.since,
         })),

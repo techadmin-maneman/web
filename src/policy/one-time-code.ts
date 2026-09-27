@@ -1,5 +1,9 @@
 // The login code (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them; their code arrives in P2-M1.
+// The rules as the prompt states them, and the numbers they turn on (docs/decisions/0030-one-time-codes.md). A code is
+// asked for and sent through src/http/send-code.ts, and checked, for a client and a technician alike, by
+// src/domain/one-time-codes.ts.
+
+import { MINUTE_MS } from "../lib/durations.ts";
 
 export const RULES = [
   "Six digits, sent on WhatsApp.",
@@ -16,12 +20,12 @@ export const ONE_TIME_CODE = {
 } as const;
 
 /** A code works for ten minutes ("Endpoints": "code lifetime of 10 minutes"). */
-export const CODE_TTL_MS = 10 * 60 * 1000;
+export const CODE_TTL_MS = 10 * MINUTE_MS;
 /** One challenge sends at most this many codes, whichever channel asks. */
 export const MAX_SENDS_PER_CHALLENGE = 5;
 
 /** Six random digits, each equally likely. */
-export function newCode(): string {
+export function newLoginCode(): string {
   const limit = 4_294_000_000; // the largest multiple of 1,000,000 under 2^32, so no code is likelier than another
   const value = new Uint32Array(1);
   do crypto.getRandomValues(value);

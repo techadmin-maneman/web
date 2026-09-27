@@ -13,12 +13,11 @@
 // rule on a record that is still to be built (docs/open-points.md, item 57).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { dayMoney } from "../domain/day-money.ts";
 import { errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 /** As many lines as the board can usefully hold; past this the day is not one to read on a card. */
 const LIMIT = 200;

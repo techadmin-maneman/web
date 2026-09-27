@@ -12,7 +12,7 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
-import { createStubPayments } from "../../src/providers/razorpay.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import {

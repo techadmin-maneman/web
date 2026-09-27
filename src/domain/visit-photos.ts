@@ -7,12 +7,14 @@
 // ever deleted on purpose and audited; an erasure finds it there.
 
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
+import { PHOTO_ANGLES, type PhotoAngle } from "../policy/in-job-steps.ts";
 import type { FsmAttachment, FsmProvider } from "../providers/fsm.ts";
 
 export const PHASES = ["before", "after"] as const;
-export const ANGLES = ["front", "top", "left", "right", "hair"] as const;
+/** The prompt's five angles, in the order they are taken. */
+export const ANGLES = PHOTO_ANGLES;
 export type Phase = (typeof PHASES)[number];
-export type Angle = (typeof ANGLES)[number];
+export type Angle = PhotoAngle;
 
 /** A full set: five angles, before and after. */
 export const PHOTOS_PER_VISIT = PHASES.length * ANGLES.length;

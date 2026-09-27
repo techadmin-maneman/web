@@ -1,0 +1,47 @@
+# Glossary
+
+The words the code, the database and the API use for the same few things, and which one means what. Where two surfaces use one word differently, both meanings are here, and the one to use in new code is named.
+
+## A visit and its records
+
+| Word            | Means                                                                                                                                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **appointment** | FSM's record of one visit to one client at one time, and our mirror of it, the `appointments` table (ADR 0032). The code's word for the row.                                                                        |
+| **visit**       | The same appointment as the client sees it: the app's _Visits_, `/api/visits`. A consultation, a service, a first fit or a replacement (`VISIT_TYPES`).                                                             |
+| **job**         | The same appointment as its technician sees it: `/api/tech/jobs`. A write to it is a **job event** (`job_events`), landed once by its event ID (ADR 0038).                                                          |
+| **booking**     | Making a visit: a **hold** paid for, or free, and written to FSM (`src/domain/bookings.ts`). Not a record of its own. A Phase 1 booking was a lead with a proposed date.                                            |
+| **hold**        | A client's claim on a time while they pay, ten minutes (`slot_holds`, ADR 0045). Confirmed once paid, it keeps its time until it is booked or refunded (ADR 0068).                                                  |
+| **request**     | A day and window asked for while self-serve booking is off, which ops confirm (`consultation_requests`, ADR 0060). FSM has a Request too: a lead sent to FSM before it is a work order (`src/domain/fsm-leads.ts`). |
+| **work order**  | FSM's container for an appointment and its invoice. We create one with each booking (`src/domain/bookings.ts`).                                                                                                     |
+
+## Time
+
+| Word                  | Means                                                                                                                                                                                                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **window**            | One of the three the client books: morning 9–12, afternoon 12–4, evening 4–8 (`BookingWindow`, `WINDOW_TIMES`; ADR 0035). What new code means by the word.                                                                                                                                                          |
+| **visit window**      | Phase 1's rough preference on the booking form: weekday or weekend, morning or evening (`VisitWindow`, a lead's `first_choice_window`). Still read for Phase 1 leads.                                                                                                                                               |
+| **window label**      | Two meanings, by surface: on `/api/lead` and `/api/me` it is Phase 1's words for the booked page, "before noon" or "after four" (`WindowLabel`); on `/api/visits` and `/api/tech/jobs` it is the window, morning, afternoon or evening. The API fields keep their names; renaming them is a change to the contract. |
+| **window_start**      | An appointment's booked start, an instant; `window_end` its end. Not a window in the sense above.                                                                                                                                                                                                                   |
+| **slot**              | One of the dispatch board's four columns a day (`SLOTS_PER_DAY`).                                                                                                                                                                                                                                                   |
+| **unit**              | Half a slot, the grain the day is counted in: eight a day (`UNIT_STARTS`), so a replacement's slot and a half is three.                                                                                                                                                                                             |
+| **claim**             | A row in `slot_claims` holding one unit, or one window, of one technician's day, for a hold or for a move on the board while it is written to FSM (ADR 0069).                                                                                                                                                       |
+| **rate-limit window** | The India hour or day a counter counts in (`src/domain/rate-limit.ts`). Nothing to do with a visit's time.                                                                                                                                                                                                          |
+
+## People
+
+| Word           | Means                                                                                                                                                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **person**     | Anyone we hold a number for: a row in `people`. The code's word for the row.                                                                                                            |
+| **client**     | A person who may sign in to the app: one with a booked consultation or a later visit (`src/policy/login.ts`). Fitted, a lead or nothing booked (`clientStateOf`).                       |
+| **lead**       | Two meanings: a row in `leads`, what a form or a try-on left, which reaches the CRM; and, as a client's state, a person booked but not yet fitted. The CRM's own record is also a Lead. |
+| **contact**    | The person's record in FSM (`fsm_contact_id`). Not ours; FSM makes and keeps it.                                                                                                        |
+| **customer**   | The person's record in Books, where invoices and payments are (`customer_id`). Also FSM's and Books' word, never ours.                                                                  |
+| **technician** | A field technician FSM lists as active, mirrored in `technicians`. He signs in on one phone at a time (ADR 0052).                                                                       |
+| **staff**      | Whoever Cloudflare Access let into the ops console: a person's e-mail, or a service token (`staffOf`, `src/http/audit.ts`).                                                             |
+
+## Removing a person
+
+| Word                 | Means                                                                                                                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **deletion request** | A client asking, in the app, for their account to be deleted (`deletion_requests`). Ops decide it within 7 days (`DELETION_DECIDED_WITHIN_DAYS`).                                                                         |
+| **erasure**          | The act itself (`erasePerson`, ADR 0019 and 0066): photographs deleted, the person blanked, the CRM and FSM told. A decided deletion request is an erasure, and so is the operators' `POST /api/erasure`. All or nothing. |

@@ -5,24 +5,23 @@
 
 import { CHECKLIST } from "../config/job-sheet.ts";
 import type { VisitType } from "../config/visit-types.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
+import { indiaDate, indiaTime } from "../lib/india-time.ts";
+import { windowAt } from "../policy/windows.ts";
 import { signToken } from "../lib/signed-token.ts";
 import type { AppointmentStatus, VisitOutcome } from "./fsm-mirror.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
+import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
 /** The three windows the client app offers (docs/prompts/phase2-frontend.md), by the hour a visit starts in India. */
 export type VisitWindowLabel = "morning" | "afternoon" | "evening";
 
 /** A photograph's link lasts this long; the app asks again for a fresh one. */
-export const PHOTO_LINK_MS = 15 * 60 * 1000;
+export const PHOTO_LINK_MS = 15 * MINUTE_MS;
 
-export function windowOf(startsAt: string): VisitWindowLabel {
-  const hour = Number(indiaHour(new Date(startsAt)).slice(11, 13));
-  return hour < 12 ? "morning" : hour < 16 ? "afternoon" : "evening";
-}
+export const windowOf = (startsAt: string): VisitWindowLabel => windowAt(indiaTime(new Date(startsAt)));
 
 /**
  * Where a visit FSM has not closed stands for the client: still to come, under
@@ -102,7 +101,7 @@ function summaryOf(row: AppointmentRow, place: (row: AppointmentRow) => string, 
     window_label: windowOf(row.window_start),
     starts_at: row.window_start,
     ends_at: row.window_end,
-    length_minutes: Math.round((Date.parse(row.window_end) - Date.parse(row.window_start)) / 60_000),
+    length_minutes: minutesBetween(row.window_start, row.window_end),
     type: row.type,
     status: row.status,
     stage: stageOf(row, now),
@@ -141,7 +140,8 @@ export type ClientState = (typeof CLIENT_STATES)[number];
  * app's Home card and the ops console's client page read the same rule.
  */
 export function clientStateOf(fitted: boolean, hasBooking: boolean): ClientState {
-  return fitted ? "fitted" : hasBooking ? "lead" : "nothing_booked";
+  if (fitted) return "fitted";
+  return hasBooking ? "lead" : "nothing_booked";
 }
 
 /** Whether the client has been fitted: a first fit, or any visit after one, has been done. */

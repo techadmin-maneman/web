@@ -10,17 +10,20 @@
 //                                     house card; the version in the link is what makes a revoke reach new shares
 //
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. An unknown
-// code still books or waits, without an invite.
+// code still books or waits, without an invite. The same submission sent again under its Idempotency-Key gets its
+// first answer.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { HOUSE_CARD } from "../config/house-card.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";
 import { inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
+import { formRequest } from "../http/public-form.ts";
 import { takenOrBooked } from "./consultations.ts";
 
 const CodeParams = z.object({ code: z.string().regex(/^[A-Za-z0-9]{4,12}$/) });
@@ -127,6 +130,7 @@ const consultationRoute = createRoute({
   summary: "Book a free consultation through an invite",
   request: {
     params: CodeParams,
+    headers: IdempotencyKeyHeaderSchema,
     body: { content: { "application/json": { schema: ConsultationRequestSchema } } },
   },
   responses: {
@@ -155,7 +159,8 @@ const consultationRoute = createRoute({
     403: errorResponse("turnstile_failed"),
     409: takenOrBooked,
     422: errorResponse(
-      "not_bookable: the pincode is not served, the day is not open, or this number is past consultations",
+      "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; " +
+        "idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -166,7 +171,11 @@ const waitlistRoute = createRoute({
   method: "post",
   path: "/api/r/{code}/waitlist",
   summary: "Wait for an unserved pincode",
-  request: { params: CodeParams, body: { content: { "application/json": { schema: WaitlistRequestSchema } } } },
+  request: {
+    params: CodeParams,
+    headers: IdempotencyKeyHeaderSchema,
+    body: { content: { "application/json": { schema: WaitlistRequestSchema } } },
+  },
   responses: {
     201: {
       description: "On the list",
@@ -181,7 +190,11 @@ const waitlistRoute = createRoute({
     },
     400: errorResponse("invalid_request"),
     403: errorResponse("turnstile_failed"),
-    422: errorResponse("not_bookable: that pincode is served; book instead"),
+    409: errorResponse("idempotency_in_progress: the first request with this key is still running"),
+    422: errorResponse(
+      "not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a " +
+        "different body",
+    ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
   },
@@ -226,55 +239,77 @@ export function registerReferralLanding(app: App): void {
   app.openapi(consultationRoute, async (c) => {
     const { code } = c.req.valid("param");
     const body = c.req.valid("json");
-    const booked = await bookConsultation(c, {
-      name: body.name,
-      mobile: body.mobile,
-      pincode: body.pincode,
-      date: body.date,
-      window: body.window,
-      lossExtent: null, // an invited friend is not asked where the hair loss is
-      turnstileToken: body.turnstile_token,
-      attribution: {},
-      invite: await invite(c, code),
+    const { requestId } = c.var;
+    const key = c.req.valid("header")["idempotency-key"];
+
+    const keyed = { route: "POST /api/r/:code/consultation", key, request: { code, ...body } };
+    const run = await onceForKey(c, keyed, async () => {
+      const booked = await bookConsultation(formRequest(c), {
+        name: body.name,
+        mobile: body.mobile,
+        pincode: body.pincode,
+        date: body.date,
+        window: body.window,
+        lossExtent: null, // an invited friend is not asked where the hair loss is
+        turnstileToken: body.turnstile_token,
+        attribution: {},
+        invite: await invite(c, code),
+      });
+      if (!booked.ok) return booked;
+      return {
+        ok: true,
+        body: {
+          state: booked.state,
+          date: booked.date,
+          window: booked.window,
+          area: booked.area,
+          credits: booked.credits,
+          invite: booked.invite,
+        },
+      };
     });
-    if (!booked.ok) {
-      if (booked.booked !== undefined) {
-        return c.json({ ...errorBody("already_booked", c.var.requestId), booked: booked.booked }, 409);
-      }
-      // The landing has said all along whether we come, so a refused pincode reads as not bookable.
-      const code422 = booked.status === 422 ? "not_bookable" : booked.code;
-      return c.json(errorBody(code422, c.var.requestId), booked.status);
+    if (run.kind === "replay") return c.json(run.body, 201);
+    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
+    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
+
+    const booked = run.outcome;
+    if (booked.ok) return c.json(booked.body, 201);
+    if (booked.booked !== undefined) {
+      return c.json({ ...errorBody("already_booked", requestId), booked: booked.booked }, 409);
     }
-    return c.json(
-      {
-        state: booked.state,
-        date: booked.date,
-        window: booked.window,
-        area: booked.area,
-        credits: booked.credits,
-        invite: booked.invite,
-      },
-      201,
-    );
+    // The landing has said all along whether we come, so a refused pincode reads as not bookable.
+    const code422 = booked.status === 422 ? "not_bookable" : booked.code;
+    return c.json(errorBody(code422, requestId), booked.status);
   });
 
   app.openapi(waitlistRoute, async (c) => {
     const { code } = c.req.valid("param");
     const body = c.req.valid("json");
-    const listed = await joinTheWaitlist(c, {
-      name: body.name,
-      mobile: body.mobile,
-      pincode: body.pincode,
-      lossExtent: null,
-      launchAlert: body.launch_alert,
-      turnstileToken: body.turnstile_token,
-      attribution: {},
-      invite: await invite(c, code),
+    const { requestId } = c.var;
+    const key = c.req.valid("header")["idempotency-key"];
+
+    const keyed = { route: "POST /api/r/:code/waitlist", key, request: { code, ...body } };
+    const run = await onceForKey(c, keyed, async () => {
+      const listed = await joinTheWaitlist(formRequest(c), {
+        name: body.name,
+        mobile: body.mobile,
+        pincode: body.pincode,
+        lossExtent: null,
+        launchAlert: body.launch_alert,
+        turnstileToken: body.turnstile_token,
+        attribution: {},
+        invite: await invite(c, code),
+      });
+      if (!listed.ok) return listed;
+      return { ok: true, body: { area: listed.area, credits: listed.credits, invite: listed.invite } };
     });
-    if (!listed.ok) {
-      const code422 = listed.status === 422 ? "not_bookable" : listed.code;
-      return c.json(errorBody(code422, c.var.requestId), listed.status);
-    }
-    return c.json({ area: listed.area, credits: listed.credits, invite: listed.invite }, 201);
+    if (run.kind === "replay") return c.json(run.body, 201);
+    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
+    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
+
+    const listed = run.outcome;
+    if (listed.ok) return c.json(listed.body, 201);
+    const code422 = listed.status === 422 ? "not_bookable" : listed.code;
+    return c.json(errorBody(code422, requestId), listed.status);
   });
 }

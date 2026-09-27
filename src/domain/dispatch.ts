@@ -43,10 +43,13 @@ import {
   placement,
   unitAt,
   visitTimes,
-  windowAt,
   type Day,
 } from "./scheduling.ts";
+import { latestConsentSql } from "./messages.ts";
 import { visitMessage } from "./visit-messages.ts";
+import { windowAt } from "../policy/windows.ts";
+import { failureReason } from "../log.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 /** Seven days, as the board shows them. */
 export const BOARD_DAYS = 7;
@@ -131,8 +134,7 @@ export interface Board {
  * The latest word on WhatsApp about his visits from the client of appointment `a`: 1, 0, or NULL where he never
  * gave one. The messaging consumer reads it the same way before it sends (src/domain/visit-messages.ts).
  */
-const LATEST_VISITS_CONSENT = `SELECT c.granted FROM consents c WHERE c.person_id = a.person_id
-  AND c.purpose = 'whatsapp_visits' ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1`;
+const LATEST_VISITS_CONSENT = latestConsentSql("a.person_id", "whatsapp_visits");
 
 /**
  * A move `m` of appointment `a` whose client has not heard of it: its day or window changed, no message was
@@ -164,7 +166,7 @@ const BOARD_JOBS = `
   SELECT a.id, a.type, a.status, a.window_start, a.technician_id, a.service_city, a.service_pincode, a.asked_window,
     a.person_id, d.locality, sp.area,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
-    (${LATEST_VISITS_CONSENT}) AS whatsapp_visits,
+    ${LATEST_VISITS_CONSENT} AS whatsapp_visits,
     (SELECT referrer.name FROM referral_attributions r
        JOIN referral_codes code ON code.code = r.code
        JOIN people referrer ON referrer.id = code.person_id
@@ -515,7 +517,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
       await deps.fsm.rescheduleVisit(job.fsm_id, { start: indiaIso(times.start), end: indiaIso(times.end) });
     }
   } catch (error) {
-    const reason = (error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    const reason = failureReason(error);
     await db.batch([
       releasingClaims(db, moveId),
       db
@@ -550,7 +552,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
         job.id,
         technicianId,
         nowStart.toISOString(),
-        (times?.end ?? new Date(nowStart.getTime() + VISIT_BLOCKS[job.type].minutes * 60_000)).toISOString(),
+        (times?.end ?? new Date(nowStart.getTime() + VISIT_BLOCKS[job.type].minutes * MINUTE_MS)).toISOString(),
         at,
       ),
     // The mirror now holds the new time, so the claim on it goes in the same batch.
@@ -576,7 +578,7 @@ function changedSince(job: LiveJob, expected: MoveInput["expected"]): Change[] {
 /** Whether the latest word on WhatsApp about his visits from the client of this job is yes. */
 async function agreedToVisitMessages(db: D1Database, appointmentId: string): Promise<boolean> {
   const latest = await db
-    .prepare(`SELECT (${LATEST_VISITS_CONSENT}) AS granted FROM appointments a WHERE a.id = ?1`)
+    .prepare(`SELECT ${LATEST_VISITS_CONSENT} AS granted FROM appointments a WHERE a.id = ?1`)
     .bind(appointmentId)
     .first<{ granted: number | null }>();
   return latest?.granted === 1;

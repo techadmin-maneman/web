@@ -41,7 +41,7 @@ The app's second screen then says a code is on its way if the number has a booki
 - **Checking:** each check counts the attempt before comparing, so parallel guesses cannot share one. The fifth wrong code voids the challenge. A right code closes it and opens a session (ADR 0029).
 - **Resending:** `POST /api/auth/otp/resend` (WhatsApp, 30 seconds after the last send) and `POST /api/auth/otp/sms` (30 seconds after the first) put a fresh code on the same challenge. Its count of wrong attempts carries on, so asking again gains a guesser nothing. A challenge sends at most five codes.
 
-**Limits.** Every number counts alike, booked or not:
+**Limits.** Every number counts alike, booked or not. The three are fixed in `src/config/limits.ts` (ADR 0009, rule 6):
 
 - 5 codes per number per day (`OTP_MOBILE_DAILY_LIMIT`);
 - 10 codes per address per hour (`OTP_IP_HOURLY_LIMIT`);

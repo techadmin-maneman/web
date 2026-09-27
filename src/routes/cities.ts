@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { listCities } from "../domain/cities.ts";
 import { errorResponse } from "../http/errors.ts";
 

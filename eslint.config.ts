@@ -70,6 +70,35 @@ export default defineConfig(
     },
   },
   {
+    // src/app.ts imports every route, so a route that imported it would import all the others. The types every
+    // handler needs are src/http/context.ts; only the Worker's entry and the OpenAPI documents build the app.
+    files: ["src/**/*.ts"],
+    ignores: ["src/index.ts", "src/openapi.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "(^|/)app\\.ts$",
+              message: "Import App and AppEnv from src/http/context.ts; src/app.ts is for the entry points only.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // What a junior developer can hold in their head on a first read: no ternary inside another, and no function
+    // or file past these sizes. Warnings while the longest are split; none of the three stops a build.
+    files: ["src/**/*.ts"],
+    rules: {
+      "no-nested-ternary": "warn",
+      "max-lines-per-function": ["warn", { max: 80, skipBlankLines: true, skipComments: true }],
+      "max-lines": ["warn", { max: 400, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     // The logger is the only place src/ may write to the console.
     files: ["src/log.ts", "scripts/**/*.ts", "site/astro.config.ts"],
     rules: { "no-console": "off" },

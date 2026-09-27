@@ -6,7 +6,8 @@ import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { consentGiven } from "./messages.ts";
+import { consentGiven, latestConsentSql } from "./messages.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 export interface WaitlistArea {
   readonly pincode: string;
@@ -64,8 +65,7 @@ export async function waitlistByPincode(db: D1Database, limit: number): Promise<
  * and for the launch itself.
  */
 const TOLD_ON_LAUNCH = `w.launch_alert = 1 AND w.alerted_at IS NULL AND p.erased_at IS NULL
-  AND (SELECT c.granted FROM consents c WHERE c.person_id = w.person_id AND c.purpose = 'whatsapp_launches'
-       ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1) = 1`;
+  AND ${latestConsentSql("w.person_id", "whatsapp_launches")} = 1`;
 
 /** Those waiting for a pincode whom a launch would tell. */
 async function toAlert(db: D1Database, pincode: string): Promise<{ id: string; person_id: string }[]> {
@@ -180,7 +180,7 @@ export async function composeLaunchAlert(
   if (row.served !== 1) return { skip: "the pincode is not served after all" };
   return {
     template: "launch_alert_v1",
-    params: [row.name.split(" ")[0] ?? row.name, row.area ?? row.city ?? pincode, `${PUBLIC_ORIGIN[environment]}/book`],
+    params: [firstNameOf(row.name), row.area ?? row.city ?? pincode, `${PUBLIC_ORIGIN[environment]}/book`],
   };
 }
 
@@ -228,6 +228,6 @@ export async function composeWaitlistConfirmation(
   const told = row.launch_alert === 1 && (await consentGiven(db, personId, "whatsapp_launches"));
   return {
     template: told ? "waitlist_listed_alert_v1" : "waitlist_listed_v1",
-    params: [row.name.split(" ")[0] ?? row.name, row.area ?? row.pincode],
+    params: [firstNameOf(row.name), row.area ?? row.pincode],
   };
 }

@@ -1,6 +1,7 @@
 // What outbound_messages may hold (migrations/0006_outbound_messages_v2.sql).
-// The database leaves kind and subject_kind unchecked, so that a new kind needs
-// no table rebuild; these lists are where they are checked instead.
+// The database leaves kind and subject_kind unchecked, so that a new one needs
+// no table rebuild. The list below is every kind the code writes, and its type
+// is the check; subject_kind names the table a message's subject_id is in.
 
 import type { NoticePurpose } from "../config/notices.ts";
 
@@ -25,7 +26,15 @@ export const MESSAGE_KINDS = [
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
-/** Whether the person's latest word on this purpose is yes. Consents are append-only, so the latest one stands. */
+/**
+ * The person's latest word on a purpose as a subquery: 1, 0, or NULL where they never gave one. `personColumn`
+ * names the person's ID in the query it sits in. Consents are append-only, so the latest one stands.
+ */
+export const latestConsentSql = (personColumn: string, purpose: NoticePurpose): string =>
+  `(SELECT c.granted FROM consents c WHERE c.person_id = ${personColumn} AND c.purpose = '${purpose}'
+    ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1)`;
+
+/** Whether the person's latest word on this purpose is yes. */
 export async function consentGiven(db: D1Database, personId: string, purpose: NoticePurpose): Promise<boolean> {
   const latest = await db
     .prepare(
@@ -36,14 +45,3 @@ export async function consentGiven(db: D1Database, personId: string, purpose: No
     .first<{ granted: number }>();
   return latest?.granted === 1;
 }
-
-/** What a message is about: the table its subject_id is in. */
-export const MESSAGE_SUBJECTS = [
-  "tryon_job",
-  "appointment",
-  "referral",
-  "waitlist_entry",
-  "payment",
-  "pincode",
-] as const;
-export type MessageSubject = (typeof MESSAGE_SUBJECTS)[number];

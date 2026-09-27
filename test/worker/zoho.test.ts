@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
-import { createZohoCrm, noteFor, recordFor } from "../../src/providers/zoho.ts";
+import { createZohoCrm, noteFor, recordFor } from "../../src/providers/zoho-crm.ts";
 import { crmLead } from "./crm-rules.test.ts";
 import { NOW, captureLogs, fakeFetch, json, type RecordedCall } from "./helpers.ts";
 

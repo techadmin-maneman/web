@@ -282,7 +282,7 @@ Request body:
 }
 ```
 
-**409**: taken: that window has gone; or already_booked: this number has a consultation still to happen
+**409**: taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running
 
 ```json
 {
@@ -297,7 +297,7 @@ Request body:
 }
 ```
 
-**422**: invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app
+**422**: invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -446,7 +446,15 @@ Request body:
 }
 ```
 
-**422**: invalid_request: that pincode is served; book instead
+**409**: idempotency_in_progress: the first request with this key is still running
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -596,7 +604,7 @@ Request body:
 }
 ```
 
-**409**: taken: that window has gone; or already_booked: this number has a consultation still to happen
+**409**: taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running
 
 ```json
 {
@@ -611,7 +619,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations
+**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -712,7 +720,15 @@ Request body:
 }
 ```
 
-**422**: not_bookable: that pincode is served; book instead
+**409**: idempotency_in_progress: the first request with this key is still running
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body
 
 ```json
 {

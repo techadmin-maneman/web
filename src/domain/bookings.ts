@@ -26,7 +26,7 @@ import { indiaIso } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { createLogger, type Logger } from "../log.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import type { PaymentsProvider } from "../providers/razorpay.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { redeemCredit } from "./credits.ts";
@@ -34,6 +34,7 @@ import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { liveVisitOf, visitTimes } from "./scheduling.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
 
 export interface ConfirmOptions {
   readonly labelAsTest: boolean;
@@ -218,7 +219,7 @@ export async function confirmBooking(
 }
 
 /** Longer than every FSM call a booking makes, each of which gives up at 20 seconds. */
-const BOOKING_LEASE_MS = 5 * 60 * 1000;
+const BOOKING_LEASE_MS = 5 * MINUTE_MS;
 
 /** Takes the hold for this consumer while it writes it to FSM; false while another consumer has it. */
 async function takeLease(db: D1Database, holdId: string, now: Date): Promise<boolean> {
@@ -695,7 +696,7 @@ async function cancelOrphan(fsm: FsmProvider, hold: HoldRow, labelAsTest: boolea
 }
 
 /** How long a confirmed hold may wait for FSM before the cron puts it back on the queue. */
-const UNBOOKED_AFTER_MS = 30 * 60 * 1000;
+const UNBOOKED_AFTER_MS = 30 * MINUTE_MS;
 const REQUEUE_PER_PASS = 20;
 
 /** The alert a hold raises while it waits unbooked; closed once it is booked or given back. */

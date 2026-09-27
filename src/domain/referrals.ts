@@ -6,12 +6,13 @@
 
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { inviteLapsed } from "../policy/invites.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 /** No 0, O, 1 or I: a code is read aloud and typed. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const RANDOM_LENGTH = 4;
 
-export function newCode(name: string): string {
+export function newReferralCode(name: string): string {
   const initials =
     name
       .split(/\s+/)
@@ -39,7 +40,7 @@ export async function referralCodeOf(db: D1Database, personId: string, name: str
         `INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)
          ON CONFLICT DO NOTHING RETURNING code`,
       )
-      .bind(newCode(name), personId, at)
+      .bind(newReferralCode(name), personId, at)
       .first<{ code: string }>();
     if (made !== null) return made.code;
     // Either the code was taken, or another request made this person's code meanwhile.
@@ -85,7 +86,7 @@ export async function inviteOf(db: D1Database, code: string, nameOnInvite: boole
   return {
     code: row.code,
     referrerId: row.person_id,
-    referrerFirstName: nameOnInvite && !erased && row.named === 1 ? (row.name.split(" ")[0] ?? null) : null,
+    referrerFirstName: nameOnInvite && !erased && row.named === 1 ? firstNameOf(row.name) : null,
     card: { state: erased ? "house" : row.card_state, version: row.card_version },
   };
 }

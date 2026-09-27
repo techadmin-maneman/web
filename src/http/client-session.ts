@@ -4,7 +4,7 @@
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import { findSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession, type Session } from "../domain/sessions.ts";
 import { errorBody } from "./errors.ts";
 
@@ -49,3 +49,10 @@ export const requireClientSession = createMiddleware<AppEnv>(async (c, next) => 
   c.set("clientSession", session);
   return next();
 });
+
+/** The signed-in client's session; requireClientSession has set it on every route that asks. */
+export function clientOf(c: Context<AppEnv>): Session {
+  const session = c.var.clientSession;
+  if (session === undefined) throw new Error("client routes run after requireClientSession");
+  return session;
+}

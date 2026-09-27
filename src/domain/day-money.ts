@@ -116,6 +116,12 @@ interface ChargeRow {
   technician: string | null;
 }
 
+/** A visit replaced inside 24 hours was cancelled for a new one; the client ended it either way. */
+function changeOf(change: ChargeRow["change"]): Charge["change"] {
+  if (change === null) return null;
+  return change === "moved" ? "moved" : "cancelled";
+}
+
 /** The day's money and its charges, the earliest first. */
 export async function dayMoney(db: D1Database, date: string, limit: number): Promise<DayMoney> {
   const from = indiaInstant(date, "00:00").toISOString();
@@ -139,8 +145,7 @@ export async function dayMoney(db: D1Database, date: string, limit: number): Pro
       amount: row.amount,
       at: row.at,
       visit_started_at: row.visit_started_at,
-      // A visit replaced inside 24 hours was cancelled for a new one; the client ended this one either way.
-      change: row.change === null ? null : row.change === "moved" ? "moved" : "cancelled",
+      change: changeOf(row.change),
       technician: row.technician,
     })),
   };

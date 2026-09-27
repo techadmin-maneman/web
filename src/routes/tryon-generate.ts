@@ -7,7 +7,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { PRESET_IDS, findPreset } from "../config/presets.ts";
 import { FAILURE_CODES, HAIR_COLORS, JOB_STATES, TRYON_STAGES } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
@@ -15,7 +15,7 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { chooseRender } from "../domain/render-choice.ts";
 import { failJob, loadJob, type JobRow, type RenderChoice } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { setLookCookie } from "../http/session.ts";
+import { setLookCookie } from "../http/tryon-session.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaHour } from "../lib/india-time.ts";
 import type { RenderMessage } from "../queues/render.ts";
