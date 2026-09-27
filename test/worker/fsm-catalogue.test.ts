@@ -7,10 +7,10 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
-import { checkCatalogue, itemForService, pushCatalogue } from "../../src/domain/fsm-catalogue.ts";
+import { checkCatalogue, itemForService, PART_WRITES_A_PASS, pushCatalogue } from "../../src/domain/fsm-catalogue.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubFsm, EMPTY_FSM, type FsmItem, type StubFsm } from "../../src/providers/fsm.ts";
+import { createStubFsm, EMPTY_FSM, FSM_ITEM_PAGES, type FsmItem, type StubFsm } from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, request } from "./helpers.ts";
 
@@ -46,6 +46,7 @@ function check(fsm: StubFsm, options: { push: boolean; now?: Date; calls?: numbe
       queue,
       alertOnce: createAlertOnce({ db: env.DB, alert, now: () => now, environment: "local", log: createLogger() }),
       resolveAlert: createResolveAlert({ db: env.DB, now: () => now }),
+      log: createLogger(),
     },
     { push: options.push, now, budget: createCallBudget(options.calls ?? 40) },
   );
@@ -392,6 +393,156 @@ describe("the item a booking goes on", () => {
         deps().deps,
       ),
     ).rejects.toThrow("FSM has no First fit item");
+  });
+});
+
+// Ops' consumables, kept in FSM's catalogue as parts at Rs. 0 (docs/decisions/0087-consumables-and-stock.md). The
+// push is forced on here only, as a test's own option: FSM_CATALOGUE_PUSH is off in every environment, and staging's
+// FSM is the owner's real org.
+describe("the consumables, as parts", () => {
+  async function consumable(code: string, name: string, fsm: { id: string; name: string } | null = null) {
+    await env.DB.prepare(
+      `INSERT INTO consumables (code, name, unit, unit_cost, fsm_item_id, fsm_name, fsm_checked_at, created_at,
+         updated_at)
+       VALUES (?1, ?2, 'strip', 1200, ?3, ?4, ?5, ?6, ?6)`,
+    )
+      .bind(code, name, fsm?.id ?? null, fsm?.name ?? null, fsm === null ? null : "2026-09-25T06:00:00.000Z", "x")
+      .run();
+  }
+
+  const heldFor = (code: string) =>
+    env.DB.prepare("SELECT fsm_item_id, fsm_name, fsm_checked_at FROM consumables WHERE code = ?1")
+      .bind(code)
+      .first<{ fsm_item_id: string | null; fsm_name: string | null; fsm_checked_at: string | null }>();
+
+  const agreeing = CATALOGUE.map((item) => (item.name === "Replacement" ? { ...item, price: 1_500_000 } : item));
+
+  it("links one FSM already holds by its name, and tells ops of one it does not, writing nothing to FSM", async () => {
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [...agreeing, { id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 }],
+    });
+    await consumable("tape_strips", "Tape strips");
+    await consumable("solvent", "Solvent");
+
+    await check(fsm, { push: false }).done;
+
+    expect(await heldFor("tape_strips")).toEqual({
+      fsm_item_id: "fsm-part-tape",
+      fsm_name: "Tape strips",
+      fsm_checked_at: ON_THE_HOUR.toISOString(),
+    });
+    expect(await heldFor("solvent")).toEqual({
+      fsm_item_id: null,
+      fsm_name: null,
+      fsm_checked_at: ON_THE_HOUR.toISOString(),
+    });
+    expect(alerted).toEqual([expect.stringContaining('"Solvent" is not there')]);
+    expect(alerted[0]).toContain("FSM_CATALOGUE_PUSH");
+    expect(alerted[0]).toContain("/settings/consumables");
+    expect(fsm.made.parts).toEqual([]);
+    expect(fsm.made.renamedItems).toEqual([]);
+  });
+
+  it("tells ops of a part still under a name ops have since changed, and renames nothing while the push is off", async () => {
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [...agreeing, { id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 }],
+    });
+    await consumable("tape_strips", "Contour tape", { id: "fsm-part-tape", name: "Tape strips" });
+
+    await check(fsm, { push: false }).done;
+
+    expect(alerted).toEqual([expect.stringContaining('part fsm-part-tape is "Tape strips", ours "Contour tape"')]);
+    expect(fsm.made.renamedItems).toEqual([]);
+  });
+
+  it("with the push on, adds a missing part at Rs. 0 and renames one ops renamed, telling nobody", async () => {
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [...agreeing, { id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 }],
+    });
+    await consumable("tape_strips", "Contour tape", { id: "fsm-part-tape", name: "Tape strips" });
+    await consumable("solvent", "Solvent");
+
+    await check(fsm, { push: true }).done;
+
+    expect(fsm.made.renamedItems).toEqual([{ itemId: "fsm-part-tape", name: "Contour tape" }]);
+    expect(fsm.made.parts).toEqual(["Solvent"]);
+    const solvent = await heldFor("solvent");
+    expect(solvent?.fsm_item_id).toMatch(/^stub-part-/);
+    expect(solvent?.fsm_name).toBe("Solvent");
+    expect((await fsm.items()).find((item) => item.id === solvent?.fsm_item_id)).toMatchObject({
+      type: "Part",
+      price: 0,
+    });
+    expect(alerted).toEqual([]);
+
+    // The next hour finds both as ours, and writes nothing more, to FSM or to D1.
+    await check(fsm, { push: true, now: AN_HOUR_ON }).done;
+    expect(fsm.made.parts).toHaveLength(1);
+    expect(fsm.made.renamedItems).toHaveLength(1);
+    expect((await heldFor("solvent"))?.fsm_checked_at).toBe(ON_THE_HOUR.toISOString());
+  });
+
+  it("with the push on, writes a few a pass from the run's budget, and the rest the next hour", async () => {
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: agreeing });
+    for (let n = 1; n <= PART_WRITES_A_PASS + 2; n += 1) await consumable(`c${String(n)}`, `Consumable ${String(n)}`);
+
+    await check(fsm, { push: true }).done;
+    expect(fsm.made.parts).toHaveLength(PART_WRITES_A_PASS);
+
+    // A run with the list's pages and one call more left spends the pages on the list and one on a part.
+    await check(fsm, { push: true, now: AN_HOUR_ON, calls: FSM_ITEM_PAGES + 1 }).done;
+    expect(fsm.made.parts).toHaveLength(PART_WRITES_A_PASS + 1);
+  });
+
+  it("with the push on, tells ops only of a part it still could not add an hour on", async () => {
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: agreeing });
+    await consumable("solvent", "Solvent");
+    const logs = captureLogs();
+
+    fsm.refuseNext("createPart");
+    await check(fsm, { push: true }).done;
+    expect(alerted).toEqual([]);
+    expect(logs.lines().some((line) => line.event === "fsm_part_push_failed")).toBe(true);
+
+    fsm.refuseNext("createPart");
+    await check(fsm, { push: true, now: AN_HOUR_ON }).done;
+    expect(alerted).toEqual([expect.stringContaining("still so an hour after the push tried")]);
+  });
+
+  it("links a part whose answer was lost by its name the next hour, rather than adding a second", async () => {
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: agreeing });
+    await consumable("solvent", "Solvent");
+
+    fsm.loseAnswer("createPart");
+    await check(fsm, { push: true }).done;
+    expect((await heldFor("solvent"))?.fsm_item_id).toBeNull();
+
+    await check(fsm, { push: true, now: AN_HOUR_ON }).done;
+    expect(fsm.made.parts).toEqual(["Solvent"]);
+    expect((await heldFor("solvent"))?.fsm_item_id).toMatch(/^stub-part-/);
+  });
+
+  it("leaves a retired consumable's part as it is, and closes the alert once each is FSM's", async () => {
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: agreeing });
+    await consumable("solvent", "Solvent");
+    await check(fsm, { push: false }).done;
+    expect(await openAlert("fsm_catalogue:consumables")).not.toBeNull();
+
+    await env.DB.prepare("UPDATE consumables SET retired_date = '2026-09-26' WHERE code = 'solvent'").run();
+    await check(fsm, { push: true, now: AN_HOUR_ON }).done;
+    expect(fsm.made.parts).toEqual([]);
+    expect(await openAlert("fsm_catalogue:consumables")).toBeNull();
+  });
+
+  it("is never part of the price push, which writes only prices", async () => {
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
+    await consumable("solvent", "Solvent");
+
+    await pushCatalogue(env.DB, fsm, "2026-09-26");
+    expect(fsm.made.parts).toEqual([]);
   });
 });
 

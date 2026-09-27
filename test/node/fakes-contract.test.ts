@@ -89,6 +89,12 @@ const OPS_FIXTURES: readonly [method: string, path: string, name: string, body: 
   ["GET", "/api/services", "SERVICES", ops.SERVICES],
   ["POST", "/api/prices/withdraw", "PRICE_ROWS", { prices: ops.PRICE_ROWS }],
   ["GET", "/api/service-area", "SERVICE_AREA", ops.SERVICE_AREA],
+  ["GET", "/api/consumables", "CONSUMABLES", ops.CONSUMABLES],
+  ["POST", "/api/service-usage", "CONSUMABLES", ops.CONSUMABLES],
+  ["GET", "/api/job-sheet", "JOB_SHEET", ops.JOB_SHEET],
+  ["POST", "/api/job-sheet/partial-reasons", "JOB_SHEET", ops.JOB_SHEET],
+  ["GET", "/api/stock", "STOCK", ops.STOCK],
+  ["POST", "/api/stock/transfers", "STOCK", ops.STOCK],
 ];
 
 describe("the ops console's fakes", () => {

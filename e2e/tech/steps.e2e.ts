@@ -103,8 +103,56 @@ test("says each count as it changes, and ties it to the buttons that change it",
 
   const more = page.getByRole("button", { name: "One more tape strips" });
   await more.click();
-  await expect(page.getByRole("status").filter({ hasText: "Tape strips: 1" })).toBeAttached();
-  await expect(more).toHaveAccessibleDescription("Tape strips: 1");
+  await expect(page.getByRole("status").filter({ hasText: "Tape strips: 5" })).toBeAttached();
+  await expect(more).toHaveAccessibleDescription("Tape strips: 5");
+});
+
+// The consumables are ops', with what each service is expected to use (docs/decisions/0087-consumables-and-stock.md).
+test.describe("the consumables step", () => {
+  test("starts each stepper at what the visit's service expects, and keeps the rest behind Add another", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    startedThrough(fake, "before_photos", "checklist");
+    await page.goto(`/jobs/${JOB_ID}/consumables`);
+
+    await expect(page.getByRole("status").filter({ hasText: "Tape strips: 4" })).toBeAttached();
+    await expect(page.getByRole("status").filter({ hasText: "Solvent: 10" })).toBeAttached();
+    await expect(page.getByText("strip · 4 expected")).toBeVisible();
+    await expect(page.getByRole("button", { name: "One more bonding glue" })).toHaveCount(0);
+
+    const another = page.getByRole("button", { name: "Add another" });
+    await expect(another).toHaveAttribute("aria-expanded", "false");
+    await another.click();
+    await expect(page.getByRole("button", { name: "Add Shampoo sachet" })).toBeVisible();
+    const results = await wcag(page);
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+    await page.getByRole("button", { name: "Add Bonding glue" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Bonding glue: 1" })).toBeAttached();
+    await expect(page.getByRole("button", { name: "Add Bonding glue" })).toHaveCount(0);
+  });
+
+  test("sends each consumable by its code, and one taken down to nought not at all", async ({ page }) => {
+    const fake = await fakeTech(page);
+    startedThrough(fake, "before_photos", "checklist");
+    await page.goto(`/jobs/${JOB_ID}/consumables`);
+
+    await page.getByRole("button", { name: "One more tape strips" }).click();
+    for (let count = 0; count < 10; count += 1) await page.getByRole("button", { name: "One fewer solvent" }).click();
+    await page.getByRole("button", { name: "Add another" }).click();
+    await page.getByRole("button", { name: "Add Shampoo sachet" }).click();
+    await page.getByRole("button", { name: "Next" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+    await expect.poll(() => writesTo(fake, "consumables").length).toBe(1);
+    expect(writesTo(fake, "consumables")[0]?.body).toEqual({
+      items: [
+        { code: "tape_strips", quantity: 5 },
+        { code: "shampoo_sachet", quantity: 1 },
+      ],
+    });
+  });
 });
 
 test("a focused checklist line shows its whole focus ring, not one cut by the screen's edge", async ({ page }) => {

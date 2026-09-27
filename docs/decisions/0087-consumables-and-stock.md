@@ -1,0 +1,125 @@
+# 0087. Consumables and their stock, and the job sheet, set in the console
+
+- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/owner-answers-2026-09-27.md`: item 28, "Consumables, stock and FSM" and "Where stock is held"). FSM's two new calls are untried on the org (`docs/open-points.md`, item 25), and the switch that makes them is off everywhere; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), whose services a service's expected use is now checked against
+- Date: 2026-09-27
+- Amends [0061](0061-ops-editable-inputs.md), [0065](0065-a-technicians-writes-reach-fsm.md) and [0073](0073-prices-from-the-price-book.md); follows [0038](0038-offline-writes.md), [0067](0067-alerts-and-silent-failures.md), [0070](0070-vendor-correctness.md) and [0071](0071-what-ops-see-before-a-setting-changes.md)
+
+## Context
+
+The technician's job sheet was code. Each kind of visit's checklist and the four partial reasons were committed in `src/config/job-sheet.ts`, most of them placeholders, waiting for a template the owner was to build in FSM (open point 28), and ADR 0061 counted `PARTIAL_REASONS` among the closed sets ops cannot change. The consumables step offered the board's four, by name, and the API kept whatever name it was sent. `consumables_used` held each job's rows once FSM had the summary, "where a stock count can read it" (ADR 0065), and nothing read them.
+
+FSM keeps no stock. Its catalogue holds services and parts, and a work order can carry parts with quantities, but stock levels and their deduction come only with Zoho Inventory, on FSM Professional, Books Premium and Inventory Professional, and Inventory deducts only when an invoice is sent: a free consultation or a visit paid by credit would never deduct.
+
+The owner ruled on 27 September 2026:
+
+- **The job-sheet template is set in the ops console:** each kind of visit's checklist, the consumables with each service's expected use, and the reasons a job may be left partly done. The technician app reads them, and the consumables reach FSM as parts.
+- **Stock is our own ledger.** The consumables and each service's expected use are set in the console and synced to FSM's catalogue as parts; stock on hand, deliveries, counts and reorder alerts are kept in our own system. Books stays on Standard.
+- **Consumables are internal.** A job's use is kept in our records and on FSM's job summary, never as lines of the work order, so the client's invoice is unchanged.
+- **Stock is held in each technician's kit and a central store.** A job's use comes out of the kit of the technician who did it, ops record deliveries and transfers, and low stock is alerted per kit.
+
+## Decision
+
+The rule is `src/policy/stock.ts`, which quotes the prompt: these are ours because FSM has no place for them, and everything FSM does hold is written to FSM. Migration 0049 adds five tables and three columns, and rebuilds none.
+
+### The consumables
+
+**Ops keep the list** in Settings · Consumables (`consumables`). Each has:
+
+- **a code**, made from its name when it is added and never changed. The phone sends it and the ledger keys on it, so a rename keeps the history and a step queued offline is still understood;
+- **a name**, unique whatever its case, since FSM's part is found by it;
+- **the unit** it is counted in, in whole numbers: a strip, a millilitre, a sachet;
+- **what one costs us**, in paise. Only this panel shows it: the technician's card carries none, and no invoice carries a consumable;
+- **two reorder levels**, one for any kit and one for the central store (below);
+- **the day it is retired from**, today or later. From that day the app no longer offers it. A job that recorded it keeps it, the stock held stays, and its FSM part is left as it is. It can be restored.
+
+Each change shows the old figure beside the new before it is sent (ADR 0071) and is audited (`consumable.add`, `consumable.change`, `consumable.retire`, `consumable.restore`).
+
+**In tables of their own, not the settings register.** ADR 0061's register holds at most ten inputs, each one figure. A list that grows, a row per consumable, is a table, and so are the ledger and the job sheet's lists. Nothing here is a Worker var.
+
+### What each service uses
+
+`consumable_usage` holds how many of each consumable a service is expected to use, and the technician's steppers start there. Ops set it beneath the list, one service at a time, old beside new, audited as `consumable.usage`.
+
+A **service** is a kind of visit at one of the price book's tiers, `(visit_type, tier)`, and the API takes only a pair the book prices: the standard four today. The table of services the owner has asked for (ADR 0025, item 67) is being built beside this, so there is no foreign key to it; once it exists the pair becomes its row, as the migration's header says. Until then every job is taken to be its kind's standard tier, which is what every booking is sold at (ADR 0025, item 35). **Amended 27 September 2026 ([ADR 0085](0085-services-ops-can-edit.md)):** the table of services exists (migration 0050). `POST /api/service-usage` now takes a pair only where the services table holds that `(kind, tier)` row, retired or not, since a visit sold before its service was retired is still done; the price book's pairs no longer decide it. A job's service is its own visit's, `appointments.tier` (the standard tier where the mirror knows no other), so the technician's steppers start at what that service uses. Settings · Consumables lists each service by its name, a kind at a time in the console's order, a retired one marked "retired from" its day. There is still no foreign key: `consumable_usage` comes in migration 0049 and `services` in 0050, and SQLite adds a foreign key only by rebuilding the table, so the pair stays checked in code (`setExpectedUse`, `src/domain/consumables.ts`).
+
+### The technician's step
+
+The job's card carries every consumable offered on the job's day, with its unit and how many the job's service expects: those it expects first, their steppers already at that count, and **Add another** for any of the rest. The step sends `{ code, quantity }` for each used, and an empty list for none. The phone keeps the list with the job, so a basement changes nothing.
+
+- **A step a phone queued before this release** sends `{ name, quantity }`, and is still taken. Each name is matched to a consumable whatever its case; one that matches none is kept as the technician typed it and moves no stock.
+- **A code the catalogue never held is refused** (400, `items`). One retired since the phone kept the job is taken: it was used.
+- **Board B3 draws four steppers** at a count already made. The departure is recorded in `docs/fidelity-method.md`.
+
+### A job's use
+
+**It lands in our records as the step lands,** not once FSM has the summary, as ADR 0065 had it. Stock is ours, and a job whose FSM write waits or fails still used what it used (`src/domain/job-use.ts`).
+
+- **A row of `consumables_used` for each consumable**, which now also keeps its code, what the job's service expected of it and what one cost that day, so a later change of cost leaves a past job's as it was. Its `fsm_item_id` stays empty: the part is the consumable's, found through its code.
+- **A movement out of the technician's kit** for each, reason `used`, naming the job and the event.
+- **Once, however often the step is replayed.** The use is read from the job's latest consumables step, and what the kit's rows for the job already took is subtracted, so a replay writes nothing, a replay of an older step changes nothing, and a corrected step writes only the difference. A unique index on the event and the consumable holds it under two replays at once.
+- **FSM's summary names each consumable as before,** by the name the console gives it now, and no line is written to the work order.
+
+### Stock
+
+`stock_movements` is the ledger. Every movement into or out of a place is a row that is never changed, and what a place holds is the sum of its rows.
+
+- **The places** are the central store and each technician's kit. Stock is in whole units of the consumable.
+- **A delivery** is received into the central store; one straight into a kit is a delivery and a transfer.
+- **A transfer** is two rows sharing an ID, out of one place and into another; the same place twice is refused.
+- **A count** writes the difference from what the rows said, nought when it agrees, and the Stock page says when each place last counted each consumable. A kit's first count is its opening stock.
+- **A loss** is written off with ops' words for what happened, which it requires.
+- **Nothing is refused for leaving a place below nothing.** A job's use cannot be refused, and a delivery may be recorded late. The console says so before a movement is sent, and a count puts it right.
+
+Ops record each on the Stock page, a section of its own beside Technicians. Each movement shows what every place it touches holds now and will hold, before it is sent (ADR 0071), and is written in one batch with its audit entry (`stock.receive`, `stock.transfer`, `stock.count`, `stock.write_off`). The page lists every consumable offered, and any retired one still held, against the central store, each active technician's kit, and the kit of any technician who left still holding stock, with the latest 30 movements beneath.
+
+### Low stock
+
+**One reorder level for any kit and one for the central store,** on each consumable, since the kits carry the same set. A level per kit would be a table ops fill for every new technician; it can come later without touching the ledger. A place is low at or below its level, and a consumable with no level is never low.
+
+**An alert per kit, and one for the store** (`src/domain/alerts.ts`, ADR 0067), keyed `low_stock:kit:<technician's ID>` and `low_stock:central`. A movement that takes a place to its level raises its alert, naming all the place is low on and linking to the Stock page; the message gives the technician's ID, never his name. A place's alert closes once it is low on nothing. Like every alert it is told once, and again only as the movements that find the place low reach 10, 100 and 1,000.
+
+**The Stock page marks each low place in words.** Low stock is not a group on the Tasks board: the board's groups are cases about a client or a visit that someone closes, and low stock is a property of a place that each movement changes, shown where ops act on it.
+
+### FSM's catalogue
+
+**The hourly check keeps the consumables in FSM's catalogue as parts at Rs. 0** (`src/domain/fsm-catalogue.ts`). It is ADR 0073's pass, extended: the same run in the first five minutes of the hour, the same catalogue list, read once, and no call of its own while nothing needs writing.
+
+- **It finds each consumable still offered** among FSM's parts, by the part's ID once linked, else by our name exactly, which links it. Settings · Consumables says of each whether it is in FSM, in FSM under another name, not in FSM, or not checked yet. D1 is written only where that changed.
+- **With `FSM_CATALOGUE_PUSH` off,** in every environment today, it raises one alert, `fsm_catalogue:consumables`, naming each consumable missing or named otherwise, for ops to add or rename by hand as a part at Rs. 0. It closes once each is linked. The startup guard still refuses the push in staging, which shares the owner's real org, so staging never writes the catalogue.
+- **With the push on,** it adds a missing part, or renames one named otherwise, in the pass itself: at most five a pass (`PART_WRITES_A_PASS`), each a call from the cron run's budget, the rest waiting for the next hour. A part is added at Rs. 0 and its price never touched again, and a retired consumable's part is left alone. A write FSM refuses is logged, `fsm_part_push_failed`, and ops hear only if the next hour still finds it unsettled.
+- **Both calls are untried on the org** (open point 25), as the provider's header marks them: `POST /fsm/v1/Service_And_Parts` with `Type: "Part"` and `Unit_Price: 0`, and `PUT /fsm/v1/Products/{id}` with a new `Name`. Adding reads the new ID from whichever of the shapes FSM's creates answer in comes back, and an answer with none is a failure, not a part without an ID. The next hour's check reads both back by name. The stub keeps what it was asked to add and rename, and the unconnected provider refuses both, as it refuses every call.
+- **A piece is never built on a consumable's part.** Fitting a piece takes the catalogue's part by its base's name; a consumable's part, by its ID or its name, is left out (`src/domain/pieces.ts`).
+
+### The job sheet
+
+**Ops set each kind of visit's checklist and the partial reasons** in Settings · Job sheet (`checklist_items`, `partial_reasons`), at most 20 and 12 items, each at most 80 characters, no two alike.
+
+- **A list nobody has saved is the committed one,** `src/config/job-sheet.ts`, whose placeholders stand until ops set theirs. The first save makes the rows the list.
+- **An item keeps its code** through a rename or a move. A new one's code is made from its words.
+- **An item left out is retired, not deleted,** so a phone that queued it offline is still taken, FSM's summary can still name it, and ops can put it back under its own code.
+- **The card carries both lists** in ops' order, each item with its code and its words. A step is checked against every code the list ever held, and one never listed is refused.
+- **FSM's summary** names the checklist in ops' words, counting only what is still on the list, and the Tasks board names a partial visit's reason in ops' words too, where it gave the code.
+
+Each save shows what is renamed, added, taken off and moved before it is sent (ADR 0071), and is audited (`job_sheet.set`).
+
+## Consequences
+
+- **ADR 0061 is amended:** the partial reasons and the checklists are ops' lists, no longer closed sets in code. The four kinds of visit remain a closed set.
+- **The card's `partial_reasons` changed shape,** from codes to `{ id, label }`, and it gained `consumables`. The technician app is not yet released, so only test phones hold cards, and a card an earlier build kept is read in today's shape, each reason worded from its code (`apps/tech/src/store/jobs.ts`).
+- **Jobs worked before this release are not replayed into the ledger.** They predate every kit's opening count, which would only undo them; their rows in `consumables_used` stay as they were, by name. A step that landed before the release and reaches FSM after it keeps no row: FSM's summary still names it. Production has no such job, since the technician app is not released there.
+- **The Zoho budget.** The check reads the catalogue once an hour, as it did. With the push on, it may add at most five calls a pass until every consumable is linked, and none after. D1 gains a row per consumable used on a job, and the check writes nothing in an hour when nothing changed.
+- **Staging holds no consumables** until ops add them; the local stack's seed adds a few (`scripts/seed-local.ts`). The console's words are placeholders (`apps/ops/src/content.ts`).
+- **Tests.**
+  - `test/node/policy-stock.test.ts`: the rules.
+  - `test/node/migration-0049.test.ts`: the migration.
+  - `test/worker/consumables.test.ts`: the list, its retirement and what each service uses.
+  - `test/worker/stock.test.ts`: the ledger, a job's use written once and corrected, and low stock.
+  - `test/worker/job-sheet-settings.test.ts`: the job sheet, the committed lists and retired items.
+  - `test/worker/fsm-catalogue.test.ts`: the parts, with the push off and on, and its bound.
+  - `test/worker/fsm.test.ts`, `test/worker/fsm-zoho-replies.test.ts`: the two calls, on Zoho, the stub and the unconnected provider.
+  - `test/node/fakes-contract.test.ts`: the console's fakes answer as the API does.
+  - `test/worker/pieces.test.ts`: a piece is never built on a consumable's part.
+  - `test/worker/ops-tasks.test.ts`: a partial visit's reason in ops' words.
+  - `test/node/tech-kept.test.ts`: a card an earlier build kept.
+  - `e2e/ops/consumables.e2e.ts`, `e2e/ops/job-sheet.e2e.ts`, `e2e/ops/stock.e2e.ts`: the console.
+  - `e2e/tech/steps.e2e.ts`: the step.

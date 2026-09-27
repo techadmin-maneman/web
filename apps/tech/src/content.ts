@@ -336,9 +336,14 @@ export const steps = {
     less: (name: string) => `One fewer ${name.toLowerCase()}`,
     more: (name: string) => `One more ${name.toLowerCase()}`,
     count: (name: string, count: number) => `${name}: ${String(count)}`,
-    // PLACEHOLDER: FSM holds no consumables catalogue, so the board's four stand in (open point 28).
-    items: ["Tape strips", "Bonding glue", "Solvent", "Shampoo sachet"],
+    // PLACEHOLDER: the board draws the name alone; what one is counted in, and what the visit's service expects.
+    unit: (unit: string, expected: number) => (expected === 0 ? unit : `${unit} · ${String(expected)} expected`),
+    // PLACEHOLDER: the board draws four steppers and no way to record a fifth consumable.
+    add: "Add another",
+    addOne: (name: string) => `Add ${name}`,
     none: "None used",
+    // PLACEHOLDER: the console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
+    nothingOffered: "No consumables are listed yet. Ops add them in the console.",
   },
   piece: {
     // The owner ruled out a barcode and a QR code on 24 September 2026, so the code is typed, never scanned.
@@ -376,13 +381,6 @@ export const steps = {
     pickReason: "Pick a reason to continue",
     done: "Done",
     partial: "Partial · pick a reason",
-    // PLACEHOLDER: the design lists four other reasons; these are the four the API takes (src/config/job-sheet.ts).
-    reasons: {
-      client_stopped_it: "Client stopped it partway",
-      piece_not_ready: "The piece was not ready",
-      client_unwell: "Client unwell",
-      more_time_needed: "More time needed",
-    },
   },
 } as const;
 

@@ -14,6 +14,7 @@
 
 import { CHECKIN_RADIUS_M } from "../policy/check-in.ts";
 import { UNLOCK_HOUR } from "../policy/job-visibility.ts";
+import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "../policy/next-visit.ts";
 import { NO_SHOW_WAIT_MIN } from "../policy/no-show.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "./pieces.ts";
@@ -30,8 +31,14 @@ export interface OpsSetting {
   readonly note: string;
   /** What the number counts: metres, minutes, hours, days, or the hour of the day. */
   readonly unit: string;
+  /** What every figure may be; where a keyed input's figures differ, the widest, with each key's own in `bounds`. */
   readonly min: number;
   readonly max: number;
+  /**
+   * Each key's own bounds, for a closed set whose figures measure different things, as the days of `booking_days`
+   * do; left out where every key takes `min` to `max`.
+   */
+  readonly bounds?: Readonly<Record<string, { readonly min: number; readonly max: number }>>;
   /**
    * null for one number. A list of keys where the set is closed, as the visit
    * types and the task groups are. "open" where ops name the keys themselves:
@@ -105,6 +112,20 @@ export const OPS_SETTINGS = [
     fallback: { ...PIECE_CYCLE_DAYS, [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS },
     source: "src/config/pieces.ts",
   },
+  {
+    // One input for the seven figures the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md),
+    // since the register holds ten inputs at most (docs/decisions/0061-ops-editable-inputs.md).
+    name: "booking_days",
+    title: "Booking and the next visit",
+    note: "When the app offers each next visit and how far ahead a client may book it, when the WhatsApp reminder of the next service goes while nothing is booked, when the Tasks board asks you to step in, and how long Home shows an invoice just issued. Each figure has its own range.",
+    unit: "days",
+    min: 0,
+    max: 90,
+    keys: NEXT_VISIT_DAY_KEYS,
+    bounds: NEXT_VISIT_DAY_BOUNDS,
+    fallback: NEXT_VISIT_DAYS,
+    source: "src/policy/next-visit.ts",
+  },
 ] as const satisfies readonly OpsSetting[];
 
 export type OpsSettingName = (typeof OPS_SETTINGS)[number]["name"];
@@ -121,9 +142,15 @@ export const MAX_OPEN_KEYS = 32;
 /** A base names itself; this is only long enough to hold FSM's own part names. */
 const KEY = /^[A-Za-z0-9][A-Za-z0-9 _.-]{0,63}$/;
 
+/** What one figure may be: its key's own bounds where it has them, else the input's. */
+export function boundsOf(setting: OpsSetting, key?: string): { readonly min: number; readonly max: number } {
+  return (key === undefined ? undefined : setting.bounds?.[key]) ?? { min: setting.min, max: setting.max };
+}
+
 /** What is allowed, in the words a refusal shows: "50 to 1000 metres, a whole number". */
-export function allowed(setting: OpsSetting): string {
-  return `${String(setting.min)} to ${String(setting.max)} ${setting.unit}, a whole number`;
+export function allowed(setting: OpsSetting, key?: string): string {
+  const { min, max } = boundsOf(setting, key);
+  return `${String(min)} to ${String(max)} ${setting.unit}, a whole number`;
 }
 
 /** Why a value was refused: the field it was in, and what that field will take. */
@@ -132,12 +159,13 @@ export interface Refusal {
   readonly says: string;
 }
 
-const boundsRefusal = (setting: OpsSetting, field: string, value: unknown): Refusal | null => {
+const boundsRefusal = (setting: OpsSetting, field: string, value: unknown, key?: string): Refusal | null => {
+  const { min, max } = boundsOf(setting, key);
   if (typeof value !== "number" || !Number.isInteger(value)) {
-    return { field, says: `${setting.title} must be ${allowed(setting)}.` };
+    return { field, says: `${setting.title} must be ${allowed(setting, key)}.` };
   }
-  if (value < setting.min || value > setting.max) {
-    return { field, says: `${setting.title} must be ${allowed(setting)}. ${String(value)} is outside that.` };
+  if (value < min || value > max) {
+    return { field, says: `${setting.title} must be ${allowed(setting, key)}. ${String(value)} is outside that.` };
   }
   return null;
 };
@@ -192,7 +220,7 @@ export function checkValue(setting: OpsSetting, value: unknown): Checked {
   }
 
   for (const [key, each] of entries) {
-    const refusal = boundsRefusal(setting, `${setting.name}.${key}`, each);
+    const refusal = boundsRefusal(setting, `${setting.name}.${key}`, each, key);
     if (refusal !== null) refusals.push(refusal);
   }
   return refusals.length > 0 ? { ok: false, refusals } : { ok: true, value: value as Record<string, number> };

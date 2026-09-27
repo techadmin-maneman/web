@@ -104,6 +104,40 @@ describe("the mirror of FSM's assets", () => {
 });
 
 describe("a piece the technician fitted", () => {
+  // The catalogue holds ops' consumables as parts too (docs/decisions/0087-consumables-and-stock.md), and "Bonding
+  // glue" sorts before "Standard base": a piece whose base nobody named must still be built on a base.
+  it("is never built on a consumable's part when its base is not named", async () => {
+    const withConsumables = createStubFsm({
+      ...EMPTY_FSM,
+      items: [
+        { id: "part-glue", name: "Bonding glue", type: "Part", price: 0 },
+        { id: "part-acetone", name: "Acetone", type: "Part", price: 0 },
+        { id: "part-standard", name: "Standard base", type: "Part", price: null },
+      ],
+    });
+    await env.DB.prepare(
+      `INSERT INTO consumables (code, name, unit, unit_cost, fsm_item_id, fsm_name, created_at, updated_at)
+       VALUES ('bonding_glue', 'Bonding glue', 'ml', 90, NULL, NULL, ?1, ?1),
+              ('solvent', 'Solvent', 'ml', 50, 'part-acetone', 'Acetone', ?1, ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+
+    await recordFittedPiece(env.DB, withConsumables, {
+      personId: PERSON,
+      fsmContactId: "contact-1",
+      appointmentId: JOB,
+      pieceCode: "MM-STD-9002-A",
+      base: null,
+      supplierLot: null,
+      fittedOn: "2026-09-21",
+      replacementDue: "2027-03-20",
+      now: NOW,
+    });
+
+    expect(withConsumables.made.assets[0]?.productId).toBe("part-standard");
+  });
+
   it("becomes an asset in FSM first, then our copy, and a replay writes neither twice", async () => {
     const fitted = {
       personId: PERSON,

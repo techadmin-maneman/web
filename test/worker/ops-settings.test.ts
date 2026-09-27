@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { COMMITTED, createCachedOpsInputs, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
+import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
 import { pincodeUpsert } from "../../scripts/lib/pincodes.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
@@ -211,6 +212,61 @@ describe("what the routes that read them do", () => {
       .run();
     expect((await createCachedOpsInputs()(env.DB, NOW)).checkinRadiusM).toBe(COMMITTED.checkinRadiusM);
     expect((await named("checkin_radius_m")).set_by).toBeNull();
+  });
+});
+
+// The seven figures the next visit turns on, as one input with each figure's own bounds, since the register holds
+// ten inputs at most (docs/decisions/0086-the-next-visit-is-offered.md).
+describe("the next visit's days", () => {
+  it("answers the committed figures, each key with its own bounds, before anybody sets them", async () => {
+    const days = await named("booking_days");
+    expect(days).toMatchObject({
+      unit: "days",
+      value: NEXT_VISIT_DAYS,
+      default: NEXT_VISIT_DAYS,
+      source: "src/policy/next-visit.ts",
+      set_by: null,
+    });
+    expect((days as Setting & { bounds: unknown }).bounds).toEqual(NEXT_VISIT_DAY_BOUNDS);
+    expect(COMMITTED.nextVisitDays).toEqual(NEXT_VISIT_DAYS);
+  });
+
+  it("takes a figure inside its own key's bounds, a lead time of nought among them", async () => {
+    const value = { ...NEXT_VISIT_DAYS, first_fit_lead: 0, service_cadence: 28, horizon: 60 };
+    const answer = await post("/api/settings/booking_days", { value });
+    expect(answer.status).toBe(200);
+    expect(await answer.json<Setting>()).toMatchObject({ value, set_by: "ops@localhost" });
+    expect((await createCachedOpsInputs()(env.DB, NOW)).nextVisitDays).toEqual(value);
+  });
+
+  it("refuses a figure outside its own key's bounds, though inside another's, naming the box", async () => {
+    // Nought is a lead time ops may set; a horizon of nought, or of ten days, is shorter than the date strip.
+    const answer = await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, horizon: 10 } });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { fields: ["booking_days.horizon"] } });
+    const cadence = await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, service_cadence: 0 } });
+    expect(await cadence.json()).toMatchObject({ error: { fields: ["booking_days.service_cadence"] } });
+    expect((await named("booking_days")).value).toEqual(NEXT_VISIT_DAYS);
+    expect((await auditFor("setting.change")).results).toHaveLength(0);
+  });
+
+  it("wants every figure, and refuses a set that leaves one out", async () => {
+    const { invoice_prompt: _left_out, ...short } = NEXT_VISIT_DAYS;
+    expect((await post("/api/settings/booking_days", { value: short })).status).toBe(400);
+  });
+
+  it("records who changed them, the old figures beside the new, and puts the committed ones back", async () => {
+    await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, service_cadence: 28 } });
+    await post("/api/settings/booking_days", { value: null });
+    const { results } = await auditFor("setting.change");
+    expect(results.map((entry) => entry.subject_id)).toEqual(["booking_days", "booking_days"]);
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({
+      from: JSON.stringify(NEXT_VISIT_DAYS),
+      to: JSON.stringify({ ...NEXT_VISIT_DAYS, service_cadence: 28 }),
+      reset: false,
+    });
+    expect(JSON.parse(results[1]?.detail ?? "{}")).toMatchObject({ to: JSON.stringify(NEXT_VISIT_DAYS), reset: true });
+    expect(await named("booking_days")).toMatchObject({ value: NEXT_VISIT_DAYS, set_by: null });
   });
 });
 

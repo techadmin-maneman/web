@@ -169,6 +169,17 @@ describe("GET /api/me/export", () => {
       requestId: "request-1",
       now: new Date(NOW.getTime() - 60_000),
     });
+    // What they asked for on the site's form before a visit was booked (ADR 0086).
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+         VALUES ('request-a', ?1, '122018', '2026-10-02', 'morning', ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
+         VALUES ('request-b', ?1, 'afternoon', ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+    ]);
     const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export", {
       headers: { Cookie: cookie },
     });
@@ -181,6 +192,8 @@ describe("GET /api/me/export", () => {
       grievances: [{ text: "Please stop calling me.", state: "open" }],
       // Who in ops opened their photographs, and when: the owner's ruling of 27 September 2026.
       photo_views: [{ by: "ops@maneman.in", at: new Date(NOW.getTime() - 60_000).toISOString() }],
+      consultation_requests: [{ pincode: "122018", requested_date: "2026-10-02", requested_window: "morning" }],
+      first_fit_requests: [{ preferred_window: "afternoon" }],
     });
     const audit = await env.DB.prepare("SELECT action FROM audit_log WHERE action = 'data.export'").first();
     expect(audit).toEqual({ action: "data.export" });

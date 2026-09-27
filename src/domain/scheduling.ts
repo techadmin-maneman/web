@@ -198,7 +198,7 @@ export async function occupancy(
     }
   }
 
-  // A visit is the standard tier's where the mirror knows no other (migration 0047).
+  // A visit is the standard tier's where the mirror knows no other (migration 0050).
   const visits = await db
     .prepare(
       `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes FROM appointments a

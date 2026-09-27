@@ -63,6 +63,13 @@ const SettingSchema = z
     keys: z
       .union([z.array(z.string()), z.literal("open"), z.null()])
       .openapi({ description: 'null for one number, a list where the keys are fixed, "open" where ops name them.' }),
+    bounds: z
+      .union([z.record(z.string(), z.object({ min: z.number().int(), max: z.number().int() }).strict()), z.null()])
+      .openapi({
+        description:
+          "Each key's own bounds, where a keyed rule's figures measure different things; null where every figure " +
+          "takes min to max.",
+      }),
     value: ValueSchema,
     default: ValueSchema.openapi({ description: "The committed figure, in force until somebody sets one." }),
     source: z.string().openapi({ description: "The module the default lives in." }),
@@ -330,6 +337,7 @@ const stateBody = (state: Awaited<ReturnType<typeof settingStates>>[number]) => 
   min: state.setting.min,
   max: state.setting.max,
   keys: keysOf(state.setting),
+  bounds: state.setting.bounds ?? null,
   value: state.value,
   default: state.setting.fallback,
   source: state.setting.source,

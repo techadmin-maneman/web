@@ -23,6 +23,7 @@ describe("the ops console's routes", () => {
       "Waitlist",
       "Tasks",
       "Technicians",
+      "Stock",
       "Grievances",
       "Deletion requests",
       "Number changes",
@@ -34,6 +35,9 @@ describe("the ops console's routes", () => {
     expect(routeOf("/settings")).toEqual({ page: "settings", tab: "rules" });
     expect(routeOf(settingsPath("prices"))).toEqual({ page: "settings", tab: "prices" });
     expect(routeOf(settingsPath("area"))).toEqual({ page: "settings", tab: "area" });
+    expect(routeOf("/settings/consumables")).toEqual({ page: "settings", tab: "consumables" });
+    expect(routeOf("/settings/job-sheet")).toEqual({ page: "settings", tab: "job-sheet" });
+    expect(routeOf("/stock")).toEqual({ page: "stock" });
     expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "pieces" });
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });
   });

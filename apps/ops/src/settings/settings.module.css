@@ -274,7 +274,8 @@
   background: var(--paper-light);
 }
 
-.group .check {
+.group .check,
+.rule .check {
   margin-left: 0;
   margin-right: 0;
 }

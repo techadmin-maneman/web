@@ -29,17 +29,23 @@
 // their address and the slot are written in one batch: a slot that has gone
 // leaves nothing behind (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
+// The form may ask for the first fit to follow the consultation. That is a
+// request, written in the same batch as the booking, so a refused booking leaves
+// none; the fit is booked and paid for in the app once the consultation is done,
+// and the site takes no money (docs/decisions/0086-the-next-visit-is-offered.md).
+//
 // The number, the Turnstile token and the day's limits are checked by the
 // route's side (src/http/public-form.ts), which this is handed as checkPerson:
 // after the pincode and the day, so a form refused for those costs neither.
 
 import type { LossExtent } from "../config/booking.ts";
 import { CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
-import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
+import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow, type FirstFitWindow } from "../config/scheduling.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
+import { firstFitRequestStatement } from "./next-visit.ts";
 import { bookableService } from "./services.ts";
 import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
@@ -282,6 +288,11 @@ export interface ConsultationRequest {
   readonly attribution: Attribution;
   /** The invite the friend arrived with, where there is one. */
   readonly invite: Invite | null;
+  /**
+   * The first fit asked for with the consultation, in the window wanted, if any; null for the consultation alone.
+   * It is booked and paid for in the app once the consultation is done.
+   */
+  readonly firstFit: { readonly window: FirstFitWindow | null } | null;
 }
 
 export interface Booked {
@@ -301,6 +312,8 @@ export interface Booked {
   readonly invite: InviteState;
   /** Whether the address typed in was saved, or the one the person already had is kept and used. */
   readonly address: TypedAddress;
+  /** Whether the first fit was asked for, and recorded, with it. */
+  readonly firstFit: boolean;
 }
 
 /** Books the free consultation: the slot, the lead, and the invite's credits where they apply. */
@@ -333,10 +346,15 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   });
   const saved = knownId === null ? null : await currentAddress(db, knownId);
   const address = typedAddress({ hasSavedAddress: saved !== null });
-  const alongside =
-    address === "saved"
-      ? [...person.statements, firstAddressStatement(db, person.id, request.address, now)]
-      : person.statements;
+  // What stands or falls with the booking: the person, their consent, the address where it is theirs now, and the
+  // first fit they asked for.
+  const alongside = [
+    ...person.statements,
+    ...(address === "saved" ? [firstAddressStatement(db, person.id, request.address, now)] : []),
+    ...(request.firstFit === null
+      ? []
+      : [firstFitRequestStatement(db, { personId: person.id, window: request.firstFit.window, now })]),
+  ];
 
   // A slot is held and FSM told only while self-serve booking is on and the consultation is free that day;
   // otherwise booking goes through WhatsApp, and what the person asked for waits for ops. The site books the
@@ -396,6 +414,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     lead_id: leadId,
     invited: request.invite !== null,
     credits: invited.credits,
+    first_fit: request.firstFit !== null,
   });
   return {
     ok: true,
@@ -406,6 +425,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     credits: invited.credits,
     invite: invited.invite,
     address,
+    firstFit: request.firstFit !== null,
   };
 }
 

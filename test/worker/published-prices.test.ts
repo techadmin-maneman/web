@@ -42,7 +42,7 @@ describe("GET /api/published-prices", () => {
       first_fit: firstFit,
       service,
       replacement,
-      // Every service offered: the four standard ones the console starts with (migration 0047).
+      // Every service offered: the four standard ones the console starts with (migration 0050).
       services: [
         { type: "consultation", tier: "standard", name: "Consultation", minutes: 60, price: free },
         { type: "first_fit", tier: "standard", name: "First fit", minutes: 180, price: firstFit },

@@ -14,6 +14,7 @@ import { NumberChangesScreen } from "./number-changes/NumberChangesScreen.tsx";
 import { ReferralsScreen } from "./referrals/ReferralsScreen.tsx";
 import { keyOf, routeOf, titleOf, usePath, type PlainPage, type Route } from "./route.ts";
 import { SettingsScreen } from "./settings/SettingsScreen.tsx";
+import { StockScreen } from "./stock/StockScreen.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 import { WaitlistScreen } from "./waitlist/WaitlistScreen.tsx";
@@ -26,6 +27,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   waitlist: WaitlistScreen,
   tasks: TasksScreen,
   technicians: TechniciansScreen,
+  stock: StockScreen,
   grievances: GrievancesScreen,
   "deletion-requests": DeletionsScreen,
   "number-changes": NumberChangesScreen,

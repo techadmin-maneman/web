@@ -206,7 +206,8 @@ describe("POST /api/holds", () => {
     expect(moved.id).toBeDefined();
   });
 
-  it("carries a first fit's late fee, and refuses a day outside the next 14", async () => {
+  // The horizon is ops' to set, 45 days from tomorrow to begin with (docs/decisions/0086-the-next-visit-is-offered.md).
+  it("carries a first fit's late fee, and refuses a day past the 45 days from tomorrow", async () => {
     const lead = await client(true);
     const answer = await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" });
     expect(await answer.json()).toMatchObject({
@@ -214,8 +215,9 @@ describe("POST /api/holds", () => {
       late_fee: { amount_ex_gst: 400000, amount: 400000 },
       ends_at: "2026-09-24T06:30:00.000Z",
     });
-    expect((await hold(lead, { type: "first_fit", date: "2026-10-30", window: "morning" })).status).toBe(422);
+    expect((await hold(lead, { type: "first_fit", date: "2026-11-06", window: "morning" })).status).toBe(422);
     expect((await hold(lead, { type: "first_fit", date: "2026-09-21", window: "evening" })).status).toBe(422);
+    expect((await hold(lead, { type: "first_fit", date: "2026-11-05", window: "morning" })).status).toBe(201);
   });
 
   it("holds the visit at the pincode of the client's saved address", async () => {

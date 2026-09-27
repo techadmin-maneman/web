@@ -1,4 +1,4 @@
-// Migration 0047: the services clients book (docs/decisions/0085-services-ops-can-edit.md). Applied to a database
+// Migration 0050: the services clients book (docs/decisions/0085-services-ops-can-edit.md). Applied to a database
 // holding a hold and a visit, as staging's does, and held to what the Worker already deployed writes. Every name
 // and number is made up.
 
@@ -11,7 +11,7 @@ import { FSM_SERVICE_NAMES, VISIT_TYPES } from "../../src/config/visit-types.ts"
 const MIGRATIONS = readdirSync("migrations")
   .filter((file) => file.endsWith(".sql"))
   .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0047_")) ?? "";
+const THIS = MIGRATIONS.find((file) => file.startsWith("0050_")) ?? "";
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -37,7 +37,7 @@ function migrated(): DatabaseSync {
   return db;
 }
 
-describe("migration 0047", () => {
+describe("migration 0050", () => {
   it("starts each kind with the standard service it always had, named as FSM names it, as long as the owner ruled", () => {
     const db = migrated();
     const services = db.prepare("SELECT kind, tier, name, minutes, retired_date, fsm_item_id FROM services").all();
@@ -55,7 +55,7 @@ describe("migration 0047", () => {
       updated_by: string;
       updated_at: string;
     };
-    expect(stamped.updated_by).toBe("migrations/0047_services.sql");
+    expect(stamped.updated_by).toBe("migrations/0050_services.sql");
     expect(stamped.updated_at).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
   });
 

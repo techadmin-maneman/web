@@ -61,6 +61,22 @@ export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
 export type AreaChanged = Body<paths["/api/service-area"]["post"]>;
 
+/** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
+export type Consumables = Body<paths["/api/consumables"]["get"]>;
+export type Consumable = Consumables["consumables"][number];
+export type ServiceUse = Consumables["services"][number];
+export type NewConsumable = Sent<paths["/api/consumables"]["post"]>;
+export type ConsumableChange = Sent<paths["/api/consumables/{code}"]["post"]>;
+export type ServiceUsage = Sent<paths["/api/service-usage"]["post"]>;
+export type JobSheet = Body<paths["/api/job-sheet"]["get"]>;
+export type JobSheetList = JobSheet["partial_reasons"];
+export type JobSheetItemSent = Sent<paths["/api/job-sheet/partial-reasons"]["post"]>["items"][number];
+export type Stock = Body<paths["/api/stock"]["get"]>;
+export type StockDelivery = Sent<paths["/api/stock/deliveries"]["post"]>;
+export type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;
+export type StockCount = Sent<paths["/api/stock/counts"]["post"]>;
+export type StockWriteOff = Sent<paths["/api/stock/write-offs"]["post"]>;
+
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
 export type Charge = DayMoney["charges"][number];
@@ -291,4 +307,29 @@ export const api = {
    */
   setServiceArea: (changes: readonly AreaChange[]) =>
     client.post("/api/service-area", { body: { changes: [...changes] } }),
+  /** Every consumable, where each stands in FSM's catalogue, and each service's expected use. */
+  consumables: () => client.get("/api/consumables"),
+  addConsumable: (added: NewConsumable) => client.post("/api/consumables", { body: added }),
+  /** Only the fields sent change; a null level clears it. */
+  changeConsumable: (code: string, change: ConsumableChange) =>
+    client.post("/api/consumables/{code}", { path: { code }, body: change }),
+  /** No longer offered from the day given, today or later. Nothing already recorded moves. */
+  retireConsumable: (code: string, from: string) =>
+    client.post("/api/consumables/{code}/retire", { path: { code }, body: { from } }),
+  restoreConsumable: (code: string) => client.post("/api/consumables/{code}/restore", { path: { code } }),
+  /** A service's whole list: a consumable left out is expected no more. */
+  setServiceUsage: (usage: ServiceUsage) => client.post("/api/service-usage", { body: usage }),
+  jobSheet: () => client.get("/api/job-sheet"),
+  /** A kind of visit's whole checklist, in its order. An item left out is retired, not forgotten. */
+  setChecklist: (type: VisitType, items: readonly JobSheetItemSent[]) =>
+    client.post("/api/job-sheet/checklists/{visit_type}", { path: { visit_type: type }, body: { items: [...items] } }),
+  setPartialReasons: (items: readonly JobSheetItemSent[]) =>
+    client.post("/api/job-sheet/partial-reasons", { body: { items: [...items] } }),
+  /** What each place holds, what is low, and the latest movements. */
+  stock: () => client.get("/api/stock"),
+  recordDelivery: (delivery: StockDelivery) => client.post("/api/stock/deliveries", { body: delivery }),
+  recordTransfer: (moved: StockTransfer) => client.post("/api/stock/transfers", { body: moved }),
+  /** The ledger takes the difference from what it held. */
+  recordCount: (counted: StockCount) => client.post("/api/stock/counts", { body: counted }),
+  recordWriteOff: (lost: StockWriteOff) => client.post("/api/stock/write-offs", { body: lost }),
 };

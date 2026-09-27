@@ -1,4 +1,4 @@
--- Migration number: 0047
+-- Migration number: 0050
 -- Services ops can edit (docs/decisions/0085-services-ops-can-edit.md). Every service is one of the four kinds of
 -- visit, and a tier of it: the price book already keys its prices by the two (price_book.item and .tier), so its
 -- rows stay as they are, and a hold, a payment and an invoice keep the price they were sold at. Ops add, rename,
@@ -35,10 +35,10 @@ CREATE TABLE services (
 -- (FSM_SERVICE_NAMES, src/config/visit-types.ts), and as long as the owner ruled on 24 September 2026
 -- (VISIT_BLOCKS, src/config/scheduling.ts). Their items are found by name at the first booking or check.
 INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at) VALUES
-  ('consultation', 'standard', 'Consultation', 60, 0, 'migrations/0047_services.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-  ('first_fit', 'standard', 'First fit', 180, 0, 'migrations/0047_services.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-  ('service', 'standard', 'Service visit', 90, 0, 'migrations/0047_services.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-  ('replacement', 'standard', 'Replacement', 135, 0, 'migrations/0047_services.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
+  ('consultation', 'standard', 'Consultation', 60, 0, 'migrations/0050_services.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  ('first_fit', 'standard', 'First fit', 180, 0, 'migrations/0050_services.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  ('service', 'standard', 'Service visit', 90, 0, 'migrations/0050_services.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  ('replacement', 'standard', 'Replacement', 135, 0, 'migrations/0050_services.sql', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
 
 -- The service a hold is for, beside its kind (type): its price, late fee and length are copied onto it as it is
 -- made, so what the client was sold stays sold whatever ops change after.

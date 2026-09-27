@@ -11,6 +11,10 @@
 // held without one (ADR 0079). The pay step of a new visit says what booking
 // also agrees to, and its tap sends that on (ADR 0080).
 //
+// Opened with the visit the app offers next, the sheet starts its strip a week
+// before the day offered and has that day and window chosen where they are
+// free, for the client to take or change (ADR 0086).
+//
 // The hold's ten minutes are counted on the API's clock, not the phone's
 // (lib/clock.ts), and when the phone sees them run out it lets the hold go too.
 
@@ -85,28 +89,60 @@ function onlyOne(type: BookableType, services: readonly OfferedService[], moving
   return moving === undefined && only !== undefined ? { type: only.type, tier: only.tier } : { type };
 }
 
+/** The day and window a visit is offered on, which the sheet opens with chosen. */
+export interface Offered {
+  readonly date: string;
+  readonly window: BookingWindow | null;
+}
+
+/** How many days before the day offered the strip starts, so a week either side of it is in view. */
+const OFFER_WEEK = 7;
+
+/** India's day `days` before `date`, both YYYY-MM-DD. */
+const daysBefore = (date: string, days: number) =>
+  new Date(Date.parse(`${date}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
+
+/** The offered window on a day, where it is open that day; null otherwise. */
+function openWindow(day: Availability["days"][number] | undefined, window: BookingWindow | null | undefined) {
+  return day?.windows.find((each) => each.window === window && each.with !== null)?.window ?? null;
+}
+
 export function BookingSheet({
   type,
   services = [],
+  tier,
   moving,
+  from,
+  offer,
   onClose,
 }: {
   /** The kind booked when there is nothing to pick: a move's own, or the one open to the client. */
   type: BookableType;
   /** Every service open to the client, a kind at a time; with more than one, the client picks theirs first. */
   services?: readonly OfferedService[];
+  /** The service the app offers among them, chosen when the sheet opens for the client to take or change. */
+  tier?: string;
   /** The visit being moved, and what moving it costs. */
   moving?: MoveTerms;
+  /** The strip's first day, where it should not start from the first day open. */
+  from?: string;
+  /** The day and window the visit is offered on (ADR 0086), chosen where they are free. */
+  offer?: Offered;
   /** `changed`: money moved or a visit was booked, so Home is out of date. */
   onClose: (changed: boolean) => void;
 }) {
   const movingId = moving?.visit_id;
+  const offeredDate = offer?.date;
+  const offeredWindow = offer?.window;
+  const firstDay = from ?? (offeredDate === undefined ? undefined : daysBefore(offeredDate, OFFER_WEEK));
   const dialog = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<Step>({ kind: "loading" });
   // A new visit with more than one service open to it is picked first; anything else books the one there is.
   const picking = moving === undefined && services.length > 1;
   const [wanted, setWanted] = useState<Wanted | null>(() => (picking ? null : onlyOne(type, services, moving)));
-  const [picked, setPicked] = useState<OfferedService | null>(null);
+  const [picked, setPicked] = useState<OfferedService | null>(
+    () => services.find((service) => service.tier === tier) ?? null,
+  );
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [date, setDate] = useState<string | null>(null);
   const [chosenWindow, setChosenWindow] = useState<BookingWindow | null>(null);
@@ -135,11 +171,17 @@ export function BookingSheet({
     setStep({ kind: "address", refused });
   };
 
-  /** The days of the visit wanted, and the step after them: the address if there is none yet, else the date. */
+  /**
+   * The days of the visit wanted, and the step after them: the address if there is none yet, else the date. The day
+   * offered is chosen where it has a window open, and its window where that one is.
+   */
   const showDays = (days: Availability) => {
     setAvailability(days);
-    setDate(null);
-    setChosenWindow(null);
+    const open = days.days.find(
+      (each) => each.date === offeredDate && each.windows.some((window) => window.with !== null),
+    );
+    setDate(open?.date ?? null);
+    setChosenWindow(openWindow(open, offeredWindow));
     if (addressMissing.current) askForAddress(false);
     else setStep({ kind: "date" });
   };
@@ -152,7 +194,7 @@ export function BookingSheet({
     async (visit: Wanted | null) => {
       setStep({ kind: "loading" });
       const [answer, profile] = await Promise.all([
-        visit === null ? null : api.availability(visit, movingId),
+        visit === null ? null : api.availability(visit, movingId, firstDay),
         api.profile(),
       ]);
       if (answer !== null && !answer.ok) {
@@ -167,7 +209,7 @@ export function BookingSheet({
       if (answer === null) setStep({ kind: "service" });
       else showDays(answer.body);
     },
-    [movingId],
+    [movingId, firstDay, offeredDate, offeredWindow],
   );
 
   useEffect(() => {
@@ -179,7 +221,7 @@ export function BookingSheet({
     const visit = { type: service.type, tier: service.tier };
     setWanted(visit);
     setStep({ kind: "loading" });
-    const answer = await api.availability(visit, movingId);
+    const answer = await api.availability(visit, movingId, firstDay);
     if (answer.ok) showDays(answer.body);
     else setStep({ kind: "broken" });
   };
@@ -250,7 +292,7 @@ export function BookingSheet({
     if (answer.ok) setStep({ kind: "pay", hold: answer.body });
     else if (answer.code === "taken") {
       setProblem(booking.window.taken);
-      const fresh = await api.availability(wanted, movingId);
+      const fresh = await api.availability(wanted, movingId, firstDay);
       if (fresh.ok) setAvailability(fresh.body);
       setChosenWindow(null);
     } else if (answer.code === "address_required") askForAddress(true);
@@ -355,7 +397,16 @@ export function BookingSheet({
             before={before}
             days={availability.days}
             chosen={date}
-            onChoose={setDate}
+            onChoose={(chosen) => {
+              setDate(chosen);
+              // The window offered stays chosen on another day only where it is open there too.
+              setChosenWindow(
+                openWindow(
+                  availability.days.find((each) => each.date === chosen),
+                  offeredWindow,
+                ),
+              );
+            }}
             onNext={() => {
               setStep({ kind: "window" });
             }}

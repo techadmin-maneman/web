@@ -1,0 +1,400 @@
+// Stock of consumables, in each technician's kit and the central store
+// (docs/decisions/0087-consumables-and-stock.md; the rules are src/policy/stock.ts).
+//
+// Every movement is a row of stock_movements, written with its audit entry in
+// one batch, and never changed; what a place holds is the sum of its rows. Ops
+// record deliveries into the central store, transfers between the store and a
+// kit, counts, which write the difference from what the rows said, and
+// losses. A job's use comes out of the kit of the technician who recorded it,
+// as his consumables step lands, once however often the step is replayed
+// (src/domain/job-use.ts).
+//
+// A place that falls to a consumable's reorder level raises one alert, for
+// that kit or for the store, listing everything low there, and the Stock
+// screen marks it. The alert closes when the place is stocked again.
+
+import { indiaDate } from "../lib/india-time.ts";
+import { countDifference, isLow } from "../policy/stock.ts";
+import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { auditStatement, type AuditActor } from "./audit.ts";
+import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
+
+/** Where stock is kept: a technician's kit, by his ID, or the central store, null. */
+export type Place = string | null;
+
+/** Why a row moved stock: a delivery, a transfer, a job's use, a count's difference, or a loss. */
+export const MOVEMENT_REASONS = ["received", "transferred", "used", "counted", "written_off"] as const;
+type Reason = (typeof MOVEMENT_REASONS)[number];
+
+/** What ops write, with who and why, so every movement lands with its audit entry. */
+export interface Written {
+  readonly actor: AuditActor;
+  readonly requestId: string;
+  readonly now: Date;
+}
+
+/** A movement written, or the fields refused. `lowered` names the places whose stock went down. */
+export type Moved =
+  { readonly ok: true; readonly lowered: readonly Place[] } | { readonly ok: false; readonly fields: string[] };
+
+const where = (place: Place) => (place === null ? "central" : "kit");
+
+/** One row of the ledger, ready to write. */
+interface Movement {
+  readonly code: string;
+  readonly place: Place;
+  readonly quantity: number;
+  readonly reason: Reason;
+  readonly transferId?: string;
+  readonly note: string | null;
+}
+
+function movementStatement(db: D1Database, movement: Movement, written: Written): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason, transfer_id,
+         actor_kind, actor, note, created_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      movement.code,
+      where(movement.place),
+      movement.place,
+      movement.quantity,
+      movement.reason,
+      movement.transferId ?? null,
+      written.actor.kind,
+      written.actor.id,
+      movement.note,
+      written.now.toISOString(),
+    );
+}
+
+async function consumableExists(db: D1Database, code: string): Promise<boolean> {
+  return (await db.prepare("SELECT 1 FROM consumables WHERE code = ?1").bind(code).first()) !== null;
+}
+
+/** A kit is a technician's, active or not: one who left may still hold stock to hand back. */
+async function placeExists(db: D1Database, place: Place): Promise<boolean> {
+  if (place === null) return true;
+  return (await db.prepare("SELECT 1 FROM technicians WHERE id = ?1").bind(place).first()) !== null;
+}
+
+/** What a place holds of one consumable: the sum of its rows. */
+export async function heldOf(db: D1Database, code: string, place: Place): Promise<number> {
+  const row = await db
+    .prepare(
+      "SELECT COALESCE(SUM(quantity), 0) AS held FROM stock_movements WHERE technician_id IS ?1 AND consumable_code = ?2",
+    )
+    .bind(place, code)
+    .first<{ held: number }>();
+  return row?.held ?? 0;
+}
+
+/** Stock received into the central store. */
+export async function receive(
+  db: D1Database,
+  input: { readonly code: string; readonly quantity: number; readonly note: string | null },
+  written: Written,
+): Promise<Moved> {
+  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  await db.batch([
+    auditStatement(db, entry("stock.receive", input.code, written, { quantity: input.quantity }), written.now),
+    movementStatement(db, { ...input, place: null, reason: "received" }, written),
+  ]);
+  return { ok: true, lowered: [] };
+}
+
+/** Stock moved from one place to another: two rows, out of the one and into the other. */
+export async function transfer(
+  db: D1Database,
+  input: { readonly code: string; readonly quantity: number; readonly from: Place; readonly to: Place },
+  written: Written,
+): Promise<Moved> {
+  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  if (!(await placeExists(db, input.from))) return { ok: false, fields: ["from"] };
+  if (input.from === input.to || !(await placeExists(db, input.to))) return { ok: false, fields: ["to"] };
+  const transferId = crypto.randomUUID();
+  await db.batch([
+    auditStatement(
+      db,
+      entry("stock.transfer", input.code, written, {
+        quantity: input.quantity,
+        from: input.from ?? "central",
+        to: input.to ?? "central",
+      }),
+      written.now,
+    ),
+    movementStatement(
+      db,
+      { code: input.code, place: input.from, quantity: -input.quantity, reason: "transferred", transferId, note: null },
+      written,
+    ),
+    movementStatement(
+      db,
+      { code: input.code, place: input.to, quantity: input.quantity, reason: "transferred", transferId, note: null },
+      written,
+    ),
+  ]);
+  return { ok: true, lowered: [input.from] };
+}
+
+/**
+ * What ops counted at a place. The row is the difference from what the ledger
+ * said, nought when they agree, so the ledger then holds exactly what was
+ * counted and says when it was last counted.
+ */
+export async function count(
+  db: D1Database,
+  input: { readonly code: string; readonly place: Place; readonly counted: number; readonly note: string | null },
+  written: Written,
+): Promise<Moved> {
+  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  if (!(await placeExists(db, input.place))) return { ok: false, fields: ["technician_id"] };
+  const held = await heldOf(db, input.code, input.place);
+  const difference = countDifference(input.counted, held);
+  await db.batch([
+    auditStatement(
+      db,
+      entry("stock.count", input.code, written, {
+        place: input.place ?? "central",
+        counted: input.counted,
+        held,
+        difference,
+      }),
+      written.now,
+    ),
+    movementStatement(
+      db,
+      { code: input.code, place: input.place, quantity: difference, reason: "counted", note: input.note },
+      written,
+    ),
+  ]);
+  return { ok: true, lowered: difference < 0 ? [input.place] : [] };
+}
+
+/** A loss somebody saw at a place, with what happened: a tube dropped, a batch spoilt. */
+export async function writeOff(
+  db: D1Database,
+  input: { readonly code: string; readonly place: Place; readonly quantity: number; readonly note: string },
+  written: Written,
+): Promise<Moved> {
+  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  if (!(await placeExists(db, input.place))) return { ok: false, fields: ["technician_id"] };
+  await db.batch([
+    auditStatement(
+      db,
+      entry("stock.write_off", input.code, written, { place: input.place ?? "central", quantity: input.quantity }),
+      written.now,
+    ),
+    movementStatement(
+      db,
+      { code: input.code, place: input.place, quantity: -input.quantity, reason: "written_off", note: input.note },
+      written,
+    ),
+  ]);
+  return { ok: true, lowered: [input.place] };
+}
+
+function entry(
+  action: "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off",
+  code: string,
+  written: Written,
+  detail: Record<string, string | number>,
+) {
+  return {
+    surface: "ops" as const,
+    actor: written.actor,
+    action,
+    subject: { kind: "consumable", id: code },
+    requestId: written.requestId,
+    detail,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Low stock
+// ---------------------------------------------------------------------------
+
+/** One consumable a place holds at or below its level. */
+export interface Low {
+  readonly code: string;
+  readonly name: string;
+  readonly unit: string;
+  readonly held: number;
+  readonly level: number;
+}
+
+/** What a place holds at or below its level, of every consumable still offered that has one. */
+export async function lowAt(db: D1Database, place: Place, today: string): Promise<Low[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT c.code, c.name, c.unit, CASE WHEN ?1 IS NULL THEN c.reorder_central ELSE c.reorder_kit END AS level,
+         (SELECT COALESCE(SUM(m.quantity), 0) FROM stock_movements m
+           WHERE m.technician_id IS ?1 AND m.consumable_code = c.code) AS held
+       FROM consumables c
+       WHERE c.retired_date IS NULL OR c.retired_date > ?2
+       ORDER BY c.name COLLATE NOCASE`,
+    )
+    .bind(place, today)
+    .all<{ code: string; name: string; unit: string; level: number | null; held: number }>();
+  return results.flatMap((row) =>
+    row.level !== null && isLow(row.held, row.level) ? [{ ...row, level: row.level }] : [],
+  );
+}
+
+export const lowStockKey = (place: Place) => (place === null ? "low_stock:central" : `low_stock:kit:${place}`);
+
+/**
+ * After a movement: one alert for a place that went down and is low, naming
+ * all it is low on; the place's alert closed once it is low on nothing. A
+ * place that only gained stock is told nothing new. The message carries the
+ * technician's ID, never his name (src/domain/alerts.ts).
+ */
+export async function tellOfLowStock(
+  db: D1Database,
+  deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert; readonly now: () => Date },
+  places: { readonly touched: readonly Place[]; readonly lowered: readonly Place[] },
+): Promise<void> {
+  const today = indiaDate(deps.now());
+  for (const place of new Set(places.touched)) {
+    const low = await lowAt(db, place, today);
+    const key = lowStockKey(place);
+    if (low.length === 0) {
+      await deps.resolveAlert(key);
+      continue;
+    }
+    if (!places.lowered.includes(place)) continue;
+    const at = place === null ? "the central store" : `technician ${place}'s kit`;
+    const items = low.map((each) => `${each.name} ${String(each.held)} ${each.unit} (level ${String(each.level)})`);
+    await deps.alertOnce({
+      key,
+      message: `Stock is low in ${at}: ${items.join(", ")}. Record a transfer or a delivery on the Stock page.`,
+      link: "/stock",
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// What the Stock screen reads
+// ---------------------------------------------------------------------------
+
+export interface StockPlace {
+  readonly technicianId: string | null;
+  /** The technician's name; null for the central store, which the console names. */
+  readonly name: string | null;
+  readonly active: boolean;
+}
+
+export interface Holding {
+  readonly code: string;
+  readonly technicianId: string | null;
+  readonly quantity: number;
+  readonly low: boolean;
+  /** When this place last counted it; null if never. */
+  readonly countedAt: string | null;
+}
+
+export interface StockMovement {
+  readonly at: string;
+  readonly code: string;
+  readonly technicianId: string | null;
+  readonly quantity: number;
+  readonly reason: Reason;
+  /** An e-mail for ops, the technician's ID for a job's use. */
+  readonly by: string;
+  readonly note: string | null;
+}
+
+export interface StockView {
+  /** Every consumable offered, and any retired one a place still holds. */
+  readonly consumables: readonly Consumable[];
+  /** The central store first, then every active technician's kit, and any other kit still holding stock. */
+  readonly places: readonly StockPlace[];
+  readonly holdings: readonly Holding[];
+  /** The latest movements, newest first. */
+  readonly movements: readonly StockMovement[];
+}
+
+/** How many of the latest movements the screen shows beneath the table. */
+const MOVEMENTS_SHOWN = 30;
+
+export async function stockView(db: D1Database, now: Date): Promise<StockView> {
+  const today = indiaDate(now);
+  const [sums, technicians, recent] = await db.batch([
+    db.prepare(
+      `SELECT consumable_code, technician_id, SUM(quantity) AS quantity,
+         MAX(CASE WHEN reason = 'counted' THEN created_at END) AS counted_at
+       FROM stock_movements GROUP BY consumable_code, technician_id`,
+    ),
+    db.prepare(
+      `SELECT id, name, active FROM technicians
+       WHERE active = 1 OR id IN (SELECT DISTINCT technician_id FROM stock_movements WHERE technician_id IS NOT NULL)
+       ORDER BY name`,
+    ),
+    db
+      .prepare(
+        `SELECT created_at, consumable_code, technician_id, quantity, reason, actor, note FROM stock_movements
+         ORDER BY created_at DESC, rowid DESC LIMIT ?1`,
+      )
+      .bind(MOVEMENTS_SHOWN),
+  ]);
+  const held = (sums?.results ?? []) as {
+    consumable_code: string;
+    technician_id: string | null;
+    quantity: number;
+    counted_at: string | null;
+  }[];
+  const holding = held.filter((row) => row.quantity !== 0);
+  const heldSomewhere = new Set(holding.map((row) => row.consumable_code));
+  const consumables = (await allConsumables(db)).filter(
+    (consumable) => isOffered(consumable, today) || heldSomewhere.has(consumable.code),
+  );
+  // A technician who left keeps his column while his kit holds anything, so it can be counted or moved.
+  const kits = ((technicians?.results ?? []) as { id: string; name: string; active: number }[]).filter(
+    (row) => row.active === 1 || holding.some((each) => each.technician_id === row.id),
+  );
+  const places: StockPlace[] = [
+    { technicianId: null, name: null, active: true },
+    ...kits.map((row) => ({ technicianId: row.id, name: row.name, active: row.active === 1 })),
+  ];
+
+  const holdings = consumables.flatMap((consumable) =>
+    places.map((place): Holding => {
+      const row = held.find(
+        (each) => each.consumable_code === consumable.code && each.technician_id === place.technicianId,
+      );
+      const quantity = row?.quantity ?? 0;
+      const level = place.technicianId === null ? consumable.reorderCentral : consumable.reorderKit;
+      return {
+        code: consumable.code,
+        technicianId: place.technicianId,
+        quantity,
+        low: isOffered(consumable, today) && isLow(quantity, level),
+        countedAt: row?.counted_at ?? null,
+      };
+    }),
+  );
+
+  const movements = (
+    (recent?.results ?? []) as {
+      created_at: string;
+      consumable_code: string;
+      technician_id: string | null;
+      quantity: number;
+      reason: Reason;
+      actor: string;
+      note: string | null;
+    }[]
+  ).map((row) => ({
+    at: row.created_at,
+    code: row.consumable_code,
+    technicianId: row.technician_id,
+    quantity: row.quantity,
+    reason: row.reason,
+    by: row.actor,
+    note: row.note,
+  }));
+  return { consumables, places, holdings, movements };
+}

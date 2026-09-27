@@ -8,6 +8,7 @@
 import { describe, expect, it } from "vitest";
 import {
   allowed,
+  boundsOf,
   checkValue,
   DEFAULT_KEY,
   MAX_OPEN_KEYS,
@@ -19,6 +20,7 @@ import {
 import { COMMITTED, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
 import { CHECKIN_RADIUS_M } from "../../src/policy/check-in.ts";
 import { UNLOCK_HOUR } from "../../src/policy/job-visibility.ts";
+import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 import { NO_SHOW_WAIT_MIN } from "../../src/policy/no-show.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS } from "../../src/config/pieces.ts";
@@ -67,12 +69,25 @@ describe("the register", () => {
     expect(setting.note).not.toMatch(/\b(he|his|him)\b|src\/|PLACEHOLDER/);
   });
 
-  it.each(OPS_SETTINGS)("$name's own default is inside its own bounds", (setting) => {
-    const figures = typeof setting.fallback === "number" ? [setting.fallback] : Object.values(setting.fallback);
-    for (const figure of figures) {
-      expect(figure).toBeGreaterThanOrEqual(setting.min);
-      expect(figure).toBeLessThanOrEqual(setting.max);
+  it.each(OPS_SETTINGS)("$name's own default is inside its own bounds, each key's where it has them", (setting) => {
+    const figures: [string | undefined, number][] =
+      typeof setting.fallback === "number" ? [[undefined, setting.fallback]] : Object.entries(setting.fallback);
+    for (const [key, figure] of figures) {
+      const { min, max } = boundsOf(setting, key);
+      expect(figure, key).toBeGreaterThanOrEqual(min);
+      expect(figure, key).toBeLessThanOrEqual(max);
+      // A key's own bounds are inside the widest the rule states.
+      expect(min, key).toBeGreaterThanOrEqual(setting.min);
+      expect(max, key).toBeLessThanOrEqual(setting.max);
     }
+  });
+
+  it("gives the next visit's days one input, with each key's bounds, not seven of the ten the register holds", () => {
+    const days = named("booking_days");
+    expect(days.keys).toEqual(Object.keys(NEXT_VISIT_DAYS));
+    expect(days.bounds).toEqual(NEXT_VISIT_DAY_BOUNDS);
+    expect(COMMITTED.nextVisitDays).toEqual(NEXT_VISIT_DAYS);
+    expect(days.source).toBe("src/policy/next-visit.ts");
   });
 });
 
@@ -124,6 +139,23 @@ describe("what a rule will take", () => {
 
   it("refuses an array, which JSON would otherwise take for an object", () => {
     expect(checkValue(named("no_show_wait_min"), [15, 15, 15, 15]).ok).toBe(false);
+  });
+
+  it("holds each key of the next visit's days to its own bounds, and says them in the refusal", () => {
+    const days = named("booking_days");
+    expect(checkValue(days, { ...NEXT_VISIT_DAYS, first_fit_lead: 0 }).ok).toBe(true);
+    // Nought is the lead time's floor, and ten days the cadence's ceiling is far above, but neither is the horizon's.
+    for (const horizon of [0, 10, 91]) {
+      const checked = checkValue(days, { ...NEXT_VISIT_DAYS, horizon });
+      expect(checked.ok, String(horizon)).toBe(false);
+      if (checked.ok) continue;
+      expect(checked.refusals).toEqual([
+        { field: "booking_days.horizon", says: expect.stringContaining("14 to 90 days, a whole number") as string },
+      ]);
+    }
+    expect(allowed(days, "first_fit_lead")).toBe("0 to 30 days, a whole number");
+    expect(allowed(days, "service_cadence")).toBe("14 to 90 days, a whole number");
+    expect(allowed(days)).toBe("0 to 90 days, a whole number");
   });
 });
 

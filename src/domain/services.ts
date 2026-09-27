@@ -114,6 +114,27 @@ export async function bookableService(
   return offered.find((service) => service.tier === STANDARD_TIER) ?? offered[0] ?? null;
 }
 
+/**
+ * The service a visit of this kind is offered to a client as (docs/decisions/0086-the-next-visit-is-offered.md): the
+ * one their last visit of the kind was, while it is offered and priced on the day, else the kind's first offered in
+ * the console's order. A visit the mirror knows no service of was the standard one. The kind's standard code where it
+ * offers nothing that day, which a booking is then refused for, as any would be.
+ */
+export async function serviceToOffer(db: D1Database, personId: string, kind: VisitType, on: string): Promise<string> {
+  const [offered, last] = await Promise.all([
+    offeredServices(db, on, [kind]),
+    db
+      .prepare(
+        `SELECT COALESCE(tier, 'standard') AS tier FROM appointments
+         WHERE person_id = ?1 AND type = ?2 AND status = 'completed' AND deleted_at IS NULL AND window_start IS NOT NULL
+         ORDER BY window_start DESC LIMIT 1`,
+      )
+      .bind(personId, kind)
+      .first<{ tier: string }>(),
+  ]);
+  return offered.find((service) => service.tier === last?.tier)?.tier ?? offered[0]?.tier ?? STANDARD_TIER;
+}
+
 /** Why a change to a service was refused: the box it names, where there is one. */
 export type ServiceRefusal =
   | { readonly refused: "invalid"; readonly field: "name" | "tier" | "minutes" | "retired_date" | "order" }

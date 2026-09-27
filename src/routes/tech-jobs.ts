@@ -28,12 +28,16 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import { checklistIds, isPartialReason, CHECKLIST, PARTIAL_REASONS } from "../config/job-sheet.ts";
+import { CONSUMABLE_BOUNDS } from "../config/consumables.ts";
 import { isPieceCode } from "../config/pieces.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { latestArrival, recordArrival } from "../domain/check-ins.ts";
+import { allConsumables, offeredForJob, serviceOfJob } from "../domain/consumables.ts";
 import { landJobEvent, type Landing } from "../domain/job-events.ts";
+import { jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
+import { recordJobUse } from "../domain/job-use.ts";
+import { tellOfLowStock } from "../domain/stock.ts";
 import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
 import { jobDetail, jobsOn, lastVisitPhoto, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
 import { anglesHeld, MAX_PHOTO_BYTES, slotOfLink, storeTechnicianPhoto, uploadLink } from "../domain/tech-photos.ts";
@@ -124,6 +128,21 @@ const ProgressSchema = z
   .strict()
   .openapi("TechnicianJobProgress");
 
+/** One item of the job sheet: the code the app sends back, and the words the technician reads. */
+const JobSheetItemSchema = z.object({ id: z.string(), label: z.string() }).strict().openapi("JobSheetItem");
+
+const OfferedSchema = z
+  .object({
+    code: z.string().openapi({ description: "What the consumables step sends back." }),
+    name: z.string(),
+    unit: z.string().openapi({ description: "What one is counted in: strip, ml, sachet." }),
+    expected: z.number().int().openapi({
+      description: "How many this job's service is expected to use; 0 for one it lists no use for.",
+    }),
+  })
+  .strict()
+  .openapi("TechnicianConsumable");
+
 const JobDetailSchema = JobSummarySchema.extend({
   address: z
     .union([
@@ -177,8 +196,17 @@ const JobDetailSchema = JobSummarySchema.extend({
     .union([z.object({ delivered_at: z.union([z.iso.datetime(), z.null()]) }).strict(), z.null()])
     .openapi({ description: "The day-before or arrival WhatsApp to the client, and when it was delivered." }),
   steps: z.array(z.enum(JOB_EVENT_KINDS)).openapi({ description: "The steps this visit type runs, in order." }),
-  checklist: z.array(z.object({ id: z.string(), label: z.string() }).strict()),
-  partial_reasons: z.array(z.enum(PARTIAL_REASONS)),
+  checklist: z
+    .array(JobSheetItemSchema)
+    .openapi({ description: "This kind of visit's checklist, as ops set it in the console, in its order." }),
+  partial_reasons: z
+    .array(JobSheetItemSchema)
+    .openapi({ description: "The reasons a job may be left partly done, as ops set them, in their order." }),
+  consumables: z.array(OfferedSchema).openapi({
+    description:
+      "Every consumable the technician may record, those this job's service is expected to use first, " +
+      "each with the count its stepper starts at.",
+  }),
 }).openapi("TechnicianJobDetail");
 
 const AcceptedSchema = z
@@ -243,14 +271,30 @@ const ChecklistRequestSchema = z
   .strict()
   .openapi("ChecklistRequest");
 
+const QUANTITY = z.number().int().min(1).max(CONSUMABLE_BOUNDS.maxExpected);
+
 const ConsumablesRequestSchema = z
   .object({
     items: z
-      .array(z.object({ name: z.string().min(1).max(80), quantity: z.number().int().min(1).max(999) }).strict())
+      .array(
+        z.union([
+          z.object({ code: z.string().min(1).max(64), quantity: QUANTITY }).strict(),
+          z
+            .object({ name: z.string().min(1).max(80), quantity: QUANTITY })
+            .strict()
+            .openapi({
+              description: "A consumable by the name the technician gave it, as a phone queued it before codes.",
+            }),
+        ]),
+      )
       .max(30),
   })
   .strict()
-  .openapi("ConsumablesRequest");
+  .openapi("ConsumablesRequest", {
+    description:
+      "What was used, each by the code the job's card gave it. None used is an empty list. A code the " +
+      "catalogue does not hold is refused, fields items.",
+  });
 
 const PieceRequestSchema = z
   .object({
@@ -274,7 +318,14 @@ const PieceRequestSchema = z
 const OutcomeRequestSchema = z
   .discriminatedUnion("outcome", [
     z.object({ outcome: z.literal("done") }).strict(),
-    z.object({ outcome: z.literal("partial"), reason: z.enum(PARTIAL_REASONS) }).strict(),
+    z
+      .object({
+        outcome: z.literal("partial"),
+        reason: z.string().min(1).max(64).openapi({
+          description: "One of the card's partial_reasons, by its id; one ops have since taken off is still taken.",
+        }),
+      })
+      .strict(),
   ])
   .openapi("OutcomeRequest");
 
@@ -489,8 +540,16 @@ export function registerTechJobs(app: App): void {
     });
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const type: VisitType = job.type ?? "service";
+    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day.
+    const sheet = await jobSheet(c.env.DB);
     return c.json(
-      { ...job, steps: stepsFor(type), checklist: [...CHECKLIST[type]], partial_reasons: [...PARTIAL_REASONS] },
+      {
+        ...job,
+        steps: stepsFor(type),
+        checklist: [...sheet.checklists[type].items],
+        partial_reasons: [...sheet.partialReasons.items],
+        consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
+      },
       200,
     );
   });
@@ -617,18 +676,37 @@ export function registerTechJobs(app: App): void {
     }));
   });
 
+  // An item ops have taken off since the phone kept the job is still one it may send.
   app.openapi(checklistRoute, (c) => {
     const { done } = c.req.valid("json");
-    return step(c, "checklist", (job) => {
-      const known = checklistIds(job.type);
+    return step(c, "checklist", async (job) => {
+      const known = knownCodes((await jobSheet(c.env.DB)).checklists[job.type]);
       const unknown = done.filter((item) => !known.has(item));
       return unknown.length > 0 ? { invalid: ["done"] } : { done };
     });
   });
 
+  // By code, or by name from a phone that queued the step before codes. A retired consumable is still taken:
+  // it was used. What was used comes out of the technician's kit as the step lands, once however often it does.
   app.openapi(consumablesRoute, (c) => {
     const { items } = c.req.valid("json");
-    return step(c, "consumables", () => ({ items }));
+    return step(
+      c,
+      "consumables",
+      async () => {
+        const codes = new Set((await allConsumables(c.env.DB)).map((consumable) => consumable.code));
+        return items.some((item) => "code" in item && !codes.has(item.code)) ? { invalid: ["items"] } : { items };
+      },
+      async (job) => {
+        const { technicianId } = technicianOf(c);
+        const { deps } = c.var;
+        const used = await recordJobUse(c.env.DB, { job, technicianId, now: deps.now() });
+        await tellOfLowStock(c.env.DB, deps, {
+          touched: [technicianId],
+          lowered: used.lowered ? [technicianId] : [],
+        });
+      },
+    );
   });
 
   app.openapi(pieceRoute, (c) => {
@@ -648,11 +726,13 @@ export function registerTechJobs(app: App): void {
     });
   });
 
+  // The reasons ops set; one they have taken off since the phone kept the job is still taken.
   app.openapi(outcomeRoute, (c) => {
     const body = c.req.valid("json");
-    return step(c, "outcome", () => {
-      if (body.outcome === "partial" && !isPartialReason(body.reason)) return { invalid: ["reason"] };
-      return body.outcome === "done" ? { outcome: "done" } : { outcome: "partial", reason: body.reason };
+    return step(c, "outcome", async () => {
+      if (body.outcome === "done") return { outcome: "done" };
+      const known = knownCodes((await jobSheet(c.env.DB)).partialReasons);
+      return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };
     });
   });
 
@@ -704,8 +784,17 @@ const namedJob = (c: Ctx, id: string): Promise<WorkableJob | null> => workableJo
 /** What a step's handler returns: the event's body, or the fields that were wrong. */
 type StepBody = Record<string, unknown> | { invalid: string[] };
 
-/** One in-job step: check it, land it once, and put its FSM write on the queue. */
-async function step(c: Ctx, kind: JobEventKind, build: (job: WorkableJob) => StepBody | Promise<StepBody>) {
+/**
+ * One in-job step: check it, land it once, and put its FSM write on the queue.
+ * What a step keeps of its own, `landed` does once it has landed, first time
+ * or replayed, and must do the same however often it is called.
+ */
+async function step(
+  c: Ctx,
+  kind: JobEventKind,
+  build: (job: WorkableJob) => StepBody | Promise<StepBody>,
+  landed?: (job: WorkableJob) => Promise<void>,
+) {
   const job = await namedJob(c, c.req.param("id") ?? "");
   if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
   const built = await build(job);
@@ -714,6 +803,7 @@ async function step(c: Ctx, kind: JobEventKind, build: (job: WorkableJob) => Ste
   }
   const landing = await land(c, job, kind, built);
   if (!landing.ok) return c.json(errorBody(landing.code, c.var.requestId, landing.fields), 409);
+  if (landed !== undefined) await landed(job);
   return c.json(landing.accepted, 202);
 }
 

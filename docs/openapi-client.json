@@ -387,17 +387,79 @@
                   "kind": {
                     "type": "string",
                     "enum": [
+                      "next_visit"
+                    ]
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "service",
+                      "replacement"
+                    ],
+                    "description": "The next service, or the replacement where the piece in wear falls due first."
+                  },
+                  "tier": {
+                    "type": "string",
+                    "description": "The service of its kind it offers, as booking.next's (ADR 0085)."
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "India's day it falls due: the last visit's day and the cadence; tomorrow once passed."
+                  },
+                  "window": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "morning",
+                          "afternoon",
+                          "evening"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The last visit's window, where this kind of visit can start in it."
+                  }
+                },
+                "required": [
+                  "kind",
+                  "type",
+                  "tier",
+                  "date",
+                  "window"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
                       "replacement_due"
                     ]
                   },
                   "month": {
                     "type": "string",
                     "pattern": "^\\d{4}-\\d{2}$"
+                  },
+                  "tier": {
+                    "type": "string",
+                    "description": "The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085)."
+                  },
+                  "bookable": {
+                    "type": "boolean",
+                    "description": "The month begins within how far ahead a visit may be booked, so it can be booked now."
                   }
                 },
                 "required": [
                   "kind",
-                  "month"
+                  "month",
+                  "tier",
+                  "bookable"
                 ],
                 "additionalProperties": false
               },
@@ -448,7 +510,7 @@
                 "type": "null"
               }
             ],
-            "description": "Board B1's one contextual prompt, the first that applies: no address given while something is booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight. Null when none applies."
+            "description": "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies."
           },
           "booking": {
             "type": "object",
@@ -476,12 +538,65 @@
                   "$ref": "#/components/schemas/OfferedService"
                 },
                 "description": "Every service of those kinds offered and priced now, a kind at a time, in the console's order."
+              },
+              "next": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "first_fit",
+                          "service",
+                          "replacement"
+                        ]
+                      },
+                      "tier": {
+                        "type": "string",
+                        "description": "The service it is offered as: the one the client's last visit of its kind was, while that is offered, else its kind's first in the console's order (ADR 0085)."
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "India's day it is offered on."
+                      },
+                      "window": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "morning",
+                              "afternoon",
+                              "evening"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "tier",
+                      "date",
+                      "window"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086)."
               }
             },
             "required": [
               "self_serve",
               "types",
-              "services"
+              "services",
+              "next"
             ],
             "additionalProperties": false
           }
@@ -4636,10 +4751,10 @@
             "schema": {
               "type": "string",
               "format": "date",
-              "description": "The first day; tomorrow if left out, or if earlier."
+              "description": "The first day; the first bookable day if left out, or if earlier. The 14 days end within how far ahead a visit may be booked, and a day outside it, or before a first fit may be booked, has no window open."
             },
             "required": false,
-            "description": "The first day; tomorrow if left out, or if earlier.",
+            "description": "The first day; the first bookable day if left out, or if earlier. The 14 days end within how far ahead a visit may be booked, and a day outside it, or before a first fit may be booked, has no window open.",
             "name": "from",
             "in": "query"
           },

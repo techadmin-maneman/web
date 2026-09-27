@@ -1,20 +1,19 @@
 // The prompt says: "Encode each rule once, in src/policy/, with a unit test
 // that quotes it." Each module there exports its RULES in the prompt's own
 // words, or in the owner's where a later ruling of theirs made the rule, as
-// ADR 0025's register or the record of the owner's answers of 27 September
-// 2026 has it. This test holds them to that: every quote is in the prompt or
-// one of those records, and every rule under "Business rules, decided" is
-// quoted by exactly one module. The behaviour behind each rule is tested next
-// to it as its milestone lands.
+// ADR 0025's register records it, or as the record of the owner's answers the
+// register names does (docs/owner-answers-2026-09-27.md). This test holds them
+// to that: every quote is in the prompt, the register or those answers, and
+// every rule under "Business rules, decided" is quoted by exactly one module.
+// The behaviour behind each rule is tested next to it as its milestone lands.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const PROMPT = readFileSync("docs/prompts/phase2-backend.md", "utf8");
-const RULINGS = [
-  readFileSync("docs/decisions/0025-phase-2-conflicts-register.md", "utf8"),
-  readFileSync("docs/owner-answers-2026-09-27.md", "utf8"),
-];
+const RULINGS = readFileSync("docs/decisions/0025-phase-2-conflicts-register.md", "utf8");
+/** The owner's answers of 27 September 2026, word for word where they were typed, which the register names. */
+const ANSWERS = readFileSync("docs/owner-answers-2026-09-27.md", "utf8");
 
 /** The words alone: markdown's emphasis and code marks removed, whitespace collapsed. */
 function plain(text: string): string {
@@ -52,7 +51,7 @@ describe("src/policy", () => {
   });
 
   it.each(quoted)("quotes the prompt, or the owner's ruling, word for word: %s", (rule) => {
-    const quotesASource = [PROMPT, ...RULINGS].some((source) => plain(source).includes(rule));
+    const quotesASource = [PROMPT, RULINGS, ANSWERS].some((source) => plain(source).includes(rule));
     expect(quotesASource, "not in docs/prompts/phase2-backend.md, nor ruled in ADR 0025 or the owner's answers").toBe(
       true,
     );

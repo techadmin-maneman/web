@@ -48,6 +48,11 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_waived_credit_back_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your visit credit is back.",
+  // The next visit falls due in a few days and nothing is booked (docs/decisions/0086-the-next-visit-is-offered.md),
+  // sent once a last visit, only with the client's consent to WhatsApp about their visits. PLACEHOLDER COPY, pending
+  // the owner's wording: {{1}} the client's first name, {{2}} the visit ("service visit", or "replacement" where the
+  // piece falls due first), {{3}} the day it falls due ("Tue 27 Oct").
+  next_visit_due_v1: "Hello {{1}}, your next {{2}} is due on {{3}}. You can book it in the Mane Man app.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
   visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
   // A credit-paid visit cancelled inside 24 hours keeps its credit, as the cancel sheet warned; one cancelled in time

@@ -1,13 +1,18 @@
 // What each event of the technician's outbox writes to Zoho FSM
 // (docs/decisions/0038-offline-writes.md, 0032-fsm-mirror.md).
 //
-// FSM is the record. The trial found the org has no job-sheet template yet
-// (`meta/job_sheet_forms` is empty, docs/open-points.md, item 28), so there is
-// no job-sheet record to create; until there is, the checklist, the consumables
-// and the outcome are written on the appointment itself, as its summary and as
-// the mandatory note of the transition that closes it. Our own job_events keep
-// the same facts field by field, so they can be replayed into job-sheet records
-// the day the template exists.
+// FSM is the record. The trial found the org has no job-sheet template
+// (`meta/job_sheet_forms` is empty), and the owner ruled on 27 September 2026
+// that the job sheet is set in the ops console instead (docs/open-points.md,
+// item 28): so the checklist, the consumables and the outcome are written on
+// the appointment itself, as its summary and as the mandatory note of the
+// transition that closes it, in the words the console gives them. Our own
+// job_events keep the same facts field by field.
+//
+// What was used is internal: it is on the summary, and in our own records from
+// the moment the step lands (src/domain/stock.ts), and never a line of the work
+// order, so the client's invoice is as it was
+// (docs/decisions/0087-consumables-and-stock.md).
 //
 // Every call here throws when FSM refuses, so the fsm-sync queue retries it
 // rather than losing the technician's work. That includes a transition FSM
@@ -15,13 +20,14 @@
 // start or close FSM never took must never be counted as written
 // (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
 
-import { CHECKLIST } from "../config/job-sheet.ts";
 import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaIso } from "../lib/india-time.ts";
 import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../providers/fsm.ts";
+import { allConsumables } from "./consumables.ts";
 import { statusOf } from "./fsm-mirror.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
+import { jobSheet } from "./job-sheet-settings.ts";
 import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";
 import { attachPhotosToFsm } from "./tech-photos.ts";
 import { minutesBetween } from "../lib/durations.ts";
@@ -91,13 +97,9 @@ export async function writeEventToFsm(
       await fsm.updateAppointment(job.fsmId, { Summary: await summaryOf(db, job, deps) });
       return "written";
     }
-    case "checklist": {
-      await fsm.updateAppointment(job.fsmId, { Summary: await summaryOf(db, job, deps) });
-      return "written";
-    }
+    case "checklist":
     case "consumables": {
       await fsm.updateAppointment(job.fsmId, { Summary: await summaryOf(db, job, deps) });
-      await recordConsumables(db, job, event, now);
       return "written";
     }
     case "outcome": {
@@ -195,16 +197,24 @@ export async function summaryOf(db: D1Database, job: JobForFsm, deps: { labelAsT
   const events = await eventsOf(db, job.id);
   const parts = [`${prefix(deps)}${FSM_SERVICE_NAMES[job.type]}`];
 
+  // The words ops gave each item; one they have since taken off is still named, and not counted against the list.
   const checklist = events.findLast((event) => event.kind === "checklist");
   if (checklist !== undefined) {
+    const list = (await jobSheet(db)).checklists[job.type];
     const doneIds = new Set(asStrings(checklist.body.done));
-    const labels = CHECKLIST[job.type].filter((item) => doneIds.has(item.id)).map((item) => item.label);
-    parts.push(`Checklist ${String(labels.length)}/${String(CHECKLIST[job.type].length)}: ${labels.join(", ")}`);
+    const ticked = [...list.items, ...list.retired].filter((item) => doneIds.has(item.id));
+    const inList = list.items.filter((item) => doneIds.has(item.id)).length;
+    const labels = ticked.map((item) => item.label).join(", ");
+    parts.push(`Checklist ${String(inList)}/${String(list.items.length)}: ${labels}`);
   }
 
+  // By each consumable's name in the console, or as a phone that knew no codes entered it.
   const consumables = events.findLast((event) => event.kind === "consumables");
   if (consumables !== undefined) {
-    const used = asItems(consumables.body.items).map((item) => `${item.name} x${String(item.quantity)}`);
+    const names = new Map((await allConsumables(db)).map((consumable) => [consumable.code, consumable.name]));
+    const used = asItems(consumables.body.items).map(
+      (item) => `${item.code === null ? item.name : (names.get(item.code) ?? item.code)} x${String(item.quantity)}`,
+    );
     if (used.length > 0) parts.push(`Consumables: ${used.join(", ")}`);
   }
 
@@ -228,27 +238,6 @@ function pieceLines(event: JobEvent): string[] {
   const failure = asText(event.body.failure_reason);
   if (code !== null) lines.push(failure === null ? `Piece: ${code}` : `Piece failed: ${code} (${failure})`);
   return lines;
-}
-
-/**
- * What was used, row by row, once FSM has the summary that names it: the table
- * ops count stock from (migration 0026). A replay writes the same rows.
- */
-async function recordConsumables(db: D1Database, job: JobForFsm, event: JobEvent, now: Date): Promise<void> {
-  const totals = new Map<string, number>();
-  for (const item of asItems(event.body.items)) totals.set(item.name, (totals.get(item.name) ?? 0) + item.quantity);
-  if (totals.size === 0) return;
-  await db.batch(
-    [...totals].map(([name, quantity]) =>
-      db
-        .prepare(
-          `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at)
-           VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-           ON CONFLICT (job_event_id, name) DO UPDATE SET quantity = excluded.quantity`,
-        )
-        .bind(crypto.randomUUID(), job.id, event.id, name, quantity, now.toISOString()),
-    ),
-  );
 }
 
 /** The mandatory note on the transition that closes the job. */
@@ -289,12 +278,17 @@ function asStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-function asItems(value: unknown): { name: string; quantity: number }[] {
+/** A line of a consumables step: by code, or by name from a phone that queued it before the codes. */
+type UsedLine = { readonly quantity: number } & (
+  { readonly code: string; readonly name: null } | { readonly code: null; readonly name: string }
+);
+
+function asItems(value: unknown): UsedLine[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((item) => {
-    const row = item as { name?: unknown; quantity?: unknown };
-    return typeof row.name === "string" && typeof row.quantity === "number"
-      ? [{ name: row.name, quantity: row.quantity }]
-      : [];
+  return value.flatMap((item): UsedLine[] => {
+    const row = item as { code?: unknown; name?: unknown; quantity?: unknown };
+    if (typeof row.quantity !== "number") return [];
+    if (typeof row.code === "string") return [{ code: row.code, name: null, quantity: row.quantity }];
+    return typeof row.name === "string" ? [{ code: null, name: row.name, quantity: row.quantity }] : [];
   });
 }

@@ -43,6 +43,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
   checklist: [],
   partial_reasons: [],
+  consumables: [],
   ...over,
 });
 

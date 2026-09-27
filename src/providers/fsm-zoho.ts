@@ -58,6 +58,14 @@
 //   POST /fsm/v1/Service_And_Parts                               { data: [{ Name, Type: "Service", Unit_Price }] }
 //   PUT  /fsm/v1/Products/{id}                                   { data: [{ Name, Unit_Price }] }, rupees before GST
 //
+// Nor have the two that keep ops' consumables in the catalogue as parts, which run behind the same switch
+// (docs/decisions/0087-consumables-and-stock.md). scripts/setup-fsm.ts added the catalogue's items with the same
+// create and read only its status, so the new ID is taken from whichever of the shapes FSM's creates answer in;
+// a rename is written where the price is. The next hourly check reads both back by name.
+//
+//   POST /fsm/v1/Service_And_Parts                               { data: [{ Name, Type: "Part", Unit_Price: 0 }] }
+//   PUT  /fsm/v1/Products/{id}                                   { data: [{ Name }] }
+//
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
 import { z } from "zod";
@@ -177,6 +185,21 @@ const Addresses = z.object({
 const Created = z.object({
   data: z.union([z.array(z.object({ id: z.string() })), z.record(z.string(), z.array(z.object({ id: z.string() })))]),
 });
+
+/**
+ * What adding a catalogue item answers, which no call here has read yet: the
+ * trial's `data[0].details.id`, a list of new records, or the records under
+ * the module's name.
+ */
+const ItemCreated = z.object({
+  data: z.union([
+    z.array(z.object({ id: z.string().optional(), details: z.object({ id: z.string() }).optional() })),
+    z.record(z.string(), z.array(z.object({ id: z.string() }))),
+  ]),
+});
+
+/** What FSM's catalogue says of a part a consumable is: used on jobs, and never on an invoice. */
+const PART_DESCRIPTION = "A consumable used on jobs. Never invoiced.";
 
 /** A blueprint's next steps from a record's state; a closed record offers none. */
 const Transitions = z.object({ transitions: z.array(z.object({ id: z.string(), name: z.string() })).default([]) });
@@ -433,6 +456,23 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         method: "PUT",
         body: { data: [{ Name: item.name, Unit_Price: item.price / 100 }] },
       });
+    },
+
+    // Rs. 0: a job's use stays in our records and on FSM's summary, and never reaches a work order's lines.
+    async createPart(name) {
+      const response = await request("create_part", "/fsm/v1/Service_And_Parts", {
+        method: "POST",
+        body: { data: [{ Name: name, Type: "Part", Unit_Price: 0, Description: PART_DESCRIPTION }] },
+      });
+      const { data } = ItemCreated.parse(await response.json());
+      const [first] = Array.isArray(data) ? data : [];
+      const id = Array.isArray(data) ? (first?.id ?? first?.details?.id) : Object.values(data)[0]?.[0]?.id;
+      if (id === undefined) throw new ZohoError(response.status, "NO_ID", "create_part answered without the new ID");
+      return id;
+    },
+
+    async renameItem(itemId, name) {
+      await request("rename_item", `/fsm/v1/Products/${itemId}`, { method: "PUT", body: { data: [{ Name: name }] } });
     },
 
     async attachments(appointmentId) {

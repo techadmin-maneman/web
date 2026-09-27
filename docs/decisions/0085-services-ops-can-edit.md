@@ -2,7 +2,7 @@
 
 - Status: accepted, on the owner's rulings of 27 September 2026 (ADR 0025, items 67 and 35; `docs/open-points.md`, items 1, 11 and 13). The push to FSM's catalogue is built and stays off until the owner switches it on in production (item 11)
 - Date: 2026-09-27
-- Amends [0073](0073-prices-from-the-price-book.md) and [0061](0061-ops-editable-inputs.md); follows [0035](0035-window-slot-map.md) for the half-slots a day is counted in, [0068](0068-a-paid-hold-is-kept.md) for what a hold keeps, [0070](0070-vendor-correctness.md) for the invoice check and [0071](0071-what-ops-see-before-a-setting-changes.md) for what ops see before a change
+- Amends [0073](0073-prices-from-the-price-book.md) and [0061](0061-ops-editable-inputs.md), and, built beside it the same day, [0086](0086-the-next-visit-is-offered.md), whose visit offered now names a service, and [0087](0087-consumables-and-stock.md), whose expected use is now checked against the services; follows [0035](0035-window-slot-map.md) for the half-slots a day is counted in, [0068](0068-a-paid-hold-is-kept.md) for what a hold keeps, [0070](0070-vendor-correctness.md) for the invoice check and [0071](0071-what-ops-see-before-a-setting-changes.md) for what ops see before a change
 
 ## Context
 
@@ -27,7 +27,7 @@ and ruled the same day (`docs/owner-answers-2026-09-27.md`):
 
 ### A service is a kind and a tier, and the tier is the price book's own key
 
-**`services` (migration 0047)** holds one row a service: its `kind`, its `tier`, its `name`, its `minutes`, its `sort` within the kind, the `retired_date` it is offered until, and the `fsm_item_id` of its item once found or made. Its key is `(kind, tier)`, the price book's own `(item, tier)` for a visit. So:
+**`services` (migration 0050)** holds one row a service: its `kind`, its `tier`, its `name`, its `minutes`, its `sort` within the kind, the `retired_date` it is offered until, and the `fsm_item_id` of its item once found or made. Its key is `(kind, tier)`, the price book's own `(item, tier)` for a visit. So:
 
 - **No price row moves.** Every price the book holds stays where it is, and a hold, a payment and an invoice keep the price they were sold at (ADR 0068).
 - **The four services there have always been** are seeded as each kind's `standard` tier, named as FSM names its items (`FSM_SERVICE_NAMES`): Consultation, First fit, Service visit and Replacement, at 60, 180, 90 and 135 minutes.
@@ -73,6 +73,8 @@ One rule turns a length into what the day holds (`src/policy/visit-length.ts`): 
 
 - **`/api/me`** lists every service offered and priced for the kinds the client may book now (`booking.services`), a kind at a time in the console's order, each with its length and its price on the first day it can be booked.
 - **The app's booking sheet** asks the client to pick one when there is more than one, each with how long it takes and what it costs, the inclusive figure beside it once GST applies; with one, it goes straight to the date as before. The pick goes with the availability and the hold, and the pay step names the service. "Premium? Message us" is gone (ADR 0025, item 70).
+- **A button that books one kind offers that kind's services** (ADR 0086's next visit, and the other kind beside it); one that names no kind offers every kind open to the client, a kind at a time.
+- **The visit the app offers next names its service** (ADR 0086, amended): the one the client's last completed visit of that kind was, while it is still offered, else the kind's first offered in the console's order. The sheet opens with it chosen; where the kind offers more than one, the client may pick another, and the sheet then opens on the day and window offered.
 - **A hold with no tier is the kind's standard service** while it is offered, which is what the app deployed before this sends. A move keeps its own visit's service.
 - **The badge, the dispatch board and the invoice check** read the visit's own service's price, not its kind's standard one.
 
@@ -107,10 +109,11 @@ One rule turns a length into what the day holds (`src/policy/visit-length.ts`): 
 - **A late fee does not follow the service.** A premium first fit moved late costs the kind's late fee. A late fee for one service alone would need rows of its own in the book, and a ruling.
 - **The app's Visits and Home name a visit by its kind**, not its service: `VisitSummary` does not carry the service yet. The pay step and the booking sheet do.
 - **`scripts/setup-fsm.ts` is unchanged.** It makes the four kinds' standard items; any other service's item is made by hand or by the push.
-- **Contract:** `/api/services` and `/api/prices/correct` on the ops surface, `tier` on `/api/availability` and `/api/holds`, `service` on a hold and an availability, `booking.services` on `/api/me`, `services` on `/api/published-prices`, and the error codes `service_exists`, `last_of_kind` and `service_retired`. The OpenAPI documents, `docs/api*.md` and `docs/schema.md` are regenerated.
+- **A consumable's expected use is a service's** (ADR 0087, amended): `POST /api/service-usage` takes a pair the services table holds, retired or not, Settings · Consumables names each service by its name, and a job's steppers start at what its own visit's service uses. `consumable_usage` has no foreign key to `services`, since its migration, 0049, comes before this one, 0050.
+- **Contract:** `/api/services` and `/api/prices/correct` on the ops surface, `tier` on `/api/availability` and `/api/holds`, `service` on a hold and an availability, `booking.services` and `booking.next.tier` on `/api/me`, `tier` on its `next_visit` and `replacement_due` prompts, `name` and `retired_date` on each service of `/api/consumables`, `services` on `/api/published-prices`, and the error codes `service_exists`, `last_of_kind` and `service_retired`. The OpenAPI documents, `docs/api*.md` and `docs/schema.md` are regenerated.
 
 ## Not built
 
-- **Consumables per service** and their sync to FSM as parts (the owner's other request of the same day) are their own work.
+- **A foreign key from `consumable_usage` to `services`**, which would need that table rebuilt; the pair is checked in code.
 - **A service's own late fee**, as above.
 - **Naming the service on Visits and Home.**

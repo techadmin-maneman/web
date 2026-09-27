@@ -16,6 +16,8 @@ import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
+import { queueNextServiceReminders } from "../domain/next-visit.ts";
+import { readOpsInputs } from "../domain/ops-settings.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
@@ -116,7 +118,7 @@ async function reconcileJob({ env, deps, log, budget }: CronContext): Promise<vo
 async function catalogueJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const checked = await checkCatalogue(
     env.DB,
-    { fsm: deps.fsm, queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert },
+    { fsm: deps.fsm, queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert, log },
     { push: config.settings.fsmCataloguePush, now: deps.now(), budget },
   );
   if (checked !== null && checked.differs.length > 0) log.warn("fsm_catalogue_differs", { ...checked });
@@ -144,6 +146,17 @@ async function remindersJob({ env, deps, log }: CronContext): Promise<void> {
   const reminders = await queueReminders(env.DB, deps.now());
   await queueMessages(env.MESSAGE_QUEUE, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
+}
+
+async function nextServiceRemindersJob({ env, deps, log }: CronContext): Promise<void> {
+  const now = deps.now();
+  // The figures ops set; the committed ones if the store cannot be read, which is said once in the log.
+  const inputs = await readOpsInputs(env.DB, now, (error) => {
+    log.error("ops_settings_unreadable", { error });
+  });
+  const reminders = await queueNextServiceReminders(env.DB, now, inputs.nextVisitDays);
+  await queueMessages(env.MESSAGE_QUEUE, reminders, "next-service-reminders");
+  if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
 
 async function invoicesJob({ env, deps, log, budget }: CronContext): Promise<void> {
@@ -174,7 +187,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
   { name: "fsm_reconcile", needs: "fsm_record", run: reconcileJob },
   // Once an hour: FSM's catalogue against the price book, which it prices invoices by
-  // (docs/decisions/0073-prices-from-the-price-book.md).
+  // (docs/decisions/0073-prices-from-the-price-book.md), and against ops' consumables, which it holds
+  // as parts (docs/decisions/0087-consumables-and-stock.md).
   { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
@@ -183,6 +197,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "dispatch_utilisation", needs: "nothing", run: utilisationJob },
   { name: "referrals", needs: "nothing", run: referralsJob },
   { name: "visit_reminders", needs: "messaging", run: remindersJob },
+  // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
+  { name: "next_service_reminders", needs: "messaging", run: nextServiceRemindersJob },
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets
   // a client's advance against the invoice once it is issued.
   { name: "invoices", needs: "fsm_and_books", run: invoicesJob },
