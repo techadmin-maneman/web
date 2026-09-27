@@ -12,6 +12,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { minutesBetween } from "../lib/durations.ts";
 
 /** What each outcome is in FSM, and in the mirror: done is Complete Work, partial is Terminate. */
 const CLOSES = {
@@ -65,7 +66,7 @@ export function registerDevFsm(app: App): void {
     const { status, fsmStatus } = CLOSES[outcome];
     const minutes =
       visit.window_start !== null && visit.window_end !== null
-        ? Math.round((Date.parse(visit.window_end) - Date.parse(visit.window_start)) / 60_000)
+        ? minutesBetween(visit.window_start, visit.window_end)
         : null;
     await db.batch([
       db
