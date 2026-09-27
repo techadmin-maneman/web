@@ -39,6 +39,11 @@ const INVITE = {
   referrer_first_name: "Rohit",
   card: { state: "personal", version: 1 },
 };
+/**
+ * Friday 20 September 2030 in India, so the page's tomorrow is the boards' "Saturday 21 Sep" on every run: the
+ * booked confirmation is dated tomorrow (site/src/islands/invite/preview.ts).
+ */
+const THE_BOARDS_EVE = new Date("2030-09-20T05:00:00Z");
 const PINCODES: Readonly<Record<string, unknown>> = {
   "122018": { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" },
   "400050": { pincode: "400050", served: false, area: "Bandra", city: "Mumbai" },
@@ -65,6 +70,7 @@ async function openSite(browser: Browser, width: number, state: string | null): 
     // The site's policy would refuse the style that stills the page.
     bypassCSP: true,
   });
+  await page.clock.install({ time: THE_BOARDS_EVE });
   await page.route("**/api/r/*", (route) => route.fulfill({ json: INVITE }));
   await page.route("**/api/pincodes/*", (route) => {
     const pin = new URL(route.request().url()).pathname.split("/").pop() ?? "";
