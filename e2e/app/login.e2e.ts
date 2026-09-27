@@ -124,7 +124,7 @@ test("logging out takes the API's word for it: offline it waits, and a refusal k
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
 });
 
-test("the tabs reach Visits, the empty Photos and Payments, and Refer", async ({ page, request }) => {
+test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ page, request }) => {
   await sendCode(page, await booked(request));
   await enter(page, CODE);
   const tabs = page.getByRole("navigation");
@@ -137,9 +137,8 @@ test("the tabs reach Visits, the empty Photos and Payments, and Refer", async ({
   await tabs.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: "Refer" }).click();
-  // Refer is the invite itself (board F1), for a lead too (ADR 0083); who has been fitted is a page of its own.
+  // Refer is the invite itself now (board F1); who has been fitted is a page of its own.
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 service visits free.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Share an invite" })).toBeVisible();
   await page.goBack();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
 });

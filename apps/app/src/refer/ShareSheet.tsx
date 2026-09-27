@@ -6,9 +6,6 @@
 // card the phone could not make. Every step that changes what the invite shows waits for the API's answer, and a
 // refusal says so and changes nothing: an invite must never carry photographs the client thinks are gone
 // (docs/decisions/0048-referrals.md).
-//
-// A client not yet fitted has no photographs of their own to choose, so their sheet opens on the preview, with
-// the house card and a message true for someone not yet fitted (docs/decisions/0083-anyone-signed-in-can-refer.md).
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -66,13 +63,8 @@ function Choice(props: { which: Which; chosen: boolean; shown: Shown; onChoose: 
   );
 }
 
-/** What goes with the link: only a client who has been fitted can say they had theirs fitted. */
-function inviteMessage(link: string, fitted: boolean): string {
-  return fitted ? refer.preview.message(link) : refer.preview.messageBeforeFit(link);
-}
-
 /** Board F4: the chat's bubble, as WhatsApp draws the invite's preview above the message. */
-function Bubble({ state, card, message }: { state: Refer; card: Shown; message: string }) {
+function Bubble({ state, card }: { state: Refer; card: Shown }) {
   const { me } = useSession();
   return (
     <div className={styles.bubble}>
@@ -84,20 +76,18 @@ function Bubble({ state, card, message }: { state: Refer; card: Shown; message: 
           <p className={styles.bubbleDomain}>{refer.preview.domain}</p>
         </div>
       </div>
-      <p className={styles.bubbleMessage}>{message}</p>
+      <p className={styles.bubbleMessage}>{refer.preview.message(state.link)}</p>
     </div>
   );
 }
 
 export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: (changed: boolean) => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const { me } = useSession();
-  const fitted = me.state === "fitted";
   // The invite as it stands, read again once the sheet has changed it: the preview must name the client, and show
   // the card, exactly as the invite now will.
   const [state, setState] = useState(opened);
   const agreed = state.card.state === "personal" || state.card.consented;
-  const [step, setStep] = useState<Step>(fitted ? "choice" : "share");
+  const [step, setStep] = useState<Step>("choice");
   const [which, setWhich] = useState<Which>(state.card.state === "personal" ? "mine" : "house");
   const [pair, setPair] = useState<FirstFitPair | null>(null);
   const [made, setMade] = useState<string | null>(null);
@@ -109,7 +99,6 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   const [busy, once] = useOneAtATime();
 
   useEffect(() => {
-    if (!fitted) return;
     let current = true;
     void api.photos().then((answer) => {
       if (current && answer.ok) setPair(firstFitPhotos(answer.body));
@@ -117,7 +106,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
     return () => {
       current = false;
     };
-  }, [fitted]);
+  }, []);
 
   // A card made here lives in the page until the sheet closes.
   useEffect(
@@ -133,7 +122,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   }, [step]);
 
   const close = () => dialog.current?.close();
-  const message = inviteMessage(state.link, fitted);
+  const message = refer.preview.message(state.link);
 
   function toShare(card: "house" | "theirs", line: string | null) {
     setWhich(card === "house" ? "house" : "mine");
@@ -336,7 +325,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
             <h2 className={styles.eyebrow} id={TITLE_ID}>
               {refer.preview.title}
             </h2>
-            <Bubble state={state} card={card} message={message} />
+            <Bubble state={state} card={card} />
             {problem !== null && (
               <p className={styles.inkProblem} role="alert">
                 {problem}
