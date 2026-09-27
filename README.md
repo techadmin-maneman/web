@@ -17,13 +17,11 @@ Five Cloudflare Workers make up each environment, in one account and one zone, `
 | `mm-tech` | `apps/tech` | The technician app, which works offline                                                                  |
 
 ```
-                       /api/*            ┌─ D1: the database, the only record of much of it
-  maneman.in      ───────────────► mm-api ─┼─ R2: photographs, try-on images, referral cards
-  app.maneman.in                           ├─ queues: crm-sync, fsm-sync, messaging, render
-  ops.maneman.in       anything else       └─ the cron, every five minutes
-  tech.maneman.in ───────────────► mm-site, mm-app, mm-ops, mm-tech (the page the host serves)
+a request to maneman.in, app.maneman.in, ops.maneman.in or tech.maneman.in
+  /api/*          ──►  mm-api  ──►  D1 (the database), R2 (files), four queues, the cron
+  anything else   ──►  the host's own front end: mm-site, mm-app, mm-ops or mm-tech
 
-  mm-api ──► Zoho CRM, Zoho FSM, Zoho Books, Razorpay, Evolution (WhatsApp), Google Maps, AILabTools
+mm-api  ──►  Zoho CRM, FSM and Books, Razorpay, Evolution (WhatsApp), Google Maps, AILabTools
 ```
 
 Staging's hosts are `staging.maneman.in`, `app-staging.maneman.in`, `ops-staging.maneman.in` and `tech-staging.maneman.in`, all behind Cloudflare Access.
