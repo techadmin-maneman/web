@@ -599,6 +599,20 @@
   width: 100%;
 }
 
+/* The address's pincode: the one the page checked, shown where the field would be, and not typed again. */
+.addressPincode {
+  margin: 0;
+  font-size: var(--fs-16);
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-155);
+  color: var(--text-muted);
+}
+
 .told {
   font-size: var(--fs-15);
   line-height: var(--lh-160);

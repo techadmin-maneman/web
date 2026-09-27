@@ -27,6 +27,7 @@ export type ReferralConsultation = Schemas["ReferralConsultation"];
 export type ReferralWaitlist = Schemas["ReferralWaitlist"];
 export type Consultation = Schemas["Consultation"];
 export type Waitlist = Schemas["Waitlist"];
+export type TypedAddress = Schemas["TypedAddress"];
 export type PublicConsultationRequest = Body<"/api/consultation">;
 export type PublicWaitlistRequest = Body<"/api/waitlist">;
 export type ConsultationRequest = Body<"/api/r/{code}/consultation">;

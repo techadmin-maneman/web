@@ -4,11 +4,22 @@
 //
 // Every value here is made up. The pincodes are the design's own.
 
+import type { Page } from "@playwright/test";
 import { wrangler } from "./app/fitted.ts";
 import { technicianFor } from "./technicians.ts";
 
 export const SERVED = { pincode: "122018", area: "Gurgaon South City II", city: "Gurgaon" };
 export const UNSERVED = { pincode: "400050", area: "Bandra", city: "Mumbai" };
+
+/**
+ * The consultation's address as a visitor types it (docs/decisions/0081-the-site-takes-the-address.md): the flat,
+ * the building and the area. The city is already the pincode's, and the pincode the one checked.
+ */
+export async function fillAddress(page: Page): Promise<void> {
+  await page.getByLabel("Flat or house number").fill("Flat 402");
+  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
+  await page.getByLabel("Sector or area").fill("Sector 65");
+}
 
 export async function seedBookingArea(): Promise<void> {
   const now = new Date().toISOString();

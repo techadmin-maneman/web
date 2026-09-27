@@ -236,6 +236,9 @@ Request body:
         "evening"
       ]
     },
+    "address": {
+      "$ref": "#/components/schemas/TypedAddress"
+    },
     "consent": {
       "type": "boolean",
       "enum": [
@@ -252,6 +255,7 @@ Request body:
     "turnstile_token",
     "date",
     "window",
+    "address",
     "consent"
   ],
   "additionalProperties": false
@@ -297,7 +301,7 @@ Request body:
 }
 ```
 
-**422**: invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body
+**422**: invalid_request: the pincode is not served, or the day is not open, or the address is in another pincode (fields names address.pincode); not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -559,6 +563,9 @@ Request body:
         "evening"
       ]
     },
+    "address": {
+      "$ref": "#/components/schemas/TypedAddress"
+    },
     "consent": {
       "type": "boolean",
       "enum": [
@@ -574,6 +581,7 @@ Request body:
     "pincode",
     "date",
     "window",
+    "address",
     "consent"
   ],
   "additionalProperties": false
@@ -619,7 +627,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; invalid_request: the address is in another pincode (fields names address.pincode); idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -1628,13 +1636,22 @@ Razorpay's webhook: payments and refunds
     },
     "area": {
       "type": "string"
+    },
+    "address": {
+      "type": "string",
+      "enum": [
+        "saved",
+        "on_account"
+      ],
+      "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
     }
   },
   "required": [
     "state",
     "date",
     "window",
-    "area"
+    "area",
+    "address"
   ],
   "additionalProperties": false
 }
@@ -1744,6 +1761,87 @@ Razorpay's webhook: payments and refunds
   "required": [
     "error",
     "booked"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TypedAddress
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "line1": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "line2": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "locality": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    },
+    "access_notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "For the technician, from the day before the visit: gate code, parking."
+    },
+    "flat": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "floor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20
+    },
+    "tower": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "landmark": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    }
+  },
+  "required": [
+    "line1",
+    "line2",
+    "locality",
+    "city",
+    "pincode",
+    "access_notes"
   ],
   "additionalProperties": false
 }
@@ -1913,6 +2011,14 @@ Razorpay's webhook: payments and refunds
         "unknown"
       ],
       "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have."
+    },
+    "address": {
+      "type": "string",
+      "enum": [
+        "saved",
+        "on_account"
+      ],
+      "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
     }
   },
   "required": [
@@ -1921,7 +2027,8 @@ Razorpay's webhook: payments and refunds
     "window",
     "area",
     "credits",
-    "invite"
+    "invite",
+    "address"
   ],
   "additionalProperties": false
 }

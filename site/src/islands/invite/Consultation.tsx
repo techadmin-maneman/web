@@ -2,11 +2,13 @@ import { useState } from "preact/hooks";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
+import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
 import { bookConsultation, bookPublicConsultation, type ReferralConsultation } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
 import { mobileDigits } from "../../lib/phone.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
+import { AddressFieldset } from "./AddressFieldset.tsx";
 import { placeOf, type Booking } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
@@ -18,22 +20,28 @@ type BookingWindow = ReferralConsultation["window"];
 /** How far ahead the date strip reaches, from tomorrow: src/config/scheduling.ts, BOOKING_DAYS. */
 const DAYS = 14;
 
-/** Board C2: the pincode is served, so the page books a free consultation. */
+/**
+ * Board C2: the pincode is served, so the page books a free consultation. The form also takes the address the
+ * consultation is at, which no board draws, so nothing is booked without one (ADR 0081).
+ */
 export function Consultation(props: FormProps & { onBooked: (booking: Booking) => void }) {
   const form = useTurnstileForm(props.turnstileSiteKey);
   const [date, setDate] = useState(indiaTomorrow());
   const [window, setWindow] = useState<BookingWindow>("morning");
+  const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
   const [extent, setExtent] = useState<LossExtent>("crown");
   const days = dayStrip(indiaTomorrow(), DAYS);
+  const { pincode } = props.answer;
 
   function submit(event: Event) {
     const { fields } = form;
     const request = {
       name: fields.name.trim(),
       mobile: mobileDigits(fields.mobile),
-      pincode: props.answer.pincode,
+      pincode,
       date,
       window,
+      address: addressToSend(address, pincode),
       consent: true as const,
     };
     // The site's own page carries where this visit came from and where the hair loss is; the invite, the invite.
@@ -53,6 +61,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         const place = placeOf(props.answer);
         props.onBooked({ result: { credits: false, invite: "unknown", ...booked }, mobile: fields.mobile, place });
       },
+      missingParts(address).length === 0,
     );
   }
 
@@ -63,10 +72,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         {/* The site's own page is already headed with this; the invite's is not. */}
         {props.invited && <h2 class={styles.formTitle}>{consultation.title}</h2>}
         <p class={styles.formBody}>{consultation.body}</p>
-        <ForPincode
-          text={fill(consultation.forPincode, { pincode: props.answer.pincode })}
-          onChange={props.onChangePincode}
-        />
+        <ForPincode text={fill(consultation.forPincode, { pincode })} onChange={props.onChangePincode} />
       </div>
 
       <fieldset class={styles.group}>
@@ -110,6 +116,14 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
           ))}
         </div>
       </fieldset>
+
+      <AddressFieldset
+        address={address}
+        missing={form.touched ? missingParts(address) : []}
+        pincode={pincode}
+        idPrefix="invite-consultation"
+        onChange={setAddress}
+      />
 
       {!props.invited && <ExtentFieldset extent={extent} onChange={setExtent} />}
 

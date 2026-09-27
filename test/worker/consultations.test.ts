@@ -4,6 +4,10 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { confirmBooking } from "../../src/domain/bookings.ts";
+import { openSession } from "../../src/domain/sessions.ts";
+import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const VISITOR = {
@@ -11,6 +15,20 @@ const VISITOR = {
   mobile: "9810000002",
   loss_extent: "crown",
   turnstile_token: "token",
+};
+
+/** Where the consultation is, typed in full as the form takes it (ADR 0081). */
+const ADDRESS = {
+  flat: "Flat 402",
+  floor: "4",
+  tower: "Tower C",
+  line1: "Palm Grove Society",
+  line2: null,
+  landmark: "Opposite the park",
+  locality: "Sector 65",
+  city: "Gurgaon",
+  pincode: "122018",
+  access_notes: "Gate 2, visitor parking",
 };
 
 const site = (settings = {}) => appFor("local", fakeDependencies(), settings, "public");
@@ -45,7 +63,7 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { FSM_QUEUE: fsm, CRM_QUEUE: crm },
     );
 
@@ -55,6 +73,7 @@ describe("POST /api/consultation", () => {
       date: "2026-09-23",
       window: "morning",
       area: "Gurgaon South City II",
+      address: "saved",
     });
     expect(fsm.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
@@ -86,7 +105,7 @@ describe("POST /api/consultation", () => {
   it("refuses a pincode we do not serve, and a day outside the fortnight", async () => {
     await pincode("400050", "Bandra", "Mumbai", false);
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
-    const body = { ...VISITOR, date: "2026-09-23", window: "morning", consent: true };
+    const body = { ...VISITOR, date: "2026-09-23", window: "morning", consent: true, address: ADDRESS };
 
     expect((await request(site(), "/api/consultation", post({ ...body, pincode: "400050" }))).status).toBe(422);
     expect(
@@ -107,7 +126,7 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site({ selfServeBooking: false }),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true }),
+      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { FSM_QUEUE: fsm, CRM_QUEUE: crm },
     );
 
@@ -117,6 +136,7 @@ describe("POST /api/consultation", () => {
       date: "2026-09-23",
       window: "morning",
       area: "Gurgaon South City II",
+      address: "saved",
     });
     expect(fsm.sent).toEqual([]);
     expect(crm.sent).toHaveLength(1);
@@ -130,6 +150,193 @@ describe("POST /api/consultation", () => {
       requested_window: "morning",
       referral_code: null,
     });
+  });
+});
+
+// The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
+describe("the address the consultation is at", () => {
+  const book = (body: object, bindings = {}) =>
+    request(
+      site(),
+      "/api/consultation",
+      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, ...body }),
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue(), ...bindings },
+    );
+  const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
+
+  beforeEach(async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+  });
+
+  it("is asked for: a booking without one is refused, naming it, and nothing is booked", async () => {
+    const answer = await book({});
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["address"] } });
+    expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
+  });
+
+  it("is refused in a pincode other than the one checked, naming it, and nothing is booked", async () => {
+    const answer = await book({ address: { ...ADDRESS, pincode: "122017" } });
+    expect(answer.status).toBe(422);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["address.pincode"] } });
+    expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
+    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
+  });
+
+  it("becomes the person's address, which the app then shows them", async () => {
+    expect((await book({ address: ADDRESS })).status).toBe(201);
+    const person = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = '+919810000002'").first<{
+      id: string;
+    }>();
+    const session = await openSession(env.DB, {
+      kind: "client",
+      subjectId: person?.id ?? "",
+      deviceLabel: null,
+      now: NOW,
+    });
+    const app = appFor("local", fakeDependencies(), {}, "client");
+    const profile = await request(app, "/api/profile", { headers: { Cookie: `mm_app=${session}` } });
+    expect((await profile.json<{ address: unknown }>()).address).toEqual({
+      ...ADDRESS,
+      building: null,
+      place_id: null,
+    });
+  });
+
+  it("is kept with the day asked for, while self-serve booking is off", async () => {
+    const answer = await request(
+      site({ selfServeBooking: false }),
+      "/api/consultation",
+      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+    );
+    expect(await answer.json()).toMatchObject({ state: "requested" });
+    const saved = await env.DB.prepare(
+      `SELECT a.line1, a.pincode FROM addresses a JOIN people p ON p.id = a.person_id
+       WHERE p.mobile_e164 = '+919810000002' AND a.replaced_at IS NULL`,
+    ).first();
+    expect(saved).toEqual({ line1: "Palm Grove Society", pincode: "122018" });
+  });
+
+  // The form needs no login, only a number: whoever types one must not move where that person's visits go.
+  it("never replaces the address a person already has: it is kept, the visit goes to it, and the answer says so", async () => {
+    await env.DB.prepare(
+      `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id, zoho_lead_id)
+       VALUES ('p-known', ?1, '+919810000002', 'Karan Bhatia', 'contact-7', 'lead-7')`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+       VALUES ('old', 'p-known', '2026-09-01T00:00:00.000Z', 'House 12', 'Sector 45', 'Gurgaon', '122018')`,
+    ).run();
+    const fsm = fakeQueue();
+    const crm = fakeQueue();
+    const answer = await book({ address: ADDRESS }, { FSM_QUEUE: fsm, CRM_QUEUE: crm });
+
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", address: "on_account" });
+    const addresses = await env.DB.prepare(
+      "SELECT id, line1, replaced_at FROM addresses WHERE person_id = 'p-known'",
+    ).all();
+    expect(addresses.results).toEqual([{ id: "old", line1: "House 12", replaced_at: null }]);
+    // Nothing about them changed, so nothing is sent on to FSM or the CRM but the booking and its lead.
+    expect(fsm.sent).not.toContainEqual(expect.objectContaining({ update_contact_person_id: "p-known" }));
+    expect(crm.sent).not.toContainEqual(expect.objectContaining({ update_person_id: "p-known" }));
+  });
+
+  it("leaves the first address untouched when the same number books again with another", async () => {
+    const first = await book({ address: ADDRESS });
+    expect(await first.json()).toMatchObject({ state: "booked", address: "saved" });
+    // Ops cancel the first, so the number may book a consultation again.
+    await env.DB.prepare("UPDATE slot_holds SET state = 'released'").run();
+
+    const elsewhere = { ...ADDRESS, flat: "House 9", line1: "Rose Lane", locality: "Sector 45" };
+    const second = await book({ date: "2026-09-24", address: elsewhere });
+    expect(second.status).toBe(201);
+    expect(await second.json()).toMatchObject({ state: "booked", address: "on_account" });
+    const addresses = await env.DB.prepare(
+      `SELECT a.flat, a.line1, a.locality, a.replaced_at FROM addresses a JOIN people p ON p.id = a.person_id
+       WHERE p.mobile_e164 = '+919810000002'`,
+    ).all();
+    expect(addresses.results).toEqual([
+      { flat: "Flat 402", line1: "Palm Grove Society", locality: "Sector 65", replaced_at: null },
+    ]);
+  });
+
+  it("is saved for a person we know who has none, and goes on to their FSM contact and CRM lead", async () => {
+    await env.DB.prepare(
+      `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id, zoho_lead_id)
+       VALUES ('p-known', ?1, '+919810000002', 'Karan Bhatia', 'contact-7', 'lead-7')`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const fsm = fakeQueue();
+    const crm = fakeQueue();
+    const answer = await book({ address: ADDRESS }, { FSM_QUEUE: fsm, CRM_QUEUE: crm });
+
+    expect(await answer.json()).toMatchObject({ address: "saved" });
+    expect(await count("SELECT COUNT(*) AS n FROM addresses WHERE person_id = 'p-known'")).toBe(1);
+    expect(fsm.sent).toContainEqual({ update_contact_person_id: "p-known", request_id: expect.any(String) as string });
+    expect(crm.sent).toContainEqual({ update_person_id: "p-known", request_id: expect.any(String) as string });
+  });
+
+  // A contact FSM already holds for the number is linked, not added; the address saved before it was linked had no
+  // contact to go to (src/queues/fsm-sync.ts), so it goes as the link is made.
+  describe("with a contact FSM already holds for the number", () => {
+    const world = () => ({
+      ...EMPTY_FSM,
+      contacts: [{ id: "fsm-contact-9", name: "Karan Bhatia", mobile: "+919810000002", email: null }],
+      items: [{ id: "item-consult", name: "Consultation", type: "Service" as const, price: null }],
+    });
+    async function heldAndConfirmed(fsm: ReturnType<typeof createStubFsm>) {
+      const queue = fakeQueue();
+      expect((await book({ address: ADDRESS }, { FSM_QUEUE: queue })).status).toBe(201);
+      const [queued] = queue.sent as { hold_id: string }[];
+      return confirmBooking(env.DB, fsm, createStubPayments(), queued?.hold_id ?? "", NOW, { labelAsTest: true });
+    }
+
+    it("writes the address over it as it is linked", async () => {
+      const fsm = createStubFsm(world());
+      expect(await heldAndConfirmed(fsm)).toBe("booked");
+      expect(fsm.made.contacts).toEqual([]);
+      expect(fsm.made.contactUpdates).toEqual([
+        {
+          contactId: "fsm-contact-9",
+          mobile: "+919810000002",
+          address: { street1: "Palm Grove Society", street2: "Sector 65", city: "Gurgaon", pincode: "122018" },
+        },
+      ]);
+      const linked = await env.DB.prepare(
+        "SELECT fsm_contact_id FROM people WHERE mobile_e164 = '+919810000002'",
+      ).first();
+      expect(linked).toEqual({ fsm_contact_id: "fsm-contact-9" });
+    });
+
+    it("still books when FSM will not take the address, leaving the contact as it was", async () => {
+      const fsm = createStubFsm(world());
+      fsm.failNext("updateContact", "FSM answered 500");
+      expect(await heldAndConfirmed(fsm)).toBe("booked");
+      expect(fsm.made.contactUpdates).toEqual([]);
+      expect(fsm.made.visits).toHaveLength(1);
+    });
+  });
+
+  it("reaches the contact FSM is given, with its street, however the city was typed", async () => {
+    const queue = fakeQueue();
+    expect((await book({ address: { ...ADDRESS, city: "Gurugram" } }, { FSM_QUEUE: queue })).status).toBe(201);
+    const [queued] = queue.sent as { hold_id: string }[];
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-consult", name: "Consultation", type: "Service", price: null }],
+    });
+    const booked = await confirmBooking(env.DB, fsm, createStubPayments(), queued?.hold_id ?? "", NOW, {
+      labelAsTest: true,
+    });
+    expect(booked).toBe("booked");
+    expect(fsm.made.contacts).toMatchObject([
+      { city: "Gurgaon", pincode: "122018", street: { street1: "Palm Grove Society", street2: "Sector 65" } },
+    ]);
   });
 });
 
@@ -213,10 +420,15 @@ describe("POST /api/waitlist", () => {
 // A form anyone can fill in with a number (docs/decisions/0068-a-paid-hold-is-kept.md).
 describe("a number the site already knows", () => {
   const book = (body: object, queue = fakeQueue()) =>
-    request(site(), "/api/consultation", post({ ...VISITOR, pincode: "122018", consent: true, ...body }), {
-      FSM_QUEUE: queue,
-      CRM_QUEUE: fakeQueue(),
-    });
+    request(
+      site(),
+      "/api/consultation",
+      post({ ...VISITOR, pincode: "122018", consent: true, address: ADDRESS, ...body }),
+      {
+        FSM_QUEUE: queue,
+        CRM_QUEUE: fakeQueue(),
+      },
+    );
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
 
   beforeEach(async () => {
@@ -266,12 +478,13 @@ describe("a number the site already knows", () => {
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
   });
 
-  it("leaves no person or consent behind when the window has gone (ARCH-05)", async () => {
+  it("leaves no person, consent or address behind when the window has gone (ARCH-05)", async () => {
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
     const answer = await book({ date: "2026-09-23", window: "morning" });
     expect(answer.status).toBe(409);
     expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
     expect(await count("SELECT COUNT(*) AS n FROM consents")).toBe(0);
+    expect(await count("SELECT COUNT(*) AS n FROM addresses")).toBe(0);
   });
 
   it("asks ops instead, holding nothing, on a day the price book charges for a consultation (BIZ-10)", async () => {
@@ -306,7 +519,14 @@ describe("the Idempotency-Key", () => {
 
   it("answers a consultation sent again with its first answer, and books it once", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
-    const body = { ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
+    const body = {
+      ...VISITOR,
+      pincode: "122018",
+      date: "2026-09-23",
+      window: "morning",
+      consent: true,
+      address: ADDRESS,
+    };
 
     const first = await request(site(), "/api/consultation", keyed(body, "key-consult-0001"), bindings());
     const again = await request(site(), "/api/consultation", keyed(body, "key-consult-0001"), bindings());
@@ -333,7 +553,14 @@ describe("the Idempotency-Key", () => {
 
   it("refuses the key with a different submission, and frees it when the submission is refused", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
-    const body = { ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
+    const body = {
+      ...VISITOR,
+      pincode: "122018",
+      date: "2026-09-23",
+      window: "morning",
+      consent: true,
+      address: ADDRESS,
+    };
     await request(site(), "/api/consultation", keyed(body, "key-consult-0002"), bindings());
 
     const changed = { ...body, window: "evening" };
