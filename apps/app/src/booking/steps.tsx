@@ -44,8 +44,8 @@ export const useHoldLeft = (hold: Hold): number => useSecondsLeft(Date.parse(hol
 export const paysNothing = (hold: Hold): boolean => hold.price.amount === 0 || hold.credit !== null;
 
 /**
- * "Step 1 of 3", as the boards number the date and the window; one on, of four, once the sheet has asked for the
- * address first (ADR 0079).
+ * "Step 1 of 3" and "Step 2 of 3", as the boards number the date and the window; "Step 2 of 4" and "Step 3 of 4"
+ * once the sheet has asked for the address first (ADR 0079).
  */
 const stepOf = (step: number, addressFirst: boolean): string =>
   addressFirst ? booking.step(step + 1, 4) : booking.step(step, 3);
