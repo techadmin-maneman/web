@@ -3,19 +3,16 @@
 // Accepted while the render is still running, not only once it is ready: the
 // design shows the gate after 20 seconds, and renders take 30 to 180, so the
 // lead is captured the moment the gate is submitted. The person gets a
-// session (the mm_tryon cookie) to see the result.
-//
-// A try-on lead does not make the person contactable: the gate's consent
-// permits sending this result and nothing else (docs/decisions/0012-zoho-sync.md).
+// session (the mm_tryon cookie) to see the result. What a claim writes is
+// src/domain/tryon-claims.ts.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import { CURRENT_NOTICE } from "../config/notices.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
-import { TRYON_SESSION_TTL_MS } from "../config/tryon.ts";
 import { takeOne } from "../domain/rate-limit.ts";
-import { loadJob, loadSession, recordEvent, type JobRow } from "../domain/tryon.ts";
+import { loadJob, loadSession, type JobRow } from "../domain/tryon.ts";
+import { reclaimJob, recordClaim, reserveJob } from "../domain/tryon-claims.ts";
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { setSessionCookie } from "../http/tryon-session.ts";
@@ -127,84 +124,18 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   });
   if (!withinLimit) return { ok: false, status: 429, code: "rate_limited" };
 
-  // Reserve the job first, so two claims at once cannot both create a lead.
-  const reserved = await db
-    .prepare("UPDATE tryon_jobs SET claimed_at = ?2 WHERE id = ?1 AND claimed_at IS NULL RETURNING id")
-    .bind(job.id, now.toISOString())
-    .first();
-  if (reserved === null) return { ok: false, status: 409, code: "job_not_claimable" };
-
-  const leadId = crypto.randomUUID();
-  const sessionId = crypto.randomUUID();
-  const messageId = crypto.randomUUID();
-  const at = now.toISOString();
-  const personId = "(SELECT id FROM people WHERE mobile_e164 = ?)";
+  if (!(await reserveJob(db, job.id, now))) return { ok: false, status: 409, code: "job_not_claimable" };
   const visitor = await visitorOf(c);
-  const attribution = request.attribution ?? {};
-  // The result may already be ready; then the message can go straight away.
-  const messageState = job.state === "ready" ? "queued" : "waiting";
-
-  try {
-    await db.batch([
-      // A returning person keeps their ID and whether they are contactable.
-      db
-        .prepare(
-          `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?, ?, ?, ?, 0)
-           ON CONFLICT (mobile_e164) DO UPDATE SET name = excluded.name`,
-        )
-        .bind(crypto.randomUUID(), at, mobileE164, request.name),
-      db
-        .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-           VALUES (?, ${personId}, 'result_delivery', ?, 1, ?, ?)`,
-        )
-        .bind(crypto.randomUUID(), mobileE164, CURRENT_NOTICE.result_delivery, at, visitor.ipHash),
-      // The photo consent was given before the upload; it is recorded now that we know who gave it.
-      db
-        .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-           VALUES (?, ${personId}, 'tryon_photo', ?, 1, ?, ?)`,
-        )
-        .bind(crypto.randomUUID(), mobileE164, job.photo_consent_version, job.photo_consent_at, job.ip_hash),
-      db
-        .prepare(
-          `INSERT INTO leads (id, person_id, created_at, source, loss_extent, utm_source, utm_medium, utm_campaign,
-             utm_content, gclid, fbclid, referrer, landing_path, request_id)
-           VALUES (?, ${personId}, ?, 'tryon', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        )
-        .bind(
-          leadId,
-          mobileE164,
-          at,
-          job.stage,
-          attribution.utm_source ?? null,
-          attribution.utm_medium ?? null,
-          attribution.utm_campaign ?? null,
-          attribution.utm_content ?? null,
-          attribution.gclid ?? null,
-          attribution.fbclid ?? null,
-          attribution.referrer ?? null,
-          attribution.landing_path ?? null,
-          requestId,
-        ),
-      db
-        .prepare(`INSERT INTO tryon_sessions (id, person_id, created_at, expires_at) VALUES (?, ${personId}, ?, ?)`)
-        .bind(sessionId, mobileE164, at, new Date(now.getTime() + TRYON_SESSION_TTL_MS).toISOString()),
-      db
-        .prepare(`UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, session_id = ? WHERE id = ?`)
-        .bind(mobileE164, leadId, sessionId, job.id),
-      db
-        .prepare(
-          `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, queued_at)
-           VALUES (?, ?, ${personId}, 'tryon_result', ?, ?, ?)`,
-        )
-        .bind(messageId, at, mobileE164, job.id, messageState, messageState === "queued" ? at : null),
-      recordEvent(db, "tryon_claimed", leadId, { job_id: job.id, job_state: job.state }, now),
-    ]);
-  } catch (error) {
-    await db.prepare("UPDATE tryon_jobs SET claimed_at = NULL WHERE id = ?1").bind(job.id).run();
-    throw error;
-  }
+  const claimed = await recordClaim(db, {
+    job,
+    mobileE164,
+    name: request.name,
+    attribution: request.attribution ?? {},
+    ipHash: visitor.ipHash,
+    requestId,
+    now,
+  });
+  const { leadId, messageId } = claimed;
   log.info("tryon_claimed", { lead_id: leadId, job_id: job.id, job_state: job.state });
 
   // Both are safe in D1 if sending fails: the sweeper re-enqueues pending leads and queued messages.
@@ -213,7 +144,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   } catch (error) {
     log.warn("crm_enqueue_failed", { lead_id: leadId, error });
   }
-  if (messageState === "queued") {
+  if (claimed.messageState === "queued") {
     try {
       await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
     } catch (error) {
@@ -224,7 +155,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   return {
     ok: true,
     body: { lead_id: leadId, whatsapp_copy: promisesCopy(settings.messaging, mobileE164) },
-    sessionId,
+    sessionId: claimed.sessionId,
   };
 }
 
@@ -232,31 +163,14 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
 const promisesCopy = (messaging: MessagingSettings, mobileE164: string): boolean =>
   messaging.enabled && onAllowlist(messaging, mobileE164);
 
-/**
- * A job already claimed, claimed again: by the same number it gets a fresh
- * session (the first cookie may have been lost); by another it is refused,
- * so a job ID alone never opens someone else's result.
- */
+/** A job already claimed, claimed again: a fresh session for its own number, refused for any other. */
 async function reclaim(c: Context<AppEnv>, job: JobRow, mobileE164: string): Promise<Outcome> {
-  const db = c.env.DB;
-  const now = c.var.deps.now();
-  const owner = await db
-    .prepare("SELECT id FROM people WHERE id = ?1 AND mobile_e164 = ?2")
-    .bind(job.person_id, mobileE164)
-    .first<{ id: string }>();
-  if (owner === null || job.lead_id === null) return { ok: false, status: 409, code: "job_not_claimable" };
-
-  const sessionId = crypto.randomUUID();
-  await db.batch([
-    db
-      .prepare("INSERT INTO tryon_sessions (id, person_id, created_at, expires_at) VALUES (?1, ?2, ?3, ?4)")
-      .bind(sessionId, owner.id, now.toISOString(), new Date(now.getTime() + TRYON_SESSION_TTL_MS).toISOString()),
-    db.prepare("UPDATE tryon_jobs SET session_id = ?1 WHERE id = ?2").bind(sessionId, job.id),
-  ]);
+  const reclaimed = await reclaimJob(c.env.DB, { job, mobileE164, now: c.var.deps.now() });
+  if (reclaimed === null) return { ok: false, status: 409, code: "job_not_claimable" };
   return {
     ok: true,
-    body: { lead_id: job.lead_id, whatsapp_copy: promisesCopy(c.var.config.settings.messaging, mobileE164) },
-    sessionId,
+    body: { lead_id: reclaimed.leadId, whatsapp_copy: promisesCopy(c.var.config.settings.messaging, mobileE164) },
+    sessionId: reclaimed.sessionId,
   };
 }
 
