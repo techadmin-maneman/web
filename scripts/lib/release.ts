@@ -86,11 +86,17 @@ function servingSplit(target: Target): Split | null {
   return DeploymentStatus.parse(JSON.parse(output)).versions;
 }
 
-/** The version serving all traffic, or "" for a Worker never deployed that need not be (see mustExist). */
+/**
+ * The version serving all traffic, or "" for an app whose surface is not switched on there (see mustExist).
+ * Such an app is left alone whether or not it was ever deployed: its host serves nothing yet, and its
+ * production build refuses copy still owed (scripts/lib/content-gate.ts), so shipping it would fail a
+ * release that did not need it. `mm-app-production` was bootstrapped on 22 September 2026, before its
+ * surface was switched on (docs/open-points.md, item 152).
+ */
 export function currentVersion(target: Target): string {
+  if (!mustExist(target.worker, target.environment)) return "";
   const split = servingSplit(target);
   if (split === null) {
-    if (!mustExist(target.worker, target.environment)) return "";
     throw new Error(
       `${deployedName(target)} is not on the account, but it serves a host there; check the token and the account (docs/runbook.md)`,
     );
@@ -154,8 +160,8 @@ export function deploySplit(target: Target, splits: readonly string[], message: 
 }
 
 /**
- * Uploads a version and sends it all traffic, returning its ID. An app that is
- * not deployed yet, and need not be, is left alone: null. Its first deploy is a
+ * Uploads a version and sends it all traffic, returning its ID. An app whose
+ * surface is not switched on there is left alone: null. Its first deploy is a
  * bootstrap (docs/runbook.md, step 11).
  */
 export function ship(target: Target, tag: string, message: string): string | null {

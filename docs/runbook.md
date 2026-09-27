@@ -579,7 +579,7 @@ Production runs 268eaa4, of 21 September 2026. The next release carries every mi
 
 1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-fsm-sync-prod`, `mm-prod-client-photos` and `mm-prod-referral-cards` (open points 85 and 86). Then check every bucket with `node --env-file=.env.cf-read scripts/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
 2. **Vars and secrets.** `npm run check:config` holds each environment to 64 vars and secrets together (ADR 0009, rule 6). A secret the switched-on providers need must be set before the release (step 7): the Worker refuses to start without it, and Cloudflare refuses the upload.
-3. **The apps.** The release passes over an app whose surface is off in production and that has no Worker there; mm-ops and mm-tech have none yet (step 11).
+3. **The apps.** The release passes over an app whose surface is off in production, whether or not it has a Worker there: `mm-app-production` was bootstrapped on 22 September 2026, and until 27 September 2026 the release shipped it and its production build refused the copy still owed (`docs/open-points.md`, item 152). An app is shipped from the release that switches its surface on (step 11).
 4. **After the release.** Attach the new consumer with `npm run apply-triggers -- --env production` and check it (step 9). Then the contract step ADR 0070 holds back, dropping the old Zoho token tables, may be merged (`docs/migrations.md`).
 
 ## The CI runner
