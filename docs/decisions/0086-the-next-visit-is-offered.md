@@ -1,6 +1,6 @@
 # 0086. The next visit is offered, and the client books it
 
-- Status: accepted
+- Status: accepted; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), whose services the visit offered now names
 - Date: 2026-09-27
 - Amends [0051](0051-booking-from-the-site.md), whose form booked a consultation alone, [0045](0045-self-serve-booking.md), whose horizon was the strip's fortnight, [0061](0061-ops-editable-inputs.md), whose register gains its sixth input and a key's own bounds, and [0071](0071-what-ops-see-before-a-setting-changes.md), whose check before a change now stands before a rule is set as well as a price; follows [0047](0047-visit-messages.md) for the reminder, [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) for the request, [0072](0072-ops-clients-and-queues.md) and [0074](0074-hand-offs-and-messages.md) for the Tasks board, and [0079](0079-an-address-before-a-slot.md); records the owner's rulings of 27 September 2026, ADR 0025's items 68, 69 and 70, and their answers on booking and to open points 46, 61 and 70 (`docs/owner-answers-2026-09-27.md`)
 
@@ -123,7 +123,7 @@ The rules are `src/policy/next-visit.ts`, `src/policy/home-prompt.ts` and the se
 ## What this does not do
 
 - **It books nothing for the client.** Nothing is held until they tap, and the technician books nothing.
-- **It does not list every service of a kind.** The sheet books the kind it is opened at; the services within each kind that ops set up are ADR 0085's, which the sheet's steps follow.
+- **It does not list every service of a kind.** The sheet books the kind it is opened at; the services within each kind that ops set up are ADR 0085's, which the sheet's steps follow. **Amended 27 September 2026 ([ADR 0085](0085-services-ops-can-edit.md)):** the visit offered books one of ADR 0085's services, not a bare kind. `booking.next`, the `next_visit` prompt and the `replacement_due` prompt each carry a `tier`: the service the client's last completed visit of that kind was, while it is still offered and priced on the day offered, else the kind's first offered service in the console's order (`serviceToOffer`, `src/domain/services.ts`). BookNext, Home's "Book it for then" and "Book the replacement", and the page on a replacement pass it to the sheet, which opens with that service chosen; where the kind offers more than one, the client still sees them all and may pick another, and the sheet then opens on the day and window offered, as before. The day and window offered are worked out as this record says.
 - **It does not send a second reminder**, nor one about a first fit asked for: ops follow a fit up from the Tasks board.
 - **It does not give the data export the requests**, as it does not give it consultation requests.
 - **It does not move the site's consultation strip** past its fortnight.

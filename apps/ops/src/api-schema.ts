@@ -2204,7 +2204,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description invalid_request: fields names what was refused */
+                /** @description invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2215,6 +2215,75 @@ export interface paths {
                 };
                 /** @description access_required */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/prices/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct a price still to come: take it back and set its replacement, from any day from today, at once */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PriceCorrection"];
+                };
+            };
+            responses: {
+                /** @description The book as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            prices: components["schemas"]["Price"][];
+                        };
+                    };
+                };
+                /** @description invalid_request: fields names what was refused, was_valid_from when that row applies today or applied before; service_retired: the service is retired by the new day */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the book holds no such row to correct */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2378,6 +2447,501 @@ export interface paths {
                 };
                 /** @description access_required */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every service, offered or retired, with every price it has had and is to have, and the late fees */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every service as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsServices"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add a service to a kind of visit. Clients see it once it has a price */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServiceAdd"];
+                };
+            };
+            responses: {
+                /** @description Every service as it now stands */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsServices"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no service of that kind has that code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services/{kind}/{tier}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rename a service. Its code stays, and so do its prices and what was sold under them */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                    tier: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServiceRename"];
+                };
+            };
+            responses: {
+                /** @description Every service as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsServices"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no service of that kind has that code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services/{kind}/{tier}/length": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** How long a service is booked for, from now on. A visit held or booked before keeps its own */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                    tier: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServiceLength"];
+                };
+            };
+            responses: {
+                /** @description Every service as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsServices"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no service of that kind has that code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services/{kind}/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A kind's services in another order, as the console and the app list them */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServiceOrder"];
+                };
+            };
+            responses: {
+                /** @description Every service as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsServices"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no service of that kind has that code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services/{kind}/{tier}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop offering a service from a day, today or later. Nothing already sold changes */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                    tier: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServiceRetire"];
+                };
+            };
+            responses: {
+                /** @description Every service as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsServices"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no service of that kind has that code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services/{kind}/{tier}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Offer a retired service again, or take back a retirement still to come */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                    tier: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every service as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsServices"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no service of that kind has that code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2706,7 +3270,7 @@ export interface paths {
                         "application/json": components["schemas"]["Consumables"];
                     };
                 };
-                /** @description invalid_request: fields names tier for a service the price book does not price, or items.N.code for a consumable nobody added or one named twice */
+                /** @description invalid_request: fields names tier for a service the console does not hold, or items.N.code for a consumable nobody added or one named twice */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -3215,7 +3779,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -4075,11 +4639,30 @@ export interface components {
              * @enum {string}
              */
             item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
+            /** @description For a visit, the code of one of its kind's services; for a late fee, standard. */
             tier: string;
             amount_ex_gst: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
+        };
+        PriceCorrection: {
+            /**
+             * @description A kind of visit, or one of the two late fees.
+             * @enum {string}
+             */
+            item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
+            /** @description For a visit, the code of one of its kind's services; for a late fee, standard. */
+            tier: string;
+            amount_ex_gst: number;
+            gst_percent: number;
+            /** Format: date */
+            valid_from: string;
+            /**
+             * Format: date
+             * @description The day the price still to come applies from.
+             */
+            was_valid_from: string;
         };
         PriceWithdrawal: {
             /** @enum {string} */
@@ -4107,6 +4690,76 @@ export interface components {
                 /** @description A better name for the area than its post office's. Left out, the name stays. */
                 area?: string;
             }[];
+        };
+        OpsServices: {
+            /** Format: date */
+            today: string;
+            /** @description The four kinds, in their order, each with the length a new service of it starts at. */
+            kinds: {
+                /** @enum {string} */
+                kind: "consultation" | "first_fit" | "service" | "replacement";
+                minutes: number;
+            }[];
+            services: components["schemas"]["OpsService"][];
+            /** @description The two late fees, each one figure for its kind of visit, with every price it has had. */
+            late_fees: {
+                /** @enum {string} */
+                kind: "consultation" | "first_fit" | "service" | "replacement";
+                /** @enum {string} */
+                item: "late_fee_first_fit" | "late_fee_replacement";
+                prices: components["schemas"]["Price"][];
+            }[];
+            min_minutes: number;
+            max_minutes: number;
+            max_amount_ex_gst: number;
+            max_gst_percent: number;
+        };
+        OpsService: {
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description Its code within its kind, which the price book prices it by; never changed. */
+            tier: string;
+            name: string;
+            /** @description How long FSM books it for, and the time the day keeps. */
+            minutes: number;
+            sort: number;
+            /** @description India's date from which clients no longer see it or book it; null while it is offered. */
+            retired_date: string | null;
+            /** @description Offered today: not retired by today. Priced or not. */
+            offered: boolean;
+            /** @description Its item in FSM's catalogue, once found by its name or made; null until then. */
+            fsm_item_id: string | null;
+            updated_by: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** @description Every price it has had and is to have, newest first. */
+            prices: components["schemas"]["Price"][];
+        };
+        ServiceAdd: {
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            name: string;
+            /** @description Its code; left out, made from its name, e.g. premium. */
+            tier?: string;
+            /** @description Left out, its kind's length. */
+            minutes?: number;
+        };
+        ServiceRename: {
+            name: string;
+        };
+        ServiceLength: {
+            minutes: number;
+        };
+        ServiceOrder: {
+            /** @description Every one of the kind's codes, once. */
+            tiers: string[];
+        };
+        ServiceRetire: {
+            /**
+             * Format: date
+             * @description India's date from which clients no longer see it.
+             */
+            from: string;
         };
         Consumables: {
             /** @description Every consumable, retired ones too, by name. */
@@ -4145,11 +4798,15 @@ export interface components {
                 name: string | null;
             };
         };
-        /** @description A service the price book prices: a kind of visit at a tier. */
+        /** @description A service the console holds: a kind of visit at a tier (docs/decisions/0085-services-ops-can-edit.md). */
         ServiceUse: {
             /** @enum {string} */
             visit_type: "consultation" | "first_fit" | "service" | "replacement";
             tier: string;
+            /** @description The service's name, as the console names it. */
+            name: string;
+            /** @description India's date it is retired from, for a service no longer offered: a visit sold before is still done, and reads what it uses. Null while it is offered. */
+            retired_date: string | null;
             /** @description What it is expected to use, by the consumable's name. */
             expected: {
                 code: string;

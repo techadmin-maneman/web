@@ -24,6 +24,7 @@ import { addDays, indiaDate } from "../lib/india-time.ts";
 import { homePromptOf } from "../policy/home-prompt.ts";
 import { lastBookableDay, type NextVisitDays } from "../policy/next-visit.ts";
 import type { NextOffer } from "./next-visit.ts";
+import { serviceToOffer } from "./services.ts";
 import { DAY_MS } from "../lib/durations.ts";
 
 export type HomePrompt =
@@ -31,6 +32,8 @@ export type HomePrompt =
   | {
       readonly kind: "next_visit";
       readonly type: "service" | "replacement";
+      /** The service of its kind it offers (NextOffer.tier). */
+      readonly tier: string;
       /** India's day it is offered on: the day it falls due, or tomorrow once that has passed. */
       readonly date: string;
       readonly window: BookingWindow | null;
@@ -38,6 +41,8 @@ export type HomePrompt =
   | {
       readonly kind: "replacement_due";
       readonly month: string;
+      /** The replacement service offered: the client's last one while offered, else the first (serviceToOffer). */
+      readonly tier: string;
       /** The month begins within how far ahead a visit may be booked, so the replacement can be booked now. */
       readonly bookable: boolean;
     }
@@ -105,11 +110,14 @@ export async function homePrompt(
     case "address":
       return { kind };
     case "next_visit":
-      return next === null ? null : { kind, type: next.type, date: next.date, window: next.window };
+      return next === null ? null : { kind, type: next.type, tier: next.tier, date: next.date, window: next.window };
     case "replacement_due": {
       const month = (row.due_on ?? "").slice(0, 7);
       const tomorrow = addDays(indiaDate(now), 1);
-      return { kind, month, bookable: `${month}-01` <= lastBookableDay(tomorrow, days) };
+      // Offered from the month it falls due, or from tomorrow once that month has begun.
+      const from = `${month}-01` > tomorrow ? `${month}-01` : tomorrow;
+      const tier = await serviceToOffer(db, personId, "replacement", from);
+      return { kind, month, tier, bookable: `${month}-01` <= lastBookableDay(tomorrow, days) };
     }
     case "invoice_ready":
       return row.invoiced_id === null || row.invoiced_start === null

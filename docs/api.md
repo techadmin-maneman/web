@@ -72,7 +72,7 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
-**503**: unavailable: the book lacks one of them, so the site shows its own
+**503**: unavailable: the book lacks a standard one of them, so the site shows its own
 
 ```json
 {
@@ -1297,7 +1297,10 @@ Razorpay's webhook: payments and refunds
             "fsm_refused",
             "fsm_partly",
             "too_early_to_close",
-            "no_service_area"
+            "no_service_area",
+            "service_exists",
+            "last_of_kind",
+            "service_retired"
           ]
         },
         "request_id": {
@@ -1417,7 +1420,7 @@ Razorpay's webhook: payments and refunds
       "enum": [
         "standard"
       ],
-      "description": "The one tier the price book holds (ADR 0025, item 35)."
+      "description": "The tier of the three figures below: each kind's standard."
     },
     "first_fit": {
       "$ref": "#/components/schemas/Price"
@@ -1427,6 +1430,13 @@ Razorpay's webhook: payments and refunds
     },
     "replacement": {
       "$ref": "#/components/schemas/Price"
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/PublishedService"
+      },
+      "description": "Every service offered and priced today, a kind at a time, in the console's order."
     }
   },
   "required": [
@@ -1434,7 +1444,8 @@ Razorpay's webhook: payments and refunds
     "tier",
     "first_fit",
     "service",
-    "replacement"
+    "replacement",
+    "services"
   ],
   "additionalProperties": false
 }
@@ -1462,6 +1473,46 @@ Razorpay's webhook: payments and refunds
     "amount_ex_gst",
     "amount",
     "gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PublishedService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "description": "Its code within its kind: standard, premium, or another."
+    },
+    "name": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "integer"
+    },
+    "price": {
+      "$ref": "#/components/schemas/Price"
+    }
+  },
+  "required": [
+    "type",
+    "tier",
+    "name",
+    "minutes",
+    "price"
   ],
   "additionalProperties": false
 }
@@ -1725,7 +1776,10 @@ Razorpay's webhook: payments and refunds
             "fsm_refused",
             "fsm_partly",
             "too_early_to_close",
-            "no_service_area"
+            "no_service_area",
+            "service_exists",
+            "last_of_kind",
+            "service_retired"
           ]
         },
         "request_id": {

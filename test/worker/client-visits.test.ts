@@ -280,7 +280,13 @@ describe("GET /api/me's one prompt", () => {
     await signIn();
     await giveAddress();
     await fitPiece("2027-03-09");
-    expect(await prompt()).toEqual({ kind: "next_visit", type: "service", date: "2026-10-10", window: "morning" });
+    expect(await prompt()).toEqual({
+      kind: "next_visit",
+      type: "service",
+      tier: "standard",
+      date: "2026-10-10",
+      window: "morning",
+    });
   });
 
   it("then names the month the piece in wear falls due, once the next visit is booked", async () => {
@@ -289,7 +295,7 @@ describe("GET /api/me's one prompt", () => {
     await giveAddress();
     await fitPiece("2027-03-09");
     // March is past the 45 days a visit may be booked ahead, so the replacement cannot be booked yet.
-    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2027-03", bookable: false });
+    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2027-03", tier: "standard", bookable: false });
   });
 
   it("offers to book the replacement once its month is within reach, and never while one is booked", async () => {
@@ -298,7 +304,7 @@ describe("GET /api/me's one prompt", () => {
     await giveAddress();
     await fitPiece("2026-10-05");
     // A service visit is booked, and October is within the 45 days a visit may be booked ahead.
-    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2026-10", bookable: true });
+    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2026-10", tier: "standard", bookable: true });
 
     // The replacement is booked: Home's card shows it, and the prompt no longer offers a second.
     await mirror([

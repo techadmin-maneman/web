@@ -38,7 +38,7 @@ export const shell = {
     "number-changes": "Number changes",
     settings: "Settings",
   },
-  /** The browser tab's title: "Prices · Settings · Mane Man operations". */
+  /** The browser tab's title: "Services and prices · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
   /**
    * PLACEHOLDER: who is signed in, where board A1 draws "AK" in a box at the
@@ -1209,10 +1209,11 @@ export const numberChanges = {
 export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
-  // PLACEHOLDER: the last two tabs' names; no board draws them (docs/decisions/0087-consumables-and-stock.md).
+  // PLACEHOLDER: the prices tab holds the services too (docs/decisions/0085-services-ops-can-edit.md), and no board
+  // draws the last two tabs' names (docs/decisions/0087-consumables-and-stock.md).
   tabs: {
     rules: "Rules",
-    prices: "Prices",
+    prices: "Services and prices",
     area: "Service area",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
@@ -1272,79 +1273,145 @@ export const settings = {
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
   },
-  prices: {
-    title: "Prices",
-    note: "A price applies from the day you give it and never before, so nothing already invoiced moves.",
-    columns: ["Item", "Tier", "Before GST", "GST", "From", "State"],
-    /** What the book prices, as the rest of the console names the visits. */
-    items: {
-      consultation: "Consultation",
-      first_fit: "First fit",
-      service: "Service visit",
-      replacement: "Replacement",
+  /**
+   * PLACEHOLDER, every line of it: no board draws the services (docs/decisions/0085-services-ops-can-edit.md). A kind
+   * of visit is code; the services within it are ops', each named, timed, priced, ordered and retired from a day
+   * here, and FSM's catalogue follows each by its own item. What a price or a change was is shown beside what it will
+   * be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+   */
+  services: {
+    title: "Services and prices",
+    note:
+      "What clients can book, kind by kind. A price applies from the day you give it and never before, so nothing " +
+      "already sold moves. Each service reaches FSM's catalogue as its own item.",
+    /** The four kinds, as the rest of the console names them. */
+    kinds: dispatch.typeNames,
+    /** "180 minutes · code premium": how long it is held and booked for, and what the price book prices it by. */
+    facts: (minutes: number, tier: string) => `${String(minutes)} minutes · code ${tier}`,
+    fsm: { linked: "In FSM's catalogue", notYet: "Not found in FSM's catalogue yet" },
+    offered: "Offered",
+    retiring: (from: string) => `Clients stop seeing it from ${from}`,
+    retired: (from: string) => `Retired from ${from}`,
+    /** Under a service, what it costs today, and what it will from a later day. */
+    now: (price: string, since: string) => `Now ${price}, since ${since}.`,
+    unpriced: "No price yet, so clients do not see it.",
+    toCome: (price: string, from: string) => `${price} from ${from}`,
+    /** "Rs. 2,000 + 18% GST": a price as the check compares two. */
+    price: (rupees: string, gst: number) => `${rupees} + ${String(gst)}% GST`,
+    history: (count: number) => (count === 1 ? "1 earlier price" : `${String(count)} earlier prices`),
+    historyCaption: (name: string) => `Earlier prices of ${name}`,
+    historyColumns: ["Before GST", "GST", "From"],
+    percent: (value: number) => `${String(value)}%`,
+    /** The two late fees, each one figure for its kind, beside its kind's services. */
+    lateFees: {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
     } as Readonly<Record<string, string>>,
-    inForce: "In force",
-    scheduled: "To come",
-    spent: "Past",
-    percent: (value: number) => `${String(value)}%`,
-    /** "Rs. 2,000 + 18% GST": a price as the confirmation compares two. */
-    price: (rupees: string, gst: number) => `${rupees} + ${String(gst)}% GST`,
+    lateFeeNote: "Charged for moving or cancelling inside 24 hours, whichever of the kind's services it is.",
+    actions: {
+      price: "Change price",
+      correct: "Correct",
+      takeBack: "Take back",
+      rename: "Rename",
+      length: "Change length",
+      retire: "Retire",
+      restore: "Restore",
+      up: "Move up",
+      down: "Move down",
+      add: (kind: string) => `Add a service to ${kind}`,
+    },
+    /** Each button named for a screen reader with what it acts on. */
+    labels: {
+      price: (name: string) => `Change the price of ${name}`,
+      correct: (name: string, from: string) => `Correct the ${name} price from ${from}`,
+      takeBack: (name: string, from: string) => `Take back the ${name} price from ${from}`,
+      rename: (name: string) => `Rename ${name}`,
+      length: (name: string) => `Change the length of ${name}`,
+      retire: (name: string) => `Retire ${name}`,
+      restore: (name: string) => `Restore ${name}`,
+      up: (name: string) => `Move ${name} up`,
+      down: (name: string) => `Move ${name} down`,
+    },
     form: {
-      title: "Set a price",
-      item: "Item",
-      tier: "Tier",
-      /** The last choice under Tier: pricing a kind of base the book has never held (ADR 0061). */
-      newTier: "A new tier",
-      newTierName: "The new tier's name",
-      newTierHint: "Small letters, digits and _, starting with a letter: lace, or mono_base.",
-      /** Under the item and tier, what they cost today, which the boxes below start from. */
-      now: (price: string, since: string) => `Now ${price}, since ${since}.`,
-      none: "Nothing is priced for this tier yet.",
+      priceTitle: (name: string) => `A new price for ${name}`,
+      correctTitle: (name: string, from: string) => `Correct the ${name} price from ${from}`,
       amount: "Price before GST, in rupees",
       amountHint: (max: string) => `Whole rupees, up to ${max}.`,
       gst: "GST",
       gstHint: (max: number) => `A whole percentage, 0 to ${String(max)}.`,
       from: "Applies from",
       fromHint: "Today or a day after it.",
-      save: "Set this price",
-      saving: "Setting",
-      saved: "The price is set.",
-      /** The check before anything is sent: what the item costs now, and what it will. */
-      confirm: {
-        title: "Check the change",
-        change: (item: string, tier: string, was: string, now: string, from: string) =>
-          `${item}, ${tier}: ${was} → ${now}, from ${from}.`,
-        nothing: "nothing",
-        gstChanges: (was: number, now: number) => `GST changes from ${String(was)}% to ${String(now)}%.`,
-        sameDay: "A price is already set from that day. This replaces it.",
-        send: "Set this price",
-        back: "Change it",
-      },
+      setPrice: "Set this price",
+      renameTitle: (name: string) => `Rename ${name}`,
+      name: "Name",
+      nameHint: "What clients, ops and FSM's catalogue call it. A letter or a digit first.",
+      lengthTitle: (name: string) => `The length of ${name}`,
+      minutes: "Length, in minutes",
+      minutesHint: (min: number, max: number) =>
+        `Whole minutes, ${String(min)} to ${String(max)}. The day keeps this long for each visit.`,
+      retireTitle: (name: string) => `Retire ${name}`,
+      retireFrom: "Clients stop seeing it from",
+      retireHint: "Today or a day after it. Visits already sold stay as they were sold.",
+      addTitle: (kind: string) => `A new service of ${kind}`,
+      code: "Code",
+      codeHint: "The price book prices the service by it, and it never changes. Made from the name.",
+      next: "Check the change",
+      cancel: "Cancel",
     },
-    withdraw: {
-      button: "Take back",
-      label: (item: string, from: string) => `Take back the ${item} price from ${from}`,
-      question: (from: string) => `Take back the price from ${from}? The price before it goes on applying.`,
-      confirm: "Take it back",
+    /** The check before anything is sent: what it is now, and what it will be. */
+    check: {
+      title: "Check the change",
+      price: (name: string, was: string, now: string, from: string) => `${name}: ${was} → ${now}, from ${from}.`,
+      correct: (name: string, was: string, wasFrom: string, now: string, from: string) =>
+        `${name}: ${was} from ${wasFrom} → ${now} from ${from}.`,
+      nothing: "nothing",
+      gstChanges: (was: number, now: number) => `GST changes from ${String(was)}% to ${String(now)}%.`,
+      sameDay: "A price is already set from that day. This replaces it.",
+      rename: (was: string, now: string, tier: string) =>
+        `${was} → ${now}. Its code stays ${tier}, and with it every price it has and every visit sold.`,
+      length: (name: string, was: number, now: number) =>
+        `${name}: ${String(was)} → ${String(now)} minutes. A visit held or booked before keeps its own length.`,
+      retire: (name: string, from: string) =>
+        `Clients stop seeing ${name} from ${from}. Visits already sold stay as they were sold.`,
+      restore: (name: string) => `Offer ${name} again. Its prices are as they were.`,
+      order: (kind: string, was: string, now: string) => `${kind}: ${was} → ${now}.`,
+      add: (kind: string, name: string, minutes: number, tier: string) =>
+        `Add ${name} to ${kind}: ${String(minutes)} minutes, code ${tier}. Clients see it once it has a price.`,
+      takeBack: (from: string) => `Take back the price from ${from}? The price before it goes on applying.`,
+      send: "Save it",
+      back: "Change it",
+      takeBackConfirm: "Take it back",
       keep: "Keep it",
-      taking: "Taking it back",
-      done: "The price is taken back.",
     },
-    /** A refusal names the box it came from (src/routes/ops-settings.ts); these are said of each. */
+    saving: "Saving",
+    done: {
+      price: "The price is set.",
+      takenBack: "The price is taken back.",
+      saved: "Saved.",
+    },
+    /** A refusal names the box it came from (src/routes/ops-services.ts, ops-settings.ts); these are said of each. */
     errors: {
-      item: "The book does not price that item. Nothing was changed.",
-      tier: "A tier's name is small letters, digits and _, starting with a letter. Nothing was changed.",
+      tier: "No service of this kind has that code, or a code cannot be made from that name. Nothing was changed.",
+      name: "A name starts with a letter or a digit, runs from 2 to 60 characters, and opens no formula. Nothing was changed.",
+      minutes: "A length is whole minutes, inside the range under the field. Nothing was changed.",
+      retired_date:
+        "A service retires from today or a day after it, and one already retired is restored first. Nothing was changed.",
+      order: "The order has changed since the page was read. Reload to see it as it stands.",
       amount_ex_gst: "A price is in whole rupees, inside the range under the field. Nothing was changed.",
       gst_percent: "GST is a whole percentage, inside the range under the field. Nothing was changed.",
       valid_from: "A price applies from today or a day after it. Nothing was changed.",
-      not_found: "That price is no longer in the book. The table now shows it as it stands.",
+      was_valid_from: "That price applies already, so it stays in the book.",
+      service_exists: "Another service already has that name, or this kind that code. Nothing was changed.",
+      last_of_kind:
+        "Each kind keeps one service that is never retired and has a price, so clients can always book it. Add and " +
+        "price the one that replaces it first.",
+      service_retired: "The service is retired by that day, so it takes no price from then. Nothing was changed.",
+      not_found: "That is no longer in the console. Reload to see it as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
     /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
-    withdrawErrors: {
+    takeBackErrors: {
       valid_from: "That price applies already, so it stays in the book.",
     } as Readonly<Record<string, string>>,
   },
@@ -1517,8 +1584,9 @@ export const settings = {
       title: "What each service uses",
       note: "The technician's steppers start at these on a job of the service. He can change them, and add any other consumable.",
       service: "Service",
-      /** "Service visit, standard": a kind of visit at a tier of the price book. */
-      serviceName: (type: string, tier: string) => `${type}, ${tier}`,
+      /** A service by its name, as the console names it; "Lace replacement, retired from 1 Oct 2027" once retired. */
+      serviceName: (name: string, retiredFrom: string | null) =>
+        retiredFrom === null ? name : `${name}, retired from ${retiredFrom}`,
       quantity: (name: string, unit: string) => `${name}, ${unit} a visit`,
       quantityHint: (max: number) => `A whole number up to ${String(max)}. Leave it empty if the service uses none.`,
       noneOffered: "Add a consumable above before setting what a service uses.",
@@ -1541,7 +1609,7 @@ export const settings = {
       reorder_kit: "A level is a whole number, or empty. Nothing was changed.",
       reorder_central: "A level is a whole number, or empty. Nothing was changed.",
       from: "A consumable is retired from today or a day after it. Nothing was changed.",
-      tier: "The price book no longer prices that service. Nothing was changed.",
+      tier: "The console no longer holds that service. Nothing was changed.",
       items: "That names a consumable nobody added, or one twice. Nothing was changed.",
       not_found: "That consumable is not in the list any more. Reload the page.",
       offline: "You are offline. Connect, then try again.",

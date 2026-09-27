@@ -18,7 +18,7 @@ export function ReplacementScreen() {
       type="replacement"
       label={replacement.book}
       message={messages.bookReplacement}
-      {...(offered === null ? {} : { offer: { date: offered.date, window: offered.window } })}
+      {...(offered === null ? {} : { tier: offered.tier, offer: { date: offered.date, window: offered.window } })}
     />
   ) : undefined;
   return (

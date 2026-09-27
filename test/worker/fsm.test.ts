@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoFsmSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
 import { createBooksProvider, createStubBooks } from "../../src/providers/books.ts";
-import { createFsmProvider, createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
+import { createFsmProvider, createStubFsm, EMPTY_FSM, FSM_ITEM_PAGES } from "../../src/providers/fsm.ts";
 import {
   FSM_API,
   ZOHO_TOKEN_URL,
@@ -205,19 +205,79 @@ describe("FSM: clients, technicians, items and files", () => {
     ]);
   });
 
-  // INT-03: FSM prices a visit's invoice from its catalogue, so the price book's figure is written there.
-  it("sets an item's price before GST, in rupees, on the item's record", async () => {
+  // The catalogue past its first page (docs/decisions/0085-services-ops-can-edit.md), a page asked for as the
+  // appointments are, while FSM says there is another, and no further than FSM_ITEM_PAGES.
+  it("reads the catalogue a page of 200 at a time, while FSM says there is more", async () => {
+    const page = (number: number, more: boolean) =>
+      json({
+        data: [{ id: `item-${String(number)}`, Name: `Item ${String(number)}`, Type: "Service" }],
+        info: { more_records: more },
+      });
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_And_Parts?page=1&`]: () => page(1, true),
+      [`${FSM_API}/Service_And_Parts?page=2&`]: () => page(2, false),
+    });
+
+    expect((await provider.items()).map((item) => item.id)).toEqual(["item-1", "item-2"]);
+    expect(calls.map((call) => call.url).filter((url) => url.includes("Service_And_Parts"))).toEqual([
+      `${FSM_API}/Service_And_Parts?page=1&per_page=200`,
+      `${FSM_API}/Service_And_Parts?page=2&per_page=200`,
+    ]);
+  });
+
+  it("stops at FSM_ITEM_PAGES however many pages FSM says there are", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_And_Parts`]: () =>
+        json({ data: [{ id: "item-1", Name: "Item", Type: "Service" }], info: { more_records: true } }),
+    });
+
+    expect(await provider.items()).toHaveLength(FSM_ITEM_PAGES);
+    expect(calls.filter((call) => call.url.includes("Service_And_Parts"))).toHaveLength(FSM_ITEM_PAGES);
+  });
+
+  // INT-03: FSM prices a visit's invoice from its catalogue, so the price book's figure is written there, and the
+  // console's name with it (docs/decisions/0085-services-ops-can-edit.md).
+  it("writes an item's name and its price before GST, in rupees, on the item's record", async () => {
     const { fsm: provider, calls } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${FSM_API}/Products/item-1`]: () => json({ data: [{ code: "SUCCESS", details: { id: "item-1" } }] }),
     });
 
-    await provider.setItemPrice("item-1", 1_500_000);
+    await provider.updateItem("item-1", { name: "Replacement", price: 1_500_000 });
 
     const put = calls.at(-1);
     expect(put?.method).toBe("PUT");
     expect(put?.url).toBe(`${FSM_API}/Products/item-1`);
-    expect(JSON.parse(put?.body ?? "null")).toEqual({ data: [{ Unit_Price: 15_000 }] });
+    expect(JSON.parse(put?.body ?? "null")).toEqual({ data: [{ Name: "Replacement", Unit_Price: 15_000 }] });
+  });
+
+  it.each([
+    ["under the module's name", { data: { Service_And_Parts: [{ id: "item-9" }] } }],
+    ["as a list", { data: [{ id: "item-9" }] }],
+  ])("makes a service item as scripts/setup-fsm.ts made the org's, and takes its ID %s", async (_, answer) => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_And_Parts`]: () => json(answer, 201),
+    });
+
+    expect(await provider.createItem({ name: "Premium first fit", price: 4_000_000 })).toBe("item-9");
+
+    const post = calls.at(-1);
+    expect(post?.method).toBe("POST");
+    expect(JSON.parse(post?.body ?? "null")).toEqual({
+      data: [{ Name: "Premium first fit", Type: "Service", Unit_Price: 40_000 }],
+    });
+  });
+
+  it("refuses an item's answer that carries no ID, rather than keep none", async () => {
+    const { fsm: provider } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_And_Parts`]: () => json({ data: {} }, 201),
+    });
+
+    await expect(provider.createItem({ name: "Premium first fit", price: 4_000_000 })).rejects.toThrow("new ID");
   });
 
   // A consumable is a part at Rs. 0: used on jobs, never invoiced (docs/decisions/0087-consumables-and-stock.md). The

@@ -320,7 +320,9 @@ describe("the price book", () => {
     expect((await post("/api/prices", { ...base, amount_ex_gst: 250_000, gst_percent: 40 })).status).toBe(400);
   });
 
-  it("prices a tier the book has never held, which is how a new kind of base is priced", async () => {
+  // A tier is a service now, added in the console before it is priced (docs/decisions/0085-services-ops-can-edit.md).
+  it("prices a service ops added to a kind, which is how a new kind of base is priced", async () => {
+    expect((await post("/api/services", { kind: "first_fit", name: "Lace" })).status).toBe(201);
     const answer = await post("/api/prices", {
       item: "first_fit",
       tier: "lace",
@@ -333,6 +335,28 @@ describe("the price book", () => {
     expect(body.prices).toContainEqual(
       expect.objectContaining({ item: "first_fit", tier: "lace", amount_ex_gst: 4_000_000 }),
     );
+  });
+
+  // BIZ-10 again: a price for a tier no service carries is a price nobody could ever be sold.
+  it("refuses a tier no service of the kind carries, and names the box", async () => {
+    const answer = await post("/api/prices", {
+      item: "first_fit",
+      tier: "lace",
+      amount_ex_gst: 4_000_000,
+      gst_percent: 0,
+      valid_from: "2026-09-21",
+    });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["tier"] } });
+    expect((await auditFor("price.set")).results).toHaveLength(0);
+  });
+
+  it("keeps a late fee to one figure a kind, its standard tier's", async () => {
+    const fee = { item: "late_fee_first_fit", amount_ex_gst: 500_000, gst_percent: 0, valid_from: "2026-09-21" };
+    expect((await post("/api/prices", { ...fee, tier: "standard" })).status).toBe(200);
+    const answer = await post("/api/prices", { ...fee, tier: "premium" });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { fields: ["tier"] } });
   });
 
   it("records who set it, from what and from when", async () => {

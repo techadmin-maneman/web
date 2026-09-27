@@ -10,8 +10,9 @@
 // Retiring one stops the technician app offering it from a day; its rows in
 // the ledger stay, and restoring it offers it again.
 
-import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
+import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
+import { allServices, serviceOf } from "./services.ts";
 
 export interface Consumable {
   readonly code: string;
@@ -267,33 +268,47 @@ export async function retireConsumable(
   return { ok: true, consumable: { ...was, retiredDate: from } };
 }
 
-/** A service, as the price book names it: a kind of visit at a tier. */
+/** A service, as the console keeps it: a kind of visit at a tier (docs/decisions/0085-services-ops-can-edit.md). */
 export interface Service {
   readonly visitType: VisitType;
   readonly tier: string;
 }
 
-/**
- * Every service the price book prices: its (item, tier) pairs that are visits.
- * A service's expected use is checked against these until the table of
- * services exists (ADR 0025, item 67), which it will then be tied to.
- */
-export async function servicesPriced(db: D1Database): Promise<Service[]> {
-  const { results } = await db
-    .prepare("SELECT DISTINCT item, tier FROM price_book ORDER BY tier")
-    .all<{ item: string; tier: string }>();
-  return VISIT_TYPES.flatMap((type) =>
-    results.filter((row) => row.item === type).map((row) => ({ visitType: type, tier: row.tier })),
-  );
+/** A service whose expected use ops set: with its name, and the day it is retired from, where it is. */
+export interface UsageService extends Service {
+  readonly name: string;
+  readonly retiredDate: string | null;
 }
 
 /**
- * The service a job was sold as. Every visit is booked at the standard tier
- * today: the price book knows one and the booking records none (ADR 0025,
- * item 35). Once the table of services is in, the job's own service answers
- * here, and nothing else changes.
+ * Every service the console holds, in its order, retired ones too: a visit sold before its service was retired is
+ * still done, and its technician's steppers still start at what the service uses. A service's expected use is
+ * checked against these rows; consumable_usage has no foreign key to them, since its table came first
+ * (migrations 0049 and 0050).
  */
-export const serviceOfJob = (job: { readonly type: VisitType }): Service => ({ visitType: job.type, tier: "standard" });
+export async function servicesForUse(db: D1Database): Promise<UsageService[]> {
+  return (await allServices(db)).map((service) => ({
+    visitType: service.kind,
+    tier: service.tier,
+    name: service.name,
+    retiredDate: service.retired_date,
+  }));
+}
+
+/**
+ * The service a job was sold as: its visit's own (appointments.tier), from the hold that booked it or its FSM item;
+ * its kind's standard one where the mirror knows no other (docs/decisions/0085-services-ops-can-edit.md).
+ */
+export async function serviceOfJob(
+  db: D1Database,
+  job: { readonly id: string; readonly type: VisitType },
+): Promise<Service> {
+  const row = await db
+    .prepare("SELECT tier FROM appointments WHERE id = ?1")
+    .bind(job.id)
+    .first<{ tier: string | null }>();
+  return { visitType: job.type, tier: row?.tier ?? STANDARD_TIER };
+}
 
 /** One consumable a service is expected to use, and how many of its unit. */
 export interface Expected {
@@ -323,18 +338,16 @@ export async function expectedUse(db: D1Database): Promise<Expected[]> {
 /**
  * Sets what one service is expected to use, the whole list at once, with its
  * audit entry: a consumable left out is expected no more. Refused for a
- * service the price book does not price, a consumable nobody added, or one
- * named twice, each by the field a form can point at.
+ * service the console does not hold, a consumable nobody added, or one named
+ * twice, each by the field a form can point at. A retired service may still be
+ * set: a visit sold before it was retired is still done.
  */
 export async function setExpectedUse(
   db: D1Database,
   input: { readonly service: Service; readonly items: readonly { code: string; quantity: number }[] } & Written,
 ): Promise<{ readonly ok: true } | { readonly ok: false; readonly fields: string[] }> {
   const { service, items } = input;
-  const priced = await servicesPriced(db);
-  if (!priced.some((each) => each.visitType === service.visitType && each.tier === service.tier)) {
-    return { ok: false, fields: ["tier"] };
-  }
+  if ((await serviceOf(db, service.visitType, service.tier)) === null) return { ok: false, fields: ["tier"] };
   const { results } = await db.prepare("SELECT code FROM consumables").all<{ code: string }>();
   const known = new Set(results.map((row) => row.code));
   const seen = new Set<string>();

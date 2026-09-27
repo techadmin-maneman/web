@@ -33,7 +33,13 @@ interface Consumable {
 
 interface Consumables {
   consumables: Consumable[];
-  services: { visit_type: string; tier: string; expected: { code: string; quantity: number }[] }[];
+  services: {
+    visit_type: string;
+    tier: string;
+    name: string;
+    retired_date: string | null;
+    expected: { code: string; quantity: number }[];
+  }[];
   today: string;
   fsm_push: boolean;
 }
@@ -232,16 +238,22 @@ describe("what each service is expected to use", () => {
     ]);
   });
 
-  it("follows a tier the price book prices, and refuses one it does not", async () => {
+  // ADR 0087, amended by ADR 0085: a service is a row of the services table, not a pair the price book prices.
+  it("follows a service the console holds, retired or not, and refuses a pair it does not, whatever the book prices", async () => {
     await add(TAPE);
     const premium = { visit_type: "first_fit", tier: "premium", items: [{ code: "tape_strips", quantity: 8 }] };
 
+    await env.DB.prepare(
+      "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('first_fit', 'premium', 4000000, 0, '2026-10-01')",
+    ).run();
     const refused = await post("/api/service-usage", premium);
     expect(refused.status).toBe(400);
     expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["tier"] } });
 
+    // Retired from a day: a first fit sold before it is still done, and its technician's steppers read this.
     await env.DB.prepare(
-      "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('first_fit', 'premium', 4000000, 0, '2026-10-01')",
+      `INSERT INTO services (kind, tier, name, minutes, sort, retired_date, updated_by, updated_at)
+       VALUES ('first_fit', 'premium', 'Premium first fit', 240, 1, '2026-10-15', 'ops@maneman.in', '2026-09-26T06:00:00.000Z')`,
     ).run();
     const taken = await post("/api/service-usage", premium);
     expect(taken.status).toBe(200);
@@ -249,8 +261,18 @@ describe("what each service is expected to use", () => {
     expect(services.find((each) => each.tier === "premium")).toEqual({
       visit_type: "first_fit",
       tier: "premium",
+      name: "Premium first fit",
+      retired_date: "2026-10-15",
       expected: [{ code: "tape_strips", quantity: 8 }],
     });
+    // In the console's order: each kind's services together, the standard one first.
+    expect(services.map((each) => each.name)).toEqual([
+      "Consultation",
+      "First fit",
+      "Premium first fit",
+      "Service visit",
+      "Replacement",
+    ]);
   });
 
   it("refuses a consumable nobody added, and one named twice, by the line", async () => {

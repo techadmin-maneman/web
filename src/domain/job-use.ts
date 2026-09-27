@@ -61,8 +61,11 @@ function usedIn(body: Record<string, unknown>, consumables: readonly Consumable[
 }
 
 /** What the job's service is expected to use, by consumable. */
-async function expectedOf(db: D1Database, job: { readonly type: VisitType }): Promise<Map<string, number>> {
-  const service = serviceOfJob(job);
+async function expectedOf(
+  db: D1Database,
+  job: { readonly id: string; readonly type: VisitType },
+): Promise<Map<string, number>> {
+  const service = await serviceOfJob(db, job);
   const { results } = await db
     .prepare("SELECT consumable_code, quantity FROM consumable_usage WHERE visit_type = ?1 AND tier = ?2")
     .bind(service.visitType, service.tier)

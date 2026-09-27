@@ -214,6 +214,31 @@ describe("a job's use", () => {
     expect(JSON.stringify(card)).not.toMatch(/cost|amount|paise|rupee/i);
   });
 
+  // ADR 0087, amended by ADR 0085: a job's service is its own visit's, not its kind's standard one.
+  it("gives a job of another service of its kind what that service expects", async () => {
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('service', 'premium', 'Premium service visit', 120, 1, 'ops@maneman.in', '2026-09-20T06:00:00.000Z')`,
+    ).run();
+    await job.opsPost("/api/service-usage", {
+      visit_type: "service",
+      tier: "premium",
+      items: [{ code: "tape_strips", quantity: 6 }],
+    });
+    await env.DB.prepare("UPDATE appointments SET tier = 'premium' WHERE id = ?1").bind(JOB).run();
+
+    const card = await (
+      await job.get(`/api/tech/jobs/${JOB}`)
+    ).json<{
+      consumables: { code: string; expected: number }[];
+    }>();
+    expect(card.consumables.map(({ code, expected }) => [code, expected])).toEqual([
+      ["tape_strips", 6],
+      ["shampoo_sachet", 0],
+      ["solvent", 0],
+    ]);
+  });
+
   it("comes out of his kit as the step lands, with what the service expected and what one cost that day", async () => {
     await readyToRecord();
     const answer = await job.post(

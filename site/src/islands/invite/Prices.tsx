@@ -1,6 +1,5 @@
 import { referral } from "../../content/referral.ts";
-import type { PriceWords } from "../../lib/prices.ts";
-import { fill } from "../../lib/text.ts";
+import { fillPrices, type PriceWords } from "../../lib/prices.ts";
 import styles from "./Invite.module.css";
 
 /** The price book's figures. Each carries its sentence too, so the Worker writes the book's into the built page. */
@@ -15,7 +14,7 @@ export function Prices({ words }: { words: PriceWords }) {
           </dt>
           <dd>
             <span class={styles.priceAmount} data-price={row.amount}>
-              {fill(row.amount, words)}
+              {fillPrices(row.amount, words)}
             </span>
             <span class={styles.priceIncl}>{row.incl}</span>
           </dd>

@@ -46,7 +46,7 @@ import type { Logger } from "../log.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { firstFitRequestStatement } from "./next-visit.ts";
-import { priceOf } from "./price-book.ts";
+import { bookableService } from "./services.ts";
 import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
 import { attribute, type Invite, type InviteState } from "./referrals.ts";
@@ -357,18 +357,19 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   ];
 
   // A slot is held and FSM told only while self-serve booking is on and the consultation is free that day;
-  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
-  const price = await priceOf(db, "consultation", request.date);
+  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops. The site books the
+  // consultation its kind offers: the standard one while it is (docs/decisions/0085-services-ops-can-edit.md).
+  const consultation = await bookableService(db, "consultation", undefined, request.date);
   let holdId: string | null = null;
-  if (form.selfServeBooking && price?.amount === 0) {
+  if (form.selfServeBooking && consultation?.price.amount === 0) {
     const hold = await holdSlot(
       db,
       {
         personId: person.id,
-        type: "consultation",
+        service: { type: "consultation", tier: consultation.tier, minutes: consultation.minutes },
         date: request.date,
         window: request.window,
-        price,
+        price: consultation.price,
         pincode: request.pincode,
         from: "site",
         alongside,

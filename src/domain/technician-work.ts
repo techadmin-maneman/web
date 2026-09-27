@@ -8,10 +8,11 @@
 // figure, Skill, is nowhere at all: nothing records what a technician is trained
 // for (docs/open-points.md, item 59).
 //
-// One statement answers the whole board: a row per technician per visit type,
-// which is at most four rows a technician however many jobs they hold. The
-// planned length is config, so the arithmetic comparing the two is here rather
-// than in SQL.
+// One statement answers the whole board: a row per technician per visit type
+// and length, which is a few rows a technician however many jobs they hold. A
+// job was planned for its service's length, or its kind's where no service is
+// it (docs/decisions/0085-services-ops-can-edit.md), so the arithmetic
+// comparing the two is here rather than in SQL.
 
 import { VISIT_BLOCKS } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
@@ -25,11 +26,12 @@ import { indiaInstant } from "../lib/india-time.ts";
 export const WORK_PERIOD_DAYS = 90;
 
 /**
- * How long a visit was planned to take, which its service time is read against.
- * FSM books the visit for this long, so it is the "planned slot" the board's
- * note means.
+ * How long a visit was planned to take, which its service time is read against:
+ * its service's length, or its kind's. FSM books the visit for this long, so it
+ * is the "planned slot" the board's note means.
  */
-const plannedMinutes = (type: VisitType): number => VISIT_BLOCKS[type].minutes;
+const plannedMinutes = (row: { type: VisitType; service_minutes: number | null }): number =>
+  row.service_minutes ?? VISIT_BLOCKS[row.type].minutes;
 
 export interface TechnicianWork {
   readonly technician_id: string;
@@ -52,7 +54,7 @@ export interface TechnicianWork {
  * without an outcome after it is not a duration, and neither is an outcome
  * before its start, which a phone with a wrong clock can send.
  */
-const WORK = `SELECT t.id AS technician_id, a.type AS type,
+const WORK = `SELECT t.id AS technician_id, a.type AS type, sv.minutes AS service_minutes,
     COUNT(a.id) AS jobs,
     SUM(CASE WHEN o.at > s.at THEN 1 ELSE 0 END) AS timed,
     SUM(CASE WHEN o.at > s.at THEN (julianday(o.at) - julianday(s.at)) * 1440 ELSE 0 END) AS minutes
@@ -63,14 +65,17 @@ const WORK = `SELECT t.id AS technician_id, a.type AS type,
                WHERE kind = 'start' AND superseded = 0 GROUP BY appointment_id) s ON s.appointment_id = a.id
   LEFT JOIN (SELECT appointment_id, MAX(occurred_at) AS at FROM job_events
                WHERE kind = 'outcome' AND superseded = 0 GROUP BY appointment_id) o ON o.appointment_id = a.id
+  LEFT JOIN services sv ON sv.kind = a.type AND sv.tier = COALESCE(a.tier, 'standard')
   WHERE t.active = 1
-  GROUP BY t.id, a.type
+  GROUP BY t.id, a.type, sv.minutes
   ORDER BY t.name`;
 
 interface Row {
   technician_id: string;
   /** Null on the row a technician with no job in the period answers with, and on a visit of none of our four kinds. */
   type: VisitType | null;
+  /** The length of the service its jobs were, where one is. */
+  service_minutes: number | null;
   jobs: number;
   timed: number;
   minutes: number;
@@ -93,7 +98,7 @@ export async function technicianWork(db: D1Database, period: { from: string; to:
     const known = rows.flatMap((row) => (row.type === null ? [] : [{ ...row, type: row.type }]));
     const timed = known.reduce((total, row) => total + row.timed, 0);
     const minutes = known.reduce((total, row) => total + row.minutes, 0);
-    const planned = known.reduce((total, row) => total + row.timed * plannedMinutes(row.type), 0);
+    const planned = known.reduce((total, row) => total + row.timed * plannedMinutes(row), 0);
     return {
       technician_id: technicianId,
       jobs,

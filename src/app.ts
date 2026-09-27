@@ -33,6 +33,7 @@ import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsTasks } from "./routes/ops-tasks.ts";
 import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
+import { registerOpsServices } from "./routes/ops-services.ts";
 import { registerOpsSettings } from "./routes/ops-settings.ts";
 import { registerOpsStock } from "./routes/ops-stock.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
@@ -111,6 +112,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,
+    // The services clients book (docs/decisions/0085-services-ops-can-edit.md).
+    registerOpsServices,
     // The consumables, the job sheet and the stock (docs/decisions/0087-consumables-and-stock.md).
     registerOpsConsumables,
     registerOpsJobSheet,

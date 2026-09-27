@@ -27,6 +27,8 @@ export function BookNext({ className, otherClassName }: { className?: string; ot
   const next = me.booking.next;
   const type = next?.type ?? me.booking.types[0];
   const offer = next === null ? undefined : { date: next.date, window: next.window };
+  // The service it is offered as, which the sheet opens with chosen where its kind offers more than one (ADR 0085).
+  const tier = next?.tier;
   // A service and a replacement are each open to a fitted client; the one not offered is the other choice.
   const other = type === undefined ? undefined : OTHER_KIND[type];
   const { label, message } = wordsFor(type);
@@ -37,6 +39,7 @@ export function BookNext({ className, otherClassName }: { className?: string; ot
         label={label}
         message={message}
         {...(type === undefined ? {} : { type })}
+        {...(tier === undefined ? {} : { tier })}
         {...(offer === undefined ? {} : { offer })}
       />
       {other !== undefined && me.booking.types.includes(other) && (

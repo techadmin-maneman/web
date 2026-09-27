@@ -4,8 +4,11 @@
 //
 // It books the kind of visit it is given, the first the client may book if it
 // is given none, and opens the sheet with the day and window the app offers it
-// on, where it is given them (ADR 0086). It is drawn as the screen's primary
-// action, or quietly, as Home's prompt draws its way on.
+// on, where it is given them (ADR 0086). The sheet offers every service of that
+// kind ops offer, or of every kind open to the client where it is given none
+// (ADR 0085), with the one the app offers chosen where it is given one. It is
+// drawn as the screen's primary action, or quietly, as Home's prompt draws its
+// way on.
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -19,6 +22,7 @@ export function BookButton({
   message,
   className,
   type,
+  tier,
   offer,
   from,
   quiet = false,
@@ -28,6 +32,8 @@ export function BookButton({
   className?: string;
   /** The kind of visit it books; the first the client may book, if left out. */
   type?: BookableType;
+  /** The service of that kind the app offers, which the sheet opens with chosen (ADR 0085). */
+  tier?: string;
   /** The day and window the app offers it on, which the sheet opens with chosen. */
   offer?: Offered;
   /** The strip's first day, where it should not start from the first day open. */
@@ -38,6 +44,8 @@ export function BookButton({
   const { me, offline, refresh } = useSession();
   const [open, setOpen] = useState(false);
   const kind = type ?? me.booking.types[0];
+  const services =
+    type === undefined ? me.booking.services : me.booking.services.filter((service) => service.type === type);
   const words = quiet ? <span>{label}</span> : label;
   if (offline) {
     return quiet ? (
@@ -78,6 +86,8 @@ export function BookButton({
       {open && (
         <BookingSheet
           type={kind}
+          services={services}
+          {...(tier === undefined ? {} : { tier })}
           {...(offer === undefined ? {} : { offer })}
           {...(from === undefined ? {} : { from })}
           onClose={(changed) => {

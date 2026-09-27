@@ -548,7 +548,7 @@ export function registerTechJobs(app: App): void {
         steps: stepsFor(type),
         checklist: [...sheet.checklists[type].items],
         partial_reasons: [...sheet.partialReasons.items],
-        consumables: await offeredForJob(c.env.DB, serviceOfJob({ type }), job.date),
+        consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
       },
       200,
     );

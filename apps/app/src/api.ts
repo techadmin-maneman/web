@@ -39,9 +39,26 @@ export type MoveTerms = Schemas["MoveTerms"];
 export type CancelTerms = Schemas["CancelTerms"];
 export type Refer = Schemas["Refer"];
 export type BookableType = Me["booking"]["types"][number];
+export type OfferedService = Me["booking"]["services"][number];
 export type BookingWindow = Hold["window"];
 /** What the app offers next, which the booking sheet opens pre-filled with (ADR 0086). */
 export type NextOffer = NonNullable<Me["booking"]["next"]>;
+
+/**
+ * The service a booking is for: its kind, and its code within the kind. Without a code, the API books the kind's
+ * standard service, and a move books its own visit's (docs/decisions/0085-services-ops-can-edit.md).
+ */
+export interface Wanted {
+  readonly type: BookableType;
+  readonly tier?: string;
+}
+
+/** A service's code, where one is named, and the visit moved, where there is one, as a query or a body takes them. */
+const serviceOf = (wanted: Wanted, moving: string | undefined) => ({
+  type: wanted.type,
+  ...(wanted.tier === undefined ? {} : { tier: wanted.tier }),
+  ...(moving === undefined ? {} : { moving }),
+});
 
 /** The codes the API refuses with, as its document writes them. */
 export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
@@ -122,12 +139,12 @@ export const api = {
   payments: () => client.get("/api/payments"),
   entry: (id: string) => client.get("/api/payments/{id}", { path: { id } }),
   /** `from`: the strip's first day, which the API keeps within the days a visit may be booked on. */
-  availability: (type: BookableType, moving?: string, from?: string) =>
+  availability: (wanted: Wanted, moving?: string, from?: string) =>
     client.get("/api/availability", {
-      query: { type, ...(moving === undefined ? {} : { moving }), ...(from === undefined ? {} : { from }) },
+      query: { ...serviceOf(wanted, moving), ...(from === undefined ? {} : { from }) },
     }),
-  hold: (type: BookableType, date: string, window: BookingWindow, moving?: string) =>
-    client.post("/api/holds", { body: { type, date, window, ...(moving === undefined ? {} : { moving }) } }),
+  hold: (wanted: Wanted, date: string, window: BookingWindow, moving?: string) =>
+    client.post("/api/holds", { body: { ...serviceOf(wanted, moving), date, window } }),
   holdById: (id: string) => client.get("/api/holds/{id}", { path: { id } }),
   releaseHold: (id: string) => client.delete("/api/holds/{id}", { path: { id } }),
   /** `consents`: the photograph purposes whose lines the pay step showed, which the tap agrees to (ADR 0080). */

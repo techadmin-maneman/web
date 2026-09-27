@@ -230,6 +230,40 @@ describe("ops, when the audit entry cannot be written", () => {
     expect(answer.status).toBe(500);
     expect(await one("SELECT state, response FROM grievances")).toEqual({ state: "open", response: null });
   });
+
+  // The services clients book (docs/decisions/0085-services-ops-can-edit.md).
+  it("adds no service, renames none, times none, orders none and retires none", async () => {
+    const services = "SELECT kind, tier, name, minutes, sort, retired_date FROM services ORDER BY kind, tier";
+    const before = await env.DB.prepare(services).all();
+
+    expect((await send(ops, "POST", "/api/services", { kind: "first_fit", name: "Premium" })).status).toBe(500);
+    expect((await send(ops, "POST", "/api/services/service/standard/name", { name: "Monthly" })).status).toBe(500);
+    expect((await send(ops, "POST", "/api/services/service/standard/length", { minutes: 100 })).status).toBe(500);
+    expect((await send(ops, "POST", "/api/services/service/order", { tiers: ["standard"] })).status).toBe(500);
+
+    expect((await env.DB.prepare(services).all()).results).toEqual(before.results);
+  });
+
+  it("corrects no price still to come, taking none back and setting none", async () => {
+    await env.DB.prepare(
+      "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'standard', 250000, 0, '2026-10-01')",
+    ).run();
+    const correction = {
+      item: "service",
+      tier: "standard",
+      amount_ex_gst: 260_000,
+      gst_percent: 0,
+      valid_from: "2026-10-05",
+      was_valid_from: "2026-10-01",
+    };
+
+    expect((await send(ops, "POST", "/api/prices/correct", correction)).status).toBe(500);
+    expect(
+      await one(
+        "SELECT group_concat(valid_from) AS days FROM price_book WHERE item = 'service' AND valid_from > '2026-09-30'",
+      ),
+    ).toEqual({ days: "2026-10-01" });
+  });
 });
 
 describe("the client, when the audit entry cannot be written", () => {

@@ -56,18 +56,35 @@ export const CONSUMABLES = {
       fsm: { state: "linked", item_id: "fsm-part-1", name: "Tape strips" },
     },
   ],
+  // The services the console holds, by name, in its order (docs/decisions/0085-services-ops-can-edit.md): a premium
+  // first fit retired from October, which a fit sold before it still reads.
   services: [
-    { visit_type: "consultation", tier: "standard", expected: [] },
-    { visit_type: "first_fit", tier: "standard", expected: [{ code: "tape_strips", quantity: 8 }] },
+    { visit_type: "consultation", tier: "standard", name: "Consultation", retired_date: null, expected: [] },
+    {
+      visit_type: "first_fit",
+      tier: "standard",
+      name: "First fit",
+      retired_date: null,
+      expected: [{ code: "tape_strips", quantity: 8 }],
+    },
+    {
+      visit_type: "first_fit",
+      tier: "premium",
+      name: "Premium first fit",
+      retired_date: "2027-10-01",
+      expected: [{ code: "tape_strips", quantity: 10 }],
+    },
     {
       visit_type: "service",
       tier: "standard",
+      name: "Service visit",
+      retired_date: null,
       expected: [
         { code: "solvent", quantity: 10 },
         { code: "tape_strips", quantity: 4 },
       ],
     },
-    { visit_type: "replacement", tier: "standard", expected: [] },
+    { visit_type: "replacement", tier: "standard", name: "Replacement", retired_date: null, expected: [] },
   ],
   today: "2027-09-21",
   fsm_push: false,

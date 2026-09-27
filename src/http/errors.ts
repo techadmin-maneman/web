@@ -75,6 +75,11 @@ export const ERROR_CODES = [
   // A service-area change that would leave no pincode served at all, and every
   // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).
   "no_service_area",
+  // The services clients book (docs/decisions/0085-services-ops-can-edit.md): another service has the name, or its
+  // kind the code; retiring it would leave its kind with nothing to book; a price for a service retired by its day.
+  "service_exists",
+  "last_of_kind",
+  "service_retired",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

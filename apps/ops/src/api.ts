@@ -47,10 +47,16 @@ export type NumberChange = Body<paths["/api/number-changes"]["get"]>["changes"][
 /** The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md). */
 export type OpsSetting = Body<paths["/api/settings"]["get"]>["settings"][number];
 export type SettingValue = OpsSetting["value"];
-export type PriceBook = Body<paths["/api/prices"]["get"]>;
-export type Price = PriceBook["prices"][number];
+export type Price = Body<paths["/api/prices"]["post"]>["prices"][number];
 export type PriceChange = Sent<paths["/api/prices"]["post"]>;
 export type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
+export type PriceCorrection = Sent<paths["/api/prices/correct"]["post"]>;
+/** The services clients book, kind by kind, each with its prices (docs/decisions/0085-services-ops-can-edit.md). */
+export type ServiceBook = Body<paths["/api/services"]["get"]>;
+export type OpsService = ServiceBook["services"][number];
+export type LateFee = ServiceBook["late_fees"][number];
+export type Kind = OpsService["kind"];
+export type ServiceAdd = Sent<paths["/api/services"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
 export type AreaChanged = Body<paths["/api/service-area"]["post"]>;
@@ -268,11 +274,30 @@ export const api = {
   /** One rule. A null value puts the figure in the code back and removes the row. */
   setSetting: (name: OpsSetting["name"], value: SettingValue | null) =>
     client.post("/api/settings/{name}", { path: { name }, body: { value } }),
-  prices: () => client.get("/api/prices"),
   /** A price from the day it applies. The book gains a row; nothing already invoiced moves. */
   setPrice: (price: PriceChange) => client.post("/api/prices", { body: price }),
   /** A price still to come, taken back. The route refuses the one in force and every spent one. */
   withdrawPrice: (row: PriceWithdrawal) => client.post("/api/prices/withdraw", { body: row }),
+  /** A price still to come, taken back and set again, from its own day or another, in one go. */
+  correctPrice: (correction: PriceCorrection) => client.post("/api/prices/correct", { body: correction }),
+  /** Every service, offered or retired, with every price it has had and is to have, and the two late fees. */
+  services: () => client.get("/api/services"),
+  /** Added last in its kind; clients see it once it has a price. */
+  addService: (service: ServiceAdd) => client.post("/api/services", { body: service }),
+  /** Its code stays, and with it every price it has and every visit sold under them. */
+  renameService: (kind: Kind, tier: string, name: string) =>
+    client.post("/api/services/{kind}/{tier}/name", { path: { kind, tier }, body: { name } }),
+  /** How long visits booked from now on are held and booked for. */
+  setServiceLength: (kind: Kind, tier: string, minutes: number) =>
+    client.post("/api/services/{kind}/{tier}/length", { path: { kind, tier }, body: { minutes } }),
+  /** Every one of a kind's codes, once, first to last. */
+  orderServices: (kind: Kind, tiers: readonly string[]) =>
+    client.post("/api/services/{kind}/order", { path: { kind }, body: { tiers: [...tiers] } }),
+  /** No longer offered from a day, today or later. The route keeps every kind one service to book. */
+  retireService: (kind: Kind, tier: string, from: string) =>
+    client.post("/api/services/{kind}/{tier}/retire", { path: { kind, tier }, body: { from } }),
+  restoreService: (kind: Kind, tier: string) =>
+    client.post("/api/services/{kind}/{tier}/restore", { path: { kind, tier } }),
   /** Every pincode, with how many wait there and how many serving it would tell. */
   serviceArea: () => client.get("/api/service-area"),
   /**

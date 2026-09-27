@@ -26,7 +26,7 @@ import {
   fsmLinkOf,
   isOffered,
   retireConsumable,
-  servicesPriced,
+  servicesForUse,
   setExpectedUse,
   type Consumable,
 } from "../domain/consumables.ts";
@@ -84,10 +84,19 @@ const ServiceUseSchema = z
   .object({
     visit_type: z.enum(VISIT_TYPES),
     tier: z.string(),
+    name: z.string().openapi({ description: "The service's name, as the console names it." }),
+    retired_date: z.union([z.iso.date(), z.null()]).openapi({
+      description:
+        "India's date it is retired from, for a service no longer offered: a visit sold before is still done, and " +
+        "reads what it uses. Null while it is offered.",
+    }),
     expected: z.array(ExpectedSchema).openapi({ description: "What it is expected to use, by the consumable's name." }),
   })
   .strict()
-  .openapi("ServiceUse", { description: "A service the price book prices: a kind of visit at a tier." });
+  .openapi("ServiceUse", {
+    description:
+      "A service the console holds: a kind of visit at a tier (docs/decisions/0085-services-ops-can-edit.md).",
+  });
 
 const ConsumablesSchema = z
   .object({
@@ -229,7 +238,7 @@ const usageRoute = createRoute({
   responses: {
     200: CONSUMABLES,
     400: errorResponse(
-      "invalid_request: fields names tier for a service the price book does not price, or items.N.code for a " +
+      "invalid_request: fields names tier for a service the console does not hold, or items.N.code for a " +
         "consumable nobody added or one named twice",
     ),
     403: errorResponse("access_required"),
@@ -256,7 +265,7 @@ async function answer(c: Context<AppEnv>) {
   const today = indiaDate(c.var.deps.now());
   const [consumables, services, expected] = await Promise.all([
     allConsumables(db),
-    servicesPriced(db),
+    servicesForUse(db),
     expectedUse(db),
   ]);
   return {
@@ -264,6 +273,8 @@ async function answer(c: Context<AppEnv>) {
     services: services.map((service) => ({
       visit_type: service.visitType,
       tier: service.tier,
+      name: service.name,
+      retired_date: service.retiredDate,
       expected: expected
         .filter((each) => each.visitType === service.visitType && each.tier === service.tier)
         .map((each) => ({ code: each.code, quantity: each.quantity })),

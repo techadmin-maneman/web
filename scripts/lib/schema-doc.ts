@@ -106,6 +106,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   refunds: "The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).",
   serviceable_pincodes:
     "Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).",
+  services:
+    "What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue; the price book prices each by its kind and tier (ADR 0085).",
   sessions:
     "The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).",
   slot_claims:

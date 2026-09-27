@@ -23,7 +23,7 @@
 // (src/policy/prepayment.ts). Otherwise the draft is held, and ops are told.
 
 import { rupees } from "@maneman/web-kit/money";
-import type { VisitType } from "../config/visit-types.ts";
+import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
@@ -63,6 +63,8 @@ interface Visit {
   person_id: string | null;
   fsm_work_order_id: string;
   type: VisitType | null;
+  /** Its service's tier; null where the mirror knows none, which is the standard tier's. */
+  tier: string | null;
   window_start: string | null;
   window_end: string | null;
 }
@@ -84,7 +86,7 @@ export async function raiseInvoices(
   const recheck = new Date(now.getTime() - RECHECK_AFTER_MS).toISOString();
   const { results } = await db
     .prepare(
-      `SELECT id, person_id, fsm_work_order_id, type, window_start, window_end FROM appointments
+      `SELECT id, person_id, fsm_work_order_id, type, tier, window_start, window_end FROM appointments
        WHERE status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL
          AND deleted_at IS NULL AND (invoice_checked_at IS NULL OR invoice_checked_at < ?1)
        ORDER BY window_start LIMIT ?2`,
@@ -185,10 +187,13 @@ async function soldVisit(db: D1Database, visit: Visit): Promise<SoldVisit> {
   return { soldFor: await listPrice(db, visit), paidWithCredit };
 }
 
-/** The price book's price, with GST, for the visit's type on the day it happened in India; null where there is none. */
+/**
+ * The price book's price, with GST, for the visit's own service on the day it happened in India; null where there is
+ * none.
+ */
 async function listPrice(db: D1Database, visit: Visit): Promise<number | null> {
   if (visit.type === null || visit.window_start === null) return null;
-  const price = await priceOf(db, visit.type, indiaDate(new Date(visit.window_start)));
+  const price = await priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
   return price?.amount ?? null;
 }
 

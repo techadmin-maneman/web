@@ -1,6 +1,6 @@
 # 0087. Consumables and their stock, and the job sheet, set in the console
 
-- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/owner-answers-2026-09-27.md`: item 28, "Consumables, stock and FSM" and "Where stock is held"). FSM's two new calls are untried on the org (`docs/open-points.md`, item 25), and the switch that makes them is off everywhere
+- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/owner-answers-2026-09-27.md`: item 28, "Consumables, stock and FSM" and "Where stock is held"). FSM's two new calls are untried on the org (`docs/open-points.md`, item 25), and the switch that makes them is off everywhere; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), whose services a service's expected use is now checked against
 - Date: 2026-09-27
 - Amends [0061](0061-ops-editable-inputs.md), [0065](0065-a-technicians-writes-reach-fsm.md) and [0073](0073-prices-from-the-price-book.md); follows [0038](0038-offline-writes.md), [0067](0067-alerts-and-silent-failures.md), [0070](0070-vendor-correctness.md) and [0071](0071-what-ops-see-before-a-setting-changes.md)
 
@@ -40,7 +40,7 @@ Each change shows the old figure beside the new before it is sent (ADR 0071) and
 
 `consumable_usage` holds how many of each consumable a service is expected to use, and the technician's steppers start there. Ops set it beneath the list, one service at a time, old beside new, audited as `consumable.usage`.
 
-A **service** is a kind of visit at one of the price book's tiers, `(visit_type, tier)`, and the API takes only a pair the book prices: the standard four today. The table of services the owner has asked for (ADR 0025, item 67) is being built beside this, so there is no foreign key to it; once it exists the pair becomes its row, as the migration's header says. Until then every job is taken to be its kind's standard tier, which is what every booking is sold at (ADR 0025, item 35).
+A **service** is a kind of visit at one of the price book's tiers, `(visit_type, tier)`, and the API takes only a pair the book prices: the standard four today. The table of services the owner has asked for (ADR 0025, item 67) is being built beside this, so there is no foreign key to it; once it exists the pair becomes its row, as the migration's header says. Until then every job is taken to be its kind's standard tier, which is what every booking is sold at (ADR 0025, item 35). **Amended 27 September 2026 ([ADR 0085](0085-services-ops-can-edit.md)):** the table of services exists (migration 0050). `POST /api/service-usage` now takes a pair only where the services table holds that `(kind, tier)` row, retired or not, since a visit sold before its service was retired is still done; the price book's pairs no longer decide it. A job's service is its own visit's, `appointments.tier` (the standard tier where the mirror knows no other), so the technician's steppers start at what that service uses. Settings · Consumables lists each service by its name, a kind at a time in the console's order, a retired one marked "retired from" its day. There is still no foreign key: `consumable_usage` comes in migration 0049 and `services` in 0050, and SQLite adds a foreign key only by rebuilding the table, so the pair stays checked in code (`setExpectedUse`, `src/domain/consumables.ts`).
 
 ### The technician's step
 

@@ -28,6 +28,7 @@ import {
 } from "../policy/next-visit.ts";
 import { windowAt } from "../policy/windows.ts";
 import { consentGiven } from "./messages.ts";
+import { serviceToOffer } from "./services.ts";
 import { NO_VISITS_CONSENT, REMINDERS_FROM, type Composed } from "./visit-messages.ts";
 
 /** A visit a next service follows: a first fit, a service or a replacement, done. Migration 0048 indexes these. */
@@ -44,6 +45,11 @@ const REMINDERS_PER_PASS = 20;
 /** What the app offers the client next, pre-filled in the booking sheet. */
 export interface NextOffer {
   readonly type: NextVisitType;
+  /**
+   * The service of its kind it is offered as: the one the client's last visit of the kind was, while that is offered,
+   * else the kind's first in the console's order (serviceToOffer, docs/decisions/0085-services-ops-can-edit.md).
+   */
+  readonly tier: string;
   /** India's day it is offered on: the day it falls due, or tomorrow once that has passed. */
   readonly date: string;
   /** The window it is offered in, where a visit of its kind can start in it; null for none. */
@@ -99,18 +105,26 @@ export async function nextVisitFacts(
     const last = new Date(row.last_start);
     const due = serviceDue(indiaDate(last), days);
     const type = nextVisitType(due, row.piece_due);
+    const date = offeredDay(due, tomorrow);
     return {
       booked,
-      offer: { type, date: offeredDay(due, tomorrow), window: windowFor(type, windowAt(indiaTime(last))) },
+      offer: {
+        type,
+        tier: await serviceToOffer(db, personId, type, date),
+        date,
+        window: windowFor(type, windowAt(indiaTime(last))),
+      },
     };
   }
   if (row.consulted_start === null) return { booked, offer: null };
   const consulted = indiaDate(new Date(row.consulted_start));
+  const date = firstFitOpens(consulted, tomorrow, days);
   return {
     booked,
     offer: {
       type: "first_fit",
-      date: firstFitOpens(consulted, tomorrow, days),
+      tier: await serviceToOffer(db, personId, "first_fit", date),
+      date,
       window: windowFor("first_fit", row.asked_window),
     },
   };

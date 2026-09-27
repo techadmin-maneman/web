@@ -164,6 +164,7 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
               quiet
               className={styles.promptLink}
               type={prompt.type}
+              tier={prompt.tier}
               offer={{ date: prompt.date, window: prompt.window }}
               label={copy.bookNext}
               message={prompt.type === "replacement" ? messages.bookReplacement : messages.book}
@@ -188,6 +189,7 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
                 quiet
                 className={styles.promptLink}
                 type="replacement"
+                tier={prompt.tier}
                 // The strip starts with the month the piece falls due, never on a day of it (ADR 0059).
                 {...(prompt.month > thisMonth ? { from: firstDay } : {})}
                 label={copy.bookReplacement}

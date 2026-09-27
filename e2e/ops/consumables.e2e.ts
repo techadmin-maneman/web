@@ -139,7 +139,16 @@ test.describe("what each service uses", () => {
   test("shows the chosen service's figures, and the change old beside new before it is sent", async ({ page }) => {
     await open(page, { "POST /api/service-usage": json(CONSUMABLES) });
     const uses = page.getByRole("region", { name: "What each service uses" });
-    await uses.getByLabel("Service").selectOption({ label: "Service visit, standard" });
+    // Each service by its name, a kind at a time; a retired one is still there, marked, for a visit sold before.
+    await expect(uses.getByLabel("Service").locator("optgroup")).toHaveCount(4);
+    await expect(uses.getByLabel("Service").locator("option")).toHaveText([
+      "Consultation",
+      "First fit",
+      "Premium first fit, retired from 1 Oct 2027",
+      "Service visit",
+      "Replacement",
+    ]);
+    await uses.getByLabel("Service").selectOption({ label: "Service visit" });
 
     await expect(uses.getByLabel("Tape strips, strip a visit")).toHaveValue("4");
     await expect(uses.getByLabel("Solvent, ml a visit")).toHaveValue("10");

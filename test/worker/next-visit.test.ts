@@ -150,19 +150,62 @@ describe("what the app offers next (GET /api/me)", () => {
     await visit("first_fit", "2026-08-11T04:30:00.000Z");
     await visit("service", "2026-09-10T04:30:00.000Z");
     const home = await me();
-    expect(home.booking.next).toEqual({ type: "service", date: "2026-10-10", window: "morning" });
-    expect(home.prompt).toEqual({ kind: "next_visit", type: "service", date: "2026-10-10", window: "morning" });
+    expect(home.booking.next).toEqual({ type: "service", tier: "standard", date: "2026-10-10", window: "morning" });
+    expect(home.prompt).toEqual({
+      kind: "next_visit",
+      type: "service",
+      tier: "standard",
+      date: "2026-10-10",
+      window: "morning",
+    });
   });
 
   it("offers it for tomorrow once the day it fell due has passed", async () => {
     await visit("service", "2026-08-01T08:30:00.000Z");
-    expect((await me()).booking.next).toEqual({ type: "service", date: "2026-09-22", window: "afternoon" });
+    expect((await me()).booking.next).toEqual({
+      type: "service",
+      tier: "standard",
+      date: "2026-09-22",
+      window: "afternoon",
+    });
   });
 
   it("offers the replacement where the piece falls due first, and not in the evening, where it cannot start", async () => {
     await visit("service", "2026-09-10T11:30:00.000Z"); // 5 pm in India
     await pieceDue("2026-10-05");
-    expect((await me()).booking.next).toEqual({ type: "replacement", date: "2026-10-10", window: null });
+    expect((await me()).booking.next).toEqual({
+      type: "replacement",
+      tier: "standard",
+      date: "2026-10-10",
+      window: null,
+    });
+  });
+
+  // ADR 0086, amended by ADR 0085: the visit offered is one of the services ops keep.
+  it("offers it as the service the last visit of its kind was, while that is offered, else the kind's first", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('service', 'premium', 'Premium service visit', 120, 1, 'ops@maneman.in', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'premium', 300000, 0, '2026-01-01')",
+      ),
+    ]);
+    const last = await visit("service", "2026-09-10T04:30:00.000Z");
+    await env.DB.prepare("UPDATE appointments SET tier = 'premium' WHERE id = ?1").bind(last).run();
+    expect((await me()).booking.next).toEqual({
+      type: "service",
+      tier: "premium",
+      date: "2026-10-10",
+      window: "morning",
+    });
+
+    // Retired by the day it would be offered on, it is offered as the kind's first service in the console's order.
+    await env.DB.prepare(
+      "UPDATE services SET retired_date = '2026-10-01' WHERE kind = 'service' AND tier = 'premium'",
+    ).run();
+    expect((await me()).booking.next).toMatchObject({ type: "service", tier: "standard" });
   });
 
   it("offers the service where the piece falls due after it", async () => {
@@ -194,7 +237,7 @@ describe("what the app offers next (GET /api/me)", () => {
       .bind(PERSON, NOW.toISOString())
       .run();
     const home = await me();
-    expect(home.booking.next).toEqual({ type: "first_fit", date: "2026-09-22", window: "afternoon" });
+    expect(home.booking.next).toEqual({ type: "first_fit", tier: "standard", date: "2026-09-22", window: "afternoon" });
     // The first fit is Home's own card, "Book your first fit", and never the prompt beneath it.
     expect(home.prompt).toBeNull();
   });
@@ -202,7 +245,12 @@ describe("what the app offers next (GET /api/me)", () => {
   it("offers it no sooner than the lead time ops set after the consultation, and no window without a request", async () => {
     await visit("consultation", "2026-09-18T04:30:00.000Z");
     await opsSet({ first_fit_lead: 10 });
-    expect((await me()).booking.next).toEqual({ type: "first_fit", date: "2026-09-28", window: null });
+    expect((await me()).booking.next).toEqual({
+      type: "first_fit",
+      tier: "standard",
+      date: "2026-09-28",
+      window: null,
+    });
   });
 });
 

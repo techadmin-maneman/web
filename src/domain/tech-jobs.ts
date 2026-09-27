@@ -9,7 +9,8 @@
 //
 // "No money anywhere in the technician app": a job carries a Prepaid, Credit or
 // Free badge, and no amount leaves the database. Whether the price book charges
-// nothing for the visit is asked in SQL, as a yes or a no.
+// nothing for the visit's own service on its day is asked in SQL, as a yes or a
+// no (docs/decisions/0085-services-ops-can-edit.md).
 //
 // An unlocked card also carries what the technician needs at the door and no
 // route gave him before: the client's pieces (board A3's piece card, and the
@@ -17,16 +18,19 @@
 // no-show wait, and whether the day-before WhatsApp reached the client (board
 // B5). The photograph itself is served on its own, and never cached.
 
-import { VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import type { JobEventKind } from "../policy/in-job-steps.ts";
 import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
+import { slotsFor } from "../policy/dispatch.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
+import { unitsFor } from "../policy/visit-length.ts";
 import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
+import { bookedMinutes } from "./scheduling.ts";
 import { windowAt } from "../policy/windows.ts";
 import { firstNameOf } from "../lib/names.ts";
 
@@ -154,10 +158,12 @@ interface JobRow {
   lng: number | null;
   on_credit: number;
   free: number;
+  /** The length of the visit's service, from the services table; null where no service is it. */
+  service_minutes: number | null;
 }
 
-// `free`: the price book's row for the visit type on the visit's day in India
-// charges nothing, as it does a consultation.
+// `free`: the price book's row for the visit's own service, its kind and its tier (the standard tier's where the
+// mirror knows no other), on the visit's day in India charges nothing, as it does a consultation.
 const SELECT_JOB = `
   SELECT a.id, a.window_start, a.window_end, a.type, a.status, a.person_id, a.service_city, a.client_note,
     sp.area AS pincode_area,
@@ -166,12 +172,15 @@ const SELECT_JOB = `
     d.access_notes, d.lat, d.lng,
     EXISTS (SELECT 1 FROM credit_ledger l WHERE l.kind = 'redeem' AND l.source_id = a.id) AS on_credit,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
-              WHERE b.item = a.type AND b.tier = 'standard' AND b.valid_from <= date(a.window_start, '+330 minutes')
-              ORDER BY b.valid_from DESC LIMIT 1), 0) AS free
+              WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
+                AND b.valid_from <= date(a.window_start, '+330 minutes')
+              ORDER BY b.valid_from DESC LIMIT 1), 0) AS free,
+    s.minutes AS service_minutes
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
+  LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
   WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
 
 /** The jobs on one India date, in time order. Statuses the technician can still act on, and what he closed today. */
@@ -383,7 +392,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
     sector: row.pincode_area ?? row.locality ?? row.service_city,
     status: row.status,
     badge: badgeOf(row),
-    slots: row.type === null ? null : VISIT_BLOCKS[row.type].units / 2,
+    slots: row.type === null ? null : slotsFor(unitsFor(bookedMinutes(row))),
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
   };

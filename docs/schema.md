@@ -53,6 +53,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
 - [refunds](#refunds): The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
+- [services](#services): What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue; the price book prices each by its kind and tier (ADR 0085).
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
@@ -130,7 +131,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -159,6 +160,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `client_note` | TEXT | yes |  |  |
 | `client_note_at` | TEXT | yes |  |  |
 | `first_seen_at` | TEXT | yes |  |  |
+| `tier` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1051,6 +1053,28 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`.
 | `launched_at` | TEXT | yes |  |  |
 | `area_named_by` | TEXT | yes |  |  |
 
+## services
+
+What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue; the price book prices each by its kind and tier (ADR 0085).
+
+Made by `0050_services.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `kind` | TEXT | no |  | primary key |
+| `tier` | TEXT | no |  | primary key |
+| `name` | TEXT | no |  |  |
+| `minutes` | INTEGER | no |  |  |
+| `sort` | INTEGER | no | `0` |  |
+| `retired_date` | TEXT | yes |  |  |
+| `fsm_item_id` | TEXT | yes |  |  |
+| `updated_by` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`name`)
+
 ## sessions
 
 The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
@@ -1097,7 +1121,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1130,6 +1154,8 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `pincode` | TEXT | yes |  |  |
 | `late_fee_ex_gst` | INTEGER | yes |  |  |
 | `late_fee_gst_percent` | INTEGER | yes |  |  |
+| `tier` | TEXT | no | `'standard'` |  |
+| `minutes` | INTEGER | yes |  |  |
 
 Indexes:
 

@@ -1,10 +1,13 @@
 // What each service is expected to use: where the technician's steppers start
-// on a job of it (docs/decisions/0087-consumables-and-stock.md). A service is a
-// kind of visit at a tier of the price book, so every tier the book prices is
-// here. The whole list is sent at once, and the check shows each consumable
-// whose figure changes, old beside new (ADR 0071). An empty box is none.
+// on a job of it (docs/decisions/0087-consumables-and-stock.md). A service is
+// one the console holds, by its name, a kind at a time
+// (docs/decisions/0085-services-ops-can-edit.md); a retired one is here too,
+// marked, since a visit sold before it was retired is still done. The whole
+// list is sent at once, and the check shows each consumable whose figure
+// changes, old beside new (ADR 0071). An empty box is none.
 
 import { Button } from "@maneman/ui/Button";
+import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Consumables, type ServiceUse } from "../api.ts";
 import { dispatch, settings } from "../content.ts";
@@ -18,7 +21,7 @@ const words = copy.usage;
 
 const keyOf = (service: ServiceUse) => `${service.visit_type}/${service.tier}`;
 const serviceName = (service: ServiceUse) =>
-  words.serviceName(dispatch.typeNames[service.visit_type] ?? service.visit_type, service.tier);
+  words.serviceName(service.name, service.retired_date === null ? null : longDate(service.retired_date));
 
 /** Each consumable's box, as text: the figure the service expects, or empty for none. */
 type Draft = Readonly<Record<string, string>>;
@@ -93,10 +96,16 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
               setStep({ step: "editing" });
             }}
           >
-            {book.services.map((each) => (
-              <option key={keyOf(each)} value={keyOf(each)}>
-                {serviceName(each)}
-              </option>
+            {[...new Set(book.services.map((each) => each.visit_type))].map((kind) => (
+              <optgroup key={kind} label={dispatch.typeNames[kind] ?? kind}>
+                {book.services
+                  .filter((each) => each.visit_type === kind)
+                  .map((each) => (
+                    <option key={keyOf(each)} value={keyOf(each)}>
+                      {serviceName(each)}
+                    </option>
+                  ))}
+              </optgroup>
             ))}
           </select>
         </div>

@@ -391,8 +391,22 @@ describe("the session", () => {
       credits: null,
       // A consultation is booked and no address given: board B1's prompt asks for one.
       prompt: { kind: "address" },
-      // Nothing is offered next while a visit is booked (ADR 0086).
-      booking: { self_serve: true, types: ["consultation"], next: null },
+      // Every service of the kinds open to them, with its length and price (docs/decisions/0085-services-ops-can-edit.md);
+      // nothing is offered next while a visit is booked (ADR 0086).
+      booking: {
+        self_serve: true,
+        types: ["consultation"],
+        services: [
+          {
+            type: "consultation",
+            tier: "standard",
+            name: "Consultation",
+            minutes: 60,
+            price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 },
+          },
+        ],
+        next: null,
+      },
     });
   });
 

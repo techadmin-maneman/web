@@ -1,8 +1,9 @@
 // The booking sheet's steps (boards C2 to C6): the date, the window, paying,
-// and what came of it, and, for a client who has given none, the address before
-// them all (ADR 0079). The sheet (BookingSheet.tsx) holds the state; each step
-// only draws it. Every step has a heading with the sheet's title id, so the
-// sheet is named whatever it shows.
+// and what came of it; for a client with more than one service open to them,
+// the one they want before those (ADR 0085); and, for a client who has given
+// none, the address before the date (ADR 0079). The sheet (BookingSheet.tsx)
+// holds the state; each step only draws it. Every step has a heading with the
+// sheet's title id, so the sheet is named whatever it shows.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -10,10 +11,10 @@ import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import type { Availability, BookingConsent, BookingWindow, Hold, MoveTerms, Price } from "../api.ts";
+import type { Availability, BookingConsent, BookingWindow, Hold, MoveTerms, OfferedService, Price } from "../api.ts";
 import { booking, change, messages, profile, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
 import { CHECK, CLOCK } from "../icons.ts";
-import { lateFeeFigures } from "../lib/money.ts";
+import { priceFigures } from "../lib/money.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
 import { firstName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
@@ -30,9 +31,6 @@ export const TITLE_ID = "booking-title";
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const isFull = (day: Day) => day.windows.every((window) => window.with === null);
 
-/** The visits that come in a standard and a premium tier (the public site's price table). */
-const TIERED = new Set<Hold["type"]>(["first_fit", "service", "replacement"]);
-
 /** Whole minutes and seconds: 9:42. */
 const minutesAndSeconds = (seconds: number) =>
   `${String(Math.floor(seconds / 60))}:${String(seconds % 60).padStart(2, "0")}`;
@@ -44,11 +42,11 @@ export const useHoldLeft = (hold: Hold): number => useSecondsLeft(Date.parse(hol
 export const paysNothing = (hold: Hold): boolean => hold.price.amount === 0 || hold.credit !== null;
 
 /**
- * "Step 1 of 3" and "Step 2 of 3", as the boards number the date and the window; "Step 2 of 4" and "Step 3 of 4"
- * once the sheet has asked for the address first (ADR 0079).
+ * "Step 1 of 3" and "Step 2 of 3", as the boards number the date and the window, with the pay step the third; one
+ * step later, and one step longer, for each the sheet takes before the date: the visit chosen (ADR 0085) and the
+ * address asked for (ADR 0079).
  */
-const stepOf = (step: number, addressFirst: boolean): string =>
-  addressFirst ? booking.step(step + 1, 4) : booking.step(step, 3);
+const stepOf = (step: number, before: number): string => booking.step(step + before, 3 + before);
 
 function Heading({ title, step, aside }: { title: string; step?: string; aside?: string }) {
   return (
@@ -84,7 +82,7 @@ function LastMinute({ left }: { left: number }) {
  * ex-GST figure in the sentence, and the inclusive one muted after it once GST applies.
  */
 export function LateFee({ fee }: { fee: Price }) {
-  const { exGst, inclusive } = lateFeeFigures(fee);
+  const { exGst, inclusive } = priceFigures(fee);
   const copy = booking.lateFee;
   return (
     <>
@@ -109,13 +107,14 @@ export function LoadingStep() {
 
 /**
  * The address, before any slot, for a client who has given none (ADR 0079): Profile's own form, under its heading.
- * No board draws it. `refused`: the API refused a hold for want of one, so the sheet came back here.
+ * No board draws it. `refused`: the API refused a hold for want of one, so the sheet came back here. `before`: the
+ * steps the sheet takes before the date, of which this is the last.
  */
-export function AddressStep({ refused, onSaved }: { refused: boolean; onSaved: () => void }) {
+export function AddressStep({ refused, before, onSaved }: { refused: boolean; before: number; onSaved: () => void }) {
   const copy = booking.address;
   return (
     <>
-      <Heading title={profile.where} step={booking.step(1, 4)} />
+      <Heading title={profile.where} step={booking.step(before, 3 + before)} />
       <p className={styles.why} role={refused ? "alert" : undefined}>
         {refused ? copy.refused : copy.why}
       </p>
@@ -125,11 +124,78 @@ export function AddressStep({ refused, onSaved }: { refused: boolean; onSaved: (
 }
 
 /**
+ * No board draws it: every service open to the client, when there is more than one, a kind at a time in the order
+ * ops keep them, each with how long it takes and what it costs from the first day it can be booked (ADR 0085). The
+ * services are native radio buttons of one name, drawn as the window step's rows: one choice among them all, one
+ * tab stop, and the arrow keys move between them. `before`: the steps the sheet will take before the date.
+ */
+export function ServiceStep(props: {
+  before: number;
+  services: readonly OfferedService[];
+  chosen: OfferedService | null;
+  onChoose: (service: OfferedService) => void;
+  onNext: () => void;
+}) {
+  const copy = booking.service;
+  const kinds = [...new Set(props.services.map((service) => service.type))];
+  return (
+    <>
+      <Heading title={copy.title} step={booking.step(1, 3 + props.before)} />
+      {kinds.map((kind) => (
+        <div key={kind} className={styles.kind}>
+          <h3 className={styles.label} id={`booking-kind-${kind}`}>
+            {VISIT_TYPES[kind]}
+          </h3>
+          <div className={styles.windows} role="radiogroup" aria-labelledby={`booking-kind-${kind}`}>
+            {props.services
+              .filter((service) => service.type === kind)
+              .map((service) => {
+                const { exGst, inclusive } = priceFigures(service.price);
+                return (
+                  <label key={service.tier} className={styles.window}>
+                    <input
+                      className={styles.radio}
+                      type="radio"
+                      name="booking-service"
+                      checked={service.type === props.chosen?.type && service.tier === props.chosen.tier}
+                      onChange={() => {
+                        props.onChoose(service);
+                      }}
+                    />
+                    <span>
+                      <span className={styles.windowName}>{service.name}</span>
+                      <span className={styles.windowTime}>{booking.length(service.minutes)}</span>
+                    </span>
+                    <span className={styles.serviceMoney}>
+                      <span className={styles.windowName}>{service.price.amount === 0 ? copy.free : exGst}</span>
+                      {inclusive !== null && <span className={styles.windowTime}>{copy.incl(inclusive)}</span>}
+                    </span>
+                  </label>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+      <Button
+        variant="primary"
+        size="action"
+        className={styles.primary}
+        disabled={props.chosen === null}
+        onClick={props.onNext}
+      >
+        {copy.continue}
+      </Button>
+    </>
+  );
+}
+
+/**
  * Board C2: fourteen days, full ones shown but not chosen. The days are one group of native radio
  * buttons, drawn as the design's squares: one tab stop, and the arrow keys move between the days.
+ * `before`: the steps the sheet took before the date.
  */
 export function DateStep(props: {
-  addressFirst: boolean;
+  before: number;
   days: Day[];
   chosen: string | null;
   onChoose: (date: string) => void;
@@ -138,7 +204,7 @@ export function DateStep(props: {
   const copy = booking.date;
   return (
     <>
-      <Heading title={copy.title} step={stepOf(1, props.addressFirst)} />
+      <Heading title={copy.title} step={stepOf(1, props.before)} />
       <div className={styles.strip} role="radiogroup" aria-labelledby={TITLE_ID}>
         {props.days.map((day) => {
           const full = isFull(day);
@@ -191,7 +257,7 @@ export function DateStep(props: {
 
 /** Board C3: the day's three windows, and whether the regular technician is free. */
 export function WindowStep(props: {
-  addressFirst: boolean;
+  before: number;
   day: Day;
   regular: Availability["regular"];
   chosen: BookingWindow | null;
@@ -212,7 +278,7 @@ export function WindowStep(props: {
 
   return (
     <>
-      <Heading title={copy.title} step={stepOf(2, props.addressFirst)} />
+      <Heading title={copy.title} step={stepOf(2, props.before)} />
       <p className={styles.dayLine}>{weekdayDate(props.day.date)}</p>
       <div className={styles.windows} role="radiogroup" aria-labelledby={TITLE_ID}>
         {props.day.windows.map(({ window, with: who }) => (
@@ -262,9 +328,9 @@ export function WindowStep(props: {
   );
 }
 
-/** What the pay step names: the visit, or, for a move, the visit moved or its late fee. */
+/** What the pay step names: the service booked, or, for a move, the visit moved or its late fee. */
 function itemName(hold: Hold, moving: MoveTerms | undefined): string {
-  const what = hold.type === "first_fit" && moving === undefined ? booking.pay.firstFit : VISIT_TYPES[hold.type];
+  const what = hold.service.name;
   if (moving?.cost === "free") return change.moveItem(what);
   if (moving?.cost === "late_fee") return change.lateFeeItem(what);
   return what;
@@ -334,8 +400,6 @@ export function PayStep(props: {
   // A move in place keeps the visit as it was booked: only its new time, and what the move costs, are shown.
   const inPlace = moving !== undefined && moving.cost !== "charged";
   const isFirstFit = hold.type === "first_fit" && !inPlace;
-  // Only the standard tier can be booked here, until a client's tier is recorded (docs/open-points.md).
-  const offerPremium = moving === undefined && TIERED.has(hold.type);
   return (
     <>
       <Heading title={copy.title} aside={copy.held(minutesAndSeconds(left))} />
@@ -345,7 +409,8 @@ export function PayStep(props: {
           <div>
             <p className={styles.itemName}>{itemName(hold, moving)}</p>
             <p className={styles.itemWhen}>{`${shortDate(hold.date)}, ${WINDOW_HOURS[hold.window]}`}</p>
-            {isFirstFit && <p className={styles.itemWhen}>{copy.firstFitBlock}</p>}
+            {/* Board C5 draws "Two slots · 3 hours": the length is now the service's own (ADR 0085). */}
+            {isFirstFit && <p className={styles.itemWhen}>{booking.length(hold.service.minutes)}</p>}
           </div>
           <div className={styles.money}>
             {covered && <p className={styles.was}>{rupees(hold.price.amount_ex_gst)}</p>}
@@ -362,11 +427,6 @@ export function PayStep(props: {
         {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
         <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
       </div>
-      {offerPremium && (
-        <a className={styles.quiet} href={whatsappWith(messages.premium(VISIT_TYPES[hold.type]))} rel="noopener">
-          {copy.premium}
-        </a>
-      )}
       {!free && (
         <>
           <h3 className={styles.label}>{copy.with}</h3>
