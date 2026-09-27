@@ -1,9 +1,11 @@
 // A client who made a try-on on the site before their consultation: the gate
 // claimed it with their number, so it is theirs in the app (ADR 0082). Written
-// straight into the local database and the two try-on buckets the local mm-api
-// reads. The client has a consultation booked from the site and no visit done,
-// so their Photos tab has the try-on and no visit photographs. Every name and
-// number is made up, and the photograph and the look are plain blocks.
+// straight into the local database and the buckets the local mm-api reads. The
+// client has a consultation booked from the site and no visit done, so their
+// Photos tab has the try-on and no visit photographs. They agreed to the photo
+// notice that keeps a client's try-on, and the site sent the photograph's small
+// copy with it, so the try-on is kept (ADR 0084). Every name and number is made
+// up, and the photograph, its copy and the look are plain blocks.
 //
 // e2e/global-setup.ts seeds the client once, before any test runs, as it does
 // the fitted client (e2e/app/fitted.ts). The tests only read it.
@@ -61,6 +63,7 @@ export async function seedTryOn(): Promise<void> {
   const expiresAt = new Date(now.getTime() + 3 * DAY).toISOString();
   const consultationDay = new Date(now.getTime() + 330 * MINUTE + 3 * DAY).toISOString().slice(0, 10);
   const uploadKey = `uploads/${job}`;
+  const copyKey = `tryons/${job}/before.jpg`;
   const resultKey = `results/${job}.jpg`;
 
   const sql = [
@@ -72,14 +75,15 @@ export async function seedTryOn(): Promise<void> {
        ${row(tryOnLead, person, createdAt, "tryon", null, null, "receding", null, "synced", "e2e")};`,
     `INSERT INTO tryon_jobs (id, created_at, upload_key, uploaded_at, stage, preset, hair_color, endpoint, state,
        result_key, expires_at, person_id, lead_id, claimed_at, photo_consent_version, photo_consent_at, ip_hash,
-       request_id) VALUES
-       ${row(job, createdAt, uploadKey, createdAt, "receding", "medium-natural-short", "black", "pro", "ready", resultKey, expiresAt, person, tryOnLead, createdAt, "photo-v1", createdAt, "e2e", "e2e")};`,
+       request_id, copy_key) VALUES
+       ${row(job, createdAt, uploadKey, createdAt, "receding", "medium-natural-short", "black", "pro", "ready", resultKey, expiresAt, person, tryOnLead, createdAt, "photo-v2", createdAt, "e2e", "e2e", copyKey)};`,
   ];
 
   const folder = await mkdtemp(join(tmpdir(), "mm-e2e-"));
   try {
     const images = [
       { bucket: "mm-local-tryon-uploads", key: uploadKey, file: await block(folder, "photo.jpg", "#131c2e") },
+      { bucket: "mm-local-client-photos", key: copyKey, file: await block(folder, "copy.jpg", "#131c2e") },
       { bucket: "mm-local-tryon-results", key: resultKey, file: await block(folder, "look.jpg", "#1a2740") },
     ];
     for (const image of images) {

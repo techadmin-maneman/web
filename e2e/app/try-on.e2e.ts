@@ -1,17 +1,16 @@
-// The owner's ruling of 27 September 2026 (ADR 0082): a client who made a
-// try-on on the site sees, in the app's Photos tab, the photograph they
+// The owner's rulings of 27 September 2026 (ADR 0082, ADR 0084): a client who
+// made a try-on on the site sees, in the app's Photos tab, the photograph they
 // uploaded beside the look made from it, and how long each is kept. The client
 // has a consultation booked and no visit done (e2e/app/try-on.ts), so the
-// empty state's lines for visit photographs follow the try-on.
+// try-on is theirs to keep, and the empty state's lines for visit photographs
+// follow it.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { fullDate, indiaClock, indiaDate, longDate } from "../../packages/web-kit/dates.ts";
+import { fullDate, indiaDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { logIn } from "./signed-in.ts";
 import { tryOnClient } from "./try-on.ts";
-
-const HOUR = 60 * 60 * 1000;
 
 const tab = (page: Page, name: string) => page.getByRole("navigation").getByRole("link", { name });
 
@@ -19,7 +18,9 @@ const tab = (page: Page, name: string) => page.getByRole("navigation").getByRole
 const arrived = async (button: ReturnType<Page["getByRole"]>) =>
   expect.poll(() => button.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
 
-test("Photos shows the try-on's photograph beside its look, each opening in the sheet", async ({ page }) => {
+test("Photos shows a booked client's before photo beside its look, each kept, each opening in the sheet", async ({
+  page,
+}) => {
   const client = tryOnClient();
   const madeOn = indiaDate(client.createdAt);
   const date = fullDate(madeOn);
@@ -33,11 +34,11 @@ test("Photos shows the try-on's photograph beside its look, each opening in the 
   const look = tryOn.getByRole("button", { name: `Your look, try-on of ${date}` });
   await arrived(photo);
   await arrived(look);
-  // The photograph is kept an hour after the look was asked for; the look until it expires.
-  const photoUntil = new Date(Date.parse(client.createdAt) + HOUR).toISOString();
+  // Booked, so the photograph is kept until they ask, and the look until their first fit is photographed.
   await expect(
     tryOn.getByText(
-      `Your photograph is kept until ${indiaClock(photoUntil)}, the look until ${longDate(client.expiresAt)}.`,
+      "Your photograph is kept in your account until you ask us to delete it. " +
+        "The look is kept until your first fit is photographed.",
     ),
   ).toBeVisible();
   // No visit has photographs yet: board D3's lines, beneath the try-on.

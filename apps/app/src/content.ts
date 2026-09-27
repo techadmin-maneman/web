@@ -540,7 +540,7 @@ export const photos = {
   photoOf: (angle: string, date: string) => `${angle} · ${date}`,
   // PLACEHOLDER
   close: "Close",
-  // PLACEHOLDER: no board draws the try-on the client made on the site (ADR 0025, item 63; ADR 0082).
+  // PLACEHOLDER: no board draws the try-on the client made on the site (ADR 0025, items 63 and 65; ADR 0082 and 0084).
   tryOn: {
     title: "Your try-on",
     images: { photo: "Your photograph", look: "Your look" },
@@ -551,6 +551,12 @@ export const photos = {
     keptLook: (lookUntil: string) =>
       `Your photograph was deleted within the hour. The look is kept until ${lookUntil}.`,
     keptPhoto: (photoUntil: string) => `The look is still being made. Your photograph is kept until ${photoUntil}.`,
+    // The small copy of the photograph is held as long as the look, until the client books (ADR 0084).
+    keptTogether: (until: string) => `Your photograph and the look are kept until ${until}.`,
+    // A client's try-on, once they have booked (ADR 0084): the photograph for good, the look until the first fit.
+    photoKept: "Your photograph is kept in your account until you ask us to delete it.",
+    lookKeptToFirstFit: "The look is kept until your first fit is photographed.",
+    lookKeptUntil: (lookUntil: string) => `The look is kept until ${lookUntil}.`,
   },
 } as const;
 
