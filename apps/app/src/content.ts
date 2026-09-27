@@ -499,9 +499,6 @@ export const refer = {
     body: "Home-fitted hair systems across Delhi NCR. 3 service visits free when you're fitted.",
     domain: "maneman.in",
     message: (link: string) => `Had my hair system fitted at home by these people. Worth a look — ${link}`,
-    // PLACEHOLDER: the message of a client not yet fitted, who cannot say they had theirs fitted (ADR 0083).
-    messageBeforeFit: (link: string) =>
-      `These people fit hair systems at home, across Delhi NCR. Worth a look — ${link}`,
     via: "Share via",
     whatsapp: "WhatsApp",
     other: "Other apps",
@@ -702,6 +699,13 @@ export const empty = {
   paymentsFitted: {
     title: "Payments",
     lines: ["No payments yet.", "Payments made in the app appear here with their invoices."],
+  },
+  refer: {
+    title: "Refer",
+    lines: [
+      "Nobody you have referred has been fitted yet.",
+      "When a friend you refer is fitted, you both get 3 service visits free.",
+    ],
   },
 } as const;
 
