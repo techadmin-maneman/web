@@ -104,6 +104,32 @@ export const referral = {
     told: "{name} is told when you are fitted. That is when the 3 visits land.",
     toldUnnamed: "Whoever invited you is told when you are fitted. That is when the 3 visits land.",
   },
+  /**
+   * PLACEHOLDER: no board draws an address on the consultation form. The owner ruled on 27 September 2026 that the
+   * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields and
+   * their words are the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words.
+   */
+  address: {
+    legend: "Where we come",
+    labels: {
+      flat: "Flat or house number",
+      floor: "Floor (optional)",
+      tower: "Tower or block (optional)",
+      line1: "Building, society or street",
+      line2: "Street (optional)",
+      landmark: "Landmark (optional)",
+      locality: "Sector or area",
+      city: "City",
+      accessNotes: "Access notes (optional)",
+    },
+    errors: {
+      line1: "Please give the building, society or street.",
+      locality: "Please give the sector or area.",
+      city: "Please give the city.",
+    },
+    pincode: "Pincode",
+    accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
+  },
   /** The waitlist form, shown when the pincode is not served (C3). */
   waitlist: {
     title: "We are not in {area} yet",

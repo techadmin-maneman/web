@@ -49,15 +49,18 @@ export function useTurnstileForm(siteKey: string) {
   /**
    * Checks the fields, then sends: `send` makes the request with the token, keying it by its body without the token,
    * so pressing again after a lost answer is the same request. A refusal shows on the form; an answer goes to `sent`.
+   * `complete` is false while the form's own fields, beyond the person's, have one left to fill in: the booking's
+   * address. Nothing is sent then either.
    */
   async function submit<T>(
     event: Event,
     send: (token: string, keyFor: (request: unknown) => string) => Promise<Answer<T>>,
     sent: (body: T) => void,
+    complete = true,
   ) {
     event.preventDefault();
     if (sending) return;
-    if (fields.name.trim() === "" || !isCompleteMobile(fields.mobile) || !fields.consent) {
+    if (!complete || fields.name.trim() === "" || !isCompleteMobile(fields.mobile) || !fields.consent) {
       setTouched(true);
       return;
     }

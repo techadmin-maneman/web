@@ -4,6 +4,7 @@
 // and e2e/book-api.e2e.ts books against the real local API.
 
 import type { Page, Request } from "@playwright/test";
+import { fillAddress } from "./booking-area.ts";
 import { analyticsEvents, expect, expectNoPersonalData, fakeTurnstile, test, visit } from "./support.ts";
 
 const SERVED = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
@@ -53,6 +54,7 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText("We come to Sector 65")).toBeVisible();
 
+  await fillAddress(page);
   await page.getByText("Receding front", { exact: true }).click();
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
@@ -65,6 +67,48 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   expect(sent.turnstile_token).toBeTruthy();
   // The invite's three visits are the landing's; this page promises nothing of the kind.
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
+});
+
+// The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
+test("a booking without the address is stopped at the form, each part it needs marked", async ({ page }) => {
+  const requests = await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+
+  // The city is the pincode's to begin with, and the pincode is the one checked, not asked again.
+  await expect(page.getByLabel("City")).toHaveValue(SERVED.city);
+  await expect(page.getByText(SERVED.pincode, { exact: true })).toBeVisible();
+  await page.getByLabel("City").fill("");
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByText("Please give the building, society or street.")).toBeVisible();
+  await expect(page.getByText("Please give the sector or area.")).toBeVisible();
+  await expect(page.getByText("Please give the city.")).toBeVisible();
+  await expect(page.getByLabel("Building, society or street")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Flat or house number")).toHaveAttribute("aria-invalid", "false");
+  expect(requests).toHaveLength(0);
+
+  await fillAddress(page);
+  await page.getByLabel("City").fill("Gurugram");
+  await page.getByLabel("Access notes (optional)").fill("Gate 2, visitor parking");
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect((requests[0]?.postDataJSON() as Record<string, unknown>).address).toEqual({
+    flat: "Flat 402",
+    floor: null,
+    tower: null,
+    line1: "Palm Grove Society",
+    line2: null,
+    landmark: null,
+    locality: "Sector 65",
+    city: "Gurugram",
+    pincode: SERVED.pincode,
+    access_notes: "Gate 2, visitor parking",
+  });
 });
 
 // Nobody invited them, so nothing on this page may speak of an invite or of the
@@ -117,6 +161,7 @@ test("a number that already has a consultation is told its day, and counted as n
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
@@ -131,6 +176,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
   await page.getByText("Receding front", { exact: true }).click();
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
@@ -141,7 +187,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
     ["lead_submitted", { page: "book", served: true, area: "Sector 65", window: "morning", loss_extent: "receding" }],
     ["booking_confirmed", { page: "book", area: "Sector 65", window: "morning", state: "booked" }],
   ]);
-  await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000"]);
+  await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000", "Flat 402", "Palm Grove Society"]);
 
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
@@ -171,6 +217,7 @@ test("booking through WhatsApp for now is confirmed as a request, not refused", 
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
@@ -192,5 +239,7 @@ test("an empty submit shows each error, announced, and sends nothing", async ({ 
   await expect(page.getByText("Please tell us your name.")).toBeVisible();
   await expect(page.getByText("Please enter a ten-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
+  await expect(page.getByText("Please give the building, society or street.")).toBeVisible();
+  await expect(page.getByText("Please give the sector or area.")).toBeVisible();
   expect(requests).toHaveLength(0);
 });

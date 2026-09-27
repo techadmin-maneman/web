@@ -4,7 +4,7 @@
 // answer the API can give, against a mocked one.
 
 import { expect, fakeTurnstile, randomMobile, test, visit } from "./support.ts";
-import { SERVED, UNSERVED } from "./booking-area.ts";
+import { fillAddress, SERVED, UNSERVED } from "./booking-area.ts";
 
 /** Tomorrow in India, the first day the form offers. */
 function tomorrow(): string {
@@ -17,12 +17,13 @@ test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);
 });
 
-test("a served pincode books a real date and window", async ({ page }) => {
+test("a served pincode books a real date and window, at the address given", async ({ page }) => {
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText(`We come to ${SERVED.area}`)).toBeVisible();
 
+  await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill(randomMobile());
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
