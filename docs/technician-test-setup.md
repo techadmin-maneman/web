@@ -39,7 +39,7 @@ That is not a reading of the code; it was done. The technician above was written
 
 What the FSM user is really for is **how the row gets there in the ordinary way**. The mirror copies each technician's name, whether he is active, his territory and his mobile number out of FSM's user records, and in production that is the only thing that writes them. **It is also the supported way for you from now on:** put your own mobile number on your own FSM user (open point 27), and the mirror lists you as it will list every real technician.
 
-One thing to watch, and the reason the test technician should be cleared first: once your own FSM user carries your number, the mirror writes a **second** technician row with the same number, and the sign-in takes whichever row it finds first. The list no longer switches the test technician off, so nothing settles that for you. Clear the test technician before your number goes on your FSM user.
+One thing to watch: once your own FSM user carries your number, the mirror writes a **second** technician row with the same number. The sign-in takes the row FSM lists before one written by hand (since 27 September 2026), so you sign in as your FSM user either way; still clear the test technician once you have moved to your FSM user, so that its jobs and its row do not linger on the dispatch board.
 
 ---
 

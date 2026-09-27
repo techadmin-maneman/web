@@ -19,10 +19,16 @@ export interface FieldTechnician {
   readonly mobileE164: string;
 }
 
-/** The active field technician this number belongs to, as FSM lists him. */
+/**
+ * The active field technician this number belongs to, as FSM lists him. Where a row written by hand into staging
+ * holds the same number as one FSM lists, FSM's comes first: the owner signs in on their own FSM user from 27
+ * September 2026, and a test row left behind on that number must not take the sign-in (migration 0046).
+ */
 export async function findFieldTechnician(db: D1Database, mobileE164: string): Promise<FieldTechnician | null> {
   const row = await db
-    .prepare("SELECT id, name FROM technicians WHERE mobile_e164 = ?1 AND active = 1")
+    .prepare(
+      "SELECT id, name FROM technicians WHERE mobile_e164 = ?1 AND active = 1 ORDER BY hand_written, rowid LIMIT 1",
+    )
     .bind(mobileE164)
     .first<{ id: string; name: string }>();
   return row === null ? null : { id: row.id, name: row.name, mobileE164 };

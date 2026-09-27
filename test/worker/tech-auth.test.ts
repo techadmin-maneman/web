@@ -351,6 +351,27 @@ describe("the technician list", () => {
     expect(code).toMatch(/^\d{6}$/);
   });
 
+  // The owner signs in on their own FSM user from 27 September 2026 (docs/owner-answers-2026-09-27.md). A test row
+  // left behind on the same number must not take the sign-in, whichever was written first.
+  it("prefers the technician FSM lists to one written by hand on the same number", async () => {
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM technicians WHERE id = ?1").bind(IMRAN),
+      env.DB.prepare(
+        `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
+         VALUES (?1, 'tech-tester-1a2b3c4d', 'Test Technician', 'TT', 1, 'Gurgaon', '+919810000009', ?2, 1)`,
+      ).bind(TESTER, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
+         VALUES (?1, 'resource-1', 'Imran Qureshi', 'IQ', 1, 'Gurgaon', '+919810000009', ?2)`,
+      ).bind(IMRAN, NOW.toISOString()),
+    ]);
+
+    const { id } = await challengeFor("98100 00009");
+
+    const challenge = await env.DB.prepare("SELECT technician_id FROM otp_challenges WHERE id = ?1").bind(id).first();
+    expect(challenge).toEqual({ technician_id: IMRAN });
+  });
+
   it("stops no one when FSM lists no one, which is a failed read rather than an empty org", async () => {
     expect(await syncTechnicians(env.DB, createStubFsm(EMPTY_FSM), NOW.toISOString())).toEqual([]);
 
