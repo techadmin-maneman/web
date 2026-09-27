@@ -24,7 +24,7 @@
 
 import { indiaDate } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
-import { scrubString, type Logger } from "../log.ts";
+import { failureReason, type Logger } from "../log.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
@@ -53,8 +53,7 @@ export interface BooksSyncDeps {
 
 export type BooksSyncSummary = { recorded: number; applied: number; refunded: number };
 
-const describe = (error: unknown): string =>
-  scrubString(error instanceof Error ? error.message : "unknown error").slice(0, 200);
+const describe = (error: unknown): string => failureReason(error, 200);
 
 interface Pass {
   readonly db: D1Database;

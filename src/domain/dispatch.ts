@@ -47,6 +47,7 @@ import {
 } from "./scheduling.ts";
 import { visitMessage } from "./visit-messages.ts";
 import { windowAt } from "../policy/windows.ts";
+import { failureReason } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 /** Seven days, as the board shows them. */
@@ -516,7 +517,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
       await deps.fsm.rescheduleVisit(job.fsm_id, { start: indiaIso(times.start), end: indiaIso(times.end) });
     }
   } catch (error) {
-    const reason = (error instanceof Error ? error.message : "unknown error").slice(0, 300);
+    const reason = failureReason(error);
     await db.batch([
       releasingClaims(db, moveId),
       db

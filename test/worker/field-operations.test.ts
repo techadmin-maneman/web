@@ -1141,6 +1141,23 @@ describe("dispatch", () => {
       .first<{ window_start: string }>();
     expect(unmoved?.window_start).toBe("2026-09-21T07:30:00.000Z");
   });
+
+  it("keeps FSM's reason for a refused move without the number or e-mail it echoed", async () => {
+    fsm.failNext("rescheduleVisit", "FSM said 400: contact +919810000001 (rohit@example.com) is locked");
+
+    await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
+      date: "2026-09-22",
+      window: "morning",
+      reason: "running_over",
+    });
+
+    const move = await env.DB.prepare("SELECT fsm_error FROM dispatch_moves").first<{ fsm_error: string }>();
+    expect(move?.fsm_error).toContain("FSM said 400");
+    expect(move?.fsm_error).not.toContain("9810000001");
+    expect(move?.fsm_error).not.toContain("rohit@example.com");
+  });
 });
 
 // Leave is ours because FSM has nowhere to keep it (ADR 0062). The point of
