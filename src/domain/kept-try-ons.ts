@@ -5,7 +5,7 @@
 // What is kept lives in the client-photos bucket, which has no lifecycle rule: the small copy from its upload, and the
 // look once it is moved there from the results bucket, whose 30-day rule would otherwise take it.
 
-import { keptTryOn, type HeldTryOn } from "../policy/kept-try-ons.ts";
+import { KEEPING_NOTICES, keptTryOn, type HeldTryOn } from "../policy/kept-try-ons.ts";
 import { DAY_MS } from "../lib/durations.ts";
 import { fileExtension, type ImageType } from "../lib/image-bytes.ts";
 import type { JobState } from "../config/tryon.ts";
@@ -100,6 +100,8 @@ export async function keepOrLetGo(env: KeepEnv, tryOns: readonly ExpiringTryOn[]
 async function keepOnItsDay(env: KeepEnv, tryOn: ExpiringTryOn, now: Date): Promise<boolean> {
   const { person_id: personId, expires_at: lastDay } = tryOn;
   if (personId === null || lastDay === null) return false;
+  // Agreed to under a notice that does not keep it, it goes on its day, as that notice said.
+  if (!KEEPING_NOTICES.includes(tryOn.photo_consent_version)) return false;
   const db = env.DB;
 
   const { results: theirs } = await db
