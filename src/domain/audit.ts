@@ -44,6 +44,14 @@ export const AUDIT_ACTIONS = [
   "price.withdraw",
   "pincode.set",
   "pincode.rename",
+  // The services clients book (docs/decisions/0085-services-ops-can-edit.md): one added to a kind, renamed, given
+  // another length, a kind's put in another order, one retired from a day, and one offered again.
+  "service.add",
+  "service.rename",
+  "service.length",
+  "service.reorder",
+  "service.retire",
+  "service.restore",
   // Ops putting a client's service-visit credits right by hand (docs/decisions/0068-a-paid-hold-is-kept.md).
   "credit.adjust",
   // Ops calling a client about a move he had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).

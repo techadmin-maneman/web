@@ -2,8 +2,15 @@
 // time, read fresh from FSM and written over its copy in D1, with the client,
 // technician and visit type it names. A webhook or the reconciliation only
 // says which appointment to read; FSM's answer is what is stored.
+//
+// The visit's service, its kind and its tier, comes from its FSM item: the
+// service whose item it is by the ID kept on it, else the one of its name,
+// else, for an item scripts/setup-fsm.ts made, its kind's standard service.
+// A visit a hold booked keeps the hold's tier, since the hold is what was
+// sold, and FSM may hold it on its kind's item where it had none of its own
+// (docs/decisions/0085-services-ops-can-edit.md).
 
-import { visitTypeOfService, type VisitType } from "../config/visit-types.ts";
+import { STANDARD_TIER, visitTypeOfService, type VisitType } from "../config/visit-types.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { initialsOf } from "../lib/names.ts";
 import type { FsmAppointment, FsmProvider } from "../providers/fsm.ts";
@@ -51,7 +58,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
   const personId = appointment.contactId === null ? null : await personFor(db, fsm, appointment.contactId, at);
   const leadTechnician = appointment.technicianIds[0];
   const technicianId = leadTechnician === undefined ? null : await technicianFor(db, fsm, leadTechnician, at);
-  const type = await visitTypeOf(db, fsm, appointment.serviceIds, at);
+  const service = await serviceOfItems(db, fsm, appointment.serviceIds, at);
 
   const existing = await db
     .prepare("SELECT id FROM appointments WHERE fsm_id = ?1")
@@ -66,13 +73,17 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         // fsm_invoice_id is not written here: FSM leaves the appointment's own Invoice_Id
         // null, and the invoice pass fills the column with Books' ID (ADR 0055). Where FSM
         // holds no place for it yet, the visit keeps the one our booking gave it (ADR 0068).
-        // first_seen_at is the first sync's alone, so an update leaves it.
-        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
+        // first_seen_at is the first sync's alone, so an update leaves it. The tier is the hold's that booked the
+        // visit, where one did, else its item's.
+        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
            technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
+         VALUES (?1, ?2, ?3, ?4, ?5,
+           COALESCE((SELECT h.tier FROM slot_holds h WHERE h.appointment_id = ?1 AND h.state = 'booked'
+             ORDER BY h.created_at LIMIT 1), ?15),
+           ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
          ON CONFLICT (fsm_id) DO UPDATE SET
            fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id, type = excluded.type,
-           window_start = excluded.window_start, window_end = excluded.window_end,
+           tier = excluded.tier, window_start = excluded.window_start, window_end = excluded.window_end,
            technician_id = excluded.technician_id, status = excluded.status, fsm_status = excluded.fsm_status,
            service_city = COALESCE(excluded.service_city, appointments.service_city),
            service_pincode = COALESCE(excluded.service_pincode, appointments.service_pincode),
@@ -83,7 +94,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         fsmId,
         appointment.workOrderId,
         personId,
-        type,
+        service?.type ?? null,
         utc(appointment.scheduledStart),
         utc(appointment.scheduledEnd),
         technicianId,
@@ -93,6 +104,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         appointment.servicePincode,
         utc(appointment.modifiedAt),
         at,
+        service?.tier ?? null,
       ),
   ];
   const visit = visitOf(appointment, status);
@@ -261,13 +273,13 @@ export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: stri
   return technicians.length;
 }
 
-/** The visit type of the first of an appointment's services that is one of ours. */
-async function visitTypeOf(
+/** The service of the first of an appointment's service items that is one of ours: its kind and its tier. */
+async function serviceOfItems(
   db: D1Database,
   fsm: FsmProvider,
   serviceIds: readonly string[],
   at: string,
-): Promise<VisitType | null> {
+): Promise<{ type: VisitType; tier: string } | null> {
   if (serviceIds.length === 0) return null;
   let names = await itemNames(db, serviceIds);
   if (names.size < new Set(serviceIds).size) {
@@ -286,10 +298,32 @@ async function visitTypeOf(
     names = await itemNames(db, serviceIds);
   }
   for (const serviceId of serviceIds) {
-    const type = visitTypeOfService(names.get(serviceId) ?? "");
-    if (type !== null) return type;
+    const service = await serviceByItem(db, serviceId, names.get(serviceId) ?? null);
+    if (service !== null) return service;
   }
   return null;
+}
+
+/**
+ * The service an FSM item is: the one its ID is kept on, else the one of its name, else, for an item named as
+ * scripts/setup-fsm.ts names a kind's, that kind's standard service. Null for an item that is no service of ours.
+ */
+async function serviceByItem(
+  db: D1Database,
+  itemId: string,
+  name: string | null,
+): Promise<{ type: VisitType; tier: string } | null> {
+  const service = await db
+    .prepare(
+      `SELECT kind AS type, tier, 0 AS rank FROM services WHERE fsm_item_id = ?1
+       UNION ALL SELECT kind AS type, tier, 1 AS rank FROM services WHERE name = ?2 COLLATE NOCASE
+       ORDER BY rank LIMIT 1`,
+    )
+    .bind(itemId, name)
+    .first<{ type: VisitType; tier: string }>();
+  if (service !== null) return service;
+  const type = visitTypeOfService(name ?? "");
+  return type === null ? null : { type, tier: STANDARD_TIER };
 }
 
 async function itemNames(db: D1Database, ids: readonly string[]): Promise<Map<string, string>> {

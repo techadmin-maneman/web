@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../../src/config/scheduling.ts";
 import { clashes, clientNotice, MOVE_REASONS, moveRefusal, RULES, slotsFor } from "../../src/policy/dispatch.ts";
+import { unitsFor } from "../../src/policy/visit-length.ts";
 
 /** A technician whose day already holds a job starting in each of these windows. */
 const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLeave: false });
@@ -19,11 +20,14 @@ describe("dispatch", () => {
     expect(UNITS_PER_DAY).toBe(8); // counted in halves, so a replacement's block is whole
   });
 
+  // Each block's size comes from its service's length (src/policy/visit-length.ts), and the kinds' own lengths
+  // give the prompt's four (docs/decisions/0085-services-ops-can-edit.md).
   it(RULES[1], () => {
-    expect(slotsFor("consultation")).toBe(1);
-    expect(slotsFor("service")).toBe(1);
-    expect(slotsFor("replacement")).toBe(1.5);
-    expect(slotsFor("first_fit")).toBe(2);
+    const sized = (type: keyof typeof VISIT_BLOCKS) => slotsFor(unitsFor(VISIT_BLOCKS[type].minutes));
+    expect(sized("consultation")).toBe(1);
+    expect(sized("service")).toBe(1);
+    expect(sized("replacement")).toBe(1.5);
+    expect(sized("first_fit")).toBe(2);
   });
 
   it("books each visit for the length the owner ruled on 24 September 2026", () => {

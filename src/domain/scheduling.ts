@@ -19,6 +19,11 @@
 // A move on the dispatch board claims its new time the same way while FSM is
 // written, and the claims count here for as long as the move can still finish
 // (docs/decisions/0069-dispatch-under-concurrency.md).
+//
+// A visit holds the half-slots its length needs (src/policy/visit-length.ts):
+// a hold, its service's length as it was made; a visit already booked, the
+// longer of its service's length and the time FSM books it for
+// (docs/decisions/0085-services-ops-can-edit.md).
 
 import {
   BOOKING_WINDOWS,
@@ -34,11 +39,12 @@ import {
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { clashes } from "../policy/dispatch.ts";
+import { bookedLength, unitsFor } from "../policy/visit-length.ts";
 import { windowAt } from "../policy/windows.ts";
 import { isFitted } from "./client-visits.ts";
 import { loadBlackouts } from "./leads.ts";
 import type { Price } from "./price-book.ts";
-import { MINUTE_MS } from "../lib/durations.ts";
+import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
 /** What one technician's day already holds. */
 export interface Day {
@@ -59,24 +65,42 @@ export function unitAt(time: string): number {
   return unit;
 }
 
-/** Whether every half-slot of a visit of this type starting at `start` is free, and inside the day. */
-export function fitsAt(day: Day, start: number, type: VisitType): boolean {
-  const { units } = VISIT_BLOCKS[type];
+/** Whether every one of a visit's half-slots, starting at `start`, is free, and inside the day. */
+export function fitsAt(day: Day, start: number, units: number): boolean {
   if (start + units > UNITS_PER_DAY) return false;
   for (let unit = start; unit < start + units; unit += 1) if (day.units.has(unit)) return false;
   return true;
 }
 
-/** Where a visit of this type can start in this window, given the day; null if it cannot. */
-export function placement(day: Day, window: BookingWindow, type: VisitType): number | null {
+/** Where a visit of this many half-slots can start in this window, given the day; null if it cannot. */
+export function placement(day: Day, window: BookingWindow, units: number): number | null {
   if (day.onLeave || clashes(day, window)) return null;
-  return WINDOW_SLOT_MAP[window].find((start) => fitsAt(day, start, type)) ?? null;
+  return WINDOW_SLOT_MAP[window].find((start) => fitsAt(day, start, units)) ?? null;
 }
 
 /** What a visit starting at a half-slot claims: each half-slot it covers, and its window. */
-export function claimsOf(start: number, type: VisitType, window: BookingWindow): string[] {
-  const units = Array.from({ length: VISIT_BLOCKS[type].units }, (_, index) => `unit:${String(start + index)}`);
-  return [...units, `window:${window}`];
+export function claimsOf(start: number, units: number, window: BookingWindow): string[] {
+  const covered = Array.from({ length: units }, (_, index) => `unit:${String(start + index)}`);
+  return [...covered, `window:${window}`];
+}
+
+/** A visit already booked, as the mirror holds it: its kind, its service's length where the table has it, its times. */
+export interface BookedVisit {
+  readonly type: VisitType | null;
+  /** The length of the service it is, from the services table; null where no service is it. */
+  readonly service_minutes: number | null;
+  readonly window_start: string;
+  readonly window_end: string | null;
+}
+
+/**
+ * How long a visit already booked takes (src/policy/visit-length.ts): the longer of its service's length, or its
+ * kind's where no service is it, and the time FSM books it for, where FSM gives one.
+ */
+export function bookedMinutes(visit: BookedVisit): number {
+  const service = visit.service_minutes ?? VISIT_BLOCKS[visit.type ?? "service"].minutes;
+  const booked = visit.window_end === null ? 0 : minutesBetween(visit.window_start, visit.window_end);
+  return bookedLength(service, booked > 0 ? booked : null);
 }
 
 export interface Technician {
@@ -174,20 +198,23 @@ export async function occupancy(
     }
   }
 
+  // A visit is the standard tier's where the mirror knows no other (migration 0047).
   const visits = await db
     .prepare(
-      `SELECT technician_id, type, window_start FROM appointments
-       WHERE deleted_at IS NULL AND technician_id IS NOT NULL AND status IN ('scheduled', 'dispatched', 'in_progress')
-         AND window_start >= ?1 AND window_start < ?2 AND id IS NOT ?3`,
+      `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes FROM appointments a
+       LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
+       WHERE a.deleted_at IS NULL AND a.technician_id IS NOT NULL
+         AND a.status IN ('scheduled', 'dispatched', 'in_progress')
+         AND a.window_start >= ?1 AND a.window_start < ?2 AND a.id IS NOT ?3`,
     )
     .bind(indiaInstant(from, "00:00").toISOString(), indiaInstant(addDays(to, 1), "00:00").toISOString(), exceptVisitId)
-    .all<{ technician_id: string; type: VisitType | null; window_start: string }>();
+    .all<BookedVisit & { technician_id: string }>();
   for (const visit of visits.results) {
     const starts = new Date(visit.window_start);
     const time = indiaTime(starts);
     const day = dayOf(visit.technician_id, indiaDate(starts));
     const start = unitAt(time);
-    const units = VISIT_BLOCKS[visit.type ?? "service"].units;
+    const units = unitsFor(bookedMinutes(visit));
     for (let unit = start; unit < Math.min(start + units, UNITS_PER_DAY); unit += 1) day.units.add(unit);
     day.windows.add(windowAt(time));
   }
@@ -266,16 +293,20 @@ export interface WindowOffer {
   readonly with: "regular" | "another" | null;
 }
 
-/** Each window of each day from `from`, for this type: who could take it, the regular technician first. */
+/**
+ * Each window of each day from `from`, for a visit that takes this many minutes: who could take it, the regular
+ * technician first. A day from `until` on, the day a service is retired from, is offered to nobody.
+ */
 export async function availability(
   db: D1Database,
   personId: string,
-  type: VisitType,
+  visit: { readonly minutes: number; readonly until?: string | null },
   from: string,
   days: number,
   now: Date,
   moving: Moving | null = null,
 ): Promise<{ date: string; windows: WindowOffer[] }[]> {
+  const units = unitsFor(visit.minutes);
   const to = addDays(from, days - 1);
   const [technicians, regular, held, closed] = await Promise.all([
     techniciansFor(db, moving),
@@ -283,11 +314,12 @@ export async function availability(
     occupancy(db, from, to, now, moving?.visitId ?? null),
     loadBlackouts(db, from, to),
   ]);
+  const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(from, index);
     const windows = BOOKING_WINDOWS.map((window): WindowOffer => {
-      if (closed.has(date)) return { window, with: null };
-      const free = technicians.filter((technician) => placement(held(technician.id, date), window, type) !== null);
+      if (closed.has(date) || retired(date)) return { window, with: null };
+      const free = technicians.filter((technician) => placement(held(technician.id, date), window, units) !== null);
       if (free.some((technician) => technician.id === regular)) return { window, with: "regular" };
       return { window, with: free.length > 0 ? "another" : null };
     });
@@ -295,9 +327,19 @@ export async function availability(
   });
 }
 
+/**
+ * What a hold is for: its service's kind and tier, and the length it is held and booked for, copied onto the hold as
+ * it is made, so a change to the service after never moves what the client was sold.
+ */
+export interface HeldService {
+  readonly type: VisitType;
+  readonly tier: string;
+  readonly minutes: number;
+}
+
 export interface Hold {
   readonly id: string;
-  readonly type: VisitType;
+  readonly service: HeldService;
   readonly date: string;
   readonly window: BookingWindow;
   readonly technician: Technician;
@@ -335,7 +377,8 @@ export async function holdSlot(
   db: D1Database,
   input: {
     personId: string;
-    type: VisitType;
+    /** The service it is for, and the length its time is held for. */
+    service: HeldService;
     date: string;
     window: BookingWindow;
     price: Price;
@@ -358,7 +401,8 @@ export async function holdSlot(
   now: Date,
   holdSeconds: number,
 ): Promise<Hold | null> {
-  const { personId, type, date, window, price, moves, useCredit = false, from = "app" } = input;
+  const { personId, service, date, window, price, moves, useCredit = false, from = "app" } = input;
+  const units = unitsFor(service.minutes);
   if ((await loadBlackouts(db, date, date)).has(date)) return null;
   const moving = moves?.kind === "move" ? moves.visit : null;
   const [technicians, regular, held] = await Promise.all([
@@ -367,7 +411,7 @@ export async function holdSlot(
     occupancy(db, date, date, now, moving?.visitId ?? null),
   ]);
   const candidates = technicians
-    .map((technician) => ({ technician, start: placement(held(technician.id, date), window, type) }))
+    .map((technician) => ({ technician, start: placement(held(technician.id, date), window, units) }))
     .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null)
     .sort(
       (a, b) =>
@@ -388,14 +432,14 @@ export async function holdSlot(
           .prepare(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
                amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
-               use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at)
+               use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at, tier, minutes)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-               ?19, ?19)`,
+               ?19, ?19, ?20, ?21)`,
           )
           .bind(
             id,
             personId,
-            type,
+            service.type,
             date,
             window,
             technician.id,
@@ -412,14 +456,16 @@ export async function holdSlot(
             input.lateFee?.amount_ex_gst ?? null,
             input.lateFee?.gst_percent ?? null,
             confirmedAt,
+            service.tier,
+            service.minutes,
           ),
-        ...claimsOf(start, type, window).map((claim) =>
+        ...claimsOf(start, units, window).map((claim) =>
           db
             .prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)")
             .bind(technician.id, date, claim, id),
         ),
       ]);
-      return { id, type, date, window, technician, startUnit: start, price, expiresAt };
+      return { id, service, date, window, technician, startUnit: start, price, expiresAt };
     } catch (error) {
       // Another hold took this technician's time between the look and the write: the next one, then.
       if (!(error instanceof Error && error.message.includes("UNIQUE"))) throw error;
@@ -428,8 +474,12 @@ export async function holdSlot(
   return null;
 }
 
-/** When a held visit starts and ends, as FSM books it. */
-export function visitTimes(date: string, startUnit: number, type: VisitType): { start: Date; end: Date } {
+/** When a visit starting in a half-slot starts and ends, as FSM books it: from the half-slot's start, for its length. */
+export function visitTimes(date: string, startUnit: number, minutes: number): { start: Date; end: Date } {
   const start = indiaInstant(date, UNIT_STARTS[startUnit] ?? WINDOW_TIMES.morning.start);
-  return { start, end: new Date(start.getTime() + VISIT_BLOCKS[type].minutes * MINUTE_MS) };
+  return { start, end: new Date(start.getTime() + minutes * MINUTE_MS) };
 }
+
+/** How long a hold's visit is booked for: the length it was held for, or its kind's for a hold made before lengths. */
+export const heldMinutes = (hold: { readonly type: VisitType; readonly minutes: number | null }): number =>
+  hold.minutes ?? VISIT_BLOCKS[hold.type].minutes;

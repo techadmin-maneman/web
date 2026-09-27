@@ -4,6 +4,8 @@
 // consultation, from the mirror or from their booking on the site before FSM
 // has it; else nothing is booked. The next visit comes from the mirror, and
 // the credit tile and board B1's one prompt beneath it (src/domain/home-prompt.ts).
+// What the client may book now is every service offered of each kind open to
+// them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
@@ -14,11 +16,14 @@ import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/cli
 import { creditBalance } from "../domain/credits.ts";
 import { homePrompt } from "../domain/home-prompt.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
+import { offeredServices } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
 import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { addDays, indiaDate } from "../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
+import { PriceSchema } from "./client-booking.ts";
 import { CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
 
@@ -82,6 +87,23 @@ export const MeSchema = z
       .object({
         self_serve: z.boolean().openapi({ description: "Booking in the app is on; off, the app opens WhatsApp." }),
         types: z.array(z.enum(VISIT_TYPES)).openapi({ description: "What the client may book now." }),
+        services: z
+          .array(
+            z
+              .object({
+                type: z.enum(VISIT_TYPES),
+                tier: z.string().openapi({ description: "Its code within its kind, which booking it names." }),
+                name: z.string(),
+                minutes: z.number().int().openapi({ description: "How long the visit is booked for." }),
+                price: PriceSchema.openapi({ description: "Its price tomorrow, the first day it can be booked." }),
+              })
+              .strict()
+              .openapi("OfferedService"),
+          )
+          .openapi({
+            description:
+              "Every service of those kinds offered and priced now, a kind at a time, in the console's order.",
+          }),
       })
       .strict(),
   })
@@ -125,6 +147,14 @@ export function registerClientMe(app: App): void {
     const address = proposal === null ? null : await currentAddress(db, session.subjectId);
     const place = address === null ? (booking?.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
     const state = clientStateOf(fitted, upcoming !== null || booking !== null);
+    const types = await bookableTypes(db, session.subjectId);
+    const services = (await offeredServices(db, addDays(indiaDate(now), 1), types)).map((service) => ({
+      type: service.kind,
+      tier: service.tier,
+      name: service.name,
+      minutes: service.minutes,
+      price: service.price,
+    }));
 
     return c.json(
       {
@@ -139,10 +169,7 @@ export function registerClientMe(app: App): void {
         next_visit: upcoming,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         prompt: await homePrompt(db, session.subjectId, state, now),
-        booking: {
-          self_serve: c.var.config.settings.selfServeBooking,
-          types: await bookableTypes(db, session.subjectId),
-        },
+        booking: { self_serve: c.var.config.settings.selfServeBooking, types, services },
       },
       200,
     );

@@ -7,12 +7,19 @@
 // The Request carries the lead's ID, so a retry after a Request whose answer
 // never reached us finds that one rather than making a second
 // (docs/decisions/0068-a-paid-hold-is-kept.md).
+//
+// Its line is the item of the consultation the site books: the kind's
+// standard service while it is offered, else the first the kind offers
+// (docs/decisions/0085-services-ops-can-edit.md).
 
 import { windowLabel, type VisitWindow } from "../config/booking.ts";
-import { FSM_SERVICE_NAMES } from "../config/visit-types.ts";
+import { STANDARD_TIER } from "../config/visit-types.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { createLogger, type Logger } from "../log.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
+import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf } from "./fsm-contacts.ts";
+import { bookableService } from "./services.ts";
 
 /** The two windows a Phase 1 booking offers, in Phase 2's words (docs/decisions/0040-phase-1-alignment.md). */
 const WINDOWS = { "before noon": "Morning, 9 am to 12 pm", "after four": "Evening, 4 to 8 pm" } as const;
@@ -56,7 +63,7 @@ export async function sendLeadToFsm(
   const contactId = await fsmContactOf(db, fsm, lead.person_id, { city: lead.city, pincode: null }, log);
   const requestId =
     (lead.fsm_request_tried_at === null ? null : await requestMadeBefore(fsm, leadId, log)) ??
-    (await askForConsultation(db, fsm, { leadId, lead, contactId, labelAsTest, now }));
+    (await askForConsultation(db, fsm, { leadId, lead, contactId, labelAsTest, now, log }));
   await db.prepare("UPDATE leads SET fsm_request_id = ?1 WHERE id = ?2").bind(requestId, leadId).run();
   return "sent";
 }
@@ -74,11 +81,12 @@ async function requestMadeBefore(fsm: FsmProvider, leadId: string, log: Logger):
 async function askForConsultation(
   db: D1Database,
   fsm: FsmProvider,
-  input: { leadId: string; lead: LeadRow; contactId: string; labelAsTest: boolean; now: Date },
+  input: { leadId: string; lead: LeadRow; contactId: string; labelAsTest: boolean; now: Date; log: Logger },
 ): Promise<string> {
-  const { leadId, lead, contactId, labelAsTest, now } = input;
-  const consultation = (await fsm.items()).find((item) => item.name === FSM_SERVICE_NAMES.consultation);
-  if (consultation === undefined) throw new Error("FSM has no Consultation service item: run scripts/setup-fsm.ts");
+  const { leadId, lead, contactId, labelAsTest, now, log } = input;
+  const offered = await bookableService(db, "consultation", undefined, lead.proposed_visit_date ?? indiaDate(now));
+  const tier = offered?.tier ?? STANDARD_TIER;
+  const consultation = await itemForService(db, fsm, { kind: "consultation", tier }, { log });
   await db.prepare("UPDATE leads SET fsm_request_tried_at = ?2 WHERE id = ?1").bind(leadId, now.toISOString()).run();
   return fsm.createRequest({
     contactId,

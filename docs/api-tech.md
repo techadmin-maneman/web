@@ -790,7 +790,10 @@ The piece a label names
             "fsm_refused",
             "fsm_partly",
             "too_early_to_close",
-            "no_service_area"
+            "no_service_area",
+            "service_exists",
+            "last_of_kind",
+            "service_retired"
           ]
         },
         "request_id": {

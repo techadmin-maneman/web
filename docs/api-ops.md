@@ -1639,7 +1639,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused
+**400**: invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from
 
 ```json
 {
@@ -1648,6 +1648,62 @@ Request body:
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/prices/correct
+
+Correct a price still to come: take it back and set its replacement, from any day from today, at once
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PriceCorrection"
+}
+```
+
+**200**: The book as it now stands
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Price"
+      }
+    }
+  },
+  "required": [
+    "prices"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names what was refused, was_valid_from when that row applies today or applied before; service_retired: the service is retired by the new day
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the book holds no such row to correct
 
 ```json
 {
@@ -1797,6 +1853,330 @@ Request body:
 }
 ```
 
+### GET /api/services
+
+Every service, offered or retired, with every price it has had and is to have, and the late fees
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services
+
+Add a service to a kind of visit. Clients see it once it has a price
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceAdd"
+}
+```
+
+**201**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/name
+
+Rename a service. Its code stays, and so do its prices and what was sold under them
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceRename"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/length
+
+How long a service is booked for, from now on. A visit held or booked before keeps its own
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceLength"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/order
+
+A kind's services in another order, as the console and the app list them
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceOrder"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/retire
+
+Stop offering a service from a day, today or later. Nothing already sold changes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceRetire"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/restore
+
+Offer a retired service again, or take back a retirement still to come
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/whoami
 
 Who Access let through, and where signing out goes
@@ -1868,7 +2248,10 @@ Who Access let through, and where signing out goes
             "fsm_refused",
             "fsm_partly",
             "too_early_to_close",
-            "no_service_area"
+            "no_service_area",
+            "service_exists",
+            "last_of_kind",
+            "service_retired"
           ]
         },
         "request_id": {
@@ -5482,7 +5865,8 @@ Who Access let through, and where signing out goes
     },
     "tier": {
       "type": "string",
-      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "For a visit, the code of one of its kind's services; for a late fee, standard."
     },
     "amount_ex_gst": {
       "type": "integer",
@@ -5505,6 +5889,61 @@ Who Access let through, and where signing out goes
     "amount_ex_gst",
     "gst_percent",
     "valid_from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PriceCorrection
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "item": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement",
+        "late_fee_first_fit",
+        "late_fee_replacement"
+      ],
+      "description": "A kind of visit, or one of the two late fees."
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "For a visit, the code of one of its kind's services; for a late fee, standard."
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000000
+    },
+    "gst_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 28
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "was_valid_from": {
+      "type": "string",
+      "format": "date",
+      "description": "The day the price still to come applies from."
+    }
+  },
+  "required": [
+    "item",
+    "tier",
+    "amount_ex_gst",
+    "gst_percent",
+    "valid_from",
+    "was_valid_from"
   ],
   "additionalProperties": false
 }
@@ -5644,6 +6083,315 @@ Who Access let through, and where signing out goes
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsServices
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "kinds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "minutes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "minutes"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The four kinds, in their order, each with the length a new service of it starts at."
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OpsService"
+      }
+    },
+    "late_fees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "item": {
+            "type": "string",
+            "enum": [
+              "late_fee_first_fit",
+              "late_fee_replacement"
+            ]
+          },
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Price"
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "item",
+          "prices"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The two late fees, each one figure for its kind of visit, with every price it has had."
+    },
+    "min_minutes": {
+      "type": "integer"
+    },
+    "max_minutes": {
+      "type": "integer"
+    },
+    "max_amount_ex_gst": {
+      "type": "integer"
+    },
+    "max_gst_percent": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "today",
+    "kinds",
+    "services",
+    "late_fees",
+    "min_minutes",
+    "max_minutes",
+    "max_amount_ex_gst",
+    "max_gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "description": "Its code within its kind, which the price book prices it by; never changed."
+    },
+    "name": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "integer",
+      "description": "How long FSM books it for, and the time the day keeps."
+    },
+    "sort": {
+      "type": "integer"
+    },
+    "retired_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date from which clients no longer see it or book it; null while it is offered."
+    },
+    "offered": {
+      "type": "boolean",
+      "description": "Offered today: not retired by today. Priced or not."
+    },
+    "fsm_item_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Its item in FSM's catalogue, once found by its name or made; null until then."
+    },
+    "updated_by": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Price"
+      },
+      "description": "Every price it has had and is to have, newest first."
+    }
+  },
+  "required": [
+    "kind",
+    "tier",
+    "name",
+    "minutes",
+    "sort",
+    "retired_date",
+    "offered",
+    "fsm_item_id",
+    "updated_by",
+    "updated_at",
+    "prices"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "Its code; left out, made from its name, e.g. premium."
+    },
+    "minutes": {
+      "type": "integer",
+      "description": "Left out, its kind's length."
+    }
+  },
+  "required": [
+    "kind",
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceRename
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 60
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceLength
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "minutes": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "minutes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceOrder
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tiers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "minItems": 1,
+      "maxItems": 64,
+      "description": "Every one of the kind's codes, once."
+    }
+  },
+  "required": [
+    "tiers"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceRetire
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date from which clients no longer see it."
+    }
+  },
+  "required": [
+    "from"
   ],
   "additionalProperties": false
 }

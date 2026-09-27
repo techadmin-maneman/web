@@ -3,15 +3,19 @@
 //   GET  /api/settings              every rule ops may change, with its unit and its bounds
 //   POST /api/settings/:name        set one, or send null to put the default back
 //   GET  /api/prices                the price book, with the row in force marked
-//   POST /api/prices                a price from the date it applies
+//   POST /api/prices                a price from the date it applies, for a service or a late fee
 //   POST /api/prices/withdraw       a price still to come, taken back
+//   POST /api/prices/correct        a price still to come, taken back and set again, in one batch
 //   GET  /api/service-area          every pincode, its city, whether we go there and who waits there
 //   POST /api/service-area          which pincodes we go to, from when, and what their areas are called
 //
 // A change here needs no release. Every one records the Access identity behind
 // it, what the value was and what it is now, in the same batch as the change
 // itself (ADR 0031). Serving a pincode launches it, as the waitlist's launch
-// does (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// does (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A
+// visit's price is its service's, so it is set only for a service the console
+// holds, and not from the day it is retired by; the services themselves are
+// src/routes/ops-services.ts's (docs/decisions/0085-services-ops-can-edit.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
@@ -27,7 +31,15 @@ import {
 } from "../config/ops-settings.ts";
 import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
-import { checkPrice, PRICE_ITEMS, priceBook, setPrice, withdrawPrice } from "../domain/price-book.ts";
+import {
+  correctPrice,
+  PRICE_ITEMS,
+  priceBook,
+  priceRefusal,
+  setPrice,
+  withdrawPrice,
+  type PriceRefusal,
+} from "../domain/price-book.ts";
 import { serviceArea, setServiceArea } from "../domain/service-area.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -93,7 +105,7 @@ const setSettingRoute = createRoute({
   },
 });
 
-const PriceSchema = z
+export const PriceRowSchema = z
   .object({
     item: z.enum(PRICE_ITEMS),
     tier: z.string(),
@@ -115,7 +127,7 @@ const pricesRoute = createRoute({
       ...json(
         z
           .object({
-            prices: z.array(PriceSchema),
+            prices: z.array(PriceRowSchema),
             today: z.iso.date(),
             max_amount_ex_gst: z.number().int(),
             max_gst_percent: z.number().int(),
@@ -127,31 +139,65 @@ const pricesRoute = createRoute({
   },
 });
 
+/** A price as ops set one: what it prices, the figures, and the day it applies from. */
+const PriceFields = {
+  item: z.enum(PRICE_ITEMS).openapi({ description: "A kind of visit, or one of the two late fees." }),
+  tier: z.string().regex(PRICE_TIER).openapi({
+    description: "For a visit, the code of one of its kind's services; for a late fee, standard.",
+  }),
+  amount_ex_gst: z.number().int().min(PRICE_BOUNDS.minPaise).max(PRICE_BOUNDS.maxPaise),
+  gst_percent: z.number().int().min(PRICE_BOUNDS.minGstPercent).max(PRICE_BOUNDS.maxGstPercent),
+  valid_from: z.iso.date(),
+};
+
+const bookAnswer = {
+  description: "The book as it now stands",
+  ...json(z.object({ prices: z.array(PriceRowSchema) }).strict()),
+};
+
 const setPriceRoute = createRoute({
   method: "post",
   path: "/api/prices",
   summary: "A price from the date it applies. A change is a new row, so nothing already invoiced moves",
+  request: {
+    body: { required: true, ...json(z.object(PriceFields).strict().openapi("PriceChange")) },
+  },
+  responses: {
+    200: bookAnswer,
+    400: errorResponse(
+      "invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: " +
+        "the service is retired by the day it would apply from",
+    ),
+    403: errorResponse("access_required"),
+  },
+});
+
+const correctPriceRoute = createRoute({
+  method: "post",
+  path: "/api/prices/correct",
+  summary: "Correct a price still to come: take it back and set its replacement, from any day from today, at once",
   request: {
     body: {
       required: true,
       ...json(
         z
           .object({
-            item: z.enum(PRICE_ITEMS).openapi({ description: "A kind of visit, or one of the two late fees." }),
-            tier: z.string().regex(PRICE_TIER),
-            amount_ex_gst: z.number().int().min(PRICE_BOUNDS.minPaise).max(PRICE_BOUNDS.maxPaise),
-            gst_percent: z.number().int().min(PRICE_BOUNDS.minGstPercent).max(PRICE_BOUNDS.maxGstPercent),
-            valid_from: z.iso.date(),
+            ...PriceFields,
+            was_valid_from: z.iso.date().openapi({ description: "The day the price still to come applies from." }),
           })
           .strict()
-          .openapi("PriceChange"),
+          .openapi("PriceCorrection"),
       ),
     },
   },
   responses: {
-    200: { description: "The book as it now stands", ...json(z.object({ prices: z.array(PriceSchema) }).strict()) },
-    400: errorResponse("invalid_request: fields names what was refused"),
+    200: bookAnswer,
+    400: errorResponse(
+      "invalid_request: fields names what was refused, was_valid_from when that row applies today or applied " +
+        "before; service_retired: the service is retired by the new day",
+    ),
     403: errorResponse("access_required"),
+    404: errorResponse("not_found: the book holds no such row to correct"),
   },
 });
 
@@ -171,7 +217,7 @@ const withdrawPriceRoute = createRoute({
     },
   },
   responses: {
-    200: { description: "The book as it now stands", ...json(z.object({ prices: z.array(PriceSchema) }).strict()) },
+    200: bookAnswer,
     400: errorResponse("invalid_request: fields names valid_from when the row applies today or applied before"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: the book holds no such row"),
@@ -264,6 +310,12 @@ const setServiceAreaRoute = createRoute({
   },
 });
 
+/** A refused price as the API answers it: the box it names, and whether its service is retired by then. */
+const priceRefused = (requestId: string, refusal: PriceRefusal) =>
+  refusal.retired === true
+    ? errorBody("service_retired", requestId, [refusal.field])
+    : errorBody("invalid_request", requestId, [refusal.field]);
+
 /** The keys a setting takes: those ops name themselves ("open"), these, or none for a single number. */
 function keysOf(setting: OpsSetting): "open" | string[] | null {
   if (setting.keys === "open" || setting.keys === null) return setting.keys;
@@ -350,13 +402,35 @@ export function registerOpsSettings(app: App): void {
     const now = c.var.deps.now();
     const today = indiaDate(now);
     const price = c.req.valid("json");
-    const refusal = checkPrice(price, today);
+    const refusal = await priceRefusal(c.env.DB, price, today);
     if (refusal !== null) {
       c.var.log.warn("price_refused", { item: price.item, field: refusal.field });
-      return c.json(errorBody("invalid_request", c.var.requestId, [refusal.field]), 400);
+      return c.json(priceRefused(c.var.requestId, refusal), 400);
     }
     await setPrice(c.env.DB, { price, actor: staffOf(c), requestId: c.var.requestId, now });
     // FSM's catalogue follows only while the owner has the push on (docs/decisions/0073-prices-from-the-price-book.md).
+    if (c.var.config.settings.fsmCataloguePush && changesTheCatalogue(price, today)) {
+      await queueCatalogueSync(c.env.FSM_QUEUE, c.var.requestId);
+    }
+    return c.json({ prices: await priceBook(c.env.DB, today) }, 200);
+  });
+
+  app.openapi(correctPriceRoute, async (c) => {
+    const now = c.var.deps.now();
+    const today = indiaDate(now);
+    const { was_valid_from: wasValidFrom, ...price } = c.req.valid("json");
+    const refusal = await priceRefusal(c.env.DB, price, today);
+    if (refusal !== null) {
+      c.var.log.warn("price_refused", { item: price.item, field: refusal.field });
+      return c.json(priceRefused(c.var.requestId, refusal), 400);
+    }
+    const was = { item: price.item, tier: price.tier, valid_from: wasValidFrom };
+    const result = await correctPrice(c.env.DB, { was, price, actor: staffOf(c), requestId: c.var.requestId, now });
+    if (result === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (result === "not_to_come") {
+      c.var.log.warn("price_correction_refused", { item: price.item });
+      return c.json(errorBody("invalid_request", c.var.requestId, ["was_valid_from"]), 400);
+    }
     if (c.var.config.settings.fsmCataloguePush && changesTheCatalogue(price, today)) {
       await queueCatalogueSync(c.env.FSM_QUEUE, c.var.requestId);
     }

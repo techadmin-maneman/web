@@ -6,7 +6,10 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
+import { VISIT_BLOCKS } from "../../src/config/scheduling.ts";
+import type { VisitType } from "../../src/config/visit-types.ts";
 import { placement, unitAt } from "../../src/domain/scheduling.ts";
+import { unitsFor } from "../../src/policy/visit-length.ts";
 import { windowAt } from "../../src/policy/windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
@@ -75,22 +78,27 @@ beforeEach(async () => {
   await technician(SANDEEP, "Sandeep Rawat", "SR");
 });
 
+/** The half-slots a kind's own length holds (src/policy/visit-length.ts). */
+const unitsOf = (type: VisitType) => unitsFor(VISIT_BLOCKS[type].minutes);
+
 describe("the working day", () => {
   it("places a visit at the first free half-slot of its window, one job per window", () => {
     const empty = { units: new Set<number>(), windows: new Set<"morning" | "afternoon" | "evening">(), onLeave: false };
-    expect(placement(empty, "afternoon", "service")).toBe(2);
-    expect(placement({ ...empty, units: new Set([2, 3]) }, "afternoon", "service")).toBe(4);
-    expect(placement({ ...empty, windows: new Set(["afternoon"] as const) }, "afternoon", "service")).toBeNull();
+    expect(placement(empty, "afternoon", unitsOf("service"))).toBe(2);
+    expect(placement({ ...empty, units: new Set([2, 3]) }, "afternoon", unitsOf("service"))).toBe(4);
+    expect(
+      placement({ ...empty, windows: new Set(["afternoon"] as const) }, "afternoon", unitsOf("service")),
+    ).toBeNull();
     // A first fit is two slots: it cannot start in the evening's last half-slots.
-    expect(placement(empty, "evening", "first_fit")).toBeNull();
-    expect(placement(empty, "morning", "first_fit")).toBe(0);
+    expect(placement(empty, "evening", unitsOf("first_fit"))).toBeNull();
+    expect(placement(empty, "morning", unitsOf("first_fit"))).toBe(0);
   });
 
   it("offers a technician on leave no window at all, whatever else their day holds", () => {
     const away = { units: new Set<number>(), windows: new Set<"morning" | "afternoon" | "evening">(), onLeave: true };
-    expect(placement(away, "morning", "service")).toBeNull();
-    expect(placement(away, "afternoon", "consultation")).toBeNull();
-    expect(placement(away, "evening", "service")).toBeNull();
+    expect(placement(away, "morning", unitsOf("service"))).toBeNull();
+    expect(placement(away, "afternoon", unitsOf("consultation"))).toBeNull();
+    expect(placement(away, "evening", unitsOf("service"))).toBeNull();
   });
 
   it("reads a time of day as its half-slot and window", () => {
@@ -304,5 +312,138 @@ describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-k
     const { days } = await availability(await client());
     expect(days.find((day) => day.date === "2026-09-24")?.price.amount).toBe(200000);
     expect(days.find((day) => day.date === "2026-09-25")?.price.amount).toBe(210000);
+  });
+});
+
+/**
+ * A service of the client's choosing (docs/decisions/0085-services-ops-can-edit.md): each kind's services are ops',
+ * each priced, timed and retired from a day in the console, and a booking names the one it is for.
+ */
+describe("choosing a service", () => {
+  /** A service ops added, priced from January. */
+  async function service(kind: string, tier: string, name: string, minutes: number, paise: number, retired?: string) {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, retired_date, updated_by, updated_at)
+         VALUES (?1, ?2, ?3, ?4, 1, ?5, 'ops@localhost', ?6)`,
+      ).bind(kind, tier, name, minutes, retired ?? null, NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES (?1, ?2, ?3, 0, '2026-01-01')",
+      ).bind(kind, tier, paise),
+    ]);
+  }
+
+  interface Days {
+    service: { tier: string; name: string; minutes: number };
+    price: { amount_ex_gst: number };
+    days: { date: string; windows: { window: string; with: string | null }[] }[];
+  }
+  const availabilityOf = async (who: { cookie: string }, query: string) =>
+    (await request(app, `/api/availability?${query}`, { headers: { Cookie: who.cookie } })).json<Days>();
+
+  it("lists on Home every service offered of each kind the client may book now, with its price tomorrow", async () => {
+    const rohit = await client();
+    await service("replacement", "premium", "Premium replacement", 150, 3_000_000);
+    await service("first_fit", "premium", "Premium first fit", 240, 4_000_000);
+    await service("service", "lace", "Lace service", 90, 250_000, "2026-09-22");
+
+    const me = await (
+      await request(app, "/api/me", { headers: { Cookie: rohit.cookie } })
+    ).json<{
+      booking: { types: string[]; services: { type: string; tier: string; name: string; minutes: number }[] };
+    }>();
+
+    // A fitted client books service visits and replacements, and sees every one of either kind: not the first
+    // fit, which is not theirs to book, nor the service retired from tomorrow.
+    expect(me.booking.types).toEqual(["service", "replacement"]);
+    expect(me.booking.services).toEqual([
+      expect.objectContaining({ type: "service", tier: "standard", name: "Service visit", minutes: 90 }),
+      expect.objectContaining({ type: "replacement", tier: "standard", name: "Replacement", minutes: 135 }),
+      expect.objectContaining({ type: "replacement", tier: "premium", name: "Premium replacement", minutes: 150 }),
+    ]);
+  });
+
+  it("offers a longer service only where its half-slots fit, and holds it for its own length and price", async () => {
+    const lead = await client(true);
+    // Seven half-slots: from the morning's first two only (src/policy/visit-length.ts).
+    await service("first_fit", "premium", "Premium first fit", 300, 4_000_000);
+
+    const offered = await availabilityOf(lead, "type=first_fit&tier=premium");
+    expect(offered.service).toEqual({ tier: "premium", name: "Premium first fit", minutes: 300 });
+    expect(offered.price.amount_ex_gst).toBe(4_000_000);
+    expect(offered.days[0]?.windows.map((window) => window.with)).toEqual(["regular", null, null]);
+
+    const held = await hold(lead, { type: "first_fit", tier: "premium", date: "2026-09-22", window: "morning" });
+    expect(held.status).toBe(201);
+    expect(await held.json()).toMatchObject({
+      service: { tier: "premium", name: "Premium first fit", minutes: 300 },
+      price: { amount_ex_gst: 4_000_000 },
+      // The late fee is its kind's, one figure a kind.
+      late_fee: { amount_ex_gst: 400_000 },
+      starts_at: "2026-09-22T03:30:00.000Z",
+      ends_at: "2026-09-22T08:30:00.000Z",
+    });
+    const kept = await env.DB.prepare("SELECT tier, minutes, amount_ex_gst FROM slot_holds").first();
+    expect(kept).toEqual({ tier: "premium", minutes: 300, amount_ex_gst: 4_000_000 });
+    const claims = await env.DB.prepare("SELECT claim FROM slot_claims ORDER BY claim").all<{ claim: string }>();
+    expect(claims.results.map((claim) => claim.claim)).toEqual([
+      "unit:0",
+      "unit:1",
+      "unit:2",
+      "unit:3",
+      "unit:4",
+      "unit:5",
+      "unit:6",
+      "window:morning",
+    ]);
+  });
+
+  it("keeps a visit of a longer service from being overlapped, as long as its service is", async () => {
+    const rohit = await client();
+    await service("first_fit", "premium", "Premium first fit", 300, 4_000_000);
+    // Imran fits a premium first fit from 9 am on Wednesday: seven half-slots, into the evening's first.
+    const booked = await visit(null, "first_fit", "scheduled", "2026-09-23T03:30:00.000Z", IMRAN);
+    await env.DB.prepare("UPDATE appointments SET tier = 'premium' WHERE id = ?1").bind(booked).run();
+
+    const offered = await availabilityOf(rohit, "type=service&from=2026-09-23");
+    expect(offered.days[0]?.windows.map((window) => window.with)).toEqual(["another", "another", "another"]);
+
+    // The same visit as the standard first fit, four half-slots, leaves Imran the afternoon and the evening.
+    await env.DB.prepare("UPDATE appointments SET tier = NULL WHERE id = ?1").bind(booked).run();
+    const standard = await availabilityOf(rohit, "type=service&from=2026-09-23");
+    expect(standard.days[0]?.windows.map((window) => window.with)).toEqual(["another", "regular", "regular"]);
+  });
+
+  it("books the kind's standard service where the booking names none, as an app from before services does", async () => {
+    const held = await (
+      await hold(await client(), { type: "service", date: "2026-09-22", window: "afternoon" })
+    ).json();
+    expect(held).toMatchObject({ service: { tier: "standard", name: "Service visit", minutes: 90 } });
+  });
+
+  it("offers no service its kind does not hold, nor one from the day it is retired", async () => {
+    const rohit = await client();
+    const gold = await hold(rohit, { type: "service", tier: "gold", date: "2026-09-22", window: "afternoon" });
+    expect(gold.status).toBe(422);
+    await service("service", "premium", "Premium service", 90, 250_000, "2026-09-24");
+
+    const offered = await availabilityOf(rohit, "type=service&tier=premium");
+    expect(offered.days.map((day) => day.windows.some((window) => window.with !== null))).toEqual([
+      true,
+      true,
+      ...Array.from({ length: 12 }, () => false),
+    ]);
+    const onTheDay = { type: "service", tier: "premium", date: "2026-09-24", window: "afternoon" };
+    expect((await hold(rohit, onTheDay)).status).toBe(422);
+    expect((await hold(rohit, { ...onTheDay, date: "2026-09-23" })).status).toBe(201);
+  });
+
+  it("offers a kind's service to nobody who may not book the kind", async () => {
+    const lead = await client(true);
+    await service("service", "premium", "Premium service", 90, 250_000);
+    const answer = await request(app, "/api/availability?type=service&tier=premium", {
+      headers: { Cookie: lead.cookie },
+    });
+    expect(answer.status).toBe(422);
   });
 });

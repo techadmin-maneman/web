@@ -1,19 +1,24 @@
 // A client's hold, as the app shows it (docs/decisions/0045-self-serve-booking.md): the window held for ten
-// minutes while they pay, what it costs, and what became of it. Letting one go, and what Checkout is opened with.
-// A hold is made by holdSlot (src/domain/scheduling.ts) and booked by startBooking (src/domain/bookings.ts).
+// minutes while they pay, the service it is for, what it costs, and what became of it. Letting one go, and what
+// Checkout is opened with. A hold is made by holdSlot (src/domain/scheduling.ts) and booked by startBooking
+// (src/domain/bookings.ts).
 
 import { withGst } from "../config/gst.ts";
 import { WINDOW_TIMES, type BookingWindow } from "../config/scheduling.ts";
-import type { VisitType } from "../config/visit-types.ts";
+import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaInstant } from "../lib/india-time.ts";
 import { freeUntil, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { creditBalance } from "./credits.ts";
 import { priceOf, type Price } from "./price-book.ts";
-import { visitTimes } from "./scheduling.ts";
+import { heldMinutes, visitTimes } from "./scheduling.ts";
 
 interface HoldRow {
   id: string;
   type: VisitType;
+  tier: string;
+  minutes: number | null;
+  /** The service's name as it is now; null only where no service is the hold's kind and tier. */
+  service_name: string | null;
   date: string;
   window_label: BookingWindow;
   start_unit: number;
@@ -34,12 +39,14 @@ interface HoldRow {
   paid: number;
 }
 
-const HOLD_QUERY = `SELECT h.id, h.type, h.date, h.window_label, h.start_unit, h.amount, h.amount_ex_gst, h.gst_percent,
-    h.state, h.expires_at, h.confirmed_at, h.late_fee_ex_gst, h.late_fee_gst_percent,
-    t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
+const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
+    h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.confirmed_at, h.late_fee_ex_gst,
+    h.late_fee_gst_percent, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
     h.moves_appointment_id, h.use_credit, h.person_id,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
-  FROM slot_holds h JOIN technicians t ON t.id = h.technician_id WHERE h.id = ?1 AND h.person_id = ?2`;
+  FROM slot_holds h JOIN technicians t ON t.id = h.technician_id
+  LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
+  WHERE h.id = ?1 AND h.person_id = ?2`;
 
 /** The late fee the hold was made under; for a hold made before it kept one, the price book's for its day. */
 async function lateFeeOf(db: D1Database, row: HoldRow): Promise<Price | null> {
@@ -58,11 +65,13 @@ const hasLapsed = (row: HoldRow, now: Date) =>
   row.state === "held" && row.confirmed_at === null && row.expires_at <= now.toISOString();
 
 async function holdOf(db: D1Database, row: HoldRow, now: Date) {
-  const { start, end } = visitTimes(row.date, row.start_unit, row.type);
+  const minutes = heldMinutes(row);
+  const { start, end } = visitTimes(row.date, row.start_unit, minutes);
   const windowStarts = indiaInstant(row.date, WINDOW_TIMES[row.window_label].start);
   return {
     id: row.id,
     type: row.type,
+    service: { tier: row.tier, name: row.service_name ?? FSM_SERVICE_NAMES[row.type], minutes },
     date: row.date,
     window: row.window_label,
     starts_at: start.toISOString(),
@@ -111,6 +120,8 @@ export async function releaseHold(db: D1Database, hold: { holdId: string; person
 /** What Checkout names a hold's payment with, and prefills. */
 export interface CheckoutHold {
   readonly type: VisitType;
+  /** The hold's service, by its name as it is now; null only where no service is the hold's kind and tier. */
+  readonly service_name: string | null;
   readonly amount: number;
   readonly date: string;
   readonly move_kind: "move" | "replace" | null;
@@ -121,8 +132,10 @@ export interface CheckoutHold {
 export function checkoutHold(db: D1Database, holdId: string): Promise<CheckoutHold | null> {
   return db
     .prepare(
-      `SELECT h.type, h.amount, h.date, h.move_kind, p.name, p.mobile_e164
-       FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE h.id = ?1`,
+      `SELECT h.type, s.name AS service_name, h.amount, h.date, h.move_kind, p.name, p.mobile_e164
+       FROM slot_holds h JOIN people p ON p.id = h.person_id
+       LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
+       WHERE h.id = ?1`,
     )
     .bind(holdId)
     .first<CheckoutHold>();

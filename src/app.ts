@@ -31,6 +31,7 @@ import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsTasks } from "./routes/ops-tasks.ts";
 import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
+import { registerOpsServices } from "./routes/ops-services.ts";
 import { registerOpsSettings } from "./routes/ops-settings.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
@@ -108,6 +109,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,
+    registerOpsServices,
     registerOpsWhoami,
   ],
   tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],

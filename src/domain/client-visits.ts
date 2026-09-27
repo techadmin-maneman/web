@@ -4,7 +4,7 @@
 // "not found".
 
 import { CHECKLIST } from "../config/job-sheet.ts";
-import type { VisitType } from "../config/visit-types.ts";
+import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { indiaDate, indiaTime } from "../lib/india-time.ts";
 import { windowAt } from "../policy/windows.ts";
 import { signToken } from "../lib/signed-token.ts";
@@ -51,6 +51,8 @@ export interface VisitSummary {
 interface AppointmentRow {
   id: string;
   type: VisitType | null;
+  /** Its service's tier; null where the mirror knows none, which is the standard tier's. */
+  tier: string | null;
   status: AppointmentStatus;
   window_start: string;
   window_end: string;
@@ -70,7 +72,7 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
   OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND h.appointment_id = a.id
     AND h.state = 'booked' AND h.use_credit = 1))`;
 
-const APPOINTMENT_COLUMNS = `a.id, a.type, a.status, a.window_start, a.window_end, a.service_city, a.service_pincode,
+const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.status, a.window_start, a.window_end, a.service_city, a.service_pincode,
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
 /** The statuses of a visit FSM has not closed. */
@@ -223,7 +225,7 @@ export interface VisitDetail extends VisitSummary {
 export type InvoiceHeld = "credit" | "checking";
 
 /**
- * A visit is billed when the price book charges for its type on the day it
+ * A visit is billed when the price book charges for its service on the day it
  * happened. A free consultation totals nothing and FSM raises no invoice for
  * it (ADR 0055). A visit whose service is not one of ours is unpriced here and
  * counts as billed: FSM knows its total, we do not.
@@ -231,7 +233,7 @@ export type InvoiceHeld = "credit" | "checking";
 async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boolean> {
   if (row.status !== "completed") return false;
   if (row.type === null) return true;
-  const price = await priceOf(db, row.type, indiaDate(new Date(row.window_start)));
+  const price = await priceOf(db, row.type, indiaDate(new Date(row.window_start)), row.tier ?? STANDARD_TIER);
   return price === null || price.amount_ex_gst > 0;
 }
 

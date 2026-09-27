@@ -38,6 +38,7 @@ const PAYMENT_PATH = [
   "src/domain/payments.ts",
   "src/domain/visit-changes.ts",
   "src/domain/scheduling.ts",
+  "src/domain/services.ts",
   "src/routes/client-payments.ts",
 ];
 
@@ -50,6 +51,8 @@ const SMALL_TABLES = new Set([
   "serviceable_pincodes",
   "ops_settings",
   "fsm_items",
+  // A row a service, which grows with what ops sell, not with who buys it (docs/decisions/0085-services-ops-can-edit.md).
+  "services",
   "sync_cursors",
   "cron_jobs",
 ]);

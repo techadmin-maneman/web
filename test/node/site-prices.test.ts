@@ -20,6 +20,7 @@ const ANSWER: PublishedPrices = {
   first_fit: { amount_ex_gst: 3_500_000, amount: 4_130_000, gst_percent: 18 },
   service: { amount_ex_gst: 250_000, amount: 295_000, gst_percent: 18 },
   replacement: { amount_ex_gst: 1_600_000, amount: 1_888_000, gst_percent: 18 },
+  services: [],
 };
 
 function sentence(text: string | undefined): string {

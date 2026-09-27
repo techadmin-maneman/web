@@ -5,14 +5,16 @@
 // The board counts in slots and the day in half-slots, so a replacement's slot
 // and a half is a whole number (docs/decisions/0035-window-slot-map.md). Where a
 // visit fits inside a window is src/domain/scheduling.ts; the rule below is the
-// one the prompt states, and both booking and dispatch answer to it.
+// one the prompt states, and both booking and dispatch answer to it. A block's
+// size now comes from its service's length rather than its kind's alone, by the
+// one rule in src/policy/visit-length.ts, which gives the prompt's four sizes for
+// the four kinds' own lengths (docs/decisions/0085-services-ops-can-edit.md).
 //
 // The last rule is quoted as the prompt writes it, and it is the one rule we do
 // not keep: FSM has nowhere to read a leave period from, so ops record leave in
 // the console and the same clash check reads it (ADR 0062).
 
-import { VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
-import type { VisitType } from "../config/visit-types.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 
 export const RULES = [
   "Rows are technicians; columns are seven days; each day has config SLOTS_PER_DAY (4) slots.",
@@ -23,8 +25,8 @@ export const RULES = [
   "Leave periods come from FSM technician availability.",
 ] as const;
 
-/** A block's size on the board, in slots: 1, 1, 1.5 and 2, from the half-slots the day is counted in. */
-export const slotsFor = (type: VisitType): number => VISIT_BLOCKS[type].units / 2;
+/** A block's size on the board, in slots, from the half-slots it holds: 1, 1, 1.5 and 2 for the kinds' own lengths. */
+export const slotsFor = (units: number): number => units / 2;
 
 /**
  * What one technician already holds on one date: the windows his live jobs and

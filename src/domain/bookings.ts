@@ -19,6 +19,10 @@
 // A hold that moves a visit (docs/decisions/0046-moving-and-cancelling.md)
 // either moves it in place, once its late fee is paid or at once when free, or
 // books a new visit and cancels the old one, whose payment is kept.
+//
+// A visit is booked on its service's own FSM item, for the length its hold
+// was made with, and the mirror's copy carries the hold's tier, since the hold
+// is what was sold (docs/decisions/0085-services-ops-can-edit.md).
 
 import { PAYMENT_GRACE_SECONDS } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
@@ -30,8 +34,9 @@ import type { PaymentsProvider } from "../providers/payments.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { redeemCredit } from "./credits.ts";
+import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
-import { liveVisitOf, visitTimes } from "./scheduling.ts";
+import { heldMinutes, liveVisitOf, visitTimes } from "./scheduling.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -50,6 +55,11 @@ interface HoldRow {
   person_id: string;
   person_name: string;
   type: VisitType;
+  tier: string;
+  /** The length it was held for; null for a hold made before services had lengths. */
+  minutes: number | null;
+  /** Its service's name as it is now; null only where no service is its kind and tier. */
+  service_name: string | null;
   date: string;
   start_unit: number;
   technician_id: string;
@@ -74,12 +84,13 @@ interface HoldRow {
 async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
   return db
     .prepare(
-      `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.date, h.start_unit, h.technician_id,
-              t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at, h.confirmed_at, h.razorpay_order_id,
-              h.appointment_id, h.moves_appointment_id, h.move_kind, h.use_credit, h.fsm_tried_at,
-              h.fsm_work_order_id, h.fsm_appointment_id, h.pincode, sp.city
+      `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
+              h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
+              h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
+              h.use_credit, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.pincode, sp.city
        FROM slot_holds h JOIN technicians t ON t.id = h.technician_id JOIN people p ON p.id = h.person_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
+       LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
        WHERE h.id = ?1`,
     )
     .bind(holdId)
@@ -244,17 +255,19 @@ async function bookNewVisit(
   const workOrder = await workOrderFor(db, fsm, hold, now, options);
   const appointmentId = hold.fsm_appointment_id ?? (await appointmentFor(db, fsm, hold, workOrder, options));
 
-  // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID.
-  const { start, end } = visitTimes(hold.date, hold.start_unit, hold.type);
+  // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID. Its
+  // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own.
+  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
   const at = now.toISOString();
   const visitId = "(SELECT id FROM appointments WHERE fsm_id = ?1)";
   await db.batch([
     db
       .prepare(
-        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
+        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
            technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
-         VALUES (?2, ?1, ?3, ?4, ?5, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11)
+         VALUES (?2, ?1, ?3, ?4, ?5, ?12, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11)
          ON CONFLICT (fsm_id) DO UPDATE SET
+           tier = excluded.tier,
            service_city = COALESCE(appointments.service_city, excluded.service_city),
            service_pincode = COALESCE(appointments.service_pincode, excluded.service_pincode)`,
       )
@@ -270,6 +283,7 @@ async function bookNewVisit(
         hold.city,
         hold.pincode,
         at,
+        hold.tier,
       ),
     db
       .prepare(
@@ -327,8 +341,12 @@ async function workOrderFor(
 
   const log = options.log ?? createLogger();
   const contactId = await fsmContactOf(db, fsm, hold.person_id, placeOf(hold), log);
-  const service = (await fsm.items()).find((item) => item.name === FSM_SERVICE_NAMES[hold.type]);
-  if (service === undefined) throw new Error(`FSM has no ${FSM_SERVICE_NAMES[hold.type]} item: run setup-fsm.ts`);
+  const service = await itemForService(
+    db,
+    fsm,
+    { kind: hold.type, tier: hold.tier },
+    { alertOnce: options.alertOnce, log },
+  );
   await db.prepare("UPDATE slot_holds SET fsm_tried_at = ?2 WHERE id = ?1").bind(hold.id, now.toISOString()).run();
   const id = await fsm.createWorkOrder({
     contactId,
@@ -368,7 +386,7 @@ async function appointmentFor(
   workOrder: WorkOrder,
   options: ConfirmOptions,
 ): Promise<string> {
-  const { start, end } = visitTimes(hold.date, hold.start_unit, hold.type);
+  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
   const madeBefore = workOrder.madeNow ? null : await fsm.workOrderAppointment(workOrder.id);
   const id =
     madeBefore ??
@@ -383,7 +401,7 @@ async function appointmentFor(
 }
 
 const summaryOf = (hold: HoldRow, labelAsTest: boolean) =>
-  `${labelAsTest ? "Staging test: " : ""}${FSM_SERVICE_NAMES[hold.type]} for ${hold.person_name}`;
+  `${labelAsTest ? "Staging test: " : ""}${hold.service_name ?? FSM_SERVICE_NAMES[hold.type]} for ${hold.person_name}`;
 
 async function keepWorkOrder(db: D1Database, holdId: string, workOrderId: string): Promise<void> {
   await db.prepare("UPDATE slot_holds SET fsm_work_order_id = ?2 WHERE id = ?1").bind(holdId, workOrderId).run();
@@ -451,7 +469,7 @@ async function moveInPlace(
     await giveBack(db, payments, hold.id, now, "the visit could no longer be moved");
     return hold.amount > 0 ? "refunded" : "lapsed";
   }
-  const { start, end } = visitTimes(hold.date, hold.start_unit, hold.type);
+  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
   await fsm.rescheduleVisit(visit.fsm_id, { start: indiaIso(start), end: indiaIso(end) });
 
   const at = now.toISOString();
@@ -550,7 +568,7 @@ async function retireReplaced(
         old.id,
         hold.person_id,
         old.window_start,
-        visitTimes(hold.date, hold.start_unit, hold.type).start.toISOString(),
+        visitTimes(hold.date, hold.start_unit, heldMinutes(hold)).start.toISOString(),
         payment?.paid ?? 0,
         payment?.id ?? null,
         hold.id,

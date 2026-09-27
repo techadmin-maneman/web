@@ -32,13 +32,56 @@ describe("GET /api/published-prices", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=60");
+    const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
+    const firstFit = { amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 };
+    const service = { amount_ex_gst: 200_000, amount: 200_000, gst_percent: 0 };
+    const replacement = { amount_ex_gst: 1_500_000, amount: 1_500_000, gst_percent: 0 };
     expect(await response.json()).toEqual({
       on: "2026-09-26",
       tier: "standard",
-      first_fit: { amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 },
-      service: { amount_ex_gst: 200_000, amount: 200_000, gst_percent: 0 },
-      replacement: { amount_ex_gst: 1_500_000, amount: 1_500_000, gst_percent: 0 },
+      first_fit: firstFit,
+      service,
+      replacement,
+      // Every service offered: the four standard ones the console starts with (migration 0047).
+      services: [
+        { type: "consultation", tier: "standard", name: "Consultation", minutes: 60, price: free },
+        { type: "first_fit", tier: "standard", name: "First fit", minutes: 180, price: firstFit },
+        { type: "service", tier: "standard", name: "Service visit", minutes: 90, price: service },
+        { type: "replacement", tier: "standard", name: "Replacement", minutes: 135, price: replacement },
+      ],
     });
+  });
+
+  // The site's Premium column is the book's premium tier where the console offers one (ADR 0085).
+  it("carries every service offered today, each in its kind, and leaves out one retired or unpriced", async () => {
+    const service = (kind: string, tier: string, name: string, sort: number, retired: string | null = null) =>
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, retired_date, updated_by, updated_at)
+         VALUES (?1, ?2, ?3, 180, ?4, ?5, 'ops@localhost', '2026-09-22T06:30:00.000Z')`,
+      )
+        .bind(kind, tier, name, sort, retired)
+        .run();
+    await service("first_fit", "premium", "Premium first fit", 1);
+    await priceRow("first_fit", 4_000_000, 0, "2026-09-22", "premium");
+    await service("first_fit", "lace", "Lace first fit", 2, "2026-09-26");
+    await priceRow("first_fit", 4_500_000, 0, "2026-09-22", "lace");
+    await service("replacement", "premium", "Premium replacement", 1);
+
+    const body = (await pricesOn()) as { services: { type: string; tier: string }[] };
+
+    expect(body.services.map((each) => `${each.type}/${each.tier}`)).toEqual([
+      "consultation/standard",
+      "first_fit/standard",
+      "first_fit/premium",
+      "service/standard",
+      "replacement/standard",
+    ]);
+  });
+
+  it("answers 503 when a kind's standard service is retired, so the site keeps its own", async () => {
+    await env.DB.prepare("UPDATE services SET retired_date = '2026-09-26' WHERE kind = 'service'").run();
+
+    expect((await request(appFor("local", today()), "/api/published-prices")).status).toBe(503);
   });
 
   it("follows a change from its day, and never shows one still to come or another tier's", async () => {

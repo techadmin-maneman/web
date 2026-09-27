@@ -777,6 +777,33 @@ describe("what the board carries of each visit", () => {
     expect(blocks?.map((block) => block.badge)).toEqual(["credit", "free"]);
   });
 
+  // docs/decisions/0085-services-ops-can-edit.md: a visit is its own service, priced and timed as that.
+  it("reads a visit's badge from its own service's price on its day, and sizes it by its own length", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('consultation', 'at_home', 'Consultation at home', 60, 1, 'ops@localhost', ?1),
+                ('first_fit', 'premium', 'Premium first fit', 300, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('consultation', 'at_home', 50000, 0, '2026-01-01'), ('first_fit', 'premium', 4000000, 0, '2026-01-01')`,
+      ),
+    ]);
+    await insertJob(A, { type: "consultation", start: TUESDAY["09:00"], technician: IMRAN, person: null });
+    await insertJob(B, { type: "first_fit", start: TUESDAY["12:00"], technician: SAMEER, person: null });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET tier = 'at_home' WHERE id = ?1").bind(A),
+      env.DB.prepare("UPDATE appointments SET tier = 'premium' WHERE id = ?1").bind(B),
+    ]);
+
+    const week = await board("from=2026-09-22");
+    // Charged for, so not free, though the standard consultation is.
+    expect(week.technicians[0]?.days[0]?.blocks[0]).toMatchObject({ appointment_id: A, badge: "prepaid", slots: 1 });
+    // Seven half-slots: three slots and a half.
+    expect(week.technicians[1]?.days[0]?.blocks[0]).toMatchObject({ appointment_id: B, slots: 3.5 });
+  });
+
   it("names the move the client was not told of on the visit it moved", async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
     const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();

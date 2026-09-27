@@ -1,11 +1,13 @@
-// FSM's catalogue against the price book (docs/decisions/0073-prices-from-the-price-book.md): the hourly check,
-// which reads only and tells ops, and the push, which writes the book's prices to FSM only while the owner has it
-// switched on. Staging's FSM is the owner's real org, so nothing here may write to it by itself (INT-03).
+// FSM's catalogue against the services and the price book (docs/decisions/0073-prices-from-the-price-book.md,
+// docs/decisions/0085-services-ops-can-edit.md): the hourly check, which reads only and tells ops, and the push, which
+// makes a missing item and writes the console's name and the book's price only while the owner has it switched on.
+// Staging's FSM is the owner's real org, so nothing here may write to it by itself (INT-03). The push is forced on
+// here, in the tests alone: FSM_CATALOGUE_PUSH is off in every environment (test/worker/guard.test.ts).
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
-import { checkCatalogue, pushCatalogue } from "../../src/domain/fsm-catalogue.ts";
+import { checkCatalogue, itemForService, pushCatalogue } from "../../src/domain/fsm-catalogue.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmItem, type StubFsm } from "../../src/providers/fsm.ts";
@@ -25,6 +27,8 @@ const CATALOGUE: FsmItem[] = [
   { id: "fsm-item-replacement", name: "Replacement", type: "Service", price: 3_000_000 },
   { id: "fsm-item-base", name: "Standard base", type: "Part", price: 3_000_000 },
 ];
+/** The same, once FSM's replacement agrees with the book. */
+const AGREEING = CATALOGUE.map((item) => (item.name === "Replacement" ? { ...item, price: 1_500_000 } : item));
 
 let alerted: string[];
 
@@ -53,6 +57,26 @@ const openAlert = (key: string) =>
     .bind(key)
     .first<{ message: string }>();
 
+/** A service ops added in the console, priced from the 22nd. */
+async function service(kind: string, tier: string, name: string, paise: number, retiredDate: string | null = null) {
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, retired_date, updated_by, updated_at)
+       VALUES (?1, ?2, ?3, 180, 1, ?4, 'ops@localhost', '2026-09-22T06:30:00.000Z')`,
+    ).bind(kind, tier, name, retiredDate),
+    env.DB.prepare(
+      "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES (?1, ?2, ?3, 0, '2026-09-22')",
+    ).bind(kind, tier, paise),
+  ]);
+}
+
+const itemKept = async (kind: string, tier: string) =>
+  (
+    await env.DB.prepare("SELECT fsm_item_id FROM services WHERE kind = ?1 AND tier = ?2")
+      .bind(kind, tier)
+      .first<{ fsm_item_id: string | null }>()
+  )?.fsm_item_id;
+
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
@@ -64,25 +88,32 @@ describe("the hourly catalogue check", () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
 
     const first = check(fsm, { push: false });
-    expect(await first.done).toEqual({ differs: ["replacement"], queued: false });
+    expect(await first.done).toEqual({ differs: ["replacement/standard"], queued: false });
     expect(alerted).toHaveLength(1);
     expect(alerted[0]).toContain('FSM\'s catalogue item fsm-item-replacement ("Replacement") is Rs. 30,000 before GST');
     expect(alerted[0]).toContain("the price book has Rs. 15,000");
     expect(alerted[0]).toContain("FSM_CATALOGUE_PUSH");
     expect(alerted[0]).toContain("/settings/prices");
     expect(first.queue.sent).toEqual([]);
-    expect(fsm.made.itemPrices).toEqual([]);
+    expect(fsm.made.itemUpdates).toEqual([]);
+    expect(fsm.made.itemsMade).toEqual([]);
 
     await check(fsm, { push: false, now: AN_HOUR_ON }).done;
     expect(alerted).toHaveLength(1);
   });
 
-  it("closes the alert once FSM and the book agree again", async () => {
+  it("keeps each item it finds by name on its service, so it is found by its ID from then on", async () => {
+    await check(createStubFsm({ ...EMPTY_FSM, items: CATALOGUE }), { push: false }).done;
+
+    expect(await itemKept("first_fit", "standard")).toBe("fsm-item-first-fit");
+    expect(await itemKept("replacement", "standard")).toBe("fsm-item-replacement");
+  });
+
+  it("closes the alert once FSM and the book agree again, under the key the kind was told under", async () => {
     await check(createStubFsm({ ...EMPTY_FSM, items: CATALOGUE }), { push: false }).done;
     expect(await openAlert("fsm_catalogue:replacement")).not.toBeNull();
 
-    const agreeing = CATALOGUE.map((item) => (item.name === "Replacement" ? { ...item, price: 1_500_000 } : item));
-    const later = check(createStubFsm({ ...EMPTY_FSM, items: agreeing }), { push: false, now: AN_HOUR_ON });
+    const later = check(createStubFsm({ ...EMPTY_FSM, items: AGREEING }), { push: false, now: AN_HOUR_ON });
 
     expect(await later.done).toEqual({ differs: [], queued: false });
     expect(await openAlert("fsm_catalogue:replacement")).toBeNull();
@@ -95,25 +126,77 @@ describe("the hourly catalogue check", () => {
 
     const { done } = check(createStubFsm({ ...EMPTY_FSM, items: CATALOGUE }), { push: false });
 
-    expect(await done).toEqual({ differs: ["service", "replacement"], queued: false });
+    expect(await done).toEqual({ differs: ["service/standard", "replacement/standard"], queued: false });
   });
 
-  // The push only writes prices; making a missing item is scripts/setup-fsm.ts's, so it is told at once either way.
-  it.each([false, true])("tells ops at once of a visit FSM has no item for (push on: %s)", async (push) => {
+  it("compares every service ops offer, not only the standard ones, each by its own item", async () => {
+    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    const items = [
+      ...AGREEING,
+      { id: "fsm-item-premium", name: "Premium first fit", type: "Service" as const, price: 3_500_000 },
+    ];
+
+    const { done } = check(createStubFsm({ ...EMPTY_FSM, items }), { push: false });
+
+    expect(await done).toEqual({ differs: ["first_fit/premium"], queued: false });
+    expect(await itemKept("first_fit", "premium")).toBe("fsm-item-premium");
+    const told = await openAlert("fsm_catalogue:first_fit/premium");
+    expect(told?.message).toContain('fsm-item-premium ("Premium first fit") is Rs. 35,000 before GST');
+    expect(told?.message).toContain("the price book has Rs. 40,000");
+  });
+
+  it("tells ops of a service's name that FSM's item does not carry, found by the ID kept on it", async () => {
+    await check(createStubFsm({ ...EMPTY_FSM, items: AGREEING }), { push: false }).done;
+    await env.DB.prepare("UPDATE services SET name = 'Monthly service' WHERE kind = 'service'").run();
+
+    const { done } = check(createStubFsm({ ...EMPTY_FSM, items: AGREEING }), { push: false, now: AN_HOUR_ON });
+
+    expect(await done).toEqual({ differs: ["service/standard"], queued: false });
+    const told = await openAlert("fsm_catalogue:service");
+    expect(told?.message).toContain(
+      'fsm-item-service is named "Service visit", and the console names it "Monthly service"',
+    );
+  });
+
+  it("leaves a retired service alone, and closes what it was told of", async () => {
+    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    await check(createStubFsm({ ...EMPTY_FSM, items: AGREEING }), { push: false }).done;
+    expect(await openAlert("fsm_catalogue:first_fit/premium")).not.toBeNull();
+
+    await env.DB.prepare("UPDATE services SET retired_date = '2026-09-26' WHERE tier = 'premium'").run();
+    const later = check(createStubFsm({ ...EMPTY_FSM, items: AGREEING }), { push: false, now: AN_HOUR_ON });
+
+    expect(await later.done).toEqual({ differs: [], queued: false });
+    expect(await openAlert("fsm_catalogue:first_fit/premium")).toBeNull();
+  });
+
+  it("tells ops at once of a visit FSM has no item for while the push is off", async () => {
     const without = CATALOGUE.filter((item) => item.name !== "First fit");
 
-    await check(createStubFsm({ ...EMPTY_FSM, items: without }), { push }).done;
+    await check(createStubFsm({ ...EMPTY_FSM, items: without }), { push: false }).done;
 
     const told = alerted.find((message) => message.includes('no service item named "First fit"'));
     expect(told).toBeDefined();
   });
 
-  it("reads FSM only on the hour, and only from what the cron run has left", async () => {
+  it("with the push on, queues the push to make a missing item, and tells ops only if it is still missing an hour on", async () => {
+    const without = CATALOGUE.filter((item) => item.name !== "First fit");
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: without });
+
+    const first = check(fsm, { push: true });
+    expect(await first.done).toMatchObject({ queued: true });
+    expect(alerted.filter((message) => message.includes('"First fit"'))).toEqual([]);
+
+    await check(fsm, { push: true, now: AN_HOUR_ON }).done;
+    expect(alerted.find((message) => message.includes('still has no service item named "First fit"'))).toBeDefined();
+  });
+
+  it("reads FSM only on the hour, and only from what the cron run has left for a whole catalogue", async () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
     fsm.failNext("items");
 
     expect(await check(fsm, { push: false, now: OFF_THE_HOUR }).done).toBeNull();
-    expect(await check(fsm, { push: false, calls: 0 }).done).toBeNull();
+    expect(await check(fsm, { push: false, calls: 4 }).done).toBeNull();
     expect(alerted).toEqual([]);
   });
 
@@ -121,7 +204,7 @@ describe("the hourly catalogue check", () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
 
     const first = check(fsm, { push: true });
-    expect(await first.done).toEqual({ differs: ["replacement"], queued: true });
+    expect(await first.done).toEqual({ differs: ["replacement/standard"], queued: true });
     expect(first.queue.sent).toEqual([{ catalogue_sync: true, request_id: "fsm_catalogue" }]);
     expect(alerted).toEqual([]);
 
@@ -138,7 +221,29 @@ describe("the push", () => {
     expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(1);
     expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(0);
 
-    expect(fsm.made.itemPrices).toEqual([{ itemId: "fsm-item-replacement", price: 1_500_000 }]);
+    expect(fsm.made.itemUpdates).toEqual([{ itemId: "fsm-item-replacement", name: "Replacement", price: 1_500_000 }]);
+    expect(fsm.made.itemsMade).toEqual([]);
+  });
+
+  it("makes the item a service has none of, keeps its ID, and makes it once", async () => {
+    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: AGREEING });
+
+    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(1);
+    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(0);
+
+    expect(fsm.made.itemsMade).toEqual([{ name: "Premium first fit", price: 4_000_000 }]);
+    expect(await itemKept("first_fit", "premium")).toMatch(/^stub-item-/);
+  });
+
+  it("writes a service's new name over its item, found by the ID kept on it", async () => {
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: AGREEING });
+    await pushCatalogue(env.DB, fsm, "2026-09-26");
+    await env.DB.prepare("UPDATE services SET name = 'Monthly service' WHERE kind = 'service'").run();
+
+    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(1);
+
+    expect(fsm.made.itemUpdates).toEqual([{ itemId: "fsm-item-service", name: "Monthly service", price: 200_000 }]);
   });
 
   function syncMessage() {
@@ -166,7 +271,7 @@ describe("the push", () => {
       cataloguePush: true,
     });
 
-    expect(fsm.made.itemPrices).toEqual([{ itemId: "fsm-item-replacement", price: 1_500_000 }]);
+    expect(fsm.made.itemUpdates).toEqual([{ itemId: "fsm-item-replacement", name: "Replacement", price: 1_500_000 }]);
     expect(acked).toEqual(["message-1"]);
   });
 
@@ -179,13 +284,14 @@ describe("the push", () => {
       cataloguePush: false,
     });
 
-    expect(fsm.made.itemPrices).toEqual([]);
+    expect(fsm.made.itemUpdates).toEqual([]);
+    expect(fsm.made.itemsMade).toEqual([]);
     expect(acked).toEqual(["message-1"]);
   });
 
   it("tries once: a refusal is logged, and the next hour's check is its retry", async () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
-    fsm.refuseNext("setItemPrice");
+    fsm.refuseNext("updateItem");
     const logs = captureLogs();
     const { batch, acked, retried } = syncMessage();
 
@@ -197,6 +303,95 @@ describe("the push", () => {
     expect(acked).toEqual(["message-1"]);
     expect(retried).toEqual([]);
     expect(logs.lines().some((line) => line.event === "fsm_catalogue_push_failed")).toBe(true);
+  });
+});
+
+describe("the item a booking goes on", () => {
+  const deps = () => {
+    const told: string[] = [];
+    const alertOnce = createAlertOnce({
+      db: env.DB,
+      alert: (message) => {
+        told.push(message);
+        return Promise.resolve();
+      },
+      now: () => ON_THE_HOUR,
+      environment: "local",
+      log: createLogger(),
+    });
+    return { told, deps: { alertOnce, log: createLogger() } };
+  };
+
+  it("is the service's own, by its name the first time and by its ID after, whatever FSM renames it", async () => {
+    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    const items = [
+      ...AGREEING,
+      { id: "fsm-item-premium", name: "Premium first fit", type: "Service" as const, price: 4_000_000 },
+    ];
+    const { deps: itemDeps } = deps();
+
+    const first = await itemForService(
+      env.DB,
+      createStubFsm({ ...EMPTY_FSM, items }),
+      { kind: "first_fit", tier: "premium" },
+      itemDeps,
+    );
+    expect(first.id).toBe("fsm-item-premium");
+
+    const renamed = items.map((item) => (item.id === "fsm-item-premium" ? { ...item, name: "Thin skin fit" } : item));
+    const again = await itemForService(
+      env.DB,
+      createStubFsm({ ...EMPTY_FSM, items: renamed }),
+      { kind: "first_fit", tier: "premium" },
+      itemDeps,
+    );
+    expect(again.id).toBe("fsm-item-premium");
+  });
+
+  it("falls back to its kind's standard item where FSM has none, and tells ops once, however often it is booked", async () => {
+    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    const logs = captureLogs();
+    const { told, deps: itemDeps } = deps();
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: AGREEING });
+
+    const item = await itemForService(env.DB, fsm, { kind: "first_fit", tier: "premium" }, itemDeps);
+    await itemForService(env.DB, fsm, { kind: "first_fit", tier: "premium" }, itemDeps);
+
+    expect(item.id).toBe("fsm-item-first-fit");
+    expect(told).toHaveLength(1);
+    expect(told[0]).toContain('no item for the service "Premium first fit"');
+    expect(await openAlert("fsm_item_fallback:first_fit/premium")).not.toBeNull();
+    expect(logs.lines().filter((line) => line.event === "fsm_item_fallback")).toHaveLength(2);
+  });
+
+  it("closes that alert once the hourly check finds the service's own item", async () => {
+    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    await itemForService(
+      env.DB,
+      createStubFsm({ ...EMPTY_FSM, items: AGREEING }),
+      { kind: "first_fit", tier: "premium" },
+      deps().deps,
+    );
+    const items = [
+      ...AGREEING,
+      { id: "fsm-item-premium", name: "Premium first fit", type: "Service" as const, price: 4_000_000 },
+    ];
+
+    await check(createStubFsm({ ...EMPTY_FSM, items }), { push: false }).done;
+
+    expect(await openAlert("fsm_item_fallback:first_fit/premium")).toBeNull();
+  });
+
+  it("still refuses a kind FSM has no item for at all, as a booking always has", async () => {
+    const without = AGREEING.filter((item) => item.name !== "First fit");
+    await expect(
+      itemForService(
+        env.DB,
+        createStubFsm({ ...EMPTY_FSM, items: without }),
+        { kind: "first_fit", tier: "standard" },
+        deps().deps,
+      ),
+    ).rejects.toThrow("FSM has no First fit item");
   });
 });
 
@@ -226,13 +421,18 @@ describe("a price set in the console", () => {
     ]);
   });
 
+  // Every service has its own item now, so a price for any of them is one FSM should carry.
+  it("queues it for a service ops added, as for a standard one", async () => {
+    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    expect(await setPrice({ valid_from: "2026-09-26", item: "first_fit", tier: "premium" }, true)).toHaveLength(1);
+  });
+
   it("queues nothing while the push is off: the hourly check tells ops instead", async () => {
     expect(await setPrice({ valid_from: "2026-09-26" }, false)).toEqual([]);
   });
 
   it.each([
     ["a price from a later day, which the hourly check pushes on its day", { valid_from: "2026-10-01" }],
-    ["another tier's, which FSM's catalogue does not hold", { valid_from: "2026-09-26", tier: "premium" }],
     ["a late fee, which is not a catalogue item", { valid_from: "2026-09-26", item: "late_fee_first_fit" }],
   ])("queues nothing for %s", async (_, body) => {
     expect(await setPrice(body, true)).toEqual([]);

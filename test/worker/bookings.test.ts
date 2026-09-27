@@ -14,6 +14,7 @@ import { saltedHash } from "../../src/lib/hash.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import {
   appFor,
+  captureLogs,
   fakeDependencies,
   fakeQueue,
   LOCAL_SETTINGS,
@@ -235,6 +236,110 @@ describe("confirmBooking", () => {
     expect(fifth.messages[0]?.ack).toHaveBeenCalled();
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 200000 }]);
     expect(deps.alerts).toEqual([expect.stringMatching(/could not be written to FSM.*refunded/)]);
+  });
+});
+
+/**
+ * A service ops added to a kind (docs/decisions/0085-services-ops-can-edit.md): a premium service visit of two hours
+ * at Rs. 2,500, priced from January, whose item FSM holds in `withItem` alone.
+ */
+async function premiumService(): Promise<void> {
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('service', 'premium', 'Premium service', 120, 1, 'ops@localhost', ?1)`,
+    ).bind(NOW.toISOString()),
+    env.DB.prepare(
+      "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'premium', 250000, 0, '2026-01-01')",
+    ),
+  ]);
+}
+
+const withItem = () => ({
+  ...world(),
+  items: [...world().items, { id: "item-premium", name: "Premium service", type: "Service" as const, price: 250000 }],
+});
+
+async function heldPremium(app: ReturnType<typeof appFor>): Promise<string> {
+  const body = { type: "service", tier: "premium", date: "2026-09-22", window: "afternoon" };
+  return (await (await post(app, "/api/holds", body)).json<{ id: string }>()).id;
+}
+
+describe("booking a service ops added", () => {
+  it("holds it at its own price and length, and books it in FSM on its own item, as its own service", async () => {
+    await premiumService();
+    const app = appFor("local", fakeDependencies(), {}, "client");
+    const holdId = await heldPremium(app);
+    const held = await env.DB.prepare("SELECT type, tier, minutes, amount FROM slot_holds WHERE id = ?1")
+      .bind(holdId)
+      .first();
+    expect(held).toEqual({ type: "service", tier: "premium", minutes: 120, amount: 250000 });
+    const started = await (await post(app, "/api/bookings", { hold_id: holdId })).json<{ checkout: object }>();
+    expect(started.checkout).toMatchObject({ amount: 250000, description: "Premium service, 2026-09-22" });
+
+    await captured(holdId);
+    const fsm = createStubFsm(withItem());
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), holdId, NOW, { labelAsTest: true })).toBe("booked");
+
+    expect(fsm.made.visits).toEqual([
+      {
+        contactId: "contact-1",
+        summary: "Staging test: Premium service for Rohit Malhotra",
+        serviceId: "item-premium",
+        technicianId: "resource-1",
+        start: "2026-09-22T12:00:00+05:30",
+        end: "2026-09-22T14:00:00+05:30",
+      },
+    ]);
+    const visit = await env.DB.prepare(
+      "SELECT type, tier, window_end FROM appointments WHERE fsm_id LIKE 'stub-appointment-%'",
+    ).first();
+    expect(visit).toEqual({ type: "service", tier: "premium", window_end: "2026-09-22T08:30:00.000Z" });
+    const kept = await env.DB.prepare("SELECT fsm_item_id FROM services WHERE tier = 'premium'").first();
+    expect(kept).toEqual({ fsm_item_id: "item-premium" });
+  });
+
+  // ADR 0068: what a client was sold stays sold, whatever ops change after.
+  it("keeps the price and the length it was held at, whatever ops set after", async () => {
+    await premiumService();
+    const app = appFor("local", fakeDependencies(), {}, "client");
+    const holdId = await heldPremium(app);
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'premium', 300000, 0, '2026-09-21')",
+      ),
+      env.DB.prepare("UPDATE services SET minutes = 180 WHERE tier = 'premium'"),
+    ]);
+    await post(app, "/api/bookings", { hold_id: holdId });
+    await captured(holdId);
+    const fsm = createStubFsm(withItem());
+
+    await confirmBooking(env.DB, fsm, createStubPayments(), holdId, NOW, { labelAsTest: true });
+
+    expect(fsm.made.visits[0]?.end).toBe("2026-09-22T14:00:00+05:30");
+    const paid = await env.DB.prepare("SELECT amount FROM payments WHERE razorpay_payment_id = 'pay_1'").first();
+    expect(paid).toEqual({ amount: 250000 });
+  });
+
+  it("books it on its kind's standard item where FSM has none of its own, and tells ops once", async () => {
+    await premiumService();
+    const deps = fakeDependencies();
+    const logs = captureLogs();
+    const app = appFor("local", deps, {}, "client");
+    const holdId = await heldPremium(app);
+    await post(app, "/api/bookings", { hold_id: holdId });
+    await captured(holdId);
+    const fsm = createStubFsm(world());
+    const options = { labelAsTest: true, alertOnce: deps.alertOnce, log: createLogger() };
+
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), holdId, NOW, options)).toBe("booked");
+
+    expect(fsm.made.workOrders.map((order) => order.serviceId)).toEqual(["item-service"]);
+    expect(deps.alerts).toEqual([expect.stringContaining('no item for the service "Premium service"')]);
+    expect(logs.lines().filter((line) => line.event === "fsm_item_fallback")).toHaveLength(1);
+    // The visit is still the premium one the client paid for; its invoice is checked against that (ADR 0070).
+    const visit = await env.DB.prepare("SELECT tier FROM appointments WHERE fsm_id LIKE 'stub-appointment-%'").first();
+    expect(visit).toEqual({ tier: "premium" });
   });
 });
 
