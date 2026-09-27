@@ -249,8 +249,12 @@ export async function clearStaging(fixture: StagingFixture): Promise<void> {
   }
 
   await execute([
-    `DELETE FROM job_events WHERE appointment_id IN (${ids});`,
+    // A job's use and what was used point at its events, and the kit's stock at the technician. A
+    // transfer goes with both its rows, so the central store holds what it held before it.
+    `DELETE FROM stock_movements WHERE appointment_id IN (${ids}) OR technician_id = ${quote(fixture.technicianId)}
+       OR transfer_id IN (SELECT transfer_id FROM stock_movements WHERE technician_id = ${quote(fixture.technicianId)});`,
     `DELETE FROM consumables_used WHERE appointment_id IN (${ids});`,
+    `DELETE FROM job_events WHERE appointment_id IN (${ids});`,
     `DELETE FROM no_show_cases WHERE appointment_id IN (${ids});`,
     `DELETE FROM checkins WHERE appointment_id IN (${ids});`,
     `DELETE FROM photos WHERE photo_set_id IN (SELECT id FROM photo_sets WHERE appointment_id IN (${ids}));`,

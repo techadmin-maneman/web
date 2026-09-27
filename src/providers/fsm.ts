@@ -247,6 +247,13 @@ export interface FsmProvider {
   items(): Promise<FsmItem[]>;
   /** Writes an item's price, in paise before GST (docs/decisions/0073-prices-from-the-price-book.md). */
   setItemPrice(itemId: string, amountExGst: number): Promise<void>;
+  /**
+   * Adds a consumable to the catalogue as a part at Rs. 0: it is used on jobs
+   * and never invoiced (docs/decisions/0087-consumables-and-stock.md). Returns its ID.
+   */
+  createPart(name: string): Promise<string>;
+  /** Renames a catalogue item, as ops renamed the consumable it is. */
+  renameItem(itemId: string, name: string): Promise<void>;
   /** The files attached to an appointment, such as its photographs. */
   attachments(appointmentId: string): Promise<FsmAttachment[]>;
   download(fileId: string): Promise<FsmDownload>;
@@ -404,6 +411,10 @@ export interface StubFsm extends FsmProvider {
     readonly attached: { appointmentId: string; name: string; contentType: string; bytes: number }[];
     /** Each catalogue price written, in paise before GST. */
     readonly itemPrices: { itemId: string; price: number }[];
+    /** Each part added to the catalogue, by name. */
+    readonly parts: string[];
+    /** Each catalogue item renamed. */
+    readonly renamedItems: { itemId: string; name: string }[];
   };
   /** Makes the next call of this kind throw, so a test can prove the retry. */
   failNext(step: StubFsmStep, message?: string): void;
@@ -418,13 +429,20 @@ export interface StubFsm extends FsmProvider {
 
 /** The creates whose answer a test can lose. */
 export type StubFsmCreate =
-  "createContact" | "createRequest" | "createWorkOrder" | "createAppointment" | "createAsset" | "attachToAppointment";
+  | "createContact"
+  | "createRequest"
+  | "createWorkOrder"
+  | "createAppointment"
+  | "createAsset"
+  | "attachToAppointment"
+  | "createPart";
 
 /** The writes a test can make fail. */
 export type StubFsmStep =
   | StubFsmCreate
   | "items"
   | "setItemPrice"
+  | "renameItem"
   | "assets"
   | "createAsset"
   | "updateAsset"
@@ -459,6 +477,8 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     appointmentUpdates: [] as { appointmentId: string; fields: Record<string, string> }[],
     attached: [] as { appointmentId: string; name: string; contentType: string; bytes: number }[],
     itemPrices: [] as { itemId: string; price: number }[],
+    parts: [] as string[],
+    renamedItems: [] as { itemId: string; name: string }[],
   };
   const failures = new Map<StubFsmStep, Error>();
   /** Throws once if the test asked this step to fail; a retry then succeeds. */
@@ -488,8 +508,10 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   const madeAssets = new Map<string, FsmAsset[]>();
   const madeAttachments = new Map<string, FsmAttachment[]>();
   const invoices = new Map<string, FsmInvoice>();
-  /** Catalogue prices written since, over the ones the world gave. */
+  /** Catalogue prices and names written since, over the ones the world gave, and the parts added. */
   const itemPrices = new Map<string, number>();
+  const itemNames = new Map<string, string>();
+  const madeParts: FsmItem[] = [];
 
   /** Where each appointment's transitions have moved it, over the status the world gave it. */
   const statuses = new Map<string, string>();
@@ -530,12 +552,31 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     technicians: () => Promise.resolve([...world.technicians]),
     items: () => {
       checkFailure("items");
-      return Promise.resolve(world.items.map((item) => ({ ...item, price: itemPrices.get(item.id) ?? item.price })));
+      return Promise.resolve(
+        [...world.items, ...madeParts].map((item) => ({
+          ...item,
+          name: itemNames.get(item.id) ?? item.name,
+          price: itemPrices.get(item.id) ?? item.price,
+        })),
+      );
     },
     setItemPrice: (itemId, price) => {
       checkFailure("setItemPrice");
       made.itemPrices.push({ itemId, price });
       itemPrices.set(itemId, price);
+      return Promise.resolve();
+    },
+    createPart: (name) => {
+      checkFailure("createPart");
+      made.parts.push(name);
+      const id = `stub-part-${crypto.randomUUID()}`;
+      madeParts.push({ id, name, type: "Part", price: 0 });
+      return answer("createPart", id);
+    },
+    renameItem: (itemId, name) => {
+      checkFailure("renameItem");
+      made.renamedItems.push({ itemId, name });
+      itemNames.set(itemId, name);
       return Promise.resolve();
     },
     attachments: (appointmentId) =>
@@ -696,6 +737,8 @@ function createUnconnectedFsm(): FsmProvider {
     technicians: off,
     items: off,
     setItemPrice: off,
+    createPart: off,
+    renameItem: off,
     attachments: off,
     download: off,
     findContact: off,

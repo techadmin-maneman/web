@@ -115,7 +115,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 
 **The release:** as the site's, then `npm run apply-triggers -- --env production` to attach the apps' routes (never `W deploy`, RB 11, point 5), and `npm run smoke -- --environment production --surfaces`.
 
-**The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked in FSM and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see `fsm_catalogue_pushed` in the logs and no `fsm_catalogue` alert an hour later (item 25).
+**The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked in FSM and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see `fsm_catalogue_pushed` in the logs and no `fsm_catalogue` alert an hour later (item 25). The same hour's check adds each consumable to FSM's catalogue as a part at Rs. 0: see `fsm_part_added` in the logs, each part in FSM, and Settings · Consumables saying "In FSM" beside each, with no `fsm_catalogue:consumables` alert (ADR 0087).
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
 

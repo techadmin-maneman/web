@@ -39,6 +39,56 @@ const WINDOWS = {
   afternoon: { start: "08:30", end: "10:00" },
 } as const;
 
+/**
+ * The consumables the technician's step offers, what a service visit is expected to use, so its steppers start
+ * filled, and stock in the central store and his kit (docs/decisions/0087-consumables-and-stock.md). Once only:
+ * a second run finds them and leaves the ledger as it is.
+ */
+function consumables(now: string): string[] {
+  const kept = [
+    ["tape_strips", "Tape strips", "strip", 1200, 5, 50, 4],
+    ["bonding_glue", "Bonding glue", "ml", 90, 20, 200, 3],
+    ["solvent", "Solvent", "ml", 50, 50, 500, 10],
+    ["shampoo_sachet", "Shampoo sachet", "sachet", 800, 2, 20, 0],
+  ] as const;
+  // Four times the store's level delivered, and three times the kit's level moved into the technician's kit.
+  const moved = kept.flatMap(([code, , , , kit, central]) => [
+    row(`local-stock-${code}-in`, code, "central", null, central * 4, "received", null, "staff", "seed", now),
+    row(
+      `local-stock-${code}-out`,
+      code,
+      "central",
+      null,
+      -kit * 3,
+      "transferred",
+      `local-${code}`,
+      "staff",
+      "seed",
+      now,
+    ),
+    row(
+      `local-stock-${code}-kit`,
+      code,
+      "kit",
+      TECHNICIAN.id,
+      kit * 3,
+      "transferred",
+      `local-${code}`,
+      "staff",
+      "seed",
+      now,
+    ),
+  ]);
+  return [
+    `INSERT OR IGNORE INTO consumables (code, name, unit, unit_cost, reorder_kit, reorder_central, created_at,
+       updated_at) VALUES ${kept.map(([code, name, unit, cost, kit, central]) => row(code, name, unit, cost, kit, central, now, now)).join(", ")};`,
+    `INSERT OR IGNORE INTO consumable_usage (visit_type, tier, consumable_code, quantity, set_by, set_at) VALUES
+       ${kept.flatMap(([code, , , , , , expected]) => (expected > 0 ? [row("service", "standard", code, expected, "seed", now)] : [])).join(", ")};`,
+    `INSERT OR IGNORE INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason, transfer_id,
+       actor_kind, actor, created_at) VALUES ${moved.join(", ")};`,
+  ];
+}
+
 async function seedTechnician(): Promise<void> {
   const now = new Date().toISOString();
   const visit = (date: string, window: keyof typeof WINDOWS) => {
@@ -74,6 +124,7 @@ async function seedTechnician(): Promise<void> {
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
        ${visit(indiaDate(0), "morning")}, ${visit(indiaDate(0), "afternoon")}, ${visit(indiaDate(1), "morning")};`,
+    ...consumables(now),
   ];
   const folder = await mkdtemp(join(tmpdir(), "mm-seed-"));
   try {

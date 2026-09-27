@@ -37,8 +37,35 @@ export async function keepJob(job: Job): Promise<void> {
 
 export async function keptJob(id: string): Promise<Job | null> {
   const kept = await get<Kept>("jobs", id);
-  return kept !== null && kept.kind === "job" ? kept.job : null;
+  return kept !== null && kept.kind === "job" ? inTodaysShape(kept.job) : null;
 }
+
+/**
+ * A card an earlier build kept, before the job sheet and the consumables were
+ * set in the console (docs/decisions/0087-consumables-and-stock.md): its
+ * partial reasons were ids alone, and it carried no consumables. It is read in
+ * today's shape, so a job opened with no signal after an update still closes:
+ * each reason worded from its id, and the step with nothing to start from.
+ */
+function inTodaysShape(job: Job): Job {
+  const kept = job as Omit<Job, "partial_reasons" | "consumables"> & {
+    readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
+    readonly consumables?: Job["consumables"];
+  };
+  return {
+    ...kept,
+    partial_reasons: kept.partial_reasons.map((reason) =>
+      typeof reason === "string" ? { id: reason, label: worded(reason) } : reason,
+    ),
+    consumables: kept.consumables ?? [],
+  };
+}
+
+/** "piece_not_ready" as "Piece not ready". */
+const worded = (id: string): string => {
+  const words = id.replace(/_/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
 
 /** What the check-in measured: the distance, the radius, and when the no-show wait ends. */
 export async function keepArrival(jobId: string, arrival: CheckIn): Promise<void> {

@@ -16,10 +16,13 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [appointments](#appointments): The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065).
+- [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
 - [cities](#cities): The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).
 - [consents](#consents): What each person agreed to, and under which notice's version. Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
-- [consumables_used](#consumables_used): The consumables a technician entered at a job's third step, kept to replay the write and to count stock (ADR 0038).
+- [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
+- [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
+- [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
 - [cron_jobs](#cron_jobs): Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
@@ -37,6 +40,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 - [outbound_messages](#outbound_messages): Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
+- [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 - [people](#people): One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).
 - [photo_sets](#photo_sets): A visit's set of photographs, before or after (ADR 0028).
@@ -51,6 +55,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
+- [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
@@ -217,6 +222,22 @@ Indexes:
 - `checkins_by_address`: on (`address_id`), where `address_id IS NOT NULL`
 - `checkins_by_appointment`: on (`appointment_id`, `at`)
 
+## checklist_items
+
+Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
+
+Made by `0051_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `visit_type` | TEXT | no |  | primary key |
+| `code` | TEXT | no |  | primary key |
+| `label` | TEXT | no |  |  |
+| `position` | INTEGER | no |  |  |
+| `retired_at` | TEXT | yes |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
 ## cities
 
 The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).
@@ -273,11 +294,51 @@ Indexes:
 - `consultation_requests_by_created`: on (`created_at`)
 - A `UNIQUE` constraint: unique on (`person_id`, `requested_date`, `requested_window`)
 
+## consumable_usage
+
+What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
+
+Made by `0051_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `visit_type` | TEXT | no |  | primary key |
+| `tier` | TEXT | no | `'standard'` | primary key |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
+| `quantity` | INTEGER | no |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
+## consumables
+
+The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
+
+Made by `0051_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |
+| `name` | TEXT | no |  |  |
+| `unit` | TEXT | no |  |  |
+| `unit_cost` | INTEGER | no |  |  |
+| `reorder_kit` | INTEGER | yes |  |  |
+| `reorder_central` | INTEGER | yes |  |  |
+| `retired_date` | TEXT | yes |  |  |
+| `fsm_item_id` | TEXT | yes |  |  |
+| `fsm_name` | TEXT | yes |  |  |
+| `fsm_checked_at` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `consumables_name`: unique on (`name`)
+
 ## consumables_used
 
-The consumables a technician entered at a job's third step, kept to replay the write and to count stock (ADR 0038).
+The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 
-Made by `0026_field_operations.sql`.
+Made by `0026_field_operations.sql`; changed by `0051_consumables_and_stock.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -288,6 +349,9 @@ Made by `0026_field_operations.sql`.
 | `name` | TEXT | no |  |  |
 | `quantity` | INTEGER | no |  |  |
 | `created_at` | TEXT | no |  |  |
+| `consumable_code` | TEXT | yes |  | → `consumables.code` |
+| `expected_quantity` | INTEGER | yes |  |  |
+| `unit_cost` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -683,6 +747,21 @@ Indexes:
 - `outbound_messages_by_subject`: on (`subject_id`)
 - `outbound_messages_one_arrival`: unique on (`subject_id`), where `kind = 'arrival_notice'`
 
+## partial_reasons
+
+The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
+
+Made by `0051_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |
+| `label` | TEXT | no |  |  |
+| `position` | INTEGER | no |  |  |
+| `retired_at` | TEXT | yes |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
 ## payments
 
 The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
@@ -1039,6 +1118,34 @@ Indexes:
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
+
+## stock_movements
+
+Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
+
+Made by `0051_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |
+| `location` | TEXT | no |  |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `quantity` | INTEGER | no |  |  |
+| `reason` | TEXT | no |  |  |
+| `transfer_id` | TEXT | yes |  |  |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |
+| `job_event_id` | TEXT | yes |  | → `job_events.id` |
+| `actor_kind` | TEXT | no |  |  |
+| `actor` | TEXT | no |  |  |
+| `note` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `stock_movements_by_job`: on (`appointment_id`), where `reason = 'used'`
+- `stock_movements_held`: on (`technician_id`, `consumable_code`)
+- `stock_movements_used`: unique on (`job_event_id`, `consumable_code`), where `reason = 'used'`
 
 ## sync_cursors
 

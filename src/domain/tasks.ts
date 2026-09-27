@@ -8,6 +8,7 @@
 // start. The due date follows from that moment and the group's allowance, and
 // is never later than the visit; nothing is written anywhere.
 
+import { PARTIAL_REASONS } from "../config/job-sheet.ts";
 import { indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { UNTOLD_MOVE } from "./dispatch.ts";
 import { LEAVE_ON_THE_DAY } from "./leave.ts";
@@ -146,7 +147,8 @@ const OUTSTANDING = [
      AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM addresses d WHERE d.person_id = a.person_id AND d.replaced_at IS NULL)
   UNION ALL
-  SELECT 'partial_visit', a.id, a.person_id, pe.name, v.partial_reason,
+  SELECT 'partial_visit', a.id, a.person_id, pe.name,
+         COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason),
          COALESCE(v.ended_at, a.window_end, v.updated_at), NULL
     FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND COALESCE(v.partial_reason, '') <> 'no_show' AND a.deleted_at IS NULL
@@ -174,6 +176,18 @@ function firstSignal(signals: string | null): string | null {
   if (signals === null) return null;
   const parsed = JSON.parse(signals) as unknown;
   return Array.isArray(parsed) && typeof parsed[0] === "string" ? parsed[0] : null;
+}
+
+/**
+ * The one fact a task turns on, as ops read it. A partial visit's is the
+ * technician's reason in the words ops gave it: the statement reads them from
+ * the reasons ops saved, and a reason from the committed list, which stands
+ * until they save one, is named here (docs/decisions/0087-consumables-and-stock.md).
+ */
+function detailOf(row: Row): string | null {
+  if (row.group === "referral_review") return firstSignal(row.detail);
+  if (row.group !== "partial_visit") return row.detail;
+  return PARTIAL_REASONS.find((reason) => reason.id === row.detail)?.label ?? row.detail;
 }
 
 /** A replacement is due on a calendar date; everything else waits from an instant. */
@@ -213,7 +227,7 @@ function taskOf(row: Row, sla: Slas): Task {
     id: row.id,
     group: row.group,
     person: row.person_id === null || row.person_name === null ? null : { id: row.person_id, name: row.person_name },
-    detail: row.group === "referral_review" ? firstSignal(row.detail) : row.detail,
+    detail: detailOf(row),
     since,
     due: dueOf(row, since, sla).toISOString(),
   };

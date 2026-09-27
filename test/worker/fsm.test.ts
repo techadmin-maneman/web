@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoFsmSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
 import { createBooksProvider, createStubBooks } from "../../src/providers/books.ts";
-import { createFsmProvider, createStubFsm } from "../../src/providers/fsm.ts";
+import { createFsmProvider, createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import {
   FSM_API,
   ZOHO_TOKEN_URL,
@@ -218,6 +218,41 @@ describe("FSM: clients, technicians, items and files", () => {
     expect(put?.method).toBe("PUT");
     expect(put?.url).toBe(`${FSM_API}/Products/item-1`);
     expect(JSON.parse(put?.body ?? "null")).toEqual({ data: [{ Unit_Price: 15_000 }] });
+  });
+
+  // A consumable is a part at Rs. 0: used on jobs, never invoiced (docs/decisions/0087-consumables-and-stock.md). The
+  // create is scripts/setup-fsm.ts's own, whose answer that script never read; the trial's creates answer data[0].details.id.
+  it("adds a consumable to the catalogue as a part at Rs. 0, and reads the new ID FSM answers", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_And_Parts`]: () =>
+        json({ data: [{ code: "SUCCESS", details: { id: "part-9" }, message: "record added" }] }, 201),
+    });
+
+    expect(await provider.createPart("Tape strips")).toBe("part-9");
+
+    const post = calls.at(-1);
+    expect(post?.method).toBe("POST");
+    expect(post?.url).toBe(`${FSM_API}/Service_And_Parts`);
+    expect(JSON.parse(post?.body ?? "null")).toEqual({
+      data: [
+        { Name: "Tape strips", Type: "Part", Unit_Price: 0, Description: "A consumable used on jobs. Never invoiced." },
+      ],
+    });
+  });
+
+  it("renames a catalogue item on the item's record, where its price is written", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Products/part-9`]: () => json({ data: [{ code: "SUCCESS", details: { id: "part-9" } }] }),
+    });
+
+    await provider.renameItem("part-9", "Contour tape");
+
+    const put = calls.at(-1);
+    expect(put?.method).toBe("PUT");
+    expect(put?.url).toBe(`${FSM_API}/Products/part-9`);
+    expect(JSON.parse(put?.body ?? "null")).toEqual({ data: [{ Name: "Contour tape" }] });
   });
 
   it("lists an appointment's attachments and downloads one as FSM sent it", async () => {
@@ -919,6 +954,25 @@ describe("the stand-ins", () => {
   it("none refuses every call plainly", async () => {
     const off = createFsmProvider("none", null, { db: env.DB, fetch, now: () => NOW, log: createLogger() });
     await expect(off.appointment("ap-1")).rejects.toThrow("FSM is not connected here (FSM_PROVIDER is none)");
+    await expect(off.createPart("Tape strips")).rejects.toThrow("FSM_PROVIDER is none");
+    await expect(off.renameItem("part-1", "Tape strips")).rejects.toThrow("FSM_PROVIDER is none");
+  });
+
+  it("the stub FSM lists a part it added at Rs. 0, and an item under the name it was given since", async () => {
+    const stub = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "part-1", name: "Solvent (old)", type: "Part", price: 0 }],
+    });
+
+    const added = await stub.createPart("Tape strips");
+    await stub.renameItem("part-1", "Solvent");
+
+    expect(await stub.items()).toEqual([
+      { id: "part-1", name: "Solvent", type: "Part", price: 0 },
+      { id: added, name: "Tape strips", type: "Part", price: 0 },
+    ]);
+    expect(stub.made.parts).toEqual(["Tape strips"]);
+    expect(stub.made.renamedItems).toEqual([{ itemId: "part-1", name: "Solvent" }]);
   });
 });
 

@@ -100,8 +100,8 @@ function subOf(group: Group, task: Task): string {
     return copy.replacement_order(task.detail ?? tasks.unknown, fullDate(indiaDate(task.since)));
   }
   if (group === "partial_visit") {
-    // The technician's reason, and the day he closed the visit.
-    const reason = copy.partialReasons[task.detail ?? ""] ?? copy.noReason;
+    // The technician's reason, in the job sheet's words, and the day he closed the visit.
+    const reason = task.detail ?? copy.noReason;
     return copy.partial_visit(reason, shortDate(indiaDate(task.since)));
   }
   if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;

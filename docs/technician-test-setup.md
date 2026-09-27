@@ -78,8 +78,8 @@ Work through this on **today's** job. It is a service visit, so it has five step
 
 5. Tap **Start job**.
 6. **Before photos.** You should see a live picture, **0 of 5**, and the word **Front**. Tap **Capture** five times, following the label each time — Front, Top, Left, Right, Hair. After the fifth you should see **All five are on the phone.**, and **Capture** becomes **Done** in the same place. Point the camera at a wall; nobody needs to be photographed. Tap **Done**.
-7. **Service checklist.** Six lines, each beginning "PLACEHOLDER" — that is correct, because the real checklist has to be built in FSM and has not been (open point 28). Tick all six. The bar at the bottom stays dim and says "Finish the list to continue" until every line is ticked. Tap **Next**.
-8. **Consumables used.** Four items with a plus and a minus each. Add one or two of anything, or tap **None used**. Tap **Next**.
+7. **Service checklist.** Six lines, each beginning "PLACEHOLDER" — that is correct until ops set the real list in the console's Settings · Job sheet (open point 28), and then you see theirs. Tick every line. The bar at the bottom stays dim and says "Finish the list to continue" until every line is ticked. Tap **Next**.
+8. **Consumables used.** The consumables ops listed in the console's Settings · Consumables, each with a plus and a minus; those a service visit is expected to use come first, already at what it expects. **Add another** gives any of the rest. Change a count or two, or take each to 0, which records **None used**. If ops have listed none yet, the step says so. Tap **Next**. What you record comes out of your kit on the console's Stock page.
 9. **After photos.** The same five as before. Tap **Capture** five times, then **Done**.
 10. **Outcome.** Nothing is chosen for you: tap **Done**, then **Next**. (**Partial · pick a reason** is the other path; try it on tomorrow's job if you want to see it.)
 11. You should reach the close-out: **Closed out**, a tick, "Staging test · done", how long the job took, and how many photographs are queued or sent.

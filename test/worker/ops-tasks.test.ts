@@ -470,13 +470,15 @@ describe("GET /api/tasks", () => {
       ]);
     }
 
+    // In the words the reason has on the job sheet: the committed list's, until ops save their own
+    // (docs/decisions/0087-consumables-and-stock.md).
     it("waits with the technician's reason, from when he closed it", async () => {
       await closed("partial", "piece_not_ready");
       expect(tasksIn(await tasks(), "partial_visit")).toEqual([
         {
           id: VISIT,
           person: { id: PERSON, name: "Rohit Malhotra" },
-          detail: "piece_not_ready",
+          detail: "PLACEHOLDER The piece was not ready",
           since: "2026-09-20T05:40:00.000Z",
           due: "2026-09-22T05:40:00.000Z",
         },

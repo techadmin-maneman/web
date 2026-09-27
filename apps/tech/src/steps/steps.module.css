@@ -157,6 +157,14 @@
   color: var(--paper);
 }
 
+/* What one is counted in, and how many the visit's service expects, beneath the consumable's name (ADR 0087). */
+.countUnit {
+  display: block;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-16);
+  color: var(--ink-muted);
+}
+
 .stepper {
   display: flex;
   align-items: center;

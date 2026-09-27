@@ -5,7 +5,8 @@
 // it, and each page is titled from it. Two sections have pages beneath them:
 //
 //   /clients/:id/:tab       a client's page, a tab at a time (B1 to B3, and the tabs no board draws)
-//   /settings/:tab          the rules, the price book and the service area (ADR 0061)
+//   /settings/:tab          the rules, the price book and the service area (ADR 0061), the consumables
+//                           and the job sheet (ADR 0087)
 //
 // Anything else, "/" included, is the dispatch board, which is what the design opens on.
 
@@ -16,8 +17,9 @@ export { followsHere, go, usePath, type Click } from "@maneman/ui/router";
 
 /**
  * The console's sections, in the navigation's order: the design's eight, with
- * No-shows where it draws Payments, and the three a client's rights over their
- * data put in front of ops before Settings (docs/fidelity-method.md).
+ * No-shows where it draws Payments, Stock beside the technicians whose kits it
+ * counts (ADR 0087), and the three a client's rights over their data put in
+ * front of ops before Settings (docs/fidelity-method.md).
  */
 export const SECTIONS = [
   { page: "dispatch", path: "/dispatch" },
@@ -27,6 +29,7 @@ export const SECTIONS = [
   { page: "waitlist", path: "/waitlist" },
   { page: "tasks", path: "/tasks" },
   { page: "technicians", path: "/technicians" },
+  { page: "stock", path: "/stock" },
   { page: "grievances", path: "/grievances" },
   { page: "deletion-requests", path: "/deletion-requests" },
   { page: "number-changes", path: "/number-changes" },
@@ -50,7 +53,7 @@ export type ClientTab = (typeof CLIENT_TABS)[number];
 const OPENING_TAB: ClientTab = "pieces";
 
 /** What Settings holds, in the order the section lists it. Rules has the section's own path. */
-export const SETTINGS_TABS = ["rules", "prices", "area"] as const;
+export const SETTINGS_TABS = ["rules", "prices", "area", "consumables", "job-sheet"] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 export type Route =
@@ -60,7 +63,7 @@ export type Route =
 
 const DISPATCH: Route = { page: "dispatch" };
 const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|photos|consents|history))?)?$/;
-const SETTINGS_PATH = /^\/settings(?:\/(prices|area))?$/;
+const SETTINGS_PATH = /^\/settings(?:\/(prices|area|consumables|job-sheet))?$/;
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
 const clientTabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? OPENING_TAB;
