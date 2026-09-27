@@ -1,13 +1,15 @@
 // Before any test runs: the builds the run will be served are checked against
 // their source, then a fitted client in the local mirrors, for the client app's
 // read surfaces (e2e/app/fitted.ts), two clients whose visits the change tests
-// move and cancel (e2e/app/changing.ts), and the service area the booking pages
-// read (e2e/booking-area.ts).
+// move and cancel (e2e/app/changing.ts), a client with a try-on from the site
+// (e2e/app/try-on.ts), and the service area the booking pages read
+// (e2e/booking-area.ts).
 
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { seedChanging } from "./app/changing.ts";
 import { seedFitted } from "./app/fitted.ts";
+import { seedTryOn } from "./app/try-on.ts";
 import { seedBookingArea } from "./booking-area.ts";
 
 /** Each surface playwright.config.ts serves, and the command that builds it. */
@@ -58,5 +60,6 @@ export default async function globalSetup(): Promise<void> {
   checkBuilds();
   await seedFitted();
   await seedChanging();
+  await seedTryOn();
   await seedBookingArea();
 }
