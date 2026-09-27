@@ -1,4 +1,6 @@
 // Paying for a visit (docs/prompts/phase2-backend.md, "Business rules, decided").
+// The rule as the prompt states it, and what it means for the tax invoice. The payment is taken in
+// src/domain/bookings.ts before anything is booked; the invoice is held or issued in src/domain/fsm-invoices.ts.
 //
 // A visit is paid for before it happens, so its tax invoice records a sale
 // already settled: it must total what the client was sold the visit for. An

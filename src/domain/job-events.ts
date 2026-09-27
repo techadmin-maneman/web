@@ -16,9 +16,8 @@
 // An event's time is the phone's, held within bounds (src/policy/phone-clock.ts),
 // so a job worked offline keeps its real durations; received_at is ours.
 
-import { JOB_STEPS, type JobEventKind, type JobStep, PIECE_STEP_TYPES } from "../policy/in-job-steps.ts";
+import { isNoShow, stepBefore, type JobEventKind } from "../policy/in-job-steps.ts";
 import { onTheVisitsDay } from "../policy/phone-clock.ts";
-import type { VisitType } from "../config/visit-types.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
 
 export type FsmWriteState = "pending" | "written" | "rejected";
@@ -100,35 +99,6 @@ function supersededBy(job: WorkableJob, technicianId: string, expectedStart: Dat
   if (job.status === "cancelled" || job.status === "terminated") changed.push("status");
   if (expectedStart !== null && expectedStart.getTime() !== job.windowStart.getTime()) changed.push("time");
   return changed;
-}
-
-const isNoShow = (kind: JobEventKind, body: Record<string, unknown>): boolean =>
-  kind === "outcome" && body.outcome === "no_show";
-
-/** The step this one must follow, or null when it may land now. */
-function stepBefore(
-  kind: JobEventKind,
-  type: VisitType,
-  done: ReadonlySet<string>,
-  body: Record<string, unknown>,
-): JobEventKind | null {
-  if (kind === "check_in") return null;
-  if (kind === "start") return done.has("check_in") ? null : "check_in";
-  // A no-show closes a job that was never started, so it needs only the check-in
-  // the wait ran from (src/policy/no-show.ts).
-  if (isNoShow(kind, body)) return done.has("check_in") ? null : "check_in";
-  if (!done.has("start")) return "start";
-  const wanted: readonly JobEventKind[] = stepsFor(type);
-  const position = wanted.indexOf(kind);
-  if (position <= 0) return null;
-  const previous = wanted[position - 1];
-  return previous === undefined || done.has(previous) ? null : previous;
-}
-
-/** The steps this visit type runs: the piece is a replacement's and a first fit's only. */
-export function stepsFor(type: VisitType): JobStep[] {
-  const takesPiece = (PIECE_STEP_TYPES as readonly string[]).includes(type);
-  return JOB_STEPS.filter((step) => step !== "piece" || takesPiece);
 }
 
 async function kindsLanded(db: D1Database, appointmentId: string): Promise<Set<string>> {
