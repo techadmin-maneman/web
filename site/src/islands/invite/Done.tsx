@@ -3,15 +3,15 @@
 // board draws: the number we message, a calendar file for the window, and the way into the client app.
 
 import { ICONS } from "@maneman/brand/icons";
-import { referral } from "../content/referral.ts";
-import type { PincodeAnswer, ReferralConsultation, ReferralWaitlist } from "../lib/api.ts";
-import { clientAppOrigin } from "../lib/app-link.ts";
-import { ENVIRONMENT } from "../lib/build.ts";
-import { consultationCalendar } from "../lib/calendar.ts";
-import { bookedHeadline } from "../lib/dates.ts";
-import { downloadFile } from "../lib/download.ts";
-import { fill } from "../lib/text.ts";
-import { Icon } from "./Drawings.tsx";
+import { referral } from "../../content/referral.ts";
+import type { PincodeAnswer, ReferralConsultation, ReferralWaitlist } from "../../lib/api.ts";
+import { clientAppOrigin } from "../../lib/app-link.ts";
+import { ENVIRONMENT } from "../../lib/build.ts";
+import { consultationCalendar } from "../../lib/calendar.ts";
+import { bookedHeadline } from "../../lib/dates.ts";
+import { downloadFile } from "../../lib/download.ts";
+import { fill } from "../../lib/text.ts";
+import { Icon } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
 
 type HeadingRef = { current: HTMLHeadingElement | null };
