@@ -4,7 +4,7 @@
 // referrer, and not already fitted. An invite held for them on a waitlist lapses 12 months after their area
 // launched; from then it carries no credits, and says so when they book.
 
-import { CURRENT_NOTICE } from "../config/notices.ts";
+import { NAMING_NOTICES } from "../config/notices.ts";
 import { inviteLapsed } from "../policy/invites.ts";
 import { firstNameOf } from "../lib/names.ts";
 
@@ -61,17 +61,22 @@ export interface Invite {
   readonly card: { readonly state: "house" | "personal"; readonly version: number };
 }
 
-/** A code's invite; null if no such code. An erased referrer's invite stays valid, with the house card. */
+/**
+ * A code's invite; null if no such code. An erased referrer's invite stays valid, with the house card. The referrer
+ * is named only if their latest consent to cards was given on a notice that told them so: the profile's, or the
+ * pay step's when booking gave it (ADR 0080).
+ */
 export async function inviteOf(db: D1Database, code: string, nameOnInvite: boolean): Promise<Invite | null> {
+  const naming = NAMING_NOTICES.map((_, index) => `?${String(index + 2)}`).join(", ");
   const row = await db
     .prepare(
       `SELECT r.code, r.person_id, r.card_state, r.card_version, p.name, p.erased_at,
-         (SELECT c.granted = 1 AND c.notice_version = ?2 FROM consents c
+         (SELECT c.granted = 1 AND c.notice_version IN (${naming}) FROM consents c
           WHERE c.person_id = r.person_id AND c.purpose = 'photos_referral_cards'
           ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1) AS named
        FROM referral_codes r JOIN people p ON p.id = r.person_id WHERE r.code = ?1`,
     )
-    .bind(code.toUpperCase(), CURRENT_NOTICE.photos_referral_cards)
+    .bind(code.toUpperCase(), ...NAMING_NOTICES)
     .first<{
       code: string;
       person_id: string;

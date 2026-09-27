@@ -1625,10 +1625,7 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        hold_id: string;
-                    };
+                    "application/json": components["schemas"]["BookingStart"];
                 };
             };
             responses: {
@@ -2834,6 +2831,12 @@ export interface components {
                     contact: string;
                 };
             } | null;
+        };
+        BookingStart: {
+            /** Format: uuid */
+            hold_id: string;
+            /** @description The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on (ADR 0080); left out, none. */
+            consents?: ("photos_own_record" | "photos_referral_cards")[];
         };
         MoveTerms: {
             /** Format: uuid */

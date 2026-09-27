@@ -1045,17 +1045,7 @@ Request body:
 
 ```json
 {
-  "type": "object",
-  "properties": {
-    "hold_id": {
-      "type": "string",
-      "format": "uuid"
-    }
-  },
-  "required": [
-    "hold_id"
-  ],
-  "additionalProperties": false
+  "$ref": "#/components/schemas/BookingStart"
 }
 ```
 
@@ -4352,6 +4342,36 @@ Request body:
   "required": [
     "hold_id",
     "checkout"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BookingStart
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "consents": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "photos_own_record",
+          "photos_referral_cards"
+        ]
+      },
+      "maxItems": 2,
+      "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on (ADR 0080); left out, none."
+    }
+  },
+  "required": [
+    "hold_id"
   ],
   "additionalProperties": false
 }

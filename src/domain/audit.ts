@@ -98,7 +98,7 @@ export function auditStatementIfWritten(
   db: D1Database,
   entry: AuditEntry,
   now: Date,
-  written: { readonly table: "grievances"; readonly id: string },
+  written: { readonly table: "grievances" | "consents"; readonly id: string },
 ): D1PreparedStatement {
   return db
     .prepare(

@@ -15,7 +15,10 @@
 //
 // No slot is held, for a new visit or a move, until the client has given the
 // address the visit goes to, and the hold carries its pincode
-// (docs/decisions/0079-an-address-before-a-slot.md).
+// (docs/decisions/0079-an-address-before-a-slot.md). The tap that books a new
+// visit also agrees to the photograph purposes the pay step showed, each only
+// while the client has never decided on it
+// (docs/decisions/0080-consents-given-by-booking.md).
 //
 // Once paid for, a hold keeps its time until it is booked or refunded, and the
 // client can no longer let it go (docs/decisions/0068-a-paid-hold-is-kept.md).
@@ -25,6 +28,7 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
+import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { startBooking } from "../domain/bookings.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { priceOf, type Price } from "../domain/price-book.ts";
@@ -42,8 +46,9 @@ import { changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
+import { visitorOf } from "../http/visitor.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
-import { isFullAddress } from "../policy/booking.ts";
+import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
 import { LATE_FEES } from "../policy/moving-a-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -205,11 +210,27 @@ const holdByIdRoute = createRoute({
   },
 });
 
+const BookingStartSchema = z
+  .object({
+    hold_id: z.uuid(),
+    consents: z
+      .array(z.enum(GIVEN_BY_BOOKING))
+      .max(GIVEN_BY_BOOKING.length)
+      .optional()
+      .openapi({
+        description:
+          "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never " +
+          "decided on (ADR 0080); left out, none.",
+      }),
+  })
+  .strict()
+  .openapi("BookingStart");
+
 const bookingRoute = createRoute({
   method: "post",
   path: "/api/bookings",
   summary: "Book a held window: pay through Checkout, or, if free, book it at once",
-  request: { body: { content: { "application/json": { schema: z.object({ hold_id: z.uuid() }).strict() } } } },
+  request: { body: { content: { "application/json": { schema: BookingStartSchema } } } },
   responses: {
     201: { description: "Started", content: { "application/json": { schema: BookingSchema } } },
     401: errorResponse("session_required"),
@@ -381,8 +402,17 @@ export function registerClientBooking(app: App): void {
 
   app.openapi(bookingRoute, async (c) => {
     const session = clientOf(c);
-    const booking = await startCheckout(c, c.req.valid("json").hold_id, session.subjectId);
+    const { hold_id: holdId, consents = [] } = c.req.valid("json");
+    const booking = await startCheckout(c, holdId, session.subjectId);
     if (booking === null) return c.json(errorBody("hold_expired", c.var.requestId), 409);
+    await recordBookingConsents(c.env.DB, {
+      personId: session.subjectId,
+      holdId,
+      shown: consents,
+      ipHash: (await visitorOf(c)).ipHash,
+      requestId: c.var.requestId,
+      now: c.var.deps.now(),
+    });
     return c.json(booking, 201);
   });
 
