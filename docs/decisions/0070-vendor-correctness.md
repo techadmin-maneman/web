@@ -29,6 +29,8 @@ The audit of 24 September 2026 found the vendors trusted where they should have 
 
 **One requester, and tokens asked for sparingly** (`src/providers/zoho-http.ts`). The CRM, FSM and Books go through one requester, with both clients' tokens in `zoho_access_tokens` (migration 0041, seeded from the two old tables, which are dropped in a later contract step).
 
+- **The contract step waits for production.** Production still runs code from before this package (#125, 6ef2ddb), and that code reads and writes `zoho_token` (0002) and `zoho_tokens` (0010). They are dropped only by a migration after production has run #125's code, carrying `-- contract: docs/decisions/0070-vendor-correctness.md`; until then no migration touches them. `docs/migrations.md` lists the step.
+
 - A token is asked for only when the one held has under a minute to run, or a 401 names it invalid. Any other 401 is thrown as it is.
 - One caller asks at a time, under a lease in D1. Another waits for its token; one that finds the token replaced since its own was refused uses the new one.
 - After Zoho refuses a token ("Access Denied"), none is asked for ten minutes, and every call fails at once meanwhile.
