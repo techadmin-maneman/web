@@ -923,7 +923,7 @@ The sweeper reads the balance once an hour and alerts once when it is below `AIL
 
 ### A ceiling was reached
 
-The alert names the ceiling (`upload`, `render` or `result_read`). Try-ons answer `503 busy` until midnight IST, and the alert fires at most once a day per ceiling.
+The alert names the ceiling (`upload`, `render` or `result_read`). Try-ons answer `503 busy` until midnight IST, and the alert fires at most once a day per ceiling. The result-read ceiling also counts a client opening their try-on's photograph or look in the app (ADR 0082), so past it the app's Photos tab shows those two as blank blocks until midnight.
 
 - If the traffic is real, raise the ceiling in `wrangler.jsonc` and deploy. The free-tier budget test refuses any value that could take the account past 80% of a free allowance.
 - If the traffic is abuse, leave the ceiling: it is doing its job.
