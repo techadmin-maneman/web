@@ -1,5 +1,5 @@
 // WhatsApp through an Evolution API bridge (docs/decisions/0016-whatsapp-through-evolution.md).
-// Only src/providers/messaging.ts imports this module.
+// Only src/providers/messaging.ts sends through this module.
 //
 //   send   POST {base}/message/sendMedia/{instance}   { number, mediatype, mimetype, caption, media, fileName }
 //          POST {base}/message/sendText/{instance}    { number, text }

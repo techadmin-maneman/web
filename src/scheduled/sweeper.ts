@@ -13,6 +13,8 @@
 //   moves       a dispatch move still open after five minutes: its claimed time let go, the move closed
 //   hourly      the AILabTools balance, against AILAB_CREDIT_FLOOR
 //   expiry      abandoned uploads after an hour, results after 30 days, photos once their jobs are done
+//   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
+//               try-on sessions once expired, and app sessions 30 days after they ended
 
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
@@ -26,7 +28,7 @@ import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { SENDING_LEASE_MS, type MessagingMessage } from "../queues/messaging.ts";
 import type { RenderMessage } from "../queues/render.ts";
-import { MINUTE_MS } from "../lib/durations.ts";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
@@ -41,16 +43,16 @@ const JOB_EVENT_ALERT_AFTER_MS = 60 * MINUTE_MS;
 const SUBMIT_ABANDONED_MS = 10 * MINUTE_MS;
 /** Downloads are retried every sweep at first, then hourly until the URL expires. */
 const DOWNLOAD_RETRY_EARLY_MS = 5 * MINUTE_MS;
-const DOWNLOAD_RETRY_LATE_MS = 60 * MINUTE_MS;
+const DOWNLOAD_RETRY_LATE_MS = HOUR_MS;
 const DOWNLOAD_EARLY_ATTEMPTS = DOWNLOAD_QUEUE_RETRIES + 3;
 /** Most rows handled per kind per run; the next run takes the rest. */
 const BATCH_LIMIT = 100;
-const IDEMPOTENCY_TTL_MS = 24 * 60 * MINUTE_MS;
+const IDEMPOTENCY_TTL_MS = DAY_MS;
 /** Rate-limit windows are at most a day; keep two more for inspection. */
 const COUNTER_RETENTION_DAYS = 3;
 /** A login code is kept a day past its expiry, for the logs to be read against; a session 30 days past its end. */
-const CHALLENGE_RETENTION_MS = 24 * 60 * MINUTE_MS;
-const SESSION_RETENTION_MS = 30 * 24 * 60 * MINUTE_MS;
+const CHALLENGE_RETENTION_MS = DAY_MS;
+const SESSION_RETENTION_MS = 30 * DAY_MS;
 
 export type SweepEnv = Pick<
   Env,
