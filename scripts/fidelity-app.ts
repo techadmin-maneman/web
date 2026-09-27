@@ -22,6 +22,9 @@ import { chromium, type Browser, type Page, type Route } from "@playwright/test"
 import sharp from "sharp";
 import { pair, rest, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
+import type { components } from "../apps/app/src/api-schema.ts";
+
+type Schemas = components["schemas"];
 
 const APP_DIR = resolve("apps/app/dist/local");
 const DESIGN_DIR = resolve("design/phase2");
@@ -222,8 +225,8 @@ const REFER = {
   credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
   card: { state: "house", version: 1, consented: true },
   fitted: [
-    { first_name: "Karan", month: "2027-08" },
-    { first_name: "Vikram", month: "2027-05" },
+    { first_name: "Vikram", month: "2027-08" },
+    { first_name: "Ashish", month: "2027-03" },
   ],
   invite_credits: null,
 };
@@ -600,29 +603,47 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
     await app.getByRole("heading", { name: "Pay and confirm" }).waitFor();
   }
 
+  /**
+   * The hold's countdown as board C4 letters it, 9:42, however long the sheet took to reach the pay step: the clock
+   * is held at the moment the hold was made, so every run shoots the same figure.
+   */
+  async function holdAsDrawn(app: Page): Promise<void> {
+    await app.clock.setFixedTime(IN_2030);
+    await app.getByText("9:42").waitFor();
+  }
+
+  /** The sheet alone, as board C5 draws its two cards alone, without the dark ground above it. */
+  const sheetShot = async (app: Page): Promise<Buffer> => {
+    await rest(app);
+    return app.locator("dialog[open] > div").screenshot();
+  };
+
   // C4's saved card ("Card ending 4417") is Checkout's to offer; the app offers card payment as "Card".
   const service = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030);
   await throughTheSheet(service, true);
+  await holdAsDrawn(service);
   await pair(OUT, WIDTH, "c4-pay", await frame(design, "Booking · pay"), await shot(service));
   await service.close();
 
   const firstFit = await openApp(browser, "/visits", api(FIRST_FIT_HOLD), IN_2030);
   await throughTheSheet(firstFit, false);
+  await holdAsDrawn(firstFit);
   const firstFitFrame = design
     .locator('[data-screen-label="Booking · credit"] > div')
     .filter({ has: design.getByText("First fit · guarantee line added", { exact: true }) })
     .screenshot();
-  await pair(OUT, WIDTH, "c5-first-fit", await firstFitFrame, await shot(firstFit));
+  await pair(OUT, WIDTH, "c5-first-fit", await firstFitFrame, await sheetShot(firstFit));
   await firstFit.close();
 
   // A service visit a credit covers: the design's two credits, one used.
   const credited = await openApp(browser, "/visits", api({ ...SERVICE_HOLD, credit: { remaining: 1 } }), IN_2030);
   await throughTheSheet(credited, false);
+  await holdAsDrawn(credited);
   const creditFrame = design
     .locator('[data-screen-label="Booking · credit"] > div')
     .filter({ has: design.getByText("Credit covers it · payment skipped", { exact: true }) })
     .screenshot();
-  await pair(OUT, WIDTH, "c5-credit", await creditFrame, await shot(credited));
+  await pair(OUT, WIDTH, "c5-credit", await creditFrame, await sheetShot(credited));
   await credited.close();
 
   const failed = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030, fakeCheckout("failed"));
@@ -667,8 +688,16 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
 
 /** Boards C7 and C8: what moving or cancelling Thursday's service visit costs, shown before the client confirms. */
 async function changePairs(browser: Browser, design: Page): Promise<void> {
-  const terms = { visit_id: NEXT.id, type: "service", free_until: "2030-09-18T06:30:00.000Z", paid: 236000 };
-  const move = (notice: "free" | "late") => ({
+  // Typed as the API answers, so a fixture cannot leave a field out: without `credit`, C7's late move read as a
+  // credit's beside the board's paid visit.
+  const terms = {
+    visit_id: NEXT.id,
+    type: "service",
+    free_until: "2030-09-18T06:30:00.000Z",
+    paid: 236000,
+    credit: null,
+  } as const;
+  const move = (notice: "free" | "late"): Schemas["MoveTerms"] => ({
     ...terms,
     notice,
     cost: notice === "free" ? "free" : "charged",
@@ -677,7 +706,14 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
         ? { amount_ex_gst: 0, amount: 0, gst_percent: 18 }
         : { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 },
   });
-  const cancel = { ...terms, notice: "free", refund: 236000, kept: 0, destination: "upi", cancelled: false };
+  const cancel: Schemas["CancelTerms"] = {
+    ...terms,
+    notice: "free",
+    refund: 236000,
+    kept: 0,
+    destination: "upi",
+    cancelled: false,
+  };
   const api = (notice: "free" | "late"): Api => ({
     "/api/me": json(ME_BOOKING),
     [`/api/appointments/${NEXT.id}/reschedule`]: json(move(notice)),
@@ -783,7 +819,7 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
   await revoke.close();
 
   const tracker = await openApp(browser, "/refer/fitted", api);
-  await tracker.getByText("Karan").waitFor();
+  await tracker.getByText("Ashish").waitFor();
   await pair(OUT, WIDTH, "f5-tracker", await frame(design, "Refer · tracker"), await shot(tracker));
   await tracker.close();
 
