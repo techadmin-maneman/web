@@ -9,7 +9,7 @@ import type { Dependencies } from "../../src/dependencies.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/erasure.ts";
 import type { StaticConfig } from "../../src/guard.ts";
-import { createAccessVerifier } from "../../src/http/access.ts";
+import { createAccessVerifier } from "../../src/providers/cloudflare-access.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
 import { createImageProvider } from "../../src/providers/image.ts";

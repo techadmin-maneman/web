@@ -5,7 +5,7 @@ import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
 import type { Context } from "hono";
 import { recordAudit, type AuditActor } from "../domain/audit.ts";
-import type { AccessIdentity } from "./access.ts";
+import type { AccessIdentity } from "../providers/cloudflare-access.ts";
 import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
 

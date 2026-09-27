@@ -6,7 +6,11 @@
 import { env } from "cloudflare:workers";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { AccessSettings } from "../../src/config/settings.ts";
-import { ACCESS_TOKEN_HEADER, createAccessVerifier, type AccessVerifier } from "../../src/http/access.ts";
+import {
+  ACCESS_TOKEN_HEADER,
+  createAccessVerifier,
+  type AccessVerifier,
+} from "../../src/providers/cloudflare-access.ts";
 import { appFor, captureLogs, fakeDependencies, fakeFetch, json, markDatabase, NOW, request } from "./helpers.ts";
 
 const TEAM = "summer-math-0275.cloudflareaccess.com";

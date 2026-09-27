@@ -8,7 +8,7 @@ import type { ReadOpsInputs } from "../domain/ops-settings.ts";
 import type { Session } from "../domain/sessions.ts";
 import type { IdentityCheck, StaticConfig } from "../guard.ts";
 import type { Logger } from "../log.ts";
-import type { AccessIdentity } from "./access.ts";
+import type { AccessIdentity } from "../providers/cloudflare-access.ts";
 import type { TechnicianSession } from "./technician-session.ts";
 
 /** What every handler can read from `c.env` and `c.var`. */
