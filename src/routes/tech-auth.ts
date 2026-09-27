@@ -25,7 +25,8 @@ import {
   verifyTechnicianCode,
 } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { initialsOf } from "../lib/names.ts";
+import { json } from "../http/openapi.ts";
+import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import {
   clearTechnicianCookie,
@@ -36,8 +37,6 @@ import {
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { newLoginCode } from "../policy/one-time-code.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 /**
  * FSM's technicians are read for a number the mirror does not know at most once
@@ -220,10 +219,7 @@ export function registerTechAuth(app: App): void {
     });
     setTechnicianCookie(c, token);
     log.info("technician_logged_in", { technician_id: verification.technicianId, device_id: deviceId });
-    return c.json(
-      { verified: true as const, first_name: (name ?? "").trim().split(/\s+/)[0] ?? "", device_id: deviceId },
-      200,
-    );
+    return c.json({ verified: true as const, first_name: firstNameOf(name ?? ""), device_id: deviceId }, 200);
   });
 
   app.openapi(logoutRoute, async (c) => {
@@ -241,7 +237,7 @@ export function registerTechAuth(app: App): void {
     return c.json(
       {
         name: signedIn.name,
-        first_name: signedIn.name.trim().split(/\s+/)[0] ?? "",
+        first_name: firstNameOf(signedIn.name),
         initials: initialsOf(signedIn.name),
         device: { device_id: signedIn.deviceId, label: signedIn.label, enrolled_at: signedIn.enrolledAt },
       },

@@ -13,9 +13,9 @@ import { auditStatement, type AuditEntry } from "./audit.ts";
 import { clawBack, grantCredits } from "./credits.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { NO_VISITS_CONSENT } from "./visit-messages.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 /** "Karan Bhatia" → "Karan": all the messages and the tracker name a person by. */
-const firstName = (name: string) => name.split(" ")[0] ?? name;
 
 export interface Attribution {
   readonly id: string;
@@ -195,7 +195,7 @@ const attributionFrom = (row: AttributionRow): Attribution => ({
   referrerId: row.referrer_id,
   referrerErased: row.referrer_erased !== null,
   referredId: row.referred_person_id,
-  friendFirstName: row.friend_erased === null ? firstName(row.friend_name.trim()) : null,
+  friendFirstName: row.friend_erased === null ? firstNameOf(row.friend_name) : null,
   firstFitId: row.first_fit_id,
   firstFitStart: row.window_start,
 });
@@ -345,8 +345,8 @@ export async function composeFriendFitted(
   return {
     template: "friend_fitted_v1",
     params: [
-      firstName(row.referrer),
-      firstName(row.friend),
+      firstNameOf(row.referrer),
+      firstNameOf(row.friend),
       String(CREDITS_PER_REFERRAL),
       fullDate(indiaDate(new Date(expiresAt))),
     ],
@@ -376,7 +376,7 @@ export async function composeFriendCredited(
   if (row === null) return { skip: "no grant for the friend" };
   return {
     template: "friend_credited_v1",
-    params: [firstName(row.name), String(CREDITS_PER_REFERRAL), fullDate(indiaDate(new Date(row.expires_at)))],
+    params: [firstNameOf(row.name), String(CREDITS_PER_REFERRAL), fullDate(indiaDate(new Date(row.expires_at)))],
   };
 }
 
@@ -401,9 +401,9 @@ export async function composeReferralRejected(
     .first<{ friend_id: string; friend: string; referrer_id: string; referrer: string }>();
   if (row === null) return { skip: "the grant was not rejected" };
   if (personId === row.referrer_id) {
-    return { template: "referral_rejected_referrer_v1", params: [firstName(row.referrer), firstName(row.friend)] };
+    return { template: "referral_rejected_referrer_v1", params: [firstNameOf(row.referrer), firstNameOf(row.friend)] };
   }
   if (personId !== row.friend_id) return { skip: "not a party to the referral" };
   if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
-  return { template: "referral_rejected_friend_v1", params: [firstName(row.friend)] };
+  return { template: "referral_rejected_friend_v1", params: [firstNameOf(row.friend)] };
 }

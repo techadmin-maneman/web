@@ -2,6 +2,7 @@
 // cookie, stored only as its SHA-256. A session lasts 90 days from its last
 // use, and can be revoked.
 
+import { toBase64Url } from "../lib/base64url.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { DAY_MS, HOUR_MS } from "../lib/durations.ts";
 
@@ -18,20 +19,15 @@ export interface Session {
   readonly expiresAt: Date;
 }
 
-function newToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
+/** A session's cookie token: 32 random bytes, of which only the SHA-256 is kept. */
+export const newSessionToken = (): string => toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
 
 /** Opens a session and returns the token for the cookie. */
 export async function openSession(
   db: D1Database,
   options: { kind: SessionKind; subjectId: string; deviceLabel: string | null; now: Date },
 ): Promise<string> {
-  const token = newToken();
+  const token = newSessionToken();
   const at = options.now.toISOString();
   await db
     .prepare(

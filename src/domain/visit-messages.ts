@@ -16,6 +16,7 @@ import type { AppointmentStatus } from "./fsm-mirror.ts";
 import type { MessageKind } from "./messages.ts";
 import { windowAt } from "../policy/windows.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 export type VisitMessageKind = Extract<
   MessageKind,
@@ -193,11 +194,11 @@ export async function composeVisitMessage(
 
   const start = new Date(visit.window_start);
   const params = [
-    visit.name.split(" ")[0] ?? visit.name,
+    firstNameOf(visit.name),
     FSM_SERVICE_NAMES[visit.type].toLowerCase(),
     shortDate(indiaDate(start)),
     windowHours(start),
-    visit.technician?.split(" ")[0] ?? "our technician",
+    visit.technician === null ? "our technician" : firstNameOf(visit.technician),
     "",
     "",
     "",

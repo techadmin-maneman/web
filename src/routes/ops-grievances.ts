@@ -8,10 +8,9 @@ import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { auditStatement } from "../domain/audit.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { dueAt } from "../policy/tasks.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 const openRoute = createRoute({
   method: "get",

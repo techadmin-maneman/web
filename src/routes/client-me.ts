@@ -18,7 +18,7 @@ import { bookableTypes } from "../domain/scheduling.ts";
 import { currentAddress } from "../domain/profile.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { initialsOf } from "../lib/names.ts";
+import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
 
@@ -169,7 +169,7 @@ export function registerClientMe(app: App): void {
       {
         state,
         name: person.name,
-        first_name: person.name.trim().split(/\s+/)[0] ?? "",
+        first_name: firstNameOf(person.name),
         initials: initialsOf(person.name),
         consultation:
           proposal === null || window === null

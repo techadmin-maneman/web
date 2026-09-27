@@ -16,9 +16,8 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { technicianWork, WORK_PERIOD_DAYS } from "../domain/technician-work.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 const TechnicianWorkSchema = z
   .object({

@@ -17,6 +17,7 @@ import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.
 import { NUMBER_CHANGE_WAITING_SINCE } from "../domain/tasks.ts";
 import { queueContactSync } from "../http/contact-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { dueAt } from "../policy/tasks.ts";
@@ -24,7 +25,6 @@ import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { ErasureRefusedSchema, erasureRefused } from "./erasure.ts";
 
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const Reason = z
   .string()
   .trim()

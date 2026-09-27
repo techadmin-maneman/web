@@ -28,6 +28,7 @@ import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { windowAt } from "../policy/windows.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 /** The statuses a job the technician still has work on can be in. */
 const LIVE = ["scheduled", "dispatched", "in_progress"] as const;
@@ -257,14 +258,12 @@ async function lastVisit(db: D1Database, job: JobRow): Promise<EarlierVisit | nu
     .first<EarlierVisit>();
 }
 
-const firstName = (name: string): string => name.trim().split(/\s+/)[0] ?? name;
-
 async function lastVisitOf(db: D1Database, row: JobRow): Promise<LastVisit | null> {
   const visit = await lastVisit(db, row);
   if (visit === null) return null;
   return {
     date: indiaDate(new Date(visit.window_start)),
-    technician: visit.technician === null ? null : firstName(visit.technician),
+    technician: visit.technician === null ? null : firstNameOf(visit.technician),
     photo_url: `/api/tech/jobs/${row.id}/last-visit-photo`,
   };
 }

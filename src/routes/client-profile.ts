@@ -38,6 +38,7 @@ import {
 import { takeOne } from "../domain/rate-limit.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { queueContactSync } from "../http/contact-sync.ts";
 import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
@@ -191,7 +192,6 @@ export const ProfileSchema = z
   .strict()
   .openapi("Profile");
 
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const signedIn = { 401: errorResponse("session_required") };
 
 export const profileRoute = createRoute({

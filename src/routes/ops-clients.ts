@@ -34,6 +34,7 @@ import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
 import { consentRecordsOf, currentAddress, type ConsentState } from "../domain/profile.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES } from "../policy/consents.ts";
@@ -41,7 +42,6 @@ import { clientHistory } from "../domain/client-history.ts";
 import { EntrySchema, paymentEntries } from "./client-payments.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const clientId = z.object({ id: z.uuid() });
 const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
 

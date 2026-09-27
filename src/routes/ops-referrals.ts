@@ -9,6 +9,7 @@ import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { decideHeldReferral } from "../domain/referral-grants.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
@@ -16,7 +17,6 @@ import { FRAUD_SIGNALS } from "../policy/fraud-holds.ts";
 import { dueAt } from "../policy/tasks.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const PersonRef = z.object({ person_id: z.uuid(), name: z.string() }).strict();
 
 const heldRoute = createRoute({

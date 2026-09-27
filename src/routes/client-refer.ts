@@ -15,6 +15,7 @@ import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 export const CreditsSchema = z
   .object({
@@ -78,7 +79,7 @@ interface FittedRow {
 function friendName(friend: FittedRow): string | null {
   if (friend.friend_first_name !== null) return friend.friend_first_name;
   if (friend.erased_at !== null) return null;
-  return friend.name.split(" ")[0] ?? friend.name;
+  return firstNameOf(friend.name);
 }
 
 /** The invite a client came through, where its grant waits on ops or was refused by them. */

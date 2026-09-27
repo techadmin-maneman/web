@@ -30,10 +30,9 @@ import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
 import { checkPrice, PRICE_ITEMS, priceBook, setPrice, withdrawPrice } from "../domain/price-book.ts";
 import { serviceArea, setServiceArea } from "../domain/service-area.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 /** One number, or one per key: the two shapes a rule's value takes. */
 const ValueSchema = z.union([z.number().int(), z.record(z.string(), z.number().int())]);

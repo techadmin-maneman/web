@@ -6,6 +6,7 @@
 
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { inviteLapsed } from "../policy/invites.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 /** No 0, O, 1 or I: a code is read aloud and typed. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -85,7 +86,7 @@ export async function inviteOf(db: D1Database, code: string, nameOnInvite: boole
   return {
     code: row.code,
     referrerId: row.person_id,
-    referrerFirstName: nameOnInvite && !erased && row.named === 1 ? (row.name.split(" ")[0] ?? null) : null,
+    referrerFirstName: nameOnInvite && !erased && row.named === 1 ? firstNameOf(row.name) : null,
     card: { state: erased ? "house" : row.card_state, version: row.card_version },
   };
 }

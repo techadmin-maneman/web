@@ -23,11 +23,13 @@ import {
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 import { codeGate, countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { MAX_SENDS_PER_CHALLENGE, newLoginCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
 import type { CodeChannel } from "../providers/codes.ts";
+import { firstNameOf } from "../lib/names.ts";
 
 export const LoginChallengeSchema = z
   .object({
@@ -66,7 +68,6 @@ export const LoginVerifySchema = z
   ])
   .openapi("LoginVerify");
 
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 const challengeAnswer = {
   description: "A code is on its way, if this number has a booking",
   ...json(LoginChallengeSchema),
@@ -237,7 +238,7 @@ export function registerClientAuth(app: App): void {
     });
     setClientCookie(c, token);
     log.info("client_logged_in", { person_id: verification.personId });
-    return c.json({ verified: true as const, first_name: (name ?? "").trim().split(/\s+/)[0] ?? "" }, 200);
+    return c.json({ verified: true as const, first_name: firstNameOf(name ?? "") }, 200);
   });
 
   app.openapi(logoutRoute, async (c) => {

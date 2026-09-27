@@ -12,11 +12,10 @@ import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { ADJUST_REASONS, adjustCredits } from "../domain/credits.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { json } from "../http/openapi.ts";
 
 /** More than a year of monthly visits either way is not a correction. */
 const MOST_VISITS = 12;
-
-const json = <T extends z.ZodType>(schema: T) => ({ content: { "application/json": { schema } } });
 
 const adjustRoute = createRoute({
   method: "post",

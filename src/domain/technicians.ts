@@ -11,7 +11,7 @@ import { sha256Hex } from "../lib/hash.ts";
 import { CODE_TTL_MS } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { checkCode, codeHashOf } from "./one-time-codes.ts";
-import { SESSION_TTL_MS } from "./sessions.ts";
+import { newSessionToken, SESSION_TTL_MS } from "./sessions.ts";
 
 export interface FieldTechnician {
   readonly id: string;
@@ -103,7 +103,7 @@ export async function openTechnicianSession(
   db: D1Database,
   options: { technicianId: string; deviceId: string; label: string | null; now: Date },
 ): Promise<string> {
-  const token = newToken();
+  const token = newSessionToken();
   const sessionId = await sha256Hex(token);
   const at = options.now.toISOString();
   const expiresAt = new Date(options.now.getTime() + SESSION_TTL_MS).toISOString();
@@ -261,13 +261,4 @@ export async function devicesByTechnician(db: D1Database): Promise<Map<string, D
     devices.set(technicianId, [...(devices.get(technicianId) ?? []), device]);
   }
   return devices;
-}
-
-/** A 32-byte random cookie token, as src/domain/sessions.ts makes one. */
-function newToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
 }
