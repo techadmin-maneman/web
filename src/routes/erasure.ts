@@ -5,7 +5,7 @@
 // operator says they have settled both by hand (docs/decisions/0066).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { erasePerson, erasureBlockers, personWithMobile, type ErasureBlockers } from "../domain/erasure.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";

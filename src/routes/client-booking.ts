@@ -18,7 +18,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { withGst } from "../config/gst.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS, WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";

@@ -11,7 +11,7 @@
 // to the client whose photograph it is.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";

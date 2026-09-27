@@ -5,7 +5,7 @@
 // Each decision is audited under the member of staff who made it.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { actorOf } from "../domain/audit.ts";
 import { decideHeldReferral } from "../domain/referral-grants.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";

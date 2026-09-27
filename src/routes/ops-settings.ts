@@ -14,7 +14,7 @@
 // does (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { allowed, checkValue, OPS_SETTINGS, settingNamed, PRICE_BOUNDS, PRICE_TIER } from "../config/ops-settings.ts";
 import { actorOf } from "../domain/audit.ts";
 import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";

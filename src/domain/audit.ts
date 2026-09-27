@@ -6,7 +6,7 @@
 
 import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "../http/context.ts";
 import type { Surface } from "../config/environments.ts";
 import type { AccessIdentity } from "../http/access.ts";
 import { errorBody } from "../http/errors.ts";

@@ -4,7 +4,7 @@
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import { findSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession, type Session } from "../domain/sessions.ts";
 import { errorBody } from "./errors.ts";
 

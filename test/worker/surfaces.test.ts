@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { EXPECTED_DATABASE_NAME, SURFACES, type Surface } from "../../src/config/environments.ts";
 import { ErrorResponseSchema } from "../../src/http/errors.ts";
 import { byHost, surfaceOf } from "../../src/http/surfaces.ts";

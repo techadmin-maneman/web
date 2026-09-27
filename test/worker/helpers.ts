@@ -1,7 +1,8 @@
 import { createStubPayments } from "../../src/providers/razorpay.ts";
 import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
-import { createApp, type App } from "../../src/app.ts";
+import { createApp } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { EXPECTED_DATABASE_NAME, type EnvironmentName, type Surface } from "../../src/config/environments.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";

@@ -13,7 +13,7 @@
 // ours and not the technician's.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { technicianWork, WORK_PERIOD_DAYS } from "../domain/technician-work.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";

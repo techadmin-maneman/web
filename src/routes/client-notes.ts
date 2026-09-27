@@ -8,7 +8,7 @@
 // from src/routes/client-changes.ts, which is registered first (src/app.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { CLIENT_NOTE_MAX_CHARS, saveClientNote } from "../domain/client-notes.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 

@@ -8,7 +8,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { TASKS_SHOWN } from "../../src/routes/ops-tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";

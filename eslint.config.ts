@@ -69,6 +69,25 @@ export default defineConfig(
     },
   },
   {
+    // src/app.ts imports every route, so a route that imported it would import all the others. The types every
+    // handler needs are src/http/context.ts; only the Worker's entry and the OpenAPI documents build the app.
+    files: ["src/**/*.ts"],
+    ignores: ["src/index.ts", "src/openapi.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "(^|/)app\\.ts$",
+              message: "Import App and AppEnv from src/http/context.ts; src/app.ts is for the entry points only.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // The logger is the only place src/ may write to the console.
     files: ["src/log.ts", "scripts/**/*.ts", "site/astro.config.ts"],
     rules: { "no-console": "off" },

@@ -9,7 +9,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { actorOf, type AuditAction, type AuditEntry } from "../domain/audit.ts";
 import { decideDeletion, deletionsWaiting } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";

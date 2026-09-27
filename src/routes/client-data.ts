@@ -6,7 +6,7 @@
 // Each is audited under the client.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { auditStatementIfWritten, recordAudit } from "../domain/audit.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";

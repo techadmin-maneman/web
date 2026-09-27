@@ -8,7 +8,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 
 const IMRAN = "88888888-8888-4888-8888-888888888881";

@@ -7,7 +7,7 @@
 // expiry.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { PRESET_IDS, type PresetId } from "../config/presets.ts";
 import {
   FAILURE_CODES,

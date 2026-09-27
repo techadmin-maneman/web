@@ -6,7 +6,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, request } from "./helpers.ts";
 

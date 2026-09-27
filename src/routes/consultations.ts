@@ -16,7 +16,7 @@
 // The same submission sent again under its Idempotency-Key gets its first answer.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";

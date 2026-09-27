@@ -26,7 +26,7 @@
 // (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import type { Context } from "hono";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "../http/context.ts";
 import type { LossExtent } from "../config/booking.ts";
 import { CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
 import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";

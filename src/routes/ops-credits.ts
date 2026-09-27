@@ -8,7 +8,7 @@
 // The console's form for it arrives with the client page's other screens.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { actorOf } from "../domain/audit.ts";
 import { ADJUST_REASONS, adjustCredits } from "../domain/credits.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";

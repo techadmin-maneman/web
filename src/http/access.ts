@@ -6,7 +6,7 @@
 // so every call can be audited under the person or service token behind it.
 
 import { createMiddleware } from "hono/factory";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import type { AccessSettings } from "../config/settings.ts";
 import { errorBody } from "./errors.ts";
 import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";

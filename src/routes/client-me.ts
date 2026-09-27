@@ -6,7 +6,7 @@
 // the credit tile and board B1's one prompt beneath it (src/domain/home-prompt.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { WINDOW_LABELS, type VisitWindow, type WindowLabel } from "../config/booking.ts";
 import { BOOKING_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";

@@ -6,7 +6,7 @@
 // API, each job writes to R2 exactly once.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { findNotice } from "../config/notices.ts";
 import { MAX_UPLOAD_BYTES, UPLOAD_LINK_TTL_MS } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";

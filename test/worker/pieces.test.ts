@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { recordUtilisation } from "../../src/domain/dispatch.ts";
 import { COMMITTED } from "../../src/domain/ops-settings.ts";
 import { piecesOf, recordFailedPiece, recordFittedPiece, syncPieces } from "../../src/domain/pieces.ts";

@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 
 /**
  * Runs `work` once the response has gone, where the runtime allows (Workers'

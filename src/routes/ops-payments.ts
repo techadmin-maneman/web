@@ -13,7 +13,7 @@
 // rule on a record that is still to be built (docs/open-points.md, item 57).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { dayMoney } from "../domain/day-money.ts";
 import { errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";

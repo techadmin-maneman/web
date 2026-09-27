@@ -9,7 +9,7 @@
 // refund.failed, refund.speed_changed. Any other is acknowledged and ignored.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { paymentStatusOf, recordPayment, recordRefund } from "../domain/payments.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";

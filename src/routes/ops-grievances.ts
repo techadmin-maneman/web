@@ -4,7 +4,7 @@
 // Each answer is audited under the member of staff who gave it.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { actorOf, auditStatement } from "../domain/audit.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";

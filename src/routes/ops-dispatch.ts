@@ -13,7 +13,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { actorOf } from "../domain/audit.ts";

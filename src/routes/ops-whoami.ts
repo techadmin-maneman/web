@@ -7,7 +7,7 @@
 // session there is.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 
 /** Access's own path on every host it guards: it ends the session and shows the team's page. */
 export const ACCESS_LOGOUT_PATH = "/cdn-cgi/access/logout";

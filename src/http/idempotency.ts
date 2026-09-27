@@ -4,7 +4,7 @@
 
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { DAY_MS } from "../lib/durations.ts";
 

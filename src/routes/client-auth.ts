@@ -11,7 +11,7 @@
 
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import {
   createChallenge,
   findEligiblePerson,

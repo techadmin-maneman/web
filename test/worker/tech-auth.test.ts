@@ -7,7 +7,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { syncTechnicians } from "../../src/domain/fsm-mirror.ts";
 import { createStubFsm, EMPTY_FSM, type FsmTechnician } from "../../src/providers/fsm.ts";
 import {

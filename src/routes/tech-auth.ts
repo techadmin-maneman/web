@@ -13,7 +13,7 @@
 // bound to it, so ops can revoke that phone and its cached jobs go with it.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { syncTechnicians } from "../domain/fsm-mirror.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { revokeSession, deviceLabel } from "../domain/sessions.ts";

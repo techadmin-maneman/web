@@ -8,7 +8,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { decideNoShow, refundWaivedVisit } from "../../src/domain/no-shows.ts";
 import { NO_VISITS_CONSENT } from "../../src/domain/visit-messages.ts";
 import { createStubPayments } from "../../src/providers/razorpay.ts";

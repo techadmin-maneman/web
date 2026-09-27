@@ -9,7 +9,7 @@
 // records the route's pattern, not its path.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { secretsMatch } from "../lib/hash.ts";
 

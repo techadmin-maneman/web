@@ -9,7 +9,7 @@
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import { findSession, revokeSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession } from "../domain/sessions.ts";
 import { deviceOfSession, markWiped, touchDevice } from "../domain/technicians.ts";
 import { sha256Hex } from "../lib/hash.ts";

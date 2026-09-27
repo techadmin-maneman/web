@@ -12,7 +12,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createLogger } from "../../src/log.ts";

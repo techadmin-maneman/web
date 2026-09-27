@@ -10,7 +10,7 @@
 // address instead, so asking for random numbers cannot lock everyone out.
 
 import type { Context } from "hono";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import { onAllowlist } from "../config/settings.ts";
 import { alertCeilingReached, ceilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { countOne, isSpent } from "../domain/rate-limit.ts";

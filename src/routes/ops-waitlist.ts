@@ -6,7 +6,7 @@
 // A launch is audited, and its alerts leave in a paced line.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { actorOf } from "../domain/audit.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../domain/waitlist.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";

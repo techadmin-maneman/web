@@ -15,7 +15,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";

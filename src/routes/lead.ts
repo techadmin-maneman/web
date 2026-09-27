@@ -4,7 +4,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { LOSS_EXTENTS, VISIT_WINDOWS, WINDOW_LABELS, windowLabel } from "../config/booking.ts";
 import { findActiveCity } from "../domain/cities.ts";
 import { loadBlackouts, saveBookingLead } from "../domain/leads.ts";

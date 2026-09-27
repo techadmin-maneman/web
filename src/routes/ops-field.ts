@@ -16,7 +16,7 @@
 // the client is told on WhatsApp, with their consent to messages about visits.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { actorOf } from "../domain/audit.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";

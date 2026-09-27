@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { PHOTO_VIEW_MINUTES } from "../../src/domain/photo-views.ts";
 import { CLIENTS_FOUND } from "../../src/routes/ops-clients.ts";

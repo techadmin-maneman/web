@@ -7,7 +7,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { PRESET_IDS, findPreset } from "../config/presets.ts";
 import { FAILURE_CODES, HAIR_COLORS, JOB_STATES, TRYON_STAGES } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";

@@ -10,7 +10,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { App } from "../../src/app.ts";
+import type { App } from "../../src/http/context.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { COMMITTED, createCachedOpsInputs, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";

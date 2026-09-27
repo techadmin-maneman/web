@@ -2,7 +2,7 @@
 // (docs/decisions/0026-hosts-and-surfaces.md).
 
 import { createMiddleware } from "hono/factory";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);

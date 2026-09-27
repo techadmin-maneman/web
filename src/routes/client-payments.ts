@@ -15,7 +15,7 @@
 // charge, and carries its evidence (docs/decisions/0046-moving-and-cancelling.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { exGst, GST_PERCENT } from "../config/gst.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { noShowNotes, type NoShowNote } from "../domain/no-shows.ts";

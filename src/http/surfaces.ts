@@ -1,7 +1,7 @@
 // Which surface a request is for, from its host, and the one app that answers
 // it (docs/decisions/0026-hosts-and-surfaces.md).
 
-import { REQUEST_ID_HEADER, type App } from "../app.ts";
+import { REQUEST_ID_HEADER, type App } from "./context.ts";
 import { ENABLED_SURFACES, SURFACE_HOSTS, type EnvironmentName, type Surface } from "../config/environments.ts";
 import { errorBody } from "./errors.ts";
 

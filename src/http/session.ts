@@ -5,7 +5,7 @@
 
 import type { Context } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
-import type { AppEnv } from "../app.ts";
+import type { AppEnv } from "./context.ts";
 import { LOOK_COOKIE, LOOK_COOKIE_TTL_MS, SESSION_COOKIE, SESSION_TTL_MS } from "../config/tryon.ts";
 import { loadSession, type SessionRow } from "../domain/tryon.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";

@@ -7,7 +7,7 @@
 //   DELETE /api/refer/card    the revoke: new opens show the house card
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";

@@ -14,7 +14,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { auditStatement, type AuditEntry } from "../domain/audit.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { openDeletion, requestDeletion } from "../domain/deletion.ts";

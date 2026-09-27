@@ -10,7 +10,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../app.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { SESSION_TTL_MS } from "../config/tryon.ts";

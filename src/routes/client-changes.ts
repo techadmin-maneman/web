@@ -10,7 +10,7 @@
 // and POST /api/holds with `moving`.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../app.ts";
+import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelVisit, changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
 import { requireClientSession } from "../http/client-session.ts";
