@@ -36,6 +36,7 @@ import {
 import { changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { requireSelfServe } from "../http/self-serve.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { LATE_FEES } from "../policy/moving-a-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
@@ -280,10 +281,7 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
 export function registerClientBooking(app: App): void {
   for (const path of ["/api/availability", "/api/holds", "/api/holds/*", "/api/bookings"]) {
     app.use(path, requireClientSession);
-    app.use(path, async (c, next) => {
-      if (!c.var.config.settings.selfServeBooking) return c.json(errorBody("ops_assisted", c.var.requestId), 409);
-      return next();
-    });
+    app.use(path, requireSelfServe);
   }
 
   app.openapi(availabilityRoute, async (c) => {

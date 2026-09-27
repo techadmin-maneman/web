@@ -15,6 +15,7 @@ import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelVisit, changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
 import { requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { requireSelfServe } from "../http/self-serve.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { BookingSchema, moveTermsFor, PriceSchema, startCheckout } from "./client-booking.ts";
 
@@ -136,10 +137,7 @@ const cancelRoute = createRoute({
 
 export function registerClientChanges(app: App): void {
   app.use("/api/appointments/*", requireClientSession);
-  app.use("/api/appointments/*", async (c, next) => {
-    if (!c.var.config.settings.selfServeBooking) return c.json(errorBody("ops_assisted", c.var.requestId), 409);
-    return next();
-  });
+  app.use("/api/appointments/*", requireSelfServe);
 
   app.openapi(rescheduleRoute, async (c) => {
     const session = c.var.clientSession;
