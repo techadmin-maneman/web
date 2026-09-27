@@ -48,4 +48,36 @@ describe.each(APPS)("%s", (app) => {
     expect(global).toContain('@import "@maneman/ui/base.css";');
     expect(global).not.toMatch(/box-sizing|prefers-reduced-motion|font-smoothing/);
   });
+
+  const sources = filesUnder(`${app}/src`);
+  const code = sources.filter((path) => /\.tsx?$/.test(path) && !path.endsWith("api-schema.ts"));
+  const styles = sources.filter((path) => path.endsWith(".css"));
+
+  // An app's ErrorBoundary only chooses what the shared one shows; a class component would be a copy of it.
+  it("keeps no icon, mark, router, loader, tap guard or error boundary of its own", () => {
+    const copies = code.filter((path) =>
+      /\bfunction (Icon|Mark|usePath|useLoad|useOneAtATime)\b|\bclass \w+ extends (React\.)?Component\b/.test(
+        read(path),
+      ),
+    );
+    expect(copies).toEqual([]);
+  });
+
+  it("hides words for a screen reader with the shared VisuallyHidden alone", () => {
+    const recipes = styles.filter((path) => /clip:\s*rect\(0|clip-path:\s*inset\(50%\)/.test(read(path)));
+    expect(recipes).toEqual([]);
+  });
+
+  it("calls the API through the shared client alone", () => {
+    const own = code.filter((path) => /\bfetch\(\s*["'`]\/api\//.test(read(path)));
+    expect(own).toEqual([]);
+  });
 });
+
+/** Every file under a directory. */
+function filesUnder(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${directory}/${entry.name}`;
+    return entry.isDirectory() ? filesUnder(path) : [path];
+  });
+}

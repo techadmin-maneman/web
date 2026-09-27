@@ -233,13 +233,3 @@
   padding-bottom: var(--sp-3);
   border-bottom: var(--hairline) solid var(--brass);
 }
-
-/* Said to a screen reader only: the link leaves the app for a PDF. */
-.away {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}

@@ -28,17 +28,6 @@
 
 /* ---- The day's money, and the charges beneath it --------------------------- */
 
-/* The board's card draws no heading; the panel still needs a name to be reached by. */
-.hiddenTitle {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* Each figure stands on the top line, whatever its own name runs to. */
 .figures {
   display: flex;

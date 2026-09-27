@@ -9,6 +9,7 @@
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
@@ -42,7 +43,7 @@ function Document(props: { name: string; href: string | null; missing: Missing; 
     return (
       <a className={styles.document} href={props.href} target="_blank" rel="noopener">
         <span>{props.name}</span>
-        <span className={styles.away}>{payments.newTab}</span>
+        <VisuallyHidden>{payments.newTab}</VisuallyHidden>
         {icon}
       </a>
     );

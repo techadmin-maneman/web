@@ -15,6 +15,7 @@
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { useLoad } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, listDate, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Device, type JobOnLeave, type Leave, type Technician, type TechnicianWork } from "../api.ts";
@@ -426,9 +427,9 @@ function Roster() {
 
   return (
     <section className={styles.panel} aria-labelledby="roster">
-      <h2 className={styles.hiddenTitle} id="roster">
+      <VisuallyHidden as="h2" id="roster">
         {technicians.title}
-      </h2>
+      </VisuallyHidden>
       {roster.length === 0 ? (
         <p className={styles.empty}>{technicians.empty}</p>
       ) : (

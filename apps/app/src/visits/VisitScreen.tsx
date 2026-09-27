@@ -7,6 +7,7 @@
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
@@ -71,7 +72,7 @@ function Invoice({ visit }: { visit: VisitDetail }) {
       return visit.document_id === null ? null : (
         <a className={styles.invoice} href={documentUrl(visit.document_id)} target="_blank" rel="noopener">
           <span>{copy.open}</span>
-          <span className={styles.away}>{copy.newTab}</span>
+          <VisuallyHidden>{copy.newTab}</VisuallyHidden>
           <Icon className={styles.invoiceIcon} d={ICONS.download} size={18} />
         </a>
       );

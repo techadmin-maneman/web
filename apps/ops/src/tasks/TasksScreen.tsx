@@ -15,6 +15,7 @@
 // the column is not drawn (docs/open-points.md, item 58).
 
 import { useLoad } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Task, type TaskGroup } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
@@ -152,7 +153,7 @@ function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
             <OpsLink className={styles.decide} to={where}>
               {action}
               {/* Every row of a group links the same words, so each says whose it is to a screen reader. */}
-              <span className={styles.hidden}>{` · ${subject}`}</span>
+              <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
             </OpsLink>
           </span>
         )}

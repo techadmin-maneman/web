@@ -6,6 +6,7 @@
 // Beneath the card, B1's credit tile while there is a balance, and its one contextual prompt: an address to give,
 // the replacement falling due, an invoice just issued (src/domain/home-prompt.ts).
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
 import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
@@ -167,7 +168,7 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
           <p className={styles.promptLine}>{copy.invoice(visitName(prompt.type), shortDate(prompt.date))}</p>
           <a className={styles.promptLink} href={documentUrl(prompt.visit_id)} target="_blank" rel="noopener">
             <span>{copy.openInvoice}</span>
-            <span className={styles.away}>{visits.detail.invoice.newTab}</span>
+            <VisuallyHidden>{visits.detail.invoice.newTab}</VisuallyHidden>
           </a>
         </div>
       );

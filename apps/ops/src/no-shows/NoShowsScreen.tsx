@@ -16,6 +16,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -79,9 +80,9 @@ function Money() {
   const day = loaded.value;
   return (
     <section className={styles.panel} aria-labelledby="day-money">
-      <h2 className={styles.hiddenTitle} id="day-money">
+      <VisuallyHidden as="h2" id="day-money">
         {copy.title}
-      </h2>
+      </VisuallyHidden>
       <dl className={styles.figures}>
         <div className={styles.figure}>
           <dt className={styles.figureName}>{copy.figures.collected}</dt>

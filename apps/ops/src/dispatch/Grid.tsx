@@ -9,6 +9,7 @@
 // the keyboard chooses from the list above the board, so the grid's thousands
 // of windows are not each a stop in the tab order (FEO-14).
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
@@ -105,9 +106,9 @@ function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: st
   return (
     <span className={`${marked ?? ""} ${label.caps ?? ""}`}>
       <span aria-hidden="true">{stranded === 0 ? copy.away : copy.stranded(stranded)}</span>
-      <span className={styles.hidden}>
+      <VisuallyHidden>
         {stranded === 0 ? copy.awayLabel(technician.name, day) : copy.strandedLabel(technician.name, day, stranded)}
-      </span>
+      </VisuallyHidden>
     </span>
   );
 }
