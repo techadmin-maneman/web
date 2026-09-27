@@ -35,7 +35,7 @@ On Workers Free every product except R2 fails closed, which is an outage rather 
 5. **The owner sets two alarms**, in case something outside the code bills:
    - a Cloudflare budget alert at the lowest dollar amount (Billing → Budget alerts);
    - usage notifications for R2 storage and operations at 50% of the free allowance (Notifications → Usage-based billing).
-6. **At most 64 vars and secrets on a Worker.** Workers Free allows one Worker 64 variables, text and secret together; past that a deploy is refused (code 10055) before anything moves, as staging's was on 26 September 2026 at 65. `npm run check:config` counts each mm-api environment's vars with every secret `.dev.vars.example` names and fails over 64. A value that is the same in every environment, or that only a release changes, is a constant in `src/config`, not a var.
+6. **At most 64 vars and secrets on a Worker.** Workers Free allows one Worker 64 variables, text and secret together; past that a deploy is refused (code 10055) before anything moves, as staging's was on 26 September 2026 at 65. `npm run check:config` counts each mm-api environment's vars with every secret `.dev.vars.example` names and fails over 64. A value that is the same in every environment, or that only a release changes, is a constant in `src/config`, not a var. **Amended 27 September 2026:** the nine rate limits that were the same everywhere (login codes, leads and the try-on) went to `src/config/limits.ts`, leaving 28 vars beside the 26 secrets: 54. A local run may still raise one with a var of the same name, as the browser tests do; the startup guard refuses such a var anywhere else.
 
 ## Consequences
 

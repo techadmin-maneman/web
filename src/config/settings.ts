@@ -7,6 +7,7 @@ import { toE164 } from "../lib/mobile.ts";
 import type { EvolutionSettings } from "../providers/evolution.ts";
 import { RESULT_TEMPLATE } from "./message-templates.ts";
 import { ENABLED_SURFACES, FSM_CATALOGUE_PUSH, type EnvironmentName, type ProviderVar } from "./environments.ts";
+import { FIXED_LIMITS, type FixedLimit } from "./limits.ts";
 import { UNKNOWN_COLOR_ROUTE, type UnknownColorRoute } from "./tryon.ts";
 
 export interface TryonSettings {
@@ -243,6 +244,17 @@ class Reader {
     return value;
   }
 
+  /**
+   * A limit fixed in ./limits.ts. A var of the same name may raise it on a local run only, as the browser tests do
+   * (playwright.config.ts); anywhere else that var is refused.
+   */
+  fixedLimit(name: FixedLimit, isLocal: boolean): number {
+    if (this.optionalText(name) === null) return FIXED_LIMITS[name];
+    if (isLocal) return this.count(name);
+    this.problems.push(`${name} is fixed in src/config/limits.ts: only a local run may set it`);
+    return FIXED_LIMITS[name];
+  }
+
   /** A secret long enough to sign with. */
   key(name: string): string {
     const value = this.text(name);
@@ -279,6 +291,7 @@ export function readSettings(
 ): { settings: Settings; problems: string[] } {
   const read = new Reader(env);
   const isRemote = environment === "staging" || environment === "production";
+  const isLocal = environment === "local";
   const crmProvider = providers.CRM_PROVIDER;
 
   const turnstileSecret = read.text("TURNSTILE_SECRET");
@@ -398,9 +411,9 @@ export function readSettings(
   }
   const login: LoginSettings = {
     codePepper: clientOn ? read.key("OTP_PEPPER") : (read.optionalText("OTP_PEPPER") ?? ""),
-    codeMobileDailyLimit: read.count("OTP_MOBILE_DAILY_LIMIT"),
-    codeIpHourlyLimit: read.count("OTP_IP_HOURLY_LIMIT"),
-    codeDailyCeiling: read.count("OTP_DAILY_CEILING"),
+    codeMobileDailyLimit: read.fixedLimit("OTP_MOBILE_DAILY_LIMIT", isLocal),
+    codeIpHourlyLimit: read.fixedLimit("OTP_IP_HOURLY_LIMIT", isLocal),
+    codeDailyCeiling: read.fixedLimit("OTP_DAILY_CEILING", isLocal),
     fixedCode: read.optionalText("OTP_FIXED_CODE"),
   };
   if (login.fixedCode !== null && environment !== "local") {
@@ -410,10 +423,10 @@ export function readSettings(
   }
 
   const tryon: TryonSettings = {
-    uploadIpHourlyLimit: read.count("TRYON_UPLOAD_IP_HOURLY_LIMIT"),
-    generateIpHourlyLimit: read.count("TRYON_GENERATE_IP_HOURLY_LIMIT"),
-    claimMobileDailyLimit: read.count("TRYON_CLAIM_MOBILE_DAILY_LIMIT"),
-    resultMessageMobileDailyLimit: read.count("RESULT_MESSAGE_MOBILE_DAILY_LIMIT"),
+    uploadIpHourlyLimit: read.fixedLimit("TRYON_UPLOAD_IP_HOURLY_LIMIT", isLocal),
+    generateIpHourlyLimit: read.fixedLimit("TRYON_GENERATE_IP_HOURLY_LIMIT", isLocal),
+    claimMobileDailyLimit: read.fixedLimit("TRYON_CLAIM_MOBILE_DAILY_LIMIT", isLocal),
+    resultMessageMobileDailyLimit: read.fixedLimit("RESULT_MESSAGE_MOBILE_DAILY_LIMIT", isLocal),
     renderDailyCeiling: read.count("RENDER_DAILY_CEILING"),
     uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
     resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
@@ -456,8 +469,8 @@ export function readSettings(
 
   const settings: Settings = {
     visitLeadDays: read.count("VISIT_LEAD_DAYS"),
-    leadMobileDailyLimit: read.count("LEAD_MOBILE_DAILY_LIMIT"),
-    leadIpDailyLimit: read.count("LEAD_IP_DAILY_LIMIT"),
+    leadMobileDailyLimit: read.fixedLimit("LEAD_MOBILE_DAILY_LIMIT", isLocal),
+    leadIpDailyLimit: read.fixedLimit("LEAD_IP_DAILY_LIMIT", isLocal),
     turnstileSecret,
     acceptTurnstileTestToken,
     selfServeBooking,
