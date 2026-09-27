@@ -14,10 +14,14 @@ import styles from "./clients.module.css";
 
 const copy = clients.consents;
 
-/** "photos-referral-cards-v2" → "v2". The row is already the purpose, so only the version is left. */
-function noticeOf(version: string | null): string {
-  if (version === null) return clients.unknown;
-  return /-(v\d+)$/.exec(version)?.[1] ?? version;
+/**
+ * The notice the consent was given on, less the purpose the row already names: "photos-referral-cards-v2" → "v2",
+ * and a consent given by booking a visit (ADR 0080) "photos-referral-cards-booking-v1" → "booking-v1".
+ */
+function noticeOf(consent: Consent): string {
+  if (consent.notice_version === null) return clients.unknown;
+  const purpose = `${consent.purpose.replaceAll("_", "-")}-`;
+  return consent.notice_version.replace(purpose, "");
 }
 
 /** The board marks a withdrawn consent in oxblood and one never given in the quiet ink. */
@@ -35,7 +39,7 @@ function ConsentRow({ consent }: { consent: Consent }) {
       </th>
       <td className={`${styles.state ?? ""} ${TONE[consent.state]}`}>{copy.states[consent.state]}</td>
       <td className={styles.date}>{consent.at === null ? clients.unknown : longDate(consent.at)}</td>
-      <td className={styles.notice}>{noticeOf(consent.notice_version)}</td>
+      <td className={styles.notice}>{noticeOf(consent)}</td>
     </tr>
   );
 }

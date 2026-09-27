@@ -1,10 +1,12 @@
-// Booking in the app (boards C2 to C6) for the fitted client of
-// e2e/app/fitted.ts, against the local mm-api, with Razorpay faked
-// (e2e/app/checkout-fakes.ts).
+// Booking in the app (boards C2 to C6) for the fitted client with an address of
+// e2e/app/booker.ts, against the local mm-api, with Razorpay faked
+// (e2e/app/checkout-fakes.ts): the address asked for first when there is none
+// (ADR 0079), and what booking also agrees to on the pay step (ADR 0080).
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { bookerClient } from "./booker.ts";
 import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
@@ -29,7 +31,7 @@ type Hold = Record<string, unknown>;
 
 /** Opens the booking sheet from Visits. */
 async function openSheet(page: Page): Promise<void> {
-  await logIn(page, fittedClient().mobile);
+  await logIn(page, bookerClient().mobile);
   await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
   await page.getByRole("button", { name: "Book your next visit" }).click();
 }
@@ -48,30 +50,60 @@ async function toPayment(page: Page): Promise<void> {
   await continueToPayment(page);
 }
 
-/**
- * Whether the client has switched on WhatsApp about their visits, as their profile answers it. The fitted client
- * is shared by every suite, so each test here says which it needs rather than depending on another's switch. Only
- * the browser resolves app.localhost, so the profile is answered whole rather than fetched and changed.
- */
-async function remindersAre(page: Page, granted: boolean): Promise<void> {
-  const purposes = ["photos_own_record", "photos_referral_cards", "photos_marketing", "whatsapp_visits"];
-  const consents = purposes.map((purpose) => {
-    const given = granted && purpose === "whatsapp_visits";
-    return { purpose, granted: given, since: given ? new Date().toISOString() : null };
+const PHOTOS = ["photos_own_record", "photos_referral_cards"];
+const PURPOSES = [...PHOTOS, "photos_marketing", "whatsapp_visits", "whatsapp_launches"];
+const ADDRESS = {
+  line1: "House 4417, Tower C",
+  line2: null,
+  locality: "Sector 65",
+  city: "Gurgaon",
+  pincode: "122018",
+  access_notes: null,
+  building: null,
+  flat: null,
+  floor: null,
+  tower: null,
+  landmark: null,
+  place_id: null,
+};
+
+interface Standing {
+  /** WhatsApp about their visits is on, so the sheet does not ask to remind them. */
+  readonly reminders?: boolean;
+  /** Photograph purposes never decided on; the others are given, as the booking client's are. */
+  readonly undecided?: readonly string[];
+  /** An address is saved; without one, the sheet asks for it first. */
+  readonly address?: boolean;
+}
+
+/** The profile the sheet reads, for a client standing as `standing` says. */
+function profileOf({ reminders = false, undecided = [], address = true }: Standing) {
+  const at = new Date().toISOString();
+  const consents = PURPOSES.map((purpose) => {
+    const given = purpose === "whatsapp_visits" ? reminders : PHOTOS.includes(purpose) && !undecided.includes(purpose);
+    return { purpose, granted: given, since: given ? at : null };
   });
-  await page.route("**/api/profile", (route) =>
-    route.fulfill({
-      json: {
-        name: "Rohit Malhotra",
-        mobile: "+91 98xxx x4417",
-        address: null,
-        consents,
-        number_change: null,
-        number_change_decided: null,
-        deletion: null,
-      },
-    }),
-  );
+  const answer = { name: "Rohit Malhotra", mobile: "+91 98xxx x4417", consents };
+  const rest = { number_change: null, number_change_decided: null, deletion: null };
+  return { ...answer, address: address ? ADDRESS : null, ...rest };
+}
+
+/**
+ * The client's profile as the sheet reads it. The booking client is shared by every test here, so each says what
+ * it needs rather than depending on another's switch. Only the browser resolves app.localhost, so the profile is
+ * answered whole rather than fetched and changed.
+ */
+async function profileAs(page: Page, standing: Standing): Promise<void> {
+  await page.route("**/api/profile", (route) => route.fulfill({ json: profileOf(standing) }));
+}
+
+/** Every body the page sends to start a booking. */
+function bookingsSent(page: Page): unknown[] {
+  const sent: unknown[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/api/bookings")) sent.push(request.postDataJSON());
+  });
+  return sent;
 }
 
 /**
@@ -141,7 +173,7 @@ function releases(page: Page): string[] {
 test("books and pays for a service visit through Razorpay Checkout", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
-  await remindersAre(page, true);
+  await profileAs(page, { reminders: true });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(pay.getByText(/^Slot held \d:\d\d$/)).toBeVisible();
@@ -152,6 +184,8 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(pay.getByText("Imran never handles money.")).toBeVisible();
   // Already switched on, so the sheet does not ask again.
   await expect(pay.getByRole("checkbox", { name: REMIND })).toHaveCount(0);
+  // Both photograph consents are decided, so booking asks for neither, as board C4 draws it.
+  await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
 
   await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const confirmed = page.getByRole("dialog", { name: "Confirmed" });
@@ -192,7 +226,7 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
 test("asks whether to remind the client on WhatsApp, and records it when they say yes", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
-  await remindersAre(page, false);
+  await profileAs(page, { reminders: false });
   const switched: unknown[] = [];
   await page.route("**/api/consents/whatsapp_visits", (route) => {
     switched.push(route.request().postDataJSON());
@@ -212,12 +246,102 @@ test("asks whether to remind the client on WhatsApp, and records it when they sa
 test("promises no reminder the client has not agreed to", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
-  await remindersAre(page, false);
+  await profileAs(page, { reminders: false });
   await toPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const confirmed = page.getByRole("dialog").getByRole("status");
   await expect(confirmed.getByText("Confirmed")).toBeVisible();
   await expect(confirmed.getByText(REMINDED)).toHaveCount(0);
+});
+
+// The owner's ruling of 27 September 2026 (ADR 0079): an address before any slot.
+test("asks a client with no address for it first, then books", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await confirmedByRazorpay(page);
+  // The first read finds no address; once the client has saved one, the profile is the API's own.
+  let reads = 0;
+  await page.route("**/api/profile", (route) => {
+    reads += 1;
+    return reads === 1 ? route.fulfill({ json: profileOf({ address: false }) }) : route.fallback();
+  });
+  await openSheet(page);
+  const where = page.getByRole("dialog", { name: "Where we come" });
+  await expect(where.getByText("Step 1 of 4")).toBeVisible();
+  await expect(where.getByText("Your address first, so we know where to come. Then pick a date.")).toBeVisible();
+  await scanOf(page);
+  await where.getByLabel("Building, society or street").fill("House 4417, Tower C");
+  await where.getByLabel("Sector or area").fill("Sector 65");
+  await where.getByLabel("City").fill("Gurgaon");
+  await where.getByLabel("Pincode").fill("122018");
+  await where.getByRole("button", { name: "Save and continue" }).click();
+
+  const dates = page.getByRole("dialog", { name: "Pick a date" });
+  await expect(dates.getByText("Step 2 of 4")).toBeVisible();
+  await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
+  await dates.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("dialog", { name: "Pick a window" }).getByText("Step 3 of 4")).toBeVisible();
+  await continueToPayment(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+});
+
+test("takes a client who has given their address straight to the date, as board C2 draws it", async ({ page }) => {
+  await openSheet(page);
+  await expect(page.getByRole("dialog", { name: "Pick a date" }).getByText("Step 1 of 3")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Where we come" })).toHaveCount(0);
+});
+
+test("goes back to the address, saying why, when the API holds no slot for want of one", async ({ page }) => {
+  await page.route("**/api/holds", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 409, json: { error: { code: "address_required", request_id: "e2e" } } })
+      : route.fallback(),
+  );
+  await toWindows(page);
+  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+  await windows.getByRole("button", { name: "Continue to payment" }).click();
+  const where = page.getByRole("dialog", { name: "Where we come" });
+  await expect(where.getByRole("alert")).toHaveText(
+    "We need your address before we can hold a slot. Add it, then pick your window again.",
+  );
+  await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
+});
+
+// The owner's ruling of 27 September 2026 (ADR 0080): booking agrees to the photograph purposes never decided on.
+test("says on the pay step what booking also agrees to, while neither is decided, and sends both", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await confirmedByRazorpay(page);
+  await profileAs(page, { reminders: true, undecided: PHOTOS });
+  const sent = bookingsSent(page);
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(
+    pay.getByText("By booking this visit, you also agree to photographs for your own record and on referral cards."),
+  ).toBeVisible();
+  await expect(pay.getByText("Anyone you send this card to can see your photographs.")).toBeVisible();
+  await expect(pay.getByText("Your first name appears on your invite.")).toBeVisible();
+  await expect(pay.getByText("You can switch either off in Profile.")).toBeVisible();
+  await scanOf(page);
+
+  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+  expect(sent).toMatchObject([{ consents: PHOTOS }]);
+});
+
+test("shows only the line of a purpose still undecided, and sends only that one", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await profileAs(page, { reminders: true, undecided: ["photos_own_record"] });
+  const sent = bookingsSent(page);
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(
+    pay.getByText("By booking this visit, you also agree to photographs for your own record."),
+  ).toBeVisible();
+  await expect(pay.getByText("You can switch it off in Profile.")).toBeVisible();
+  await expect(pay.getByText("Your first name appears on your invite.")).toHaveCount(0);
+  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await expect.poll(() => sent).toMatchObject([{ consents: ["photos_own_record"] }]);
 });
 
 test("offers the standard tier, and a way to ask for premium on WhatsApp", async ({ page }) => {

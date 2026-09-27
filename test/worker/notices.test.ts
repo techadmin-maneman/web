@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CURRENT_NOTICE, NOTICES, TRY_ON_NOTICES_AWAITING_COUNSEL, findNotice } from "../../src/config/notices.ts";
+import {
+  BOOKING_NOTICES,
+  CURRENT_NOTICE,
+  NAMING_NOTICES,
+  NOTICES,
+  TRY_ON_NOTICES_AWAITING_COUNSEL,
+  findNotice,
+} from "../../src/config/notices.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
 import { KEEPING_NOTICES } from "../../src/policy/kept-try-ons.ts";
 
@@ -34,6 +41,17 @@ describe("consent notices", () => {
     expect(findNotice(TRY_ON_NOTICES_AWAITING_COUNSEL.gate)?.purpose).toBe("result_delivery");
     expect(KEEPING_NOTICES).toEqual([TRY_ON_NOTICES_AWAITING_COUNSEL.photo]);
     expect(KEEPING_NOTICES).not.toContain(CURRENT_NOTICE.tryon_photo);
+  });
+
+  it("records a consent given by booking on its own purpose's notice, and names a referrer on each card notice that says so", () => {
+    for (const notices of Object.values(BOOKING_NOTICES)) {
+      for (const [purpose, version] of Object.entries(notices)) expect(findNotice(version)?.purpose).toBe(purpose);
+    }
+    expect(NAMING_NOTICES).toEqual([
+      CURRENT_NOTICE.photos_referral_cards,
+      BOOKING_NOTICES.both.photos_referral_cards,
+      BOOKING_NOTICES.alone.photos_referral_cards,
+    ]);
   });
 
   it("carries the design's booking wording", () => {

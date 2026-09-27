@@ -90,6 +90,16 @@ export async function markDatabase(databaseName: string = EXPECTED_DATABASE_NAME
   await env.DB.prepare("INSERT INTO deployment_identity (id, database_name) VALUES (1, ?)").bind(databaseName).run();
 }
 
+/** The address a client saved in the app, which they must have before any slot is held (ADR 0079). */
+export async function savedAddress(personId: string, pincode = "122018"): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+     VALUES (?1, ?2, ?3, 'House 4417, Tower C', 'Sector 65', 'Gurgaon', ?4)`,
+  )
+    .bind(crypto.randomUUID(), personId, NOW.toISOString(), pincode)
+    .run();
+}
+
 // ---------------------------------------------------------------------------
 // Fake outbound HTTP
 // ---------------------------------------------------------------------------

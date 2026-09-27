@@ -378,6 +378,31 @@
   accent-color: var(--ink);
 }
 
+/*
+ * What booking also agrees to (ADR 0080), above the button that agrees to it: the first line in the text's own
+ * ink, the card's lines after it muted, all of it shown, since it is the notice the consent is given on.
+ */
+.consents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  margin-top: var(--sp-16);
+  font-size: var(--fs-14);
+  line-height: var(--lh-150);
+  color: var(--text-muted);
+}
+
+.sheet .consents p:first-child {
+  color: var(--text);
+}
+
+/* The address step (ADR 0079), which no board draws: why the address comes first, above Profile's form. */
+.sheet .why {
+  font-size: var(--fs-15);
+  line-height: var(--lh-155);
+  color: var(--text-soft);
+}
+
 .label {
   margin: var(--sp-20) 0 0;
   font-family: var(--font-serif);

@@ -348,6 +348,22 @@ test("lists every consent with its state, date and notice, and says ops cannot g
   await expect(page.getByRole("checkbox")).toHaveCount(0);
 });
 
+// Booking a visit in the app gives the two photograph consents on the pay step's own notice (ADR 0080), which ops
+// must be able to tell from the profile's.
+test("names the notice a consent given by booking was given on", async ({ page }) => {
+  const byBooking = CONSENTS.consents.map((consent) =>
+    consent.purpose === "photos_referral_cards"
+      ? { ...consent, notice_version: "photos-referral-cards-booking-v1" }
+      : consent,
+  );
+  await openClient(page, `/clients/${CLIENT.id}/consents`, {
+    [READ_CONSENTS]: json({ ...CONSENTS, consents: byBooking }),
+  });
+  const row = page.getByRole("row").filter({ hasText: "Photographs on referral cards" });
+  await expect(row).toContainText("booking-v1");
+  await expect(page.getByRole("row").filter({ hasText: "Photographs for the client record" })).toContainText("v1");
+});
+
 test("says when the client has asked to be erased", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, {
     [READ_CONSENTS]: json(ERASURE_REQUESTED),

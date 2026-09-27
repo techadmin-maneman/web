@@ -1,6 +1,6 @@
 # 0042. The client's profile: address, consents, number change, deletion
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0080: booking a visit in the app also gives the two photograph consents the client has never decided on.
 - Date: 2026-09-22
 - Contract step for `migrations/0009_consents_v2.sql`
 

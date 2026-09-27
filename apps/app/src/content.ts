@@ -277,7 +277,16 @@ export const visits = {
 
 /** Booking in the app (boards C2 to C6), while self-serve booking is on. */
 export const booking = {
-  step: (n: number) => `Step ${String(n)} of 3`,
+  step: (n: number, of: number) => `Step ${String(n)} of ${String(of)}`,
+  /**
+   * PLACEHOLDER: no board draws it. A client who has given no address is asked for it before any slot (ADR 0079;
+   * ADR 0025, item 60), under Profile's heading, "Where we come".
+   */
+  address: {
+    why: "Your address first, so we know where to come. Then pick a date.",
+    refused: "We need your address before we can hold a slot. Add it, then pick your window again.",
+    save: "Save and continue",
+  },
   date: {
     title: "Pick a date",
     available: "Available",
@@ -327,6 +336,20 @@ export const booking = {
      * visits (the purpose the day-before reminder is sent under), on that purpose's own notice.
      */
     remind: "Remind me on WhatsApp the day before",
+    /**
+     * PLACEHOLDER: no board draws them. Booking a visit also agrees to the photograph purposes the client has never
+     * decided on (ADR 0080; ADR 0025, item 61). With the referral card's lines (profile.referralCards), they are the
+     * notice each consent is recorded under, word for word (src/config/notices.ts; booking/consents.ts).
+     */
+    consents: {
+      both: "By booking this visit, you also agree to photographs for your own record and on referral cards.",
+      alone: {
+        photos_own_record: "By booking this visit, you also agree to photographs for your own record.",
+        photos_referral_cards: "By booking this visit, you also agree to photographs on referral cards.",
+      },
+      switchEither: "You can switch either off in Profile.",
+      switchIt: "You can switch it off in Profile.",
+    },
   },
   /**
    * Board C5's late-fee line, which C7 repeats word for word: the ex-GST figure, and the inclusive one after it,
