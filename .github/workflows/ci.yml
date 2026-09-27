@@ -119,6 +119,8 @@ jobs:
           else
             npm run check:migrations -- --base "$BASE"
           fi
+      - name: Open points have one number each, and every citation of one names a point that exists
+        run: npm run check:open-points
 
       - name: Dependency audit
         run: npm audit --audit-level=high

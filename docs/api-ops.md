@@ -5029,11 +5029,11 @@ Who Access let through, and where signing out goes
     },
     "no_shows_charged": {
       "type": "integer",
-      "description": "How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 57)."
+      "description": "How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 60)."
     },
     "dispute": {
       "type": "null",
-      "description": "The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 57)."
+      "description": "The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 60)."
     },
     "charges": {
       "type": "array",

@@ -29,13 +29,13 @@ Two of those three jobs are there for a reason. Today's and tomorrow's carry the
 
 ## Does this need a Zoho FSM user? No.
 
-You have been told that open point 12 — every technician needs an FSM user **with his mobile number on it** — blocks the technician app, and that only you can create one in Zoho. For production that is still true. **For this test it is not, and it never was.**
+You have been told that open point 27 — every technician needs an FSM user **with his mobile number on it** — blocks the technician app, and that only you can create one in Zoho. For production that is still true. **For this test it is not, and it never was.**
 
 The sign-in reads one table in our own database, `technicians`, and nothing else. Its query is `WHERE mobile_e164 = ? AND active = 1` (`src/domain/technicians.ts`). FSM is asked only when that comes back empty, and then only as a refresh, so that a technician you added to FSM this morning does not have to wait for tonight's reconciliation (`src/routes/tech-auth.ts`). With a row already there, **no call to Zoho is made at all**.
 
 That is not a reading of the code; it was done. The technician above was written straight into staging's database with no Zoho record behind him, and the code request answered `202` and the code went out on WhatsApp.
 
-What the FSM user is really for is **how the row gets there in the ordinary way**. The mirror copies each technician's name, whether he is active, his territory and his mobile number out of FSM's user records, and in production that is the only thing that writes them. So open point 12 stands for production and for any technician other than this test one — but it does not stand between you and this test.
+What the FSM user is really for is **how the row gets there in the ordinary way**. The mirror copies each technician's name, whether he is active, his territory and his mobile number out of FSM's user records, and in production that is the only thing that writes them. So open point 27 stands for production and for any technician other than this test one — but it does not stand between you and this test.
 
 One thing to watch, and the reason the test technician should be cleared when you are done: if you later put your own number on your own FSM user, the mirror will write a **second** technician row carrying the same number, and the sign-in takes whichever row it finds first. Clear the test technician before that happens.
 
@@ -78,7 +78,7 @@ Work through this on **today's** job. It is a service visit, so it has five step
 
 5. Tap **Start job**.
 6. **Before photos.** You should see a live picture, **0 of 5**, and the word **Front**. Tap **Capture** five times, following the label each time — Front, Top, Left, Right, Hair. After the fifth you should see **All five are on the phone.**, and **Capture** becomes **Done** in the same place. Point the camera at a wall; nobody needs to be photographed. Tap **Done**.
-7. **Service checklist.** Six lines, each beginning "PLACEHOLDER" — that is correct, because the real checklist has to be built in FSM and has not been (open point 13). Tick all six. The bar at the bottom stays dim and says "Finish the list to continue" until every line is ticked. Tap **Next**.
+7. **Service checklist.** Six lines, each beginning "PLACEHOLDER" — that is correct, because the real checklist has to be built in FSM and has not been (open point 28). Tick all six. The bar at the bottom stays dim and says "Finish the list to continue" until every line is ticked. Tap **Next**.
 8. **Consumables used.** Four items with a plus and a minus each. Add one or two of anything, or tap **None used**. Tap **Next**.
 9. **After photos.** The same five as before. Tap **Capture** five times, then **Done**.
 10. **Outcome.** Nothing is chosen for you: tap **Done**, then **Next**. (**Partial · pick a reason** is the other path; try it on tomorrow's job if you want to see it.)
@@ -150,7 +150,7 @@ The same script lays it again, without `--clear`, when you want another run or t
 
 ## What this page does not test, and what does
 
-- **The 200 m check-in radius.** Not touched here, on purpose. `docs/tech-field-test.md`, Part 1, measures it at a Gurgaon high-rise, a gated sector house and a basement, and those three numbers are the whole evidence for open point 46.
+- **The 200 m check-in radius.** Not touched here, on purpose. `docs/tech-field-test.md`, Part 1, measures it at a Gurgaon high-rise, a gated sector house and a basement, and those three numbers are the whole evidence for open point 56.
 - **The camera in real conditions** — bright sun, a basement, gloves on. `docs/tech-field-test.md`, Part 2.
 - **A whole job in a dead spot**, and whether anything is lost or doubled when signal returns. Part 3.
 - **The phone locked mid-job**, and battery and heat over a working day. Parts 4 and 5.

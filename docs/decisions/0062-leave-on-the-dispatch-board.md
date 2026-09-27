@@ -46,7 +46,7 @@ Two further things ruled FSM out even if the owner did configure a type. The
 board must **refuse** a job on a day off before anything is written, and so must
 self-serve booking; asking FSM on every board render is seven days by however
 many technicians, per refresh, against an org quota of 5,000 calls a day and a
-token budget that has already refunded paid bookings (open point 60). And ops
+token budget that has already refunded paid bookings (open point 32). And ops
 have a Technicians screen in our own console, while the owner is FSM's only user.
 
 ## Decision

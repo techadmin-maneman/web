@@ -7,7 +7,7 @@
 
 ADR 0055 has a finished job invoiced within five minutes, and `GET /api/documents/{visit_id}` streams the PDF from Books. Two things were left.
 
-**The invoice is a draft.** FSM creates it in Books as a draft, as the owner's own hand-made one is. A draft can be edited, renumbered or deleted; it is not a valid tax invoice, and ADR 0044 has the payments pass wait while an invoice is a draft, so a client's advance is never set against it. Sending it is one Books call and an accounting act, so ADR 0055 left it to the owner and the CA as `docs/open-points.md` item 70.
+**The invoice is a draft.** FSM creates it in Books as a draft, as the owner's own hand-made one is. A draft can be edited, renumbered or deleted; it is not a valid tax invoice, and ADR 0044 has the payments pass wait while an invoice is a draft, so a client's advance is never set against it. Sending it is one Books call and an accounting act, so ADR 0055 left it to the owner and the CA as `docs/open-points.md` item 115.
 
 **The invoice is only under Payments.** The client app shows it on the payment's screen (board E2), and the visit's own screen (board C9) says nothing about it. The owner's words on 23 September 2026: _"We can't wait for the CA to send the invoice. Once the invoice is generated, it needs to be shown to the user in the app next to the service."_
 
@@ -15,9 +15,9 @@ The same day they also ruled that a free visit must say so. `document_id` was nu
 
 ## Decision
 
-**The invoice is issued as it is raised.** `POST /books/v3/invoices/{id}/status/sent` follows the create in the same pass, and only then is the invoice a document the client may see. Open point 70 is settled by this.
+**The invoice is issued as it is raised.** `POST /books/v3/invoices/{id}/status/sent` follows the create in the same pass, and only then is the invoice a document the client may see. Open point 115 is settled by this.
 
-> **Amended 25 September 2026 ([ADR 0070](0070-vendor-correctness.md), audit findings INT-03 and BIZ-08):** only when it totals what the client was sold the visit for, and never for a visit a referral credit paid for. FSM prices the invoice from its own catalogue, and staging's "Replacement" item was ₹30,000 against the price book's ₹15,000, so an irreversible invoice for twice what was paid was one pass away. The work order's total is now compared, before the send, with the visit's captured payment, or with the price book's price on the day for a visit no payment names (`src/policy/prepayment.ts`). Otherwise, and for every credit-paid visit until the CA rules how one is invoiced (open point 97), the invoice stays a draft that can still be corrected or deleted: ops are told once, under the draft's own alert, and the Tasks board's Draft invoice group lists it. The rule below then holds as it always has: nothing sends a draft that already exists.
+> **Amended 25 September 2026 ([ADR 0070](0070-vendor-correctness.md), audit findings INT-03 and BIZ-08):** only when it totals what the client was sold the visit for, and never for a visit a referral credit paid for. FSM prices the invoice from its own catalogue, and staging's "Replacement" item was ₹30,000 against the price book's ₹15,000, so an irreversible invoice for twice what was paid was one pass away. The work order's total is now compared, before the send, with the visit's captured payment, or with the price book's price on the day for a visit no payment names (`src/policy/prepayment.ts`). Otherwise, and for every credit-paid visit until the CA rules how one is invoiced (open point 14), the invoice stays a draft that can still be corrected or deleted: ops are told once, under the draft's own alert, and the Tasks board's Draft invoice group lists it. The rule below then holds as it always has: nothing sends a draft that already exists.
 
 **Only an invoice this code has just raised is ever sent.** `fsm.invoiceWorkOrder` already answered either the invoice it raised or one the work order already had; it now says which, and the send happens on the first only.
 
@@ -42,7 +42,7 @@ The same day they also ruled that a free visit must say so. `document_id` was nu
 ## Consequences
 
 - **A client who prepaid sees an invoice that is settled.** The payments pass (ADR 0044) waits while an invoice is a draft; issued invoices are no longer drafts, so the advance is applied on the next five-minute run and the invoice's balance falls to nil. Nothing else was needed.
-- **Every invoice this raises is a real accounting record**, in the owner's real org from staging (open point 10). It cannot be deleted, only voided with a credit note. The first pass after this is deployed issues the invoices for staging's finished jobs, so the backlog's drafts should be dealt with by hand **before** it is deployed; after that they are sent as they are raised. Anything already a draft when this ships is never touched by the pass.
+- **Every invoice this raises is a real accounting record**, in the owner's real org from staging (open point 19). It cannot be deleted, only voided with a credit note. The first pass after this is deployed issues the invoices for staging's finished jobs, so the backlog's drafts should be dealt with by hand **before** it is deployed; after that they are sent as they are raised. Anything already a draft when this ships is never touched by the pass.
 - **GST is still off** (open points 2 and 3), so what is issued carries the price and nothing else. When GST goes on, the invoice is FSM's to compute, and issuing does not change.
 - The visit screen departs from board C9, which draws no invoice row; the departure is recorded in `docs/fidelity-method.md`.
-- Ops learn of a failed send from the alert. A board for invoices that could not be raised or sent still belongs with the payments screen that open point 57 wants.
+- Ops learn of a failed send from the alert. A board for invoices that could not be raised or sent still belongs with the payments screen that open point 60 wants.

@@ -10,7 +10,7 @@ The owner asked for this on 24 September 2026, in these words:
 
 > Ensure that all of the non-tech inputs that are needed for the product to work (e.g., pricing, service pincodes, SKU types, etc.) are not tech-dependent. Include them in the dashboard where an ops/admin person can change them and the app picks up those changes automatically. This was scoped and built for price, but include all non-tech inputs in it now.
 
-The principle behind it: **a business fact should not need a developer and a deploy.** Today a price change, a new served pincode or a different no-show wait all mean editing TypeScript, opening a pull request and waiting for CI. Open point 44 already said so for prices — "changing one price means a release, in three places that can disagree" — and recorded that the three had already disagreed on staging.
+The principle behind it: **a business fact should not need a developer and a deploy.** Today a price change, a new served pincode or a different no-show wait all mean editing TypeScript, opening a pull request and waiting for CI. Open point 11 already said so for prices — "changing one price means a release, in three places that can disagree" — and recorded that the three had already disagreed on staging.
 
 `docs/open-points.md` is close to a list of exactly these inputs, because every row in it was a question for the owner. Going through it, and `src/config/`, `src/policy/`, `packages/brand` and `data/pincodes/`, gives the inventory below.
 

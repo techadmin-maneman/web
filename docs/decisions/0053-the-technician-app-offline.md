@@ -38,7 +38,7 @@ The owner ruled on 23 September 2026 that we build our own interface over FSM (`
 ## Consequences
 
 - **The rules can be read.** `apps/tech/src/store/replay.ts` holds the ordering and the stopping, with no IndexedDB in it, and `test/node/tech-outbox.test.ts` checks them. `e2e/tech/outbox.e2e.ts` walks the whole thing in a browser: a step queued with no signal, replayed on reconnection, and a supersede that says what changed.
-- **iOS may evict the store.** The prompt asks for company Android phones for this reason; it is `docs/open-points.md`'s item 27.
+- **iOS may evict the store.** The prompt asks for company Android phones for this reason; it is `docs/open-points.md`'s item 124.
 - **The app follows the API, not the boards.** `npm run openapi` writes `apps/tech/src/api-schema.ts` from the schemas that serve the routes, and `apps/tech/src/routes.ts` assumes nothing. What the boards draw and the API cannot answer — a job's distance from the technician, and the piece card's tier, colour, adhesive, template and scalp — is recorded beside the fidelity pairs in `docs/fidelity-method.md`. The "Free" badge was on that list until 25 September 2026, when the API began answering it (ADR 0065); a job's slots, the client's pieces, the last visit's after photograph and the day-before WhatsApp's delivery receipt left it the same day ("The job flow", below).
 - **The check-in is queued like every other write, and its answer is kept.** It is the one write whose answer a screen needs: how far the phone was from the door, and when the no-show wait ends. Both are kept beside the job (`apps/tech/src/store/jobs.ts`), so a reload does not lose the countdown. A check-in queued in a basement says so, and the check runs when there is signal. From ADR 0065 the job's card carries both as well, in its `progress`, so a phone that lost its copy — a second store on an iPhone, a sign-out, a loaner — can still close a no-show.
 - **The close-out's duration is the phone's.** It runs from the `started_at` the API keeps to the instant the technician took the outcome, because nothing gives the closing time back.
@@ -47,11 +47,11 @@ The owner ruled on 23 September 2026 that we build our own interface over FSM (`
 
 ## Update, 24 September 2026: the phones are any phones, and one of them is an iPhone
 
-The owner ruled open point 27:
+The owner ruled open point 124:
 
 > Any phone, including iPhones.
 
-The decision above assumed the opposite. "The prompt asks for company Android phones for this reason; it is `docs/open-points.md`'s item 27" was the whole of this ADR's answer to eviction, and it is now no answer at all. Three things in the app followed from the assumption, and this section records what each becomes. The Navigate link is the fourth and is ADR 0054's, which had already written the replacement.
+The decision above assumed the opposite. "The prompt asks for company Android phones for this reason; it is `docs/open-points.md`'s item 124" was the whole of this ADR's answer to eviction, and it is now no answer at all. Three things in the app followed from the assumption, and this section records what each becomes. The Navigate link is the fourth and is ADR 0054's, which had already written the replacement.
 
 ### The home screen is where an iPhone keeps this store, so the app is installable
 
@@ -106,7 +106,7 @@ Now `apps/tech/src/api.ts` tells App of any 401, from any call, and App hides th
 
 ### The phone keeps two days and no more
 
-The cards and day lists were written and never deleted, so a phone held every card it had opened for as long as its 90-day session. Now, each time a day arrives fresh from the API, the phone lets go of everything but today's and tomorrow's lists, the cards and check-ins of the jobs in them, and any job whose work has not reached us (`forgetOld` in `apps/tech/src/store/jobs.ts`). The service worker keeps today's list alone, dropping the earlier day's as it keeps the new one. `docs/open-points.md`'s item 71 now describes this.
+The cards and day lists were written and never deleted, so a phone held every card it had opened for as long as its 90-day session. Now, each time a day arrives fresh from the API, the phone lets go of everything but today's and tomorrow's lists, the cards and check-ins of the jobs in them, and any job whose work has not reached us (`forgetOld` in `apps/tech/src/store/jobs.ts`). The service worker keeps today's list alone, dropping the earlier day's as it keeps the new one. `docs/open-points.md`'s item 55 now describes this.
 
 ### Sign out asks first, and needs signal
 
@@ -138,7 +138,7 @@ The camera is let go while the app is hidden and opened again when it comes back
 ### Consequences
 
 - The store and the sending have their own tests, on an IndexedDB that runs in Node (`fake-indexeddb`): `test/node/tech-store.test.ts`, `tech-kept.test.ts`, `tech-outbox-replay.test.ts`, `tech-api.test.ts` and `tech-sw.test.ts`. The browser walks each change in `e2e/tech/`.
-- The words for the states no board draws are placeholders in `apps/tech/src/content.ts`, for the owner (`docs/open-points.md`, item 20; ADR 0025, item 32).
+- The words for the states no board draws are placeholders in `apps/tech/src/content.ts`, for the owner (`docs/open-points.md`, item 42; ADR 0025, item 32).
 
 ---
 

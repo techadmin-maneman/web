@@ -13,7 +13,7 @@
 //
 // The board draws four groups (Replacement order, At-risk client, Referral
 // review, Photo QA). Two of them have no record behind them, and four queues
-// the board does not draw do; what is built and what is not is item 58 of
+// the board does not draw do; what is built and what is not is open point 61 of
 // docs/open-points.md.
 //
 // The last two groups are ours, not the prompt's (docs/decisions/0067-alerts-and-silent-failures.md):
@@ -81,7 +81,7 @@ export type TaskGroup = (typeof TASK_GROUPS)[number];
  * queue counts down to as well. The board writes "2 days", "1 day", "Today"
  * and "Overdue 3" and names no group's own allowance, and the prompt states
  * none, so every group waits the same two days, with three exceptions:
- * placeholders until the owner rules each one (docs/open-points.md, item 58).
+ * placeholders until the owner rules each one (docs/open-points.md, item 61).
  */
 export type Slas = Readonly<Record<TaskGroup, number>>;
 
@@ -99,7 +99,7 @@ export const TASK_SLA_HOURS: Slas = {
   number_change: 48,
   // What the client was promised: the 7 days run from the request to ops' decision (ADR 0049).
   erasure_request: DELETION_DECIDED_WITHIN_DAYS * 24,
-  // The app promises an answer within 30 days at the latest (docs/open-points.md, item 42).
+  // The app promises an answer within 30 days at the latest (docs/open-points.md, item 51).
   grievance: 30 * 24,
   draft_invoice: 48,
   erasure_unfinished: 48,

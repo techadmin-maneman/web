@@ -76,7 +76,7 @@ describe("content", () => {
     }
   });
 
-  // CLI-15, LIFE-16, FEO-23: the owner kept the design's lengths on 24 September 2026 (docs/open-points.md, item 23):
+  // CLI-15, LIFE-16, FEO-23: the owner kept the design's lengths on 24 September 2026 (docs/open-points.md, item 122):
   // "consultation 60 minutes, service 90, replacement 135, first fit 180".
   it("says each visit is as long as the backend books it", () => {
     expect(VISIT_BLOCKS.consultation.minutes).toBe(60);

@@ -4,7 +4,7 @@
 // method it writes it at, and nothing may be left assumed.
 //
 // It also pins the four things P2-M4 and the app's shell disagreed about
-// (`docs/open-points.md`, item 55), so neither side can quietly drop one.
+// (`docs/open-points.md`, item 132), so neither side can quietly drop one.
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";

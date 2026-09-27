@@ -10,7 +10,7 @@ Print this, or copy it into a notes app, and fill it in as you go.
 
 **How long it takes:** one full working day, with three visits in different kinds of building. Part 6 needs the same phone again a week later, for ten minutes.
 
-**Which phone:** the owner ruled on 24 September 2026 that technicians use **any phone, including iPhones** (`docs/open-points.md`, item 27). Run this sheet on whichever phone the technician actually owns. The parts marked **iPhone only** are skipped on an Android phone; everything else is the same on both.
+**Which phone:** the owner ruled on 24 September 2026 that technicians use **any phone, including iPhones** (`docs/open-points.md`, item 124). Run this sheet on whichever phone the technician actually owns. The parts marked **iPhone only** are skipped on an Android phone; everything else is the same on both.
 
 **The one rule:** this is staging, with test jobs. Do not run it against a real client's visit unless ops have said which one, and never photograph a client without asking him first.
 
@@ -24,10 +24,10 @@ Ops do these once. Tick each before the phone leaves the office.
 
 | #   | Set up                                                                                                                                                                                    | Done |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| 1   | The technician is a user in Zoho FSM, active, **with his mobile number on his FSM user** (open point 12)                                                                                  |      |
+| 1   | The technician is a user in Zoho FSM, active, **with his mobile number on his FSM user** (open point 27)                                                                                  |      |
 | 2   | That mobile number is on staging's WhatsApp allowlist, or no login code will arrive (runbook, step 7)                                                                                     |      |
 | 3   | Three jobs are scheduled in FSM for that technician, today, at the three buildings in Part 1                                                                                              |      |
-| 4   | Each job's client address in FSM has a street address FSM could geocode (open point 26)                                                                                                   |      |
+| 4   | Each job's client address in FSM has a street address FSM could geocode (open point 54)                                                                                                   |      |
 | 5   | The phone is charged to 100%, with the battery percentage switched on in the status bar. Android or iPhone, whichever the technician owns                                                 |      |
 | 6   | The phone can reach `https://tech-staging.maneman.in` — it is behind Cloudflare Access, so the technician signs in to Access with his founders' login first, or ops open the site for him |      |
 | 7   | Ops can see this technician's phones, so they can count the rows before and after Part 0a (board D3, the technician list)                                                                 |      |
@@ -105,7 +105,7 @@ After this, ops check the technician's phones on board D3 and write down what th
 
 ## Part 1 — the door, and how far the phone thinks you are
 
-This is the most important part of the day. The app checks that you are within **200 m** of the address before it lets you start. Nobody knows yet whether 200 m is the right number, because nobody has measured how wrong a phone's position is at an Indian address (open point 46). **These three readings are the evidence that settles it.**
+This is the most important part of the day. The app checks that you are within **200 m** of the address before it lets you start. Nobody knows yet whether 200 m is the right number, because nobody has measured how wrong a phone's position is at an Indian address (open point 56). **These three readings are the evidence that settles it.**
 
 Run steps 1 to 8 at **each** of the three buildings.
 
@@ -181,7 +181,7 @@ node node_modules/wrangler/bin/wrangler.js d1 execute maneman-staging --env stag
 
 `distance_m` is how far the phone said it was from the address; `accuracy_m` is how sure the phone was of its own position. Both matter. The owner rules the radius from these numbers.
 
-The first line leaves out every check-in that measured nothing. An address the client typed rather than chose has no coordinate, so its check-in passes with no distance at all, and it says nothing about GPS error. Before migration 0035 such a row held a filler 0 and read as "0 m, passed"; the migration cleared those, and the second line counts them. If it is most of the day's check-ins, the addresses need their pins before the numbers mean anything (open point 46).
+The first line leaves out every check-in that measured nothing. An address the client typed rather than chose has no coordinate, so its check-in passes with no distance at all, and it says nothing about GPS error. Before migration 0035 such a row held a filler 0 and read as "0 m, passed"; the migration cleared those, and the second line counts them. If it is most of the day's check-ins, the addresses need their pins before the numbers mean anything (open point 56).
 
 > **Known gap.** The app shows the distance only when the check-in **fails**. When it passes, the technician never sees the number, so the line above is the only way to collect it. Whether the app should show the distance on a passing check-in too is a change to board B5, and is the owner's and the designer's to rule.
 
@@ -401,8 +401,8 @@ If a second iPhone is available, sign in on it **in Safari only**, leave the sam
 
 ## What this test decides
 
-- **Open point 46, the check-in radius.** The distances from Parts 1 and 3 are the whole evidence. Until they exist, 200 m is a guess.
-- **Open point 27 is settled, and this is what is left of it.** The owner ruled on 24 September 2026 that technicians use any phone, including iPhones. What the day and Part 6 now decide is whether that ruling holds in practice on an iPhone: whether an installed app keeps a week's unsent work, whether the second sign-in reads as sensible rather than broken, and whether the camera gives ten usable frames through iOS's own pipeline. If Part 6 shows the work goes, installing to the home screen stops being advice and becomes a rule ops enforce before a phone is used in the field.
-- **Open point 34, photograph sizes.** The app re-encodes each frame to about 250 KB; the sets from this day show whether that is enough to see a hairline in a basement.
+- **Open point 56, the check-in radius.** The distances from Parts 1 and 3 are the whole evidence. Until they exist, 200 m is a guess.
+- **Open point 124 is settled, and this is what is left of it.** The owner ruled on 24 September 2026 that technicians use any phone, including iPhones. What the day and Part 6 now decide is whether that ruling holds in practice on an iPhone: whether an installed app keeps a week's unsent work, whether the second sign-in reads as sensible rather than broken, and whether the camera gives ten usable frames through iOS's own pipeline. If Part 6 shows the work goes, installing to the home screen stops being advice and becomes a rule ops enforce before a phone is used in the field.
+- **Open point 125, photograph sizes.** The app re-encodes each frame to about 250 KB; the sets from this day show whether that is enough to see a hairline in a basement.
 - **Whether the app shows the technician enough at the door.** Board B5 shows the distance only on a failure, and the wait's evidence line names the distance without giving it.
 - **Whether Navigate lands in the right place.** It sends a Google Maps route to the address's own coordinate where there is one and to the typed address where there is not (ADR 0054). Part 1 asks at three buildings; if it opens the wrong tower, the coordinate is what to look at, not the button.

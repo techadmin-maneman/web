@@ -4,7 +4,7 @@
 // and the mark and the wordmark's small cut in the bottom right corner.
 //
 // PLACEHOLDER: where A2 has photographs, the two halves are the ink blocks the boards draw a card with (F2, F4),
-// until the owner gives us licensed ones (docs/open-points.md, item 43).
+// until the owner gives us licensed ones (docs/open-points.md, item 52).
 //
 //   node scripts/make-house-card.ts
 //

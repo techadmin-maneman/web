@@ -1,6 +1,6 @@
 // Whether the phone has promised to keep what the outbox holds.
 //
-// Open point 27 is now "any phone, including iPhones", and an iPhone treats
+// Open point 124 is now "any phone, including iPhones", and an iPhone treats
 // this store differently from an Android one. WebKit puts every origin in a
 // "best-effort mode, which means their persistence is not guaranteed and their
 // data can be evicted", and evicts least-recently-used; an origin escapes that

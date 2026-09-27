@@ -3,7 +3,7 @@
 //
 //   the shell     every file of the build, with the app itself kept as "/", so a
 //                 phone in a basement can close the app, reopen it, and still see
-//                 the day (docs/open-points.md, item 56);
+//                 the day (docs/open-points.md, item 133);
 //   today's jobs  the one answer to GET /api/tech/jobs?date=<today in India>,
 //                 which carries a time, a type, a badge and an area — no client,
 //                 no address, no number.

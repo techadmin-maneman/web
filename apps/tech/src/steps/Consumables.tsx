@@ -3,7 +3,7 @@
 //
 // The names are the app's: FSM holds no consumables catalogue, so the API takes
 // whatever the technician names and keeps it as he entered it
-// (src/config/job-sheet.ts, docs/open-points.md item 13). The four here are the
+// (src/config/job-sheet.ts, docs/open-points.md item 28). The four here are the
 // board's own, a placeholder until the owner builds the list.
 //
 // Each count is said as it changes, and each stepper names the count it

@@ -38,7 +38,7 @@ Alerts that already fire once per record, and name it, still post directly: a le
 | A cron job failing                                                     | on the third run in a row                                               | a run works                                              |
 | Books refusing a payment, its application or a refund (amends 0044)    | at once                                                                 | it goes through                                          |
 | Books failing on one in any other way                                  | on the third time                                                       | it goes through                                          |
-| A payment with nothing to set it against, or kept on a cancelled visit | once (open point 79)                                                    | never: ops settle it in Books                            |
+| A payment with nothing to set it against, or kept on a cancelled visit | once (open point 16)                                                    | never: ops settle it in Books                            |
 | FSM refusing to invoice a visit                                        | at once                                                                 | the invoice is issued                                    |
 | A draft invoice the client cannot open                                 | an hour after the visit ended                                           | the invoice is issued                                    |
 | FSM not anonymising an erased client's contact                         | when the sweeper stops asking, after ten attempts                       | never: its task goes once `fsm_erased_at` is set by hand |
@@ -68,4 +68,4 @@ Alerts that already fire once per record, and name it, still post directly: a le
 - A resolved alert stays in the table, and so does one nothing closes (the table's "never" rows), so "open" means not yet known to be put right. The table grows by the alerts raised, which is small; nothing deletes them yet.
 - Checking whether to close an alert costs one indexed D1 statement where the good outcome happens: a login code sent, an appointment synced, a job step written, a Books record gone through. Each reads the open alert by key through a partial index and usually writes nothing.
 - A refused Books refund is still asked again every hour, as a refusal can be put right in Books. Ops now know of it, once, and again at the tenth and hundredth hour.
-- **Still open:** how a kept charge is invoiced waits for the CA (open point 79), and whether Books may keep an erased client's display name waits for counsel (open point 80).
+- **Still open:** how a kept charge is invoiced waits for the CA (open point 16), and whether Books may keep an erased client's display name waits for counsel (open point 23).

@@ -273,7 +273,7 @@ async function keptCharges(db: D1Database): Promise<KeptCharge[]> {
 
 /**
  * Ops settle it by hand. How a kept charge is invoiced, so that it does not
- * stay the client's credit, waits for the CA (docs/open-points.md, item 79).
+ * stay the client's credit, waits for the CA (docs/open-points.md, item 16).
  */
 async function tellUnapplied(
   pass: Pass,

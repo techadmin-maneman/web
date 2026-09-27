@@ -19,7 +19,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 **Pincodes decide where we go.** `serviceable_pincodes` (migration 0021) is loaded from `data/pincodes/ncr-pincodes.csv` by `scripts/import-pincodes.ts`.
 
 - Each pincode's area is the shortest name among its sub and head post offices, until ops give better ones. **Amended 26 September 2026:** ops name an area in Settings · Service area, and the import keeps a name they gave (ADR 0071).
-- Staging runs with every pincode served (`--all-served-from`, open point 21).
+- Staging runs with every pincode served (`--all-served-from`, open point 48).
 - `GET /api/pincodes/:pin` says served or not, with the area, and refuses what is not an Indian pincode.
 
 **A client's code** (`referral_codes`) is their initials and four random characters from an alphabet without look-alikes (no 0, O, 1 or I). It is never taken from their mobile number, and is made the first time they open Refer (`GET /api/refer`). The code also holds the card's state (house or personal) and version.
@@ -72,7 +72,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 - **Every upload or revoke is a new version,** because WhatsApp caches a link's preview by its URL: a revoke reaches new shares only.
 - **`GET /api/og/:code.jpg`** is the preview: the client's card while it is live, and otherwise the house card, a static file of the site's. It is served by mm-api, so the path stays under `/api`, and the versioned link makes it safe to cache for a day.
 - **A card comes down by itself** when the consent is switched off, and when the client is erased: it is made of their photographs.
-- The house card is a placeholder until the owner gives us a licensed one (`docs/open-points.md`, item 43).
+- The house card is a placeholder until the owner gives us a licensed one (`docs/open-points.md`, item 52).
 
 **The waitlist and a launch** (`src/domain/waitlist.ts`), on the ops surface:
 

@@ -376,7 +376,7 @@ describe("the referrer's tracker, after the friend is erased", () => {
 
     await erasePerson(env, FRIEND, NOW, createLogger());
 
-    // An erasure keeps no name of theirs, not even on another client's page (open point 105, for counsel).
+    // An erasure keeps no name of theirs, not even on another client's page (open point 63, for counsel).
     expect(await tracker()).toEqual([{ first_name: null, month: "2026-09" }]);
   });
 

@@ -3,7 +3,7 @@
 // migrations. It refuses, and writes nothing, while the file would serve a pincode people wait for.
 //
 //   node scripts/import-pincodes.ts local
-//   node scripts/import-pincodes.ts staging --all-served-from 2026-09-22    (staging's placeholder, open point 21)
+//   node scripts/import-pincodes.ts staging --all-served-from 2026-09-22    (staging's placeholder, open point 48)
 //   node scripts/import-pincodes.ts production                              (the file's served and launch_on)
 //
 // Each pincode's area is named from its post offices (scripts/lib/pincodes.ts).

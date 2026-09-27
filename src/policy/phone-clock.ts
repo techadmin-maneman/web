@@ -28,14 +28,14 @@ export const BOUNDS = [
 /**
  * PLACEHOLDER: how long before the booked start a technician may say he
  * arrived. Early enough for one who beats the traffic, too early to back-date
- * a morning's check-in into the night before (docs/open-points.md, item 77).
+ * a morning's check-in into the night before (docs/open-points.md, item 58).
  */
 export const EARLIEST_BEFORE_START_MIN = 60;
 
 /**
  * PLACEHOLDER: how long a phone may hold a write and still have its time
  * believed. The app keeps today's and tomorrow's jobs, so a day covers any
- * genuine replay (docs/open-points.md, item 77).
+ * genuine replay (docs/open-points.md, item 58).
  */
 export const MAX_OFFLINE_HOURS = 24;
 

@@ -421,7 +421,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 8. **FSM's catalogue and the price book.** FSM prices a visit's tax invoice from its catalogue item, so each item must hold the price book's price before GST (docs/decisions/0073-prices-from-the-price-book.md).
    - **The check.** Once an hour the cron's `fsm_catalogue` job reads the catalogue and compares it with the book. An item that differs, or is missing, is an alert `fsm_catalogue:<visit type>` naming the item's ID and both figures, closed when the two agree. Until the push is on, set the item's price in FSM by hand as the alert says (Setup → Service and Parts).
    - **The push** writes each price ops set in the console to the catalogue, and a price from a later day on its day. `FSM_CATALOGUE_PUSH` in `src/config/environments.ts` is off in every environment. **Only the owner switches it on, and only in production,** once production's price book holds the owner's prices and production connects FSM: set its `production` to `true`, and release. Staging's stays off for as long as it shares the owner's real org; a test refuses it on.
-   - **After switching it on,** set any price in the console and look for `fsm_catalogue_pushed` in the logs; the next hour's check should raise no `fsm_catalogue` alert. The write, `PUT /fsm/v1/Products/{id}`, has never been tried on the org (`docs/open-points.md`, item 98): if FSM refuses it, `fsm_catalogue_push_failed` is logged with FSM's answer, and the check tells ops an hour later.
+   - **After switching it on,** set any price in the console and look for `fsm_catalogue_pushed` in the logs; the next hour's check should raise no `fsm_catalogue` alert. The write, `PUT /fsm/v1/Products/{id}`, has never been tried on the org (`docs/open-points.md`, item 25): if FSM refuses it, `fsm_catalogue_push_failed` is logged with FSM's answer, and the check tells ops an hour later.
 
 ### 11c. Razorpay
 
@@ -778,7 +778,7 @@ A request waiting 5 days alerts ops: process it before its 7 days run out. The c
 **The pincodes we serve** are loaded from `data/pincodes/ncr-pincodes.csv` (docs/decisions/0048-referrals.md). Fill in its `served` and `launch_on` columns, then:
 
 ```sh
-node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging's placeholder (open point 21)
+node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging's placeholder (open point 48)
 node scripts/import-pincodes.ts production                             # the file's own columns
 ```
 
@@ -822,7 +822,7 @@ The DPDP Act and its Rules require us to tell the Data Protection Board and each
 4. **Notify.**
    - **The Board,** at once in brief, and in full within 72 hours: what happened, when, the data and people affected, the harm likely, what we have done, and who to contact.
    - **Each person affected,** in plain words on WhatsApp or by phone: what happened to their data, what it may mean for them, what we have done, what they can do, and who to contact.
-   - **The Grievance Officer** leads both (`docs/open-points.md`, item 42).
+   - **The Grievance Officer** leads both (`docs/open-points.md`, item 51).
 5. **Record.** Keep a note of the breach, the timeline, the decisions and the notices, for the Board and for us. Review it within two weeks, and fix what let it happen.
 
 ---

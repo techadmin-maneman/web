@@ -58,12 +58,12 @@ A client who pays in advance is owed a receipt, then the tax invoice with the pa
 **Each captured payment is recorded in Books** as a customer payment (`src/domain/books-sync.ts`).
 
 - It goes against the client's Books customer: the FSM contact's `ZBilling_Id`, which FSM's sync fills in. Until the client reaches Books, the payment waits.
-- The mode is "Razorpay"; the reference is ours (MM-2026-0841). On staging the description begins "Staging test:" (`docs/open-points.md`, item 10).
+- The mode is "Razorpay"; the reference is ours (MM-2026-0841). On staging the description begins "Staging test:" (`docs/open-points.md`, item 19).
 - **Books' own receipt is the receipt.** `GET /api/payments/{id}/receipt` streams its PDF; `documents.receipt` gives the payment's ID once Books has it.
 
 **Applied to the visit's invoice** once Books has sent it, up to what the invoice still owes. A draft waits. A paid or void invoice, or an application Books refuses, is logged for ops and not tried again.
 
-**A processed refund is recorded against its payment,** from `BOOKS_REFUND_ACCOUNT_ID`, the bank account Razorpay settles into. Books refuses a refund from Undeposited Funds, and our token cannot create accounts, so the owner creates it (runbook 11b, step 7). While the var is empty, refunds are not recorded (`docs/open-points.md`, item 39). The refund voucher stays null in the API: Books' refund has no PDF of its own that we have found.
+**A processed refund is recorded against its payment,** from `BOOKS_REFUND_ACCOUNT_ID`, the bank account Razorpay settles into. Books refuses a refund from Undeposited Funds, and our token cannot create accounts, so the owner creates it (runbook 11b, step 7). While the var is empty, refunds are not recorded (`docs/open-points.md`, item 10). The refund voucher stays null in the API: Books' refund has no PDF of its own that we have found.
 
 **On the five-minute cron,** after the FSM reconciliation, never in the payment's path, so Books is never on the way to a booking.
 
@@ -74,5 +74,5 @@ A client who pays in advance is owed a receipt, then the tax invoice with the pa
 ### Consequences
 
 - A first payment's receipt can take up to three hours: FSM's sync must first put the client into Books.
-- Staging's test payments are in the real Books org, labelled, until they are removed before go-live (`docs/open-points.md`, item 10).
-- With GST at 0% on staging, a receipt carries no tax. When GST goes on, the CA says whether an advance needs tax on its receipt; Books can take it on the customer payment (`docs/open-points.md`, item 35).
+- Staging's test payments are in the real Books org, labelled, until they are removed before go-live (`docs/open-points.md`, item 19).
+- With GST at 0% on staging, a receipt carries no tax. When GST goes on, the CA says whether an advance needs tax on its receipt; Books can take it on the customer payment (`docs/open-points.md`, item 9).

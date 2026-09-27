@@ -24,7 +24,7 @@ Three things follow from that, and all three are broken:
 
 1. **Zoho never sees the address.** When we create a client in Zoho, we write the street as the words _"To be confirmed with the client"_, and nothing ever replaces it. So Zoho — which is the system of record for field work — has a city and a placeholder where the address should be.
 2. **The arrival check measures nothing.** The technician taps "I have arrived" and we are supposed to check they are within 200 m of the address. With no coordinate there is nothing to compare against, so the check quietly passes. Worse, the ops screen that decides whether to charge a client for a no-show shows the distance as **0 m** — which reads as "the technician was standing exactly at the door" when the truth is "we did not measure".
-3. **The "Navigate" button is a text search, and on an iPhone it does nothing.** It hands the typed address as words to whatever map app is installed. On Android that opens a search. On an iPhone the link format we use is not recognised at all, so nothing happens. Technicians' phones are still "any phone" (open point 27).
+3. **The "Navigate" button is a text search, and on an iPhone it does nothing.** It hands the typed address as words to whatever map app is installed. On Android that opens a search. On an iPhone the link format we use is not recognised at all, so nothing happens. Technicians' phones are still "any phone" (open point 124).
 
 ## How far wrong is a typed address, really?
 
@@ -42,7 +42,7 @@ So a pincode resolves to something roughly a kilometre and a half from its neigh
 
 A pin, by contrast, is within a few metres of the door.
 
-**But we do not have to take this on faith, and we should not.** Every check-in already records where the technician's phone was and how accurate that fix was — that data is collected whether or not the address has a coordinate. The two-week parallel run scheduled after the technician app ships will therefore produce, for free and with no extra work, exactly the evidence needed: for each real visit, where the technician actually stood, which we can compare against what the typed address would have resolved to. **That is the measurement that should decide whether to spend anything on a map.** It also settles the 200 m radius itself (open point 46), which has been waiting on the same missing numbers.
+**But we do not have to take this on faith, and we should not.** Every check-in already records where the technician's phone was and how accurate that fix was — that data is collected whether or not the address has a coordinate. The two-week parallel run scheduled after the technician app ships will therefore produce, for free and with no extra work, exactly the evidence needed: for each real visit, where the technician actually stood, which we can compare against what the typed address would have resolved to. **That is the measurement that should decide whether to spend anything on a map.** It also settles the 200 m radius itself (open point 56), which has been waiting on the same missing numbers.
 
 ## What we propose to build, in order
 
@@ -159,11 +159,11 @@ So every new field is **added alongside** the existing ones and left empty for o
 
 ## What we need from you
 
-Three rulings, recorded as open points 66, 67 and 68:
+Three rulings, recorded as open points 137, 138 and 139:
 
-1. **Which map supplier, if any** (open point 66). **Our recommendation, if one is wanted at all, is Ola Maps** — the largest free allowance, no card, no storage restriction in their terms, and a prepaid model under which going over the free allowance physically cannot charge us. Google is the better map of Indian apartment complexes, and its geocoding terms do permit keeping the coordinate, but it requires a billing account to exist before anything works. **Mappls we recommend ruling out** for the reasons above. **Our stronger recommendation is to defer this ruling entirely until the parallel run reports.**
-2. **Whether to sign up for anything at all, and for how much** (open point 67). Every option for Stage 4 needs an account with a map company. At our size the answer is ₹0 a month under any of them, so the ruling is not really about money — it is about whether you want a third company holding an account for us, and whether the feature is worth it once the free pins are working. The spend to approve is **nil**, with a ceiling: we would set a hard daily request cap so the service stops rather than ever bills.
-3. **Before or after the staging test** (open point 68). Our recommendation: Stages 1 and 2 before, because one is a correctness fix on a screen used to charge clients money and the other is plain form work; Stage 3 before, so the parallel run starts collecting real pins as it goes; Stage 4 after, judged on what the parallel run shows.
+1. **Which map supplier, if any** (open point 137). **Our recommendation, if one is wanted at all, is Ola Maps** — the largest free allowance, no card, no storage restriction in their terms, and a prepaid model under which going over the free allowance physically cannot charge us. Google is the better map of Indian apartment complexes, and its geocoding terms do permit keeping the coordinate, but it requires a billing account to exist before anything works. **Mappls we recommend ruling out** for the reasons above. **Our stronger recommendation is to defer this ruling entirely until the parallel run reports.**
+2. **Whether to sign up for anything at all, and for how much** (open point 138). Every option for Stage 4 needs an account with a map company. At our size the answer is ₹0 a month under any of them, so the ruling is not really about money — it is about whether you want a third company holding an account for us, and whether the feature is worth it once the free pins are working. The spend to approve is **nil**, with a ceiling: we would set a hard daily request cap so the service stops rather than ever bills.
+3. **Before or after the staging test** (open point 139). Our recommendation: Stages 1 and 2 before, because one is a correctness fix on a screen used to charge clients money and the other is plain form work; Stage 3 before, so the parallel run starts collecting real pins as it goes; Stage 4 after, judged on what the parallel run shows.
 
 We would also like Zoho checked on one point: **whether it will accept a coordinate we supply**, or insists on working out its own from the street. This was never tested in the trial. If Zoho overwrites our pin, then a client-placed pin only ever lives in our own system and is worth noticeably less — it would still drive our arrival check and our technician's directions, but it would not appear in Zoho's own app.
 

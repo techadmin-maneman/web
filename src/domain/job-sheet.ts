@@ -2,7 +2,7 @@
 // (docs/decisions/0038-offline-writes.md, 0032-fsm-mirror.md).
 //
 // FSM is the record. The trial found the org has no job-sheet template yet
-// (`meta/job_sheet_forms` is empty, docs/open-points.md, item 13), so there is
+// (`meta/job_sheet_forms` is empty, docs/open-points.md, item 28), so there is
 // no job-sheet record to create; until there is, the checklist, the consumables
 // and the outcome are written on the appointment itself, as its summary and as
 // the mandatory note of the transition that closes it. Our own job_events keep
@@ -268,7 +268,7 @@ function outcomeLine(event: JobEvent): string {
   return `Outcome: partial${reason === null ? "" : ` (${reason})`}`;
 }
 
-/** Staging shares the real FSM org, so everything it writes says so (docs/open-points.md, item 10). */
+/** Staging shares the real FSM org, so everything it writes says so (docs/open-points.md, item 19). */
 const prefix = (deps: { labelAsTest: boolean }): string => (deps.labelAsTest ? "Staging test: " : "");
 
 const indiaIsoOf = (instant: string): string => indiaIso(new Date(instant));

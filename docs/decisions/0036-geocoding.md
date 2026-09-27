@@ -19,10 +19,10 @@ The FSM trial found something that changes the question (`docs/decisions/fsm-tri
 
 **The geofence degrades honestly.** An address with no coordinates cannot be measured against, so the check-in is accepted, its row names no address, and the response carries `distance_m: null`. It is never silently treated as a pass at zero metres.
 
-**Every check-in records the distance it measured and the radius in force**, whether it passed or not, which is what the owner tunes the 200 m from (`docs/open-points.md`, item 46).
+**Every check-in records the distance it measured and the radius in force**, whether it passed or not, which is what the owner tunes the 200 m from (`docs/open-points.md`, item 56).
 
 ## Consequences
 
 - One less provider, one less key, one less bill, and no second opinion on where a client lives.
-- We inherit FSM's geocoding quality. If the parallel run's recorded distances show it is not good enough for Gurgaon high-rises, item 26 stays open and Ola Maps or Mappls goes behind `providers/geocode.ts`, which this decision does not foreclose.
+- We inherit FSM's geocoding quality. If the parallel run's recorded distances show it is not good enough for Gurgaon high-rises, open point 54 stays open and Ola Maps or Mappls goes behind `providers/geocode.ts`, which this decision does not foreclose.
 - The technician surface cannot refuse a check-in for an address FSM never geocoded. That is the right way round: a technician standing at the door is not the person to punish for a missing coordinate.

@@ -22,7 +22,7 @@ describe("prepayment", () => {
       expect(invoiceHold(REPLACEMENT, { soldFor: null, paidWithCredit: false })).toBe("price_unknown");
     });
 
-    // Interim until the CA rules how a credit visit is invoiced (audit BIZ-08, open point 97).
+    // Interim until the CA rules how a credit visit is invoiced (audit BIZ-08, open point 14).
     it("never issues an invoice for a visit a referral credit paid for, whatever it totals", () => {
       expect(invoiceHold(REPLACEMENT, { soldFor: REPLACEMENT, paidWithCredit: true })).toBe("paid_with_credit");
       expect(invoiceHold(0, { soldFor: 0, paidWithCredit: true })).toBe("paid_with_credit");

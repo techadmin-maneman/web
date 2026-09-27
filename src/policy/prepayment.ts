@@ -16,7 +16,7 @@ export type InvoiceHold =
   /**
    * A referral credit paid for the visit. How such a visit is invoiced waits
    * for the CA: a zero-priced line, a discount, or no invoice at all
-   * (docs/open-points.md, item 97).
+   * (docs/open-points.md, item 14).
    */
   | "paid_with_credit"
   /** FSM's work order totals something other than what the client was sold the visit for. */

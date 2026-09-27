@@ -470,7 +470,7 @@ describe("GET /api/visits/:id and the photographs", () => {
       .run();
     expect(await held("ap-done")).toBeNull();
 
-    // A credit paid for it: never sent until the CA rules how such a visit is invoiced (open point 97).
+    // A credit paid for it: never sent until the CA rules how such a visit is invoiced (open point 14).
     const person = await env.DB.prepare("SELECT person_id FROM appointments WHERE id = ?1")
       .bind(ids["ap-credit"] ?? "")
       .first<string>("person_id");

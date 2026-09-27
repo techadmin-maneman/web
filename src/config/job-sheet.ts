@@ -3,7 +3,7 @@
 // The prompt puts the checklist and the partial reasons in config, "taken from
 // the FSM job-sheet template". The trial found no template in the org yet
 // (`meta/job_sheet_forms` is empty), so everything here is a placeholder until
-// the owner builds it (docs/open-points.md, item 13). Consumables are not
+// the owner builds it (docs/open-points.md, item 28). Consumables are not
 // listed at all: the technician names what he used, and migration 0026 keeps
 // the name as he entered it until FSM's catalogue can be matched against.
 
@@ -18,7 +18,7 @@ export interface ChecklistItem {
 /**
  * The checklist per visit type. A service visit has the design's six items;
  * the other types have the steps their screens show. Every label is a
- * placeholder (item 13).
+ * placeholder (open point 28).
  */
 export const CHECKLIST: Readonly<Record<VisitType, readonly ChecklistItem[]>> = {
   consultation: [
