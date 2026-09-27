@@ -122,8 +122,35 @@ describe("the Phase 2 colour layer", () => {
     expect([...phase2.values()].filter((value) => isColour(value) && coreColours.has(value))).toEqual([]);
   });
 
-  it.each([...phase2])("%s (%s) is drawn in a Phase 2 spec board", (_name, value) => {
-    const drawnIn = SPEC_BOARDS.filter((board) => board.toLowerCase().includes(value.toLowerCase()));
-    expect(drawnIn.length).toBeGreaterThan(0);
+  // A role that names another token (--fs-app-title is --fs-34) is checked through the token it names.
+  it.each([...phase2].filter(([, value]) => !value.startsWith("var(")))(
+    "%s (%s) is drawn in a Phase 2 spec board",
+    (_name, value) => {
+      const drawnIn = SPEC_BOARDS.filter((board) => board.toLowerCase().includes(value.toLowerCase()));
+      expect(drawnIn.length).toBeGreaterThan(0);
+    },
+  );
+});
+
+// DS-15, DS-18: --fs-app-title and --fs-34 both held 34px, so a change to one would leave the other behind. A
+// value is written once in its family; a name for what it is for says which token it is.
+describe("the scale", () => {
+  const all = new Map([
+    ...customProperties("packages/brand/tokens.css"),
+    ...customProperties("packages/brand/tokens-phase2.css"),
+  ]);
+  const familyOf = (name: string) => name.replace(/^--/, "").split("-")[0] ?? "";
+
+  it.each(["fs", "sp", "lh", "weight", "duration"])("writes each --%s value once", (family) => {
+    const raw = [...all].filter(([name, value]) => familyOf(name) === family && !value.startsWith("var("));
+    const values = raw.map(([, value]) => value);
+    expect(raw.filter(([, value], index) => values.indexOf(value) !== index)).toEqual([]);
+  });
+
+  it("names only tokens that exist where one token is another", () => {
+    const aliases = [...all].filter(([, value]) => value.startsWith("var("));
+    expect(aliases.length).toBeGreaterThan(0);
+    const missing = aliases.filter(([, value]) => !all.has(/^var\((--[a-z0-9-]+)\)$/.exec(value)?.[1] ?? ""));
+    expect(missing).toEqual([]);
   });
 });

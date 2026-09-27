@@ -51,8 +51,8 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-app-title);
-  font-weight: 400;
-  line-height: 1.1;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-110);
   color: var(--paper);
 }
 
@@ -63,7 +63,7 @@
 .lead {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--ink-soft);
 }
 
@@ -122,14 +122,14 @@
 .notice {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
 .error {
   margin: var(--sp-14) 0 0;
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-ink);
 }
 
@@ -198,7 +198,7 @@
 .hint {
   margin: 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   text-align: center;
   color: var(--ink-muted);
 }
@@ -207,15 +207,15 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-app-title-long);
-  font-weight: 400;
-  line-height: 1.12;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-112);
   color: var(--paper);
 }
 
 .helpBody {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.7;
+  line-height: var(--lh-170);
   color: var(--ink-soft);
 }
 
@@ -225,7 +225,7 @@
   padding: var(--sp-30) var(--sp-20) var(--sp-20);
   border: var(--hairline) solid var(--ink-line);
   font-size: var(--fs-15);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--ink-soft);
 }
 

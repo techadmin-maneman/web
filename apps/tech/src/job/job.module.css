@@ -43,7 +43,7 @@
 .name {
   margin: 0;
   font-size: var(--fs-18);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--paper);
 }
 
@@ -79,14 +79,14 @@
 .line {
   margin: 0;
   font-size: var(--fs-18);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--paper);
 }
 
 .access {
   margin: var(--sp-10) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
@@ -132,7 +132,7 @@
 .lockedBody {
   margin: var(--sp-10) 0 0;
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
@@ -155,7 +155,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--ink-muted);
 }
 
@@ -208,7 +208,7 @@
 .lastVisitLine {
   margin: 0;
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
@@ -219,7 +219,7 @@
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--paper);
 }
 
@@ -236,14 +236,14 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--error-on-ink);
 }
 
 .changedLine {
   margin: 0 0 var(--sp-12);
   font-size: var(--fs-19);
-  line-height: 1.45;
+  line-height: var(--lh-145);
   color: var(--paper);
 }
 
@@ -287,7 +287,7 @@
 .stageBody {
   margin: 0;
   font-size: var(--fs-18);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--paper);
 }
 
@@ -295,21 +295,21 @@
 .stageNote {
   margin: 0;
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
 .failedLine {
   margin: 0 0 var(--sp-12);
   font-size: var(--fs-19);
-  line-height: 1.45;
+  line-height: var(--lh-145);
   color: var(--paper);
 }
 
 .stageWarn {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-ink);
 }
 
@@ -319,7 +319,7 @@
   font-family: var(--font-serif);
   font-size: var(--fs-timer);
   font-variant-numeric: lining-nums tabular-nums;
-  line-height: 1;
+  line-height: var(--lh-100);
   color: var(--paper);
 }
 
@@ -331,7 +331,7 @@
   padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--ink-soft);
 }
 
@@ -359,6 +359,6 @@
 
 .outline:focus-visible,
 .second:focus-visible {
-  outline: var(--rule-strong) solid var(--paper);
+  outline: var(--focus-width) solid var(--paper);
   outline-offset: var(--focus-offset);
 }

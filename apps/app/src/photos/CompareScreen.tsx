@@ -6,6 +6,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
+import { ARRIVE } from "@maneman/ui/motion";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import {
@@ -28,7 +29,7 @@ import styles from "./compare.module.css";
 type Visit = PhotoTimeline["visits"][number];
 type CompareAngle = keyof typeof photos.compareAngles;
 const COMPARE_ANGLES = Object.keys(photos.compareAngles) as CompareAngle[];
-/** How long the angles cross-fade: the one curve's 300 ms (tokens.css, --ease). */
+/** How long the angles cross-fade: the house's quick 300 ms (tokens.css, --duration-quick). */
 const FADE_MS = 300;
 
 const photoOf = (visit: Visit, angle: CompareAngle): PhotoLink | undefined =>
@@ -186,7 +187,7 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
           }}
         >
           {leaving !== null && <Sides from={from} to={to} angle={leaving} />}
-          <Sides key={angle} from={from} to={to} angle={angle} className={styles.arriving} />
+          <Sides key={angle} from={from} to={to} angle={angle} className={ARRIVE} />
           <div className={styles.divider} />
           <div
             className={styles.handle}

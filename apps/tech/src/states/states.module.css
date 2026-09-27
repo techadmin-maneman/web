@@ -6,7 +6,7 @@
 
 .message {
   font-size: var(--fs-18);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--paper);
 }
 

@@ -21,7 +21,7 @@
     height: var(--ops-row);
     padding-block: var(--sp-7);
     border-bottom: var(--hairline) solid var(--paper-line);
-    font-weight: 400;
+    font-weight: var(--weight-regular);
     text-align: left;
   }
 

@@ -12,7 +12,7 @@
 .cardLabel {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   color: var(--text-muted);
@@ -36,13 +36,13 @@
 
 .address {
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 
 .muted {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--text-muted);
 }
 
@@ -104,8 +104,8 @@
 
 .input:focus,
 .numberField:focus-within {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .numberField {
@@ -143,7 +143,7 @@
 .error {
   margin: var(--sp-10) 0 0;
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-paper);
 }
 
@@ -188,7 +188,7 @@ a.secondary {
 textarea.input {
   height: auto;
   padding: var(--sp-12) var(--sp-15);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   resize: vertical;
 }
 
@@ -228,7 +228,7 @@ textarea.input {
 
 .consentName {
   font-size: var(--fs-16);
-  line-height: 1.4;
+  line-height: var(--lh-140);
 }
 
 .consentRow .consentWhen {
@@ -289,7 +289,7 @@ textarea.input {
   margin: 0 0 var(--sp-14);
   padding-left: var(--sp-18);
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--text-soft);
 }
 
@@ -307,13 +307,13 @@ textarea.input {
 .cardBody {
   margin: 0;
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .cardHint {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 

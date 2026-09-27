@@ -17,15 +17,15 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-26);
-  font-weight: 400;
-  line-height: 1.15;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-115);
   color: var(--paper);
 }
 
 .body {
   margin: var(--sp-12) 0 var(--sp-22);
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 

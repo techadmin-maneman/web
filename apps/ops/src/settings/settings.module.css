@@ -38,7 +38,7 @@
 .panelTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-22);
 }
 
@@ -46,7 +46,7 @@
 .hint {
   margin: var(--sp-8) var(--sp-20) 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -174,8 +174,8 @@
 .cellText:focus-visible,
 .cellDate:focus-visible,
 .box:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* The unit beside the box, so nobody has to guess whether 15 is minutes or hours. */
@@ -237,8 +237,8 @@
 }
 
 .inline:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset-wide);
 }
 
 .saved {
@@ -280,22 +280,22 @@
 }
 
 .check:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .checkTitle {
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-22);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .checkLine,
 .checkWarning {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .checkWarning {
@@ -307,7 +307,7 @@
   padding: 0;
   list-style: none;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 /* ---- The tables: board C2's, 13 px heads over 14 px rows 34 px tall -------- */
@@ -398,8 +398,8 @@
 }
 
 .city:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* A row's own boxes, as tall as the row allows. */
@@ -469,13 +469,13 @@
   color: var(--text);
   font: inherit;
   font-size: var(--fs-15);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   cursor: pointer;
 }
 
 .file:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* The rules' and service area's quieter buttons (packages/ui/Button.tsx) sit a little narrower than Save. */

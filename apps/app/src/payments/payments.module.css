@@ -56,7 +56,7 @@
 .amount {
   font-family: var(--font-serif);
   font-size: var(--fs-21);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
 }
 
@@ -83,7 +83,7 @@
 .bigAmount {
   font-family: var(--font-serif);
   font-size: var(--fs-40);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
 }
 
@@ -129,7 +129,7 @@
   margin: var(--sp-26) 0 0;
   font-family: var(--font-serif);
   font-size: var(--fs-15);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   color: var(--text-muted);
@@ -176,7 +176,7 @@
 
 .unavailable p {
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 
 .notify {
@@ -186,7 +186,7 @@
   padding: 0 var(--sp-16);
   border: var(--hairline) solid var(--ink);
   font-size: var(--fs-15);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--text);
   text-decoration: none;
 }

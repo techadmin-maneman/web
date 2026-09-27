@@ -94,7 +94,7 @@
 .more {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-13);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -123,8 +123,8 @@
 }
 
 .choose:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .live {
@@ -144,8 +144,8 @@
 
 /* The panel takes focus as it opens, so it is read from its head and scrolled into view. */
 .launch:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .launchLabel {
@@ -161,7 +161,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .figures {
@@ -193,7 +193,7 @@
   padding: var(--sp-12) var(--sp-14);
   background: var(--wa-dark);
   font-size: var(--fs-14);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--wa-dark-text);
 }
 
@@ -209,8 +209,8 @@
 }
 
 .named a:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* The day a technician starts coming, which the launch's API takes and the board does not draw (OPS-22). */
@@ -240,8 +240,8 @@
 }
 
 .launchDate:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .fieldHint {
@@ -270,6 +270,6 @@
 .note {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-soft);
 }

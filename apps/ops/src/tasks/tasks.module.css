@@ -28,7 +28,7 @@
 .panelTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-22);
 }
 
@@ -65,7 +65,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -111,8 +111,8 @@ a.subject {
 }
 
 a.subject:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .sub {
@@ -129,8 +129,8 @@ a.subject:focus-visible {
 }
 
 .decide:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* A group longer than the board lists: its count is all of them, the rows the longest waits. */
@@ -157,6 +157,6 @@ a.subject:focus-visible {
   margin: 0;
   padding: var(--sp-14) var(--sp-20);
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }

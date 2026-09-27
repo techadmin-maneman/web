@@ -22,7 +22,7 @@
     border: var(--filled-edge) solid transparent;
     background: transparent;
     font: inherit;
-    font-weight: 500;
+    font-weight: var(--weight-medium);
     text-decoration: none;
     cursor: pointer;
   }

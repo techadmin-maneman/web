@@ -66,8 +66,8 @@
 }
 
 .section:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--gilt);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .body {
@@ -99,7 +99,7 @@
 .title {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-22);
 }
 
@@ -135,8 +135,8 @@
 }
 
 .signOut:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* A spent Access session, said once under the header and over whichever section is open. */

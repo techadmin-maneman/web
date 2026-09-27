@@ -5,7 +5,7 @@
 @layer ui {
   .caps {
     font-family: var(--font-serif);
-    font-weight: 400;
+    font-weight: var(--weight-regular);
     font-variant-caps: all-small-caps;
     letter-spacing: var(--tracking-14);
   }

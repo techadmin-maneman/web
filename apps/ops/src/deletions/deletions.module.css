@@ -30,8 +30,8 @@
 }
 
 .name:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .who {
@@ -51,14 +51,14 @@
 
 /* The panel takes focus as it opens, so the outline has to be its own. */
 .confirm:focus-visible {
-  outline: var(--rule-strong) solid var(--error-on-paper);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--error-on-paper);
+  outline-offset: var(--focus-offset);
 }
 
 .warning {
   margin: 0;
   font-size: var(--fs-15);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--error-on-paper);
 }
 
@@ -72,7 +72,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -83,7 +83,7 @@
 
 .whatItem {
   font-size: var(--fs-14);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 
 .checkLine {

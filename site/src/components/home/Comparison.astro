@@ -98,7 +98,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
     padding: 0 var(--comparison-cell-pad);
     border-left: var(--hairline) solid var(--paper-line);
     font-size: var(--fs-17);
-    line-height: 1.45;
+    line-height: var(--lh-145);
   }
   .label-cell + .cell {
     padding-left: 0;
@@ -110,7 +110,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
   .column-head {
     font-family: var(--font-serif);
     font-size: var(--fs-column-head);
-    line-height: 1.15;
+    line-height: var(--lh-115);
   }
   .yes {
     color: var(--ink);
@@ -121,7 +121,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
   .note {
     margin: var(--sp-26) 0 0;
     font-size: var(--fs-16);
-    line-height: 1.7;
+    line-height: var(--lh-170);
     color: var(--text-muted);
     max-width: var(--measure-note);
     text-wrap: pretty;

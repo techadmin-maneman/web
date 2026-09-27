@@ -15,6 +15,7 @@
     "./Field": "./Field.tsx",
     "./Icon": "./Icon.tsx",
     "./Mark": "./Mark.tsx",
+    "./motion": "./motion.ts",
     "./Panel": "./Panel.tsx",
     "./router": "./router.tsx",
     "./Sheet": "./Sheet.tsx",

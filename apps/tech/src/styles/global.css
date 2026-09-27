@@ -22,7 +22,7 @@ body {
   --action-text: var(--fs-18);
   --control-height: var(--tech-stepper);
   --control-text: var(--fs-17);
-  --control-weight: 400;
+  --control-weight: var(--weight-regular);
   --small-height: var(--tech-min);
   --small-text: var(--fs-17);
 

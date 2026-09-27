@@ -32,7 +32,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-20);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
 }
 
 .groupWhat {
@@ -72,7 +72,7 @@ div.cell {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity var(--ease);
+  transition: opacity var(--duration-quick) var(--ease-house);
 }
 
 .arrived {
@@ -90,7 +90,7 @@ div.cell {
 
 .thumb.large {
   height: auto;
-  max-height: 56dvh;
+  max-height: var(--photo-max-h);
   aspect-ratio: 3 / 4;
   background: var(--paper-shade);
 }
@@ -120,7 +120,7 @@ div.cell {
   padding-top: var(--sp-14);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 

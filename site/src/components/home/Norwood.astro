@@ -168,7 +168,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   .name {
     font-family: var(--font-serif);
     font-size: var(--fs-card-title);
-    line-height: 1.2;
+    line-height: var(--lh-120);
   }
   .tag {
     letter-spacing: var(--tracking-12);
@@ -186,14 +186,14 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     grid-row: 3;
     padding: var(--sp-8) var(--norwood-card-pad) var(--norwood-card-pad);
     font-size: var(--fs-14);
-    line-height: 1.55;
+    line-height: var(--lh-155);
     color: var(--text-soft);
     text-wrap: pretty;
   }
   .note {
     margin: var(--sp-20) 0 0;
     font-size: var(--fs-16);
-    line-height: 1.7;
+    line-height: var(--lh-170);
     color: var(--text-muted);
     max-width: var(--measure-note);
     text-wrap: pretty;

@@ -70,7 +70,7 @@
 .unavailableLine {
   margin: 0;
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   text-align: center;
   color: var(--paper);
 }
@@ -126,7 +126,7 @@
   flex-shrink: 0;
   width: var(--tech-retake);
   padding: 0;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .take {

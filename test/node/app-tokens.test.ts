@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { rawValues } from "./raw-values.ts";
 
 const APPS = [
   ["the client app", "apps/app/src"],
@@ -32,10 +33,6 @@ const defined = new Set([
   ...tokenNames("packages/ui/base.css"),
 ]);
 
-/** Media query conditions cannot use custom properties, so they keep their px. */
-const withoutMediaConditions = (css: string) =>
-  css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@media[^{]*\{/g, "@media {");
-
 describe.each(APPS)("%s's design tokens", (_app, source) => {
   const stylesheets = files(source).filter((path) => path.endsWith(".css"));
   const components = files(source).filter((path) => path.endsWith(".tsx"));
@@ -44,10 +41,9 @@ describe.each(APPS)("%s's design tokens", (_app, source) => {
     expect(stylesheets.length).toBeGreaterThan(0);
   });
 
-  it.each(stylesheets)("%s uses no raw colour or size", (path) => {
-    const css = withoutMediaConditions(readFileSync(path, "utf8"));
-    const raw = [...css.matchAll(/#[0-9a-fA-F]{3,8}\b|rgba?\(|\b\d+(?:\.\d+)?(?:px|vw|em|rem)\b/g)].map((m) => m[0]);
-    expect(raw).toEqual([]);
+  // DS-06, DS-20: a weight, a leading, a duration, a curve or a named colour counts as much as a px.
+  it.each(stylesheets)("%s uses no raw colour, size, weight, leading or motion", (path) => {
+    expect(rawValues(readFileSync(path, "utf8"))).toEqual([]);
   });
 
   it.each(stylesheets)("%s uses only tokens that are defined", (path) => {

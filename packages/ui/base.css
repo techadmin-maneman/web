@@ -35,7 +35,7 @@
     --action-text: var(--fs-16);
     --control-height: var(--btn-md);
     --control-text: var(--fs-15);
-    --control-weight: 500;
+    --control-weight: var(--weight-medium);
     --small-height: var(--tap);
     --small-text: var(--fs-15);
     /* A filled button's edge: none, unless the app draws its filled buttons edged as its outlined ones are. */
@@ -55,7 +55,7 @@
   h5,
   h6,
   th {
-    font-weight: 400;
+    font-weight: var(--weight-regular);
   }
 
   /*

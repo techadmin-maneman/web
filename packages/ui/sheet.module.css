@@ -30,7 +30,7 @@
   }
 
   .rises[open] {
-    animation: rise var(--ease-progress);
+    animation: rise var(--duration-travel) var(--ease-house);
   }
 
   @keyframes rise {

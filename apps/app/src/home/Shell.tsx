@@ -5,7 +5,9 @@
 
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
+import { classes } from "@maneman/ui/classes";
 import { Mark } from "@maneman/ui/Mark";
+import { ARRIVE } from "@maneman/ui/motion";
 import { Link } from "@maneman/ui/router";
 import type { ReactNode } from "react";
 import { home, states, tabs } from "../content.ts";
@@ -76,7 +78,7 @@ export function Shell({ header, tab, footer, children }: Props) {
           </p>
         )}
       </div>
-      <main className={styles.page}>{children}</main>
+      <main className={classes(styles.page, ARRIVE)}>{children}</main>
       {footer !== undefined && <div className={styles.footer}>{footer}</div>}
       <nav className={styles.tabs}>
         {tabs.map((each) => (

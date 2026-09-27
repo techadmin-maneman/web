@@ -16,7 +16,7 @@
   top: 0;
   bottom: 0;
   background: var(--gilt);
-  transition: width var(--ease-progress);
+  transition: width var(--duration-travel) var(--ease-house);
 }
 .progress-upload {
   width: 14%;
@@ -85,18 +85,18 @@
 .errorTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--paper);
 }
 .title {
   font-size: var(--fs-flow-title);
-  line-height: 1.05;
+  line-height: var(--lh-105);
   letter-spacing: var(--tracking-title);
   text-wrap: balance;
 }
 .titleLarge {
   font-size: var(--fs-upload-title);
-  line-height: 1.03;
+  line-height: var(--lh-103);
   letter-spacing: var(--tracking-title);
   max-width: var(--measure-upload-title);
   text-wrap: balance;
@@ -110,7 +110,7 @@
 .body {
   margin: var(--sp-20) 0 0;
   font-size: var(--fs-body);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--ink-soft);
   max-width: var(--measure-short);
   text-wrap: pretty;
@@ -131,8 +131,8 @@
   margin-top: var(--sp-28);
   border: 0;
   font-size: var(--fs-16);
-  font-weight: 500;
-  transition: background-color var(--ease);
+  font-weight: var(--weight-medium);
+  transition: background-color var(--duration-quick) var(--ease-house);
 }
 .nextSpaced {
   margin-top: var(--sp-32);
@@ -151,7 +151,7 @@
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-14);
   color: var(--ink-muted);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 .inlineLink,
 .inlineLink:hover {
@@ -194,13 +194,13 @@
 .guidelineTitle {
   font-size: var(--fs-17);
   color: var(--paper);
-  line-height: 1.4;
+  line-height: var(--lh-140);
 }
 .guidelineBody {
   font-size: var(--fs-15);
   color: var(--ink-muted);
   margin-top: var(--sp-5);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 .actions {
   display: flex;
@@ -229,7 +229,7 @@
   bottom: var(--sp-24);
   font-size: var(--fs-14);
   color: var(--ink-muted);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 .previewPhoto {
   position: absolute;
@@ -266,7 +266,7 @@
   margin: 0;
   font-size: var(--fs-16);
   color: var(--paper);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 .agree {
   margin-top: var(--sp-28);
@@ -275,7 +275,7 @@
   align-items: flex-start;
   cursor: pointer;
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--paper);
 }
 .box {
@@ -290,8 +290,8 @@
   border: var(--hairline) solid var(--ink-line-strong);
   color: var(--ink);
   transition:
-    background-color var(--ease),
-    border-color var(--ease);
+    background-color var(--duration-quick) var(--ease-house),
+    border-color var(--duration-quick) var(--ease-house);
 }
 .boxOn {
   background: var(--paper);
@@ -323,8 +323,8 @@
   background: transparent;
   color: var(--ink-soft);
   transition:
-    border-color var(--ease),
-    background-color var(--ease);
+    border-color var(--duration-quick) var(--ease-house),
+    background-color var(--duration-quick) var(--ease-house);
 }
 .stage.picked {
   border-color: var(--paper);
@@ -334,14 +334,14 @@
 .stageTitle {
   display: block;
   font-size: var(--fs-17);
-  line-height: 1.3;
+  line-height: var(--lh-130);
 }
 .stageSub {
   display: block;
   font-size: var(--fs-14);
   color: var(--ink-muted);
   margin-top: var(--sp-6);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 .lookGrid {
   margin-top: var(--flow-choices-gap);
@@ -355,7 +355,7 @@
   flex-direction: column;
   border: var(--hairline) solid var(--ink-line);
   color: var(--ink-soft);
-  transition: border-color var(--ease);
+  transition: border-color var(--duration-quick) var(--ease-house);
 }
 .look.picked {
   border-color: var(--paper);
@@ -372,7 +372,7 @@
   align-items: flex-end;
   padding: var(--sp-10);
   background: var(--ink-frame);
-  transition: background-color var(--ease);
+  transition: background-color var(--duration-quick) var(--ease-house);
 }
 .look.picked .thumb {
   background: var(--ink-raised);
@@ -394,7 +394,7 @@
   font-size: var(--fs-13);
   color: var(--ink-muted);
   margin-top: var(--sp-4);
-  line-height: 1.45;
+  line-height: var(--lh-145);
 }
 .stage:has(input:focus-visible),
 .look:has(input:focus-visible) {
@@ -437,7 +437,7 @@
   margin-top: var(--processing-gap);
   font-family: var(--font-serif);
   font-size: var(--fs-countdown);
-  line-height: 1;
+  line-height: var(--lh-100);
   /* v2's --ink-disabled is 1.6:1 here; this is 4.2:1, over WCAG's 3:1 for large text (ADR 0022, item 30). */
   color: var(--ink-line-strong);
   font-variant-numeric: lining-nums tabular-nums;
@@ -482,7 +482,7 @@
 .gateCaption {
   margin: var(--sp-20) 0 0;
   font-size: var(--fs-15);
-  line-height: 1.7;
+  line-height: var(--lh-170);
   color: var(--ink-muted);
   max-width: var(--measure-form);
   text-wrap: pretty;
@@ -561,7 +561,7 @@
   margin-top: var(--sp-16);
   font-size: var(--fs-14);
   color: var(--ink-muted);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   max-width: var(--measure-form);
 }
 
@@ -601,7 +601,7 @@
 .returningNote {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-body);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--ink-soft);
 }
 /* The after side while the render is still running, in the gate's colours. Beside the photograph, BeforeAfter
@@ -628,14 +628,14 @@
 .resultTitle {
   margin-top: var(--sp-18);
   font-size: var(--fs-closing);
-  line-height: 1.06;
+  line-height: var(--lh-106);
 }
 .disclaimer {
   margin-top: var(--sp-26);
   border: var(--hairline) solid var(--ink-line);
   padding: var(--sp-18) var(--sp-20);
   font-size: var(--fs-15);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--ink-soft);
 }
 .resultActions {
@@ -659,7 +659,7 @@
   margin-top: var(--sp-22);
   font-size: var(--fs-14);
   color: var(--ink-muted);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 .number {
   font-variant-numeric: tabular-nums;
@@ -687,13 +687,13 @@
 .errorTitle {
   margin-top: var(--error-title-gap);
   font-size: var(--fs-error-title);
-  line-height: 1.1;
+  line-height: var(--lh-110);
   text-wrap: balance;
 }
 .errorBody {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-body);
-  line-height: 1.7;
+  line-height: var(--lh-170);
   color: var(--ink-soft);
   max-width: var(--measure-error);
   text-wrap: pretty;

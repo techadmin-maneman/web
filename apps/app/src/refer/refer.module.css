@@ -24,7 +24,7 @@
 .promise {
   font-family: var(--font-serif);
   font-size: var(--fs-30);
-  line-height: 1.18;
+  line-height: var(--lh-118);
 }
 
 /* Board F1's credit tile, ruled above and below. */
@@ -51,20 +51,20 @@
 .creditCount {
   font-family: var(--font-serif);
   font-size: var(--fs-34);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums;
 }
 
 .noOther {
   font-size: var(--fs-16);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--text-soft);
 }
 
 /* Where the credits of the invite the client came with stand, while they are not in the balance. */
 .inviteCredits {
   font-size: var(--fs-16);
-  line-height: 1.65;
+  line-height: var(--lh-165);
 }
 
 /* The two ways on, at the foot of the screen (board F1). */
@@ -120,7 +120,7 @@
 .figureCount {
   font-family: var(--font-serif);
   font-size: var(--fs-34);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums;
 }
 
@@ -161,7 +161,7 @@
 .tracker .only {
   margin-top: var(--sp-24);
   font-size: var(--fs-15);
-  line-height: 1.65;
+  line-height: var(--lh-165);
   color: var(--text-muted);
 }
 
@@ -175,12 +175,12 @@
 .nobodyTitle {
   font-family: var(--font-serif);
   font-size: var(--fs-25);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .nobodyLine {
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -223,7 +223,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .panel .panelBody {
@@ -231,7 +231,7 @@
   padding-top: var(--sp-14);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .pair {
@@ -248,7 +248,7 @@
 
 .problem {
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-paper);
 }
 
@@ -316,7 +316,7 @@
 
 .lead {
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-soft);
 }
 
@@ -489,7 +489,7 @@ img.card {
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-26);
-  line-height: 1.18;
+  line-height: var(--lh-118);
 }
 
 .lines {
@@ -506,7 +506,7 @@ img.card {
   padding: var(--sp-15) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 
 .bullet {
@@ -587,7 +587,7 @@ img.card {
 
 .bubbleTitle {
   font-size: var(--fs-14);
-  line-height: 1.35;
+  line-height: var(--lh-135);
 }
 
 .bubble .bubbleLine,
@@ -598,7 +598,7 @@ img.card {
 
 .bubble .bubbleLine {
   margin-top: var(--sp-4);
-  line-height: 1.4;
+  line-height: var(--lh-140);
 }
 
 .bubble .bubbleDomain {
@@ -608,19 +608,19 @@ img.card {
 .bubble .bubbleMessage {
   padding: var(--sp-8) var(--sp-4) var(--sp-2);
   font-size: var(--fs-15);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   overflow-wrap: anywhere;
 }
 
 .inkProblem {
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-ink);
 }
 
 .failed p + p {
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }
 
 .retry {
@@ -633,7 +633,7 @@ img.card {
   background: none;
   font: inherit;
   font-size: var(--fs-15);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--text);
   cursor: pointer;
 }

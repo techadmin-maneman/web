@@ -22,8 +22,8 @@
   margin: var(--sp-36) 0 0;
   font-family: var(--font-serif);
   font-size: var(--fs-34);
-  font-weight: 400;
-  line-height: 1.1;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-110);
   color: var(--paper);
 }
 
@@ -61,7 +61,7 @@
 }
 
 .number:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
+  outline: var(--focus-width) solid var(--gilt);
   outline-offset: var(--focus-offset);
 }
 
@@ -128,14 +128,14 @@
 .note {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
 .error {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--error-on-ink);
 }
 

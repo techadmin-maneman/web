@@ -33,7 +33,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-22);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
 }
 
 .main {
@@ -143,17 +143,6 @@
   color: var(--ink-muted);
 }
 
-/* A new angle fades in over the one it replaces, both sides at once. */
-.arriving {
-  animation: arrive var(--ease);
-}
-
-@keyframes arrive {
-  from {
-    opacity: 0;
-  }
-}
-
 .divider {
   position: absolute;
   top: 0;
@@ -206,5 +195,5 @@
   margin: 0;
   padding: var(--sp-24) var(--sp-20);
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
 }

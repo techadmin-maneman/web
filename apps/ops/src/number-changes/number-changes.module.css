@@ -29,8 +29,8 @@
 }
 
 .name:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .when {
@@ -62,7 +62,7 @@
 .effect {
   margin: 0;
   font-size: var(--fs-14);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--text-muted);
 }
 
@@ -93,8 +93,8 @@
 }
 
 .reasonField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .reasonHint {
