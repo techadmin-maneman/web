@@ -65,6 +65,15 @@ const fromRow = ({ access_notes: accessNotes, place_id: placeId, ...rest }: Addr
   placeId,
 });
 
+/** A person's name; null once they are erased. */
+export async function liveName(db: D1Database, personId: string): Promise<string | null> {
+  const person = await db
+    .prepare("SELECT name FROM people WHERE id = ?1 AND erased_at IS NULL")
+    .bind(personId)
+    .first<{ name: string }>();
+  return person?.name ?? null;
+}
+
 export async function currentAddress(db: D1Database, personId: string): Promise<Address | null> {
   const row = await db
     .prepare(

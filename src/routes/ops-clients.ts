@@ -40,6 +40,7 @@ import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES } from "../policy/consents.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { paymentEntries } from "../domain/client-payments.ts";
+import { latestProposal } from "../domain/proposed-visits.ts";
 import { EntrySchema } from "./client-payments.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 
@@ -395,10 +396,7 @@ export function registerOpsClients(app: App): void {
       paymentEntries(db, id),
       clientHistory(db, id),
       // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
-      db
-        .prepare("SELECT 1 FROM leads WHERE person_id = ?1 AND proposed_visit_date IS NOT NULL LIMIT 1")
-        .bind(id)
-        .first(),
+      latestProposal(db, id),
     ]);
     const outcomes = await visitOutcomes(
       db,
