@@ -183,10 +183,12 @@ export const SERVICES = {
   max_gst_percent: 28,
 } satisfies OpsReply<"/api/services">;
 
-/** The book's rows, as a price's route answers them: every service's and late fee's, newest first. */
-export const PRICE_ROWS = [
-  ...SERVICES.services.flatMap((each) => each.prices),
-  ...SERVICES.late_fees.flatMap((fee) => fee.prices),
+type PriceRow = OpsReply<"/api/prices/withdraw", "post">["prices"][number];
+
+/** The book's rows, as a price's routes answer them: every service's and late fee's, newest first. */
+export const PRICE_ROWS: PriceRow[] = [
+  ...SERVICES.services.flatMap((each): PriceRow[] => each.prices),
+  ...SERVICES.late_fees.flatMap((fee): PriceRow[] => fee.prices),
 ];
 
 /** Three of NCR's own six-digit numbers: one served, one with a waitlist, one neither. */
