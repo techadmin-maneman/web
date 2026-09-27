@@ -300,12 +300,14 @@ test.describe("other pages", () => {
     await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
   });
 
-  test("the footer's phone number is the business line", async ({ page }) => {
+  // The owner ruled on 27 September 2026 that the footer gives the number as WhatsApp, not as a line to call.
+  test("the footer gives the business number as WhatsApp, and no line to call", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "Phone · +91 90079 73247" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "WhatsApp · +91 90079 73247" })).toHaveAttribute(
       "href",
-      "tel:+919007973247",
+      "https://wa.me/919007973247",
     );
+    await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
   });
 
   test("every page says it is mm-site, and is not indexed outside production", async ({ page }) => {

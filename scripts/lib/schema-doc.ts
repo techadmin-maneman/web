@@ -106,7 +106,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
-  technicians: "The mirror of FSM's technicians: name, initials, mobile number and zone (ADR 0032, ADR 0052).",
+  technicians:
+    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",
   tryon_sessions: "The try-on gate's session, which shows a visitor their result without the gate again (ADR 0014).",
   visit_blackouts: "Days on which no visit is offered.",

@@ -59,6 +59,14 @@ describe("the version serving now", () => {
     expect(currentVersion(target("mm-ops", "production", wrangler))).toBe("");
   });
 
+  it("reads as not deployed for an app whose surface is off, even one bootstrapped there", () => {
+    // mm-app-production was bootstrapped before its surface was switched on (docs/open-points.md,
+    // item 152); a release that shipped it would build its placeholder copy and fail.
+    const { wrangler, calls } = fakeWorker(serving(OLD));
+    expect(currentVersion(target("mm-app", "production", wrangler))).toBe("");
+    expect(calls).toEqual([]);
+  });
+
   it.each([
     ["mm-api", "production"],
     ["mm-site", "production"],
@@ -72,7 +80,7 @@ describe("the version serving now", () => {
 
   it("is an error, not 'never deployed', when Cloudflare refuses the token", () => {
     const { wrangler } = fakeWorker({ error: UNAUTHORISED });
-    expect(() => currentVersion(target("mm-tech", "production", wrangler))).toThrow("Command failed");
+    expect(() => currentVersion(target("mm-tech", "staging", wrangler))).toThrow("Command failed");
   });
 
   it("is asked for again when Cloudflare drops the reply, since asking changes nothing", () => {
@@ -103,6 +111,12 @@ describe("shipping a Worker", () => {
     const { wrangler, calls } = fakeWorker({ error: NOT_FOUND });
     expect(ship(target("mm-tech", "production", wrangler), "abc123", "release abc123")).toBeNull();
     expect(calls.filter((call) => call.startsWith("versions"))).toEqual([]);
+  });
+
+  it("leaves an app alone whose surface is off, though it was bootstrapped there", () => {
+    const { wrangler, calls } = fakeWorker(serving(OLD));
+    expect(ship(target("mm-app", "production", wrangler), "abc123", "release abc123")).toBeNull();
+    expect(calls).toEqual([]);
   });
 
   it("fails, rather than skipping the Worker, when Cloudflare cannot be asked", () => {

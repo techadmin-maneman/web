@@ -88,6 +88,7 @@ describe("the referral card", () => {
     const preview = await request(site(), `/api/og/${CODE}.jpg`);
     expect(preview.status).toBe(200);
     expect(preview.headers.get("Content-Type")).toBe("image/jpeg");
+    expect(preview.headers.get("Content-Length")).toBe("20");
     expect(new Uint8Array(await preview.arrayBuffer())).toEqual(jpegOf(1200, 630));
 
     const revoked = await request(client(), "/api/refer/card", {
@@ -126,6 +127,64 @@ describe("the referral card", () => {
     expect((await card())?.card_state).toBe("personal");
     await eraseByMobile("+919810000001", NOW);
     expect(await card()).toMatchObject({ card_state: "house", card_key: null });
+  });
+});
+
+// The app shows its owner the card the invite shows, and shares it as a photograph: the preview's own route is the
+// public host's, and answers nothing on the client app's (test/worker/surfaces.test.ts).
+describe("the client's own card, from the client app's host", () => {
+  const own = (withCookie = cookie) =>
+    request(client(), "/api/refer/card?v=2", withCookie === "" ? {} : { headers: { Cookie: withCookie } });
+
+  it("is the stored card, for its owner alone, kept a day on their phone", async () => {
+    await consent("photos_referral_cards", true);
+    await put(jpegOf(1200, 630));
+
+    const answer = await own();
+    expect(answer.status).toBe(200);
+    expect(answer.headers.get("Content-Type")).toBe("image/jpeg");
+    expect(answer.headers.get("Content-Length")).toBe("20");
+    expect(answer.headers.get("Cache-Control")).toBe("private, max-age=86400");
+    expect(new Uint8Array(await answer.arrayBuffer())).toEqual(jpegOf(1200, 630));
+
+    const signedOut = await own("");
+    expect(signedOut.status).toBe(401);
+    expect(await signedOut.json()).toMatchObject({ error: { code: "session_required" } });
+  });
+
+  it("answers 404 with no card of theirs, and once a revoke takes it down", async () => {
+    expect((await own()).status).toBe(404);
+    await consent("photos_referral_cards", true);
+    await put(jpegOf(1200, 630));
+    await request(client(), "/api/refer/card", {
+      method: "DELETE",
+      headers: { Cookie: cookie, Origin: "https://maneman.test" },
+    });
+
+    const revoked = await own();
+    expect(revoked.status).toBe(404);
+    expect(await revoked.json()).toMatchObject({ error: { code: "not_found" } });
+  });
+
+  // The consent's own row is written here, as the notice's switch leaves one, without the switch taking the card
+  // down: the route itself must not answer a card its owner no longer agrees to.
+  it("answers 404 once the consent is off, even for a card still stored", async () => {
+    await consent("photos_referral_cards", true);
+    await put(jpegOf(1200, 630));
+    await consent("photos_referral_cards", false);
+
+    expect((await card())?.card_state).toBe("personal");
+    expect((await own()).status).toBe(404);
+  });
+
+  it("answers nothing once the client is erased: the session ends, and a new one finds no card", async () => {
+    await consent("photos_referral_cards", true);
+    await put(jpegOf(1200, 630));
+    await eraseByMobile("+919810000001", NOW);
+
+    expect((await own()).status).toBe(401);
+    const again = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
+    expect((await own(again)).status).toBe(404);
   });
 });
 

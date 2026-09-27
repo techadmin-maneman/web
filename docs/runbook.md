@@ -58,6 +58,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 9. Triggers: the cron                          | done, and checked by the deploy                        | done                                                                                      |
 | 9. Triggers: the queue consumers               | done (all four); CI cannot read them, so check by hand | three; fsm-sync's once its queue exists                                                   |
 | 10. Access bypass for result links             | done                                                   | not applicable                                                                            |
+| 10b. Access bypass for invite previews         | not yet: the owner's (27 September 2026)               | not applicable                                                                            |
 | 11. Phase 2 hosts: DNS, Access                 | done                                                   | done (all three behind Access until go-live)                                              |
 | 11. Phase 2 surfaces switched on               | done (22 September 2026)                               | not yet: waits for the production go-ahead                                                |
 | 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                    | mm-app recorded as bootstrapped with no route (open point 83); mm-ops and mm-tech not yet |
@@ -323,6 +324,31 @@ A WhatsApp copy carries a link to `/api/result/…`, which the Evolution bridge 
 
 Access applies the most specific path, so the rest of staging stays behind the founders' login.
 
+### 10b. Invite previews through Access (staging only)
+
+Added 27 September 2026. An invite is a link to `https://staging.maneman.in/r/<code>`, and WhatsApp draws its preview from that page's Open Graph tags and the card they name. Its crawler has no Access login, so on staging it met the sign-in instead, and every invite shared from staging arrived with no image. Where the phone can share files the app now sends the card itself as well (ADR 0048, amended 27 September 2026), but the link's preview still needs the crawler to reach the page and the card:
+
+1. Zero Trust → Access → Applications → Add → Self-hosted, with three public hostnames, each domain `staging.maneman.in`: paths `r/`, `images/` and `api/og/`.
+2. Policy: action **Bypass**, include **Everyone**.
+
+**What it exposes**, to anyone with a code, and only what production serves anyone with the link:
+
+- the landing's HTML for any code, with the referrer's first name where they agreed to be named;
+- the house card, the one file under `images/`;
+- a referrer's own card, `api/og/<code>.jpg`, while it is live.
+
+The invite's API (`/api/r/*`), the pincode check (`/api/pincodes`), the page's scripts and styles (`/_astro/*`) and every other path stay behind the founders' login, so a visitor without it gets the page unstyled, and it does nothing. The crawler reads only the HTML.
+
+**Check it** from outside Access, as the crawler is:
+
+```sh
+npm run smoke -- --base https://staging.maneman.in --environment staging --link-preview <code>
+```
+
+It fetches `/r/<code>`, then the card its `og:image` names, with WhatsApp's user agent and never the Access token, even one in the environment. It passes on the page with an absolute `og:image` and a JPEG under 300 KB. It is not part of the deploys' smoke: it fails until this step is done, and would stop every staging deploy.
+
+Then share an invite on a handset. WhatsApp keeps a link's preview by its address, so a link it has already seen keeps showing none: add a query it has not seen, `https://staging.maneman.in/r/<code>?t=1`, then `?t=2`, and so on. The landing ignores the query.
+
 ### 11. Switching on a Phase 2 surface
 
 Each Phase 2 surface is switched on per environment, once its host exists (docs/decisions/0026-hosts-and-surfaces.md):
@@ -350,7 +376,7 @@ To switch one on:
 
    The config check fails if either comes without the other.
 
-5. **The route.** After the merge, run `W deploy --env <env>` to attach the new route, since CI never changes routes. Then run the smoke tests against the new host.
+5. **The route.** After the merge, attach the new route with `npm run apply-triggers -- --env <env>` (step 9), since CI never changes routes. Never `W deploy --env production` for it: that sends a version of mm-api all production traffic outside the release, with no canary and before its migrations (corrected 27 September 2026). Then run the smoke tests against the new host.
 6. **The app's own Worker**, where the surface has one: the client app is `mm-app` (docs/decisions/0043-client-app.md), the ops console is `mm-ops`, and the technician app is `mm-tech` (docs/decisions/0053-the-technician-app-offline.md). Its first deploy is a bootstrap, which also attaches its route; CI deploys it after that. Until then a production release passes over it, as long as its surface is not switched on there. A Worker that must be there and is not — mm-api, mm-site, or an app whose host is live — fails the deploy, and so does any answer from Cloudflare other than "it does not exist".
 
    ```sh
@@ -364,7 +390,7 @@ To switch one on:
    W deploy --config apps/tech/wrangler.jsonc --env <env> --tag bootstrap
    ```
 
-   Then add the new Worker to that environment's CI token (step 3), which can only name a Worker that exists.
+   Then add the new Worker to that environment's CI token (step 6), which can only name a Worker that exists.
 
 ### 11a. The client app's login
 
@@ -423,7 +449,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    ```
 
 6. **FSM's webhook** keeps the mirror current within seconds. Without it, the mirror waits for the reconciliation.
-   - **The token.** Make one and set it: `openssl rand -hex 24 | W secret put FSM_WEBHOOK_TOKEN --env <env>`.
+   - **The token.** Make one with `openssl rand -hex 24`, keep it in the password manager, and set it with `W secret put FSM_WEBHOOK_TOKEN --env <env>`: the webhook's URL below needs the same value, and a secret cannot be read back (corrected 27 September 2026; piping it straight into `secret put` lost it).
    - **The webhook.** In FSM, Setup → Automation → Webhooks → New Webhook:
      - URL: `https://<public host>/api/hooks/fsm/<token>`;
      - method: POST;
@@ -579,7 +605,7 @@ Production runs 268eaa4, of 21 September 2026. The next release carries every mi
 
 1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-fsm-sync-prod`, `mm-prod-client-photos` and `mm-prod-referral-cards` (open points 85 and 86). Then check every bucket with `node --env-file=.env.cf-read scripts/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
 2. **Vars and secrets.** `npm run check:config` holds each environment to 64 vars and secrets together (ADR 0009, rule 6). A secret the switched-on providers need must be set before the release (step 7): the Worker refuses to start without it, and Cloudflare refuses the upload.
-3. **The apps.** The release passes over an app whose surface is off in production and that has no Worker there; mm-ops and mm-tech have none yet (step 11).
+3. **The apps.** The release passes over an app whose surface is off in production, whether or not it has a Worker there: `mm-app-production` was bootstrapped on 22 September 2026, and until 27 September 2026 the release shipped it and its production build refused the copy still owed (`docs/open-points.md`, item 152). An app is shipped from the release that switches its surface on (step 11).
 4. **After the release.** Attach the new consumer with `npm run apply-triggers -- --env production` and check it (step 9). Then the contract step ADR 0070 holds back, dropping the old Zoho token tables, may be merged (`docs/migrations.md`).
 
 ## The CI runner
@@ -902,7 +928,7 @@ For a payment whose delivery Razorpay will not send again (past its 24 hours, or
 
 ## Try-on and WhatsApp
 
-The render consumer is the only caller of AILabTools and the messaging consumer the only caller of WhatsApp (`docs/decisions/0015-render-pipeline.md`). D1 records where every job and message stands:
+The render consumer is the only caller of AILabTools and the messaging consumer the only caller of WhatsApp (`docs/decisions/0015-render-pipeline.md`), but for login codes: those go straight to the provider once the response has gone (ADR 0030), and only the Worker's log records them, as `login_code_sent`, `login_code_not_sent` with its reason, or `login_code_failed`. D1 records where every job and message stands:
 
 ```sql
 SELECT state, failure_code, COUNT(*) AS jobs FROM tryon_jobs GROUP BY state, failure_code;

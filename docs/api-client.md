@@ -1281,6 +1281,28 @@ Request body:
 }
 ```
 
+### GET /api/refer/card
+
+The client's own card while it is live: the JPEG the invite shows
+
+**200**: The card
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no card of theirs is live: none made, taken down, the consent off, or erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PUT /api/refer/card
 
 Upload the client's referral card: the body is the JPEG itself

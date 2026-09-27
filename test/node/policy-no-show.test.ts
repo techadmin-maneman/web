@@ -54,8 +54,9 @@ describe("no-show", () => {
     expect([...NO_SHOW_DECISIONS]).toEqual(["undecided", "charged", "waived"]);
   });
 
-  // BIZ-28: the rule says what a charge keeps and nothing of what a waiver gives back, which is the owner's.
-  it("moves no money on a waiver until the owner rules what one gives back", () => {
-    expect(WAIVER_GIVES_BACK).toBe(false);
+  // BIZ-28: the rule says what a charge keeps and nothing of what a waiver gives back, which the owner ruled
+  // on 27 September 2026: "Refund and credit back" (docs/owner-answers-2026-09-27.md).
+  it("gives back the payment and the credit on a waiver, as the owner ruled", () => {
+    expect(WAIVER_GIVES_BACK).toBe(true);
   });
 });

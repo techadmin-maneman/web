@@ -4,13 +4,14 @@
 //
 //   GET    /api/refer
 //   PUT    /api/refer/card    the client's card: a 1200 x 630 JPEG under 300 KB, with their consent to cards
+//   GET    /api/refer/card    the same card while it is live, for the app to show and to share as a photograph
 //   DELETE /api/refer/card    the revoke: new opens show the house card
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { creditBalance } from "../domain/credits.ts";
-import { MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
+import { liveCard, MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
 import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -85,6 +86,12 @@ function friendName(friend: FittedRow): string | null {
 /** The invite a client came through, where its grant waits on ops or was refused by them. */
 const INVITE_CREDITS: Readonly<Record<string, "checking" | "refused">> = { held: "checking", rejected: "refused" };
 
+/** The client's code, made from their initials the first time they need one. */
+async function codeOf(db: D1Database, personId: string, now: Date): Promise<string> {
+  const person = await db.prepare("SELECT name FROM people WHERE id = ?1").bind(personId).first<{ name: string }>();
+  return referralCodeOf(db, personId, person?.name ?? "", now);
+}
+
 const referRoute = createRoute({
   method: "get",
   path: "/api/refer",
@@ -117,6 +124,29 @@ const revokeRoute = createRoute({
   responses: { 204: { description: "Revoked, or there was none" }, 401: errorResponse("session_required") },
 });
 
+const liveCardRoute = createRoute({
+  method: "get",
+  path: "/api/refer/card",
+  summary: "The client's own card while it is live: the JPEG the invite shows",
+  request: {
+    query: z.object({
+      v: z
+        .string()
+        .optional()
+        .openapi({
+          description:
+            "The card's version, from GET /api/refer. The route does not read it: a new version is a new link, so " +
+            "the day the phone may keep the card never shows an older one.",
+        }),
+    }),
+  },
+  responses: {
+    200: { description: "The card", content: { "image/jpeg": { schema: z.string() } } },
+    401: errorResponse("session_required"),
+    404: errorResponse("not_found: no card of theirs is live: none made, taken down, the consent off, or erased"),
+  },
+});
+
 export function registerClientRefer(app: App): void {
   app.use("/api/refer", requireClientSession);
   app.use("/api/refer/*", requireClientSession);
@@ -128,11 +158,7 @@ export function registerClientRefer(app: App): void {
     if (Number(c.req.header("Content-Length") ?? "0") > MAX_CARD_BYTES) {
       return c.json(errorBody("photo_invalid_file", c.var.requestId), 422);
     }
-    const person = await db
-      .prepare("SELECT name FROM people WHERE id = ?1")
-      .bind(session.subjectId)
-      .first<{ name: string }>();
-    const code = await referralCodeOf(db, session.subjectId, person?.name ?? "", now);
+    const code = await codeOf(db, session.subjectId, now);
     const stored = await storeCard(db, c.env.REFERRAL_CARDS, {
       personId: session.subjectId,
       code,
@@ -147,6 +173,8 @@ export function registerClientRefer(app: App): void {
     return c.json({ version: stored.version }, 200);
   });
 
+  registerLiveCard(app);
+
   app.openapi(revokeRoute, async (c) => {
     const session = clientOf(c);
     await revokeCard(c.env.DB, c.env.REFERRAL_CARDS, session.subjectId, c.var.deps.now());
@@ -157,11 +185,7 @@ export function registerClientRefer(app: App): void {
     const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
-    const person = await db
-      .prepare("SELECT name FROM people WHERE id = ?1")
-      .bind(session.subjectId)
-      .first<{ name: string }>();
-    const code = await referralCodeOf(db, session.subjectId, person?.name ?? "", now);
+    const code = await codeOf(db, session.subjectId, now);
     const [card, invite, balance, fitted, invited] = await Promise.all([
       db
         .prepare("SELECT card_state, card_version FROM referral_codes WHERE code = ?1")
@@ -200,5 +224,25 @@ export function registerClientRefer(app: App): void {
       },
       200,
     );
+  });
+}
+
+/**
+ * The client's own card, as the invite shows it. The preview's route, GET /api/og/{code}.jpg, is the public host's
+ * (ADR 0026), so the app cannot load it from its own: this is the same card for its owner, for the share sheet's
+ * preview (board F4) and for the photograph the phone's share sheet sends with the invite's words.
+ */
+function registerLiveCard(app: App): void {
+  app.openapi(liveCardRoute, async (c) => {
+    const session = clientOf(c);
+    const code = await codeOf(c.env.DB, session.subjectId, c.var.deps.now());
+    // Live exactly when the landing's preview would show it: stored, the consent still given, the client not erased.
+    const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);
+    if (card === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    return c.body(card.body, 200, {
+      "Content-Type": "image/jpeg",
+      "Content-Length": String(card.size),
+      "Cache-Control": "private, max-age=86400",
+    });
   });
 }

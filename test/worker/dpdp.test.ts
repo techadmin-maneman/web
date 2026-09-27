@@ -5,6 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { alertAgedDeletions } from "../../src/domain/deletion.ts";
+import { logPhotoView } from "../../src/domain/photo-views.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
@@ -162,6 +163,12 @@ describe("erasure reaches Phase 2's data", () => {
 describe("GET /api/me/export", () => {
   it("gives the client everything held about them as a file, and audits it", async () => {
     await phase2Data();
+    await logPhotoView(env.DB, {
+      personId: PERSON,
+      actor: { kind: "staff", id: "ops@maneman.in" },
+      requestId: "request-1",
+      now: new Date(NOW.getTime() - 60_000),
+    });
     const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export", {
       headers: { Cookie: cookie },
     });
@@ -172,6 +179,8 @@ describe("GET /api/me/export", () => {
       addresses: [{ line1: "House 7", pincode: "122018" }],
       visits: [{ type: "service", status: "completed" }],
       grievances: [{ text: "Please stop calling me.", state: "open" }],
+      // Who in ops opened their photographs, and when: the owner's ruling of 27 September 2026.
+      photo_views: [{ by: "ops@maneman.in", at: new Date(NOW.getTime() - 60_000).toISOString() }],
     });
     const audit = await env.DB.prepare("SELECT action FROM audit_log WHERE action = 'data.export'").first();
     expect(audit).toEqual({ action: "data.export" });

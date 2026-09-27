@@ -1,5 +1,6 @@
 // Sends a one-time code after the response has gone (docs/decisions/0030-one-time-codes.md),
-// so a real send takes no longer to answer than a challenge that sends nothing.
+// so a real send takes no longer to answer than a challenge that sends nothing. The answer
+// is the same either way, so a code that is not sent says why in the log, and only there.
 //
 // A code that does not go leaves nobody able to sign in, so failures are counted
 // by the hour, and the third in an hour tells ops; the next code that does go
@@ -107,18 +108,25 @@ export async function countCode(
   return withinCodeCeiling(c, now);
 }
 
-/** Nothing is sent without a number, nor, on staging, to a number off the allowlist. The code is never logged. */
+/**
+ * Nothing is sent when no account here holds the number, and the caller passes none; nor, on staging, to a number
+ * off the allowlist. Each is logged as `login_code_not_sent` with its reason. Neither the code nor the number is
+ * ever logged.
+ */
 export async function sendCodeAfterResponse(
   c: Context<AppEnv>,
   mobileE164: string | null,
   channel: CodeChannel,
   code: string,
 ): Promise<void> {
-  if (mobileE164 === null) return;
   const { log, deps, config } = c.var;
   const work = (async () => {
+    if (mobileE164 === null) {
+      log.info("login_code_not_sent", { channel, reason: "no account holds the number" });
+      return;
+    }
     if (!onAllowlist(config.settings.messaging, mobileE164)) {
-      log.info("login_code_skipped", { channel, reason: "number not on the allowlist" });
+      log.info("login_code_not_sent", { channel, reason: "number not on the allowlist" });
       return;
     }
     const result = await deps.codes.send(channel, mobileE164, code);

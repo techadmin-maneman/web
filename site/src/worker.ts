@@ -95,13 +95,17 @@ class Meta {
   }
 
   element(element: Element): void {
-    // The page's X card reads these Open Graph tags; it carries none of its own (site/src/layouts/Site.astro).
+    // The page's X card reads these Open Graph tags; it carries none of its own (site/src/layouts/Site.astro). The
+    // card's type and size stay as the page was built with them: the house card and a referrer's own are both
+    // 1200 x 630 JPEGs, so only its address changes, and it is absolute, on the host the link was opened on.
     const property = element.getAttribute("property");
     const name = this.invite?.referrer_first_name ?? null;
     const image = this.invite === null ? HOUSE_CARD : cardPath(this.invite, this.code);
     if (property === "og:title") element.setAttribute("content", inviteTitle(name));
     if (property === "og:description") element.setAttribute("content", inviteDescription(this.invite));
-    if (property === "og:image") element.setAttribute("content", this.origin + image);
+    if (property === "og:image" || property === "og:image:secure_url") {
+      element.setAttribute("content", this.origin + image);
+    }
     if (property === "og:url") element.setAttribute("content", `${this.origin}/r/${this.code}`);
   }
 }

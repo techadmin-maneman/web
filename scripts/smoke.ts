@@ -2,13 +2,17 @@
 // npm run smoke -- --api-base http://localhost:8787 --site-base http://localhost:8788 --environment local
 // npm run smoke -- --environment staging --surfaces    every switched-on Phase 2 host (docs/decisions/0026):
 //                                                      mm-api there, and the app the host serves at /
+// npm run smoke -- --base https://staging.maneman.in --environment staging --link-preview <code>
+//                                                      only the invite <code> as WhatsApp's crawler fetches it,
+//                                                      without the Access token: its landing, then its card. No
+//                                                      deploy runs it (docs/runbook.md, step 10b)
 //
 // Options:
 //   --version-id <id>         require /api/health to report this Worker version
 //   --version-tag <sha>       require /api/health, and each surface's app, to report this commit
 //   --override <worker>=<id>  pin requests to a version (Cloudflare-Workers-Version-Overrides)
 // Environment:
-//   CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET   Access service token (staging)
+//   CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET   Access service token (staging); never sent by --link-preview
 
 import { parseArgs } from "node:util";
 import { ENABLED_SURFACES, isEnvironmentName, SURFACE_HOSTS } from "../src/config/environments.ts";
@@ -24,17 +28,24 @@ const { values } = parseArgs({
     "version-tag": { type: "string" },
     override: { type: "string", multiple: true },
     surfaces: { type: "boolean", default: false },
+    "link-preview": { type: "string" },
   },
 });
 
 const environment = values.environment;
 const apiBase = values["api-base"] ?? values.base;
 const siteBase = values["site-base"] ?? values.base;
+const linkPreview = values["link-preview"];
 const surfacesOnly = values.surfaces && (environment === "staging" || environment === "production");
-if (!isEnvironmentName(environment) || (!surfacesOnly && (apiBase === undefined || siteBase === undefined))) {
+if (
+  !isEnvironmentName(environment) ||
+  (!surfacesOnly && (apiBase === undefined || siteBase === undefined)) ||
+  (surfacesOnly && linkPreview !== undefined)
+) {
   console.error(
     "usage: smoke --environment <local|staging|production> (--base <url> | --api-base <url> --site-base <url>)\n" +
-      "       smoke --environment <staging|production> --surfaces",
+      "       smoke --environment <staging|production> --surfaces\n" +
+      "       smoke --environment <local|staging|production> --base <url> --link-preview <code>",
   );
   process.exit(2);
 }
@@ -73,6 +84,7 @@ if (surfacesOnly) {
     ...common,
     apiBase: apiBase.replace(/\/$/, ""),
     siteBase: siteBase.replace(/\/$/, ""),
+    linkPreview,
   });
   runs.push({ base: apiBase, results });
 }

@@ -5,13 +5,19 @@
 // (docs/decisions/0085-services-ops-can-edit.md).
 
 import { describe, expect, it } from "vitest";
+import { HOUSE_CARD } from "../../src/config/house-card.ts";
 import { createSiteWorker, type SiteEnv } from "../../site/src/worker.ts";
 
+/** The landing's head as the build writes it (site/src/layouts/Site.astro): the house card is its image. */
 const PAGE = `<!doctype html><html><head>
 <meta property="og:title" content="You have a Mane Man invite">
 <meta property="og:description" content="Home-fitted hair systems.">
-<meta property="og:image" content="https://maneman.in/og.png">
 <meta property="og:url" content="https://maneman.in/r">
+<meta property="og:image" content="https://maneman.in${HOUSE_CARD}">
+<meta property="og:image:secure_url" content="https://maneman.in${HOUSE_CARD}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 </head><body><div id="invite" data-invite=""></div><p>The landing</p></body></html>`;
 
 /**
@@ -89,9 +95,9 @@ function siteEnv(api: Api, page = PAGE): { env: SiteEnv; asked: Request[]; files
   return { env, asked, files };
 }
 
-async function open(api: Api, headers: HeadersInit = {}) {
+async function open(api: Api, headers: HeadersInit = {}, origin = "https://maneman.in") {
   const { env, asked } = siteEnv(api);
-  const response = await createSiteWorker().fetch(new Request("https://maneman.in/r/RM4K7P", { headers }), env);
+  const response = await createSiteWorker().fetch(new Request(`${origin}/r/RM4K7P`, { headers }), env);
   const html = await response.text();
   const meta = (property: string) =>
     new RegExp(`<meta property="${property}" content="([^"]*)"`).exec(html)?.[1] ?? "(missing)";
@@ -136,6 +142,22 @@ describe("the site Worker at /r/:code", () => {
     expect(page.meta("og:image")).toMatch(/^https:\/\/maneman\.in\/images\/invite-house\.jpg\?v=\d+$/);
   });
 
+  // WhatsApp draws a preview only from an image it can fetch by its full address, and an invite opened on staging is
+  // staging's: the card is on the host the link was opened on, and keeps the type and size the page was built with.
+  it.each([
+    ["https://maneman.in", VALID, "/api/og/RM4K7P.jpg?v=3"],
+    ["https://staging.maneman.in", VALID, "/api/og/RM4K7P.jpg?v=3"],
+    ["https://staging.maneman.in", UNKNOWN, HOUSE_CARD],
+  ])("on %s, names the card by its absolute address, and keeps its type and size", async (origin, invite, card) => {
+    const page = await open(() => Response.json(invite), {}, origin);
+    expect(page.meta("og:image")).toBe(`${origin}${card}`);
+    expect(page.meta("og:image:secure_url")).toBe(`${origin}${card}`);
+    expect(page.meta("og:image:type")).toBe("image/jpeg");
+    expect(page.meta("og:image:width")).toBe("1200");
+    expect(page.meta("og:image:height")).toBe("630");
+    expect(page.meta("og:url")).toBe(`${origin}/r/RM4K7P`);
+  });
+
   // FEO-18: a failure is not an unknown code. The page is served as built and the island asks again.
   it.each([
     ["answers 503", () => Response.json({ error: { code: "unavailable" } }, { status: 503 })],
@@ -153,6 +175,7 @@ describe("the site Worker at /r/:code", () => {
     expect(page.html).toContain("<p>The landing</p>");
     expect(page.invite).toBe("");
     expect(page.meta("og:description")).not.toContain("service visits");
+    expect(page.meta("og:image")).toBe(`https://maneman.in${HOUSE_CARD}`);
   });
 
   // FEO-25: mm-api counts an open only for a person, so it needs to know who asked.

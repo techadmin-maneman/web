@@ -231,8 +231,13 @@ export function registerReferralLanding(app: App): void {
       .toUpperCase();
     const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);
     if (card === null) return c.redirect(HOUSE_CARD, 302);
-    // A version's card never changes: a new one gets a new link.
-    return c.body(card.body, 200, { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400" });
+    // A version's card never changes: a new one gets a new link. The length tells a chat's crawler the card's size
+    // before it reads it, as the house card's static file does.
+    return c.body(card.body, 200, {
+      "Content-Type": "image/jpeg",
+      "Content-Length": String(card.size),
+      "Cache-Control": "public, max-age=86400",
+    });
   });
 
   app.openapi(pincodeRoute, async (c) => {

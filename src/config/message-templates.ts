@@ -28,9 +28,10 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // At the technician's check-in (docs/decisions/0074-hand-offs-and-messages.md), the no-show's evidence.
   technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
   // Ops' ruling on a visit the client was not home for (docs/decisions/0074-hand-offs-and-messages.md), with {{9}}
-  // the minutes the technician waited. A charge keeps what was paid, as a cancel inside 24 hours does; what a waiver
-  // gives back is the owner's to rule, so until then the client is asked to message us about it
-  // (src/policy/no-show.ts, WAIVER_GIVES_BACK). Never ops' reason, which stays with the ruling.
+  // the minutes the technician waited. A charge keeps what was paid, as a cancel inside 24 hours does; a waiver
+  // refunds the payment and returns the credit, as the owner ruled on 27 September 2026 (src/policy/no-show.ts,
+  // WAIVER_GIVES_BACK), and the two texts that ask the client to message us stand only for the switch turned off.
+  // Never ops' reason, which stays with the ruling.
   no_show_missed_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. Message us to book again.",
   no_show_charged_paid_v1:

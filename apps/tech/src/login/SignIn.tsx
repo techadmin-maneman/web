@@ -24,6 +24,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
+import { typedDigits } from "@maneman/web-kit/mobile";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { api, type Challenge } from "../api.ts";
@@ -181,7 +182,8 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
           className={styles.number}
           value={mobile}
           onChange={(event) => {
-            setMobile(event.target.value.replace(/\D/g, "").slice(0, 10));
+            // A number pasted as "+91 98110 00000" or "098110 00000" loses the prefix, not its last digits.
+            setMobile(typedDigits(event.target.value).slice(0, 10));
             setError(null);
           }}
           inputMode="numeric"

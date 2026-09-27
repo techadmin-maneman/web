@@ -11,8 +11,9 @@
 // "A no-show is charged under the 24-hour policy. The charge is applied by ops
 // from the evidence, never automatically": nothing here charges anybody. The
 // decision is recorded, and a charge keeps what the visit took, as a client's
-// own late cancel does (src/policy/moving-a-visit.ts). What a waiver gives back
-// is the owner's to rule (src/policy/no-show.ts, WAIVER_GIVES_BACK). Either way
+// own late cancel does (src/policy/moving-a-visit.ts). A waiver refunds the
+// payment and returns the credit, as the owner ruled on 27 September 2026
+// (src/policy/no-show.ts, WAIVER_GIVES_BACK). Either way
 // the client is told on WhatsApp, with their consent to messages about visits.
 
 import { createRoute, z } from "@hono/zod-openapi";

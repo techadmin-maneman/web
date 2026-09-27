@@ -140,6 +140,15 @@ test("the code request carries the phone's own ID, and a wrong code is not an er
   expect(unlistedBody.device_id ?? "").toMatch(/^[A-Za-z0-9_-]{8,64}$/);
   await expect(page.getByText("A six-digit code is on its way.")).toBeVisible();
 
+  // That request may read FSM's list again, which never names the seeded technician. He is written by hand, so
+  // the sync leaves him active (migration 0046). Before, it could switch him off, and an inactive technician's
+  // session, the one the seed wrote, ends on its next call (ADR 0065).
+  const seeded = await query<{ active: number }>(
+    `SELECT active FROM technicians WHERE id = '${fixture.technicianId}';`,
+  );
+  record("the seeded technician after the unlisted number", seeded[0] ?? "not found");
+  expect(seeded[0]?.active).toBe(1);
+
   // Now the technician FSM does list. Nothing goes out here either: staging
   // sends only to its messaging allowlist, and this test number is not on it.
   await page.reload();

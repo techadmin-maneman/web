@@ -1,13 +1,14 @@
 ---
 // The footer, on the home page only (as v2). The wordmark here is 132 px wide,
 // so it is the display cut (design/brand/README.md); v2 drew the small cut.
-import { business, footer, phone, whatsapp } from "../content/site.ts";
+import { business, footer, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 
 const { service, reach, legal } = footer.columns;
+// The number is given as WhatsApp alone: the owner ruled on 27 September 2026 that
+// the footer offers no line to call (docs/open-points.md, item 47).
 const showWhatsapp = isShown(whatsapp);
-const showPhone = isShown(phone);
 ---
 
 <footer class="footer on-ink">
@@ -30,19 +31,12 @@ const showPhone = isShown(phone);
             </a>
           ))}
         </div>
-        {(showWhatsapp || showPhone) && (
+        {showWhatsapp && (
           <div class="column">
             <span class="title caps">{reach.title}</span>
-            {showWhatsapp && (
-              <a class="item number" href={whatsappChat(whatsapp.number)}>
-                {whatsapp.label}
-              </a>
-            )}
-            {showPhone && (
-              <a class="item number" href={`tel:${phone.number}`}>
-                {phone.label}
-              </a>
-            )}
+            <a class="item number" href={whatsappChat(whatsapp.number)}>
+              {whatsapp.label}
+            </a>
           </div>
         )}
         <div class="column">

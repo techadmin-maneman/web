@@ -1,5 +1,6 @@
 // A client's rights over their data (docs/decisions/0049-dpdp.md), on the client surface:
-//   GET  /api/me/export     everything we hold about them, as a JSON file: the right of access
+//   GET  /api/me/export     everything we hold about them, as a JSON file: the right of access, with who in ops
+//                           opened their photographs and when (docs/open-points.md, item 68)
 //   POST /api/grievances    a grievance, for ops to answer: the right of redress. The same words,
 //                           still open, are one grievance however often they are sent (ADR 0058)
 // Correction is the profile itself (address, number change); erasure is the deletion request (ADR 0042).
@@ -8,6 +9,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { auditStatementIfWritten, recordAudit } from "../domain/audit.ts";
+import { everythingHeldAbout } from "../domain/data-export.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorResponse } from "../http/errors.ts";
 
@@ -73,60 +75,10 @@ export function registerClientData(app: App): void {
       },
       now,
     );
-    const all = (sql: string) =>
-      db
-        .prepare(sql)
-        .bind(id)
-        .all()
-        .then((rows) => rows.results);
-    const [person, addresses, consents, visits, payments, refunds, credits, referral, messages, grievances, tryOns] =
-      await Promise.all([
-        db.prepare("SELECT name, mobile_e164 AS mobile, email, created_at FROM people WHERE id = ?1").bind(id).first(),
-        all(
-          `SELECT line1, line2, locality, city, pincode, access_notes, created_at, replaced_at FROM addresses
-           WHERE person_id = ?1 ORDER BY created_at`,
-        ),
-        all(
-          `SELECT purpose, granted, notice_version, created_at FROM consents WHERE person_id = ?1
-           ORDER BY created_at, rowid`,
-        ),
-        all(
-          `SELECT a.type, a.window_start, a.status, t.name AS technician FROM appointments a
-           LEFT JOIN technicians t ON t.id = a.technician_id
-           WHERE a.person_id = ?1 AND a.deleted_at IS NULL ORDER BY a.window_start`,
-        ),
-        all(
-          `SELECT created_at, amount, method, reference, status, refunded_amount FROM payments WHERE person_id = ?1
-           ORDER BY created_at`,
-        ),
-        all(
-          `SELECT r.created_at, r.amount, r.status FROM refunds r JOIN payments p ON p.id = r.payment_id
-           WHERE p.person_id = ?1 ORDER BY r.created_at`,
-        ),
-        all("SELECT kind, visits, expires_at, created_at FROM credit_ledger WHERE person_id = ?1 ORDER BY created_at"),
-        db.prepare("SELECT code, card_state FROM referral_codes WHERE person_id = ?1").bind(id).first(),
-        all("SELECT kind, state, created_at FROM outbound_messages WHERE person_id = ?1 ORDER BY created_at"),
-        all("SELECT text, state, response, created_at FROM grievances WHERE person_id = ?1 ORDER BY created_at"),
-        all("SELECT state, created_at FROM tryon_jobs WHERE person_id = ?1 ORDER BY created_at"),
-      ]);
-    return c.json(
-      {
-        exported_at: now.toISOString(),
-        person,
-        addresses,
-        consents,
-        visits,
-        payments,
-        refunds,
-        credits,
-        referral,
-        messages,
-        grievances,
-        try_ons: tryOns,
-      },
-      200,
-      { "Content-Disposition": 'attachment; filename="maneman-my-data.json"', "Cache-Control": "private, no-store" },
-    );
+    return c.json({ exported_at: now.toISOString(), ...(await everythingHeldAbout(db, id)) }, 200, {
+      "Content-Disposition": 'attachment; filename="maneman-my-data.json"',
+      "Cache-Control": "private, no-store",
+    });
   });
 
   app.openapi(grievanceRoute, async (c) => {

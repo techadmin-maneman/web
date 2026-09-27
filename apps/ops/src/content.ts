@@ -803,9 +803,9 @@ export const noShows = {
     deciding: "Deciding",
     /**
      * PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. A charge keeps what the visit
-     * took, as a cancel inside 24 hours does; what a waiver gives back waits for the owner (BIZ-28).
+     * took, as a cancel inside 24 hours does; a waiver gives it back, as the owner ruled on 27 September 2026 (BIZ-28).
      */
-    note: "Charging records the decision and keeps what the visit took. Waiving records it too, but refunds nothing and returns no credit yet: settle that with the client by hand. Either way the client is told on WhatsApp, never your note.",
+    note: "Charging records the decision and keeps what the visit took. Waiving records it too, refunds what the visit was paid with and returns its credit. Either way the client is told on WhatsApp, never your note.",
     /** PLACEHOLDER: the board draws no empty queue. */
     empty: "No no-show is waiting for a decision.",
     errors: {

@@ -45,7 +45,9 @@ export const referral = {
       },
       {
         what: "Service visit",
-        note: "Every four weeks, at home",
+        // Monthly, as the main site sells twelve service visits a year: the owner ruled the cadence 30 days on
+        // 27 September 2026 (docs/owner-answers-2026-09-27.md).
+        note: "Every month, at home",
         amount: "{service}",
         incl: "Lifted, cleaned, re-bonded, trimmed",
       },
@@ -67,7 +69,7 @@ export const referral = {
       },
       {
         n: "3",
-        title: "A service visit every four weeks",
+        title: "A service visit every month",
         body: `Lifted, cleaned, re-bonded, trimmed. ${capitalised(visitLength.service)}.`,
       },
     ],

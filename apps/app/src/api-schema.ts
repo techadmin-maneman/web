@@ -1983,7 +1983,48 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** The client's own card while it is live: the JPEG the invite shows */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The card's version, from GET /api/refer. The route does not read it: a new version is a new link, so the day the phone may keep the card never shows an older one. */
+                    v?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The card */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no card of theirs is live: none made, taken down, the consent off, or erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         /** Upload the client's referral card: the body is the JPEG itself */
         put: {
             parameters: {

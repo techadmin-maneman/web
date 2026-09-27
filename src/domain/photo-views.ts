@@ -53,6 +53,18 @@ export async function viewInForce(db: D1Database, personId: string, actor: Audit
   return row !== null;
 }
 
+/**
+ * Every opening of this client's photographs, the earliest first: the client's to read in their data export, as the
+ * owner ruled on 27 September 2026 (docs/open-points.md, item 68).
+ */
+export async function allViews(db: D1Database, personId: string): Promise<PhotoView[]> {
+  const { results } = await db
+    .prepare(`SELECT actor, at FROM audit_log WHERE ${VIEWS_OF} ORDER BY at`)
+    .bind(personId)
+    .all<{ actor: string; at: string }>();
+  return results.map((row) => ({ by: row.actor, at: row.at }));
+}
+
 /** Who opened this client's photographs before `now`, the latest first. */
 export async function earlierViews(db: D1Database, personId: string, now: Date): Promise<PhotoView[]> {
   const { results } = await db

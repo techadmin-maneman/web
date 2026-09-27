@@ -1,6 +1,6 @@
 # 0048. Referrals and the waitlist
 
-- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3. Amended by ADR 0080: a consent to cards given by booking a visit, on the pay step's lines, names the referrer too.
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3. Amended by ADR 0080: a consent to cards given by booking a visit, on the pay step's lines, names the referrer too. Amended 27 September 2026: where the phone can share files, the card goes with the invite as a photograph (below).
 - Date: 2026-09-22
 
 ## Context
@@ -69,7 +69,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 **The card** (`src/domain/referral-cards.ts`) is a 1200 x 630 JPEG under 300 KB, composed on the client's phone from their first fit's photographs, in a Worker, with board A1's 2 px gilt rule and its lockup (since 25 September 2026: `apps/app/src/refer/card-layout.ts`, from which the house card is drawn too). The app composes it before it records the consent, so nothing is agreed to for a card the phone could not make.
 
 - `PUT /api/refer/card` stores it, only with their consent to photographs on referral cards, as the code's next version; `DELETE /api/refer/card` takes it down.
-- **Every upload or revoke is a new version,** because WhatsApp caches a link's preview by its URL: a revoke reaches new shares only.
+- **Every upload or revoke is a new version,** because WhatsApp caches a link's preview by its URL: a revoke reaches new shares only, and never a card sent as a photograph (amended 27 September 2026, below).
 - **`GET /api/og/:code.jpg`** is the preview: the client's card while it is live, and otherwise the house card, a static file of the site's. It is served by mm-api, so the path stays under `/api`, and the versioned link makes it safe to cache for a day.
 - **A card comes down by itself** when the consent is switched off, and when the client is erased: it is made of their photographs.
 - The house card is a placeholder until the owner gives us a licensed one (`docs/open-points.md`, item 52).
@@ -95,3 +95,19 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 
 - The consultation a friend books is in FSM at once, like any booking in the app.
 - The landing page itself (mm-site's Worker entry, ADR 0027), the card upload, and the versioned Open Graph image arrive with the rest of P2-M3.
+
+## Amended 27 September 2026: the card goes with the invite
+
+The owner found invites shared from the app reaching WhatsApp with no image. The card reached a chat only as the preview WhatsApp draws of the invite's link, and three things stood in its way:
+
+- **The app sent only words.** WhatsApp's button opened `wa.me/?text=…`, and Other apps shared the words alone. Where the phone's share sheet takes files (`navigator.canShare` with the card), both now send the card itself, a JPEG named `mane-man-invite.jpg`, with the invite's words, link and all, as its caption (`apps/app/src/refer/share.ts`), as the site's try-on shares its look (ADR 0022, item 23).
+  - The card is made a file before the share step shows, since a share must start on the tap: the house card from the app's own copy, one just made as the phone made it, and a stored one from the API (below).
+  - Elsewhere WhatsApp's link stays, with the words, and the chat draws the card from the landing's preview as before.
+  - A share the phone refuses is F6's "Share failed"; one the client backs out of says nothing.
+  - The owner approved this on 27 September 2026, a departure from boards F4, B1 and B2, which draw the link's preview (ADR 0025, item 71). F4 still draws that preview, which is what the friend gets where the phone cannot send the file.
+- **A client's own card was a broken image in F4.** The app asked for it at `GET /api/og/:code.jpg`, which answers only on the public host (ADR 0026). `GET /api/refer/card` gives the client their own card on the app's host while it is live, exactly when the landing would show it (stored, the consent given, the client not erased), and a 404 otherwise. The phone keeps it a day, under the version in its link.
+- **Staging's Access turned WhatsApp's crawler away** from the landing and the card, as it turns away anyone without the founders' login. The owner is to let `r/`, `images/` and `api/og/` through (runbook, step 10b). `npm run smoke -- --base <host> --environment <env> --link-preview <code>` fetches both as the crawler does, with no Access token. No deploy runs it: it fails on staging until then.
+
+The landing's tags also give the card's type and its HTTPS address beside it (`og:image:type`, `og:image:secure_url`), and the preview's answer gives its length.
+
+**A revoke cannot reach a card sent as a photograph.** A preview comes from us whenever WhatsApp fetches it, so a revoke reaches new shares, and old ones once their preview is fetched again. A photograph sent in a chat is a copy: it stays there, and wherever it is forwarded or saved, whatever the client does next. The consent's lines already say so ("Cards already delivered stay in people's chats. We cannot take those back.", board F3), as the revoke's do ("Cards already sent stay in those chats."), so neither changes.
