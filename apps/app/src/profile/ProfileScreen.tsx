@@ -1,7 +1,8 @@
 // The profile (boards G1 and G2): where we come, what the client has agreed
 // to, and their account: a change of number, support, and deletion.
 
-import { useCallback, useEffect, useState } from "react";
+import { Button } from "@maneman/ui/Button";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, type Profile } from "../api.ts";
 import { errors, profile } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
@@ -32,32 +33,39 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
   }, [load]);
 
   const { me } = useSession();
-  return (
-    <Shell header={{ kind: "back", title: me.name, to: "/", label: profile.back }} tab={null}>
-      {loaded === null ? (
-        <Loading />
-      ) : loaded === "failed" ? (
+  // Fetched again after a change without going back to Loading, so the page stays where the client is.
+  function page(): ReactNode {
+    if (loaded === null) return <Loading />;
+    if (loaded === "failed") {
+      return (
         <div className={`${styles.page} ${styles.failed}`} role="alert">
           <p>{errors.load}</p>
-          <button className={styles.secondary} type="button" onClick={() => void load()}>
+          <Button variant="outline" size="control" className={styles.secondary} onClick={() => void load()}>
             {errors.retry}
-          </button>
+          </Button>
         </div>
-      ) : (
-        <div className={styles.page}>
-          <AddressSection address={loaded.address} onSaved={changed} />
-          <ConsentList consents={loaded.consents} />
-          <NumberChangeCard
-            change={loaded.number_change}
-            decided={loaded.number_change_decided}
-            onChanged={() => void load()}
-          />
-          <SupportCard />
-          <DataCard />
-          <DeletionCard deletion={loaded.deletion} onRequested={() => void load()} />
-          <LogOut className={styles.logout} />
-        </div>
-      )}
+      );
+    }
+    return (
+      <div className={styles.page}>
+        <AddressSection address={loaded.address} onSaved={changed} />
+        <ConsentList consents={loaded.consents} />
+        <NumberChangeCard
+          change={loaded.number_change}
+          decided={loaded.number_change_decided}
+          onChanged={() => void load()}
+        />
+        <SupportCard />
+        <DataCard />
+        <DeletionCard deletion={loaded.deletion} onRequested={() => void load()} />
+        <LogOut className={styles.logout} />
+      </div>
+    );
+  }
+
+  return (
+    <Shell header={{ kind: "back", title: me.name, to: "/", label: profile.back }} tab={null}>
+      {page()}
     </Shell>
   );
 }

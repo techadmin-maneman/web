@@ -5,12 +5,12 @@
 // Among them, as the board lists a visit a credit covered, every change to the
 // service-visit credits (LIFE-14): one about a visit opens that visit's page.
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type CreditLine, type Entry } from "../api.ts";
 import { empty, payments } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { EmptyState } from "../home/TabScreens.tsx";
-import { useLoad } from "../lib/useLoad.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";

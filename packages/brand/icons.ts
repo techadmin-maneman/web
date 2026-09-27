@@ -2,6 +2,9 @@
 // stroke and round caps. They are drawn in currentColor, so a component sets
 // their colour through CSS.
 
+/** The stroke the icon set is drawn at. */
+export const ICON_STROKE = 1.6;
+
 /** The Phase 1 site's icons. Frozen: the site's island bundles carry exactly these. */
 export const ICONS = {
   tick: "M4 12.5 L9.5 18 L20 6",
@@ -32,6 +35,18 @@ export const ICONS_P2 = {
   offline: "M4 8 C9 4 15 4 20 8 M7.5 12 C10.5 9.8 13.5 9.8 16.5 12 M12 16.5 V16.6 M3 3 L21 21",
   uploadQueue: "M12 14 V5 M8.5 8.5 L12 5 L15.5 8.5 M4.5 15 V19.5 H19.5 V15 M8 17.2 H16",
   pieceId: "M4 6 V18 M7 7 V17 M10 7 V17 M13.5 7 V17 M17 7 V17 M20 6 V18",
+} as const;
+
+/**
+ * The glyphs the apps draw beyond the two sets, each declared once here
+ * rather than once in each app (DS-24). An app's own icons.ts keeps only
+ * the glyphs no other app draws.
+ */
+export const GLYPHS = {
+  /** A row that opens its detail: a past visit (client board C1), a job (technician board A1). */
+  chevron: "M9 5 L16 12 L9 19",
+  /** A chosen way to pay and a chosen card (client boards C4, F2); inside a ticked checklist box (technician B2). */
+  check: "M5 13 L10 18 L19 6",
 } as const;
 
 /** The head outline behind the stage drawings, in a 64 × 74 box. */

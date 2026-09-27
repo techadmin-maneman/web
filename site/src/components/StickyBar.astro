@@ -2,13 +2,13 @@
 // The bar fixed to the bottom of the home page, at every width, as v2 shows it.
 import { stickyBar, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
-import { whatsappLink } from "../lib/whatsapp.ts";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import Icon from "./Icon.astro";
 ---
 
 <div class="bar on-ink">
   {isShown(whatsapp) && (
-    <a class="whatsapp" href={whatsappLink(whatsapp.number)} aria-label={stickyBar.whatsappLabel}>
+    <a class="whatsapp" href={whatsappChat(whatsapp.number)} aria-label={stickyBar.whatsappLabel}>
       <Icon name="whatsapp" size={22} />
     </a>
   )}

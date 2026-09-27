@@ -16,6 +16,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
+import { HOUSE_CARD } from "../config/house-card.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";
@@ -92,9 +93,6 @@ const WaitlistRequestSchema = z
 /** The crawlers that fetch a shared link to draw its preview in a chat or a feed, by their user agents. */
 const LINK_PREVIEW =
   /WhatsApp|facebookexternalhit|facebookcatalog|meta-externalagent|TelegramBot|Discordbot|Slackbot|LinkedInBot|Twitterbot|SkypeUriPreview|Googlebot|bingbot|Applebot/i;
-
-/** The house card, a static file of the site's (site/public/images/invite-house.jpg). */
-export const HOUSE_CARD_PATH = "/images/invite-house.jpg";
 
 const ogRoute = createRoute({
   method: "get",
@@ -227,7 +225,7 @@ export function registerReferralLanding(app: App): void {
       .file.replace(/\.jpg$/, "")
       .toUpperCase();
     const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);
-    if (card === null) return c.redirect(HOUSE_CARD_PATH, 302);
+    if (card === null) return c.redirect(HOUSE_CARD, 302);
     // A version's card never changes: a new one gets a new link.
     return c.body(card.body, 200, { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400" });
   });

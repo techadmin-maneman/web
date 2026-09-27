@@ -1,49 +1,37 @@
 /*
- * A question before a tap that cannot be taken back, risen from the foot of the
- * column on the ink-night ground. Both answers are outlined, 64 px and full
- * width, the way back last, where the thumb is.
+ * A question before a tap that cannot be taken back, at the foot of the column
+ * on the ink-night ground (packages/ui/Sheet.tsx). Both answers are outlined,
+ * 64 px and full width, the way back last, where the thumb is.
  */
 
 .sheet {
-  width: 100%;
-  max-width: var(--app-column);
-  margin: auto auto 0;
+  min-height: 0;
   padding: var(--sp-22) var(--sp-20);
-  border: 0;
+  overflow-y: auto;
   border-top: var(--hairline) solid var(--ink-line);
   background: var(--ink-deep);
   color: var(--paper);
-}
-
-.sheet::backdrop {
-  background: var(--ink-night);
 }
 
 .title {
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-26);
-  font-weight: 400;
-  line-height: 1.15;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-115);
   color: var(--paper);
 }
 
 .body {
   margin: var(--sp-12) 0 var(--sp-22);
   font-size: var(--fs-17);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--ink-soft);
 }
 
 .yes,
 .no {
   width: 100%;
-  height: var(--tech-primary);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-18);
-  color: var(--paper);
-  cursor: pointer;
 }
 
 /* The answer that can cost the client, drawn in the error's line and never in gold. */
@@ -53,11 +41,4 @@
 
 .no {
   margin-top: var(--sp-12);
-  border: var(--hairline) solid var(--ink-line);
-}
-
-.yes:focus-visible,
-.no:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
 }

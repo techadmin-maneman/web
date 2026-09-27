@@ -2,11 +2,12 @@
 // give one, the figures a page is built with, and the production gate that stops a price typed by hand.
 
 import { describe, expect, it } from "vitest";
+import { rupeeSign } from "../../packages/web-kit/money.ts";
 import { BUILT_STANDARD, PREMIUM } from "../../site/src/content/prices.ts";
 import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
 import type { PublishedPrices } from "../../site/src/lib/api.ts";
-import { holdsAPrice, isPublishedPrices, priceWords, rupeeFigure, standardOf } from "../../site/src/lib/prices.ts";
+import { holdsAPrice, isPublishedPrices, priceWords, standardOf } from "../../site/src/lib/prices.ts";
 import { publishProblems } from "../../site/src/lib/publish-gate.ts";
 import { fill } from "../../site/src/lib/text.ts";
 
@@ -70,10 +71,11 @@ describe("the site's prices", () => {
     expect(fill(site.business.priceRange, priceWords({ ...MOVED, first_fit: 4_500_000 }))).toBe("₹40,000–₹45,000");
   });
 
+  // With the sign the site's design writes, from the one formatter the front ends share (packages/web-kit/money.ts).
   it("writes rupees as India groups them", () => {
-    expect(rupeeFigure(3_000_000)).toBe("₹30,000");
-    expect(rupeeFigure(10_000_000)).toBe("₹1,00,000");
-    expect(rupeeFigure(250_050)).toBe("₹2,500.50");
+    expect(rupeeSign(3_000_000)).toBe("₹30,000");
+    expect(rupeeSign(10_000_000)).toBe("₹1,00,000");
+    expect(rupeeSign(250_050)).toBe("₹2,500.50");
   });
 
   // src/policy/prices.ts: "Shown ex-GST as the main figure".

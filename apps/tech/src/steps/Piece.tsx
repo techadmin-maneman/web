@@ -13,12 +13,14 @@
 // replacement the piece that came off and why it failed, so the step asks for
 // them: a lookup fills the base and lot in when it knows them.
 
+import { ICONS_P2 } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { job as jobCopy, steps as copy } from "../content.ts";
-import { ICONS_P2 } from "@maneman/brand/icons";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
+import { STROKE } from "../icons.ts";
 import { dayMonth } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { asLabel, isLabel } from "./label.ts";
@@ -150,7 +152,7 @@ export function Piece({ id }: { id: string }) {
           {copy.piece.label}
         </label>
         <div className={styles.scan}>
-          <Icon className={styles.scanIcon} d={ICONS_P2.pieceId} size={21} />
+          <Icon className={styles.scanIcon} d={ICONS_P2.pieceId} size={21} stroke={STROKE} />
           <input
             className={styles.input}
             id="piece-code"
@@ -171,25 +173,28 @@ export function Piece({ id }: { id: string }) {
             {copy.piece.malformed}
           </p>
         )}
-        <button
+        <Button
+          variant="outlineOnInk"
+          size="control"
           className={styles.second}
-          type="button"
           disabled={!isLabel(code) || looking}
+          busy={looking}
           onClick={() => void look()}
         >
           {copy.piece.look}
-        </button>
+        </Button>
         {newToPick.length > 0 && (
-          <button
+          <Button
+            variant="outlineOnInk"
+            size="control"
             className={styles.second}
-            type="button"
             aria-expanded={picking === "new"}
             onClick={() => {
               setPicking(picking === "new" ? null : "new");
             }}
           >
             {copy.piece.pick}
-          </button>
+          </Button>
         )}
         {picking === "new" && <PieceList pieces={newToPick} onPick={pickNew} />}
       </div>
@@ -261,16 +266,17 @@ export function Piece({ id }: { id: string }) {
             }}
           />
           {oldToPick.length > 0 && (
-            <button
+            <Button
+              variant="outlineOnInk"
+              size="control"
               className={styles.second}
-              type="button"
               aria-expanded={picking === "old"}
               onClick={() => {
                 setPicking(picking === "old" ? null : "old");
               }}
             >
               {copy.piece.pick}
-            </button>
+            </Button>
           )}
           {picking === "old" && <PieceList pieces={oldToPick} onPick={pickOld} />}
           <label className={styles.fieldLabel} htmlFor="old-piece-reason">

@@ -18,16 +18,6 @@
   border: var(--hairline) solid var(--paper-line);
 }
 
-.hiddenTitle {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .empty {
   margin: 0;
   font-size: var(--fs-15);
@@ -53,7 +43,7 @@
 .head {
   padding: var(--sp-8) var(--sp-6) var(--sp-8) 0;
   font-size: var(--fs-13);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--text-muted);
   text-align: left;
 }
@@ -61,7 +51,7 @@
 .name,
 .zone {
   padding: 0 var(--sp-6) 0 0;
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   text-align: left;
 }
 
@@ -116,8 +106,8 @@
 }
 
 .choose:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 /* A technician who runs over the length their visits were planned for, in the oxblood the board letters it in. */
@@ -144,7 +134,7 @@
 .note {
   margin: var(--sp-14) 0 0;
   font-size: var(--fs-13);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
@@ -190,7 +180,7 @@
 .drawerTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-size: var(--fs-22);
 }
 
@@ -209,7 +199,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -251,7 +241,7 @@
 .warning {
   margin: 0;
   font-size: var(--fs-13);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--text-muted);
 }
 
@@ -261,40 +251,11 @@
   margin-top: var(--sp-8);
 }
 
+/* The roster's buttons (packages/ui/Button.tsx, 44 px), in the drawer's smaller words. */
 .revoke,
 .quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
   padding: 0 var(--sp-14);
-  font: inherit;
   font-size: var(--fs-14);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.revoke {
-  border: var(--hairline) solid var(--error-on-paper);
-  background: transparent;
-  color: var(--error-on-paper);
-}
-
-.quiet {
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-}
-
-.revoke:disabled,
-.quiet:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.revoke:focus-visible,
-.quiet:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
 }
 
 .revoked {
@@ -325,7 +286,7 @@
 .strandedTitle {
   margin: 0;
   font-size: var(--fs-13);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 
 .leaveList {
@@ -384,6 +345,6 @@
 }
 
 .input:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }

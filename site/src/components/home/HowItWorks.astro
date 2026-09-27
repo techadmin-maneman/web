@@ -79,7 +79,7 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
   .number {
     font-family: var(--font-serif);
     font-size: var(--fs-step-number);
-    line-height: 0.9;
+    line-height: var(--lh-90);
     color: var(--text-muted);
     font-variant-numeric: lining-nums;
     flex-shrink: 0;
@@ -87,15 +87,15 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
   h3 {
     margin: 0;
     font-family: var(--font-serif);
-    font-weight: 400;
+    font-weight: var(--weight-regular);
     font-size: var(--fs-step-title);
-    line-height: 1.15;
+    line-height: var(--lh-115);
     letter-spacing: var(--tracking-heading);
   }
   p {
     margin: var(--sp-14) 0 0;
     font-size: var(--fs-body);
-    line-height: 1.65;
+    line-height: var(--lh-165);
     color: var(--text-soft);
     max-width: var(--measure-short);
     text-wrap: pretty;

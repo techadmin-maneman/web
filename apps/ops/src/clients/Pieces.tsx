@@ -6,11 +6,12 @@
 // quiet. A piece that has failed has been replaced, so the brass falls on the
 // one that has not.
 
+import { Table } from "@maneman/ui/Table";
+import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { api, type Piece } from "../api.ts";
 import { clients } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 
@@ -51,7 +52,7 @@ export function Pieces({ clientId }: { clientId: string }) {
       {pieces.length === 0 ? (
         <p className={styles.empty}>{copy.empty}</p>
       ) : (
-        <table className={styles.table}>
+        <Table className={styles.table}>
           <thead>
             <tr>
               <th scope="col" className={styles.code}>
@@ -79,7 +80,7 @@ export function Pieces({ clientId }: { clientId: string }) {
               <PieceRow key={piece.piece_code} piece={piece} />
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
     </section>
   );

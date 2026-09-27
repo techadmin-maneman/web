@@ -22,15 +22,22 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { Button } from "@maneman/ui/Button";
+import { Mark } from "@maneman/ui/Mark";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { api, type Challenge } from "../api.ts";
-import { Mark } from "../components/Mark.tsx";
 import { session, signIn as copy } from "../content.ts";
 import { installed } from "../lib/installed.ts";
 import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
 import styles from "./login.module.css";
+
+/** What the sign-in says before the code is asked for: that ops revoked the phone, or why an installed app is out. */
+function noteFor(why: Out): string | null {
+  if (why === "revoked") return session.revoked;
+  return why === "fresh" && installed() ? copy.installed : null;
+}
 
 /** The API's error code in the app's words, or the line that fits when the code is one we do not know. */
 const MESSAGES: Readonly<Record<string, string>> = copy.errors;
@@ -160,7 +167,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   // Only worth saying before the code has been asked for, and only in the app
   // that caused it: a first sign-in in a browser needs no explanation.
   const quiet = challenge === null && error === null;
-  const note = why === "revoked" ? session.revoked : why === "fresh" && installed() ? copy.installed : null;
+  const note = noteFor(why);
 
   return (
     <main className={styles.screen}>
@@ -192,9 +199,10 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
       {challenge !== null && (
         <div className={styles.again}>
-          <button
+          <Button
+            variant="outlineOnInk"
+            size="small"
             className={styles.againButton}
-            type="button"
             onClick={() => {
               // Drawn at once, so the number is editable before it is focused.
               flushSync(() => {
@@ -205,15 +213,16 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
             }}
           >
             {copy.changeNumber}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outlineOnInk"
+            size="small"
             className={styles.againButton}
-            type="button"
             disabled={resendIn > 0 || working}
             onClick={() => void send()}
           >
             {resendIn > 0 ? copy.resendIn(resendIn) : copy.resend}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -226,14 +235,16 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       )}
 
       <div className={styles.foot}>
-        <button
+        <Button
+          variant="gold"
+          size="action"
           className={styles.action}
-          type="button"
           disabled={!ready || working}
+          busy={working}
           onClick={() => void (challenge === null ? send() : verify())}
         >
           {challenge === null ? copy.sendCode : copy.submit}
-        </button>
+        </Button>
       </div>
     </main>
   );

@@ -3,6 +3,7 @@
 // B1's own table is. The record already holds all of it, so the tab asks the
 // API for nothing (docs/fidelity-method.md).
 
+import { Table } from "@maneman/ui/Table";
 import { fullDate, indiaClock } from "@maneman/web-kit/dates";
 import type { ClientRecord, ClientVisit } from "../api.ts";
 import { clients } from "../content.ts";
@@ -44,7 +45,7 @@ function VisitTable({ title, visits, empty }: { title: string; visits: readonly 
       {visits.length === 0 ? (
         <p className={styles.empty}>{empty}</p>
       ) : (
-        <table className={styles.table}>
+        <Table className={styles.table}>
           <thead>
             <tr>
               {copy.columns.map((column) => (
@@ -65,7 +66,7 @@ function VisitTable({ title, visits, empty }: { title: string; visits: readonly 
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
     </section>
   );

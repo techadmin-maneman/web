@@ -1,39 +1,13 @@
 /*
  * Boards C2 to C8: the booking and change sheets, on paper over the ink-night
- * ground. The dialog fills the screen and is clear; the sheet sits at its foot,
- * as the boards draw it, and Close stands on the ground above it, where anyone
- * can see it and reach it (the boards draw none). A tap on the ground closes
- * the sheet too.
+ * ground (packages/ui/Sheet.tsx). The frame fills the screen and is clear; the
+ * sheet sits at its foot, as the boards draw it, and Close stands on the
+ * ground above it, where anyone can see it and reach it (the boards draw
+ * none). A tap on the ground closes the sheet too.
  */
 
 .dialog {
-  width: 100%;
-  max-width: var(--app-column);
-  height: 100dvh;
-  max-height: 100dvh;
-  margin: 0 auto;
-  padding: 0;
-  border: 0;
-  background: none;
   --focus-colour: var(--paper);
-}
-
-/* Only while open: a closed dialog stays hidden as the browser hides it. */
-.dialog[open] {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  animation: rise var(--ease-progress);
-}
-
-.dialog::backdrop {
-  background: var(--ink-night);
-}
-
-@keyframes rise {
-  from {
-    transform: translateY(100%);
-  }
 }
 
 .close {
@@ -65,15 +39,6 @@
   margin: 0;
 }
 
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .loading {
   height: var(--skeleton-card);
   background: var(--paper-shade);
@@ -90,7 +55,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
 }
 
 .step {
@@ -294,7 +259,7 @@
   padding-top: var(--sp-18);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-15);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 
 .initials {
@@ -341,7 +306,7 @@
 .amount {
   font-family: var(--font-serif);
   font-size: var(--fs-26);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
 }
 
@@ -349,7 +314,7 @@
 .was {
   font-family: var(--font-serif);
   font-size: var(--fs-22);
-  line-height: 1;
+  line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
   color: var(--text-muted);
   text-decoration: line-through;
@@ -383,7 +348,7 @@
   padding: var(--sp-16) 0;
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-15);
-  line-height: 1.55;
+  line-height: var(--lh-155);
 }
 
 .soft {
@@ -417,7 +382,7 @@
   margin: var(--sp-20) 0 0;
   font-family: var(--font-serif);
   font-size: var(--fs-15);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   color: var(--text-muted);
@@ -453,46 +418,19 @@
   background: var(--ink);
 }
 
+/* The sheets' buttons (packages/ui/Button.tsx), the width of the sheet: the action 56 px, any other 48. */
 .primary,
 .secondary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  font: inherit;
-  font-weight: 500;
-  cursor: pointer;
 }
 
 .primary {
-  height: var(--btn-lg);
   margin-top: var(--sp-22);
-  border: 0;
-  background: var(--ink);
-  font-size: var(--fs-16);
   font-variant-numeric: tabular-nums;
-  color: var(--paper);
-}
-
-.primary:disabled {
-  background: var(--paper-shade);
-  color: var(--text-quiet);
-  cursor: default;
 }
 
 .secondary {
-  min-height: var(--btn-md);
   margin-top: var(--sp-18);
-  border: var(--hairline) solid var(--ink);
-  background: none;
-  font-size: var(--fs-15);
-  color: var(--text);
-}
-
-.secondary:disabled {
-  border-color: var(--paper-line);
-  color: var(--text-quiet);
-  cursor: default;
 }
 
 /* Boards C7 and C8: the change, and what it costs. */
@@ -520,21 +458,21 @@
   background: var(--white);
   font: inherit;
   font-size: var(--fs-16);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--text);
   resize: vertical;
 }
 
 .noteInput:focus {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 .changeTitle {
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  font-weight: 400;
-  line-height: 1.2;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-120);
 }
 
 .sheet .terms {
@@ -542,7 +480,7 @@
   padding-top: var(--sp-14);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   font-variant-numeric: tabular-nums;
 }
 
@@ -582,7 +520,7 @@
 .sheet .creditNote {
   margin-top: var(--sp-12);
   font-size: var(--fs-14);
-  line-height: 1.55;
+  line-height: var(--lh-155);
   color: var(--text-muted);
 }
 
@@ -610,13 +548,13 @@
 .outcome {
   font-family: var(--font-serif);
   font-size: var(--fs-22);
-  line-height: 1.25;
+  line-height: var(--lh-125);
 }
 
 .sheet .outcomeLine {
   margin-top: var(--sp-10);
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   font-variant-numeric: tabular-nums;
   color: var(--text-soft);
 }
@@ -627,13 +565,11 @@
   margin-top: var(--sp-18);
 }
 
+/* Side by side, both 48 px (size="control"). */
 .pair .primary,
 .pair .secondary {
   flex: 1;
-  height: auto;
-  min-height: var(--btn-md);
   margin-top: 0;
-  font-size: var(--fs-15);
 }
 
 .confirmed {
@@ -662,13 +598,13 @@
   margin-top: var(--sp-18);
   font-family: var(--font-serif);
   font-size: var(--fs-28);
-  line-height: 1.12;
+  line-height: var(--lh-112);
 }
 
 .sheet .confirmedLine {
   margin-top: var(--sp-12);
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -698,7 +634,7 @@
   background: none;
   font: inherit;
   font-size: var(--fs-15);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--paper);
   text-decoration: none;
   cursor: pointer;

@@ -202,6 +202,31 @@ test("A3 is reached by choice, and points to booking and WhatsApp", async ({ pag
   await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 });
 
+test("a phone's Back steps back through the login, as its back arrows do, and never out of the app", async ({
+  page,
+  request,
+}) => {
+  await sendCode(page, randomMobile());
+  await page.getByRole("button", { name: "No booking on this number?" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "No booking on this number?" })).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await page.goForward();
+  await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
+
+  // Signed in, the login's steps are behind the client: Back from Home leaves the app, as it did before them.
+  const mobile = await booked(request);
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
+  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await enter(page, CODE);
+  await expect(page.getByRole("link", { name: "Your profile" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.history.state as unknown)).toBeNull();
+});
+
 test("the WhatsApp resend counts down from 30 seconds, and SMS is offered after 30", async ({ page }) => {
   await page.clock.install();
   await sendCode(page, randomMobile());

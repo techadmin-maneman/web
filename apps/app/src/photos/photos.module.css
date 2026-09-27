@@ -1,14 +1,5 @@
 /* Boards D1 and D3, and the photographs on C9: rows of five at 3:4, and the sheet. */
 
-.hidden {
-  position: absolute;
-  width: var(--sr-only-size);
-  height: var(--sr-only-size);
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .compareLink {
   display: flex;
   align-items: center;
@@ -41,7 +32,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-20);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
 }
 
 .groupWhat {
@@ -81,39 +72,25 @@ div.cell {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity var(--ease);
+  transition: opacity var(--duration-quick) var(--ease-house);
 }
 
 .arrived {
   opacity: 1;
 }
 
-/* The sheet: a photograph large, then board D3's download line. */
+/* The sheet (packages/ui/Sheet.tsx): a photograph large, then board D3's download line. */
 .sheet {
-  width: 100%;
-  max-width: var(--app-column);
-  max-height: 100dvh;
-  margin: auto auto 0;
+  min-height: 0;
   padding: var(--sp-22) var(--sp-20) var(--sp-24);
-  border: 0;
+  overflow-y: auto;
   background: var(--paper);
   color: var(--text);
-  animation: rise var(--ease-progress);
-}
-
-.sheet::backdrop {
-  background: var(--ink-night);
-}
-
-@keyframes rise {
-  from {
-    transform: translateY(100%);
-  }
 }
 
 .thumb.large {
   height: auto;
-  max-height: 56dvh;
+  max-height: var(--photo-max-h);
   aspect-ratio: 3 / 4;
   background: var(--paper-shade);
 }
@@ -132,20 +109,10 @@ div.cell {
   font-size: var(--fs-16);
 }
 
+/* Board D3's Download (packages/ui/Button.tsx), as wide as its words. */
 .download {
   display: inline-flex;
-  align-items: center;
-  gap: var(--sp-10);
-  min-height: var(--tap);
   padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--text);
-  text-decoration: none;
-  cursor: pointer;
 }
 
 .gallery {
@@ -153,19 +120,13 @@ div.cell {
   padding-top: var(--sp-14);
   border-top: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-14);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }
 
+/* Close, the width of the sheet and quieter than Download: edged in the paper's own line. */
 .close {
   width: 100%;
-  min-height: var(--btn-md);
   margin-top: var(--sp-16);
-  border: var(--hairline) solid var(--paper-line);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
+  border-color: var(--paper-line);
 }

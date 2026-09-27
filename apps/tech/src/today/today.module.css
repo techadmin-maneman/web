@@ -32,15 +32,8 @@
 
 /* The Prototype's chip: the technician's initials, and the way out. */
 .account {
-  display: flex;
   gap: var(--sp-11);
-  align-items: center;
-  min-height: var(--tech-min);
   padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  cursor: pointer;
 }
 
 .initials {
@@ -58,7 +51,7 @@
 .tomorrow:focus-visible,
 .waiting:focus-visible,
 .row:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
+  outline: var(--focus-width) solid var(--gilt);
   outline-offset: calc(-1 * var(--focus-offset));
 }
 
@@ -66,8 +59,8 @@
   margin: var(--sp-20) 0 0;
   font-family: var(--font-serif);
   font-size: var(--fs-app-title-long);
-  font-weight: 400;
-  line-height: 1.08;
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-108);
   color: var(--paper);
 }
 
@@ -116,14 +109,14 @@
 .stayed {
   margin: 0;
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--paper);
 }
 
 .leaveBody {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -132,24 +125,6 @@
   flex-wrap: wrap;
   gap: var(--sp-12);
   margin-top: var(--sp-16);
-}
-
-.leaveButton {
-  display: flex;
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-17);
-  cursor: pointer;
-}
-
-.leaveButton:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
 }
 
 .stayed {
@@ -174,7 +149,7 @@
 .atRiskBody {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -316,13 +291,13 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-26);
-  line-height: 1.15;
+  line-height: var(--lh-115);
   color: var(--paper);
 }
 
 .emptyBody {
   margin: 0;
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }

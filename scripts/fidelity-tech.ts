@@ -17,7 +17,7 @@ import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
-import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
+import { pair, rest, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
 const APP_DIR = resolve("apps/tech/dist/local");
@@ -224,6 +224,7 @@ async function frame(design: Page, label: string, statusBar = true): Promise<Buf
 
 async function shot(page: Page): Promise<Buffer> {
   await page.evaluate(() => document.fonts.ready);
+  await rest(page);
   return page.screenshot();
 }
 

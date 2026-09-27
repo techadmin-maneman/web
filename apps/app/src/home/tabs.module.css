@@ -22,11 +22,11 @@
 .emptyFirst {
   font-family: var(--font-serif);
   font-size: var(--fs-24);
-  line-height: 1.2;
+  line-height: var(--lh-120);
 }
 
 .line {
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--text-muted);
 }

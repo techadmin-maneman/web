@@ -8,7 +8,8 @@
 //   /refer             the invite (F1); /refer/fitted, who has been fitted (F5 and F6)
 //   /profile
 
-import { useEffect, useState } from "react";
+/** The router the apps share (packages/ui/router.tsx), so a page takes its routes and its way between them from here. */
+export { go, usePath } from "@maneman/ui/router";
 
 export type Route =
   | { readonly page: "home" }
@@ -67,25 +68,4 @@ export function tabOf(route: Route): Tab | null {
     case "profile":
       return null;
   }
-}
-
-/** The path shown, which keys the page so each one opens at its top. */
-export function usePath(): string {
-  const [path, setPath] = useState(() => window.location.pathname);
-  useEffect(() => {
-    const onChange = () => {
-      setPath(window.location.pathname);
-    };
-    window.addEventListener("popstate", onChange);
-    return () => {
-      window.removeEventListener("popstate", onChange);
-    };
-  }, []);
-  return path;
-}
-
-export function go(path: string): void {
-  if (window.location.pathname === path) return;
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
 }

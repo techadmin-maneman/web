@@ -20,6 +20,19 @@ const MONTH_NAMES = [
   "December",
 ] as const;
 
+/** India is five and a half hours ahead of UTC, all year: it keeps no summer time. */
+const INDIA_OFFSET_MS = 330 * 60 * 1000;
+
+/** An instant as India's wall clock, to be read with the getUTC methods: its date, hour and minute there. */
+export function inIndia(isoInstant: string): Date {
+  return new Date(new Date(isoInstant).getTime() + INDIA_OFFSET_MS);
+}
+
+/** A date and a time on India's clock as the instant they are: "2026-09-24", "09:00" → 2026-09-24T03:30:00Z. */
+export function indiaInstant(date: string, time: string): Date {
+  return new Date(Date.parse(`${date}T${time}:00Z`) - INDIA_OFFSET_MS);
+}
+
 /** "2026-09-24" → "Thu 24 Sep". */
 export function shortDate(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);
@@ -60,12 +73,12 @@ export function listMonth(isoMonth: string, thisYear: number): string {
 
 /** An instant as India's calendar date, YYYY-MM-DD: "2026-09-21T20:00:00Z" → "2026-09-22". */
 export function indiaDate(isoInstant: string): string {
-  return new Date(new Date(isoInstant).getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
+  return inIndia(isoInstant).toISOString().slice(0, 10);
 }
 
 /** An instant as India's clock: "2026-09-22T03:44:00Z" → "9:14 am"; on the hour, "10 am". */
 export function indiaClock(isoInstant: string): string {
-  const india = new Date(new Date(isoInstant).getTime() + 330 * 60 * 1000);
+  const india = inIndia(isoInstant);
   const hours = india.getUTCHours();
   const minutes = india.getUTCMinutes();
   const hour = hours % 12 === 0 ? 12 : hours % 12;
@@ -74,7 +87,6 @@ export function indiaClock(isoInstant: string): string {
 
 /** An instant as India's calendar date, with the year: "2026-11-14T08:00:00Z" → "14 Nov 2026". */
 export function longDate(isoInstant: string): string {
-  // India is five and a half hours ahead of UTC, all year.
-  const india = new Date(new Date(isoInstant).getTime() + 330 * 60 * 1000);
+  const india = inIndia(isoInstant);
   return `${String(india.getUTCDate())} ${MONTHS[india.getUTCMonth()] ?? ""} ${String(india.getUTCFullYear())}`;
 }

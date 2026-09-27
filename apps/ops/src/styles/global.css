@@ -1,30 +1,24 @@
 /*
  * The ops console's base: the brand tokens, the Phase 2 layer and the fonts
- * (packages/brand). Components style themselves in their own .module.css,
- * with tokens only. The console is a desk tool, drawn at 1440 and never
- * narrower than the navigation column and one panel.
+ * (packages/brand), and the page every app starts from (packages/ui).
+ * Components style themselves in their own .module.css, with tokens only. The
+ * console is a desk tool, drawn at 1440 and never narrower than the navigation
+ * column and one panel.
  */
 
 @import "@maneman/brand/tokens.css";
 @import "@maneman/brand/tokens-phase2.css";
 @import "@maneman/brand/fonts.css";
+@import "@maneman/ui/base.css";
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
+/* The console's filled buttons are edged as its outlined ones are, so the two stand side by side at one width. */
+:root {
+  --filled-edge: var(--hairline);
 }
 
 body {
   background: var(--paper);
   color: var(--text);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
 }
 
 #root {

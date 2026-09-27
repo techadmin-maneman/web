@@ -70,6 +70,12 @@ function pageFor(route: Route) {
   }
 }
 
+/** Why the sign-in is showing once a session ends: ops revoked the phone, it had a session, or it never did. */
+function whyOut(code: string | null, hadSession: boolean): Out {
+  if (code === DEVICE_REVOKED) return "revoked";
+  return hadSession ? "ended" : "fresh";
+}
+
 /** Whether the phone has just refused a write for want of room (./store/db.ts). */
 function useStorageFull(): boolean {
   const [full, setFull] = useState(false);
@@ -98,7 +104,7 @@ export function App() {
       await wipe();
       setKeeping("asking");
       go("/");
-      setState({ kind: "out", why: code === DEVICE_REVOKED ? "revoked" : had ? "ended" : "fresh" });
+      setState({ kind: "out", why: whyOut(code, had) });
     })().finally(() => {
       ending.current = null;
     });

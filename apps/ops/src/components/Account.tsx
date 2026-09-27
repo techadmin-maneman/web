@@ -2,9 +2,9 @@
 // and the way out, which the board does not draw. Asked for once per load of
 // the console, since the frame is drawn afresh on every page.
 
+import { useLoad } from "@maneman/ui/useLoad";
 import { api, type Answer, type Whoami } from "../api.ts";
 import { shell } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import styles from "./shell.module.css";
 
 let asked: Promise<Answer<Whoami>> | null = null;

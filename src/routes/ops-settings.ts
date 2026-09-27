@@ -37,9 +37,12 @@ import type { MessagingMessage } from "../queues/messaging.ts";
 /** One number, or one per key: the two shapes a rule's value takes. */
 const ValueSchema = z.union([z.number().int(), z.record(z.string(), z.number().int())]);
 
+/** The rules ops may set, by name: the listing names them as the path that sets one does. */
+const SettingName = z.enum(OPS_SETTINGS.map((setting) => setting.name) as [string, ...string[]]);
+
 const SettingSchema = z
   .object({
-    name: z.string(),
+    name: SettingName,
     title: z.string(),
     note: z.string(),
     unit: z.string(),
@@ -72,7 +75,7 @@ const setSettingRoute = createRoute({
   path: "/api/settings/{name}",
   summary: "Set one rule, or send a null value to put the committed default back",
   request: {
-    params: z.object({ name: z.enum(OPS_SETTINGS.map((setting) => setting.name) as [string, ...string[]]) }),
+    params: z.object({ name: SettingName }),
     body: {
       required: true,
       ...json(

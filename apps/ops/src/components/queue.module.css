@@ -1,0 +1,40 @@
+/* A decision queue (./DecisionQueue.tsx): its rows, the line when none wait, and the note beneath. */
+
+.empty {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row,
+.targeted {
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* The row a task on the Tasks board led here, marked as the board marks a selection. */
+.targeted {
+  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
+}
+
+/* Inside the row, so the panel's edge never cuts the ring. */
+.row:focus-visible,
+.targeted:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.note {
+  margin: 0;
+  padding: var(--sp-14) var(--sp-20);
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}

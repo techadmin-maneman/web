@@ -13,7 +13,7 @@
   padding: var(--sp-14) var(--sp-20);
   background: var(--gilt);
   font-size: var(--fs-17);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--ink-deep);
 }
 
@@ -21,7 +21,7 @@
   margin: 0;
   padding: var(--sp-20);
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -37,22 +37,10 @@
 .stoppedLine {
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--paper);
 }
 
 .open {
   display: inline-flex;
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  font-size: var(--fs-17);
-  color: var(--paper);
-  text-decoration: none;
-}
-
-.open:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
 }

@@ -19,6 +19,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
+import { colourOf } from "../../packages/brand/colours.ts";
 import type { Plugin } from "vite";
 
 const FAVICON = `${import.meta.dirname}/../../design/brand/favicon-32.svg`;
@@ -26,9 +27,7 @@ const TOKENS = `${import.meta.dirname}/../../packages/brand/tokens.css`;
 
 /** A colour from tokens.css, so the icons and the manifest use the app's one set of values. */
 export function token(name: string, tokens = readFileSync(TOKENS, "utf8")): string {
-  const found = new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`).exec(tokens);
-  if (found?.[1] === undefined) throw new Error(`no colour ${name} in tokens.css`);
-  return found[1];
+  return colourOf(name, tokens);
 }
 
 /** The same sizes the client app draws: two for a launcher, one maskable, one for iOS. */

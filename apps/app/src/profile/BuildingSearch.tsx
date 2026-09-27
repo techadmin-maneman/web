@@ -12,6 +12,7 @@
 // technology through aria-activedescendant. Nothing here is required — a client
 // who ignores the search types their address into the fields below.
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useId, useRef, useState } from "react";
 import { api, type Suggestion } from "../api.ts";
 import { profile } from "../content.ts";
@@ -157,9 +158,9 @@ export function BuildingSearch({
       <p className={styles.muted} id={`${listId}-hint`}>
         {state === "unavailable" ? copy.unavailable : copy.hint}
       </p>
-      <p className={styles.hidden} role="status">
+      <VisuallyHidden as="p" role="status">
         {state === "searching" || !shown ? "" : copy.found(suggestions.length)}
-      </p>
+      </VisuallyHidden>
     </div>
   );
 }

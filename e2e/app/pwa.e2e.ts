@@ -120,8 +120,10 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page, 
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
   expect((await keptPaths(page)).filter((path) => path.startsWith("/api/"))).toEqual([]);
 
-  // The app itself still opens offline, but with no Home kept it can only say so.
+  // The app itself still opens offline. With no Home kept on a phone that logged out, it opens on the login,
+  // not on board B3's error, which is for a client who is still in (CLI-31).
   await page.context().setOffline(true);
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "We could not load your visit." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "We could not load your visit." })).toHaveCount(0);
 });

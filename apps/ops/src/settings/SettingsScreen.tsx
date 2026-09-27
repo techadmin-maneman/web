@@ -4,6 +4,7 @@
 // the moment it is set, a price applies from a date and keeps every earlier
 // row, and a pincode's launch date is a promise the waitlist counts from.
 
+import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
@@ -22,13 +23,13 @@ export function SettingsScreen({ tab }: { tab: SettingsTab }) {
   return (
     <Shell section="/settings" title={settings.title} sub={settings.sub}>
       <div className={styles.screen}>
-        <nav className={styles.tabs} aria-label={settings.title}>
+        <Tabs label={settings.title}>
           {SETTINGS_TABS.map((each) => (
-            <OpsLink key={each} className={styles.tab} to={settingsPath(each)} current={each === tab}>
+            <OpsLink key={each} className={TAB} to={settingsPath(each)} current={each === tab}>
               {SETTINGS_TAB_NAMES[each]}
             </OpsLink>
           ))}
-        </nav>
+        </Tabs>
         <Panel tab={tab} />
       </div>
     </Shell>

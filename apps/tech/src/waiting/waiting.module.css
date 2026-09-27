@@ -36,7 +36,7 @@
   margin: 0;
   outline: none;
   font-size: var(--fs-17);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--paper);
 }
 
@@ -55,7 +55,7 @@
 .atRiskBody {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-16);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-soft);
 }
 
@@ -139,22 +139,13 @@
 .stoppedLine {
   margin: 0 0 var(--sp-14);
   font-size: var(--fs-17);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--paper);
 }
 
 .button {
   display: inline-flex;
-  align-items: center;
-  min-height: var(--tech-min);
   margin-top: var(--sp-12);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink-line);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  color: var(--paper);
-  cursor: pointer;
 }
 
 .buttons {
@@ -167,17 +158,11 @@
   margin-top: 0;
 }
 
-.button:focus-visible,
-.back:focus-visible {
-  outline: var(--rule-strong) solid var(--gilt);
-  outline-offset: var(--focus-offset);
-}
-
 .nothing,
 .never {
   margin: 0;
   padding: var(--sp-18) var(--sp-20);
   font-size: var(--fs-15);
-  line-height: 1.6;
+  line-height: var(--lh-160);
   color: var(--ink-muted);
 }

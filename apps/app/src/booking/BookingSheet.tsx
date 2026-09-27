@@ -8,6 +8,7 @@
 // The hold's ten minutes are counted on the API's clock, not the phone's
 // (lib/clock.ts), and when the phone sees them run out it lets the hold go too.
 
+import { Sheet } from "@maneman/ui/Sheet";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
@@ -105,7 +106,6 @@ export function BookingSheet({
   }, [type, movingId]);
 
   useEffect(() => {
-    dialog.current?.showModal();
     void load();
   }, [load]);
 
@@ -238,20 +238,17 @@ export function BookingSheet({
 
   const day = availability?.days.find((each) => each.date === date);
   return (
-    <dialog
+    <Sheet
       ref={dialog}
       className={styles.dialog}
-      aria-labelledby={TITLE_ID}
+      labelledBy={TITLE_ID}
       onClose={() => {
-        // Stepping out of Checkout's way is not the client closing the sheet; nor is that close's
-        // event, when it arrives after the sheet has risen again.
-        if (paying.current || dialog.current?.open === true) return;
+        // Stepping out of Checkout's way is not the client closing the sheet (Sheet ignores that close's
+        // event if it arrives after the sheet has risen again).
+        if (paying.current) return;
         // Closed before it was paid for, the hold is let go for someone else.
         if (step.kind === "pay" || step.kind === "failed") void api.releaseHold(step.hold.id);
         onClose(changed.current);
-      }}
-      onClick={(event) => {
-        if (event.target === dialog.current) close();
       }}
     >
       <button className={styles.close} type="button" onClick={close}>
@@ -315,6 +312,6 @@ export function BookingSheet({
         {step.kind === "slow" && <WaitStep text={booking.slow} onClose={close} />}
         {step.kind === "refunded" && <WaitStep text={booking.refunded} onClose={close} />}
       </div>
-    </dialog>
+    </Sheet>
   );
 }

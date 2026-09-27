@@ -2,15 +2,16 @@
 // badge — a body that scrolls, and the one action fixed at the foot, where a
 // gloved thumb finds it on every screen.
 
+import { ICONS } from "@maneman/brand/icons";
+import { Icon } from "@maneman/ui/Icon";
+import { shortDate } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { badges, job as copy, types, typesLower } from "../content.ts";
-import { BACK } from "../icons.ts";
+import { STROKE } from "../icons.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
-import { shortDate } from "@maneman/web-kit/dates";
 import styles from "./job.module.css";
 
 /** The day, written only when it is not today: "Tomorrow", or "Fri 27 Sep". */
@@ -48,7 +49,7 @@ export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; 
             go("/");
           }}
         >
-          <Icon d={BACK} size={24} />
+          <Icon d={ICONS.back} size={24} stroke={STROKE} />
         </button>
         <div className={styles.headWho}>
           <h1 className={styles.name} ref={heading} tabIndex={-1}>

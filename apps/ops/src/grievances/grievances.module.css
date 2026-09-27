@@ -12,62 +12,7 @@
   max-width: var(--ops-panel);
 }
 
-.panel {
-  border: var(--hairline) solid var(--paper-line);
-}
-
-.panelHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--sp-14) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
-.panelTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: var(--fs-22);
-}
-
-.count {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.empty {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 /* ---- One grievance --------------------------------------------------------- */
-
-.grievances {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.grievance,
-.targeted {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-/* The grievance a task on the Tasks board led here, marked as the board marks a selection. */
-.targeted {
-  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
-}
-
-.grievance:focus-visible,
-.targeted:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
-}
 
 .head {
   display: flex;
@@ -84,8 +29,8 @@
 }
 
 .name:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .who {
@@ -106,7 +51,7 @@
   border-bottom: var(--hairline) solid var(--paper-line);
   font-family: var(--font-serif);
   font-size: var(--fs-16);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 
 /* ---- The answer ------------------------------------------------------------ */
@@ -115,35 +60,10 @@
   margin-top: var(--sp-14);
 }
 
-.answerLabel {
-  display: block;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
+/* An answer to a client can run long, so the field grows as ops write. */
 .answerField {
-  display: block;
-  width: 100%;
   min-height: var(--sp-64);
-  margin-top: var(--sp-6);
-  padding: var(--sp-8) var(--sp-10);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--fs-15);
   resize: vertical;
-}
-
-.answerField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
-}
-
-.answerHint {
-  margin: var(--sp-6) 0 0;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }
 
 .actions {
@@ -152,41 +72,8 @@
   margin-top: var(--sp-12);
 }
 
-/* Ink carries the one primary action, as on boards C1 and D1. */
-.send {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.send:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.send:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
-}
-
 .error {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
   color: var(--error-on-paper);
-}
-
-.note {
-  margin: 0;
-  padding: var(--sp-14) var(--sp-20);
-  font-size: var(--fs-14);
-  line-height: 1.6;
-  color: var(--text-muted);
 }

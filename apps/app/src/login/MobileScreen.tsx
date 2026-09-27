@@ -1,7 +1,8 @@
 // A1: the mobile number (design/phase2/Client App, board A1).
 
+import { Button } from "@maneman/ui/Button";
+import { Mark } from "@maneman/ui/Mark";
 import { useState } from "react";
-import { Mark } from "../components/Mark.tsx";
 import { login } from "../content.ts";
 import styles from "./login.module.css";
 import { mobileDigits } from "./mobile.ts";
@@ -66,9 +67,9 @@ export function MobileScreen({ initial, busy, error, ended, onSubmit }: Props) {
             </p>
           )}
           <div className={styles.foot}>
-            <button className={styles.primary} type="submit" disabled={busy}>
+            <Button variant="light" size="action" className={styles.primary} type="submit" disabled={busy} busy={busy}>
               {copy.send}
-            </button>
+            </Button>
             <p className={styles.hint}>{copy.hint}</p>
           </div>
         </form>

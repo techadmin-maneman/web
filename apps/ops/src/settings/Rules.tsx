@@ -8,11 +8,12 @@
 // would read as nought, and a nought here is a radius no arrival can pass or a
 // cycle due the day it is fitted.
 
+import { Button } from "@maneman/ui/Button";
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type OpsSetting, type SettingValue } from "../api.ts";
 import { settings } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./settings.module.css";
 
@@ -142,9 +143,10 @@ function AddKey({ rule, onAdd }: { rule: OpsSetting; onAdd: (key: string, text: 
           }}
         />
       </div>
-      <button
+      <Button
+        variant="outline"
+        size="small"
         className={styles.quiet}
-        type="button"
         disabled={!ready}
         onClick={() => {
           onAdd(key.trim(), text);
@@ -153,7 +155,7 @@ function AddKey({ rule, onAdd }: { rule: OpsSetting; onAdd: (key: string, text: 
         }}
       >
         {copy.add}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -216,18 +218,25 @@ function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting
 
       <p className={styles.set}>{setLine(rule)}</p>
       <div className={styles.actions}>
-        <button
+        <Button
+          variant="primary"
+          size="small"
           className={styles.save}
-          type="button"
           disabled={busy || !complete}
           onClick={() => void send(valueOf(rule, draft))}
         >
           {busy ? copy.saving : copy.save}
-        </button>
+        </Button>
         {rule.set_by !== null && (
-          <button className={styles.quiet} type="button" disabled={busy} onClick={() => void send(null)}>
+          <Button
+            variant="outline"
+            size="small"
+            className={styles.quiet}
+            disabled={busy}
+            onClick={() => void send(null)}
+          >
             {copy.reset}
-          </button>
+          </Button>
         )}
       </div>
       {saving.step === "saved" && (

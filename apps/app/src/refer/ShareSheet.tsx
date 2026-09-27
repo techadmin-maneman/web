@@ -8,14 +8,16 @@
 // (docs/decisions/0048-referrals.md).
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { Sheet } from "@maneman/ui/Sheet";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { whatsappShare } from "@maneman/web-kit/whatsapp";
 import { useEffect, useRef, useState } from "react";
 import { api, putCard, type Refer } from "../api.ts";
-import { Icon } from "../components/Icon.tsx";
 import { profile, refer } from "../content.ts";
 import { CHECK, COPY_LINK, OTHER_APPS } from "../icons.ts";
 import { focusIfLost } from "../lib/arrival.ts";
-import { useOneAtATime } from "../lib/useOneAtATime.ts";
-import { whatsappShare } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { composeCard, firstFitPhotos, type FirstFitPair } from "./card.ts";
 import { CardPreview, type Shown } from "./CardPreview.tsx";
@@ -97,7 +99,6 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   const [busy, once] = useOneAtATime();
 
   useEffect(() => {
-    dialog.current?.showModal();
     let current = true;
     void api.photos().then((answer) => {
       if (current && answer.ok) setPair(firstFitPhotos(answer.body));
@@ -207,16 +208,13 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
 
   const card = which === "house" ? HOUSE : sentCard(state, made);
   return (
-    <dialog
+    <Sheet
       ref={dialog}
       className={styles.dialog}
-      aria-labelledby={TITLE_ID}
-      aria-busy={busy}
+      labelledBy={TITLE_ID}
+      busy={busy}
       onClose={() => {
         onClose(changed.current);
-      }}
-      onClick={(event) => {
-        if (event.target === dialog.current) close();
       }}
     >
       {step === "choice" && (
@@ -256,9 +254,15 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
                 {problem}
               </p>
             )}
-            <button className={styles.primary} type="button" disabled={busy} onClick={continueToShare}>
+            <Button
+              variant="primary"
+              size="action"
+              className={styles.primary}
+              disabled={busy}
+              onClick={continueToShare}
+            >
               {refer.card.next}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -290,12 +294,24 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
               </p>
             )}
             <div className={styles.stack}>
-              <button className={styles.primary} type="button" disabled={busy} onClick={() => void makeTheirOwn(true)}>
+              <Button
+                variant="primary"
+                size="action"
+                className={styles.primary}
+                disabled={busy}
+                onClick={() => void makeTheirOwn(true)}
+              >
                 {refer.consent.allow}
-              </button>
-              <button className={styles.outline} type="button" disabled={busy} onClick={() => void useTheExample()}>
+              </Button>
+              <Button
+                variant="outline"
+                size="action"
+                className={styles.outline}
+                disabled={busy}
+                onClick={() => void useTheExample()}
+              >
                 {refer.consent.instead}
-              </button>
+              </Button>
             </div>
           </div>
         </>
@@ -351,6 +367,6 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
           </div>
         </div>
       )}
-    </dialog>
+    </Sheet>
   );
 }

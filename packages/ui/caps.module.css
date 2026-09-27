@@ -1,0 +1,12 @@
+/* The small-caps serif. A caller's own class sets the size and the colour, and may space it closer. */
+
+@layer base, ui;
+
+@layer ui {
+  .caps {
+    font-family: var(--font-serif);
+    font-weight: var(--weight-regular);
+    font-variant-caps: all-small-caps;
+    letter-spacing: var(--tracking-14);
+  }
+}

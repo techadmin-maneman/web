@@ -80,9 +80,6 @@ export const isMovable = (block: Block): boolean => block.status !== "completed"
 /** "Rohit", as the drawer's WhatsApp button names him. */
 export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;
 
-/** A chat with the client in WhatsApp, opened from the drawer (board A3). */
-export const whatsAppLink = (mobile: string): string => `https://wa.me/${mobile.replace(/\D/g, "")}`;
-
 /** The India date `days` after `date`: the board's weeks are counted in whole days. */
 export function addDays(date: string, days: number): string {
   const [year, month, day] = date.split("-").map(Number);

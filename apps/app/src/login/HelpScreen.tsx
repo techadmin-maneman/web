@@ -3,7 +3,9 @@
 // has a booking (docs/decisions/0030-one-time-codes.md).
 
 import { ICONS } from "@maneman/brand/icons";
-import { Icon } from "../components/Icon.tsx";
+import { ButtonLink } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { BOOKING_URL, login, whatsapp } from "../content.ts";
 import styles from "./login.module.css";
 
@@ -21,13 +23,24 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
         <p className={styles.helpBody}>{copy.body}</p>
         <p className={styles.helpBox}>{copy.hint}</p>
         <div className={styles.buttons}>
-          <a className={styles.primary} href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}>
+          <ButtonLink
+            variant="light"
+            size="action"
+            className={styles.primary}
+            href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}
+          >
             {copy.book}
-          </a>
-          <a className={styles.secondary} href={`https://wa.me/${whatsapp.number}`} rel="noopener">
+          </ButtonLink>
+          <ButtonLink
+            variant="outlineOnInk"
+            size="action"
+            className={styles.secondary}
+            href={whatsappChat(whatsapp.number)}
+            rel="noopener"
+          >
             <Icon d={ICONS.whatsapp} size={19} />
             {copy.message}
-          </a>
+          </ButtonLink>
         </div>
       </div>
     </main>

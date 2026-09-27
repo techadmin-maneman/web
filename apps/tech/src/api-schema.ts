@@ -1364,7 +1364,7 @@ export interface components {
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
-            /** @description The area, never the street. */
+            /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
@@ -1392,7 +1392,7 @@ export interface components {
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
-            /** @description The area, never the street. */
+            /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";

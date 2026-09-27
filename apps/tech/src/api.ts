@@ -1,13 +1,16 @@
-// The technician app's calls to mm-api (docs/api-tech.md). Every shape here is
-// the API's own: `npm run openapi` writes ./api-schema.ts from the schemas that
-// serve the routes, so nothing below is this app's reading of a board.
+// The technician app's calls to mm-api (docs/api-tech.md), made with the one
+// client the apps share (packages/web-kit/api.ts). Every shape here is the
+// API's own: `npm run openapi` writes ./api-schema.ts from the schemas that
+// serve the routes, and each call's path, query, body and answer are checked
+// against it, so nothing below is this app's reading of a board.
 //
 // Every call is same-origin, so the session cookie goes with it and the Origin
 // matches (docs/decisions/0026-hosts-and-surfaces.md). Every write carries the
 // client-generated `X-Client-Event-Id`, which makes it idempotent however often
 // the outbox replays it (docs/decisions/0038-offline-writes.md).
 
-import type { components } from "./api-schema.ts";
+import { createClient, type Answer as Answered } from "@maneman/web-kit/api";
+import type { components, paths } from "./api-schema.ts";
 import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, SUPERSEDED } from "./routes.ts";
 
 export {
@@ -45,20 +48,16 @@ export type PartialReason = Job["partial_reasons"][number];
 export type Angle = Schema["TechnicianPhotoUrlRequest"]["angle"];
 export type Phase = Schema["TechnicianPhotoUrlRequest"]["phase"];
 
+/** The codes the API refuses with, as its document writes them. */
+export type ErrorCode = Schema["ErrorResponse"]["error"]["code"];
+
 /**
  * A failed call carries the API's error code, or "offline" when it never
  * reached the API. The API never returns a message — a stable code and, on a
  * 409 or a 400, the fields that changed or failed — so the words a screen shows
  * are the app's own (apps/tech/src/content.ts).
  */
-export type Answer<T> =
-  | { readonly ok: true; readonly status: number; readonly body: T }
-  | {
-      readonly ok: false;
-      readonly status: number;
-      readonly code: string;
-      readonly fields: readonly string[];
-    };
+export type Answer<T> = Answered<T, ErrorCode>;
 
 export interface Write {
   /** The UUIDv7 that makes this write idempotent, whatever it takes to arrive. */
@@ -66,9 +65,6 @@ export interface Write {
   /** The job's start as the phone held it when the write was queued; null for a write an older build queued. */
   readonly startsAt: string | null;
 }
-
-/** A call that never reached the API: no signal, a signal that never answered, or something else answering. */
-const OFFLINE = { ok: false, status: 0, code: "offline", fields: [] } as const;
 
 /**
  * Whether a failed call means the API could not be reached, or could not answer
@@ -123,90 +119,75 @@ function reached(answered: boolean): void {
   for (const listener of reachListeners) listener(answered);
 }
 
-async function answerOf<T>(response: Response): Promise<Answer<T>> {
-  if (response.ok) {
-    // An answer that is not JSON is not ours — a Wi-Fi sign-in page, say — and throws, which counts as no signal.
-    const body = response.status === 204 ? null : ((await response.json()) as unknown);
+const client = createClient<paths, ErrorCode>({
+  onSessionEnded: (code) => {
+    for (const listener of sessionListeners) listener(code);
+  },
+  // The day's list from the service worker's copy is still the day, but it is not the API answering.
+  onAnswer: (response) => {
     reached(response.headers.get(SERVED_FROM) !== "cache");
-    return { ok: true, status: response.status, body: body as T };
-  }
-  reached(true);
-  const failure = (await response.json().catch(() => null)) as {
-    error?: { code?: string; fields?: string[] };
-  } | null;
-  const code = failure?.error?.code ?? (response.status === 409 ? SUPERSEDED : "unknown");
-  if (response.status === 401) for (const listener of sessionListeners) listener(code);
-  return { ok: false, status: response.status, code, fields: failure?.error?.fields ?? [] };
-}
-
-/** One request, and its answer read in full, given up on if it takes longer than `patience`. */
-async function ask<T>(url: string, init: RequestInit, patience: number): Promise<Answer<T>> {
-  const giveUp = new AbortController();
-  const timer = setTimeout(() => {
-    giveUp.abort();
-  }, patience);
-  try {
-    return await answerOf<T>(await fetch(url, { ...init, credentials: "same-origin", signal: giveUp.signal }));
-  } catch {
+  },
+  onUnreached: () => {
     reached(false);
-    return OFFLINE;
-  } finally {
-    clearTimeout(timer);
-  }
-}
+  },
+  // FSM changed the job under the phone and the answer lost its body on the way: still a job to stop.
+  missingCode: (status) => (status === 409 ? SUPERSEDED : "unknown"),
+});
 
-function call<T>(method: string, path: string, patience: number, body?: unknown, write?: Write): Promise<Answer<T>> {
-  const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (write !== undefined) {
-    headers[EVENT_ID_HEADER] = write.eventId;
-    if (write.startsAt !== null) headers[JOB_STARTS_AT_HEADER] = write.startsAt;
-  }
-  return ask<T>(
-    `/api${path}`,
-    { method, headers, ...(body === undefined ? {} : { body: JSON.stringify(body) }) },
-    patience,
-  );
+/** The headers that make a write idempotent, and say which start of the job the phone held. */
+function headersOf(write: Write): Record<string, string> {
+  const headers: Record<string, string> = { [EVENT_ID_HEADER]: write.eventId };
+  if (write.startsAt !== null) headers[JOB_STARTS_AT_HEADER] = write.startsAt;
+  return headers;
 }
 
 export const api = {
   /** The code goes to the technician's mobile on WhatsApp, and the phone names itself here too. */
   sendCode: (mobile: string, deviceId: string) =>
-    call<Challenge>("POST", "/tech/auth/otp", PATIENCE_MS.write, { mobile, device_id: deviceId }),
+    client.post("/api/tech/auth/otp", { body: { mobile, device_id: deviceId }, patience: PATIENCE_MS.write }),
   /**
    * Checks the code. A wrong one is a 200 with the attempts left, not an error:
    * only a closed challenge is refused (410). The right one opens the session
    * bound to this phone (docs/decisions/0052-technician-sessions.md).
    */
   verify: (challengeId: string, code: string, deviceId: string) =>
-    call<Verified>("POST", "/tech/auth/verify", PATIENCE_MS.write, {
-      challenge_id: challengeId,
-      code,
-      device_id: deviceId,
+    client.post("/api/tech/auth/verify", {
+      body: { challenge_id: challengeId, code, device_id: deviceId },
+      patience: PATIENCE_MS.write,
     }),
   /** Who is signed in, and on which phone. A 401 says the session ended, or that ops revoked the phone. */
-  me: () => call<Me>("GET", "/tech/me", PATIENCE_MS.read),
-  logout: () => call<null>("POST", "/tech/auth/logout", PATIENCE_MS.write),
+  me: () => client.get("/api/tech/me", { patience: PATIENCE_MS.read }),
+  logout: () => client.post("/api/tech/auth/logout", { patience: PATIENCE_MS.write }),
 
   /** Today and tomorrow in full; later dates carry time, type and sector only. */
-  jobs: (date: string) => call<Day>("GET", `/tech/jobs?date=${encodeURIComponent(date)}`, PATIENCE_MS.read),
+  jobs: (date: string) => client.get("/api/tech/jobs", { query: { date }, patience: PATIENCE_MS.read }),
   /** The card, which respects the day-before unlock: the API withholds it, not the screen. */
-  job: (id: string) => call<Job>("GET", `/tech/jobs/${id}`, PATIENCE_MS.read),
+  job: (id: string) => client.get("/api/tech/jobs/{id}", { path: { id }, patience: PATIENCE_MS.read }),
   /** The piece a label names, and whether it is one of this job's client's. */
   piece: (code: string, jobId: string) =>
-    call<PieceLookup>(
-      "GET",
-      `/tech/pieces/lookup?code=${encodeURIComponent(code)}&job=${encodeURIComponent(jobId)}`,
-      PATIENCE_MS.write,
-    ),
+    client.get("/api/tech/pieces/lookup", { query: { code, job: jobId }, patience: PATIENCE_MS.write }),
 
   /** A link to PUT one photograph to, good for fifteen minutes. */
   uploadLink: (jobId: string, phase: Phase, angle: Angle) =>
-    call<UploadLink>("POST", `/tech/jobs/${jobId}/photos/upload-url`, PATIENCE_MS.write, { phase, angle }),
+    client.post("/api/tech/jobs/{id}/photos/upload-url", {
+      path: { id: jobId },
+      body: { phase, angle },
+      patience: PATIENCE_MS.write,
+    }),
 
   /** The photograph itself. The link is a path on this host, so this call is same-origin too. */
-  upload: (link: string, frame: Blob) => ask<null>(link, { method: "PUT", body: frame }, PATIENCE_MS.upload),
+  upload: (link: string, frame: Blob) =>
+    client.request<null>("PUT", link, { body: frame, patience: PATIENCE_MS.upload }),
 
-  /** Every write below goes through the outbox, never straight from a screen (./store/outbox.ts). */
-  send: <T>(path: string, body: unknown, write: Write) => call<T>("POST", path, PATIENCE_MS.write, body, write),
+  /**
+   * Every write below goes through the outbox, never straight from a screen
+   * (./store/outbox.ts). The outbox keeps each write's path as it queued it,
+   * under the API's /api (./routes.ts), and sends it as it was queued.
+   */
+  send: <T>(path: string, body: unknown, write: Write) =>
+    client.request<T>("POST", `/api${path}`, {
+      ...(body === undefined ? {} : { json: body }),
+      headers: headersOf(write),
+      patience: PATIENCE_MS.write,
+    }),
 };

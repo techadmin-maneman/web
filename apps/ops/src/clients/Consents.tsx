@@ -3,11 +3,12 @@
 // board's fourth column is the source; nothing records one, so it carries the
 // notice version the client saw instead (docs/fidelity-method.md).
 
+import { Table } from "@maneman/ui/Table";
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { api, type Consent } from "../api.ts";
 import { clients } from "../content.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 
@@ -49,7 +50,7 @@ export function Consents({ clientId }: { clientId: string }) {
   const { consents, deletion } = loaded.value;
   return (
     <section className={styles.consents} aria-label={copy.title}>
-      <table className={styles.table}>
+      <Table className={styles.table}>
         <thead>
           <tr>
             <th scope="col" className={styles.purpose}>
@@ -71,7 +72,7 @@ export function Consents({ clientId }: { clientId: string }) {
             <ConsentRow key={consent.purpose} consent={consent} />
           ))}
         </tbody>
-      </table>
+      </Table>
       {deletion !== null && (
         <p className={styles.deletion}>{copy.deletion[deletion.state](longDate(deletion.requested_at))}</p>
       )}

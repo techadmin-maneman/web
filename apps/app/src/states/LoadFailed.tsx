@@ -2,6 +2,8 @@
 // a way to reach us. When the phone kept a Home with a visit on it, the visit
 // is still booked, and the screen says so.
 
+import { Button, ButtonLink } from "@maneman/ui/Button";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useEffect } from "react";
 import { states, whatsapp } from "../content.ts";
 import { nameInTitle } from "../lib/arrival.ts";
@@ -19,12 +21,18 @@ export function LoadFailed({ booked, onRetry }: { booked: boolean; onRetry: () =
         {booked && <p className={styles.booked}>{copy.booked}</p>}
       </div>
       <div className={styles.actions}>
-        <button className={styles.retry} type="button" onClick={onRetry}>
+        <Button variant="primary" size="small" className={styles.retry} onClick={onRetry}>
           {copy.retry}
-        </button>
-        <a className={styles.message} href={`https://wa.me/${whatsapp.number}`} rel="noopener">
+        </Button>
+        <ButtonLink
+          variant="outline"
+          size="small"
+          className={styles.message}
+          href={whatsappChat(whatsapp.number)}
+          rel="noopener"
+        >
           {copy.message}
-        </a>
+        </ButtonLink>
       </div>
     </main>
   );

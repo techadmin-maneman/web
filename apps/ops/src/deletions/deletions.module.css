@@ -13,62 +13,7 @@
   max-width: var(--ops-panel);
 }
 
-.panel {
-  border: var(--hairline) solid var(--paper-line);
-}
-
-.panelHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--sp-14) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
-.panelTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: var(--fs-22);
-}
-
-.count {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.empty {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
 /* ---- One request ----------------------------------------------------------- */
-
-.requests {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.request,
-.targeted {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-/* The request a task on the Tasks board led here, marked as the board marks a selection. */
-.targeted {
-  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
-}
-
-.request:focus-visible,
-.targeted:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: calc(-1 * var(--rule-strong));
-}
 
 .head {
   display: flex;
@@ -85,8 +30,8 @@
 }
 
 .name:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .who {
@@ -106,14 +51,14 @@
 
 /* The panel takes focus as it opens, so the outline has to be its own. */
 .confirm:focus-visible {
-  outline: var(--rule-strong) solid var(--error-on-paper);
-  outline-offset: var(--sp-2);
+  outline: var(--focus-width) solid var(--error-on-paper);
+  outline-offset: var(--focus-offset);
 }
 
 .warning {
   margin: 0;
   font-size: var(--fs-15);
-  line-height: 1.5;
+  line-height: var(--lh-150);
   color: var(--error-on-paper);
 }
 
@@ -127,7 +72,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -138,34 +83,13 @@
 
 .whatItem {
   font-size: var(--fs-14);
-  line-height: 1.5;
+  line-height: var(--lh-150);
 }
 
 .checkLine {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-10);
   margin-top: var(--sp-14);
   padding-top: var(--sp-12);
   border-top: var(--hairline) solid var(--paper-line);
-}
-
-.check {
-  flex-shrink: 0;
-  width: var(--sp-18);
-  height: var(--sp-18);
-  margin: 0;
-  accent-color: var(--ink);
-}
-
-.check:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
-}
-
-.checkLabel {
-  font-size: var(--fs-14);
-  line-height: 1.4;
 }
 
 /* ---- The reason a rejection carries ---------------------------------------- */
@@ -174,35 +98,9 @@
   margin-top: var(--sp-14);
 }
 
-.reasonLabel {
-  display: block;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
 .reasonField {
-  display: block;
-  width: 100%;
   min-height: var(--sp-48);
-  margin-top: var(--sp-6);
-  padding: var(--sp-8) var(--sp-10);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--fs-15);
   resize: vertical;
-}
-
-.reasonField:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-2);
-}
-
-.reasonHint {
-  margin: var(--sp-6) 0 0;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }
 
 /* ---- The two decisions ----------------------------------------------------- */
@@ -213,56 +111,8 @@
   margin-top: var(--sp-14);
 }
 
-.delete,
-.quiet {
-  display: flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 var(--sp-18);
-  font: inherit;
-  font-size: var(--fs-15);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-/*
- * The one action on the console drawn in oxblood: nothing else here destroys
- * anything. Ink carries the primary action everywhere else.
- */
-.delete {
-  border: var(--hairline) solid var(--error-on-paper);
-  background: var(--error-on-paper);
-  color: var(--paper);
-}
-
-.quiet {
-  border: var(--hairline) solid var(--ink);
-  background: transparent;
-  color: var(--text);
-}
-
-.delete:disabled,
-.quiet:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.delete:focus-visible,
-.quiet:focus-visible {
-  outline: var(--rule-strong) solid var(--ink);
-  outline-offset: var(--sp-3);
-}
-
 .error {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
   color: var(--error-on-paper);
-}
-
-.note {
-  margin: 0;
-  padding: var(--sp-14) var(--sp-20);
-  font-size: var(--fs-14);
-  line-height: 1.6;
-  color: var(--text-muted);
 }

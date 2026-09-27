@@ -17,15 +17,17 @@
 // The API refuses while the client has a visit booked or a payment held, and
 // the refusal's copy says which.
 
+import { Button } from "@maneman/ui/Button";
+import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
+import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState } from "react";
 import { api, type DeletionRequest } from "../api.ts";
+import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { deletions } from "../content.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
-import { rowId, useTargetRow } from "../lib/target.ts";
-import { useLoad } from "../lib/useLoad.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./deletions.module.css";
 
@@ -83,44 +85,34 @@ function ConfirmDelete({
       <p className={styles.warning}>{copy.warning}</p>
       <What title={copy.deleted.title} items={copy.deleted.items} />
       <What title={copy.kept.title} items={copy.kept.items} />
-      <div className={styles.checkLine}>
-        <input
-          id={`checked-${request.id}`}
-          className={styles.check}
-          type="checkbox"
-          checked={checked}
-          disabled={sending}
-          onChange={(event) => {
-            setChecked(event.target.checked);
-          }}
-        />
-        <label className={styles.checkLabel} htmlFor={`checked-${request.id}`}>
-          {copy.checked}
-        </label>
-      </div>
+      <Checkbox
+        className={styles.checkLine}
+        label={copy.checked}
+        checked={checked}
+        disabled={sending}
+        onChange={(event) => {
+          setChecked(event.target.checked);
+        }}
+      />
       <div className={styles.actions}>
-        <button className={styles.delete} type="button" disabled={sending || !checked} onClick={onDelete}>
+        <Button
+          variant="destructive"
+          size="small"
+          className={styles.delete}
+          disabled={sending || !checked}
+          onClick={onDelete}
+        >
           {sending ? copy.deleting : copy.confirm}
-        </button>
-        <button className={styles.quiet} type="button" disabled={sending} onClick={onCancel}>
+        </Button>
+        <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onCancel}>
           {copy.cancel}
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-function Request({
-  request,
-  now,
-  targeted,
-  onDecided,
-}: {
-  request: DeletionRequest;
-  now: Date;
-  targeted: boolean;
-  onDecided: () => void;
-}) {
+function Request({ request, now, onDecided }: { request: DeletionRequest; now: Date; onDecided: () => void }) {
   const [deciding, setDeciding] = useState<Deciding>({ step: "listed" });
   const [reason, setReason] = useState("");
   const openers = { delete: useRef<HTMLButtonElement>(null), reject: useRef<HTMLButtonElement>(null) };
@@ -142,7 +134,7 @@ function Request({
   };
 
   return (
-    <li className={targeted ? styles.targeted : styles.request} id={rowId("request", request.id)} tabIndex={-1}>
+    <>
       <div className={styles.head}>
         <OpsLink className={styles.name} to={`/clients/${request.person_id}`}>
           {request.name}
@@ -162,70 +154,71 @@ function Request({
       )}
       {asking?.choice === "reject" && (
         <div className={styles.reason}>
-          <label className={styles.reasonLabel} htmlFor={`reason-${request.id}`}>
-            {copy.reason.label}
-          </label>
-          <textarea
-            id={`reason-${request.id}`}
-            className={styles.reasonField}
-            maxLength={300}
-            // The field stands where the button that asked for it stood, so the keyboard goes to it.
-            autoFocus
-            aria-describedby={`reason-hint-${request.id}`}
-            value={reason}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
-          <p className={styles.reasonHint} id={`reason-hint-${request.id}`}>
-            {copy.reason.hint}
-          </p>
+          <Field label={copy.reason.label} hint={copy.reason.hint}>
+            {(control) => (
+              <TextArea
+                {...control}
+                className={styles.reasonField}
+                maxLength={300}
+                // The field stands where the button that asked for it stood, so the keyboard goes to it.
+                autoFocus
+                value={reason}
+                onChange={(event) => {
+                  setReason(event.target.value);
+                }}
+              />
+            )}
+          </Field>
           <div className={styles.actions}>
-            <button
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending || reason.trim() === ""}
               onClick={() => void decide("reject")}
             >
               {sending ? copy.rejecting : copy.reason.confirm}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="small"
               className={styles.quiet}
-              type="button"
               disabled={sending}
               onClick={() => {
                 listed("reject");
               }}
             >
               {copy.reason.cancel}
-            </button>
+            </Button>
           </div>
         </div>
       )}
       {asking === null && (
         <div className={styles.actions}>
-          <button
+          <Button
+            variant="destructive"
+            size="small"
             ref={openers.delete}
             className={styles.delete}
-            type="button"
             aria-label={copy.deleteLabel(request.name)}
             onClick={() => {
               setDeciding({ step: "asking", choice: "delete" });
             }}
           >
             {copy.delete}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            size="small"
             ref={openers.reject}
             className={styles.quiet}
-            type="button"
             aria-label={copy.rejectLabel(request.name)}
             onClick={() => {
               setDeciding({ step: "asking", choice: "reject" });
             }}
           >
             {copy.reject}
-          </button>
+          </Button>
         </div>
       )}
       {deciding.step === "failed" && (
@@ -233,50 +226,27 @@ function Request({
           {copy.errors[deciding.code] ?? copy.errors.unknown}
         </p>
       )}
-    </li>
+    </>
   );
 }
 
 function Queue() {
   const [loaded, retry] = useLoad(api.deletionRequests);
-  // A decided request leaves the queue at once; the count follows it, and so does the keyboard.
-  const [decided, setDecided] = useState<readonly string[]>([]);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const target = useTargetRow(loaded.state === "loaded");
-
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
   const now = new Date();
-  const open = loaded.value.requests.filter((request) => !decided.includes(request.id));
   return (
-    <section className={styles.panel} aria-labelledby="deletions">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="deletions" ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h2>
-        <span className={styles.count}>{open.length}</span>
-      </div>
-      {open.length === 0 ? (
-        <p className={styles.empty}>{copy.empty}</p>
-      ) : (
-        <ul className={styles.requests}>
-          {open.map((request) => (
-            <Request
-              key={request.id}
-              request={request}
-              now={now}
-              targeted={target === rowId("request", request.id)}
-              onDecided={() => {
-                setDecided((already) => [...already, request.id]);
-                heading.current?.focus();
-              }}
-            />
-          ))}
-        </ul>
-      )}
-      <p className={styles.note}>{copy.note(copy.processDays)}</p>
-    </section>
+    <DecisionQueue
+      titleId="deletions"
+      title={copy.title}
+      items={loaded.value.requests}
+      rowKind="request"
+      empty={copy.empty}
+      note={copy.note(copy.processDays)}
+    >
+      {(request, decided) => <Request request={request} now={now} onDecided={decided} />}
+    </DecisionQueue>
   );
 }
 

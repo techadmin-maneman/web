@@ -64,7 +64,7 @@
 .tabTitle {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
 }
 
 .name {
@@ -104,13 +104,6 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding-block: var(--sp-8);
-  animation: arrive var(--ease);
-}
-
-@keyframes arrive {
-  from {
-    opacity: 0;
-  }
 }
 
 /* Board C1's bar above the tabs. */
@@ -172,7 +165,7 @@
     border-image-slice: 0 fill;
     border-image-width: 0;
     /* Far enough past the column to reach the edge of any screen. */
-    border-image-outset: 0 100vmax;
+    border-image-outset: 0 var(--reach-screen);
   }
 
   .header {
