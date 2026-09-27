@@ -154,6 +154,25 @@ test("once a code is sent, the number can be changed, and a new code asked for a
   await expect.poll(() => fake.codesSent.at(-1)).toBe("9811000001");
 });
 
+// The field kept the first ten digits typed, so a number pasted with +91 in front lost its last two
+// (docs/owner-answers-2026-09-27.md).
+test("a number pasted with +91 or 0 in front becomes its own ten digits, and the code goes to them", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+
+  const number = page.getByRole("textbox", { name: "Mobile number" });
+  for (const pasted of ["+91 98110 00000", "091 98110 00000", "9198110 00000", "098110 00000"]) {
+    await number.fill(pasted);
+    await expect(number).toHaveValue("9811000000");
+  }
+  await page.getByRole("button", { name: "Send the code" }).click();
+  await expect(page.getByText("A six-digit code is on its way.")).toBeVisible();
+  expect(fake.codesSent).toEqual(["9811000000"]);
+});
+
 test("a code the API has closed takes the sign-in back to sending one, not to a dead end", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.signedIn = false;

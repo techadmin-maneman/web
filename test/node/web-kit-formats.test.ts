@@ -13,6 +13,7 @@ import {
 } from "../../packages/web-kit/dates.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { mobileDigits, typedDigits } from "../../packages/web-kit/mobile.ts";
 import { rupees, rupeeSign } from "../../packages/web-kit/money.ts";
 import { WHATSAPP_NUMBER, whatsappChat, whatsappShare } from "../../packages/web-kit/whatsapp.ts";
 
@@ -103,6 +104,38 @@ describe("web-kit money", () => {
       .flatMap(sourcesUnder)
       .filter((path) => readFileSync(path, "utf8").includes("new Intl.NumberFormat("));
     expect(formatting).toEqual([]);
+  });
+});
+
+describe("web-kit mobile numbers", () => {
+  // The technician app kept the first ten digits typed, so "+91 98110 00000" pasted into it became 91981 10000,
+  // a number nobody holds; a pasted +91 is to be read (docs/owner-answers-2026-09-27.md). Both apps read it so.
+  it.each([
+    "+91 98110 00000",
+    "+91-98110-00000",
+    "919811000000",
+    "9198110 00000",
+    "098110 00000",
+    "091 98110 00000",
+    "0091 98110 00000",
+    "98110 00000",
+  ])("reads %s as its ten digits, whatever country code or trunk prefix is in front", (typed) => {
+    expect(typedDigits(typed)).toBe("9811000000");
+    expect(mobileDigits(typed)).toBe("9811000000");
+  });
+
+  it("keeps a number that itself begins 91 or 0 whole, and one still being typed as it is", () => {
+    expect(mobileDigits("91981 10000")).toBe("9198110000");
+    expect(mobileDigits("0 91981 10000")).toBe("9198110000");
+    expect(typedDigits("+91 9811")).toBe("919811");
+    expect(typedDigits("98110")).toBe("98110");
+  });
+
+  it("takes nothing that is not an Indian mobile number", () => {
+    expect(mobileDigits("58110 00000")).toBeNull();
+    expect(mobileDigits("98110 0000")).toBeNull();
+    expect(mobileDigits("+44 7911 123456")).toBeNull();
+    expect(mobileDigits("")).toBeNull();
   });
 });
 
