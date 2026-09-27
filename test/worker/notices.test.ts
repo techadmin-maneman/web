@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CURRENT_NOTICE, NOTICES, findNotice } from "../../src/config/notices.ts";
+import { BOOKING_NOTICES, CURRENT_NOTICE, NAMING_NOTICES, NOTICES, findNotice } from "../../src/config/notices.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
 
 /**
@@ -25,6 +25,17 @@ describe("consent notices", () => {
     for (const [purpose, version] of Object.entries(CURRENT_NOTICE)) {
       expect(findNotice(version)?.purpose).toBe(purpose);
     }
+  });
+
+  it("records a consent given by booking on its own purpose's notice, and names a referrer on each card notice that says so", () => {
+    for (const notices of Object.values(BOOKING_NOTICES)) {
+      for (const [purpose, version] of Object.entries(notices)) expect(findNotice(version)?.purpose).toBe(purpose);
+    }
+    expect(NAMING_NOTICES).toEqual([
+      CURRENT_NOTICE.photos_referral_cards,
+      BOOKING_NOTICES.both.photos_referral_cards,
+      BOOKING_NOTICES.alone.photos_referral_cards,
+    ]);
   });
 
   it("carries the design's booking wording", () => {

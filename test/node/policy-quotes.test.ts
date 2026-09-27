@@ -1,13 +1,16 @@
 // The prompt says: "Encode each rule once, in src/policy/, with a unit test
 // that quotes it." Each module there exports its RULES in the prompt's own
-// words. This test holds them to that: every quote is in the prompt, and
-// every rule under "Business rules, decided" is quoted by exactly one module.
-// The behaviour behind each rule is tested next to it as its milestone lands.
+// words, or in the owner's where a later ruling of theirs made the rule, as
+// ADR 0025's register records it. This test holds them to that: every quote is
+// in the prompt or the register, and every rule under "Business rules, decided"
+// is quoted by exactly one module. The behaviour behind each rule is tested
+// next to it as its milestone lands.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const PROMPT = readFileSync("docs/prompts/phase2-backend.md", "utf8");
+const RULINGS = readFileSync("docs/decisions/0025-phase-2-conflicts-register.md", "utf8");
 
 /** The words alone: markdown's emphasis and code marks removed, whitespace collapsed. */
 function plain(text: string): string {
@@ -44,8 +47,9 @@ describe("src/policy", () => {
     expect(rules.length).toBeGreaterThan(0);
   });
 
-  it.each(quoted)("quotes the prompt word for word: %s", (rule) => {
-    expect(plain(PROMPT).includes(rule), "not in docs/prompts/phase2-backend.md").toBe(true);
+  it.each(quoted)("quotes the prompt, or the owner's ruling, word for word: %s", (rule) => {
+    const quotesASource = plain(PROMPT).includes(rule) || plain(RULINGS).includes(rule);
+    expect(quotesASource, "not in docs/prompts/phase2-backend.md, nor ruled in ADR 0025").toBe(true);
   });
 
   it("quotes no rule twice", () => {

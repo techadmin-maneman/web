@@ -993,7 +993,7 @@ Request body:
 }
 ```
 
-**409**: taken: nobody is free in that window now; not_changeable; or ops_assisted
+**409**: address_required: the client has not given the address the visit goes to; taken: nobody is free in that window now; not_changeable; or ops_assisted
 
 ```json
 {
@@ -1075,17 +1075,7 @@ Request body:
 
 ```json
 {
-  "type": "object",
-  "properties": {
-    "hold_id": {
-      "type": "string",
-      "format": "uuid"
-    }
-  },
-  "required": [
-    "hold_id"
-  ],
-  "additionalProperties": false
+  "$ref": "#/components/schemas/BookingStart"
 }
 ```
 
@@ -1468,6 +1458,7 @@ Request body:
             "taken",
             "not_bookable",
             "hold_expired",
+            "address_required",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -4462,6 +4453,36 @@ Request body:
   "required": [
     "hold_id",
     "checkout"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BookingStart
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "consents": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "photos_own_record",
+          "photos_referral_cards"
+        ]
+      },
+      "maxItems": 2,
+      "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on (ADR 0080); left out, none."
+    }
+  },
+  "required": [
+    "hold_id"
   ],
   "additionalProperties": false
 }

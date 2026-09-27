@@ -1,6 +1,6 @@
 # 0048. Referrals and the waitlist
 
-- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3.
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3. Amended by ADR 0080: a consent to cards given by booking a visit, on the pay step's lines, names the referrer too.
 - Date: 2026-09-22
 
 ## Context
@@ -26,7 +26,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 
 **The invite** (`GET /api/r/:code`) is valid or unknown, with the card to show.
 
-- It names the referrer by first name only if their latest consent to photographs on referral cards was given on the notice that says so. That is `photos-referral-cards-v2`: the four lines, and "Your first name appears on your invite." (ruling 2). The app shows the same five lines.
+- It names the referrer by first name only if their latest consent to photographs on referral cards was given on the notice that says so. That is `photos-referral-cards-v2`: the four lines, and "Your first name appears on your invite." (ruling 2). The app shows the same five lines. Since ADR 0080 it is any notice for cards that carries that line, the pay step's included (`NAMING_NOTICES`, `src/config/notices.ts`).
 - `REFERRER_NAME_ON_INVITE` switches the name off everywhere.
 - An erased referrer's invite stays valid, with the house card (ruling 1).
 

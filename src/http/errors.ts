@@ -43,6 +43,8 @@ export const ERROR_CODES = [
   "taken",
   "not_bookable",
   "hold_expired",
+  // No slot is held for a client who has not given their address (docs/decisions/0079-an-address-before-a-slot.md).
+  "address_required",
   // A public form for a number that already has a consultation still to happen (docs/decisions/0068-a-paid-hold-is-kept.md).
   "already_booked",
   // Moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md): it has started, passed or gone;

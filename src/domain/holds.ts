@@ -9,7 +9,6 @@ import { indiaInstant } from "../lib/india-time.ts";
 import { freeUntil, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { creditBalance } from "./credits.ts";
 import { priceOf, type Price } from "./price-book.ts";
-import { currentAddress } from "./profile.ts";
 import { visitTimes } from "./scheduling.ts";
 
 interface HoldRow {
@@ -127,18 +126,4 @@ export function checkoutHold(db: D1Database, holdId: string): Promise<CheckoutHo
     )
     .bind(holdId)
     .first<CheckoutHold>();
-}
-
-/** Where the client's visit would be: their saved address's pincode, else the one their last booking gave. */
-export async function bookingPincode(db: D1Database, personId: string): Promise<string | null> {
-  const address = await currentAddress(db, personId);
-  if (address !== null) return address.pincode;
-  const lastBooked = await db
-    .prepare(
-      `SELECT pincode FROM slot_holds WHERE person_id = ?1 AND pincode IS NOT NULL
-       ORDER BY created_at DESC LIMIT 1`,
-    )
-    .bind(personId)
-    .first<{ pincode: string }>();
-  return lastBooked?.pincode ?? null;
 }

@@ -1,5 +1,6 @@
 // The booking sheet's steps (boards C2 to C6): the date, the window, paying,
-// and what came of it. The sheet (BookingSheet.tsx) holds the state; each step
+// and what came of it, and, for a client who has given none, the address before
+// them all (ADR 0079). The sheet (BookingSheet.tsx) holds the state; each step
 // only draws it. Every step has a heading with the sheet's title id, so the
 // sheet is named whatever it shows.
 
@@ -9,14 +10,16 @@ import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import type { Availability, BookingWindow, Hold, MoveTerms, Price } from "../api.ts";
-import { booking, change, messages, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
+import type { Availability, BookingConsent, BookingWindow, Hold, MoveTerms, Price } from "../api.ts";
+import { booking, change, messages, profile, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
 import { CHECK, CLOCK } from "../icons.ts";
 import { lateFeeFigures } from "../lib/money.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
 import { firstName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
+import { AddressForm } from "../profile/AddressForm.tsx";
 import type { PayMethod } from "./checkout.ts";
+import { consentLines } from "./consents.ts";
 import styles from "./booking.module.css";
 
 type Day = Availability["days"][number];
@@ -40,13 +43,20 @@ export const useHoldLeft = (hold: Hold): number => useSecondsLeft(Date.parse(hol
 /** A hold that costs the client nothing now: a free visit, or one a credit covers. Checkout never opens for it. */
 export const paysNothing = (hold: Hold): boolean => hold.price.amount === 0 || hold.credit !== null;
 
-function Heading({ title, step, aside }: { title: string; step?: number; aside?: string }) {
+/**
+ * "Step 1 of 3" and "Step 2 of 3", as the boards number the date and the window; "Step 2 of 4" and "Step 3 of 4"
+ * once the sheet has asked for the address first (ADR 0079).
+ */
+const stepOf = (step: number, addressFirst: boolean): string =>
+  addressFirst ? booking.step(step + 1, 4) : booking.step(step, 3);
+
+function Heading({ title, step, aside }: { title: string; step?: string; aside?: string }) {
   return (
     <div className={styles.heading}>
       <h2 className={styles.title} id={TITLE_ID}>
         {title}
       </h2>
-      {step !== undefined && <p className={styles.step}>{booking.step(step)}</p>}
+      {step !== undefined && <p className={styles.step}>{step}</p>}
       {aside !== undefined && (
         <p className={styles.held}>
           <Icon d={CLOCK} size={16} />
@@ -98,10 +108,28 @@ export function LoadingStep() {
 }
 
 /**
+ * The address, before any slot, for a client who has given none (ADR 0079): Profile's own form, under its heading.
+ * No board draws it. `refused`: the API refused a hold for want of one, so the sheet came back here.
+ */
+export function AddressStep({ refused, onSaved }: { refused: boolean; onSaved: () => void }) {
+  const copy = booking.address;
+  return (
+    <>
+      <Heading title={profile.where} step={booking.step(1, 4)} />
+      <p className={styles.why} role={refused ? "alert" : undefined}>
+        {refused ? copy.refused : copy.why}
+      </p>
+      <AddressForm address={null} saveLabel={copy.save} onSaved={onSaved} />
+    </>
+  );
+}
+
+/**
  * Board C2: fourteen days, full ones shown but not chosen. The days are one group of native radio
  * buttons, drawn as the design's squares: one tab stop, and the arrow keys move between the days.
  */
 export function DateStep(props: {
+  addressFirst: boolean;
   days: Day[];
   chosen: string | null;
   onChoose: (date: string) => void;
@@ -110,7 +138,7 @@ export function DateStep(props: {
   const copy = booking.date;
   return (
     <>
-      <Heading title={copy.title} step={1} />
+      <Heading title={copy.title} step={stepOf(1, props.addressFirst)} />
       <div className={styles.strip} role="radiogroup" aria-labelledby={TITLE_ID}>
         {props.days.map((day) => {
           const full = isFull(day);
@@ -163,6 +191,7 @@ export function DateStep(props: {
 
 /** Board C3: the day's three windows, and whether the regular technician is free. */
 export function WindowStep(props: {
+  addressFirst: boolean;
   day: Day;
   regular: Availability["regular"];
   chosen: BookingWindow | null;
@@ -183,7 +212,7 @@ export function WindowStep(props: {
 
   return (
     <>
-      <Heading title={copy.title} step={2} />
+      <Heading title={copy.title} step={stepOf(2, props.addressFirst)} />
       <p className={styles.dayLine}>{weekdayDate(props.day.date)}</p>
       <div className={styles.windows} role="radiogroup" aria-labelledby={TITLE_ID}>
         {props.day.windows.map(({ window, with: who }) => (
@@ -289,6 +318,8 @@ export function PayStep(props: {
   problem: string | null;
   /** Whether to ask to remind the client the day before: not when they have already switched it on. */
   askToRemind: boolean;
+  /** The photograph purposes booking also agrees to, whose lines are shown above the button (ADR 0080). */
+  consents: readonly BookingConsent[];
   remind: boolean;
   onRemind: (remind: boolean) => void;
   onMethod: (method: PayMethod) => void;
@@ -371,6 +402,14 @@ export function PayStep(props: {
           />
           <span>{copy.remind}</span>
         </label>
+      )}
+      {props.consents.length > 0 && (
+        // What the tap below also agrees to, read before it, whole: it is the notice the consent is given on.
+        <div className={styles.consents}>
+          {consentLines(props.consents).map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
       )}
       {props.problem !== null && (
         <p className={styles.problem} role="alert">

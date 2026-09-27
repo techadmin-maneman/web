@@ -11,7 +11,16 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  request,
+  savedAddress,
+} from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const world = () => ({
@@ -74,6 +83,7 @@ beforeEach(async () => {
   )
     .bind(PERSON, NOW.toISOString())
     .run();
+  await savedAddress(PERSON);
   // Fitted, so service visits are what they book.
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,

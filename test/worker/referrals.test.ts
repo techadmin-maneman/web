@@ -136,6 +136,20 @@ describe("GET /api/r/:code", () => {
     expect(await read({ referrerNameOnInvite: false })).toMatchObject({ referrer_first_name: null });
   });
 
+  // The pay step carries the naming line with the card's (ADR 0080), so a consent given by booking a visit names the
+  // referrer as one given on the profile's notice does; and the app's card sheet does not ask for it again (F3).
+  it.each(["photos-referral-cards-booking-v1", "photos-referral-cards-booking-alone-v1"])(
+    "names a referrer whose consent to cards was given by booking, on %s",
+    async (notice) => {
+      const code = await codeOf();
+      await cardConsent(notice);
+      expect(await (await request(site(), `/api/r/${code}`)).json()).toMatchObject({ referrer_first_name: "Rohit" });
+      const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
+      const refer = await request(client(), "/api/refer", { headers: { Cookie: cookie } });
+      expect(await refer.json()).toMatchObject({ named: true, card: { consented: true } });
+    },
+  );
+
   it("answers unknown for a code that does not exist, and the house card for an erased referrer", async () => {
     expect(await (await request(site(), "/api/r/ZZ9999")).json()).toMatchObject({ state: "unknown" });
     const code = await codeOf();

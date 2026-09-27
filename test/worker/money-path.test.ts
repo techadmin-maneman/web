@@ -24,6 +24,7 @@ import {
   markDatabase,
   NOW,
   request,
+  savedAddress,
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -68,6 +69,7 @@ async function fittedPerson(id: string, mobile: string, name: string) {
   )
     .bind(id, NOW.toISOString(), mobile, name, `contact-${id}`)
     .run();
+  await savedAddress(id);
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
        fsm_modified_at, synced_at)

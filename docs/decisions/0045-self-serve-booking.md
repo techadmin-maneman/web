@@ -1,6 +1,6 @@
 # 0045. Self-serve booking and prepayment
 
-- Status: accepted; moving and cancelling in ADR 0046; a paid hold kept, and FSM written once, in ADR 0068
+- Status: accepted; moving and cancelling in ADR 0046; a paid hold kept, and FSM written once, in ADR 0068; no hold without an address, in ADR 0079
 - Date: 2026-09-22
 
 ## Context

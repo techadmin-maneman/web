@@ -12,7 +12,16 @@ import { createStubPayments } from "../../src/providers/payments.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { appFor, fakeDependencies, fakeQueue, LOCAL_SETTINGS, markDatabase, NOW, request } from "./helpers.ts";
+import {
+  appFor,
+  fakeDependencies,
+  fakeQueue,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+  savedAddress,
+} from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const world = () => ({
@@ -38,6 +47,7 @@ beforeEach(async () => {
   )
     .bind(PERSON, NOW.toISOString())
     .run();
+  await savedAddress(PERSON);
   // Fitted: a service visit done with Imran.
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
