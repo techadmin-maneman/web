@@ -72,8 +72,8 @@ interface FittedRow {
 }
 
 /**
- * A fitted friend's first name, as the grant kept it (LIFE-13). A friend erased before names were kept has none:
- * the tracker must not tell the referrer that the friend asked to be erased.
+ * A fitted friend's first name, as the grant kept it (LIFE-13). An erased friend has none, since the erasure blanks
+ * it: the tracker must not tell the referrer that the friend asked to be erased.
  */
 function friendName(friend: FittedRow): string | null {
   if (friend.friend_first_name !== null) return friend.friend_first_name;

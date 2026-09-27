@@ -61,9 +61,9 @@ ALTER TABLE appointments ADD COLUMN client_note_at TEXT;
 ALTER TABLE appointments ADD COLUMN first_seen_at TEXT;
 
 -- The friend's first name, kept with the referral when it is granted, so the
--- referrer's tracker still reads it after the friend is erased rather than
--- "Erased" (src/routes/client-refer.ts). Filled here for the grants already
--- made to a friend not erased; one erased before now has no name to keep.
+-- referrer's tracker reads it without the friend's record, and an erasure,
+-- which blanks it, shows "A friend" rather than "Erased" (src/routes/client-refer.ts).
+-- Filled here for the grants already made to a friend not erased.
 ALTER TABLE referral_attributions ADD COLUMN friend_first_name TEXT;
 UPDATE referral_attributions
 SET friend_first_name = (

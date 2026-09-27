@@ -209,6 +209,11 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
          WHERE referred_person_id = ?1 OR code IN (SELECT code FROM referral_codes WHERE person_id = ?1)`,
       )
       .bind(personId),
+    // Their first name on a referral, which the referrer's tracker shows until now; blank, it reads "A friend",
+    // which says nothing of the erasure (LIFE-13). Counsel may rule it can stay (docs/open-points.md, item 105).
+    db
+      .prepare("UPDATE referral_attributions SET friend_first_name = NULL WHERE referred_person_id = ?1")
+      .bind(personId),
     // And the client's own words to the technician on a visit (src/domain/client-notes.ts).
     db.prepare("UPDATE appointments SET client_note = NULL, client_note_at = NULL WHERE person_id = ?1").bind(personId),
     // Found through the check-in, which each case is keyed on, so the lookup is indexed.

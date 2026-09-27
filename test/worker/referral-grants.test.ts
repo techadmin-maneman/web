@@ -369,14 +369,15 @@ describe("the referrer's tracker, after the friend is erased", () => {
       .fitted;
   };
 
-  it("keeps the friend's first name, kept with the referral when it was granted", async () => {
+  it("names the friend until they are erased, then nobody, rather than writing Erased", async () => {
     await firstFit(FIT, FRIEND);
     await settleReferrals(env.DB, NOW);
     expect(await tracker()).toEqual([{ first_name: "Karan", month: "2026-09" }]);
 
     await erasePerson(env, FRIEND, NOW, createLogger());
 
-    expect(await tracker()).toEqual([{ first_name: "Karan", month: "2026-09" }]);
+    // An erasure keeps no name of theirs, not even on another client's page (open point 105, for counsel).
+    expect(await tracker()).toEqual([{ first_name: null, month: "2026-09" }]);
   });
 
   it("names nobody for a friend erased before names were kept, rather than writing Erased", async () => {
