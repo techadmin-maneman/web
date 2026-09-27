@@ -6,7 +6,6 @@
 // A try-on lead does not make the person contactable: the gate's consent
 // permits sending this result and nothing else (docs/decisions/0012-zoho-sync.md).
 
-import { CURRENT_NOTICE } from "../config/notices.ts";
 import { TRYON_SESSION_TTL_MS } from "../config/tryon.ts";
 import type { Attribution } from "./leads.ts";
 import { recordEvent, type JobRow } from "./tryon.ts";
@@ -27,6 +26,8 @@ export interface NewClaim {
   readonly job: JobRow;
   readonly mobileE164: string;
   readonly name: string;
+  /** The gate's notice the page showed. */
+  readonly gateNotice: string;
   readonly attribution: Attribution;
   readonly ipHash: string;
   readonly requestId: string;
@@ -65,7 +66,7 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<Clai
           `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
            VALUES (?, ${personId}, 'result_delivery', ?, 1, ?, ?)`,
         )
-        .bind(crypto.randomUUID(), mobileE164, CURRENT_NOTICE.result_delivery, at, claim.ipHash),
+        .bind(crypto.randomUUID(), mobileE164, claim.gateNotice, at, claim.ipHash),
       // The photo consent was given before the upload; it is recorded now that we know who gave it.
       db
         .prepare(

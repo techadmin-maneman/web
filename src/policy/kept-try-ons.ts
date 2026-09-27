@@ -8,8 +8,12 @@
 // keeps the published notices' rules. A client keeps one try-on, the oldest, so what R2 holds for good grows with the
 // clients and not with the try-ons each makes (scripts/lib/free-tier-budget.ts).
 
+/** The owner's ruling of 27 September 2026 (ADR 0025, item 65), in the owner's words. */
+export const RULING = "Show the before photo always, keep the generated image till the photos for first fit are taken.";
+
+/** Where a kept try-on lives, as the prompt gives the bucket for clients' photographs: what is kept stays until deleted. */
 export const RULES = [
-  "Show the before photo always, keep the generated image till the photos for first fit are taken.",
+  "Stored in a new bucket per environment, mm-{env}-client-photos, with no lifecycle rule.",
 ] as const;
 
 /** The photo notices that tell the visitor a client's try-on is kept. */

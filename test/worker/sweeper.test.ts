@@ -26,6 +26,7 @@ function sweepEnv() {
     DB: env.DB,
     UPLOADS: env.UPLOADS,
     RESULTS: env.RESULTS,
+    CLIENT_PHOTOS: env.CLIENT_PHOTOS,
     CRM_QUEUE: queues.crm,
     RENDER_QUEUE: queues.render,
     MESSAGE_QUEUE: queues.messages,

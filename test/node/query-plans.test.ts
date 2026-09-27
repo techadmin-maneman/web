@@ -22,6 +22,7 @@ const CRON_PATH = [
   "src/domain/erasure.ts",
   "src/domain/deletion.ts",
   "src/domain/tryon.ts",
+  "src/domain/kept-try-ons.ts",
   "src/domain/fsm-invoices.ts",
   "src/domain/asked-windows.ts",
   "src/domain/books-sync.ts",

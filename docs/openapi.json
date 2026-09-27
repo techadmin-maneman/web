@@ -852,6 +852,13 @@
             "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
             "example": "98100 00000"
           },
+          "notice_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "example": "gate-v1",
+            "description": "The gate's notice the page showed; the one production shows when left out. Staging's site shows the one awaiting counsel (docs/decisions/0084-a-clients-try-on-is-kept.md)."
+          },
           "attribution": {
             "$ref": "#/components/schemas/Attribution"
           }
@@ -2249,6 +2256,68 @@
           },
           "422": {
             "description": "photo_invalid_file: not a JPEG or PNG, over 5 MB, or the wrong size",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tryon/upload/{job_id}/copy": {
+      "put": {
+        "summary": "Upload the photo's small copy, which a client keeps as their before photo: a JPEG of at most 250 KB and 200 to 1600 px a side",
+        "description": "With the upload link's token, after the photo itself, and only under a photo notice that says a client's try-on is kept (docs/decisions/0084-a-clients-try-on-is-kept.md). The sweeper deletes it with the photo, or with the look, unless its person books a visit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "job_id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "required": true,
+            "name": "token",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Received"
+          },
+          "404": {
+            "description": "not_found: no such job, or the link has expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "upload_missing: the photo has not been uploaded, or has been deleted; upload_already_received: the copy was; consent_required: the photo notice agreed to keeps no copy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "photo_invalid_file: not a JPEG, over 250 KB, or the wrong size",
             "content": {
               "application/json": {
                 "schema": {

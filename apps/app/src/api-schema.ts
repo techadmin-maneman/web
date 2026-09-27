@@ -2578,19 +2578,18 @@ export interface components {
              * @description India's date the look was asked for.
              */
             made_on: string;
-            /** @description The photograph the client uploaded on the site, while it is held; null once deleted, and on a second look of the same photograph, which shows it once. */
+            /** @description The client's kept try-on (ADR 0084): they have booked a visit, and it is the oldest of theirs kept, or whose look was held when they booked. */
+            kept: boolean;
+            /** @description The photograph the client uploaded on the site, as the small copy the site sent with it where there is one, while it is held; null once deleted, and on a second look of the same photograph, which shows it once. */
             photo: components["schemas"]["TryOnLink"] | null;
-            /** @description The look made from it, once made and until it is deleted; null while it is still being made. */
+            /** @description The look made from it, once made and until it is deleted; null while it is still being made, and once a kept try-on's first fit is photographed. */
             look: components["schemas"]["TryOnLink"] | null;
         };
         TryOnLink: {
             /** @description Lasts 15 minutes; only the signed-in client can open it. */
             url: string;
-            /**
-             * Format: date-time
-             * @description When the try-on's retention rule lets it go: a photograph an hour after the last look asked of it, a look the days the site keeps it for (RESULT_RETENTION_DAYS, ADR 0039). Deleted within minutes after.
-             */
-            kept_until: string;
+            /** @description When the try-on's retention rule lets it go: a photograph an hour after the last look asked of it, or its small copy as long as the look; a look the days the site keeps it for (RESULT_RETENTION_DAYS, ADR 0039). Deleted within minutes after. Null while the try-on is kept (ADR 0084): the photograph until the client asks us to delete it, the look until their first fit is photographed. */
+            kept_until: string | null;
         };
         PhotoCompare: {
             /** @enum {string} */

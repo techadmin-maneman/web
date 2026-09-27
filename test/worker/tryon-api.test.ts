@@ -350,6 +350,35 @@ describe("POST /api/tryon/claim", () => {
     expect(browser.queues.MESSAGE_QUEUE.sent).toEqual([]);
   });
 
+  // ADR 0084: staging's site shows the notices awaiting counsel, production's the published pair, and each consent
+  // records the one the page showed.
+  it("records the gate's notice the page showed, and refuses one that is not the gate's", async () => {
+    const browser = visitor();
+    const link = await (
+      await browser.uploadLink({ notice_version: "photo-v2" })
+    ).json<{ job_id: string; upload_url: string }>();
+    await browser.put(link.upload_url, syntheticJpeg(800, 800));
+    await browser.generate(link.job_id);
+    const claim = (noticeVersion: string) =>
+      browser.post("/api/tryon/claim", {
+        job_id: link.job_id,
+        name: "Arjun Mehta",
+        mobile: "98100 00001",
+        notice_version: noticeVersion,
+      });
+
+    const refused = await claim("photo-v2");
+    expect(refused.status).toBe(400);
+    expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["notice_version"] } });
+
+    expect((await claim("gate-v2")).status).toBe(201);
+    const consents = await env.DB.prepare("SELECT purpose, notice_version FROM consents ORDER BY purpose").all();
+    expect(consents.results).toEqual([
+      { purpose: "result_delivery", notice_version: "gate-v2" },
+      { purpose: "tryon_photo", notice_version: "photo-v2" },
+    ]);
+  });
+
   it("queues the message at once when the result is already ready", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();

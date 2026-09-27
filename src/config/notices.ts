@@ -48,6 +48,32 @@ export const NOTICES: readonly Notice[] = [
       "No password, no account, no marketing. Your photograph is deleted after thirty days.",
     ],
   },
+  // A client's try-on is kept, by the owner's ruling of 27 September 2026 (ADR 0025, item 65; ADR 0084).
+  // PLACEHOLDER: the words await counsel (docs/open-points.md, item 146). Staging records them; if counsel changes
+  // them, the new words are photo-v3 and gate-v3.
+  {
+    version: "photo-v2",
+    purpose: "tryon_photo",
+    text: [
+      "What happens to your photograph.",
+      "Used for: Generating your simulation. If you book a visit, a small copy is also kept in your Mane Man account as your before photo.",
+      "Kept for: Thirty days at most, then deleted automatically. If you book a visit while your simulation is kept, we keep the small copy until you ask us to delete it, and the simulation until the photographs of your first fit are taken.",
+      "Training: Never used to train any model.",
+      "Shared with: Nobody outside Mane Man.",
+      "To withdraw: Message us and it is deleted the same day.",
+      "I understand, and I agree to my photograph being used this way.",
+    ],
+  },
+  {
+    version: "gate-v2",
+    purpose: "result_delivery",
+    text: [
+      "The full-size image is on the next screen. We also send a copy to your WhatsApp so it is not lost when you close the browser.",
+      "Where should we send it?",
+      "The result opens on the next screen either way. The number is so we can send you a copy.",
+      "No password, no account, no marketing. Your photograph is deleted after thirty days, unless you book a visit: then a small copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
+    ],
+  },
   // Phase 2's five consents (docs/prompts/phase2-backend.md, "Consents"), as the client app's profile names
   // them (design/phase2/Client App, G1). Counsel's sign-off is outstanding (plan input 6).
   {
@@ -112,7 +138,14 @@ export const NOTICES: readonly Notice[] = [
 /** The lines the referral landing shows, by what they are given for. */
 export const LANDING_NOTICES = { consultation: "referral-consultation-v1", waitlist: "waitlist-v1" } as const;
 
-/** The version shown today for each purpose. */
+/**
+ * The try-on's notices that keep a client's try-on (ADR 0084). Every build of the site shows them but production's,
+ * which shows CURRENT_NOTICE's approved pair until counsel approves these (docs/open-points.md, item 146): then they
+ * become current, and this goes.
+ */
+export const TRY_ON_NOTICES_AWAITING_COUNSEL = { photo: "photo-v2", gate: "gate-v2" } as const;
+
+/** The version shown today for each purpose, in production. */
 export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
   contact: "booking-v1",
   tryon_photo: "photo-v1",

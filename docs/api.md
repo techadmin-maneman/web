@@ -834,6 +834,36 @@ Upload the photo: a JPEG or PNG, at most 5 MB and 200 to 4090 px a side
 }
 ```
 
+### PUT /api/tryon/upload/{job_id}/copy
+
+Upload the photo's small copy, which a client keeps as their before photo: a JPEG of at most 250 KB and 200 to 1600 px a side
+
+**204**: Received
+
+**404**: not_found: no such job, or the link has expired
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: upload_missing: the photo has not been uploaded, or has been deleted; upload_already_received: the copy was; consent_required: the photo notice agreed to keeps no copy
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: photo_invalid_file: not a JPEG, over 250 KB, or the wrong size
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/tryon/generate
 
 Render the look for an uploaded photo: one look per visitor
@@ -2133,6 +2163,13 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
+    },
+    "notice_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "example": "gate-v1",
+      "description": "The gate's notice the page showed; the one production shows when left out. Staging's site shows the one awaiting counsel (docs/decisions/0084-a-clients-try-on-is-kept.md)."
     },
     "attribution": {
       "$ref": "#/components/schemas/Attribution"

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { CURRENT_NOTICE, NOTICES, findNotice } from "../../src/config/notices.ts";
+import { CURRENT_NOTICE, NOTICES, TRY_ON_NOTICES_AWAITING_COUNSEL, findNotice } from "../../src/config/notices.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
+import { KEEPING_NOTICES } from "../../src/policy/kept-try-ons.ts";
 
 /**
  * A consent row names the notice version the person saw, so a published text
@@ -25,6 +26,14 @@ describe("consent notices", () => {
     for (const [purpose, version] of Object.entries(CURRENT_NOTICE)) {
       expect(findNotice(version)?.purpose).toBe(purpose);
     }
+  });
+
+  // ADR 0084: only a photo notice that says so keeps a client's try-on, and production shows the published one.
+  it("holds the try-on's pair awaiting counsel, whose photo notice alone of the two keeps a client's try-on", () => {
+    expect(findNotice(TRY_ON_NOTICES_AWAITING_COUNSEL.photo)?.purpose).toBe("tryon_photo");
+    expect(findNotice(TRY_ON_NOTICES_AWAITING_COUNSEL.gate)?.purpose).toBe("result_delivery");
+    expect(KEEPING_NOTICES).toEqual([TRY_ON_NOTICES_AWAITING_COUNSEL.photo]);
+    expect(KEEPING_NOTICES).not.toContain(CURRENT_NOTICE.tryon_photo);
   });
 
   it("carries the design's booking wording", () => {

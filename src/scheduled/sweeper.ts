@@ -13,7 +13,9 @@
 //   moves       a dispatch move still open after five minutes: its claimed time let go, the move closed
 //   hourly      the AILabTools balance, against AILAB_CREDIT_FLOOR
 //   expiry      abandoned uploads after an hour, results once RESULT_RETENTION_DAYS is up (14 in production,
-//               3 on staging), photos once their jobs are done
+//               3 on staging), photos once their jobs are done; a client's try-on is kept on its look's day, and
+//               any other photo's small copy goes with the photo or the look (docs/decisions/0084)
+//   kept looks  a client's kept look once their first fit is photographed
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
 //               try-on sessions once expired, and app sessions 30 days after they ended
 
@@ -21,6 +23,7 @@ import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { unfinishedMovesLetGo } from "../domain/dispatch.ts";
+import { keepOrLetGo, letCopiesGoWith, letFittedLooksGo, type ExpiringTryOn } from "../domain/kept-try-ons.ts";
 import { failJob } from "../domain/tryon.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
@@ -57,7 +60,7 @@ const SESSION_RETENTION_MS = 30 * DAY_MS;
 
 export type SweepEnv = Pick<
   Env,
-  "DB" | "CRM_QUEUE" | "RENDER_QUEUE" | "MESSAGE_QUEUE" | "UPLOADS" | "RESULTS" | "FSM_QUEUE"
+  "DB" | "CRM_QUEUE" | "RENDER_QUEUE" | "MESSAGE_QUEUE" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS" | "FSM_QUEUE"
 >;
 
 export interface SweepSummary {
@@ -68,6 +71,9 @@ export interface SweepSummary {
   readonly downloadsRequeued: number;
   readonly jobsExpired: number;
   readonly photosDeleted: number;
+  /** Clients' try-ons kept on their looks' day, and kept looks let go once the first fit was photographed. */
+  readonly tryOnsKept: number;
+  readonly keptLooksDeleted: number;
   /** The AILabTools balance, on the hourly run; undefined on the others. */
   readonly credits?: number | null;
 }
@@ -111,8 +117,9 @@ export async function sweep(
   const jobEvents = await requeueJobEvents(run);
   const messages = await requeueMessages(run);
   const { renders, abandoned, downloads, lost } = await requeueTryons(run);
-  const jobsExpired = await expireJobs(env, now);
+  const { expired: jobsExpired, kept: tryOnsKept } = await expireJobs(env, now);
   const photosDeleted = await deletePhotos(env, now);
+  const keptLooksDeleted = await letFittedLooksGo(env, now);
   await housekeep(run);
   const credits = await checkCredits(run, options);
 
@@ -124,6 +131,8 @@ export async function sweep(
     downloadsRequeued: downloads.length,
     jobsExpired,
     photosDeleted,
+    tryOnsKept,
+    keptLooksDeleted,
     ...(credits === undefined ? {} : { credits }),
   };
   log.info("sweep", {
@@ -137,6 +146,8 @@ export async function sweep(
     results_lost: lost.length,
     jobs_expired: jobsExpired,
     photos_deleted: photosDeleted,
+    try_ons_kept: tryOnsKept,
+    kept_looks_deleted: keptLooksDeleted,
     credits: credits ?? null,
   });
   return summary;
@@ -412,34 +423,46 @@ async function alertStuckJobEvents(db: D1Database, deps: Dependencies, landedBef
   }
 }
 
-/** Uploads nobody finished within an hour, and results past their 30 days, become `expired`. */
-async function expireJobs(env: SweepEnv, now: Date): Promise<number> {
+/**
+ * Uploads nobody finished within an hour, and looks past their day, become `expired`. On its look's day a client's
+ * try-on is kept (src/domain/kept-try-ons.ts); any other look goes, and its small copy with it.
+ */
+async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; kept: number }> {
   const db = env.DB;
-  const pastExpiry = await db
-    .prepare("SELECT id, result_key FROM tryon_jobs WHERE state = 'ready' AND expires_at < ?1 LIMIT ?2")
+  const { results: pastExpiry } = await db
+    .prepare(
+      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key
+       FROM tryon_jobs WHERE state = 'ready' AND expires_at < ?1 ORDER BY created_at LIMIT ?2`,
+    )
     .bind(now.toISOString(), BATCH_LIMIT)
-    .all<{ id: string; result_key: string | null }>();
-  const keys = pastExpiry.results.flatMap((row) => (row.result_key === null ? [] : [row.result_key]));
-  if (keys.length > 0) await env.RESULTS.delete(keys);
+    .all<ExpiringTryOn>();
+  const kept = await keepOrLetGo(env, pastExpiry, now);
+  const results = pastExpiry.flatMap((row) => (row.result_key === null ? [] : [row.result_key]));
+  if (results.length > 0) await env.RESULTS.delete(results);
 
   const [expiredResults, abandonedUploads] = await db.batch([
     db
       .prepare(
         "UPDATE tryon_jobs SET state = 'expired' WHERE id IN (SELECT value FROM json_each(?1)) AND state = 'ready' RETURNING id",
       )
-      .bind(JSON.stringify(pastExpiry.results.map((row) => row.id))),
+      .bind(JSON.stringify(pastExpiry.map((row) => row.id))),
     db
       .prepare(
         "UPDATE tryon_jobs SET state = 'expired' WHERE state = 'awaiting_upload' AND created_at < ?1 RETURNING id",
       )
       .bind(new Date(now.getTime() - PHOTO_RETENTION_MS).toISOString()),
   ]);
-  return (expiredResults?.results.length ?? 0) + (abandonedUploads?.results.length ?? 0);
+  return {
+    expired: (expiredResults?.results.length ?? 0) + (abandonedUploads?.results.length ?? 0),
+    kept,
+  };
 }
 
 /**
  * A photo is deleted an hour after its last job was created, once none of its
- * jobs is still running. The bucket's 30-day rule is only the backstop.
+ * jobs is still running. The bucket's 30-day rule is only the backstop. Its
+ * small copy goes with it, unless the try-on is kept, or is claimed and has its
+ * look: then the copy is held as long as the look (docs/decisions/0084).
  */
 async function deletePhotos(env: SweepEnv, now: Date): Promise<number> {
   const db = env.DB;
@@ -461,6 +484,7 @@ async function deletePhotos(env: SweepEnv, now: Date): Promise<number> {
     .prepare("UPDATE tryon_jobs SET upload_deleted_at = ?1 WHERE upload_key IN (SELECT value FROM json_each(?2))")
     .bind(now.toISOString(), JSON.stringify(keys))
     .run();
+  await letCopiesGoWith(env, keys);
   return keys.length;
 }
 

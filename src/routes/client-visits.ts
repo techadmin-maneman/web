@@ -6,7 +6,7 @@
 //   GET /api/photos                 the timeline: each visit's photographs, newest first, and the try-ons
 //   GET /api/photos/compare         one angle from two visits, side by side
 //   GET /api/photos/file/:token     a photograph itself, for the signed-in client
-//   GET /api/photos/try-on/:image/:token   a try-on's photograph or look (ADR 0082)
+//   GET /api/photos/try-on/:image/:token   a try-on's photograph or look (ADR 0082, ADR 0084)
 //
 // Every photograph is served through a link that lasts 15 minutes, and only
 // to the client whose photograph it is.
@@ -156,10 +156,12 @@ const VisitsSchema = z
 const TryOnLinkSchema = z
   .object({
     url: z.string().openapi({ description: "Lasts 15 minutes; only the signed-in client can open it." }),
-    kept_until: z.iso.datetime().openapi({
+    kept_until: z.union([z.iso.datetime(), z.null()]).openapi({
       description:
-        "When the try-on's retention rule lets it go: a photograph an hour after the last look asked of it, a " +
-        "look the days the site keeps it for (RESULT_RETENTION_DAYS, ADR 0039). Deleted within minutes after.",
+        "When the try-on's retention rule lets it go: a photograph an hour after the last look asked of it, or its " +
+        "small copy as long as the look; a look the days the site keeps it for (RESULT_RETENTION_DAYS, ADR 0039). " +
+        "Deleted within minutes after. Null while the try-on is kept (ADR 0084): the photograph until the client " +
+        "asks us to delete it, the look until their first fit is photographed.",
     }),
   })
   .strict()
@@ -169,13 +171,20 @@ const TryOnSchema = z
   .object({
     id: z.uuid(),
     made_on: z.iso.date().openapi({ description: "India's date the look was asked for." }),
+    kept: z.boolean().openapi({
+      description:
+        "The client's kept try-on (ADR 0084): they have booked a visit, and it is the oldest of theirs kept, or " +
+        "whose look was held when they booked.",
+    }),
     photo: z.union([TryOnLinkSchema, z.null()]).openapi({
       description:
-        "The photograph the client uploaded on the site, while it is held; null once deleted, and on a second " +
-        "look of the same photograph, which shows it once.",
+        "The photograph the client uploaded on the site, as the small copy the site sent with it where there is " +
+        "one, while it is held; null once deleted, and on a second look of the same photograph, which shows it once.",
     }),
     look: z.union([TryOnLinkSchema, z.null()]).openapi({
-      description: "The look made from it, once made and until it is deleted; null while it is still being made.",
+      description:
+        "The look made from it, once made and until it is deleted; null while it is still being made, and once a " +
+        "kept try-on's first fit is photographed.",
     }),
   })
   .strict()
@@ -301,9 +310,6 @@ const tryOnFileRoute = createRoute({
   },
 });
 
-/** Where each try-on image is held: the photograph as the site uploaded it, the look as the render stored it. */
-const TRY_ON_BUCKETS = { photo: "UPLOADS", look: "RESULTS" } as const;
-
 export function registerClientVisits(app: App): void {
   for (const path of ["/api/visits", "/api/visits/*", "/api/photos", "/api/photos/*"]) {
     app.use(path, requireClientSession);
@@ -409,9 +415,9 @@ function registerTryOnImages(app: App): void {
       await alertCeilingReached(c.env.DB, deps.alert, "result_read", tryon.resultReadDailyCeiling, now);
       return c.json(errorBody("busy", requestId), 503);
     }
-    const object = await c.env[TRY_ON_BUCKETS[image]].get(held.key);
+    const object = await c.env[held.bucket].get(held.key);
     if (object === null) return c.json(errorBody("not_found", requestId), 404);
-    // Both buckets hold only JPEG and PNG, each checked on its way in (src/domain/photo.ts, src/queues/render.ts).
+    // Each bucket holds only JPEG and PNG, each checked on its way in (src/domain/photo.ts, src/queues/render.ts).
     const type: ImageType = object.httpMetadata?.contentType === "image/png" ? "image/png" : "image/jpeg";
     // The app names the download the same, less the extension, which only the file's type gives.
     const filename = `mane-man-${held.madeOn}-try-on-${image}.${fileExtension(type)}`;

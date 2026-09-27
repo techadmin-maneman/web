@@ -22,7 +22,8 @@ const IF_ERASED = `CASE WHEN i % 10 = 0 THEN '${AGO}' END`;
 
 /**
  * One row per person numbered i, all of it finished: leads in the CRM, messages
- * sent, try-ons expired with their photos deleted, visits done, invoiced and
+ * sent, try-ons expired with their photos deleted and kept for the client
+ * (ADR 0084) with its look let go, visits done and photographed, invoiced and
  * reconciled, payments recorded and applied in Books, refunds recorded, credits
  * expired, and a referral granted from the person numbered before.
  */
@@ -38,14 +39,18 @@ const HISTORY = [
    SELECT 'm-' || i, '${AGO}', 'p-' || i, 'visit_reminder', 'appointment', 'a-' || i, 'sent', '${AGO}', '${AGO}'
    FROM n`,
   `INSERT INTO tryon_jobs (id, created_at, upload_key, uploaded_at, upload_deleted_at, state, expires_at, person_id,
-     photo_consent_version, photo_consent_at, ip_hash, request_id)
-   SELECT 'j-' || i, '${AGO}', 'uploads/j-' || i, '${AGO}', '${AGO}', 'expired', '${AGO}', 'p-' || i, 'photo-v1',
-     '${AGO}', 'h', 'r' FROM n`,
+     photo_consent_version, photo_consent_at, ip_hash, request_id, copy_key, kept_at)
+   SELECT 'j-' || i, '${AGO}', 'uploads/j-' || i, '${AGO}', '${AGO}', 'expired', '${AGO}', 'p-' || i, 'photo-v2',
+     '${AGO}', 'h', 'r', 'tryons/j-' || i || '/before.jpg', '${AGO}' FROM n`,
   `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end, status,
      fsm_status, fsm_modified_at, synced_at, reconciled_at, invoice_issued_at, fsm_invoice_id, asked_checked_at)
    SELECT 'a-' || i, 'fsm-' || i, 'wo-' || i, 'p-' || i, 'service', '${AGO}', '${AGO_PLUS_HOUR}', 'completed',
      'Completed', '${AGO}', '${AGO}', '${AGO}', '${AGO}', 'inv-' || i, '${AGO}' FROM n`,
   `INSERT INTO visits (id, appointment_id, outcome, updated_at) SELECT 'v-' || i, 'a-' || i, 'done', '${AGO}' FROM n`,
+  `INSERT INTO photo_sets (id, appointment_id, phase, created_at) SELECT 'set-' || i, 'a-' || i, 'before', '${AGO}' FROM n`,
+  `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, created_at)
+   SELECT 'ph-' || i, 'set-' || i, 'front', 'visits/a-' || i || '/before-front.jpg', 'image/jpeg', 250000, '${AGO}',
+     '${AGO}' FROM n`,
   `INSERT INTO payments (id, person_id, appointment_id, razorpay_order_id, razorpay_payment_id, amount, currency,
      status, captured_at, created_at, updated_at, books_payment_id, books_applied_at)
    SELECT 'pay-' || i, 'p-' || i, 'a-' || i, 'order_' || i, 'pay_' || i, 200000, 'INR', 'captured', '${AGO}',
