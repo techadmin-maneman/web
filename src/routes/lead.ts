@@ -11,9 +11,9 @@ import { loadBlackouts, saveBookingLead } from "../domain/leads.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { candidateRange, proposeVisitDate } from "../domain/visit-date.ts";
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
-import { abandonIdempotent, finishIdempotent, startIdempotent, type IdempotencyRecord } from "../http/idempotency.ts";
+import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
-import { saltedHash, sha256Hex } from "../lib/hash.ts";
+import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -66,7 +66,7 @@ export const leadRoute = createRoute({
   path: "/api/lead",
   summary: "Book a free consultation, or join a city's waitlist",
   request: {
-    headers: z.object({ "idempotency-key": z.string().min(8).max(200).optional() }),
+    headers: IdempotencyKeyHeaderSchema,
     body: { required: true, content: { "application/json": { schema: LeadRequestSchema } } },
   },
   responses: {
@@ -94,35 +94,16 @@ type Outcome =
 export function registerLead(app: App): void {
   app.openapi(leadRoute, async (c) => {
     const request = c.req.valid("json");
+    const { requestId } = c.var;
     const key = c.req.valid("header")["idempotency-key"];
-    const requestId = c.var.requestId;
-    const db = c.env.DB;
 
-    const record: IdempotencyRecord | null =
-      key === undefined
-        ? null
-        : { key, route: IDEMPOTENCY_ROUTE, requestHash: await sha256Hex(JSON.stringify(request)) };
+    const run = await onceForKey(c, { route: IDEMPOTENCY_ROUTE, key, request }, () => createLead(c, request));
+    if (run.kind === "replay") return c.json(run.body, 201);
+    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
+    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
 
-    if (record !== null) {
-      const start = await startIdempotent(db, record, c.var.deps.now());
-      if (start.kind === "replay") return c.json(start.body as LeadResponse, 201);
-      if (start.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
-      if (start.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
-    }
-
-    let outcome: Outcome;
-    try {
-      outcome = await createLead(c, request);
-    } catch (error) {
-      if (record !== null) await abandonIdempotent(db, record);
-      throw error;
-    }
-
-    if (!outcome.ok) {
-      if (record !== null) await abandonIdempotent(db, record); // a retry with a fresh Turnstile token may succeed
-      return c.json(errorBody(outcome.code, requestId, outcome.fields), outcome.status);
-    }
-    if (record !== null) await finishIdempotent(db, record, { status: 201, body: outcome.body });
+    const { outcome } = run;
+    if (!outcome.ok) return c.json(errorBody(outcome.code, requestId, outcome.fields), outcome.status);
     return c.json(outcome.body, 201);
   });
 }

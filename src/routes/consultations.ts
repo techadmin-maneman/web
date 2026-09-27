@@ -13,6 +13,7 @@
 // A number that already has a consultation still to happen is answered
 // already_booked, with its day and window, rather than booked twice; one past
 // consultations books in the app (docs/decisions/0068-a-paid-hold-is-kept.md).
+// The same submission sent again under its Idempotency-Key gets its first answer.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../app.ts";
@@ -20,6 +21,7 @@ import { LOSS_EXTENTS } from "../config/booking.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
+import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
 const PincodeSchema = z
@@ -98,7 +100,9 @@ export const AlreadyBookedSchema = z
 
 /** 409: a window gone, or a consultation this number already has. */
 export const takenOrBooked = {
-  description: "taken: that window has gone; or already_booked: this number has a consultation still to happen",
+  description:
+    "taken: that window has gone; already_booked: this number has a consultation still to happen; " +
+    "idempotency_in_progress: the first request with this key is still running",
   content: { "application/json": { schema: z.union([ErrorResponseSchema, AlreadyBookedSchema]) } },
 } as const;
 
@@ -106,7 +110,10 @@ const consultationRoute = createRoute({
   method: "post",
   path: "/api/consultation",
   summary: "Book a free consultation",
-  request: { body: { content: { "application/json": { schema: ConsultationRequestSchema } } } },
+  request: {
+    headers: IdempotencyKeyHeaderSchema,
+    body: { content: { "application/json": { schema: ConsultationRequestSchema } } },
+  },
   responses: {
     201: { description: "Booked, or asked for", content: { "application/json": { schema: ConsultationSchema } } },
     400: errorResponse("invalid_request"),
@@ -114,7 +121,7 @@ const consultationRoute = createRoute({
     409: takenOrBooked,
     422: errorResponse(
       "invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past " +
-        "consultations, and books in the app",
+        "consultations, and books in the app; idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -125,12 +132,19 @@ const waitlistRoute = createRoute({
   method: "post",
   path: "/api/waitlist",
   summary: "Wait for a pincode we do not serve yet",
-  request: { body: { content: { "application/json": { schema: WaitlistRequestSchema } } } },
+  request: {
+    headers: IdempotencyKeyHeaderSchema,
+    body: { content: { "application/json": { schema: WaitlistRequestSchema } } },
+  },
   responses: {
     201: { description: "On the list", content: { "application/json": { schema: WaitlistSchema } } },
     400: errorResponse("invalid_request"),
     403: errorResponse("turnstile_failed"),
-    422: errorResponse("invalid_request: that pincode is served; book instead"),
+    409: errorResponse("idempotency_in_progress: the first request with this key is still running"),
+    422: errorResponse(
+      "invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a " +
+        "different body",
+    ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
   },
@@ -139,39 +153,61 @@ const waitlistRoute = createRoute({
 export function registerConsultations(app: App): void {
   app.openapi(consultationRoute, async (c) => {
     const body = c.req.valid("json");
-    const booked = await bookConsultation(c, {
-      name: body.name,
-      mobile: body.mobile,
-      pincode: body.pincode,
-      date: body.date,
-      window: body.window,
-      lossExtent: body.loss_extent,
-      turnstileToken: body.turnstile_token,
-      attribution: body.attribution ?? {},
-      invite: null,
+    const { requestId } = c.var;
+    const key = c.req.valid("header")["idempotency-key"];
+
+    const run = await onceForKey(c, { route: "POST /api/consultation", key, request: body }, async () => {
+      const booked = await bookConsultation(c, {
+        name: body.name,
+        mobile: body.mobile,
+        pincode: body.pincode,
+        date: body.date,
+        window: body.window,
+        lossExtent: body.loss_extent,
+        turnstileToken: body.turnstile_token,
+        attribution: body.attribution ?? {},
+        invite: null,
+      });
+      if (!booked.ok) return booked;
+      return { ok: true, body: { state: booked.state, date: booked.date, window: booked.window, area: booked.area } };
     });
-    if (!booked.ok) {
-      if (booked.booked !== undefined) {
-        return c.json({ ...errorBody("already_booked", c.var.requestId), booked: booked.booked }, 409);
-      }
-      return c.json(errorBody(booked.code, c.var.requestId), booked.status);
+    if (run.kind === "replay") return c.json(run.body, 201);
+    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
+    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
+
+    const booked = run.outcome;
+    if (booked.ok) return c.json(booked.body, 201);
+    if (booked.booked !== undefined) {
+      return c.json({ ...errorBody("already_booked", requestId), booked: booked.booked }, 409);
     }
-    return c.json({ state: booked.state, date: booked.date, window: booked.window, area: booked.area }, 201);
+    return c.json(errorBody(booked.code, requestId), booked.status);
   });
 
   app.openapi(waitlistRoute, async (c) => {
     const body = c.req.valid("json");
-    const listed = await joinTheWaitlist(c, {
-      name: body.name,
-      mobile: body.mobile,
-      pincode: body.pincode,
-      lossExtent: body.loss_extent,
-      launchAlert: body.launch_alert,
-      turnstileToken: body.turnstile_token,
-      attribution: body.attribution ?? {},
-      invite: null,
+    const { requestId } = c.var;
+    const key = c.req.valid("header")["idempotency-key"];
+
+    const run = await onceForKey(c, { route: "POST /api/waitlist", key, request: body }, async () => {
+      const listed = await joinTheWaitlist(c, {
+        name: body.name,
+        mobile: body.mobile,
+        pincode: body.pincode,
+        lossExtent: body.loss_extent,
+        launchAlert: body.launch_alert,
+        turnstileToken: body.turnstile_token,
+        attribution: body.attribution ?? {},
+        invite: null,
+      });
+      if (!listed.ok) return listed;
+      return { ok: true, body: { area: listed.area } };
     });
-    if (!listed.ok) return c.json(errorBody(listed.code, c.var.requestId), listed.status);
-    return c.json({ area: listed.area }, 201);
+    if (run.kind === "replay") return c.json(run.body, 201);
+    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
+    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
+
+    const listed = run.outcome;
+    if (listed.ok) return c.json(listed.body, 201);
+    return c.json(errorBody(listed.code, requestId), listed.status);
   });
 }

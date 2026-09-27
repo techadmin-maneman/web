@@ -1334,6 +1334,18 @@
     "/api/consultation": {
       "post": {
         "summary": "Book a free consultation",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1473,7 +1485,7 @@
             }
           },
           "409": {
-            "description": "taken: that window has gone; or already_booked: this number has a consultation still to happen",
+            "description": "taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running",
             "content": {
               "application/json": {
                 "schema": {
@@ -1490,7 +1502,7 @@
             }
           },
           "422": {
-            "description": "invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app",
+            "description": "invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {
@@ -1525,6 +1537,18 @@
     "/api/waitlist": {
       "post": {
         "summary": "Wait for a pincode we do not serve yet",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1654,8 +1678,18 @@
               }
             }
           },
+          "409": {
+            "description": "idempotency_in_progress: the first request with this key is still running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "invalid_request: that pincode is served; book instead",
+            "description": "invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {
@@ -1798,6 +1832,16 @@
             "required": true,
             "name": "code",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "idempotency-key",
+            "in": "header"
           }
         ],
         "requestBody": {
@@ -1891,7 +1935,7 @@
             }
           },
           "409": {
-            "description": "taken: that window has gone; or already_booked: this number has a consultation still to happen",
+            "description": "taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running",
             "content": {
               "application/json": {
                 "schema": {
@@ -1908,7 +1952,7 @@
             }
           },
           "422": {
-            "description": "not_bookable: the pincode is not served, the day is not open, or this number is past consultations",
+            "description": "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {
@@ -1952,6 +1996,16 @@
             "required": true,
             "name": "code",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "idempotency-key",
+            "in": "header"
           }
         ],
         "requestBody": {
@@ -2035,8 +2089,18 @@
               }
             }
           },
+          "409": {
+            "description": "idempotency_in_progress: the first request with this key is still running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "not_bookable: that pincode is served; book instead",
+            "description": "not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {

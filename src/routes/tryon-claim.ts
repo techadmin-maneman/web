@@ -17,10 +17,10 @@ import { SESSION_TTL_MS } from "../config/tryon.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob, loadSession, recordEvent, type JobRow } from "../domain/tryon.ts";
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
-import { abandonIdempotent, finishIdempotent, startIdempotent, type IdempotencyRecord } from "../http/idempotency.ts";
+import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { setSessionCookie } from "../http/session.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { saltedHash, sha256Hex } from "../lib/hash.ts";
+import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
@@ -53,7 +53,7 @@ export const claimRoute = createRoute({
   path: "/api/tryon/claim",
   summary: "The gate: save the lead and start a session, whether or not the result is ready",
   request: {
-    headers: z.object({ "idempotency-key": z.string().min(8).max(200).optional() }),
+    headers: IdempotencyKeyHeaderSchema,
     body: { required: true, content: { "application/json": { schema: ClaimRequestSchema } } },
   },
   responses: {
@@ -85,38 +85,19 @@ type Outcome =
 export function registerTryonClaim(app: App): void {
   app.openapi(claimRoute, async (c) => {
     const request = c.req.valid("json");
-    const key = c.req.valid("header")["idempotency-key"];
     const { requestId } = c.var;
-    const db = c.env.DB;
+    const key = c.req.valid("header")["idempotency-key"];
 
-    const record: IdempotencyRecord | null =
-      key === undefined
-        ? null
-        : { key, route: IDEMPOTENCY_ROUTE, requestHash: await sha256Hex(JSON.stringify(request)) };
-
-    if (record !== null) {
-      const start = await startIdempotent(db, record, c.var.deps.now());
-      if (start.kind === "replay") {
-        await restoreSessionCookie(c, request.job_id);
-        return c.json(start.body as ClaimResponse, 201);
-      }
-      if (start.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
-      if (start.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
+    const run = await onceForKey(c, { route: IDEMPOTENCY_ROUTE, key, request }, () => claim(c, request));
+    if (run.kind === "replay") {
+      await restoreSessionCookie(c, request.job_id);
+      return c.json(run.body, 201);
     }
+    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
+    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
 
-    let outcome: Outcome;
-    try {
-      outcome = await claim(c, request);
-    } catch (error) {
-      if (record !== null) await abandonIdempotent(db, record);
-      throw error;
-    }
-
-    if (!outcome.ok) {
-      if (record !== null) await abandonIdempotent(db, record);
-      return c.json(errorBody(outcome.code, requestId, outcome.fields), outcome.status);
-    }
-    if (record !== null) await finishIdempotent(db, record, { status: 201, body: outcome.body });
+    const { outcome } = run;
+    if (!outcome.ok) return c.json(errorBody(outcome.code, requestId, outcome.fields), outcome.status);
     setSessionCookie(c, outcome.sessionId);
     return c.json(outcome.body, 201);
   });

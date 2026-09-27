@@ -248,7 +248,9 @@ export interface paths {
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    "idempotency-key"?: string;
+                };
                 path?: never;
                 cookie?: never;
             };
@@ -315,7 +317,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: that window has gone; or already_booked: this number has a consultation still to happen */
+                /** @description taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -324,7 +326,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app */
+                /** @description invalid_request: the pincode is not served, or the day is not open; not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -372,7 +374,9 @@ export interface paths {
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    "idempotency-key"?: string;
+                };
                 path?: never;
                 cookie?: never;
             };
@@ -437,7 +441,16 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description invalid_request: that pincode is served; book instead */
+                /** @description idempotency_in_progress: the first request with this key is still running */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -616,7 +629,9 @@ export interface paths {
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    "idempotency-key"?: string;
+                };
                 path: {
                     code: string;
                 };
@@ -670,7 +685,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: that window has gone; or already_booked: this number has a consultation still to happen */
+                /** @description taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -679,7 +694,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations */
+                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -727,7 +742,9 @@ export interface paths {
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    "idempotency-key"?: string;
+                };
                 path: {
                     code: string;
                 };
@@ -779,7 +796,16 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_bookable: that pincode is served; book instead */
+                /** @description idempotency_in_progress: the first request with this key is still running */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
