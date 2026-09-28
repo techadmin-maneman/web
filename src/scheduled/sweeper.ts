@@ -431,8 +431,7 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
   const db = env.DB;
   const { results: pastExpiry } = await db
     .prepare(
-      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
-         kept_look_key
+      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key, kept_look_key
        FROM tryon_jobs WHERE state = 'ready' AND expires_at < ?1 ORDER BY created_at LIMIT ?2`,
     )
     .bind(now.toISOString(), BATCH_LIMIT)
