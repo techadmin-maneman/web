@@ -32,6 +32,10 @@ export interface Frame {
   readonly angle: Angle;
   readonly phase: Phase;
   readonly frame: Blob;
+  /** Its thumbnail, for the client app's rows; missing from a frame kept before the phone made them. */
+  readonly small?: Blob;
+  /** The take the API answered once the photograph was up; only its thumbnail is still to go. */
+  readonly take?: string;
   readonly kept_at: number;
 }
 
@@ -116,16 +120,26 @@ export async function correct(seq: number, body: unknown): Promise<void> {
 }
 
 /**
- * A photograph frame, held on the phone until the API confirms its upload and
- * never written to the phone's gallery (the design's line on board A2).
+ * A photograph frame and its thumbnail, held on the phone until the API
+ * confirms their upload and never written to the phone's gallery (the design's
+ * line on board A2).
  *
  * One frame per angle: the API keeps one photograph for each, so a second
  * frame for the same angle — a double tap — replaces the first rather than
  * standing in for the next angle.
  */
-export async function keepFrame(jobId: string, angle: Angle, phase: Phase, frame: Blob): Promise<string> {
+export async function keepFrame(jobId: string, angle: Angle, phase: Phase, frame: Blob, small?: Blob): Promise<string> {
   const id = `${jobId}:${phase}:${angle}`;
-  await put("frames", { id, job_id: jobId, angle, phase, frame, kept_at: Date.now() } satisfies Frame);
+  const kept: Frame = {
+    id,
+    job_id: jobId,
+    angle,
+    phase,
+    frame,
+    kept_at: Date.now(),
+    ...(small === undefined ? {} : { small }),
+  };
+  await put("frames", kept);
   changed();
   return id;
 }
@@ -185,22 +199,47 @@ export function replay(): Promise<Replayed> {
 
 /**
  * A photograph set is not one call. Each frame still on the phone is PUT to a
- * link the API hands out, and only then does the set itself go. The frames are
- * dropped one by one as they land, so a replay interrupted halfway does not
- * send any of them twice.
+ * link the API hands out, with its thumbnail, and only then does the set itself
+ * go. The frames are dropped one by one as they land, so a replay interrupted
+ * halfway does not send any of them twice.
  */
 async function uploadFrames(event: Queued, phase: Phase): Promise<Stopped | "gone" | "refused"> {
   const inTheOrderTaken = (await frames()).sort((a, b) => a.kept_at - b.kept_at);
   for (const frame of inTheOrderTaken) {
     if (frame.job_id !== event.job_id || frame.phase !== phase) continue;
-    const link = await api.uploadLink(event.job_id, phase, frame.angle);
-    if (!link.ok) return failureOf(link.status, link.code);
-    const sent = await api.upload(link.body.upload_url, frame.frame);
-    if (!sent.ok) return failureOf(sent.status, sent.code);
+    const trouble = await uploadFrame(frame);
+    if (trouble !== null) return trouble;
     await remove("frames", frame.id);
     changed();
   }
   return null;
+}
+
+/**
+ * One frame, the photograph first: the API answers it with its take, and takes
+ * the thumbnail only for that take, so it is never kept beside another. The
+ * take is kept with the frame, and a round stopped before the thumbnail sends
+ * only the thumbnail the next time. A thumbnail the API refuses, because the
+ * angle was taken again meanwhile or it is not small enough, is let go, since
+ * the client app then shows the photograph itself.
+ */
+async function uploadFrame(frame: Frame): Promise<Stopped | "gone" | "refused"> {
+  const link = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
+  if (!link.ok) return failureOf(link.status, link.code);
+  let take = frame.take;
+  if (take === undefined) {
+    const sent = await api.upload(link.body.upload_url, frame.frame);
+    if (!sent.ok) return failureOf(sent.status, sent.code);
+    // An API from before thumbnails names no take: the photograph goes alone.
+    take = sent.body?.take;
+    if (take === undefined) return null;
+    await put("frames", { ...frame, take } satisfies Frame);
+  }
+  if (frame.small === undefined) return null;
+  const sent = await api.uploadThumbnail(link.body.small_upload_url, take, frame.small);
+  if (sent.ok) return null;
+  const trouble = failureOf(sent.status, sent.code);
+  return trouble === "refused" ? null : trouble;
 }
 
 /**

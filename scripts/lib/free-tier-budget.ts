@@ -16,6 +16,7 @@ import {
   RENDER_GIVE_UP_MS,
 } from "../../src/config/pipeline.ts";
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
+import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 
 /** The Workers Free plan, per Cloudflare's pricing pages (read 21 September 2026). */
 export const FREE_TIER = {
@@ -39,8 +40,8 @@ export const HEADROOM = 0.8;
 export const PHASE_2_ALLOWANCE = {
   /** FSM webhook hints read back from the queue, and the Phase 2 messages. */
   queueOperationsPerDay: 2_000,
-  /** Clients' photographs, which are never deleted, and referral cards. */
-  r2StorageBytes: 4e9,
+  /** Clients' photographs, which are never deleted, and referral cards: the storage meter's share. */
+  r2StorageBytes: PHASE_2_SHARE_BYTES,
   r2ClassAPerMonth: 100_000,
   r2ClassBPerMonth: 1_000_000,
 } as const;
@@ -59,7 +60,7 @@ export const CRON_ROWS_READ_PER_QUIET_RUN = 100;
  * A run at its busiest, every lookup coming back full: the sweep's eight
  * lookups of 100 and what it expires and deletes (about 1,600); the
  * reconciliation's page of 50, and on the hour the photographs of three days'
- * visits (about 1,700); erased people's files, 20 at a time (about 500); and
+ * visits (about 1,700); erased people's files, 5 at a time (about 150); and
  * the referral, reminder, next-service reminder, invoice, asked-window and
  * Books passes of 5 to 20 each, with their joins (about 700).
  */
@@ -75,6 +76,8 @@ export function cronRowsReadPerDay(perBusyRun: number = CRON_ROWS_READ_PER_BUSY_
 /** A visit's photographs: five before and five after, each re-encoded on the phone to about 250 KB. */
 export const PHOTOS_PER_VISIT = 10;
 export const PHOTO_BYTES = 250_000;
+/** Each photograph's thumbnail, which the phone encodes to about 32 KB (docs/decisions/0093-the-storage-meter.md). */
+export const THUMBNAIL_BYTES = 32_000;
 /** Referral cards: one 1200×630 JPEG of at most 300 KB per referrer, for up to a thousand referrers. */
 export const REFERRAL_CARDS_BYTES = 1_000 * 300_000;
 /**
@@ -88,7 +91,7 @@ export const KEPT_TRY_ON_BYTES = MAX_COPY_BYTES + MAX_RESULT_BYTES;
  * has booked a visit, so at worst each visit is a new client's and brings one kept try-on with its photographs.
  */
 export function photoRunwayVisits(keptTryOnBytes: number = KEPT_TRY_ON_BYTES): number {
-  const perVisit = PHOTOS_PER_VISIT * PHOTO_BYTES + keptTryOnBytes;
+  const perVisit = PHOTOS_PER_VISIT * (PHOTO_BYTES + THUMBNAIL_BYTES) + keptTryOnBytes;
   return Math.floor((PHASE_2_ALLOWANCE.r2StorageBytes - REFERRAL_CARDS_BYTES) / perVisit);
 }
 const DAYS_PER_MONTH = 31;

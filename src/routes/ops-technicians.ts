@@ -14,7 +14,9 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { technicianWork, WORK_PERIOD_DAYS } from "../domain/technician-work.ts";
+import { technicianWork, type TechnicianWork } from "../domain/technician-work.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
+import { runsOver } from "../policy/technician-work.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
@@ -32,6 +34,11 @@ const TechnicianWorkSchema = z
     average_planned_minutes: z
       .union([z.number().int(), z.null()])
       .openapi({ description: "What the same jobs were planned to take, so the two can be read against each other." }),
+    runs_over: z.boolean().openapi({
+      description:
+        "Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to " +
+        "begin with); false when the phone timed none of the jobs.",
+    }),
     skill: z.null().openapi({
       description:
         'The board\'s "First fit" or "Service". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59).',
@@ -61,7 +68,9 @@ const workRoute = createRoute({
         .date()
         .optional()
         .openapi({
-          description: `India's calendar date the count starts on; ${String(WORK_PERIOD_DAYS)} days back when it is left out.`,
+          description:
+            "India's calendar date the count starts on; as many days back as ops set (technician_work.period, 90 to " +
+            "begin with) when it is left out.",
         }),
       to: z.iso.date().optional().openapi({ description: "Exclusive; tomorrow when it is left out." }),
     }),
@@ -78,11 +87,17 @@ export function registerOpsTechnicians(app: App): void {
     const asked = c.req.valid("query");
     const today = indiaDate(c.var.deps.now());
     // Today is counted, so the period ends tomorrow; the board's figures include a job finished this morning.
+    const figures = (await opsInputs(c)).technicianWork;
     const to = asked.to ?? addDays(today, 1);
-    const from = asked.from ?? addDays(to, -WORK_PERIOD_DAYS);
+    const from = asked.from ?? addDays(to, -figures.period);
     if (from >= to) return c.json(errorBody("invalid_request", c.var.requestId, ["from"]), 400);
 
     const work = await technicianWork(c.env.DB, { from, to });
-    return c.json({ from, to, technicians: work.map((each) => ({ ...each, skill: null })) }, 200);
+    const runningOver = (each: TechnicianWork) =>
+      each.average_minutes !== null &&
+      each.average_planned_minutes !== null &&
+      runsOver({ average: each.average_minutes, planned: each.average_planned_minutes }, figures.over_by);
+    const technicians = work.map((each) => ({ ...each, runs_over: runningOver(each), skill: null }));
+    return c.json({ from, to, technicians }, 200);
   });
 }

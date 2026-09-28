@@ -2067,7 +2067,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description India's calendar date the count starts on; 90 days back when it is left out. */
+                    /** @description India's calendar date the count starts on; as many days back as ops set (technician_work.period, 90 to begin with) when it is left out. */
                     from?: string;
                     /** @description Exclusive; tomorrow when it is left out. */
                     to?: string;
@@ -2177,7 +2177,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
                 };
                 cookie?: never;
             };
@@ -2534,6 +2534,160 @@ export interface paths {
                 };
                 /** @description access_required */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blackouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every day from today on that no visit is offered, with the visits still booked on each */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The days */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Blackouts"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Black out every day from one date to another. A day already blacked out takes the reason given now */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlackoutAdd"];
+                };
+            };
+            responses: {
+                /** @description The days as they now stand */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Blackouts"];
+                    };
+                };
+                /** @description invalid_request: fields names from when it is before today, to when it is before from or more than a month on, and reason when there is none or it is not one a list can hold */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blackouts/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Offer the days from one date to another again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlackoutRemove"];
+                };
+            };
+            responses: {
+                /** @description The days as they now stand */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Blackouts"];
+                    };
+                };
+                /** @description invalid_request: fields names from when it is before today, and to when it is before from */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: none of those days is blacked out */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3823,6 +3977,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the photographs and referral cards hold in R2, against their share */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The storage meter */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Storage"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/whoami": {
         parameters: {
             query?: never;
@@ -4490,6 +4689,13 @@ export interface components {
         };
         NoShowCases: {
             cases: components["schemas"]["NoShowCase"][];
+            /** @description What waiving a case gives back now, as ops set it in Settings (no_show_waiver). */
+            waiver: {
+                /** @enum {string} */
+                payment: "refunded" | "kept";
+                /** @enum {string} */
+                credit: "returned" | "spent";
+            };
         };
         /** @description The three facts ops rule on, and nothing else. */
         NoShowCase: {
@@ -4730,24 +4936,37 @@ export interface components {
             average_minutes: number | null;
             /** @description What the same jobs were planned to take, so the two can be read against each other. */
             average_planned_minutes: number | null;
+            /** @description Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to begin with); false when the phone timed none of the jobs. */
+            runs_over: boolean;
             /** @description The board's "First fit" or "Service". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59). */
             skill: null;
         };
-        OpsSetting: {
+        OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
+        NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
             title: string;
             note: string;
+            /** @description The module the default lives in. */
+            source: string;
+            set_by: string | null;
+            set_at: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "number";
             unit: string;
             min: number;
             max: number;
             /** @description null for one number, a list where the keys are fixed, "open" where ops name them. */
             keys: string[] | "open" | null;
-            /** @description Each key's own bounds, where a keyed rule's figures measure different things; null where every figure takes min to max. */
+            /** @description Each key's own bounds and unit, where a keyed rule's figures measure different things; null where every figure takes min to max, in unit. */
             bounds: {
                 [key: string]: {
                     min: number;
                     max: number;
+                    unit: string;
                 };
             } | null;
             value: number | {
@@ -4757,14 +4976,39 @@ export interface components {
             default: number | {
                 [key: string]: number;
             };
+        };
+        ChoiceRule: {
+            /** @enum {string} */
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
+            title: string;
+            note: string;
             /** @description The module the default lives in. */
             source: string;
             set_by: string | null;
             set_at: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "choice";
+            keys: string[];
+            /** @description What each key may be: a kind of visit with no late fee in the price book is offered none. */
+            choices: {
+                [key: string]: string[];
+            };
+            value: {
+                [key: string]: string;
+            };
+            /** @description The committed choices, in force until somebody sets them. */
+            default: {
+                [key: string]: string;
+            };
         };
         SettingChange: {
             value: number | {
                 [key: string]: number;
+            } | {
+                [key: string]: string;
             } | null;
         };
         Price: {
@@ -4838,6 +5082,51 @@ export interface components {
                 /** @description A better name for the area than its post office's. Left out, the name stays. */
                 area?: string;
             }[];
+        };
+        Blackouts: {
+            blackouts: components["schemas"]["Blackout"][];
+            /**
+             * Format: date
+             * @description India's date, the first a day may be blacked out from.
+             */
+            today: string;
+            /** @description The most days one addition may cover. */
+            max_days: number;
+        };
+        Blackout: {
+            /** Format: date */
+            date: string;
+            reason: string;
+            /** @description The Access identity that set it; null for a day the runbook's SQL wrote before this screen. */
+            set_by: string | null;
+            set_at: string | null;
+            /** @description Visits still booked on the day. Blacking a day out moves none of them: ops do. */
+            booked: number;
+        };
+        BlackoutAdd: {
+            /**
+             * Format: date
+             * @description The first day, today or later.
+             */
+            from: string;
+            /**
+             * Format: date
+             * @description The last day, the first included; a month on at most when adding.
+             */
+            to: string;
+            reason: string;
+        };
+        BlackoutRemove: {
+            /**
+             * Format: date
+             * @description The first day, today or later.
+             */
+            from: string;
+            /**
+             * Format: date
+             * @description The last day, the first included; a month on at most when adding.
+             */
+            to: string;
         };
         OpsServices: {
             /** Format: date */
@@ -5115,6 +5404,14 @@ export interface components {
             technician_id: string | null;
             quantity: number;
             note: string;
+        };
+        Storage: {
+            /** @description What the client-photos and referral-cards buckets hold. */
+            held_bytes: number;
+            /** @description Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted. */
+            share_bytes: number;
+            /** @description Past this the technician app's photographs are refused and wait on the phones. */
+            ceiling_bytes: number;
         };
         Whoami: {
             /** @description A member of staff's e-mail, or a service token's ID. */

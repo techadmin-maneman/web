@@ -88,6 +88,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).",
   ops_settings:
     "The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).",
+  ops_settings_snapshot:
+    "One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).",
   otp_challenges: "Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).",
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",
@@ -96,7 +98,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   people:
     "One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).",
   photo_sets: "A visit's set of photographs, before or after (ADR 0028).",
-  photos: "One photograph of a set, by its angle, and where it is kept in R2 (ADR 0028).",
+  photos: "One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).",
   pieces:
     "The mirror of FSM's assets: each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason (ADR 0032).",
   price_book:
@@ -119,6 +121,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
   stock_movements:
     "Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).",
+  stored_objects:
+    "Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).",
+  storage_meter:
+    "What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).",
   sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",

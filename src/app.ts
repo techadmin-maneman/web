@@ -22,6 +22,7 @@ import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
+import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
 import { registerOpsClientReferral } from "./routes/ops-client-referral.ts";
 import { registerOpsClients } from "./routes/ops-clients.ts";
 import { registerOpsConsumables } from "./routes/ops-consumables.ts";
@@ -50,6 +51,7 @@ import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
+import { registerOpsStorage } from "./routes/ops-storage.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
 import { registerTechAuth } from "./routes/tech-auth.ts";
@@ -114,12 +116,16 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,
+    // The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md).
+    registerOpsBlackouts,
     // The services clients book (docs/decisions/0085-services-ops-can-edit.md).
     registerOpsServices,
     // The consumables, the job sheet and the stock (docs/decisions/0087-consumables-and-stock.md).
     registerOpsConsumables,
     registerOpsJobSheet,
     registerOpsStock,
+    // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
+    registerOpsStorage,
     registerOpsWhoami,
   ],
   tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],

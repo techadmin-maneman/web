@@ -38,6 +38,7 @@ export type CheckIn = Schema["CheckIn"];
 export type NoShowClose = Schema["NoShowClose"];
 export type PieceLookup = Schema["PieceLookup"];
 export type UploadLink = Schema["TechnicianPhotoUrl"];
+export type PhotoTaken = Schema["TechnicianPhotoTaken"];
 export type Day = Schema["TechnicianJobs"];
 
 export type VisitType = NonNullable<JobSummary["type"]>;
@@ -177,7 +178,14 @@ export const api = {
 
   /** The photograph itself. The link is a path on this host, so this call is same-origin too. */
   upload: (link: string, frame: Blob) =>
-    client.request<null>("PUT", link, { body: frame, patience: PATIENCE_MS.upload }),
+    client.request<PhotoTaken | null>("PUT", link, { body: frame, patience: PATIENCE_MS.upload }),
+
+  /** Its thumbnail, naming the take the photograph's upload answered, so it is kept beside that take alone. */
+  uploadThumbnail: (link: string, take: string, small: Blob) =>
+    client.request<null>("PUT", `${link}?take=${encodeURIComponent(take)}`, {
+      body: small,
+      patience: PATIENCE_MS.upload,
+    }),
 
   /**
    * Every write below goes through the outbox, never straight from a screen

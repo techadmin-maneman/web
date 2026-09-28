@@ -26,7 +26,11 @@ export function jobDay(windowStart: Date, now: Date): JobDay {
   return date === addDays(today, 1) ? "tomorrow" : "later";
 }
 
-/** The hour in India the day-before WhatsApp goes at (docs/decisions/0047-visit-messages.md). */
+/**
+ * The hour in India the day-before WhatsApp goes at (docs/decisions/0047-visit-messages.md): 6 pm, as the owner
+ * ruled on 27 September 2026 (docs/open-points.md, item 40), until ops set another in the console
+ * (docs/decisions/0088-every-policy-in-the-console.md).
+ */
 export const DAY_BEFORE_REMINDER_HOUR = 18;
 
 /**

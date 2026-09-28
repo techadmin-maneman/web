@@ -20,18 +20,54 @@ export const FREE_CHANGE_NOTICE_HOURS = 24;
 
 export type Notice = "free" | "late";
 
-/** Until when changing a visit is free. */
-export const freeUntil = (windowStarts: Date): Date =>
-  new Date(windowStarts.getTime() - FREE_CHANGE_NOTICE_HOURS * HOUR_MS);
+/** Until when changing a visit is free: the notice before its window, 24 hours unless ops set another. */
+export const freeUntil = (windowStarts: Date, noticeHours: number = FREE_CHANGE_NOTICE_HOURS): Date =>
+  new Date(windowStarts.getTime() - noticeHours * HOUR_MS);
 
-export const noticeAt = (windowStarts: Date, now: Date): Notice =>
-  now.getTime() < freeUntil(windowStarts).getTime() ? "free" : "late";
+export const noticeAt = (windowStarts: Date, now: Date, noticeHours: number = FREE_CHANGE_NOTICE_HOURS): Notice =>
+  now.getTime() < freeUntil(windowStarts, noticeHours).getTime() ? "free" : "late";
 
 /** The late fee a first fit or a replacement costs inside 24 hours. */
 export const LATE_FEES: Partial<Record<VisitType, "late_fee_first_fit" | "late_fee_replacement">> = {
   first_fit: "late_fee_first_fit",
   replacement: "late_fee_replacement",
 };
+
+/**
+ * What a kind of visit costs when the client changes it inside the notice, as ops set it
+ * (docs/decisions/0088-every-policy-in-the-console.md):
+ *   nothing   it is free, as it is ahead of the notice;
+ *   late_fee  its kind's late fee, a price of its own in the price book;
+ *   visit     the visit itself: its payment is kept, or its credit spent.
+ */
+export type Charge = "nothing" | "late_fee" | "visit";
+
+export const CHARGES = ["nothing", "late_fee", "visit"] as const satisfies readonly Charge[];
+
+/** What each kind of visit costs inside the notice. */
+export type Charges = Readonly<Record<VisitType, Charge>>;
+
+/** The rules above, as each kind's charge: until ops set others, the committed terms. */
+export const LATE_CHANGE_CHARGES: Charges = {
+  consultation: "nothing",
+  first_fit: "late_fee",
+  replacement: "late_fee",
+  service: "visit",
+};
+
+/** The charges a kind of visit may be given: a late fee only where the price book has one for the kind. */
+export const chargesFor = (type: VisitType): readonly Charge[] =>
+  LATE_FEES[type] === undefined ? ["nothing", "visit"] : CHARGES;
+
+/**
+ * The terms a booking is sold under, kept on its hold as it is made (docs/decisions/0088-every-policy-in-the-console.md):
+ * the notice, what its kind costs inside it, and what it costs if the client is not home (src/policy/no-show.ts).
+ */
+export interface SoldTerms {
+  readonly noticeHours: number;
+  readonly lateCharge: Charge;
+  readonly noShowCharge: Charge;
+}
 
 /**
  * What a move costs the client:
@@ -41,20 +77,28 @@ export const LATE_FEES: Partial<Record<VisitType, "late_fee_first_fit" | "late_f
  */
 export type MoveCost = "free" | "late_fee" | "charged";
 
-export function moveCost(type: VisitType, notice: Notice, by: "client" | "ops"): MoveCost {
+const MOVE_COSTS: Readonly<Record<Charge, MoveCost>> = { nothing: "free", late_fee: "late_fee", visit: "charged" };
+
+export function moveCost(
+  type: VisitType,
+  notice: Notice,
+  by: "client" | "ops",
+  charge: Charge = LATE_CHANGE_CHARGES[type],
+): MoveCost {
   if (by === "ops" || notice === "free") return "free";
-  if (LATE_FEES[type] !== undefined) return "late_fee";
-  return type === "service" ? "charged" : "free";
+  return MOVE_COSTS[charge];
 }
 
 /**
  * What becomes of the credit a visit was paid with, when the client moves or cancels it:
- *   restored  it comes back, more than 24 hours ahead;
+ *   restored  it comes back, more than 24 hours ahead, or inside them where ops charge the visit nothing;
  *   lost      it is spent, inside 24 hours.
+ * A credit pays for a service visit (src/policy/referral-reward.ts), so its charge is a service visit's.
  */
 export type CreditOnChange = "restored" | "lost";
 
-export const creditOnChange = (notice: Notice): CreditOnChange => (notice === "free" ? "restored" : "lost");
+export const creditOnChange = (notice: Notice, charge: Charge = LATE_CHANGE_CHARGES.service): CreditOnChange =>
+  notice === "free" || charge === "nothing" ? "restored" : "lost";
 
 /**
  * What cancelling gives back:
@@ -64,8 +108,17 @@ export const creditOnChange = (notice: Notice): CreditOnChange => (notice === "f
  */
 export type CancelRefund = "all" | "all_but_fee" | "none";
 
-export function cancelRefund(type: VisitType, notice: Notice): CancelRefund {
+const CANCEL_REFUNDS: Readonly<Record<Charge, CancelRefund>> = {
+  nothing: "all",
+  late_fee: "all_but_fee",
+  visit: "none",
+};
+
+export function cancelRefund(
+  type: VisitType,
+  notice: Notice,
+  charge: Charge = LATE_CHANGE_CHARGES[type],
+): CancelRefund {
   if (notice === "free") return "all";
-  if (LATE_FEES[type] !== undefined) return "all_but_fee";
-  return type === "service" ? "none" : "all";
+  return CANCEL_REFUNDS[charge];
 }

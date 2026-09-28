@@ -1,6 +1,6 @@
 # 0068. A paid hold is kept
 
-- Status: accepted
+- Status: accepted; extended 28 September 2026 by [0088](0088-every-policy-in-the-console.md): a hold keeps its grace, the notice and what its kind costs inside it, and a no-show's charge, as it keeps its late fee
 - Date: 2026-09-25
 - Amends [0044](0044-payments-mirror.md), [0045](0045-self-serve-booking.md) and [0046](0046-moving-and-cancelling.md); follows [0057](0057-one-payment-per-tap.md)
 
@@ -50,7 +50,7 @@ And, around it: a timeout after FSM took a work order made a second one on the r
 
 **One consultation and one first fit at a time.** `bookableTypes` leaves out a consultation or a first fit while one is booked or paid for, and starting to pay for a hold checks again.
 
-**What a client was sold stays sold.** A hold keeps the late fee it was made under, and a visit's move and cancel terms read it from the hold that booked it. A payment keeps the figure before GST and the rate its hold charged (`payments.amount_ex_gst`, `gst_percent`), and the Payments tab shows those; only a payment no hold priced is split at `GST_PERCENT`. Availability prices each day at the price in force on it.
+**What a client was sold stays sold.** A hold keeps the late fee it was made under, and a visit's move and cancel terms read it from the hold that booked it. **Extended 28 September 2026 ([ADR 0088](0088-every-policy-in-the-console.md)):** ops set the notice, what each kind costs inside it, a no-show's charge, the countdown and the grace in the console, and a hold keeps each as it keeps its late fee. A payment keeps the figure before GST and the rate its hold charged (`payments.amount_ex_gst`, `gst_percent`), and the Payments tab shows those; only a payment no hold priced is split at `GST_PERCENT`. Availability prices each day at the price in force on it.
 
 **Credits.** A free cancel gives a credit back only to a grant that can still take it: not one clawed back or expired (`creditOnChange`, `src/policy/moving-a-visit.ts`). A credit lasts to the end of the day in India it is shown to expire on. Ops put a balance right by hand with `POST /api/clients/{id}/credits`, audited as `credit.adjust` in the same batch. An invite held on a waitlist that lapsed 12 months after its area launched is marked expired when its friend books, and the booking's answer says `invite: "expired"` with no credits.
 

@@ -4,12 +4,22 @@
 // each visit photograph this way, the size ADR 0039's R2 budget assumes, and
 // the site sends a try-on photograph's small copy this way, which a client
 // keeps as their before photo (docs/decisions/0084-a-clients-try-on-is-kept.md).
+// The camera also sends a thumbnail of each photograph, for the client app's
+// rows (docs/decisions/0093-the-storage-meter.md).
 
 /** ADR 0039: "each visit's ten photographs, re-encoded on the phone to about 250 KB each". */
 export const SMALL_JPEG_BYTES = 250 * 1024;
 
 /** The long edge a picture is first drawn at: enough for a scalp at arm's length, small enough to encode fast. */
 export const SMALL_JPEG_LONG_EDGE = 1600;
+
+/**
+ * A thumbnail's short edge. The client app's rows are five cells of about 73 px by 97 px at most, and 300 px fills
+ * one at three device pixels to one whatever the photograph's shape.
+ */
+export const THUMBNAIL_SHORT_EDGE = 300;
+/** What a thumbnail is encoded to; the API takes up to twice this. */
+export const THUMBNAIL_BYTES = 32 * 1024;
 
 /** Tried in turn until the picture is at or under the target. */
 const QUALITIES = [0.82, 0.72, 0.62, 0.52, 0.42] as const;
@@ -44,6 +54,23 @@ function draw(source: CanvasImageSource, width: number, height: number, scale: n
   return canvas;
 }
 
+/** A still of the source, at most SMALL_JPEG_LONG_EDGE on its long side, to encode more than once from one frame. */
+export function still(source: CanvasImageSource, width: number, height: number): HTMLCanvasElement {
+  return draw(source, width, height, Math.min(1, SMALL_JPEG_LONG_EDGE / Math.max(width, height)));
+}
+
+/** The canvas at the first quality that comes in at or under the target, else at the smallest tried. */
+async function encodeUnder(canvas: HTMLCanvasElement, target: number): Promise<{ picture: SmallJpeg; fits: boolean }> {
+  let smallest: SmallJpeg | null = null;
+  for (const quality of QUALITIES) {
+    const picture = { blob: await encode(canvas, quality), width: canvas.width, height: canvas.height };
+    if (picture.blob.size <= target) return { picture, fits: true };
+    if (smallest === null || picture.blob.size < smallest.blob.size) smallest = picture;
+  }
+  if (smallest === null) throw new Error("the picture could not be encoded");
+  return { picture: smallest, fits: false };
+}
+
 /**
  * The picture as a JPEG at or about the target size. Quality comes down first,
  * then the picture itself, so a close-up of a scalp stays readable. When
@@ -58,15 +85,17 @@ export async function smallJpeg(
   let scale = Math.min(1, SMALL_JPEG_LONG_EDGE / Math.max(width, height));
   let smallest: SmallJpeg | null = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const canvas = draw(source, width, height, scale);
-    for (const quality of QUALITIES) {
-      const blob = await encode(canvas, quality);
-      const picture = { blob, width: canvas.width, height: canvas.height };
-      if (smallest === null || blob.size < smallest.blob.size) smallest = picture;
-      if (blob.size <= target) return picture;
-    }
+    const tried = await encodeUnder(draw(source, width, height, scale), target);
+    if (tried.fits) return tried.picture;
+    if (smallest === null || tried.picture.blob.size < smallest.blob.size) smallest = tried.picture;
     scale *= 0.75;
   }
   if (smallest === null) throw new Error("the picture could not be encoded");
   return smallest;
+}
+
+/** The picture as a thumbnail: THUMBNAIL_SHORT_EDGE on its short side, never larger than it is. */
+export async function thumbnailJpeg(source: CanvasImageSource, width: number, height: number): Promise<SmallJpeg> {
+  const scale = Math.min(1, THUMBNAIL_SHORT_EDGE / Math.min(width, height));
+  return (await encodeUnder(draw(source, width, height, scale), THUMBNAIL_BYTES)).picture;
 }

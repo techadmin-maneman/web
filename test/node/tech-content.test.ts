@@ -87,7 +87,10 @@ describe("photographs never touch the phone's gallery", () => {
     const capture = readFileSync(`${SOURCE}/camera/capture.ts`, "utf8");
     const encoder = readFileSync("packages/web-kit/small-jpeg.ts", "utf8");
     expect(capture).toContain("getUserMedia");
-    expect(capture).toContain("smallJpeg(video,");
+    // One still of the camera's frame, the photograph and its thumbnail both drawn from it.
+    expect(capture).toContain("still(video,");
+    expect(capture).toContain("smallJpeg(frame,");
+    expect(capture).toContain("thumbnailJpeg(frame,");
     expect(encoder).toContain("toBlob");
     expect(encoder).toContain("image/jpeg");
   });

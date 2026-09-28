@@ -17,6 +17,7 @@ import {
   type Ceilings,
 } from "../../scripts/lib/free-tier-budget.ts";
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES } from "../../src/config/tryon.ts";
+import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
 
 function ceilingsOf(environment: "staging" | "production"): Ceilings {
@@ -57,16 +58,17 @@ describe("free-tier budget", () => {
   });
 
   // ADR 0084: a client keeps one try-on for good (the look of a client never fitted is never let go), and every
-  // client has booked a visit, so each visit may bring one.
-  it("gives Phase 2 room for about 460 visits' photographs, each with a kept try-on, beside the referral cards", () => {
-    expect(PHASE_2_ALLOWANCE.r2StorageBytes).toBe(4e9);
+  // client has booked a visit, so each visit may bring one. ADR 0093: each photograph has its thumbnail beside it.
+  it("gives Phase 2 room for about 440 visits' photographs, each with a kept try-on, beside the referral cards", () => {
+    expect(PHASE_2_ALLOWANCE.r2StorageBytes).toBe(PHASE_2_SHARE_BYTES);
+    expect(PHASE_2_SHARE_BYTES).toBe(4e9);
     expect(KEPT_TRY_ON_BYTES).toBe(MAX_COPY_BYTES + MAX_RESULT_BYTES);
-    expect(photoRunwayVisits()).toBe(462);
+    expect(photoRunwayVisits()).toBe(444);
   });
 
-  it("would give room for 1,480 visits with no try-on kept, and 1,228 with the look kept as small as the photograph", () => {
-    expect(photoRunwayVisits(0)).toBe(1_480);
-    expect(photoRunwayVisits(2 * MAX_COPY_BYTES)).toBe(1_228);
+  it("would give room for 1,312 visits with no try-on kept, and 1,110 with the look kept as small as the photograph", () => {
+    expect(photoRunwayVisits(0)).toBe(1_312);
+    expect(photoRunwayVisits(2 * MAX_COPY_BYTES)).toBe(1_110);
   });
 
   it("counts a render polled to the give-up time, its download retries, its message and its CRM sync", () => {

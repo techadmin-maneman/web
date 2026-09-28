@@ -1119,6 +1119,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/photos/small/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A photograph's small copy, through a link that lasts 15 minutes; the photograph itself if the copy is gone */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the link is wrong, expired, or not this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/photos/try-on/{image}/{token}": {
         parameters: {
             query?: never;
@@ -2648,6 +2705,8 @@ export interface components {
             angle: "front" | "top" | "left" | "right" | "hair";
             /** @description Lasts 15 minutes; only the signed-in client can open it. */
             url: string;
+            /** @description Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from FSM, which the row shows itself. */
+            thumbnail_url: string | null;
             width: number | null;
             height: number | null;
         };
@@ -2819,7 +2878,7 @@ export interface components {
              */
             date: string;
             /**
-             * @description added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that was cancelled inside 24 hours, or that the client was not home for and ops charged; returned: back after a cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand.
+             * @description added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that was cancelled inside the notice it was booked under, or that the client was not home for and ops charged; returned: back after a cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand.
              * @enum {string}
              */
             event: "added" | "used" | "lost" | "returned" | "expired" | "withdrawn" | "corrected";
@@ -2990,13 +3049,20 @@ export interface components {
                 initials: string;
             };
             price: components["schemas"]["Price"];
-            /** @description What moving it inside 24 hours costs: a first fit's or a replacement's late fee. */
+            /** @description The late fee moving it inside the notice costs, where it is sold to charge one; else null. */
             late_fee: components["schemas"]["Price"] | null;
             /**
              * Format: date-time
              * @description Until then, moving or cancelling is free.
              */
             free_until: string;
+            /** @description The notice it is sold under: how many hours before its window moving or cancelling stops being free, as ops set it when the hold was made (24 to begin with). */
+            change_notice_hours: number;
+            /**
+             * @description What moving or cancelling it inside the notice costs, as it is sold: nothing, its late fee (late_fee), or the visit itself, whose payment is kept or whose credit is spent (visit).
+             * @enum {string}
+             */
+            late_change_charge: "nothing" | "late_fee" | "visit";
             /** Format: date-time */
             expires_at: string;
             /** @enum {string} */
@@ -3043,10 +3109,12 @@ export interface components {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
             /**
-             * @description free: more than 24 hours before the window starts; late: inside 24 hours.
+             * @description free: before the notice the visit was booked under starts, counted back from its window; late: inside it.
              * @enum {string}
              */
             notice: "free" | "late";
+            /** @description The notice the visit was booked under, in hours: 24 unless ops had set another when it was booked. */
+            notice_hours: number;
             /** Format: date-time */
             free_until: string;
             /** @description In paise: what the visit's payment holds, carried over or kept. */
@@ -3066,10 +3134,12 @@ export interface components {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
             /**
-             * @description free: more than 24 hours before the window starts; late: inside 24 hours.
+             * @description free: before the notice the visit was booked under starts, counted back from its window; late: inside it.
              * @enum {string}
              */
             notice: "free" | "late";
+            /** @description The notice the visit was booked under, in hours: 24 unless ops had set another when it was booked. */
+            notice_hours: number;
             /** Format: date-time */
             free_until: string;
             /** @description In paise: what the visit's payment holds, carried over or kept. */

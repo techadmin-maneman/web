@@ -1,5 +1,7 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
+import { readMeter } from "../../src/domain/storage-meter.ts";
+import { MAX_PHOTO_BYTES } from "../../src/domain/tech-photos.ts";
 import { exportVisitPhotos, photoSlot } from "../../src/domain/visit-photos.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmAppointment, type FsmAttachment } from "../../src/providers/fsm.ts";
@@ -105,6 +107,46 @@ describe("exporting a visit's photographs", () => {
     expect(results).toEqual([expect.objectContaining({ fsm_attachment_id: "new", width: 20 })]);
     // The earlier take stays in the bucket: a photograph is deleted only on purpose.
     expect(await env.CLIENT_PHOTOS.head(`visits/${APPOINTMENT_ID}/before-front-old.jpg`)).not.toBeNull();
+  });
+
+  it("copies a photograph at FSM's size, past the app's upload limit, with no small copy, and counts it", async () => {
+    await closedAppointment();
+    const large = new Uint8Array(MAX_PHOTO_BYTES + 1024);
+    const header = syntheticJpeg(3000, 4000);
+    large.set(header.subarray(0, header.length - 2));
+    large.set([0xff, 0xd9], large.length - 2);
+    const fsm = fsmWith([attachment("a1", "before-front.jpg")], { a1: large });
+
+    await exportVisitPhotos(env.DB, env.CLIENT_PHOTOS, fsm, { id: APPOINTMENT_ID, fsmId: "ap-1" }, NOW);
+
+    const photo = await env.DB.prepare("SELECT bytes, thumbnail_key FROM photos").first();
+    expect(photo).toEqual({ bytes: large.byteLength, thumbnail_key: null });
+    expect((await readMeter(env.DB)).bytes).toBe(large.byteLength);
+  });
+
+  it("forgets the small copy of an app's photograph that a newer take in FSM replaces", async () => {
+    await closedAppointment();
+    const set = crypto.randomUUID();
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, 'before', ?3)",
+      ).bind(set, APPOINTMENT_ID, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, thumbnail_key, created_at)
+         VALUES ('p1', ?1, 'front', 'visits/app-take.jpg', 'image/jpeg', 10, '2026-09-24T04:00:00.000Z',
+           'visits/app-take-small.jpg', ?2)`,
+      ).bind(set, NOW.toISOString()),
+    ]);
+    const fsm = fsmWith([attachment("a1", "before-front.jpg", "2026-09-24T10:05:00+05:30")], {
+      a1: syntheticJpeg(20, 20),
+    });
+
+    await exportVisitPhotos(env.DB, env.CLIENT_PHOTOS, fsm, { id: APPOINTMENT_ID, fsmId: "ap-1" }, NOW);
+
+    expect(await env.DB.prepare("SELECT fsm_attachment_id, thumbnail_key FROM photos").first()).toEqual({
+      fsm_attachment_id: "a1",
+      thumbnail_key: null,
+    });
   });
 
   it("counts a named file that is not a JPEG or PNG, and stores nothing for it", async () => {
