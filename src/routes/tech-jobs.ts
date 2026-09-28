@@ -445,13 +445,22 @@ const uploadUrlRoute = createRoute({
   },
 });
 
+const PhotoTakenSchema = z
+  .object({
+    take: z
+      .uuid()
+      .openapi({ description: "This upload of the angle's photograph, which its small copy's upload names." }),
+  })
+  .strict()
+  .openapi("TechnicianPhotoTaken");
+
 const uploadRoute = createRoute({
   method: "put",
   path: "/api/tech/photos/{token}",
   summary: "The photograph itself: a JPEG or PNG, at most 2 MB",
   request: { params: z.object({ token: z.string().min(1).max(500) }) },
   responses: {
-    204: { description: "Received" },
+    200: { description: "Received", ...json(PhotoTakenSchema) },
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: the link is wrong or expired"),
     422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 2 MB"),
@@ -463,12 +472,17 @@ const smallUploadRoute = createRoute({
   method: "put",
   path: "/api/tech/photos/{token}/small",
   summary: "The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB and 800 px a side",
-  request: { params: z.object({ token: z.string().min(1).max(500) }) },
+  request: {
+    params: z.object({ token: z.string().min(1).max(500) }),
+    query: z.object({ take: z.uuid().openapi({ description: "The take the photograph's upload answered." }) }),
+  },
   responses: {
     204: { description: "Received, or held already" },
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: the link is wrong or expired"),
-    409: errorResponse("upload_missing: the photograph has not arrived; send it first"),
+    409: errorResponse(
+      "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since",
+    ),
     422: errorResponse("photo_invalid_file: not a JPEG, or over 64 KB or 800 px a side"),
     503: errorResponse("busy: R2 holds past the runaway ceiling"),
   },
@@ -696,7 +710,7 @@ export function registerTechJobs(app: App): void {
     const stored = await storeTechnicianPhoto(c.env.DB, c.env.CLIENT_PHOTOS, slot, bytes, now, now);
     if (stored.kind === "not_an_image") return c.json(errorBody("photo_invalid_file", requestId), 422);
     c.var.log.info("technician_photo_stored", { appointment_id: slot.appointmentId, phase: slot.phase });
-    return c.body(null, 204);
+    return c.json({ take: stored.take }, 200);
   });
 
   app.openapi(smallUploadRoute, async (c) => {
@@ -708,7 +722,7 @@ export function registerTechJobs(app: App): void {
     if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
       return c.json(errorBody("busy", requestId), 503);
     }
-    const stored = await storeThumbnail(c.env.DB, c.env.CLIENT_PHOTOS, slot, bytes);
+    const stored = await storeThumbnail(c.env.DB, c.env.CLIENT_PHOTOS, slot, c.req.valid("query").take, bytes);
     if (stored === "not_a_thumbnail") return c.json(errorBody("photo_invalid_file", requestId), 422);
     if (stored === "no_photograph") return c.json(errorBody("upload_missing", requestId), 409);
     return c.body(null, 204);

@@ -12,10 +12,12 @@
 // as a photograph is deleted only on purpose and audited.
 //
 // The phone also makes a small copy of each photograph for the client app's
-// rows, and PUTs it to the same link's /small once the photograph is in
-// (docs/decisions/0093-the-storage-meter.md). It is kept beside the photograph,
-// and a photograph taken again forgets it, so a row never shows another take's
-// copy. A photograph with none, such as one copied from FSM, is shown itself.
+// rows (docs/decisions/0093-the-storage-meter.md). Each upload of a photograph
+// is a take, which its answer names; the phone PUTs the small copy to the same
+// link's /small with that take, and it is kept beside that take alone. A
+// photograph taken again, in either app, forgets the one before's, so a row
+// never shows another take's copy. A photograph with none, such as one copied
+// from FSM, is shown itself.
 
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
@@ -69,8 +71,18 @@ export async function slotOfLink(secret: string, token: string, now: Date): Prom
 }
 
 export type Stored =
-  | { readonly kind: "stored"; readonly photoId: string; readonly width: number | null; readonly height: number | null }
+  | {
+      readonly kind: "stored";
+      readonly photoId: string;
+      /** This upload of the slot's photograph, which its small copy names. */
+      readonly take: string;
+      readonly width: number | null;
+      readonly height: number | null;
+    }
   | { readonly kind: "not_an_image" };
+
+/** Where a take of a slot is kept, less its extension: the photograph adds its own, its small copy "-small.jpg". */
+const takeKey = (slot: PhotoSlot, take: string) => `visits/${slot.appointmentId}/${slot.phase}-${slot.angle}-${take}`;
 
 /** Puts one photograph in its slot: R2 first, then the row that names it. */
 export async function storeTechnicianPhoto(
@@ -98,7 +110,8 @@ export async function storeTechnicianPhoto(
     .first<{ id: string }>();
   if (set === null) throw new Error("the photo set was not written");
 
-  const key = `visits/${slot.appointmentId}/${slot.phase}-${slot.angle}-${crypto.randomUUID()}.${fileExtension(info.type)}`;
+  const take = crypto.randomUUID();
+  const key = `${takeKey(slot, take)}.${fileExtension(info.type)}`;
   await putCounted(db, bucket, key, bytes, info.type);
   const row = await db
     .prepare(
@@ -124,7 +137,7 @@ export async function storeTechnicianPhoto(
     )
     .first<{ id: string }>();
   if (row === null) throw new Error("the photograph was not written");
-  return { kind: "stored", photoId: row.id, width: info.width, height: info.height };
+  return { kind: "stored", photoId: row.id, take, width: info.width, height: info.height };
 }
 
 /** A JPEG no larger than a small copy needs to be, in bytes and in pixels. */
@@ -137,11 +150,15 @@ function isThumbnail(bytes: Uint8Array): boolean {
 
 export type StoredThumbnail = "stored" | "held_already" | "no_photograph" | "not_a_thumbnail";
 
-/** Keeps a photograph's small copy beside it. The photograph comes first: a small copy is never held without one. */
+/**
+ * Keeps a take's small copy beside it. The take must still be the slot's photograph: a small copy is never held
+ * without its own, and never beside a newer take, from the phone or from FSM.
+ */
 export async function storeThumbnail(
   db: D1Database,
   bucket: R2Bucket,
   slot: PhotoSlot,
+  take: string,
   bytes: Uint8Array,
 ): Promise<StoredThumbnail> {
   if (!isThumbnail(bytes)) return "not_a_thumbnail";
@@ -152,18 +169,17 @@ export async function storeThumbnail(
     )
     .bind(slot.appointmentId, slot.phase, slot.angle)
     .first<{ id: string; r2_key: string; thumbnail_key: string | null }>();
-  if (photo === null) return "no_photograph";
-  if (photo.thumbnail_key !== null) return "held_already";
+  const photograph = takeKey(slot, take);
+  if (photo === null || !photo.r2_key.startsWith(`${photograph}.`)) return "no_photograph";
+  const key = `${photograph}-small.jpg`;
+  if (photo.thumbnail_key === key) return "held_already";
 
-  const key = `visits/${slot.appointmentId}/${slot.phase}-${slot.angle}-${crypto.randomUUID()}-small.jpg`;
   await putCounted(db, bucket, key, bytes, "image/jpeg");
   const claimed = await db
-    .prepare(
-      "UPDATE photos SET thumbnail_key = ?3 WHERE id = ?1 AND r2_key = ?2 AND thumbnail_key IS NULL RETURNING id",
-    )
+    .prepare("UPDATE photos SET thumbnail_key = ?3 WHERE id = ?1 AND r2_key = ?2 RETURNING id")
     .bind(photo.id, photo.r2_key, key)
     .first();
-  // The photograph was taken again meanwhile, or the same copy arrived twice at once: this one is not needed.
+  // The photograph was taken again while this was stored: it is not needed.
   if (claimed === null) await deleteCounted(db, bucket, [key]);
   return "stored";
 }

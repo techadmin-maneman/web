@@ -365,7 +365,13 @@ Request body:
 
 The photograph itself: a JPEG or PNG, at most 2 MB
 
-**204**: Received
+**200**: Received
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPhotoTaken"
+}
+```
 
 **401**: session_required; device_revoked
 
@@ -421,7 +427,7 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 }
 ```
 
-**409**: upload_missing: the photograph has not arrived; send it first
+**409**: upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since
 
 ```json
 {
@@ -2125,6 +2131,25 @@ The piece a label names
   "required": [
     "phase",
     "angle"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianPhotoTaken
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "take": {
+      "type": "string",
+      "format": "uuid",
+      "description": "This upload of the angle's photograph, which its small copy's upload names."
+    }
+  },
+  "required": [
+    "take"
   ],
   "additionalProperties": false
 }

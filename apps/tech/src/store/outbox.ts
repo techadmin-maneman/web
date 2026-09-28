@@ -33,8 +33,8 @@ export interface Frame {
   readonly frame: Blob;
   /** Its thumbnail, for the client app's rows; missing from a frame kept before the phone made them. */
   readonly small?: Blob;
-  /** The photograph is up, and only its thumbnail is still to go. */
-  readonly photo_sent?: boolean;
+  /** The take the API answered once the photograph was up; only its thumbnail is still to go. */
+  readonly take?: string;
   readonly kept_at: number;
 }
 
@@ -214,21 +214,27 @@ async function uploadFrames(event: Queued, phase: Phase): Promise<Stopped | "gon
 }
 
 /**
- * One frame, the photograph first: the API takes a thumbnail only once its
- * photograph is in. A photograph that is up is marked so, and a round stopped
- * before its thumbnail sends only the thumbnail the next time. A thumbnail the
- * API refuses is let go, since the client app then shows the photograph itself.
+ * One frame, the photograph first: the API answers it with its take, and takes
+ * the thumbnail only for that take, so it is never kept beside another. The
+ * take is kept with the frame, and a round stopped before the thumbnail sends
+ * only the thumbnail the next time. A thumbnail the API refuses, because the
+ * angle was taken again meanwhile or it is not small enough, is let go, since
+ * the client app then shows the photograph itself.
  */
 async function uploadFrame(frame: Frame): Promise<Stopped | "gone" | "refused"> {
   const link = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
   if (!link.ok) return failureOf(link.status, link.code);
-  if (frame.photo_sent !== true) {
+  let take = frame.take;
+  if (take === undefined) {
     const sent = await api.upload(link.body.upload_url, frame.frame);
     if (!sent.ok) return failureOf(sent.status, sent.code);
-    await put("frames", { ...frame, photo_sent: true } satisfies Frame);
+    // An API from before thumbnails names no take: the photograph goes alone.
+    take = sent.body?.take;
+    if (take === undefined) return null;
+    await put("frames", { ...frame, take } satisfies Frame);
   }
   if (frame.small === undefined) return null;
-  const sent = await api.upload(link.body.small_upload_url, frame.small);
+  const sent = await api.uploadThumbnail(link.body.small_upload_url, take, frame.small);
   if (sent.ok) return null;
   const trouble = failureOf(sent.status, sent.code);
   return trouble === "refused" ? null : trouble;

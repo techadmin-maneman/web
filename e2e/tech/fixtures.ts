@@ -9,6 +9,7 @@
 // The people are the design's own invented ones. No real name, number or
 // photograph is used anywhere.
 
+import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 import type { paths } from "../../apps/tech/src/api-schema.ts";
 import { assertInContract, type Reply } from "../contract.ts";
@@ -444,9 +445,12 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (method === "PUT" && path.startsWith("/api/tech/photos/")) {
       if (fake.moved) return refuse(route, 404, "not_found");
       const slot = path.slice("/api/tech/photos/".length);
-      if (slot.endsWith("/small")) fake.thumbnails.push(slot.slice(0, -"/small".length));
-      else fake.photos.push(slot);
-      return reply(route, 204);
+      if (slot.endsWith("/small")) {
+        fake.thumbnails.push(slot.slice(0, -"/small".length));
+        return reply(route, 204);
+      }
+      fake.photos.push(slot);
+      return reply(route, 200, { take: randomUUID() });
     }
 
     if (method === "POST") {

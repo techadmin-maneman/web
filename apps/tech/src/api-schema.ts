@@ -674,11 +674,13 @@ export interface paths {
             requestBody?: never;
             responses: {
                 /** @description Received */
-                204: {
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["TechnicianPhotoTaken"];
+                    };
                 };
                 /** @description session_required; device_revoked */
                 401: {
@@ -736,7 +738,10 @@ export interface paths {
         /** The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB and 800 px a side */
         put: {
             parameters: {
-                query?: never;
+                query: {
+                    /** @description The take the photograph's upload answered. */
+                    take: string;
+                };
                 header?: never;
                 path: {
                     token: string;
@@ -770,7 +775,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description upload_missing: the photograph has not arrived; send it first */
+                /** @description upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1619,6 +1624,13 @@ export interface components {
             phase: "before" | "after";
             /** @enum {string} */
             angle: "front" | "top" | "left" | "right" | "hair";
+        };
+        TechnicianPhotoTaken: {
+            /**
+             * Format: uuid
+             * @description This upload of the angle's photograph, which its small copy's upload names.
+             */
+            take: string;
         };
         TechnicianPhotosRequest: {
             /** @enum {string} */

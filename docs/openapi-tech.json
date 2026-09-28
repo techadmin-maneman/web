@@ -1265,6 +1265,20 @@
         ],
         "additionalProperties": false
       },
+      "TechnicianPhotoTaken": {
+        "type": "object",
+        "properties": {
+          "take": {
+            "type": "string",
+            "format": "uuid",
+            "description": "This upload of the angle's photograph, which its small copy's upload names."
+          }
+        },
+        "required": [
+          "take"
+        ],
+        "additionalProperties": false
+      },
       "TechnicianPhotosRequest": {
         "type": "object",
         "properties": {
@@ -2114,8 +2128,15 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Received"
+          "200": {
+            "description": "Received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianPhotoTaken"
+                }
+              }
+            }
           },
           "401": {
             "description": "session_required; device_revoked",
@@ -2173,6 +2194,17 @@
             "required": true,
             "name": "token",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The take the photograph's upload answered."
+            },
+            "required": true,
+            "description": "The take the photograph's upload answered.",
+            "name": "take",
+            "in": "query"
           }
         ],
         "responses": {
@@ -2200,7 +2232,7 @@
             }
           },
           "409": {
-            "description": "upload_missing: the photograph has not arrived; send it first",
+            "description": "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since",
             "content": {
               "application/json": {
                 "schema": {
