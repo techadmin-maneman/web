@@ -185,7 +185,7 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
     // Phase 2's own personal data (docs/decisions/0049-dpdp.md): where they live, the numbers they changed
     // between, and the words of any grievance. Visits, payments and credits stay, as records. An address a
     // technician's check-in was measured against is blanked to its city and pincode rather than deleted: the
-    // check-in points at it, and stays whole as the evidence ops rule a no-show on.
+    // check-in points at it, and stays as the evidence ops rule a no-show on.
     db
       .prepare(
         `UPDATE addresses SET line1 = 'Erased', line2 = NULL, locality = 'Erased', access_notes = NULL, lat = NULL,
@@ -218,6 +218,15 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
       .bind(personId),
     // And the client's own words to the technician on a visit (src/domain/client-notes.ts).
     db.prepare("UPDATE appointments SET client_note = NULL, client_note_at = NULL WHERE person_id = ?1").bind(personId),
+    // Where the technician's phone was at their door (ADR 0025, ruling 34). The check-in's time, the distance
+    // measured, the radius and whether it passed stay: they place nobody, and a no-show is ruled on them
+    // (docs/decisions/0094-where-a-consent-was-given.md).
+    db
+      .prepare(
+        `UPDATE checkins SET lat = NULL, lng = NULL, accuracy_m = NULL
+         WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
+      )
+      .bind(personId),
     // Found through the check-in, which each case is keyed on, so the lookup is indexed.
     db
       .prepare(
