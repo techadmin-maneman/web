@@ -1,6 +1,6 @@
 # 0086. The next visit is offered, and the client books it
 
-- Status: accepted; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), whose services the visit offered now names
+- Status: accepted; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), whose services the visit offered now names, and 28 September 2026 by the plan's piece C27, whose summary of each client's last visits the Tasks board's two groups now read
 - Date: 2026-09-27
 - Amends [0051](0051-booking-from-the-site.md), whose form booked a consultation alone, [0045](0045-self-serve-booking.md), whose horizon was the strip's fortnight, [0061](0061-ops-editable-inputs.md), whose register gains its sixth input and a key's own bounds, and [0071](0071-what-ops-see-before-a-setting-changes.md), whose check before a change now stands before a rule is set as well as a price; follows [0047](0047-visit-messages.md) for the reminder, [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) for the request, [0072](0072-ops-clients-and-queues.md) and [0074](0074-hand-offs-and-messages.md) for the Tasks board, and [0079](0079-an-address-before-a-slot.md); records the owner's rulings of 27 September 2026, ADR 0025's items 68, 69 and 70, and their answers on booking and to open points 46, 61 and 70 (`docs/owner-answers-2026-09-27.md`)
 
@@ -83,6 +83,12 @@ Both read from the rows at the moment ops look, like every other group (ADR 0072
 
 Both take the third statement of the board's read, which now holds five arms, the most D1 takes in one compound SELECT; a group added next needs a fourth statement (`src/domain/tasks.ts`). The client books; ops reach them from their page, on its visits, and nothing on the board closes either.
 
+**Read from a summary kept as each visit closes** (amended 28 September 2026, plan piece C27). At-risk client read every first fit, service and replacement ever done before its day, and First fit to book each client's every visit for their last consultation, on each look at the board: reads that grow with every visit made, against D1's 5 million rows a day (ADR 0009). Migration 0052 adds `last_visits`, a row for each client with a visit done: their last first fit, service or replacement, its start, and their last consultation's start, worked out by a view, `last_visits_now`, from the appointments themselves.
+
+- **Triggers keep it,** in the same statement as the visit's own write: a visit done added or deleted, or one whose client, kind, start, status or deletion changes, works its client's row out afresh. So the mirror's write of a visit closing, `src/domain/job-sheet.ts`'s status as the technician closes it, the local stand-in for FSM, and the Worker deployed before this one each keep it true without knowing of it. A write that leaves those five as they were, as the mirror's reads mostly do, writes nothing to it. The migration fills it from the visits there.
+- **The groups read it,** and look for anything booked since along indexes that hold only what they look for: a client's visits still to happen (`appointments_live_by_person`), those after the last one (`appointments_by_person`), and a booking paid for and on its way to FSM (`slot_holds_confirmed_by_person`). What they list, and when, is as before: the tests of both groups pass unchanged (`test/worker/ops-tasks.test.ts`). A look reads the same rows when every client has had ten times the visits (`test/worker/cron-reads.test.ts`).
+- **Two visits done on one start** were two tasks, one for each; they are now one, for the one the view finds first.
+
 ### The horizon
 
 A visit may be booked in the app from tomorrow to `horizon` days on, 45 to begin with, and a first fit no sooner than the lead time after the consultation. `GET /api/availability` still answers a strip of 14 days, from the day asked for, moved back so it ends by the horizon where it can, with any day outside the bookable days offered to nobody; `POST /api/holds` refuses a day outside them (`not_bookable`), for a move as for a new visit. The site's consultation form keeps its own fortnight from tomorrow (`BOOKING_DAYS`, which is now the strip's length and the site's reach alone).
@@ -111,7 +117,7 @@ The rules are `src/policy/next-visit.ts`, `src/policy/home-prompt.ts` and the se
 
 ## Consequences
 
-- **Migrations 0047 and 0048** add a table and an index; the Worker already deployed reads neither.
+- **Migrations 0047 and 0048** add a table and an index; the Worker already deployed reads neither. **Migration 0052** adds `last_visits`, its view and triggers, and three indexes, which the Worker already deployed neither reads nor needs to write.
 - **The contract** gains `first_fit` on both consultation routes and their answers, `booking.next` and the `next_visit` prompt on `GET /api/me`, `bookable` on the `replacement_due` prompt, `bounds` on each rule of `GET /api/settings`, the two task groups, and what `from` does on `GET /api/availability`; the documents and the front ends' types are regenerated.
 - **A new message kind and a new cron job**, `next_service_reminder` and `next_service_reminders`. An operator runs nothing for either: the cron's trigger is unchanged.
 - **A fitted client with nothing booked and no address** sees the next service rather than the address prompt; the sheet asks for the address before anything is held.

@@ -283,7 +283,8 @@ function fsmLine(holdId: string, left: LeftInFsm): string {
 
 /**
  * Writes the price book's prices over the FSM catalogue items that differ, while the push is on. It is tried once:
- * the hourly catalogue check is its retry, and tells ops if FSM still differs an hour on.
+ * the hourly catalogue check is its retry, and tells ops if FSM still differs an hour on, to look here. A service whose
+ * item lies past the pages the push reads is logged with it, since the push will never reach it.
  */
 async function syncCatalogue(
   message: Message,
@@ -298,8 +299,11 @@ async function syncCatalogue(
     return;
   }
   try {
-    const written = await pushCatalogue(db, deps.fsm, indiaDate(deps.now()));
-    log.info("fsm_catalogue_pushed", { written });
+    const pushed = await pushCatalogue(db, deps.fsm, indiaDate(deps.now()));
+    log.info("fsm_catalogue_pushed", { written: pushed.written });
+    if (pushed.unreached.length > 0) {
+      log.warn("fsm_catalogue_push_failed", { reason: "catalogue_unread", services: pushed.unreached });
+    }
   } catch (error) {
     const reason = failureReason(error);
     log.warn("fsm_catalogue_push_failed", { reason });

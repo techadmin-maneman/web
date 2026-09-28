@@ -113,14 +113,17 @@ export function auditStatement(db: D1Database, entry: AuditEntry, now: Date): D1
 
 /**
  * The entry for an insert earlier in the same batch that may write nothing, as
- * one that skips a duplicate does: it is written only if that insert's row,
- * `id` in `table`, is there.
+ * one that skips a duplicate, or a stock count whose place moved since it was
+ * read, does: it is written only if that insert's row, `id` in `table`, is there.
  */
 export function auditStatementIfWritten(
   db: D1Database,
   entry: AuditEntry,
   now: Date,
-  written: { readonly table: "grievances" | "consents" | "referral_attributions"; readonly id: string },
+  written: {
+    readonly table: "grievances" | "consents" | "referral_attributions" | "stock_movements";
+    readonly id: string;
+  },
 ): D1PreparedStatement {
   return db
     .prepare(
