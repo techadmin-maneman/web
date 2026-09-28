@@ -35,6 +35,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
+- [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
@@ -57,6 +58,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
+- [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
@@ -131,7 +133,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -170,8 +172,11 @@ Indexes:
 - `appointments_by_window_end`: on (`window_end`)
 - `appointments_by_window_start`: on (`window_start`)
 - `appointments_done_visits`: on (`window_start`), where `status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL`
+- `appointments_live_by_person`: on (`person_id`), where `status IN ('scheduled', 'dispatched', 'in_progress') AND deleted_at IS NULL`
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
+
+Triggers: `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`.
 
 ## audit_log
 
@@ -601,6 +606,23 @@ Indexes:
 
 - `job_events_unwritten`: on (`fsm_write_state`, `received_at`)
 - A `UNIQUE` constraint: unique on (`appointment_id`, `event_id`)
+
+## last_visits
+
+Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
+
+Made by `0053_balances_and_last_visits.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `person_id` | TEXT | no |  | primary key |
+| `visit_id` | TEXT | yes |  |  |
+| `visit_start` | TEXT | yes |  |  |
+| `consulted_start` | TEXT | yes |  |  |
+
+Indexes:
+
+- `last_visits_by_visit_start`: on (`visit_start`)
 
 ## leads
 
@@ -1121,7 +1143,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1162,14 +1184,28 @@ Indexes:
 - `slot_holds_by_appointment`: on (`appointment_id`), where `appointment_id IS NOT NULL`
 - `slot_holds_by_person`: on (`person_id`, `created_at`)
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
+- `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
+
+## stock_balances
+
+What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
+
+Made by `0053_balances_and_last_visits.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
+| `place` | TEXT | no |  | primary key |
+| `quantity` | INTEGER | no |  |  |
+| `counted_at` | TEXT | yes |  |  |
 
 ## stock_movements
 
 Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1191,7 +1227,10 @@ Indexes:
 
 - `stock_movements_by_job`: on (`appointment_id`), where `reason = 'used'`
 - `stock_movements_held`: on (`technician_id`, `consumable_code`)
+- `stock_movements_latest`: on (`created_at`)
 - `stock_movements_used`: unique on (`job_event_id`, `consumable_code`), where `reason = 'used'`
+
+Triggers: `stock_movements_balance`, `stock_movements_no_update`, `stock_movements_taken_out`.
 
 ## sync_cursors
 

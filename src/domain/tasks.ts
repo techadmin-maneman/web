@@ -152,6 +152,10 @@ const OUTSTANDING = [
   // A First fit to book is a fit asked for on the site's form whose consultation was done on or before ?5's day,
   // with nothing booked since. It waits from `first_fit_to_book` days after the consultation (?6 on from it), names
   // the consultation's start and the window asked for, and goes as the at-risk task does.
+  //
+  // Both read each client's last visits from last_visits, which the database keeps as each visit closes (migration
+  // 0053), and look for a visit booked since along indexes that hold only the visits to come or those after it: so a
+  // look reads about a row a client, however many visits each has had.
   `SELECT * FROM (
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.window_start || ' ' || t.name AS detail,
@@ -180,37 +184,37 @@ const OUTSTANDING = [
         WHERE later.person_id = a.person_id AND later.deleted_at IS NULL
           AND later.status NOT IN ('cancelled', 'terminated') AND later.window_start > a.window_start)
   UNION ALL
-  SELECT 'at_risk_client', a.id, a.person_id, pe.name,
-         a.window_start || ' ' || date(a.window_start, '+330 minutes', ?7),
-         date(a.window_start, '+330 minutes', ?4), NULL
-    FROM appointments a JOIN people pe ON pe.id = a.person_id
-   WHERE a.status = 'completed' AND a.type IN ('first_fit', 'service', 'replacement') AND a.deleted_at IS NULL
-     AND a.window_start < ?3 AND pe.erased_at IS NULL
+  SELECT 'at_risk_client', s.visit_id, s.person_id, pe.name,
+         s.visit_start || ' ' || date(s.visit_start, '+330 minutes', ?7),
+         date(s.visit_start, '+330 minutes', ?4), NULL
+    FROM last_visits s JOIN people pe ON pe.id = s.person_id
+   WHERE s.visit_start < ?3 AND pe.erased_at IS NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM appointments live
+        WHERE live.person_id = s.person_id AND live.status IN ('scheduled', 'dispatched', 'in_progress')
+          AND live.deleted_at IS NULL)
      AND NOT EXISTS (
        SELECT 1 FROM appointments later
-        WHERE later.person_id = a.person_id AND later.deleted_at IS NULL
-          AND (later.status IN ('scheduled', 'dispatched', 'in_progress')
-            OR (later.window_start > a.window_start AND later.status NOT IN ('cancelled', 'terminated'))))
+        WHERE later.person_id = s.person_id AND later.window_start > s.visit_start AND later.deleted_at IS NULL
+          AND later.status NOT IN ('cancelled', 'terminated'))
      AND NOT EXISTS (
-       SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
+       SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
   UNION ALL
-  SELECT 'first_fit_to_book', f.id, f.person_id, pe.name, f.consulted || ' ' || COALESCE(f.preferred_window, 'any'),
-         date(f.consulted, '+330 minutes', ?6), NULL
-    FROM (
-      SELECT r.id, r.person_id, r.preferred_window,
-             (SELECT MAX(c.window_start) FROM appointments c
-               WHERE c.person_id = r.person_id AND c.type = 'consultation' AND c.status = 'completed'
-                 AND c.deleted_at IS NULL) AS consulted
-        FROM first_fit_requests r) f
-    JOIN people pe ON pe.id = f.person_id
-   WHERE f.consulted < ?5 AND pe.erased_at IS NULL
+  SELECT 'first_fit_to_book', r.id, r.person_id, pe.name,
+         s.consulted_start || ' ' || COALESCE(r.preferred_window, 'any'),
+         date(s.consulted_start, '+330 minutes', ?6), NULL
+    FROM first_fit_requests r JOIN last_visits s ON s.person_id = r.person_id JOIN people pe ON pe.id = r.person_id
+   WHERE s.consulted_start < ?5 AND pe.erased_at IS NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM appointments live
+        WHERE live.person_id = r.person_id AND live.status IN ('scheduled', 'dispatched', 'in_progress')
+          AND live.deleted_at IS NULL)
      AND NOT EXISTS (
        SELECT 1 FROM appointments later
-        WHERE later.person_id = f.person_id AND later.deleted_at IS NULL
-          AND (later.status IN ('scheduled', 'dispatched', 'in_progress')
-            OR (later.window_start > f.consulted AND later.status NOT IN ('cancelled', 'terminated'))))
+        WHERE later.person_id = r.person_id AND later.window_start > s.consulted_start AND later.deleted_at IS NULL
+          AND later.status NOT IN ('cancelled', 'terminated'))
      AND NOT EXISTS (
-       SELECT 1 FROM slot_holds h WHERE h.person_id = f.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
+       SELECT 1 FROM slot_holds h WHERE h.person_id = r.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
 ) ORDER BY since LIMIT ?2`,
 ] as const;
 

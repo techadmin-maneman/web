@@ -1,6 +1,6 @@
 # 0087. Consumables and their stock, and the job sheet, set in the console
 
-- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/owner-answers-2026-09-27.md`: item 28, "Consumables, stock and FSM" and "Where stock is held"). FSM's two new calls are untried on the org (`docs/open-points.md`, item 25), and the switch that makes them is off everywhere; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), whose services a service's expected use is now checked against
+- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/owner-answers-2026-09-27.md`: item 28, "Consumables, stock and FSM" and "Where stock is held"). FSM's two new calls are untried on the org (`docs/open-points.md`, item 25), and the switch that makes them is off everywhere; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), whose services a service's expected use is now checked against, and 28 September 2026 by the plan's pieces C26, C27 and C28 (`docs/implementation-plan-2026-09-27.md`): writes to one place that land together each count once, what a place holds is kept as its balance, and the hourly check reads FSM's whole catalogue
 - Date: 2026-09-27
 - Amends [0061](0061-ops-editable-inputs.md), [0065](0065-a-technicians-writes-reach-fsm.md) and [0073](0073-prices-from-the-price-book.md); follows [0038](0038-offline-writes.md), [0067](0067-alerts-and-silent-failures.md), [0070](0070-vendor-correctness.md) and [0071](0071-what-ops-see-before-a-setting-changes.md)
 
@@ -57,6 +57,7 @@ The job's card carries every consumable offered on the job's day, with its unit 
 - **A row of `consumables_used` for each consumable**, which now also keeps its code, what the job's service expected of it and what one cost that day, so a later change of cost leaves a past job's as it was. Its `fsm_item_id` stays empty: the part is the consumable's, found through its code. One row an event for each consumable, by its code, so a step read again after ops renamed a consumable writes no second row under the new name (amended in review, 27 September 2026). A job's use is its latest event's rows.
 - **A movement out of the technician's kit** for each, reason `used`, naming the job and the event.
 - **Once, however often the step is replayed.** The use is read from the job's latest consumables step, and what the kit's rows for the job already took is subtracted, so a replay writes nothing, a replay of an older step changes nothing, and a corrected step writes only the difference. A unique index on the event and the consumable holds it under two replays at once.
+- **Once when two of the job's steps land together** (amended 28 September 2026, plan piece C26). The Worker serves requests at once, so an older step's use could be read, a newer step land and record its own use from rows that did not yet hold the older one's, and the older one then write its use as well: the job's use taken twice. The kit's rows are now written only while the step they were worked out from is still the job's latest (`INSERT … SELECT … WHERE` the step is the job's latest, in the same statement); the newer step's own request records the use. Nothing is retried: the step that lost is no longer the one to record. Reproduced first by holding the older step's write between its read and its batch (`test/worker/stock.test.ts`).
 - **FSM's summary names each consumable as before,** by the name the console gives it now, and no line is written to the work order.
 
 ### Stock
@@ -66,11 +67,17 @@ The job's card carries every consumable offered on the job's day, with its unit 
 - **The places** are the central store and each technician's kit. Stock is in whole units of the consumable.
 - **A delivery** is received into the central store; one straight into a kit is a delivery and a transfer.
 - **A transfer** is two rows sharing an ID, out of one place and into another; the same place twice is refused.
-- **A count** writes the difference from what the rows said, nought when it agrees, and the Stock page says when each place last counted each consumable. A kit's first count is its opening stock.
+- **A count** writes the difference from what the rows said, nought when it agrees, and the Stock page says when each place last counted each consumable. A kit's first count is its opening stock. **Amended 28 September 2026 (plan piece C26):** the difference is written only while the place still holds what the count read, and its audit entry only with it; a job's use landing between the read and the write would otherwise be taken twice, once by its own row and once in the difference. The count then reads the place again and works the difference out afresh, three times at most, which only three movements landing at that place in the same moments could exhaust; the fourth answer is an error and nothing is written. A guard rather than a figure worked out in the statement, because the audit entry names what the place held and the difference, and a guard keeps both as the Worker worked them out.
 - **A loss** is written off with ops' words for what happened, which it requires.
 - **Nothing is refused for leaving a place below nothing.** A job's use cannot be refused, and a delivery may be recorded late. The console says so before a movement is sent, and a count puts it right.
 
 Ops record each on the Stock page, a section of its own beside Technicians. Each movement shows what every place it touches holds now and will hold, before it is sent (ADR 0071), and is written in one batch with its audit entry (`stock.receive`, `stock.transfer`, `stock.count`, `stock.write_off`). The page lists every consumable offered, and any retired one still held, against the central store, each active technician's kit, and the kit of any technician who left still holding stock, with the latest 30 movements beneath.
+
+**What a place holds is kept as its balance** (amended 28 September 2026, plan piece C27). The Stock page summed the whole ledger on each look, and each movement's low-stock check and each count summed the place's rows: reads that grow with every movement ever made, against D1's 5 million rows a day (ADR 0009). Migration 0053 adds `stock_balances`, a row for each consumable at each place, `'central'` or the technician's ID, with what the place holds and when it last counted it.
+
+- **A trigger keeps it,** in the same statement as each row of the ledger is written: every writer moves it, whatever writes the row, and the Worker deployed before this one, which knows nothing of it, keeps it true from the migration to the release. Each place starts at the sum of its rows. A statement beside each write in its batch would have left a balance behind every row written without one, from the migration to the release, and behind the fixtures'.
+- **The ledger stays the record.** A movement is never changed, and a trigger now refuses an update, which would leave its balance behind. The staging fixtures take their own rows out again (`e2e/tech-staging/seed.ts`, `scripts/seed-technician-tester.ts`), and a third trigger gives each place back what the row moved, with when it last counted from the rows left.
+- **The Stock page, the low-stock check and a count read balances.** The latest 30 movements are read along an index of their time. A look, or a count, reads the same rows whether the ledger holds a hundred rows or a thousand (`test/worker/cron-reads.test.ts`).
 
 ### Low stock
 
@@ -113,7 +120,9 @@ Each save shows what is renamed, added, taken off and moved before it is sent (A
   - `test/node/policy-stock.test.ts`: the rules.
   - `test/node/migration-0049.test.ts`: the migration.
   - `test/worker/consumables.test.ts`: the list, its retirement and what each service uses.
-  - `test/worker/stock.test.ts`: the ledger, a job's use written once and corrected, and low stock.
+  - `test/worker/stock.test.ts`: the ledger, a job's use written once and corrected, writes that land together, and low stock.
+  - `test/node/migration-0053.test.ts`: the balances, started from the ledger and kept by its triggers.
+  - `test/worker/cron-reads.test.ts`: the Stock page and a count read no more as the ledger grows.
   - `test/worker/job-sheet-settings.test.ts`: the job sheet, the committed lists and retired items.
   - `test/worker/fsm-catalogue.test.ts`: the parts, with the push off and on, and its bound.
   - `test/worker/fsm.test.ts`, `test/worker/fsm-zoho-replies.test.ts`: the two calls, on Zoho, the stub and the unconnected provider.

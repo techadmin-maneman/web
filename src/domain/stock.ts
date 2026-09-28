@@ -9,6 +9,11 @@
 // as his consumables step lands, once however often the step is replayed
 // (src/domain/job-use.ts).
 //
+// That sum is kept in stock_balances, a row for each consumable at each place,
+// which the database moves in the same statement as each row of the ledger is
+// written (migration 0053), so what a place holds is read without its history.
+// It names the central store 'central', and a kit by its technician's ID.
+//
 // A place that falls to a consumable's reorder level raises one alert, for
 // that kit or for the store, listing everything low there, and the Stock
 // screen marks it. The alert closes when the place is stocked again.
@@ -76,10 +81,13 @@ function movementStatement(db: D1Database, movement: Movement, written: Written)
 }
 
 /** What a place, `?4`, holds of a consumable, `?2`, as a statement about one movement reads it. */
-const HELD_THERE =
-  "SELECT COALESCE(SUM(quantity), 0) FROM stock_movements WHERE technician_id IS ?4 AND consumable_code = ?2";
+const HELD_THERE = `SELECT COALESCE((SELECT quantity FROM stock_balances
+  WHERE consumable_code = ?2 AND place = COALESCE(?4, 'central')), 0)`;
 
-/** A count's row, `id`, written only while the place still holds what the count was worked out from. */
+/**
+ * A count's row, `id`, written only while the place still holds what the count was worked out from. It answers the
+ * row's ID when it is written: D1's count of changes takes in the balance a trigger moves with it.
+ */
 function countStatement(
   db: D1Database,
   id: string,
@@ -90,7 +98,8 @@ function countStatement(
   return db
     .prepare(
       `INSERT INTO stock_movements (${MOVEMENT_COLUMNS})
-       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11 WHERE (${HELD_THERE}) = ?12`,
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11 WHERE (${HELD_THERE}) = ?12
+       RETURNING id`,
     )
     .bind(...movementValues(id, movement, written), held);
 }
@@ -105,15 +114,13 @@ async function placeExists(db: D1Database, place: Place): Promise<boolean> {
   return (await db.prepare("SELECT 1 FROM technicians WHERE id = ?1").bind(place).first()) !== null;
 }
 
-/** What a place holds of one consumable: the sum of its rows. */
+/** What a place holds of one consumable: the sum of its rows, as its balance keeps it. */
 export async function heldOf(db: D1Database, code: string, place: Place): Promise<number> {
   const row = await db
-    .prepare(
-      "SELECT COALESCE(SUM(quantity), 0) AS held FROM stock_movements WHERE technician_id IS ?1 AND consumable_code = ?2",
-    )
-    .bind(place, code)
-    .first<{ held: number }>();
-  return row?.held ?? 0;
+    .prepare("SELECT quantity FROM stock_balances WHERE consumable_code = ?1 AND place = COALESCE(?2, 'central')")
+    .bind(code, place)
+    .first<{ quantity: number }>();
+  return row?.quantity ?? 0;
 }
 
 /** Stock received into the central store. */
@@ -224,7 +231,7 @@ async function writeCount(
       id,
     }),
   ]);
-  return row?.meta.changes === 1;
+  return row?.results.length === 1;
 }
 
 /** A loss somebody saw at a place, with what happened: a tube dropped, a batch spoilt. */
@@ -284,8 +291,8 @@ export async function lowAt(db: D1Database, place: Place, today: string): Promis
   const { results } = await db
     .prepare(
       `SELECT c.code, c.name, c.unit, CASE WHEN ?1 IS NULL THEN c.reorder_central ELSE c.reorder_kit END AS level,
-         (SELECT COALESCE(SUM(m.quantity), 0) FROM stock_movements m
-           WHERE m.technician_id IS ?1 AND m.consumable_code = c.code) AS held
+         COALESCE((SELECT b.quantity FROM stock_balances b
+           WHERE b.consumable_code = c.code AND b.place = COALESCE(?1, 'central')), 0) AS held
        FROM consumables c
        WHERE c.retired_date IS NULL OR c.retired_date > ?2
        ORDER BY c.name COLLATE NOCASE`,
@@ -375,15 +382,13 @@ const MOVEMENTS_SHOWN = 30;
 
 export async function stockView(db: D1Database, now: Date): Promise<StockView> {
   const today = indiaDate(now);
-  const [sums, technicians, recent] = await db.batch([
+  const [balances, technicians, recent] = await db.batch([
     db.prepare(
-      `SELECT consumable_code, technician_id, SUM(quantity) AS quantity,
-         MAX(CASE WHEN reason = 'counted' THEN created_at END) AS counted_at
-       FROM stock_movements GROUP BY consumable_code, technician_id`,
+      `SELECT consumable_code, NULLIF(place, 'central') AS technician_id, quantity, counted_at FROM stock_balances`,
     ),
     db.prepare(
       `SELECT id, name, active FROM technicians
-       WHERE active = 1 OR id IN (SELECT DISTINCT technician_id FROM stock_movements WHERE technician_id IS NOT NULL)
+       WHERE active = 1 OR id IN (SELECT place FROM stock_balances WHERE quantity <> 0)
        ORDER BY name`,
     ),
     db
@@ -393,7 +398,7 @@ export async function stockView(db: D1Database, now: Date): Promise<StockView> {
       )
       .bind(MOVEMENTS_SHOWN),
   ]);
-  const held = (sums?.results ?? []) as {
+  const held = (balances?.results ?? []) as {
     consumable_code: string;
     technician_id: string | null;
     quantity: number;
