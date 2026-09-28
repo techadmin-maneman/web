@@ -1,0 +1,47 @@
+# 0089. An invite is not lost when the friend books away from its page
+
+- Status: accepted
+- Date: 2026-09-28
+- Amends [0048](0048-referrals.md), whose attribution happened only on the invite's own page, and [0051](0051-booking-from-the-site.md), whose `/book` booked without an invite; records two departures in ADR 0025 (items 72 and 73)
+
+## Context
+
+A client's invite is a link, `maneman.in/r/<code>`, and until now a referral was recorded in exactly one place: when the friend booked a consultation or joined a waitlist **on that page** (`POST /api/r/:code/consultation` or `/waitlist`, then `attribute()` in `src/domain/referrals.ts`). The code lived only in the page's address. Nothing kept it in the browser (the site keeps the visit's UTM attribution in `sessionStorage`, not the code), there was nowhere to type one, and ops could not attach one. So a friend who opened the link, left, and booked later through `/book`, the app, or by messaging ops earned their referrer nothing, and the referrer was never told why.
+
+This was found on 28 September 2026. Of the ways to close it, the user chose two together: the site remembers the invite, and ops can attach one on the client's page.
+
+ADR 0048's rule stands throughout: **attribution happens once, to the first invite a person uses, and only while they are new: not the referrer, and not already fitted.**
+
+## Decision
+
+### The site remembers the invite, and `/book` carries it
+
+- **The landing remembers a valid invite.** When `/r/:code` shows an invite the API answers `valid`, the page keeps its code in `localStorage` as `mm_invite`, `{ code, saved_at }` (`site/src/lib/remembered-invite.ts`). The latest valid invite opened replaces any other. An unknown code is not kept. Every read and write is wrapped, so a browser that blocks storage books as before, only without the memory.
+- **For 30 days** (`INVITE_REMEMBERED_DAYS`, beside the code that reads it). The figure decides only how long a browser remembers a link, not who is attributed or what they get, which stay the API's rules. So it is a constant, not an ops setting (ADR 0025, item 66, is about the rules and prices ops own).
+- **`/book` sends it.** The consultation and the waitlist forms add the remembered code as `invite_code` to `POST /api/consultation` and `POST /api/waitlist`. The API looks it up with `inviteOf` and passes it on as the landing does, so the same `attribute()` rules, credits and lapse apply: the same function, the same batch, the same answers. A code we do not have, or one not shaped like a code, is ignored and the booking goes ahead without an invite; the field never refuses a booking.
+- **Both public answers now say what the landing's say:** `credits`, whether the invite's 3 service visits apply, and `invite`, `valid`, `expired` or `unknown` (no invite came with it, or a code we do not have). So `/book`'s confirmation shows the landing's lines when they are true: "The 3 service visits land when you are fitted." for a booking, "The invite holds for 12 months after that." for a place on a list, and C4's "Code expired" frame for an invite that lapsed while they waited. Before the booking, `/book` still shows no card and no invite: the page is not the invite's. Showing the credits line there is a departure from `/book`'s own design (ADR 0025, item 72).
+- **A booking or a waitlist request that used the remembered code forgets it,** from either page: the landing's own booking carries its own code, which is the one it remembered.
+- **The privacy page says so,** in one sentence: the browser keeps the code of a friend's invite for thirty days, so a consultation booked later still comes with it, and forgets it once a booking has used it. It is marked for counsel (`docs/open-points.md`, item 156).
+
+### Ops attach an invite on the client's page
+
+- **`POST /api/clients/{id}/referral`, `{ code, reason }`,** on the ops surface behind Access. The reason is required, trimmed, and at most 300 characters, as every reason ops give (`src/policy/decision-reasons.ts`).
+- **The same rules, through the same function.** The route finds the invite with `inviteOf` and attributes the client with `attribute()`, which now says why it did not: `own_invite`, `fitted`, or `already_attributed` with the code the client came with first. The route answers each in its own code, which the console words for ops:
+  - `422 unknown_invite`: no invite has that code;
+  - `409 own_invite`: the client is the code's own referrer;
+  - `409 already_invited`: the client came with an invite already, named in the answer (`invite.code`);
+  - `409 already_fitted`: the client has had their first fit. Whether ops may attach one after the first fit, when the friend says they came through it, is the owner's to rule (`docs/open-points.md`, item 157); until then the landing's rule holds, and the console says why.
+- **Who attached it and why are kept on the attribution,** in two nullable columns, `attached_by` (the Access identity) and `attach_reason` (migration 0051). Not in the audit log: it holds IDs and codes only and is never blanked (ADR 0031), while the reason is ops' words about a client. So the reason sits beside the attribution, as a review's reason does, and an erasure of either side blanks it with the review's (`src/domain/erasure.ts`). An invite the friend used themselves has both empty. The columns are added rather than a third value in `via`, whose `CHECK` is migration 0021's and could only change by rebuilding a table other tables reference (`docs/migrations.md`, rule 4).
+- **Audited in the same batch.** `referral.attach`, under the member of staff, with the client as its subject and the code in its detail, is written in the attribution's own batch, and only if the attribution was written (`auditStatementIfWritten`), so a refused attach leaves no entry and a written one cannot go unaudited.
+- **`via` is how the client came, as the landing would have recorded it** (`howTheyCame`): `waitlist`, with the list's pincode, for a client who waits on a list and has no visit booked or asked for; otherwise `consultation`, with their address's pincode. So the waitlist's lapse rule (`inviteLapsed`: an invite held on a waitlist lapses 12 months after its area launched) still reaches exactly the invites held on a waitlist, and ops' funnel of referrers counts the client as the landing would have.
+- **The CRM is sent the client again,** as after a change of number or address: `update_person_id` on the crm-sync queue, whose contact update now reads the invite the client carries and writes it to `Referral_Code` once the org has the referral fields (`CRM_ORG_HAS_REFERRAL_FIELDS`, `docs/open-points.md`, item 34). A queue that will not take the message leaves the attach standing and alerts ops once, under the contact update's own key, to write the code by hand.
+- **The client's page shows it.** `GET /api/clients/{id}` carries `invite`: the code, the referrer (a link to their page, or none once erased), where the grant stands, since when, and who attached it and why where ops did. The console shows it under Payments, beside the credits the invite grants, or, for a client with none, a small form: the code and why. No board draws it (ADR 0025, item 73).
+
+## Consequences
+
+- A friend who opens an invite and books on `/book` within 30 days, in the same browser, is attributed as if they had booked on the invite's page. One who books in the app, by messaging ops, or from another browser or phone needs ops to attach it.
+- The grant, its fraud rules, its review and its message are unchanged: an attached invite is an attribution like any other, granted at the friend's first fit by the five-minute cron (ADR 0048).
+- `POST /api/consultation` and `POST /api/waitlist` answer two more fields. The site reads them; no other caller exists.
+- Four error codes are added: `unknown_invite`, `own_invite`, `already_invited`, `already_fitted`.
+- Owed: counsel's approval of the privacy sentence (item 156), and the owner's ruling on an invite after the first fit (item 157).
+- Tests: `test/worker/consultations.test.ts` ("an invite the browser remembered"), `test/worker/ops-client-referral.test.ts`, `test/worker/crm-sync.test.ts` and `test/worker/zoho.test.ts` (the invite on a contact update), `test/worker/erasure.test.ts` (the reason blanked), `test/node/site-remembered-invite.test.ts`; `e2e/book.e2e.ts` and `e2e/refer-landing.e2e.ts` (opened, carried, forgotten), and `e2e/ops/clients.e2e.ts` (shown, attached, each refusal, with axe).
