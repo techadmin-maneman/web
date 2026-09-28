@@ -95,20 +95,23 @@ describe("POST /api/blackouts", () => {
     ]);
   });
 
-  it("records who added them, which days and why, in the same batch", async () => {
+  // The reason is text ops type, and the audit log holds IDs, counts and codes only and is never blanked (ADR 0031),
+  // so it lives in visit_blackouts alone.
+  it("records who added them and which days, in the same batch, and never the reason", async () => {
     await post("/api/blackouts", { from: "2026-10-20", to: "2026-10-22", reason: "Diwali" });
     const { results } = await audited("blackout.add");
     expect(results).toEqual([
       {
         actor: "ops@localhost",
         subject_id: "2026-10-20",
-        detail: JSON.stringify({ from: "2026-10-20", to: "2026-10-22", days: 3, reason: "Diwali", replaced: "[]" }),
+        detail: JSON.stringify({ from: "2026-10-20", to: "2026-10-22", days: 3, replaced: "[]" }),
       },
     ]);
+    expect(results[0]?.detail).not.toContain("Diwali");
   });
 
-  // Review of #145, item 6: the day's earlier reason and who set it would otherwise be lost.
-  it("gives a day already blacked out the reason given now, and records what it replaced", async () => {
+  // Review of #145, item 6: which days a change replaced, and who had set each, would otherwise be lost.
+  it("gives a day already blacked out the reason given now, and records which days it replaced and who set them", async () => {
     await env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES ('2026-10-21', 'Staff training')").run();
     await post("/api/blackouts", { from: "2026-10-20", to: "2026-10-20", reason: "Diwali" });
     await post("/api/blackouts", { from: "2026-10-20", to: "2026-10-21", reason: "Diwali, and the day after" });
@@ -116,11 +119,13 @@ describe("POST /api/blackouts", () => {
       "Diwali, and the day after",
       "Diwali, and the day after",
     ]);
-    const detail = JSON.parse((await audited("blackout.add")).results[1]?.detail ?? "{}") as { replaced: string };
-    expect(JSON.parse(detail.replaced)).toEqual([
-      { date: "2026-10-20", reason: "Diwali", set_by: "ops@localhost" },
-      { date: "2026-10-21", reason: "Staff training", set_by: null },
+    const detail = (await audited("blackout.add")).results[1]?.detail ?? "{}";
+    expect(JSON.parse((JSON.parse(detail) as { replaced: string }).replaced)).toEqual([
+      { date: "2026-10-20", set_by: "ops@localhost" },
+      { date: "2026-10-21", set_by: null },
     ]);
+    expect(detail).not.toContain("Diwali");
+    expect(detail).not.toContain("Staff training");
   });
 
   it("refuses a day already past, a last day before the first, and more than a month in one go", async () => {
@@ -160,8 +165,8 @@ describe("POST /api/blackouts/remove", () => {
     expect(answer.status).toBe(200);
     expect((await answer.json<{ blackouts: Blackout[] }>()).blackouts.map((each) => each.date)).toEqual(["2026-10-20"]);
     const removed = JSON.stringify([
-      { date: "2026-10-21", reason: "Diwali", set_by: "ops@localhost" },
-      { date: "2026-10-22", reason: "Diwali", set_by: "ops@localhost" },
+      { date: "2026-10-21", set_by: "ops@localhost" },
+      { date: "2026-10-22", set_by: "ops@localhost" },
     ]);
     expect((await audited("blackout.remove")).results).toEqual([
       {

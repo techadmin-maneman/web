@@ -5,8 +5,10 @@
 // the site (loadBlackouts, src/domain/leads.ts; docs/decisions/0068-a-paid-hold-is-kept.md).
 // It moves no visit already booked on it: ops are told how many there are, and
 // move them on the dispatch board. Each change is written in one batch with its
-// audit entry (ADR 0031), which keeps the reason given, and each day's reason and
-// who set it that the change replaced or took away.
+// audit entry (ADR 0031), which keeps the days, and each day the change replaced
+// or took away with the Access identity that had set it. Never the reason: it is
+// text ops type, and the log holds IDs, counts and codes only and is never
+// blanked, so the reason lives in visit_blackouts alone.
 
 import { addDays } from "../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
@@ -73,17 +75,16 @@ export function additionRefusal(period: { from: string; to: string }, today: str
   return period.to > addDays(period.from, BLACKOUT_MAX_DAYS - 1) ? "to" : null;
 }
 
-/** A day as the audit log keeps it, once a change has replaced or taken away its reason. */
+/** A day as the audit log keeps it, once a change has replaced or taken it away: the day, and who had set it. */
 interface HeldDay {
   readonly date: string;
-  readonly reason: string;
   readonly set_by: string | null;
 }
 
 const heldBetween = async (db: D1Database, from: string, to: string): Promise<HeldDay[]> =>
   (
     await db
-      .prepare("SELECT date, reason, set_by FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2 ORDER BY date")
+      .prepare("SELECT date, set_by FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2 ORDER BY date")
       .bind(from, to)
       .all<HeldDay>()
   ).results;
@@ -98,7 +99,7 @@ interface Change {
 
 /**
  * Blacks out every day from `from` to `to`. A day already blacked out takes the reason given now, and the audit entry
- * keeps what it had. The period has passed additionRefusal.
+ * names it and who had set it. The period has passed additionRefusal.
  */
 export async function addBlackouts(db: D1Database, change: Change & { readonly reason: string }): Promise<void> {
   const dates = datesBetween(change.from, change.to);
@@ -121,13 +122,7 @@ export async function addBlackouts(db: D1Database, change: Change & { readonly r
         action: "blackout.add",
         subject: { kind: "blackout", id: change.from },
         requestId: change.requestId,
-        detail: {
-          from: change.from,
-          to: change.to,
-          days: dates.length,
-          reason: change.reason,
-          replaced: JSON.stringify(replaced),
-        },
+        detail: { from: change.from, to: change.to, days: dates.length, replaced: JSON.stringify(replaced) },
       },
       change.now,
     ),
@@ -136,8 +131,8 @@ export async function addBlackouts(db: D1Database, change: Change & { readonly r
 
 /**
  * Offers the blacked-out days from `from` to `to` again. "not_found" when none of them is blacked out, and then
- * nothing is recorded. The audit entry keeps each day taken away, with its reason and who set it. The period has
- * passed periodRefusal.
+ * nothing is recorded. The audit entry names each day taken away and who had set it. The period has passed
+ * periodRefusal.
  */
 export async function removeBlackouts(db: D1Database, change: Change): Promise<"removed" | "not_found"> {
   const removed = await heldBetween(db, change.from, change.to);
