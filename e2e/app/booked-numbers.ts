@@ -9,6 +9,7 @@
 // directory named after it, which only one of the test workers can do. Every name and number is made up.
 
 import { mkdirSync } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomMobile } from "../support.ts";
@@ -42,7 +43,14 @@ export async function seedBookedNumbers(): Promise<void> {
          VALUES ${row(crypto.randomUUID(), person, now, "form", "Gurgaon", "weekday_am", "crown", proposed, "e2e")};`,
     ];
   });
-  await wrangler("d1", "execute", "DB", "--local", "--command", sql.join("\n"));
+  // Too long for a command line on Windows, so it goes in a file.
+  const folder = await mkdtemp(join(tmpdir(), "mm-e2e-"));
+  try {
+    await writeFile(join(folder, "booked-numbers.sql"), sql.join("\n"));
+    await wrangler("d1", "execute", "DB", "--local", "--file", join(folder, "booked-numbers.sql"));
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
 
   const taken = join(tmpdir(), `mm-e2e-booked-${crypto.randomUUID()}`);
   mkdirSync(taken);
