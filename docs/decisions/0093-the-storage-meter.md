@@ -24,7 +24,7 @@ The owner ruled on two of these on 27 September 2026:
 
 - It counts what the two Phase 2 buckets hold: `client-photos` (visit photographs, their thumbnails, a try-on's small copy and a client's kept look) and `referral-cards`.
 - Every write to and delete from those buckets goes through `putCounted`, `deleteCounted` or `deleteAllUnder`, which add or take off the object's size.
-- A delete reads each object's size first, with `head`, since R2's delete does not say what it freed. That is a Class B read, and costs no Class A.
+- A delete must know what it freed, since R2's delete does not say. `deleteCounted` reads each key's size first, with `head`, a Class B read; the sweeper's deletes come in batches of at most 100. An erasure lists each of the person's visits instead, whose listing gives every object's size: one list and one delete a visit, however many photographs it holds, so a long-standing client's erasure stays well inside the 1,000 calls to Cloudflare's services one invocation may make.
 - It is never read by listing a bucket. Listing is a Class A operation, and the cron runs 288 times a day.
 - **The backfill** (migration 0055):
   - a photograph counts at the size its row records;

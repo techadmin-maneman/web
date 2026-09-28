@@ -5,9 +5,10 @@
 //
 // It is one running figure in D1, added to as each object is stored and taken
 // from as each is deleted, so reading it never lists a bucket, which R2 bills
-// as a Class A operation. Every write to and delete from those two buckets goes
-// through here. When ops are told, and what is refused, is
-// src/policy/storage-share.ts.
+// as a Class A operation. Every write to those two buckets goes through here,
+// and so does every delete of what was written, except an erasure's sweep of
+// keys that may never have been written (src/domain/erasure.ts). When ops are
+// told, and what is refused, is src/policy/storage-share.ts.
 
 import {
   hasRoom,
