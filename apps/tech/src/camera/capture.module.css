@@ -39,12 +39,12 @@
 }
 
 .hairline {
-  stroke: var(--gilt);
+  stroke: var(--paper);
   stroke-width: 2.5;
 }
 
 .corners {
-  stroke: var(--gilt);
+  stroke: var(--paper);
   stroke-width: 3;
 }
 
@@ -96,8 +96,9 @@
   background: var(--ink-frame);
 }
 
+/* An angle taken: raised, with the ink's own line where the board draws gold; the angle to take now is edged in paper. */
 .tile[data-state="done"] {
-  border-color: var(--gilt);
+  border-color: var(--ink-line-strong);
   background: var(--ink-raised);
 }
 

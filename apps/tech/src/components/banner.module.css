@@ -1,4 +1,7 @@
-/* Board A2's offline banner, and the line above every screen when a job's work stopped reaching us. */
+/*
+ * Board A2's offline banner, and the line above every screen when a job's work stopped reaching us. The board draws
+ * the banner gold; gold marks only the one primary action (ADR 0025, item 59), so it is a paper strip.
+ */
 
 .offline {
   flex-shrink: 0;
@@ -11,7 +14,7 @@
   align-items: center;
   margin: 0;
   padding: var(--sp-14) var(--sp-20);
-  background: var(--gilt);
+  background: var(--paper);
   font-size: var(--fs-17);
   font-weight: var(--weight-medium);
   color: var(--ink-deep);

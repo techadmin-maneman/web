@@ -12,12 +12,13 @@
 @import "@maneman/ui/base.css";
 
 /*
- * Keyboard focus is gold on this app's ink, as the board draws its one accent.
- * Its buttons are the board's "Targets": the one primary action 64 px, the
- * others 56, nothing under 48, their words larger and in the regular weight.
+ * Keyboard focus is paper on this app's ink: gold marks the one primary action
+ * and nothing else (ADR 0025, item 59). Its buttons are the board's "Targets":
+ * the one primary action 64 px, the others 56, nothing under 48, their words
+ * larger and in the regular weight.
  */
 body {
-  --focus-colour: var(--gilt);
+  --focus-colour: var(--paper);
   --action-height: var(--tech-primary);
   --action-text: var(--fs-18);
   --control-height: var(--tech-stepper);

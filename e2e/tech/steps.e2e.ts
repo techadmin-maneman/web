@@ -86,6 +86,39 @@ test("the outcome has nothing chosen for the technician, and Next waits for his 
   expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
 });
 
+/** The words of every element drawn in gold: in its type, its ground or its edge. */
+const gilded = (page: Page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll("body *")]
+      .filter((element) => {
+        const style = getComputedStyle(element);
+        const drawn = [style.color, style.backgroundColor, style.borderLeftColor, style.fill, style.stroke];
+        return drawn.includes("rgb(201, 163, 99)");
+      })
+      .map((element) => element.textContent?.trim() ?? ""),
+  );
+
+// Ruling 59 (ADR 0025), 27 September 2026: "gold marks only the one primary action". The boards also gild a ticked
+// box, a step's count and a chosen outcome or reason.
+test("draws nothing in gold but the one primary action", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos");
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+  const items = page.getByRole("button", { name: /PLACEHOLDER/ });
+  await expect(items).toHaveCount(3);
+  for (const item of await items.all()) await item.click();
+  await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
+  expect(await gilded(page)).toEqual(["Next"]);
+  expect((await wcag(page)).violations.map((violation) => violation.id)).toEqual([]);
+
+  startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+  await page.getByRole("button", { name: "Partial · pick a reason" }).click();
+  await page.getByRole("button", { name: "Client stopped it partway" }).click();
+  expect(await gilded(page)).toEqual(["Next"]);
+  expect((await wcag(page)).violations.map((violation) => violation.id)).toEqual([]);
+});
+
 test("names the checklist for the visit it is on", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "replacement";
