@@ -1,4 +1,4 @@
-// Migration 0054: the storage meter and a photograph's small copy
+// Migration 0055: the storage meter and a photograph's small copy
 // (docs/decisions/0093-the-storage-meter.md). Applied to a database that
 // already holds photographs, a referral card and a client's kept try-on, as
 // staging's does. Every name and number is made up.
@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 const MIGRATIONS = readdirSync("migrations")
   .filter((file) => file.endsWith(".sql"))
   .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0054_")) ?? "";
+const THIS = MIGRATIONS.find((file) => file.startsWith("0055_")) ?? "";
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -34,7 +34,7 @@ const photo = (angle: string, bytes: number) =>
 
 const meter = (db: DatabaseSync) => db.prepare("SELECT bytes, told_percent FROM storage_meter").all();
 
-describe("migration 0054", () => {
+describe("migration 0055", () => {
   it("starts the meter at what the photographs' rows say they hold", () => {
     const db = migrated(photo("front", 240_000) + photo("hair", 260_000));
     expect(meter(db)).toEqual([{ bytes: 500_000, told_percent: 0 }]);

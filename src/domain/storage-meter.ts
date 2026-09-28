@@ -31,7 +31,7 @@ export async function readMeter(db: D1Database): Promise<Meter> {
   const row = await db
     .prepare("SELECT bytes, told_percent FROM storage_meter WHERE id = 1")
     .first<{ bytes: number; told_percent: number }>();
-  if (row === null) throw new Error("the storage meter has no row: migration 0054 has not run");
+  if (row === null) throw new Error("the storage meter has no row: migration 0055 has not run");
   return { bytes: row.bytes, toldPercent: row.told_percent };
 }
 

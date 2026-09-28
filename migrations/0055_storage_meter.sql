@@ -1,4 +1,4 @@
--- Migration number: 0054
+-- Migration number: 0055
 -- The storage meter, and a visit photograph's small copy (docs/decisions/0093-the-storage-meter.md). Only a table and
 -- a column are added; the Worker already deployed reads neither, and a photograph it stores leaves the column empty,
 -- which the client app reads as a photograph with no small copy.
