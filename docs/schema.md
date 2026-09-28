@@ -15,10 +15,10 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [alerts](#alerts): One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 - [appointments](#appointments): The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
-- [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065).
+- [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 - [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
 - [cities](#cities): The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).
-- [consents](#consents): What each person agreed to, and under which notice's version. Rows are only ever added (ADR 0042, ADR 0049).
+- [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
 - [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
@@ -206,9 +206,9 @@ Triggers: `audit_log_append_only_delete`, `audit_log_append_only_update`.
 
 ## checkins
 
-Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065).
+Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 
-Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`.
+Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`, `0057_consent_sources_and_checkin_coordinates.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -217,14 +217,14 @@ Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance
 | `technician_id` | TEXT | no |  | → `technicians.id` |
 | `address_id` | TEXT | yes |  | → `addresses.id` |
 | `at` | TEXT | no |  |  |
-| `lat` | REAL | no |  |  |
-| `lng` | REAL | no |  |  |
 | `accuracy_m` | REAL | yes |  |  |
 | `radius_m` | INTEGER | no |  |  |
 | `passed` | INTEGER | no |  |  |
 | `created_at` | TEXT | no |  |  |
 | `claimed_at` | TEXT | yes |  |  |
 | `distance_m` | INTEGER | yes |  |  |
+| `lat` | REAL | yes |  |  |
+| `lng` | REAL | yes |  |  |
 
 Indexes:
 
@@ -262,9 +262,9 @@ Made by `0002_lead_path.sql`.
 
 ## consents
 
-What each person agreed to, and under which notice's version. Rows are only ever added (ADR 0042, ADR 0049).
+What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 
-Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`.
+Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`, `0057_consent_sources_and_checkin_coordinates.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -275,6 +275,7 @@ Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`.
 | `granted` | INTEGER | no |  |  |
 | `created_at` | TEXT | no |  |  |
 | `ip_hash` | TEXT | yes |  |  |
+| `source` | TEXT | yes |  |  |
 
 Indexes:
 

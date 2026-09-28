@@ -48,12 +48,13 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).",
   audit_log:
     "Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).",
-  checkins: 'Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065).',
+  checkins:
+    'Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).',
   checklist_items:
     "Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).",
   cities: "The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).",
   consents:
-    "What each person agreed to, and under which notice's version. Rows are only ever added (ADR 0042, ADR 0049).",
+    "What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).",
   consultation_requests:
     "A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).",
   consumable_usage:

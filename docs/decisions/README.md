@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0090.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0095.
 
 | ADR | Decision | Date | Status | Changed by |
 | --- | --- | --- | --- | --- |
@@ -24,7 +24,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0016](0016-whatsapp-through-evolution.md) | WhatsApp through Evolution API, for now | 2026-09-21 | accepted |  |
 | [0017](0017-no-paid-face-precheck.md) | No paid face pre-check | 2026-09-21 | accepted |  |
 | [0018](0018-one-look-pro-only-lead-notices.md) | One look per visitor, Pro only, and new-lead notices | 2026-09-21 | accepted |  |
-| [0019](0019-erasure.md) | Erasure | 2026-09-21 | accepted | [0066](0066-erasure-all-or-nothing.md) |
+| [0019](0019-erasure.md) | Erasure | 2026-09-21 | accepted | [0066](0066-erasure-all-or-nothing.md), [0094](0094-where-a-consent-was-given.md) |
 | [0020](0020-production-on-the-zoho-test-org.md) | Production uses the Zoho test org, for now | 2026-09-21 | superseded by 0050 on 22 September 2026 | [0050](0050-crm-in-the-real-org.md) |
 | [0021](0021-public-site.md) | The public site: Astro in site/, on staging first | 2026-09-22 | accepted |  |
 | [0022](0022-site-departures-from-v2.md) | Where the site departs from v2 or the front-end prompt | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md) |
@@ -54,7 +54,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0046](0046-moving-and-cancelling.md) | Moving and cancelling a visit | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md) |
 | [0047](0047-visit-messages.md) | Messages about a client's visits | 2026-09-22 | accepted | [0074](0074-hand-offs-and-messages.md) |
 | [0048](0048-referrals.md) | Referrals and the waitlist | 2026-09-22 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0071](0071-what-ops-see-before-a-setting-changes.md), [0074](0074-hand-offs-and-messages.md), [0080](0080-consents-given-by-booking.md), [0089](0089-an-invite-is-not-lost.md) |
-| [0049](0049-dpdp.md) | DPDP readiness | 2026-09-22 | accepted | [0066](0066-erasure-all-or-nothing.md), [0074](0074-hand-offs-and-messages.md) |
+| [0049](0049-dpdp.md) | DPDP readiness | 2026-09-22 | accepted | [0066](0066-erasure-all-or-nothing.md), [0074](0074-hand-offs-and-messages.md), [0094](0094-where-a-consent-was-given.md) |
 | [0050](0050-crm-in-the-real-org.md) | The CRM moves to the real Zoho org | 2026-09-22 | accepted | [0059](0059-a-clients-history.md), [0070](0070-vendor-correctness.md) |
 | [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md), [0089](0089-an-invite-is-not-lost.md) |
 | [0052](0052-technician-sessions.md) | Technician sessions, devices and the day-before unlock | 2026-09-23 | accepted |  |
@@ -71,7 +71,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0063](0063-the-asked-window.md) | The asked window and the offered one | 2026-09-24 | accepted | [0069](0069-dispatch-under-concurrency.md), [0070](0070-vendor-correctness.md), [0074](0074-hand-offs-and-messages.md) |
 | [0064](0064-converting-a-request.md) | Converting a Request by API | 2026-09-24 | accepted |  |
 | [0065](0065-a-technicians-writes-reach-fsm.md) | A technician's writes reach FSM, in order, on a clock we can hold him to | 2026-09-25 | accepted | [0087](0087-consumables-and-stock.md) |
-| [0066](0066-erasure-all-or-nothing.md) | Erasure is all or nothing | 2026-09-25 | accepted |  |
+| [0066](0066-erasure-all-or-nothing.md) | Erasure is all or nothing | 2026-09-25 | accepted | [0094](0094-where-a-consent-was-given.md) |
 | [0067](0067-alerts-and-silent-failures.md) | A failure that needs a person reaches one, once, with the IDs to act on | 2026-09-25 | accepted |  |
 | [0068](0068-a-paid-hold-is-kept.md) | A paid hold is kept | 2026-09-25 | accepted |  |
 | [0069](0069-dispatch-under-concurrency.md) | Dispatch under concurrency | 2026-09-25 | accepted |  |
@@ -85,7 +85,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0077](0077-a-token-scale-written-once.md) | A token scale written once, and names for what a value is for | 2026-09-27 | accepted |  |
 | [0078](0078-the-queues-no-board-draws.md) | The console's queues that no board draws | 2026-09-27 | accepted |  |
 | [0079](0079-an-address-before-a-slot.md) | An address before any slot | 2026-09-27 | accepted |  |
-| [0080](0080-consents-given-by-booking.md) | The photograph consents, given by booking | 2026-09-27 | accepted, for counsel to confirm before production |  |
+| [0080](0080-consents-given-by-booking.md) | The photograph consents, given by booking | 2026-09-27 | accepted, for counsel to confirm before production | [0094](0094-where-a-consent-was-given.md) |
 | [0081](0081-the-site-takes-the-address.md) | The site takes the address before it books | 2026-09-27 | accepted |  |
 | [0082](0082-try-ons-in-the-app.md) | A client's try-on in the app | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0084](0084-a-clients-try-on-is-kept.md) |
 | [0083](0083-anyone-signed-in-can-refer.md) | Anyone signed in can refer | 2026-09-27 | withdrawn by the owner on 27 September 2026, the day it was made |  |
@@ -94,6 +94,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md) |
 | [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md) |
 | [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
+| [0094](0094-where-a-consent-was-given.md) | Where a consent was given, and an erasure blanks a check-in's coordinates | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
 
 ## Records beside them
 
