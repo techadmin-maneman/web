@@ -22,6 +22,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
 import { copyKey, keptLookKey } from "./kept-try-ons.ts";
+import { deleteAllUnder, deleteCounted } from "./storage-meter.ts";
 import { recordEvent } from "./tryon.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
@@ -272,7 +273,7 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
   ]);
   await deleteKeys(env.UPLOADS, photos);
   await deleteKeys(env.RESULTS, results);
-  await deleteKeys(env.CLIENT_PHOTOS, kept);
+  await deleteCounted(env.DB, env.CLIENT_PHOTOS, kept);
   await env.DB.prepare(
     `UPDATE tryon_jobs SET result_key = NULL, upload_deleted_at = COALESCE(upload_deleted_at, ?2), copy_key = NULL,
        kept_look_key = NULL
@@ -282,19 +283,20 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
     .run();
 }
 
+/**
+ * Everything under each of the person's visits in the bucket: the photographs, the ones taken again at the same
+ * angle, which no row names any more (docs/decisions/0028-photographs-from-the-app.md), and their small copies.
+ */
 async function deleteVisitPhotos(env: ErasureEnv, personId: string): Promise<void> {
   const db = env.DB;
-  const { results: photos } = await db
+  const { results: visits } = await db
     .prepare(
-      `SELECT ph.r2_key FROM photos ph JOIN photo_sets s ON s.id = ph.photo_set_id
-       JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1`,
+      `SELECT DISTINCT s.appointment_id FROM photo_sets s JOIN appointments a ON a.id = s.appointment_id
+       WHERE a.person_id = ?1`,
     )
     .bind(personId)
-    .all<{ r2_key: string }>();
-  await deleteKeys(
-    env.CLIENT_PHOTOS,
-    photos.map((photo) => photo.r2_key),
-  );
+    .all<{ appointment_id: string }>();
+  for (const visit of visits) await deleteAllUnder(db, env.CLIENT_PHOTOS, `visits/${visit.appointment_id}/`);
   const theirSets =
     "SELECT s.id FROM photo_sets s JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1";
   // The sets go after their photographs, for the foreign key. An empty set holds no personal data,
@@ -312,7 +314,7 @@ async function deleteReferralCard(env: ErasureEnv, personId: string): Promise<vo
     .bind(personId)
     .first<{ code: string; card_key: string }>();
   if (card === null) return;
-  await env.REFERRAL_CARDS.delete(card.card_key);
+  await deleteCounted(env.DB, env.REFERRAL_CARDS, [card.card_key]);
   await env.DB.prepare("UPDATE referral_codes SET card_key = NULL WHERE code = ?1").bind(card.code).run();
 }
 

@@ -18,6 +18,7 @@ import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
+import { tellOfStorage } from "../domain/storage-meter.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
@@ -128,6 +129,10 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
 }
 
+async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
+  await tellOfStorage(env.DB, deps.alertOnce);
+}
+
 async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
   await checkWhatsAppBridge(deps, log, budget);
 }
@@ -191,6 +196,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // as parts (docs/decisions/0087-consumables-and-stock.md).
   { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
+  // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093).
+  { name: "storage_meter", needs: "nothing", run: storageMeterJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", run: whatsAppBridgeJob },
   // Once a day: the operating figure behind the weekend-share assumption (src/policy/dispatch.ts).

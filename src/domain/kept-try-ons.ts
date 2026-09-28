@@ -9,6 +9,7 @@ import { KEEPING_NOTICES, keptTryOn, type HeldTryOn } from "../policy/kept-try-o
 import { DAY_MS } from "../lib/durations.ts";
 import { fileExtension, type ImageType } from "../lib/image-bytes.ts";
 import type { JobState } from "../config/tryon.ts";
+import { deleteCounted, putCounted } from "./storage-meter.ts";
 
 export type KeepEnv = Pick<Env, "DB" | "RESULTS" | "CLIENT_PHOTOS">;
 
@@ -85,7 +86,11 @@ export async function keepOrLetGo(env: KeepEnv, tryOns: readonly ExpiringTryOn[]
   }
   const copies = letGo.flatMap((tryOn) => (tryOn.copy_key === null ? [] : [{ id: tryOn.id, key: tryOn.copy_key }]));
   if (copies.length > 0) {
-    await env.CLIENT_PHOTOS.delete(copies.map((copy) => copy.key));
+    await deleteCounted(
+      env.DB,
+      env.CLIENT_PHOTOS,
+      copies.map((copy) => copy.key),
+    );
     await env.DB.prepare("UPDATE tryon_jobs SET copy_key = NULL WHERE id IN (SELECT value FROM json_each(?1))")
       .bind(JSON.stringify(copies.map((copy) => copy.id)))
       .run();
@@ -131,7 +136,7 @@ async function keepOnItsDay(env: KeepEnv, tryOn: ExpiringTryOn, now: Date): Prom
   if (look === null) return true;
   const type: ImageType = look.httpMetadata?.contentType === "image/png" ? "image/png" : "image/jpeg";
   const key = keptLookKey(tryOn.id, type);
-  await env.CLIENT_PHOTOS.put(key, await look.arrayBuffer(), { httpMetadata: { contentType: type } });
+  await putCounted(db, env.CLIENT_PHOTOS, key, await look.arrayBuffer(), type);
   await db.prepare("UPDATE tryon_jobs SET kept_look_key = ?2 WHERE id = ?1").bind(tryOn.id, key).run();
   return true;
 }
@@ -152,7 +157,11 @@ export async function letCopiesGoWith(env: KeepEnv, uploadKeys: readonly string[
     .all<{ id: string; copy_key: string }>();
   if (results.length === 0) return;
 
-  await env.CLIENT_PHOTOS.delete(results.map((row) => row.copy_key));
+  await deleteCounted(
+    db,
+    env.CLIENT_PHOTOS,
+    results.map((row) => row.copy_key),
+  );
   await db
     .prepare("UPDATE tryon_jobs SET copy_key = NULL WHERE id IN (SELECT value FROM json_each(?1))")
     .bind(JSON.stringify(results.map((row) => row.id)))
@@ -178,7 +187,11 @@ export async function letFittedLooksGo(env: KeepEnv, now: Date): Promise<number>
     .all<{ id: string; kept_look_key: string }>();
   if (results.length === 0) return 0;
 
-  await env.CLIENT_PHOTOS.delete(results.map((row) => row.kept_look_key));
+  await deleteCounted(
+    db,
+    env.CLIENT_PHOTOS,
+    results.map((row) => row.kept_look_key),
+  );
   await db
     .prepare("UPDATE tryon_jobs SET kept_look_key = NULL WHERE id IN (SELECT value FROM json_each(?1))")
     .bind(JSON.stringify(results.map((row) => row.id)))

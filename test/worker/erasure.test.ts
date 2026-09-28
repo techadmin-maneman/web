@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { erasePerson } from "../../src/domain/erasure.ts";
+import { putCounted, readMeter } from "../../src/domain/storage-meter.ts";
 import { secretsMatch } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
@@ -364,6 +365,24 @@ describe("erasure, all or nothing", () => {
     expect(person).toEqual({ name: "Erased", files_erased_at: NOW.toISOString() });
   });
 
+  it("deletes a photograph taken again and every small copy, and takes all they held off the meter", async () => {
+    const personId = await clientWithEverything();
+    const retaken = `visits/${VISIT}/after-front-0.jpg`;
+    const small = `visits/${VISIT}/after-front-1-small.jpg`;
+    await env.DB.prepare("UPDATE photos SET thumbnail_key = ?1").bind(small).run();
+    await putCounted(env.DB, env.CLIENT_PHOTOS, VISIT_PHOTO, syntheticJpeg(600, 800), "image/jpeg");
+    await putCounted(env.DB, env.CLIENT_PHOTOS, retaken, syntheticJpeg(600, 800, "first take"), "image/jpeg");
+    await putCounted(env.DB, env.CLIENT_PHOTOS, small, syntheticJpeg(300, 400), "image/jpeg");
+    await putCounted(env.DB, env.CLIENT_PHOTOS, `visits/someone-else/after-front-9.jpg`, new Uint8Array(70), "image/jpeg");
+    await putCounted(env.DB, env.REFERRAL_CARDS, CARD, syntheticJpeg(1200, 630), "image/jpeg");
+
+    await erasePerson(env, personId, NOW, createLogger());
+
+    expect(await env.CLIENT_PHOTOS.head(retaken)).toBeNull();
+    expect(await env.CLIENT_PHOTOS.head(small)).toBeNull();
+    expect((await readMeter(env.DB)).bytes).toBe(70);
+  });
+
   it("changes nothing, and deletes no file, when the database refuses the erasure", async () => {
     await clientWithEverything();
     await databaseRefusesErasure();
@@ -384,9 +403,8 @@ describe("erasure, all or nothing", () => {
 
   it("erases the person when R2 fails, and the cron deletes the files left", async () => {
     const personId = await clientWithEverything();
-    const failingPhotos = {
-      delete: () => Promise.reject(new Error("R2 unavailable")),
-    } as unknown as R2Bucket;
+    const unavailable = () => Promise.reject(new Error("R2 unavailable"));
+    const failingPhotos = { head: unavailable, list: unavailable, delete: unavailable } as unknown as R2Bucket;
 
     const summary = await erasePerson({ ...env, CLIENT_PHOTOS: failingPhotos }, personId, NOW, createLogger());
 

@@ -183,6 +183,7 @@ describe("CRON_JOBS", () => {
       "fsm_reconcile",
       "fsm_catalogue",
       "deletion_alerts",
+      "storage_meter",
       "whatsapp_bridge",
       "dispatch_utilisation",
       "referrals",
@@ -192,5 +193,15 @@ describe("CRON_JOBS", () => {
       "asked_windows",
       "books_sync",
     ]);
+  });
+
+  it("tells ops once when the photographs fill half their share of R2, however many runs see it", async () => {
+    await env.DB.prepare("UPDATE storage_meter SET bytes = 2.1e9").run();
+    const deps = fakeDependencies();
+    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
+    for (let run = 0; run < 3; run += 1) {
+      await runCronJobs(job, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
+    }
+    expect(deps.alerts).toEqual([expect.stringContaining("2.10 GB in R2, half of their 4 GB share")]);
   });
 });

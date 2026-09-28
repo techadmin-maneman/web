@@ -9,6 +9,7 @@
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import { PHOTO_ANGLES, type PhotoAngle } from "../policy/in-job-steps.ts";
 import type { FsmAttachment, FsmProvider } from "../providers/fsm.ts";
+import { putCounted } from "./storage-meter.ts";
 
 export const PHASES = ["before", "after"] as const;
 /** The prompt's five angles, in the order they are taken. */
@@ -107,7 +108,7 @@ async function storePhoto(
   if (set === null) throw new Error("the photo set was not written");
 
   const key = `visits/${appointmentId}/${slot.phase}-${slot.angle}-${file.id}.${fileExtension(info.type)}`;
-  await bucket.put(key, bytes, { httpMetadata: { contentType: info.type } });
+  await putCounted(db, bucket, key, bytes, info.type);
   await db
     .prepare(
       `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, fsm_attachment_id, created_at)
