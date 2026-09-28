@@ -131,7 +131,10 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
 }
 
+/** Once an hour, on the half hour: the share fills over months, and the hour's other checks run on the hour. */
 async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
+  const minute = deps.now().getUTCMinutes();
+  if (minute < 30 || minute >= 35) return;
   await tellOfStorage(env.DB, deps.alertOnce);
 }
 
