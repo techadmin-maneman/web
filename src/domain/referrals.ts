@@ -3,10 +3,14 @@
 // A person is attributed once, to the first invite they used, and only while they are new: not the
 // referrer, and not already fitted. An invite held for them on a waitlist lapses 12 months after their area
 // launched; from then it carries no credits, and says so when they book.
+//
+// Ops may attach an invite to a client who booked away from its page, under the same rules and through the
+// same function; who attached it and why are kept with it (docs/decisions/0089-an-invite-is-not-lost.md).
 
 import { NAMING_NOTICES } from "../config/notices.ts";
 import { inviteLapsed } from "../policy/invites.ts";
 import { firstNameOf } from "../lib/names.ts";
+import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 
 /** No 0, O, 1 or I: a code is read aloud and typed. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -105,17 +109,50 @@ export async function inviteOf(db: D1Database, code: string, nameOnInvite: boole
  */
 export type InviteState = "valid" | "expired" | "unknown";
 
+/** How a person reached us through an invite: a consultation booked or asked for, or a place on a waitlist. */
+export type Via = "consultation" | "waitlist";
+
+/** Who attached an invite by hand, and why, with the audit entry written in the same batch as the attribution. */
+export interface AttachedBy {
+  readonly by: string;
+  readonly reason: string;
+  readonly audit: AuditEntry;
+}
+
+/**
+ * What attributing a person to an invite came to. Refused, when the invite is their own or they are fitted already;
+ * otherwise the invite they carry, attributed by this call or before it: this one, or another they came with first.
+ */
+export type AttributionOutcome =
+  | { readonly outcome: "own_invite" }
+  | { readonly outcome: "fitted" }
+  | {
+      readonly outcome: "attributed" | "already_attributed";
+      readonly code: string;
+      /** Whether they now carry this invite's credits. */
+      readonly credits: boolean;
+      /** Whether this invite, held for them on a waitlist, has lapsed, and is marked so. */
+      readonly lapsed: boolean;
+    };
+
 /**
  * Attributes a person to an invite, if they are new to referrals: not the referrer, not already attributed,
  * and not already fitted. Says whether they now carry the invite's credits, and whether the invite they were
- * held under has lapsed, which it is marked as, so it promises nothing more.
+ * held under has lapsed, which it is marked as, so it promises nothing more. An invite ops attach carries who
+ * attached it and why, and its audit entry, written only if the attribution is.
  */
 export async function attribute(
   db: D1Database,
-  input: { invite: Invite; personId: string; via: "consultation" | "waitlist"; pincode: string | null; now: Date },
-): Promise<{ readonly credits: boolean; readonly lapsed: boolean }> {
-  const none = { credits: false, lapsed: false };
-  if (input.personId === input.invite.referrerId) return none;
+  input: {
+    invite: Invite;
+    personId: string;
+    via: Via;
+    pincode: string | null;
+    now: Date;
+    attachedBy?: AttachedBy;
+  },
+): Promise<AttributionOutcome> {
+  if (input.personId === input.invite.referrerId) return { outcome: "own_invite" };
   const fitted = await db
     .prepare(
       `SELECT 1 FROM appointments WHERE person_id = ?1 AND type = 'first_fit' AND status = 'completed'
@@ -123,17 +160,32 @@ export async function attribute(
     )
     .bind(input.personId)
     .first();
-  if (fitted !== null) return none;
+  if (fitted !== null) return { outcome: "fitted" };
   const at = input.now.toISOString();
-  await db
-    .prepare(
-      `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, pincode, created_at,
-         updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?4, ?4)
-       ON CONFLICT (referred_person_id) DO NOTHING`,
-    )
-    .bind(crypto.randomUUID(), input.invite.code, input.personId, at, input.via, input.pincode)
-    .run();
+  const id = crypto.randomUUID();
+  const { attachedBy } = input;
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, pincode, attached_by,
+           attach_reason, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?4, ?4)
+         ON CONFLICT (referred_person_id) DO NOTHING`,
+      )
+      .bind(
+        id,
+        input.invite.code,
+        input.personId,
+        at,
+        input.via,
+        input.pincode,
+        attachedBy?.by ?? null,
+        attachedBy?.reason ?? null,
+      ),
+    ...(attachedBy === undefined
+      ? []
+      : [auditStatementIfWritten(db, attachedBy.audit, input.now, { table: "referral_attributions", id })]),
+  ]);
   const kept = await db
     .prepare(
       `SELECT r.id, r.code, r.grant_state, r.via, pin.launched_at FROM referral_attributions r
@@ -142,8 +194,10 @@ export async function attribute(
     )
     .bind(input.personId)
     .first<{ id: string; code: string; grant_state: string; via: string; launched_at: string | null }>();
-  if (kept?.code !== input.invite.code) return none;
-  if (kept.grant_state === "expired") return { credits: false, lapsed: true };
+  if (kept === null) throw new Error("an attribution was written and is not there");
+  const outcome = kept.id === id ? "attributed" : "already_attributed";
+  if (kept.code !== input.invite.code) return { outcome, code: kept.code, credits: false, lapsed: false };
+  if (kept.grant_state === "expired") return { outcome, code: kept.code, credits: false, lapsed: true };
   // An invite held on a waitlist lasts until 12 months after the area launched.
   const lapsedOnWaitlist =
     kept.grant_state === "pending" &&
@@ -155,7 +209,74 @@ export async function attribute(
       .prepare("UPDATE referral_attributions SET grant_state = 'expired', updated_at = ?2 WHERE id = ?1")
       .bind(kept.id, at)
       .run();
-    return { credits: false, lapsed: true };
+    return { outcome, code: kept.code, credits: false, lapsed: true };
   }
-  return { credits: kept.grant_state === "pending", lapsed: false };
+  return { outcome, code: kept.code, credits: kept.grant_state === "pending", lapsed: false };
+}
+
+/**
+ * How a client ops attach an invite to reached us, as the landing would have recorded it: through the waitlist while
+ * they wait on one and have no visit, booked or asked for; otherwise a consultation. So the waitlist's lapse rule
+ * still reaches only an invite held on a waitlist. The pincode is the list's, or else their address's.
+ */
+export async function howTheyCame(db: D1Database, personId: string): Promise<{ via: Via; pincode: string | null }> {
+  const row = await db
+    .prepare(
+      `SELECT
+         EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL)
+           OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1)
+           OR EXISTS (SELECT 1 FROM consultation_requests WHERE person_id = ?1) AS asked,
+         (SELECT pincode FROM waitlist_entries WHERE person_id = ?1 ORDER BY created_at DESC LIMIT 1) AS waiting_in,
+         (SELECT pincode FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL
+          ORDER BY created_at DESC LIMIT 1) AS lives_in`,
+    )
+    .bind(personId)
+    .first<{ asked: number; waiting_in: string | null; lives_in: string | null }>();
+  if (row?.asked === 0 && row.waiting_in !== null) return { via: "waitlist", pincode: row.waiting_in };
+  return { via: "consultation", pincode: row?.lives_in ?? null };
+}
+
+/** Where a referral's grant stands (migration 0021). */
+export const GRANT_STATES = ["pending", "held", "approved", "rejected", "granted", "expired", "clawed_back"] as const;
+export type GrantState = (typeof GRANT_STATES)[number];
+
+/** The invite a client came with, as ops read it on the client's page. */
+export interface ClientInvite {
+  readonly code: string;
+  /** Null once the referrer has been erased. */
+  readonly referrer: { readonly id: string; readonly name: string } | null;
+  readonly grant: GrantState;
+  /** When they first came with it, or ops attached it. */
+  readonly since: string;
+  /** Null for an invite the client used themselves. */
+  readonly attached: { readonly by: string; readonly reason: string | null } | null;
+}
+
+export async function clientInviteOf(db: D1Database, personId: string): Promise<ClientInvite | null> {
+  const row = await db
+    .prepare(
+      `SELECT r.code, r.grant_state, r.first_touch_at, r.attached_by, r.attach_reason, p.id AS referrer_id,
+         p.name AS referrer_name, p.erased_at AS referrer_erased_at
+       FROM referral_attributions r JOIN referral_codes c ON c.code = r.code JOIN people p ON p.id = c.person_id
+       WHERE r.referred_person_id = ?1`,
+    )
+    .bind(personId)
+    .first<{
+      code: string;
+      grant_state: GrantState;
+      first_touch_at: string;
+      attached_by: string | null;
+      attach_reason: string | null;
+      referrer_id: string;
+      referrer_name: string;
+      referrer_erased_at: string | null;
+    }>();
+  if (row === null) return null;
+  return {
+    code: row.code,
+    referrer: row.referrer_erased_at === null ? { id: row.referrer_id, name: row.referrer_name } : null,
+    grant: row.grant_state,
+    since: row.first_touch_at,
+    attached: row.attached_by === null ? null : { by: row.attached_by, reason: row.attach_reason },
+  };
 }

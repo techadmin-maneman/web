@@ -429,8 +429,9 @@ describe("crm-sync: erasing a person", () => {
   });
 });
 
-// LIFE-12: a confirmed change of number stayed in D1, and the CRM lead kept the old one.
-describe("crm-sync: a changed number or address", () => {
+// LIFE-12: a confirmed change of number stayed in D1, and the CRM lead kept the old one. An invite ops attach is
+// sent the same way (docs/decisions/0089-an-invite-is-not-lost.md).
+describe("crm-sync: a changed number, address or invite", () => {
   const PERSON = "44444444-4444-4444-8444-444444444444";
 
   beforeEach(async () => {
@@ -459,9 +460,33 @@ describe("crm-sync: a changed number or address", () => {
     const { message, done } = update(crm);
     await done;
     expect(crm.updates).toEqual([
-      { contact: { personId: PERSON, mobileE164: "+919810000003", city: "Gurgaon" }, knownId: "zoho-9" },
+      {
+        contact: { personId: PERSON, mobileE164: "+919810000003", city: "Gurgaon", inviteCode: null },
+        knownId: "zoho-9",
+      },
     ]);
     expect(message.ack).toHaveBeenCalled();
+  });
+
+  it("writes the invite the person now carries, as ops attached it", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO people (id, created_at, mobile_e164, name)
+         VALUES ('55555555-5555-4555-8555-555555555555', ?1, '+919810000004', 'Vikram Sethi')`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO referral_codes (code, person_id, created_at, updated_at)
+         VALUES ('VSAB23', '55555555-5555-4555-8555-555555555555', ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, attached_by,
+           attach_reason, created_at, updated_at)
+         VALUES ('attr-1', 'VSAB23', ?1, ?2, 'consultation', 'ops@localhost', 'Named Vikram', ?2, ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+    ]);
+    const crm = recordingCrm();
+    await update(crm).done;
+    expect(crm.updates).toMatchObject([{ contact: { personId: PERSON, inviteCode: "VSAB23" } }]);
   });
 
   it("writes nothing for a person erased since", async () => {
@@ -479,6 +504,8 @@ describe("crm-sync: a changed number or address", () => {
     const last = update(stubCrmThatFails("Zoho 500 down"), 5);
     await last.done;
     expect(last.message.ack).toHaveBeenCalled();
-    expect(last.deps.alerts).toEqual([expect.stringContaining(`Client ${PERSON}'s new number or city`) as string]);
+    expect(last.deps.alerts).toEqual([
+      expect.stringContaining(`Client ${PERSON}'s new number, city or invite`) as string,
+    ]);
   });
 });

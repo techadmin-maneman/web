@@ -24,7 +24,10 @@ export const CrmSyncMessageSchema = z.union([
   z.object({ lead_id: z.uuid(), request_id: z.string() }),
   /** An erased person's record is blanked (docs/decisions/0019-erasure.md). */
   z.object({ erase_person_id: z.uuid(), request_id: z.string() }),
-  /** A person whose number or address changed, written onto their record (src/http/contact-sync.ts). */
+  /**
+   * A person whose number or address changed (src/http/contact-sync.ts), or whom ops attached an invite to
+   * (src/routes/ops-client-referral.ts), written onto their record.
+   */
   z.object({ update_person_id: z.string().min(1), request_id: z.string() }),
 ]);
 export type CrmSyncMessage = z.infer<typeof CrmSyncMessageSchema>;
@@ -60,9 +63,10 @@ export async function handleCrmSyncBatch(
 export const MAX_CONTACT_UPDATE_ATTEMPTS = 5;
 
 /**
- * Writes a person's number, and the city of their address, onto their CRM
- * record, read afresh from D1. Nothing is written for an erased person or one
- * the CRM never had. A failure is tried again on the queue, and the fifth tells ops.
+ * Writes a person's number, the city of their address and the invite they came
+ * through onto their CRM record, read afresh from D1. Nothing is written for an
+ * erased person or one the CRM never had. A failure is tried again on the queue,
+ * and the fifth tells ops.
  */
 async function updateContact(
   message: Message,
@@ -75,18 +79,19 @@ async function updateContact(
     .prepare(
       `SELECT p.mobile_e164, p.zoho_lead_id,
          (SELECT city FROM addresses a WHERE a.person_id = p.id AND a.replaced_at IS NULL
-          ORDER BY a.created_at DESC LIMIT 1) AS city
+          ORDER BY a.created_at DESC LIMIT 1) AS city,
+         (SELECT r.code FROM referral_attributions r WHERE r.referred_person_id = p.id) AS invite_code
        FROM people p WHERE p.id = ?1 AND p.erased_at IS NULL`,
     )
     .bind(personId)
-    .first<{ mobile_e164: string; zoho_lead_id: string | null; city: string | null }>();
+    .first<{ mobile_e164: string; zoho_lead_id: string | null; city: string | null; invite_code: string | null }>();
   if (person === null) {
     message.ack();
     return;
   }
   try {
     const { crmLeadId } = await deps.crm.updateContact(
-      { personId, mobileE164: person.mobile_e164, city: person.city },
+      { personId, mobileE164: person.mobile_e164, city: person.city, inviteCode: person.invite_code },
       person.zoho_lead_id,
     );
     if (crmLeadId !== null && crmLeadId !== person.zoho_lead_id) {
@@ -105,7 +110,7 @@ async function updateContact(
     await deps.alertOnce({
       key: `crm_contact_update:${personId}`,
       message:
-        `Client ${personId}'s new number or city did not reach their CRM lead after ` +
+        `Client ${personId}'s new number, city or invite did not reach their CRM lead after ` +
         `${String(message.attempts)} attempts: ${reason}. Update the lead by hand.`,
       link: `/clients/${personId}`,
     });

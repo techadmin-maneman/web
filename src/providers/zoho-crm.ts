@@ -14,7 +14,7 @@ import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../config/booking.ts";
 import { BOOKED_WINDOW_NAMES, CRM_ORG_HAS_REFERRAL_FIELDS, REFERRAL_LEAD_SOURCE } from "../config/crm.ts";
 import type { ZohoSettings } from "../config/settings.ts";
 
-import type { CrmLead, CrmProvider, CrmSyncResult, LeadSource, LeadStatus } from "./crm.ts";
+import type { CrmContact, CrmLead, CrmProvider, CrmSyncResult, LeadSource, LeadStatus } from "./crm.ts";
 import { createZohoRequester, ZohoError, type ZohoRequesterDependencies, type ZohoWrite } from "./zoho-http.ts";
 import {
   assertStatusAllowed,
@@ -91,7 +91,7 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
 
     async updateContact(contact, knownCrmLeadId) {
       const api = createZohoApi(settings, { ...deps, log: deps.log.child({ person_id: contact.personId }) });
-      const record = { Mobile: contact.mobileE164, ...(contact.city === null ? {} : { City: contact.city }) };
+      const record = contactRecordFor(contact);
       const write = async (id: string) => {
         await api.updateLead(id, record, { runWorkflows: false });
         return { crmLeadId: id };
@@ -137,6 +137,17 @@ function sourceOf(lead: CrmLead, fields: OrgFields): string {
 /** Which of the fields the org may not have yet it does have (src/config/crm.ts). */
 export interface OrgFields {
   readonly referral: boolean;
+}
+
+/** The Zoho Leads fields a change of number, address or invite writes: the invite's only where the org has it. */
+export function contactRecordFor(
+  contact: CrmContact,
+  fields: OrgFields = { referral: CRM_ORG_HAS_REFERRAL_FIELDS },
+): Record<string, unknown> {
+  const record: Record<string, unknown> = { Mobile: contact.mobileE164 };
+  if (contact.city !== null) record.City = contact.city;
+  if (fields.referral && contact.inviteCode !== null) record.Referral_Code = contact.inviteCode;
+  return record;
 }
 
 /** The Zoho Leads fields for this lead. See docs/runbook.md, step 8, "Zoho", for the custom fields. */

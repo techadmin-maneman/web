@@ -51,7 +51,7 @@ import { firstFitRequestStatement } from "./next-visit.ts";
 import { bookableService } from "./services.ts";
 import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
-import { attribute, type Invite, type InviteState } from "./referrals.ts";
+import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
 import { bookableTypes, holdSlot, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
@@ -173,11 +173,14 @@ async function consultationRefusal(db: D1Database, personId: string): Promise<Re
 /** Attributes the person to the invite they came with, after what the form booked stands. */
 async function applyInvite(
   db: D1Database,
-  input: { invite: Invite | null; personId: string; via: "consultation" | "waitlist"; pincode: string; now: Date },
+  input: { invite: Invite | null; personId: string; via: Via; pincode: string; now: Date },
 ): Promise<{ readonly credits: boolean; readonly invite: InviteState }> {
   if (input.invite === null) return { credits: false, invite: "unknown" };
-  const attributed = await attribute(db, { ...input, invite: input.invite });
-  return { credits: attributed.credits, invite: attributed.lapsed ? "expired" : "valid" };
+  const attribution = await attribute(db, { ...input, invite: input.invite });
+  if (attribution.outcome === "own_invite" || attribution.outcome === "fitted") {
+    return { credits: false, invite: "valid" };
+  }
+  return { credits: attribution.credits, invite: attribution.lapsed ? "expired" : "valid" };
 }
 
 /** The city a lead may name: the pincode's, where we have it as a city of ours. */

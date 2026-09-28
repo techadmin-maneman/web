@@ -440,9 +440,9 @@ describe("erasure blanks what ops wrote about the client", () => {
       ).bind(REFERRER, at),
       env.DB.prepare(
         `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state,
-           review_reason, reviewed_by, reviewed_at, created_at, updated_at)
+           review_reason, reviewed_by, reviewed_at, attached_by, attach_reason, created_at, updated_at)
          VALUES ('referral-1', 'VSAB23', ?1, ?2, 'consultation', 'rejected', 'Same flat as Vikram', 'ops@localhost',
-           ?2, ?2, ?2)`,
+           ?2, 'ops@localhost', 'Named Vikram on WhatsApp', ?2, ?2)`,
       ).bind(FRIEND, at),
       env.DB.prepare(
         "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
@@ -468,15 +468,16 @@ describe("erasure blanks what ops wrote about the client", () => {
   const reasons = () =>
     env.DB.prepare(
       `SELECT (SELECT review_reason FROM referral_attributions) AS review,
+         (SELECT attach_reason FROM referral_attributions) AS attach,
          (SELECT decision_reason FROM no_show_cases) AS no_show`,
     ).first();
 
-  it("blanks the reasons ops gave about the friend: the grant's review and the no-show ruling", async () => {
+  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review and the no-show ruling", async () => {
     await reasonsWritten();
 
     expect(await erasePerson(env, FRIEND, NOW, createLogger())).not.toBeNull();
 
-    expect(await reasons()).toEqual({ review: null, no_show: null });
+    expect(await reasons()).toEqual({ review: null, attach: null, no_show: null });
     // The decisions themselves stay, as records.
     const ruled = await env.DB.prepare(
       "SELECT (SELECT grant_state FROM referral_attributions) AS grant_state, (SELECT decision FROM no_show_cases) AS decision",
@@ -489,7 +490,7 @@ describe("erasure blanks what ops wrote about the client", () => {
 
     await erasePerson(env, REFERRER, NOW, createLogger());
 
-    expect(await reasons()).toEqual({ review: null, no_show: "His wife said he forgets" });
+    expect(await reasons()).toEqual({ review: null, attach: null, no_show: "His wife said he forgets" });
   });
 
   it("blanks nothing when the database refuses the erasure", async () => {
@@ -498,7 +499,11 @@ describe("erasure blanks what ops wrote about the client", () => {
 
     await expect(erasePerson(env, FRIEND, NOW, createLogger())).rejects.toThrow();
 
-    expect(await reasons()).toEqual({ review: "Same flat as Vikram", no_show: "His wife said he forgets" });
+    expect(await reasons()).toEqual({
+      review: "Same flat as Vikram",
+      attach: "Named Vikram on WhatsApp",
+      no_show: "His wife said he forgets",
+    });
   });
 });
 

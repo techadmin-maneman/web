@@ -101,7 +101,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).",
   razorpay_events: "Each Razorpay webhook event, once, by its event ID (ADR 0044).",
   referral_attributions:
-    "A person who came through an invite, to the first invite they used, and what became of its grant (ADR 0048).",
+    "A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).",
   referral_codes: "A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).",
   refunds: "The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).",
   serviceable_pincodes:

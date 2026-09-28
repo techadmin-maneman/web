@@ -793,7 +793,11 @@ The piece a label names
             "no_service_area",
             "service_exists",
             "last_of_kind",
-            "service_retired"
+            "service_retired",
+            "unknown_invite",
+            "own_invite",
+            "already_invited",
+            "already_fitted"
           ]
         },
         "request_id": {
