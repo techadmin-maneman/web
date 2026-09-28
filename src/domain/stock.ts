@@ -11,7 +11,7 @@
 //
 // That sum is kept in stock_balances, a row for each consumable at each place,
 // which the database moves in the same statement as each row of the ledger is
-// written (migration 0052), so what a place holds is read without its history.
+// written (migration 0053), so what a place holds is read without its history.
 // It names the central store 'central', and a kit by its technician's ID.
 //
 // A place that falls to a consumable's reorder level raises one alert, for

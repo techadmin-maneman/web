@@ -147,7 +147,7 @@ function writtenBy(sql: string): Set<string> {
 
 /**
  * Whether a table the statement never names has rows pointing at one it writes. An upsert into a table with
- * triggers, as appointments has since migration 0052, plans a look through each such table for rows pointing at a
+ * triggers, as appointments has since migration 0053, plans a look through each such table for rows pointing at a
  * key it changes; SQLite takes that look only when the key did change, and no upsert here changes its row's key
  * (test/worker/cron-reads.test.ts counts what is read).
  */
