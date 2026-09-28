@@ -60,7 +60,8 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
-- [storage_meter](#storage_meter): What Phase 2's two buckets, client-photos and referral-cards, hold: one row, kept as each object is stored and deleted, and the last mark of the share ops were told of (ADR 0093).
+- [storage_meter](#storage_meter): What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).
+- [stored_objects](#stored_objects): Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
@@ -1238,7 +1239,7 @@ Triggers: `stock_movements_balance`, `stock_movements_no_update`, `stock_movemen
 
 ## storage_meter
 
-What Phase 2's two buckets, client-photos and referral-cards, hold: one row, kept as each object is stored and deleted, and the last mark of the share ops were told of (ADR 0093).
+What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).
 
 Made by `0055_storage_meter.sql`.
 
@@ -1247,6 +1248,17 @@ Made by `0055_storage_meter.sql`.
 | `id` | INTEGER | no |  | primary key |
 | `bytes` | INTEGER | no |  |  |
 | `told_percent` | INTEGER | no | `0` |  |
+
+## stored_objects
+
+Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).
+
+Made by `0055_storage_meter.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `key` | TEXT | no |  | primary key |
+| `bytes` | INTEGER | no |  |  |
 
 ## sync_cursors
 

@@ -119,8 +119,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
   stock_movements:
     "Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).",
+  stored_objects:
+    "Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).",
   storage_meter:
-    "What Phase 2's two buckets, client-photos and referral-cards, hold: one row, kept as each object is stored and deleted, and the last mark of the share ops were told of (ADR 0093).",
+    "What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).",
   sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",

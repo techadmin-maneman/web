@@ -5,7 +5,9 @@
 // (docs/decisions/0067-alerts-and-silent-failures.md).
 //
 // The jobs share one budget of outside calls a run, so that together they stay
-// under the free plan's 50 subrequests (src/lib/call-budget.ts).
+// under the free plan's 50 fetch subrequests (src/lib/call-budget.ts). Their
+// calls to D1, R2 and the queues are a separate allowance of 1,000 a run, kept
+// by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
@@ -40,7 +42,7 @@ export interface CronContext {
 }
 
 /**
- * Outside calls one run may make. The free plan allows 50 subrequests an
+ * Outside calls one run may make. The free plan allows 50 fetch subrequests an
  * invocation; the other ten are for what no job can plan: a Zoho token
  * refresh, and the alerts the run sends.
  */

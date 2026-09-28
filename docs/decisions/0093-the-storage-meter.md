@@ -20,16 +20,18 @@ The owner ruled on two of these on 27 September 2026:
 
 ## Decision
 
-**The meter is one running figure in D1** (`storage_meter`, migration 0055; `src/domain/storage-meter.ts`).
+**The meter is one running figure in D1, beside a row for each object** (`storage_meter` and `stored_objects`, migration 0055; `src/domain/storage-meter.ts`).
 
 - It counts what the two Phase 2 buckets hold: `client-photos` (visit photographs, their thumbnails, a try-on's small copy and a client's kept look) and `referral-cards`.
-- Every write to and delete from those buckets goes through `putCounted`, `deleteCounted` or `deleteAllUnder`, which add or take off the object's size.
-- A delete must know what it freed, since R2's delete does not say. `deleteCounted` reads each key's size first, with `head`, a Class B read; the sweeper's deletes come in batches of at most 100. An erasure lists each of the person's visits instead, whose listing gives every object's size: one list and one delete a visit, however many photographs it holds, so a long-standing client's erasure stays well inside the 1,000 calls to Cloudflare's services one invocation may make.
+- Every write to and delete from those buckets goes through `putCounted` or `deleteCounted`, which write the object's row and the figure in one D1 batch, after R2 has taken the write or the delete.
+- **An object stored again under its key counts once.** R2 replaces it, and its row gives what it held, so the figure moves by the difference. A sweep stopped after keeping a look and run again, an FSM copy retried from its queue, and a card sent again each rewrite a key.
+- **A delete takes off what the rows say,** and removes them in the same batch. D1 runs each batch as one transaction, so two deletes of one key at once, an erasure's and the sweeper's, take it off once. A key with no row, never stored or stored before the meter, takes nothing off. No delete reads an object to learn its size.
 - It is never read by listing a bucket. Listing is a Class A operation, and the cron runs 288 times a day.
 - **The backfill** (migration 0055):
   - a photograph counts at the size its row records;
   - a referral card counts at 300 KB, a try-on's small copy at 250 KB, and a kept look at 5 MB. These are their upload limits, since no row records their sizes, so the figure starts high rather than low;
-  - a photograph that was replaced is in no row, so the figure starts below the bucket. The runbook says how to true it up.
+  - each of those becomes a row of `stored_objects`, and the figure is their sum;
+  - a photograph that was replaced is in no row, so the figure starts below the bucket, and deleting it later takes nothing off. The runbook says how to true it up.
 
 **Ops are told once at 50%, 80% and 100% of the share** (`src/policy/storage-share.ts`, which quotes the owner). A cron job, `storage_meter`, reads the one row each run and raises a kept alert (ADR 0067), `r2_share:50`, `r2_share:80` or `r2_share:100`, linking to Settings. The last mark told is kept on the row, so each mark is told once for good, and a run that finds two passed tells only the higher. Settings shows the figure in one line above its tabs (`GET /api/storage`).
 
@@ -56,15 +58,15 @@ The owner ruled on two of these on 27 September 2026:
 **The phone keeps the pair in its outbox and uploads both.**
 
 - **The photograph always goes first,** then the thumbnail, to `PUT /api/tech/photos/{token}/small`, which the upload link's answer names (`small_upload_url`).
-- **A photograph that is up is marked so** (`photo_sent`). A round cut off before its thumbnail sends only the thumbnail the next time, and does not store the photograph twice.
+- **The photograph's upload answers its take** (`200 {"take"}`), which the phone keeps with the frame and sends with the thumbnail (`?take=`). A round cut off before the thumbnail sends only the thumbnail the next time, and does not store the photograph twice.
 - **A thumbnail the API refuses is let go.** The client app then shows the photograph itself.
-- **A frame kept before this build** has no thumbnail, and goes without one.
+- **A frame kept before this build** has no thumbnail, and goes without one; an API that names no take gets the photograph alone.
 
 **The API keeps the thumbnail beside its photograph** (`src/domain/tech-photos.ts`).
 
 - **What it takes:** a JPEG of at most 64 KB and 800 px a side (`MAX_THUMBNAIL_BYTES`).
-- **Where it goes:** `visits/<appointment>/<phase>-<angle>-<uuid>-small.jpg`, in the same bucket and under the same prefix as the photograph. The photograph's row names it in `photos.thumbnail_key`.
-- **A thumbnail is never held without its photograph.** Before the photograph arrives, the thumbnail's upload answers `409 upload_missing`. Once the photograph has one, a second copy is answered 204 and not stored again.
+- **Where it goes:** `visits/<appointment>/<phase>-<angle>-<take>-small.jpg`, beside its photograph, `…-<take>.jpg`, in the same bucket. The photograph's row names it in `photos.thumbnail_key`.
+- **A thumbnail is kept beside its own take, and no other.** It is kept only while its take is the angle's photograph, and answered `409 upload_missing` otherwise: before the photograph arrives, and after the angle is taken again, in the app or copied from FSM, whose newer take can land between the phone's photograph and its thumbnail while both apps run (ADR 0028). Sent again, it is answered 204 and not stored again.
 - **A retake forgets the old thumbnail.** A photograph taken again at the same angle, in the app or in FSM, clears `thumbnail_key`, so a row never shows another take's thumbnail. The old thumbnail stays in the bucket with the old photograph, as ADR 0028 has it.
 
 **The client app shows the thumbnail in its rows.**
@@ -74,7 +76,7 @@ The owner ruled on two of these on 27 September 2026:
 - The opened sheet, the compare and the download use the whole photograph.
 - If a thumbnail the row names is missing from the bucket, its link answers with the photograph itself, so a row never shows a broken image.
 
-**Erasure deletes everything under each of the person's visits** (`deleteAllUnder`): their photographs, any taken again, and every thumbnail. Before this, a retake stayed in the bucket after the client was erased. Nothing else deletes a visit photograph: the bucket has no lifecycle rule, and neither the sweeper nor any retention rule touches `visits/`.
+**Erasure deletes everything under each of the person's visits**: their photographs, any taken again, and every thumbnail. It lists each visit once (`keysUnder`), then deletes every key in one R2 call for each thousand and updates the meter once. Before this, a retake stayed in the bucket after the client was erased. Nothing else deletes a visit photograph: the bucket has no lifecycle rule, and neither the sweeper nor any retention rule touches `visits/`.
 
 ## The budget
 
@@ -92,14 +94,16 @@ Past the runway, R2 bills on the owner's ruling; the runway is now when ops are 
 
 - **Ops hear of the share at 2 GB, 3.2 GB and 4 GB**, once each, and see the figure in Settings. Cloudflare's own usage notification at half of R2's 10 GB stays as the backstop (runbook, "R2 storage growing").
 - **Each environment's meter counts its own buckets** against the whole share, which staging and production share on one account. Staging holds little, and the runbook says to read both buckets on the dashboard before trusting one figure.
-- **The figure can drift from the bucket.** An object written outside these helpers is not counted, and nor is a write whose D1 update failed after R2 took it. The runbook compares the figure with the bucket sizes on the dashboard, and says how to set it.
+- **The figure can drift from the bucket.** An object written outside these helpers is not counted, and nor is a write whose D1 batch failed after R2 took it, until its key is written again. A delete whose batch failed after R2 took it errs high, until the key is deleted again. The runbook compares the figure with the bucket sizes on the dashboard, and says how to set it.
+- **An invocation's calls.** The free plan allows 50 fetch subrequests an invocation, which the cron budgets (`src/lib/call-budget.ts`), and a separate 1,000 calls to Cloudflare's own services, D1, R2, KV and Queues, which it does not. The meter adds no R2 read to any delete, and one D1 batch to each store and each delete. An erasure costs about fifteen calls and one list for each visit, and the cron finishes five erased people's files a run where it finished twenty: five clients of five years' monthly visits come to under 400.
 - **Each mark is told once for good.** A figure that falls back below a mark, after an erasure or a correction, and passes it again is not told again. Resetting `told_percent` on the row makes the meter tell again.
-- **A thumbnail is one more R2 write for each photograph,** and a delete is one Class B read for each object before the Class A delete. Both fit well inside Phase 2's operations shares (ADR 0039).
+- **A thumbnail is one more R2 write for each photograph,** and an erasure one list for each visit. Both fit well inside Phase 2's operations shares (ADR 0039).
 - **Tests.**
   - `test/node/policy-storage-share.test.ts`: the marks and the ceiling.
   - `test/node/migration-0055.test.ts`: the backfill.
-  - `test/worker/storage-meter.test.ts`: the counting and the alerts.
-  - `test/worker/field-operations.test.ts`: the upload limit, the ceiling and the thumbnail's upload.
+  - `test/worker/storage-meter.test.ts`: the counting, a rewrite and two deletes at once counted once, and the alerts.
+  - `test/worker/kept-try-ons.test.ts`, `test/worker/referral-cards.test.ts`: each store and delete of a copy, a look and a card counted, and a look kept once however often its sweep runs.
+  - `test/worker/field-operations.test.ts`: the upload limit, the ceiling, and the thumbnail's upload, claimed on its own take.
   - `test/worker/client-visits.test.ts`: the thumbnail's link and its fallback.
   - `test/worker/erasure.test.ts`: retakes and thumbnails erased.
   - `test/worker/visit-photos.test.ts`: FSM's size, and a retake from FSM.
