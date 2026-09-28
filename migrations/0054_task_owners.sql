@@ -1,4 +1,4 @@
--- Migration number: 0053
+-- Migration number: 0054
 -- Whose each task on the Tasks board is, a visit left partly done that ops
 -- closed without a follow-up, and an address a client gave ops on the phone
 -- (docs/decisions/0092-task-owners.md; the plan's pieces C7 and C8, open points
@@ -104,7 +104,7 @@ END;
 
 -- Whether the client has had a first fit, service or replacement done since
 -- their last consultation, or with none: read from last_visits, which keeps
--- both (migration 0052). A first fit asked for can be a task only while they
+-- both (migration 0053). A first fit asked for can be a task only while they
 -- have not, so the board reads only those requests, however many clients have
 -- been fitted since they asked.
 ALTER TABLE first_fit_requests ADD COLUMN fitted_since INTEGER NOT NULL DEFAULT 0;

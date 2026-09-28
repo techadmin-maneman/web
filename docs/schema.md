@@ -81,7 +81,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 
 Each address a client has given, in the app or to ops on the phone, who then saved it for them (`given_to_staff`). The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054, ADR 0092).
 
-Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0053_task_owners.sql`.
+Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0054_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -136,7 +136,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0052_balances_and_last_visits.sql`, `0053_task_owners.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -289,7 +289,7 @@ Triggers: `consents_no_delete`, `consents_no_update`.
 
 A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 
-Made by `0032_consultation_requests.sql`; changed by `0053_task_owners.sql`.
+Made by `0032_consultation_requests.sql`; changed by `0054_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -521,7 +521,7 @@ Indexes:
 
 A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
 
-Made by `0047_first_fit_requests.sql`; changed by `0053_task_owners.sql`.
+Made by `0047_first_fit_requests.sql`; changed by `0054_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -622,7 +622,7 @@ Indexes:
 
 Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
 
-Made by `0052_balances_and_last_visits.sql`; changed by `0053_task_owners.sql`.
+Made by `0053_balances_and_last_visits.sql`; changed by `0054_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1158,7 +1158,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0052_balances_and_last_visits.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1207,7 +1207,7 @@ Indexes:
 
 What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 
-Made by `0052_balances_and_last_visits.sql`.
+Made by `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1220,7 +1220,7 @@ Made by `0052_balances_and_last_visits.sql`.
 
 Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`; changed by `0052_balances_and_last_visits.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1266,7 +1266,7 @@ Made by `0012_fsm_reconciliation.sql`.
 
 A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
 
-Made by `0053_task_owners.sql`.
+Made by `0054_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1285,7 +1285,7 @@ Indexes:
 
 The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group and its row's id; a task with no row is nobody's (ADR 0092).
 
-Made by `0053_task_owners.sql`.
+Made by `0054_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
