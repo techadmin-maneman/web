@@ -9,7 +9,13 @@
 // through here. When ops are told, and what is refused, is
 // src/policy/storage-share.ts.
 
-import { hasRoom, markReached, PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES, type Mark } from "../policy/storage-share.ts";
+import {
+  hasRoom,
+  markReached,
+  PHASE_2_SHARE_BYTES,
+  RUNAWAY_CEILING_BYTES,
+  type Mark,
+} from "../policy/storage-share.ts";
 import type { AlertOnce } from "./alerts.ts";
 
 /** R2 deletes at most 1,000 keys a call. */

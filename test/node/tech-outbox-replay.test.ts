@@ -59,6 +59,20 @@ function api(answer: (method: string, url: string) => { status: number; json?: u
 
 const accepted = { status: 202, json: { event_id: "e", replayed: false, fsm_write_state: "pending", progress: {} } };
 
+type Answer = ReturnType<Parameters<typeof api>[0]>;
+
+/** The photographs' calls answered as the API does, and each thumbnail as `small` says. */
+const answerPhotos =
+  (small: () => Answer) =>
+  (method: string, url: string): Answer => {
+    if (url.endsWith("/upload-url")) {
+      const links = { upload_url: "/api/tech/photos/t", small_upload_url: "/api/tech/photos/t/small", expires_at: "" };
+      return { status: 201, json: links };
+    }
+    if (method === "PUT") return url.endsWith("/small") ? small() : { status: 204 };
+    return accepted;
+  };
+
 describe("sending what the phone holds", () => {
   it("sends each write oldest first, with its own event ID, and lets it go once it lands", async () => {
     const start = await queue("start", "a", null);
@@ -133,6 +147,54 @@ describe("sending what the phone holds", () => {
       "POST /api/tech/jobs/a/photos",
     ]);
     expect(await frames()).toEqual([]);
+  });
+
+  it("puts each photograph's thumbnail up after the photograph, and lets the pair go together", async () => {
+    await keepFrame("a", "front", "before", new Blob(["front"]), new Blob(["small"]));
+    await queue("before_photos", "a", { phase: "before" });
+    const sent = api(answerPhotos(() => ({ status: 204 })));
+
+    expect(await replay()).toMatchObject({ sent: 1, stopped: null });
+    expect(sent.map((call) => `${call.method} ${call.url}`)).toEqual([
+      "POST /api/tech/jobs/a/photos/upload-url",
+      "PUT /api/tech/photos/t",
+      "PUT /api/tech/photos/t/small",
+      "POST /api/tech/jobs/a/photos",
+    ]);
+    expect(await frames()).toEqual([]);
+  });
+
+  it("sends only the thumbnail next time, when the signal went between the photograph and it", async () => {
+    await keepFrame("a", "front", "before", new Blob(["front"]), new Blob(["small"]));
+    await queue("before_photos", "a", { phase: "before" });
+    api(answerPhotos(() => "offline"));
+    expect(await replay()).toMatchObject({ sent: 0, stopped: "offline" });
+    expect(await frames()).toMatchObject([{ angle: "front", photo_sent: true }]);
+
+    const sent = api(answerPhotos(() => ({ status: 204 })));
+    await replay();
+    expect(sent.map((call) => `${call.method} ${call.url}`)).toEqual([
+      "POST /api/tech/jobs/a/photos/upload-url",
+      "PUT /api/tech/photos/t/small",
+      "POST /api/tech/jobs/a/photos",
+    ]);
+  });
+
+  it("lets a thumbnail the API refuses go, and the set lands: the client app shows the photograph itself", async () => {
+    await keepFrame("a", "front", "before", new Blob(["front"]), new Blob(["not small"]));
+    await queue("before_photos", "a", { phase: "before" });
+    api(answerPhotos(() => ({ status: 422, json: { error: { code: "photo_invalid_file", request_id: "t" } } })));
+
+    expect(await replay()).toMatchObject({ sent: 1, refused: 0, stopped: null });
+    expect(await frames()).toEqual([]);
+  });
+
+  it("sends a frame kept before the phone made thumbnails without one", async () => {
+    await keepFrame("a", "front", "before", new Blob(["front"]));
+    await queue("before_photos", "a", { phase: "before" });
+    const sent = api(answerPhotos(() => ({ status: 204 })));
+    await replay();
+    expect(sent.map((call) => call.url)).not.toContain("/api/tech/photos/t/small");
   });
 
   it("stops at a 401, keeps the queue, and tells the app the session has ended", async () => {

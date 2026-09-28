@@ -11,8 +11,9 @@
 //
 // The frame comes from the camera into a canvas (./capture.ts), never from a
 // file input, so nothing is written to the phone's gallery. Each frame goes
-// into the app's own store, one per angle, and stays there until the outbox has
-// PUT it to the link the API hands out and the set itself has landed
+// into the app's own store with its thumbnail, one per angle, and stays there
+// until the outbox has PUT both to the link the API hands out and the set itself
+// has landed
 // (apps/tech/src/store/outbox.ts). A double tap keeps one frame and moves on by
 // one angle.
 //
@@ -107,7 +108,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       if (video.current === null || angle === undefined) return;
       try {
         const frame = await captureFrame(video.current);
-        const frameId = await keepFrame(id, angle, phase, frame.blob);
+        const frameId = await keepFrame(id, angle, phase, frame.photo.blob, frame.small.blob);
         setMissed(false);
         setTaken((already) => [...already.filter((one) => one.angle !== angle), { angle, frameId }]);
       } catch {

@@ -3,13 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  deleteAllUnder,
-  deleteCounted,
-  putCounted,
-  readMeter,
-  tellOfStorage,
-} from "../../src/domain/storage-meter.ts";
+import { deleteAllUnder, deleteCounted, putCounted, readMeter, tellOfStorage } from "../../src/domain/storage-meter.ts";
 import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 import { fakeDependencies, markDatabase, type TestDependencies } from "./helpers.ts";
 
@@ -36,7 +30,11 @@ describe("counting what is stored", () => {
     await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/before.jpg", bytes(900), "image/jpeg");
     await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j2/before.jpg", bytes(400), "image/jpeg");
 
-    await deleteCounted(env.DB, env.CLIENT_PHOTOS, ["tryons/j1/before.jpg", "tryons/j1/look.png", "tryons/j1/before.jpg"]);
+    await deleteCounted(env.DB, env.CLIENT_PHOTOS, [
+      "tryons/j1/before.jpg",
+      "tryons/j1/look.png",
+      "tryons/j1/before.jpg",
+    ]);
 
     expect(await held()).toBe(400);
     expect(await env.CLIENT_PHOTOS.head("tryons/j1/before.jpg")).toBeNull();
@@ -91,7 +89,9 @@ describe("telling ops", () => {
     expect(deps.alerts[1]).toContain("80% of their 4 GB share");
     expect(deps.alerts[2]).toContain("all of their 4 GB share");
     expect(deps.alerts[2]).toContain("Uploads go on");
-    const { results } = await env.DB.prepare("SELECT key FROM alerts ORDER BY first_seen_at, key").all<{ key: string }>();
+    const { results } = await env.DB.prepare("SELECT key FROM alerts ORDER BY first_seen_at, key").all<{
+      key: string;
+    }>();
     expect(results.map((row) => row.key).sort()).toEqual(["r2_share:100", "r2_share:50", "r2_share:80"]);
   });
 

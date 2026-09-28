@@ -128,11 +128,9 @@ describe("exporting a visit's photographs", () => {
     await closedAppointment();
     const set = crypto.randomUUID();
     await env.DB.batch([
-      env.DB.prepare("INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, 'before', ?3)").bind(
-        set,
-        APPOINTMENT_ID,
-        NOW.toISOString(),
-      ),
+      env.DB.prepare(
+        "INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, 'before', ?3)",
+      ).bind(set, APPOINTMENT_ID, NOW.toISOString()),
       env.DB.prepare(
         `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, thumbnail_key, created_at)
          VALUES ('p1', ?1, 'front', 'visits/app-take.jpg', 'image/jpeg', 10, '2026-09-24T04:00:00.000Z',

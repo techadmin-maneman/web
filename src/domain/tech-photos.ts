@@ -158,7 +158,9 @@ export async function storeThumbnail(
   const key = `visits/${slot.appointmentId}/${slot.phase}-${slot.angle}-${crypto.randomUUID()}-small.jpg`;
   await putCounted(db, bucket, key, bytes, "image/jpeg");
   const claimed = await db
-    .prepare("UPDATE photos SET thumbnail_key = ?3 WHERE id = ?1 AND r2_key = ?2 AND thumbnail_key IS NULL RETURNING id")
+    .prepare(
+      "UPDATE photos SET thumbnail_key = ?3 WHERE id = ?1 AND r2_key = ?2 AND thumbnail_key IS NULL RETURNING id",
+    )
     .bind(photo.id, photo.r2_key, key)
     .first();
   // The photograph was taken again meanwhile, or the same copy arrived twice at once: this one is not needed.

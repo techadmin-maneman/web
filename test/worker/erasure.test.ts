@@ -373,7 +373,13 @@ describe("erasure, all or nothing", () => {
     await putCounted(env.DB, env.CLIENT_PHOTOS, VISIT_PHOTO, syntheticJpeg(600, 800), "image/jpeg");
     await putCounted(env.DB, env.CLIENT_PHOTOS, retaken, syntheticJpeg(600, 800, "first take"), "image/jpeg");
     await putCounted(env.DB, env.CLIENT_PHOTOS, small, syntheticJpeg(300, 400), "image/jpeg");
-    await putCounted(env.DB, env.CLIENT_PHOTOS, `visits/someone-else/after-front-9.jpg`, new Uint8Array(70), "image/jpeg");
+    await putCounted(
+      env.DB,
+      env.CLIENT_PHOTOS,
+      `visits/someone-else/after-front-9.jpg`,
+      new Uint8Array(70),
+      "image/jpeg",
+    );
     await putCounted(env.DB, env.REFERRAL_CARDS, CARD, syntheticJpeg(1200, 630), "image/jpeg");
 
     await erasePerson(env, personId, NOW, createLogger());

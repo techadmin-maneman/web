@@ -678,14 +678,18 @@ describe("the photographs", () => {
 
   it("stores a photograph when the share of R2 is full, as the owner ruled", async () => {
     await startJob();
-    await env.DB.prepare("UPDATE storage_meter SET bytes = ?1").bind(PHASE_2_SHARE_BYTES * 1.5).run();
+    await env.DB.prepare("UPDATE storage_meter SET bytes = ?1")
+      .bind(PHASE_2_SHARE_BYTES * 1.5)
+      .run();
     expect((await putPhoto(await opsFreeUploadLink(), syntheticJpeg(1200, 1600))).status).toBe(204);
     expect(deps.alerts).toEqual([]);
   });
 
   it("refuses a photograph past the runaway ceiling, which waits on the phone, and tells ops", async () => {
     await startJob();
-    await env.DB.prepare("UPDATE storage_meter SET bytes = ?1").bind(RUNAWAY_CEILING_BYTES - 10).run();
+    await env.DB.prepare("UPDATE storage_meter SET bytes = ?1")
+      .bind(RUNAWAY_CEILING_BYTES - 10)
+      .run();
     const refused = await putPhoto(await opsFreeUploadLink(), syntheticJpeg(1200, 1600));
     expect(refused.status).toBe(503);
     expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
@@ -694,7 +698,10 @@ describe("the photographs", () => {
   });
 
   const heldPhoto = () =>
-    env.DB.prepare("SELECT r2_key, thumbnail_key FROM photos").first<{ r2_key: string; thumbnail_key: string | null }>();
+    env.DB.prepare("SELECT r2_key, thumbnail_key FROM photos").first<{
+      r2_key: string;
+      thumbnail_key: string | null;
+    }>();
 
   it("takes the small copy after the photograph and keeps it beside it, counted", async () => {
     await startJob();
@@ -722,7 +729,11 @@ describe("the photographs", () => {
     await startJob();
     const links = await uploadLinks();
     await putPhoto(links.upload_url, syntheticJpeg(1200, 1600));
-    for (const wrong of [syntheticJpeg(1200, 1600), syntheticPng(300, 400), jpegOf(MAX_THUMBNAIL_BYTES + 1, 300, 400)]) {
+    for (const wrong of [
+      syntheticJpeg(1200, 1600),
+      syntheticPng(300, 400),
+      jpegOf(MAX_THUMBNAIL_BYTES + 1, 300, 400),
+    ]) {
       expect((await putPhoto(links.small_upload_url, wrong)).status).toBe(422);
     }
     expect((await heldPhoto())?.thumbnail_key).toBeNull();

@@ -306,7 +306,10 @@ const photoSmallRoute = createRoute({
   summary: "A photograph's small copy, through a link that lasts 15 minutes; the photograph itself if the copy is gone",
   request: { params: z.object({ token: z.string() }) },
   responses: {
-    200: { description: "The image", content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } } },
+    200: {
+      description: "The image",
+      content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
+    },
     401: errorResponse("session_required"),
     404: errorResponse("not_found: the link is wrong, expired, or not this client's"),
   },

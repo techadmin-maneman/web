@@ -485,7 +485,9 @@ describe("GET /api/visits/:id and the photographs", () => {
     await signIn();
     await env.DB.prepare("UPDATE photos SET thumbnail_key = r2_key").run();
     const [photo] = (
-      await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json<{
+      await (
+        await get(`/api/visits/${ids["ap-done"] ?? ""}`)
+      ).json<{
         photos: { after: { url: string; thumbnail_url: string }[] };
       }>()
     ).photos.after;
