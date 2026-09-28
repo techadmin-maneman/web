@@ -1549,6 +1549,44 @@ Request body:
 }
 ```
 
+### POST /api/tasks/{group}/{id}/close
+
+Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TaskClosing"
+}
+```
+
+**204**: Closed, under the member of staff who closed it
+
+**400**: invalid_request: no reason, or a group whose tasks close only when their thing is done
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task on the board now; a follow-up may be booked, or it is closed already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/payments
 
 A day's money: what was collected, what went back, and each charge kept or ruled on
@@ -3300,6 +3338,44 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "What FSM closed the visit as, a no-show being its own; null until it is closed."
+    },
+    "closed_without_follow_up": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string",
+              "description": "The Access e-mail of the member of staff who closed it."
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Null once the client is erased."
+            }
+          },
+          "required": [
+            "by",
+            "at",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a visit left partly done, ops closing its task without a follow-up visit; null otherwise."
     }
   },
   "required": [
@@ -3315,7 +3391,8 @@ Who Access let through, and where signing out goes
     "prepaid",
     "technician",
     "place",
-    "outcome"
+    "outcome",
+    "closed_without_follow_up"
   ],
   "additionalProperties": false
 }
@@ -6282,6 +6359,26 @@ Who Access let through, and where signing out goes
   },
   "required": [
     "owner"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TaskClosing
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased."
+    }
+  },
+  "required": [
+    "reason"
   ],
   "additionalProperties": false
 }

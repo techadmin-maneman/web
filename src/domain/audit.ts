@@ -127,7 +127,7 @@ export function auditStatementIfWritten(
   entry: AuditEntry,
   now: Date,
   written: {
-    readonly table: "grievances" | "consents" | "referral_attributions" | "stock_movements";
+    readonly table: "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures";
     readonly id: string;
   },
 ): D1PreparedStatement {

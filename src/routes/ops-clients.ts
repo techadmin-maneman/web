@@ -34,6 +34,7 @@ import { creditBalance } from "../domain/credits.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
 import { consentRecordsOf, currentAddress, type ConsentState } from "../domain/profile.ts";
+import { partialVisitsClosed } from "../domain/task-closures.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -68,6 +69,20 @@ const ClientVisitSchema = VisitSummarySchema.extend({
   outcome: z
     .union([z.enum(VISIT_OUTCOMES), z.null()])
     .openapi({ description: "What FSM closed the visit as, a no-show being its own; null until it is closed." }),
+  closed_without_follow_up: z
+    .union([
+      z
+        .object({
+          by: z.string().openapi({ description: "The Access e-mail of the member of staff who closed it." }),
+          at: z.iso.datetime(),
+          reason: z.union([z.string(), z.null()]).openapi({ description: "Null once the client is erased." }),
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({
+      description: "For a visit left partly done, ops closing its task without a follow-up visit; null otherwise.",
+    }),
 }).openapi("ClientVisit");
 
 /**
@@ -406,12 +421,14 @@ export function registerOpsClients(app: App): void {
       latestProposal(db, id),
       clientInviteOf(db, id),
     ]);
-    const outcomes = await visitOutcomes(
-      db,
-      [...visits.upcoming, ...visits.past].map((visit) => visit.id),
-    );
+    const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
+    const [outcomes, closings] = await Promise.all([visitOutcomes(db, visitIds), partialVisitsClosed(db, visitIds)]);
     const withOutcome = (list: typeof visits.upcoming) =>
-      list.map((visit) => ({ ...visit, outcome: outcomes.get(visit.id) ?? null }));
+      list.map((visit) => ({
+        ...visit,
+        outcome: outcomes.get(visit.id) ?? null,
+        closed_without_follow_up: closings.get(visit.id) ?? null,
+      }));
 
     return c.json(
       {

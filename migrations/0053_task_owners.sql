@@ -29,13 +29,14 @@ CREATE TABLE task_owners (
 -- visit left partly done may be (src/policy/tasks.ts); it stays closed, and a
 -- later visit left partly done is a task of its own.
 CREATE TABLE task_closures (
+  id TEXT PRIMARY KEY,
   task_group TEXT NOT NULL,
   subject_id TEXT NOT NULL,
   -- Ops' own words about the client's visit; NULL once the client is erased.
   reason TEXT,
   closed_by TEXT NOT NULL,
   closed_at TEXT NOT NULL,
-  PRIMARY KEY (task_group, subject_id)
+  UNIQUE (task_group, subject_id)
 );
 
 -- The Access e-mail of the member of staff a client gave the address to on the

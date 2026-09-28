@@ -2,6 +2,7 @@
 // src/policy/tasks.ts):
 //   GET /api/tasks                        the groups, their counts, how many have run over, and whose each task is
 //   PUT /api/tasks/:group/:id/owner       make a task a member of staff's, or nobody's
+//   POST /api/tasks/:group/:id/close      close a visit left partly done without a follow-up, with why
 //
 // A task is not a record. It is a row in a queue the database already keeps,
 // read at the moment ops look: a held grant, an undecided no-show, a number
@@ -9,8 +10,10 @@
 // past its replacement date, an invoice still a draft, an erasure FSM would not
 // finish, a client past their next service with nothing booked, a first fit
 // asked for and not booked. Each task leaves when the thing itself is done,
-// wherever it is done. What is kept about a task is whose it is, keyed by its
-// group and its row's id (docs/decisions/0092-task-owners.md).
+// wherever it is done, but for a visit left partly done, which ops may close
+// without a follow-up. What is kept about a task is whose it is, and why ops
+// closed it, keyed by its group and its row's id
+// (docs/decisions/0092-task-owners.md).
 //
 // Every count is the whole queue's. Each group lists its longest waits and no
 // more, since past that the section that decides them is the tool.
@@ -19,12 +22,14 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { staffOf } from "../http/audit.ts";
+import { closeTask } from "../domain/task-closures.ts";
 import { assignTask, handBackTask, staffWhoHaveSignedIn, type TaskKey } from "../domain/task-owners.ts";
 import { outstandingTasks, overdueCount, READ_CAP, type Task } from "../domain/tasks.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
-import { isClosable, mayOwnTasks, TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
+import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
+import { CLOSABLE_TASK_GROUPS, isClosable, mayOwnTasks, TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;
@@ -129,6 +134,35 @@ const ownerRoute = createRoute({
   },
 });
 
+const closeRoute = createRoute({
+  method: "post",
+  path: "/api/tasks/{group}/{id}/close",
+  summary: "Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed",
+  request: {
+    params: z.object({ group: z.enum(CLOSABLE_TASK_GROUPS), id: z.uuid() }),
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            reason: z.string().trim().min(1).max(REASON_MAX_CHARS).openapi({
+              description:
+                "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased.",
+            }),
+          })
+          .strict()
+          .openapi("TaskClosing"),
+      ),
+    },
+  },
+  responses: {
+    204: { description: "Closed, under the member of staff who closed it" },
+    400: errorResponse("invalid_request: no reason, or a group whose tasks close only when their thing is done"),
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such task on the board now; a follow-up may be booked, or it is closed already"),
+  },
+});
+
 /** Every task on the board, as a look at it reads them now. */
 async function readTheBoard(c: Context<AppEnv>) {
   const inputs = await opsInputs(c);
@@ -189,5 +223,30 @@ export function registerOpsTasks(app: App): void {
       audit: { ...entry, action: "task.assign", detail: { group: key.group, owner } },
     });
     return c.json({ owner }, 200);
+  });
+
+  app.openapi(closeRoute, async (c) => {
+    const key = c.req.valid("param");
+    const { reason } = c.req.valid("json");
+    const { requestId } = c.var;
+    if ((await taskOnTheBoard(c, key)) === null) return c.json(errorBody("not_found", requestId), 404);
+
+    const now = c.var.deps.now();
+    const staff = staffOf(c);
+    await closeTask(c.env.DB, key, {
+      reason,
+      by: staff.id,
+      now,
+      // The reason is ops' words about the client, kept with the closing and never in the log (ADR 0072).
+      audit: {
+        surface: "ops",
+        actor: staff,
+        action: "task.close",
+        subject: { kind: "task", id: key.id },
+        requestId,
+        detail: { group: key.group },
+      },
+    });
+    return c.body(null, 204);
   });
 }

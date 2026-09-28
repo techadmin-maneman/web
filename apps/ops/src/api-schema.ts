@@ -2069,6 +2069,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/{group}/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    group: "partial_visit";
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TaskClosing"];
+                };
+            };
+            responses: {
+                /** @description Closed, under the member of staff who closed it */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: no reason, or a group whose tasks close only when their thing is done */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such task on the board now; a follow-up may be booked, or it is closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments": {
         parameters: {
             query?: never;
@@ -4042,6 +4110,15 @@ export interface components {
             place: string;
             /** @description What FSM closed the visit as, a no-show being its own; null until it is closed. */
             outcome: ("done" | "partial" | "no_show") | null;
+            /** @description For a visit left partly done, ops closing its task without a follow-up visit; null otherwise. */
+            closed_without_follow_up: {
+                /** @description The Access e-mail of the member of staff who closed it. */
+                by: string;
+                /** Format: date-time */
+                at: string;
+                /** @description Null once the client is erased. */
+                reason: string | null;
+            } | null;
         };
         /** @description Display name and initials only. */
         Technician: {
@@ -4726,6 +4803,10 @@ export interface components {
         TaskOwnerChange: {
             /** @description A member of staff who has signed in to the console, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back. */
             owner: string | null;
+        };
+        TaskClosing: {
+            /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased. */
+            reason: string;
         };
         /** @description Derived at read time from the payments themselves; no total is kept. */
         OpsDayMoney: {

@@ -513,6 +513,44 @@
               }
             ],
             "description": "What FSM closed the visit as, a no-show being its own; null until it is closed."
+          },
+          "closed_without_follow_up": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "by": {
+                    "type": "string",
+                    "description": "The Access e-mail of the member of staff who closed it."
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Null once the client is erased."
+                  }
+                },
+                "required": [
+                  "by",
+                  "at",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a visit left partly done, ops closing its task without a follow-up visit; null otherwise."
           }
         },
         "required": [
@@ -528,7 +566,8 @@
           "prepaid",
           "technician",
           "place",
-          "outcome"
+          "outcome",
+          "closed_without_follow_up"
         ],
         "additionalProperties": false
       },
@@ -3290,6 +3329,21 @@
         },
         "required": [
           "owner"
+        ],
+        "additionalProperties": false
+      },
+      "TaskClosing": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased."
+          }
+        },
+        "required": [
+          "reason"
         ],
         "additionalProperties": false
       },
@@ -7451,6 +7505,78 @@
           },
           "404": {
             "description": "not_found: no such task on the board now; its thing may be done already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{group}/{id}/close": {
+      "post": {
+        "summary": "Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "partial_visit"
+              ]
+            },
+            "required": true,
+            "name": "group",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskClosing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Closed, under the member of staff who closed it"
+          },
+          "400": {
+            "description": "invalid_request: no reason, or a group whose tasks close only when their thing is done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such task on the board now; a follow-up may be booked, or it is closed already",
             "content": {
               "application/json": {
                 "schema": {
