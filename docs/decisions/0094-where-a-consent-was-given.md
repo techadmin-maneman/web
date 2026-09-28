@@ -18,17 +18,17 @@ Several places write the same notice. The landing's consultation line (`referral
 
 `consents.source` names where the consent was given, from a closed set, `CONSENT_SOURCES` in `src/policy/consents.ts`:
 
-| Source             | Where                                                                                                                  | Written by                                                       |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `site_booking`     | The site's booking form, `/book`; Phase 1's form before it                                                             | `POST /api/consultation`; Phase 1's `POST /api/lead`             |
-| `site_waitlist`    | The waitlist on `/book`, for a pincode we do not serve yet, with its launch alert                                      | `POST /api/waitlist`                                             |
-| `referral_landing` | A friend's invite, `/r/:code`: its consultation or its waitlist, with the launch alert                                 | `POST /api/r/{code}/consultation`, `POST /api/r/{code}/waitlist` |
-| `try_on`           | The site's try-on: the photo notice and the gate                                                                       | `POST /api/tryon/claim`                                          |
-| `app_booking`      | A booking in the app: the pay step's photograph lines (ADR 0080), and the booking sheet's "Remind me"                  | `POST /api/bookings`; `PATCH /api/consents/whatsapp_visits`      |
-| `app_profile`      | The profile's switch                                                                                                   | `PATCH /api/consents/{purpose}`                                  |
-| `app_share_sheet`  | The share sheet's card step, board F3                                                                                  | `PATCH /api/consents/photos_referral_cards`                      |
-| `technician`       | The technician's app. Nothing asks for a consent there yet; the owner named it, so it has its place when one does      | None yet                                                         |
-| `erasure`          | The withdrawal an erasure records for each purpose the person had given (ADR 0019), by ops' decision or the operators' | `erasePerson`                                                    |
+| Source             | Where                                                                                                                             | Written by                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `site_booking`     | The site's booking form, `/book`; Phase 1's form before it                                                                        | `POST /api/consultation`; Phase 1's `POST /api/lead`             |
+| `site_waitlist`    | The waitlist on `/book`, for a pincode we do not serve yet, with its launch alert                                                 | `POST /api/waitlist`                                             |
+| `referral_landing` | A friend's invite, `/r/:code`: its consultation or its waitlist, with the launch alert                                            | `POST /api/r/{code}/consultation`, `POST /api/r/{code}/waitlist` |
+| `try_on`           | The site's try-on: the photo notice and the gate                                                                                  | `POST /api/tryon/claim`                                          |
+| `app_booking`      | A booking in the app: the pay step's photograph lines (ADR 0080), and the booking sheet's "Remind me"                             | `POST /api/bookings`; `PATCH /api/consents/whatsapp_visits`      |
+| `app_profile`      | The profile's switch                                                                                                              | `PATCH /api/consents/{purpose}`                                  |
+| `app_share_sheet`  | The share sheet's card step, board F3                                                                                             | `PATCH /api/consents/photos_referral_cards`                      |
+| `technician`       | The technician's app. Nothing asks for a consent there yet; the owner named it, so it has its place when one does                 | None yet                                                         |
+| `erasure`          | The withdrawal an erasure records for each purpose the person had given (ADR 0019), from ops' decision or the operators' endpoint | `erasePerson`                                                    |
 
 Ops never grant a consent, and no ops path writes one but the erasure.
 
@@ -44,7 +44,7 @@ Ops never grant a consent, and no ops path writes one but the erasure.
 - `photos-own-record-v1` and `photos-marketing-v1`, which only the profile's switch ever wrote: `app_profile`;
 - `withdrawal`: `erasure`.
 
-Left empty: `referral-consultation-v1` and `waitlist-v1` (the landing, and `/book` since ADR 0051), `whatsapp-launches-v1` (the waitlists and the profile), `whatsapp-visits-v1` (the profile, and the booking sheet since 25 September 2026) and both notices for cards (the profile and the share sheet). Production runs Phase 1, whose rows are all `booking-v1`, `photo-v1`, `gate-v1` or `withdrawal`, so each of its rows gets its place. A consent the deployed Worker writes between the migration and this release's deploy has none. The table stays append-only: the migration lifts its update trigger for the backfill and puts it back, in one transaction.
+Left empty: `referral-consultation-v1` and `waitlist-v1` (the landing, and `/book` since ADR 0051), `whatsapp-launches-v1` (the waitlists and the profile), `whatsapp-visits-v1` (the profile, and the booking sheet since 25 September 2026) and both notices for cards (the profile and the share sheet). Production still runs Phase 1 (268eaa4, `docs/runbook.md`), whose rows are all `booking-v1`, `photo-v1`, `gate-v1` or `withdrawal`, so each of its rows gets its place. A consent the deployed Worker writes between the migration and this release's deploy has none. The table stays append-only: the migration lifts its update trigger for the backfill and puts it back, in one transaction.
 
 **Shown.** `GET /api/clients/{id}/consents` answers each purpose's `source`, of its latest row. The console writes it in board B3's Source column: "Site", "Waitlist", "Invite", "Try-on", "Booking", "Profile", "Refer", "Technician" or "Erasure"; "Not recorded" for a row with none; and "—" for a purpose never given, as the board draws it. The board writes only "App" and "Site", so the words are placeholders for the owner (`apps/ops/src/content.ts`; ADR 0025, item 79). The notice's version leaves the console's table: the source now tells a consent given by booking from the profile's, which the notice did (ADR 0080), and the version stays in the answer. The client's data export (`GET /api/me/export`) carries each consent's source beside its notice.
 
