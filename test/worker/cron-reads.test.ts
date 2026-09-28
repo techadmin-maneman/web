@@ -398,6 +398,25 @@ describe("a look at the Tasks board or the Stock page", () => {
     expect({ before, after }).toEqual({ before, after: before });
   });
 
+  /** Calls numbered ?1 to ?2 to the console, by three members of staff in turn, as the audit log keeps every one. */
+  const CALLS_SQL = `INSERT INTO audit_log (at, surface, actor_kind, actor, action, request_id, detail)
+     SELECT '${AGO}', 'ops', 'staff', printf('staff%d@maneman.in', i % 3), 'ops.call', 'r-' || i, '{}' FROM n`;
+
+  // The staff a task may be given to are those who have signed in: the board finds them in the log of every call,
+  // one row for each member of staff (docs/decisions/0092-task-owners.md).
+  it("reads no more for the staff a task may be given to when the log holds ten times the calls", async () => {
+    await over(CALLS_SQL, 1, 20).run();
+    await rowsReadBy(tasks); // the console's settings, read once and kept
+    const before = await rowsReadBy(tasks);
+    const board = await (await tasks()).json<{ staff: string[] }>();
+    expect(board.staff).toEqual(["ops@localhost", "staff0@maneman.in", "staff1@maneman.in", "staff2@maneman.in"]);
+
+    await over(CALLS_SQL, 21, 200).run();
+    const after = await rowsReadBy(tasks);
+
+    expect({ before, after }).toEqual({ before, after: before });
+  });
+
   it("reads no more for the Stock page, or a count, when the ledger holds ten times the movements", async () => {
     await env.DB.batch(CLIENTS_SQL.slice(0, 1).map((sql) => over(sql, 1, CLIENTS)));
     await env.DB.prepare(

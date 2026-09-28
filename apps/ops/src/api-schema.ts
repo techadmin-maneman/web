@@ -1999,6 +1999,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/{group}/{id}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Make a task a member of staff's, or hand it back to nobody */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TaskOwnerChange"];
+                };
+            };
+            responses: {
+                /** @description Whose it is now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TaskOwner"];
+                    };
+                };
+                /** @description invalid_request: nobody has signed in to the console with that e-mail */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such task on the board now; its thing may be done already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments": {
         parameters: {
             query?: never;
@@ -4609,11 +4679,15 @@ export interface components {
             overdue: number;
             /** @description More were waiting than one look reads (2000 a statement), so a count may be short. */
             truncated: boolean;
+            /** @description The members of staff a task may be given to: everyone who has signed in to the console, by e-mail. */
+            staff: string[];
             groups: {
                 /** @enum {string} */
                 group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
+                /** @description Ops may close a task of the group without doing its thing, with a reason. */
+                closable: boolean;
                 /** @description The longest wait first, at most 50. */
                 tasks: components["schemas"]["Task"][];
             }[];
@@ -4642,6 +4716,16 @@ export interface components {
              * @description since plus the group's allowance, which ops set; 48 hours until they do.
              */
             due: string;
+            /** @description The Access e-mail of the member of staff it is theirs; null while it is nobody's. */
+            owner: string | null;
+        };
+        TaskOwner: {
+            /** @description The Access e-mail of the member of staff it is theirs; null while it is nobody's. */
+            owner: string | null;
+        };
+        TaskOwnerChange: {
+            /** @description A member of staff who has signed in to the console, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back. */
+            owner: string | null;
         };
         /** @description Derived at read time from the payments themselves; no total is kept. */
         OpsDayMoney: {

@@ -33,7 +33,13 @@ let ops: App;
 interface Body {
   overdue: number;
   truncated: boolean;
-  groups: { group: string; count: number; tasks: { id: string; person: unknown; detail: string | null }[] }[];
+  staff: string[];
+  groups: {
+    group: string;
+    count: number;
+    closable: boolean;
+    tasks: { id: string; person: unknown; detail: string | null; owner: string | null }[];
+  }[];
 }
 
 const tasks = async (): Promise<Body> => (await request(ops, "/api/tasks")).json<Body>();
@@ -258,6 +264,7 @@ describe("GET /api/tasks", () => {
         detail: "2026-09-23 morning",
         since: "2026-09-20T06:00:00.000Z",
         due: "2026-09-22T06:00:00.000Z",
+        owner: null,
       },
     ]);
   });
@@ -288,6 +295,7 @@ describe("GET /api/tasks", () => {
         // India's midnight on the day it fell due, and two days later it was overdue.
         since: "2026-08-31T18:30:00.000Z",
         due: "2026-09-02T18:30:00.000Z",
+        owner: null,
       },
     ]);
   });
@@ -377,6 +385,7 @@ describe("GET /api/tasks", () => {
         detail: null,
         since: "2026-09-20T06:00:00.000Z",
         due: "2026-10-20T06:00:00.000Z",
+        owner: null,
       },
     ]);
 
@@ -417,6 +426,7 @@ describe("GET /api/tasks", () => {
         // It waits from the end of the visit, and two days later it is overdue.
         since: "2026-09-20T06:00:00.000Z",
         due: "2026-09-22T06:00:00.000Z",
+        owner: null,
       },
     ]);
 
@@ -446,6 +456,7 @@ describe("GET /api/tasks", () => {
         detail: "fsm-contact-4",
         since: "2026-09-20T06:00:00.000Z",
         due: "2026-09-22T06:00:00.000Z",
+        owner: null,
       },
     ]);
 
@@ -482,6 +493,7 @@ describe("GET /api/tasks", () => {
           detail: "PLACEHOLDER The piece was not ready",
           since: "2026-09-20T05:40:00.000Z",
           due: "2026-09-22T05:40:00.000Z",
+          owner: null,
         },
       ]);
     });
@@ -526,6 +538,7 @@ describe("GET /api/tasks", () => {
           since: "2026-09-21T03:00:00.000Z",
           // Two days on would be after the visit: the technician needs the address before he sets out.
           due: "2026-09-22T04:30:00.000Z",
+          owner: null,
         },
       ]);
     });
@@ -559,7 +572,8 @@ describe("GET /api/tasks", () => {
   });
 
   it("says nothing is waiting when no queue holds anything", async () => {
-    expect(await tasks()).toEqual({ overdue: 0, truncated: false, groups: [] });
+    // The look itself is logged under Access's stand-in, who has now signed in.
+    expect(await tasks()).toEqual({ overdue: 0, truncated: false, staff: ["ops@localhost"], groups: [] });
   });
 
   it("leaves out an erased person's tasks, whose record is gone", async () => {
@@ -618,6 +632,7 @@ describe("GET /api/tasks, the next visit", () => {
         detail: "2026-08-01T04:30:00.000Z 2026-08-31",
         since: "2026-09-06T18:30:00.000Z",
         due: "2026-09-08T18:30:00.000Z",
+        owner: null,
       },
     ]);
   });
@@ -668,6 +683,7 @@ describe("GET /api/tasks, the next visit", () => {
         detail: "2026-09-10T04:30:00.000Z afternoon",
         since: "2026-09-16T18:30:00.000Z",
         due: "2026-09-18T18:30:00.000Z",
+        owner: null,
       },
     ]);
     await visitOf("the-fit", "first_fit", "2026-09-29T03:30:00.000Z", "scheduled");
@@ -688,5 +704,133 @@ describe("GET /api/tasks, the next visit", () => {
     expect(tasksIn(await tasks(), "consultation_request")[0]?.detail).toBe("2026-09-23 morning first_fit afternoon");
     await env.DB.prepare("UPDATE first_fit_requests SET preferred_window = NULL").run();
     expect(tasksIn(await tasks(), "consultation_request")[0]?.detail).toBe("2026-09-23 morning first_fit any");
+  });
+});
+
+// Whose each task is (docs/decisions/0092-task-owners.md): ops take one, give it to another member of staff by their
+// Access e-mail, or hand it back. Kept by the task's group and the id of its row, never as a copy of the task.
+describe("PUT /api/tasks/{group}/{id}/owner", () => {
+  const ORIGIN = { Origin: "https://maneman.test", "Content-Type": "application/json" };
+  /** Signed in locally as Access's stand-in, whom every call to the console logs (src/http/audit.ts). */
+  const ME = "ops@localhost";
+  const PRIYA = "priya@maneman.in";
+
+  const ownerOf = (group: string, id: string, owner: string | null) =>
+    request(ops, `/api/tasks/${group}/${id}/owner`, {
+      method: "PUT",
+      headers: ORIGIN,
+      body: JSON.stringify({ owner }),
+    });
+
+  /** A member of staff who has signed in to the console before: Access let them in, and the log says so. */
+  async function signedIn(email: string) {
+    await env.DB.prepare(
+      `INSERT INTO audit_log (at, surface, actor_kind, actor, action, request_id, detail)
+       VALUES ('2026-09-20T06:00:00.000Z', 'ops', 'staff', ?1, 'ops.call', 'r', '{}')`,
+    )
+      .bind(email)
+      .run();
+  }
+
+  const ownersIn = async (group: string) => tasksIn(await tasks(), group).map((task) => task.owner);
+
+  const audited = async () =>
+    (
+      await env.DB.prepare(
+        "SELECT actor, action, subject_kind, subject_id, detail FROM audit_log WHERE action LIKE 'task.%' ORDER BY id",
+      ).all()
+    ).results;
+
+  it("names nobody until ops make a task someone's, and lists the staff who have signed in", async () => {
+    await grievance(GRIEVANCE);
+    await signedIn(PRIYA);
+    const body = await tasks();
+    expect(tasksIn(body, "grievance")).toMatchObject([{ id: GRIEVANCE, owner: null }]);
+    expect(body.staff).toEqual([ME, PRIYA]);
+  });
+
+  it("makes a task theirs who takes it, says so on the board, and audits it", async () => {
+    await grievance(GRIEVANCE);
+    const answer = await ownerOf("grievance", GRIEVANCE, ME);
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toEqual({ owner: ME });
+    expect(await ownersIn("grievance")).toEqual([ME]);
+    expect(await audited()).toEqual([
+      {
+        actor: ME,
+        action: "task.assign",
+        subject_kind: "task",
+        subject_id: GRIEVANCE,
+        detail: JSON.stringify({ group: "grievance", owner: ME }),
+      },
+    ]);
+  });
+
+  it("gives a task to another member of staff who has signed in, in whatever case it is typed", async () => {
+    await grievance(GRIEVANCE);
+    await signedIn(PRIYA);
+    expect((await ownerOf("grievance", GRIEVANCE, "Priya@Maneman.in")).status).toBe(200);
+    expect(await ownersIn("grievance")).toEqual([PRIYA]);
+    // Given again, to the same member of staff: nothing changes, and nothing more is logged.
+    expect((await ownerOf("grievance", GRIEVANCE, PRIYA)).status).toBe(200);
+    expect(await audited()).toHaveLength(1);
+  });
+
+  it("refuses an e-mail nobody has signed in to the console with, which would make the task nobody's", async () => {
+    await grievance(GRIEVANCE);
+    const answer = await ownerOf("grievance", GRIEVANCE, "priya@maneman.com");
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["owner"] } });
+    expect(await ownersIn("grievance")).toEqual([null]);
+  });
+
+  it("hands a task back, to nobody, and audits it", async () => {
+    await grievance(GRIEVANCE);
+    await ownerOf("grievance", GRIEVANCE, ME);
+    const answer = await ownerOf("grievance", GRIEVANCE, null);
+    expect(await answer.json()).toEqual({ owner: null });
+    expect(await ownersIn("grievance")).toEqual([null]);
+    expect((await audited()).map((entry) => entry.action)).toEqual(["task.assign", "task.hand_back"]);
+  });
+
+  it("refuses a task that is not on the board, done already or never there", async () => {
+    await grievance(GRIEVANCE);
+    await env.DB.prepare("UPDATE grievances SET state = 'resolved'").run();
+    expect((await ownerOf("grievance", GRIEVANCE, ME)).status).toBe(404);
+    expect((await ownerOf("referral_review", GRIEVANCE, ME)).status).toBe(404);
+    expect(await audited()).toEqual([]);
+  });
+
+  // One visit can be two tasks, as a job on a day off with no address is: each has its own owner.
+  it("gives an owner to the one task, not to another about the same row", async () => {
+    await person(OTHER, "Karan Bhatia", "+919810000003");
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t9', 'fsm-t9', 'Chetan Arora', 'CA', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+           fsm_status, fsm_modified_at, synced_at)
+         VALUES (?1, 'fsm-appt-11', ?2, 'service', '2026-09-23T05:00:00.000Z', '2026-09-23T06:30:00.000Z',
+           't9', 'scheduled', 'Scheduled', ?3, ?3)`,
+      ).bind(VISIT, OTHER, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+         VALUES ('leave-1', 't9', '2026-09-23', '2026-09-23', 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+    await ownerOf("leave_conflict", VISIT, ME);
+    expect(await ownersIn("leave_conflict")).toEqual([ME]);
+    expect(await ownersIn("address_to_confirm")).toEqual([null]);
+  });
+
+  it("belongs to the ops surface alone", async () => {
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    const answer = await request(client, `/api/tasks/grievance/${GRIEVANCE}/owner`, {
+      method: "PUT",
+      headers: ORIGIN,
+      body: JSON.stringify({ owner: ME }),
+    });
+    expect(answer.status).toBe(404);
   });
 });

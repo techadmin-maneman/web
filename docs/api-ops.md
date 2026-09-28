@@ -1505,6 +1505,50 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
+### PUT /api/tasks/{group}/{id}/owner
+
+Make a task a member of staff's, or hand it back to nobody
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TaskOwnerChange"
+}
+```
+
+**200**: Whose it is now
+
+```json
+{
+  "$ref": "#/components/schemas/TaskOwner"
+}
+```
+
+**400**: invalid_request: nobody has signed in to the console with that e-mail
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task on the board now; its thing may be done already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/payments
 
 A day's money: what was collected, what went back, and each charge kept or ruled on
@@ -6037,6 +6081,13 @@ Who Access let through, and where signing out goes
       "type": "boolean",
       "description": "More were waiting than one look reads (2000 a statement), so a count may be short."
     },
+    "staff": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The members of staff a task may be given to: everyone who has signed in to the console, by e-mail."
+    },
     "groups": {
       "type": "array",
       "items": {
@@ -6066,6 +6117,10 @@ Who Access let through, and where signing out goes
             "type": "integer",
             "description": "How many are waiting in the group, all of them."
           },
+          "closable": {
+            "type": "boolean",
+            "description": "Ops may close a task of the group without doing its thing, with a reason."
+          },
           "tasks": {
             "type": "array",
             "items": {
@@ -6077,6 +6132,7 @@ Who Access let through, and where signing out goes
         "required": [
           "group",
           "count",
+          "closable",
           "tasks"
         ],
         "additionalProperties": false
@@ -6086,6 +6142,7 @@ Who Access let through, and where signing out goes
   "required": [
     "overdue",
     "truncated",
+    "staff",
     "groups"
   ],
   "additionalProperties": false,
@@ -6149,6 +6206,19 @@ Who Access let through, and where signing out goes
       "type": "string",
       "format": "date-time",
       "description": "since plus the group's allowance, which ops set; 48 hours until they do."
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The Access e-mail of the member of staff it is theirs; null while it is nobody's."
     }
   },
   "required": [
@@ -6156,7 +6226,62 @@ Who Access let through, and where signing out goes
     "person",
     "detail",
     "since",
-    "due"
+    "due",
+    "owner"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TaskOwner
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The Access e-mail of the member of staff it is theirs; null while it is nobody's."
+    }
+  },
+  "required": [
+    "owner"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TaskOwnerChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A member of staff who has signed in to the console, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back."
+    }
+  },
+  "required": [
+    "owner"
   ],
   "additionalProperties": false
 }

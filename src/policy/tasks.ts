@@ -139,5 +139,9 @@ export const CLOSABLE_TASK_GROUPS = ["partial_visit"] as const satisfies readonl
 
 export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS as readonly TaskGroup[]).includes(group);
 
-/** Who may own a task: a member of staff, named by the e-mail Access signs them in with, never a service token. */
-export const mayOwnTasks = (identity: { readonly kind: string }): boolean => identity.kind === "staff";
+/**
+ * Who may own a task: a member of staff, named by the e-mail Access signs them in with. There is no staff table, so
+ * the members of staff are those who have signed in to the console (src/domain/task-owners.ts); an e-mail nobody has
+ * signed in with, a typo or a service token's ID, would make the task nobody's.
+ */
+export const mayOwnTasks = (email: string, staff: readonly string[]): boolean => staff.includes(email.toLowerCase());

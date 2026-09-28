@@ -74,11 +74,14 @@ describe("tasks", () => {
     expect(new Set(TASK_GROUPS).size).toBe(TASK_GROUPS.length);
   });
 
-  // The owner's answer to open point 61, 27 September 2026. Which members of staff may be named is the domain's:
-  // those who have signed in to the console (src/domain/task-owners.ts).
+  // The owner's answer to open point 61, 27 September 2026. The members of staff are those who have signed in to the
+  // console, as Access named them (src/domain/task-owners.ts).
   it(RULES[4], () => {
-    expect(mayOwnTasks({ kind: "staff" })).toBe(true);
-    expect(mayOwnTasks({ kind: "service" })).toBe(false);
+    const staff = ["anil@maneman.in", "priya@maneman.in"];
+    expect(mayOwnTasks("priya@maneman.in", staff)).toBe(true);
+    // Access gives every e-mail in lower case; one typed otherwise is the same member of staff.
+    expect(mayOwnTasks("Priya@Maneman.in", staff)).toBe(true);
+    expect(mayOwnTasks("priya@maneman.com", staff)).toBe(false);
   });
 
   // The owner's answer to open point 62. Every other task leaves the board only when its thing is done.

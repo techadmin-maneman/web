@@ -3104,6 +3104,13 @@
             "type": "boolean",
             "description": "More were waiting than one look reads (2000 a statement), so a count may be short."
           },
+          "staff": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The members of staff a task may be given to: everyone who has signed in to the console, by e-mail."
+          },
           "groups": {
             "type": "array",
             "items": {
@@ -3133,6 +3140,10 @@
                   "type": "integer",
                   "description": "How many are waiting in the group, all of them."
                 },
+                "closable": {
+                  "type": "boolean",
+                  "description": "Ops may close a task of the group without doing its thing, with a reason."
+                },
                 "tasks": {
                   "type": "array",
                   "items": {
@@ -3144,6 +3155,7 @@
               "required": [
                 "group",
                 "count",
+                "closable",
                 "tasks"
               ],
               "additionalProperties": false
@@ -3153,6 +3165,7 @@
         "required": [
           "overdue",
           "truncated",
+          "staff",
           "groups"
         ],
         "additionalProperties": false,
@@ -3211,6 +3224,19 @@
             "type": "string",
             "format": "date-time",
             "description": "since plus the group's allowance, which ops set; 48 hours until they do."
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 254
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Access e-mail of the member of staff it is theirs; null while it is nobody's."
           }
         },
         "required": [
@@ -3218,7 +3244,52 @@
           "person",
           "detail",
           "since",
-          "due"
+          "due",
+          "owner"
+        ],
+        "additionalProperties": false
+      },
+      "TaskOwner": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 254
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Access e-mail of the member of staff it is theirs; null while it is nobody's."
+          }
+        },
+        "required": [
+          "owner"
+        ],
+        "additionalProperties": false
+      },
+      "TaskOwnerChange": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 254
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A member of staff who has signed in to the console, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back."
+          }
+        },
+        "required": [
+          "owner"
         ],
         "additionalProperties": false
       },
@@ -7287,6 +7358,99 @@
           },
           "403": {
             "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{group}/{id}/owner": {
+      "put": {
+        "summary": "Make a task a member of staff's, or hand it back to nobody",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "untold_move",
+                "leave_conflict",
+                "address_to_confirm",
+                "consultation_request",
+                "first_fit_to_book",
+                "replacement_order",
+                "at_risk_client",
+                "partial_visit",
+                "referral_review",
+                "no_show_decision",
+                "number_change",
+                "erasure_request",
+                "grievance",
+                "draft_invoice",
+                "erasure_unfinished"
+              ]
+            },
+            "required": true,
+            "name": "group",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskOwnerChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Whose it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskOwner"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: nobody has signed in to the console with that e-mail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such task on the board now; its thing may be done already",
             "content": {
               "application/json": {
                 "schema": {
