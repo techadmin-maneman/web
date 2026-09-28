@@ -50,7 +50,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [pieces](#pieces): The mirror of FSM's assets: each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason (ADR 0032).
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
-- [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, and what became of its grant (ADR 0048).
+- [referral_attributions](#referral_attributions): A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
 - [refunds](#refunds): The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
@@ -983,9 +983,9 @@ Made by `0014_payments.sql`.
 
 ## referral_attributions
 
-A person who came through an invite, to the first invite they used, and what became of its grant (ADR 0048).
+A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
 
-Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`.
+Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1005,6 +1005,8 @@ Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_off
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
 | `friend_first_name` | TEXT | yes |  |  |
+| `attached_by` | TEXT | yes |  |  |
+| `attach_reason` | TEXT | yes |  |  |
 
 Indexes:
 

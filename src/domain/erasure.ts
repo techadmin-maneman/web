@@ -203,10 +203,11 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
     db.prepare("DELETE FROM number_change_requests WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE grievances SET text = 'Erased', response = NULL WHERE person_id = ?1").bind(personId),
     // Ops' own words about them, kept with a decision (docs/decisions/0072-ops-clients-and-queues.md): the review
-    // of a grant they were either side of, and the ruling on a visit of theirs they were not home for.
+    // of a grant they were either side of, why ops attached an invite they were either side of (ADR 0089), and the
+    // ruling on a visit of theirs they were not home for.
     db
       .prepare(
-        `UPDATE referral_attributions SET review_reason = NULL
+        `UPDATE referral_attributions SET review_reason = NULL, attach_reason = NULL
          WHERE referred_person_id = ?1 OR code IN (SELECT code FROM referral_codes WHERE person_id = ?1)`,
       )
       .bind(personId),

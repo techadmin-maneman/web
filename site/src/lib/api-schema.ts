@@ -277,6 +277,8 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
+                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        invite_code?: string;
                         /** Format: date */
                         date: string;
                         /** @enum {string} */
@@ -405,6 +407,8 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
+                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        invite_code?: string;
                         /**
                          * @description "You may contact me about this request." Required.
                          * @enum {boolean}
@@ -1711,7 +1715,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1825,6 +1829,13 @@ export interface components {
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
             area: string;
+            /** @description Whether the invite's 3 service visits apply. */
+            credits: boolean;
+            /**
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
+             * @enum {string}
+             */
+            invite: "valid" | "expired" | "unknown";
             /**
              * @description saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back.
              * @enum {string}
@@ -1836,7 +1847,7 @@ export interface components {
         AlreadyBooked: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1869,6 +1880,13 @@ export interface components {
         };
         Waitlist: {
             area: string | null;
+            /** @description Whether the invite's 3 service visits apply. */
+            credits: boolean;
+            /**
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
+             * @enum {string}
+             */
+            invite: "valid" | "expired" | "unknown";
         };
         Invite: {
             /** @enum {string} */
@@ -1903,7 +1921,7 @@ export interface components {
             /** @description Whether the invite's 3 service visits apply. */
             credits: boolean;
             /**
-             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have.
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
@@ -1917,9 +1935,10 @@ export interface components {
         };
         ReferralWaitlist: {
             area: string | null;
+            /** @description Whether the invite's 3 service visits apply. */
             credits: boolean;
             /**
-             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have.
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";

@@ -254,10 +254,20 @@
 
 /* ---- Credits, put right by hand ------------------------------------------ */
 
-.credits {
+.credits,
+.invite {
   max-width: var(--ops-panel);
   border: var(--hairline) solid var(--paper-line);
   padding: var(--sp-22);
+}
+
+/* The reason an invite is attached for, as tall as board C1's reason for a grant. */
+.inviteReason {
+  margin-top: var(--sp-14);
+}
+
+.inviteReasonField {
+  height: var(--skeleton-card);
 }
 
 .creditForm {

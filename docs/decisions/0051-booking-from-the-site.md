@@ -1,6 +1,6 @@
 # 0051. Booking from the site is the landing's booking
 
-- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the page records a request for ops rather than refusing. Amended by [ADR 0081](0081-the-site-takes-the-address.md): the consultation form takes the full address.
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the page records a request for ops rather than refusing. Amended by [ADR 0081](0081-the-site-takes-the-address.md): the consultation form takes the full address. Amended by [ADR 0089](0089-an-invite-is-not-lost.md): the page books with an invite the visitor's browser remembers, and its confirmation then says what the landing's does.
 - Date: 2026-09-23
 
 ## Context

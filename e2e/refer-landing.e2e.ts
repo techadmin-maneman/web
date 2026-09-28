@@ -128,6 +128,27 @@ test("a booking through the invite is counted, with nothing personal and no code
   await expect(page.locator('meta[name="referrer"]')).toHaveAttribute("content", "strict-origin");
 });
 
+// So /book carries it if the friend leaves and books there later (docs/decisions/0089-an-invite-is-not-lost.md).
+test("a valid invite is remembered in this browser, and forgotten once its own booking has used it", async ({
+  page,
+}) => {
+  const requests = await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  await expect(page.getByText("Rohit sent you this")).toBeVisible();
+  const remembered = () => page.evaluate(() => localStorage.getItem("mm_invite"));
+  expect(JSON.parse((await remembered()) ?? "{}")).toMatchObject({ code: CODE });
+
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillForm(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  // The landing books with its own invite, and sends no other.
+  expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
+  expect(await remembered()).toBeNull();
+});
+
 test("the invited page does say who is told, and what lands when", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
