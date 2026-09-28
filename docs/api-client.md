@@ -2367,6 +2367,18 @@ Request body:
         }
       ]
     },
+    "address_given_to_ops": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the client gave this address to ops on the phone, who saved it for them; null for one they saved themselves."
+    },
     "consents": {
       "type": "array",
       "items": {
@@ -2486,6 +2498,7 @@ Request body:
     "name",
     "mobile",
     "address",
+    "address_given_to_ops",
     "consents",
     "number_change",
     "number_change_decided",

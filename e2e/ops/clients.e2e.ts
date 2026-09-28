@@ -34,6 +34,8 @@ const VIEW_PHOTOS: Call = `POST ${RECORD_PATH}/photos/view`;
 const READ_CONSENTS: Call = `GET ${RECORD_PATH}/consents`;
 const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
 const ATTACH_INVITE: Call = `POST ${RECORD_PATH}/referral`;
+const SUGGEST: Call = `POST ${RECORD_PATH}/address/suggestions`;
+const SAVE_ADDRESS: Call = `POST ${RECORD_PATH}/address`;
 const FIND: Call = "POST /api/clients/find";
 const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 const NAME = { name: CLIENT.name, exact: true };
@@ -190,6 +192,110 @@ test("says so when there is no address and no visit either way", async ({ page }
   await expect(page.getByText("No address saved yet.")).toBeVisible();
   await expect(page.getByText("Nothing booked.")).toBeVisible();
   await expect(page.getByText("No visit done yet.")).toBeVisible();
+});
+
+// An address a client gives ops on the phone, saved as theirs and marked as given to ops (ADR 0092; open point 62).
+test("records an address the client gives on the phone, with the building found, and says whose it was", async ({
+  page,
+}) => {
+  const saved: unknown[] = [];
+  const GIVEN = {
+    line1: "Sunrise Greens",
+    line2: null,
+    locality: "Sector 65",
+    city: "Gurgaon",
+    pincode: "122018",
+    access_notes: null,
+    building: "Sunrise Greens",
+    flat: "Flat 1203",
+    floor: null,
+    tower: "Tower C",
+    landmark: null,
+    given_to_ops: { by: "ops@localhost", at: "2027-09-22T05:12:00.000Z" },
+  } satisfies OpsReply<"/api/clients/{id}/address", "post">;
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    [READ_RECORD]: json(NEW_RECORD),
+    [SUGGEST]: json({
+      suggestions: [{ place_id: "stub-place-sunrise", primary: "Sunrise Greens", secondary: "Sector 65, Gurugram" }],
+      attribution: "Google Maps",
+    }),
+    [SAVE_ADDRESS]: async (route) => {
+      saved.push(route.request().postDataJSON());
+      await json(GIVEN)(route);
+    },
+  });
+  await page.getByRole("button", { name: "Record an address they give you" }).click();
+  const form = page.getByRole("form", { name: "An address the client gave you" });
+  await form.getByRole("combobox", { name: "Search for their building" }).fill("Sunrise");
+  await form.getByRole("option", { name: /Sunrise Greens/ }).click();
+  await form.getByLabel("Flat or house number").fill("Flat 1203");
+  await form.getByLabel("Tower or block (optional)").fill("Tower C");
+  await form.getByLabel("Sector or area").fill("Sector 65");
+  await form.getByLabel("City").fill("Gurgaon");
+  await form.getByLabel("Pincode").fill("122018");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  await form.getByRole("button", { name: "Save their address" }).click();
+
+  await expect(page.getByText("Flat 1203, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
+  await expect(page.getByText("To ops@localhost, 22 Sep 2027")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Saved as their address, marked as given to you.");
+  expect(saved).toEqual([
+    expect.objectContaining({
+      line1: "Sunrise Greens",
+      building: "Sunrise Greens",
+      place_id: "stub-place-sunrise",
+      flat: "Flat 1203",
+      pincode: "122018",
+      session_token: expect.any(String),
+    }),
+  ]);
+});
+
+test("asks for what an address cannot do without before it sends one", async ({ page }) => {
+  let sent = 0;
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    [READ_RECORD]: json(NEW_RECORD),
+    [SAVE_ADDRESS]: async (route) => {
+      sent += 1;
+      await fails(400, "invalid_request")(route);
+    },
+  });
+  await page.getByRole("button", { name: "Record an address they give you" }).click();
+  const form = page.getByRole("form", { name: "An address the client gave you" });
+  await form.getByRole("button", { name: "Save their address" }).click();
+  await expect(form.getByRole("alert")).toContainText("Fill in the building or street");
+  await expect(form.getByLabel("Building, society or street")).toBeFocused();
+  expect(sent).toBe(0);
+  await form.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("button", { name: "Record an address they give you" })).toBeFocused();
+});
+
+// A visit left partly done that ops closed without a follow-up, from the Tasks board (ADR 0092).
+test("says who closed a visit left partly done without a follow-up, when and why", async ({ page }) => {
+  const [done] = RECORD.visits.past;
+  if (done === undefined) throw new Error("the record has no visit done");
+  const closed = {
+    ...RECORD,
+    visits: {
+      ...RECORD.visits,
+      past: [
+        {
+          ...done,
+          outcome: "partial" as const,
+          closed_without_follow_up: {
+            by: "priya@maneman.in",
+            at: "2027-09-01T06:00:00.000Z",
+            reason: "Moving to Pune; wants no more visits.",
+          },
+        },
+      ],
+    },
+  } satisfies OpsReply<"/api/clients/{id}">;
+  await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(closed) });
+  await expect(page.getByRole("region", { name: "Done" }).getByRole("row").nth(1)).toContainText(
+    "Closed without a follow-up by priya@maneman.in, 1 Sep 2027: Moving to Pune; wants no more visits.",
+  );
 });
 
 test("lists what the client has paid, and what for", async ({ page }) => {

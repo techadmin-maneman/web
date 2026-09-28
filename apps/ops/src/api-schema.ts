@@ -572,6 +572,153 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/address/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buildings matching what ops have typed of the address a client is giving them */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OpsAddressSuggestionsAsk"];
+                };
+            };
+            responses: {
+                /** @description The suggestions, which may be empty */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AddressSuggestions"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/address": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save an address the client gave ops on the phone as theirs, marked as given to ops */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddressSave"];
+                };
+            };
+            responses: {
+                /** @description Saved, and now the address visits go to */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientAddress"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access token, or a service token, which names no member of staff */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/number-changes": {
         parameters: {
             query?: never;
@@ -1993,6 +2140,144 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{group}/{id}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Make a task a member of staff's, or hand it back to nobody */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TaskOwnerChange"];
+                };
+            };
+            responses: {
+                /** @description Whose it is now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TaskOwner"];
+                    };
+                };
+                /** @description invalid_request: nobody has used the console lately with that e-mail */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access token, or a service token, which names no member of staff */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such task on the board now; its thing may be done already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{group}/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    group: "partial_visit";
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TaskClosing"];
+                };
+            };
+            responses: {
+                /** @description Closed, under the member of staff who closed it */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: no reason, or a group whose tasks close only when their thing is done */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access token, or a service token, which names no member of staff */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such task on the board now; a follow-up may be booked, or it is closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4143,6 +4428,19 @@ export interface components {
             pincode: string;
             /** @description For the technician: gate code, parking and the like. */
             access_notes: string | null;
+            /** @description The building as chosen from the suggestions; null if typed. */
+            building: string | null;
+            flat: string | null;
+            floor: string | null;
+            tower: string | null;
+            landmark: string | null;
+            /** @description Where the client gave it to ops on the phone: who saved it, and when. */
+            given_to_ops: {
+                /** @description The Access e-mail of the member of staff who saved it. */
+                by: string;
+                /** Format: date-time */
+                at: string;
+            } | null;
         };
         ClientVisit: {
             /** Format: uuid */
@@ -4171,6 +4469,15 @@ export interface components {
             place: string;
             /** @description What FSM closed the visit as, a no-show being its own; null until it is closed. */
             outcome: ("done" | "partial" | "no_show") | null;
+            /** @description For a visit left partly done, ops closing its task without a follow-up visit; null otherwise. */
+            closed_without_follow_up: {
+                /** @description The Access e-mail of the member of staff who closed it. */
+                by: string;
+                /** Format: date-time */
+                at: string;
+                /** @description Null once the client is erased. */
+                reason: string | null;
+            } | null;
         };
         /** @description Display name and initials only. */
         Technician: {
@@ -4452,6 +4759,39 @@ export interface components {
             code: string;
             /** @description Why, in ops' words: kept with the invite, and blanked if either side is erased. */
             reason: string;
+        };
+        AddressSuggestions: {
+            suggestions: {
+                place_id: string;
+                primary: string;
+                secondary: string;
+            }[];
+            /** @enum {string} */
+            attribution: "Google Maps";
+        };
+        OpsAddressSuggestionsAsk: {
+            /** @description What ops have typed so far. */
+            q: string;
+            /** @description One token for the whole search, sent again when the address is saved. */
+            session: string;
+        };
+        AddressSave: {
+            line1: string;
+            line2: string | null;
+            locality: string;
+            city: string;
+            pincode: string;
+            /** @description For the technician, from the day before the visit: gate code, parking. */
+            access_notes: string | null;
+            /** @description The building as chosen from the suggestions; null if typed. */
+            building?: string | null;
+            flat?: string | null;
+            floor?: string | null;
+            tower?: string | null;
+            landmark?: string | null;
+            /** @description Google's Place ID for the building, if one was chosen. */
+            place_id?: string | null;
+            session_token?: string | null;
         };
         NumberChangeDecision: {
             /** @enum {string} */
@@ -4815,11 +5155,15 @@ export interface components {
             overdue: number;
             /** @description More were waiting than one look reads (2000 a statement), so a count may be short. */
             truncated: boolean;
+            /** @description The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail. */
+            staff: string[];
             groups: {
                 /** @enum {string} */
                 group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
+                /** @description Ops may close a task of the group without doing its thing, with a reason. */
+                closable: boolean;
                 /** @description The longest wait first, at most 50. */
                 tasks: components["schemas"]["Task"][];
             }[];
@@ -4848,6 +5192,20 @@ export interface components {
              * @description since plus the group's allowance, which ops set; 48 hours until they do.
              */
             due: string;
+            /** @description The Access e-mail of the member of staff it is theirs; null while it is nobody's. */
+            owner: string | null;
+        };
+        TaskOwner: {
+            /** @description The Access e-mail of the member of staff it is theirs; null while it is nobody's. */
+            owner: string | null;
+        };
+        TaskOwnerChange: {
+            /** @description A member of staff who has used the console in the last 90 days, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back. */
+            owner: string | null;
+        };
+        TaskClosing: {
+            /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased. */
+            reason: string;
         };
         /** @description Derived at read time from the payments themselves; no total is kept. */
         OpsDayMoney: {

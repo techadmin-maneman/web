@@ -1,5 +1,5 @@
-// Tasks (Ops Console, board D2): what ops still have to do, in groups, with how
-// long each has left. Nothing is decided here. A task is a row in a queue the
+// Tasks (Ops Console, board D2): what ops still have to do, in groups, with whose
+// each is and how long it has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a number change, an erasure, a grievance, a piece past its
 // replacement date, an invoice still a draft, an erasure FSM would not finish,
@@ -13,19 +13,24 @@
 // section that decides it. Each group's count is the whole queue's, and a group
 // longer than the board lists says so.
 //
-// The board writes an owner in ops against every task. Nothing records one, so
-// the column is not drawn (docs/open-points.md, item 61).
+// The board writes an owner in ops against every task, in its own column. Ops
+// take a task, give it to another member of staff or hand it back, and close a
+// visit left partly done without a follow-up, from the row (TaskActions.tsx;
+// docs/decisions/0092-task-owners.md).
 
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { api, type Task, type TaskGroup } from "../api.ts";
+import { useRef, useState } from "react";
+import { api, type Task, type TaskGroup, type Tasks } from "../api.ts";
+import { whoami } from "../components/Account.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { dispatch, referrals, tasks } from "../content.ts";
 import { daysUntil } from "../lib/due.ts";
 import { rowPath } from "../lib/target.ts";
 import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
 
 type Group = TaskGroup["group"];
@@ -149,6 +154,12 @@ function unnamedSubject(group: Group, task: Task): string {
   return group === "erasure_unfinished" ? tasks.erased(day) : tasks.visit(day);
 }
 
+/** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */
+function ownerName(email: string): string {
+  const [first = email] = (email.split("@")[0] ?? email).split(/[._-]+/);
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
 /** How long is left to answer: the days over, today, or the days left. */
 function slaText(days: number): string {
   if (days < 0) return tasks.sla.over(-days);
@@ -156,13 +167,24 @@ function slaText(days: number): string {
   return tasks.sla.left(days);
 }
 
-function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
+/** What the row's actions need beyond the task: who is signed in, who a task may be given to, and what changed. */
+interface Acting {
+  readonly me: string | null;
+  readonly staff: readonly string[];
+  readonly closable: boolean;
+  readonly owner: string | null;
+  readonly onOwner: (owner: string | null) => void;
+  readonly onClosed: () => void;
+}
+
+function Row({ group, task, now, acting }: { group: Group; task: Task; now: Date; acting: Acting }) {
   const days = daysUntil(task.due, now);
   const overdue = days < 0;
   const sla = slaText(days);
   const subject = task.person?.name ?? unnamedSubject(group, task);
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
+  const { owner } = acting;
 
   return (
     <li className={styles.task}>
@@ -184,24 +206,72 @@ function Row({ group, task, now }: { group: Group; task: Task; now: Date }) {
             </OpsLink>
           </span>
         )}
+        <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>
+      <span className={styles.owner}>
+        <VisuallyHidden>{tasks.owner.label}</VisuallyHidden>
+        {owner === null ? <VisuallyHidden>{tasks.owner.nobody}</VisuallyHidden> : ownerName(owner)}
+      </span>
       <span className={`${styles.sla ?? ""} ${overdue ? (styles.late ?? "") : ""}`}>{sla}</span>
     </li>
   );
 }
 
+/** A task by its group and its row's id, as the API names it. */
+const keyOf = (group: Group, task: Task) => `${group}/${task.id}`;
+
+/**
+ * The board as it was read, less the tasks closed here since, with their groups' counts and the overdue count: the
+ * list follows what ops close on it without being read again.
+ */
+function sinceRead(board: Tasks, closed: readonly string[], now: Date): Tasks {
+  const groups = board.groups
+    .map((each) => {
+      const left = each.tasks.filter((task) => !closed.includes(keyOf(each.group, task)));
+      return { ...each, count: each.count - (each.tasks.length - left.length), tasks: left };
+    })
+    .filter((each) => each.count > 0);
+  const closedOverdue = board.groups.flatMap((each) =>
+    each.tasks.filter((task) => closed.includes(keyOf(each.group, task)) && daysUntil(task.due, now) < 0),
+  );
+  return { ...board, overdue: board.overdue - closedOverdue.length, groups };
+}
+
 function Queue() {
   const [loaded, retry] = useLoad(api.tasks);
+  const [signedIn] = useLoad(whoami);
+  const [owners, setOwners] = useState<ReadonlyMap<string, string | null>>(new Map());
+  const [closed, setClosed] = useState<readonly string[]>([]);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
   const now = new Date();
-  const { overdue, truncated, groups } = loaded.value;
+  const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as : null;
+  const { overdue, truncated, staff, groups } = sinceRead(loaded.value, closed, now);
+  const actingOn = (group: TaskGroup, task: Task): Acting => {
+    const key = keyOf(group.group, task);
+    const changed = owners.get(key);
+    return {
+      me,
+      staff,
+      closable: group.closable,
+      owner: changed === undefined ? task.owner : changed,
+      onOwner: (owner) => {
+        setOwners((was) => new Map(was).set(key, owner));
+      },
+      onClosed: () => {
+        setClosed((was) => [...was, key]);
+        // The row is gone, so the keyboard goes to the list's heading rather than to the top of the page.
+        heading.current?.focus();
+      },
+    };
+  };
   return (
     <section className={styles.panel} aria-labelledby="tasks">
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="tasks">
+        <h2 className={styles.panelTitle} id="tasks" ref={heading} tabIndex={-1}>
           {tasks.title}
         </h2>
         <span className={styles.overdue}>{tasks.overdue(overdue)}</span>
@@ -218,7 +288,7 @@ function Queue() {
             </div>
             <ul className={styles.tasks}>
               {group.tasks.map((task) => (
-                <Row key={task.id} group={group.group} task={task} now={now} />
+                <Row key={task.id} group={group.group} task={task} now={now} acting={actingOn(group, task)} />
               ))}
             </ul>
             {group.count > group.tasks.length && (
