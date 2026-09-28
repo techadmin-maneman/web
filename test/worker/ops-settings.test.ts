@@ -12,11 +12,11 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
-import { COMMITTED, createCachedOpsInputs, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
+import { COMMITTED, createCachedOpsInputs, readOpsInputs, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
 import { pincodeUpsert } from "../../scripts/lib/pincodes.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, countRowsRead, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 let ops: App;
 
@@ -173,9 +173,8 @@ describe("what the routes that read them do", () => {
 
   it("falls back to the committed figures when the store cannot be read, and never to a nought", async () => {
     const read = createCachedOpsInputs();
-    const broken = {
-      prepare: () => ({ all: () => Promise.reject(new Error("D1 is down")) }),
-    } as unknown as D1Database;
+    const down = () => Promise.reject(new Error("D1 is down"));
+    const broken = { prepare: () => ({ all: down, first: down }) } as unknown as D1Database;
 
     let reported: unknown = null;
     const inputs = await read(broken, NOW, (error) => {
@@ -215,8 +214,67 @@ describe("what the routes that read them do", () => {
   });
 });
 
-// The seven figures the next visit turns on, as one input with each figure's own bounds, since the register holds
-// ten inputs at most (docs/decisions/0086-the-next-visit-is-offered.md).
+/**
+ * A request reads one row, the snapshot of every input ops set, however long the register grows
+ * (docs/decisions/0088-every-policy-in-the-console.md). ops_settings keeps a row per input as the record of who set
+ * what; migration 0051's triggers rewrite the snapshot from it in the same transaction as any change to it.
+ */
+describe("the store a request reads", () => {
+  const snapshot = async () =>
+    JSON.parse(
+      (await env.DB.prepare("SELECT inputs FROM ops_settings_snapshot WHERE id = 1").first<{ inputs: string }>())
+        ?.inputs ?? "null",
+    ) as unknown;
+
+  it("reads one row, however many inputs are set", async () => {
+    await post("/api/settings/checkin_radius_m", { value: 150 });
+    await post("/api/settings/address_unlock_hour", { value: 17 });
+    await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, horizon: 60 } });
+
+    const rowsRead = countRowsRead();
+    const inputs = await readOpsInputs(env.DB, NOW);
+    expect(rowsRead()).toBe(1);
+    expect(inputs).toMatchObject({ checkinRadiusM: 150, addressUnlockHour: 17 });
+    expect(inputs.nextVisitDays.horizon).toBe(60);
+  });
+
+  it("holds what each change leaves, a figure put back included", async () => {
+    await post("/api/settings/checkin_radius_m", { value: 150 });
+    await post("/api/settings/address_unlock_hour", { value: 17 });
+    await post("/api/settings/checkin_radius_m", { value: null });
+    expect(await snapshot()).toEqual({ address_unlock_hour: 17 });
+  });
+
+  it("follows a row written by hand, as a runbook's SQL would write one", async () => {
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('checkin_radius_m', '300', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    expect((await readOpsInputs(env.DB, NOW)).checkinRadiusM).toBe(300);
+  });
+
+  it("builds itself again from the rows when it has gone missing", async () => {
+    await post("/api/settings/checkin_radius_m", { value: 150 });
+    await env.DB.prepare("DELETE FROM ops_settings_snapshot").run();
+
+    expect((await readOpsInputs(env.DB, NOW)).checkinRadiusM).toBe(150);
+    expect(await snapshot()).toEqual({ checkin_radius_m: 150 });
+  });
+
+  it("ignores in the snapshot what the register would refuse in a row", async () => {
+    await env.DB.prepare(
+      `INSERT OR REPLACE INTO ops_settings_snapshot (id, inputs)
+       VALUES (1, '{"checkin_radius_m": 0, "made_up_rule": 4, "address_unlock_hour": 17}')`,
+    ).run();
+    const inputs = await readOpsInputs(env.DB, NOW);
+    expect(inputs.checkinRadiusM).toBe(COMMITTED.checkinRadiusM);
+    expect(inputs.addressUnlockHour).toBe(17);
+  });
+});
+
+// The seven figures the next visit turns on, as one input with each figure's own bounds, which is how ADR 0086 kept
+// them inside the ten inputs the register then held (docs/decisions/0086-the-next-visit-is-offered.md).
 describe("the next visit's days", () => {
   it("answers the committed figures, each key with its own bounds, before anybody sets them", async () => {
     const days = await named("booking_days");

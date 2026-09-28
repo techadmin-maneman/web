@@ -2,8 +2,9 @@
 // (src/config/ops-settings.ts, docs/decisions/0061-ops-editable-inputs.md).
 //
 // Two things are held here: that a figure outside the bounds never reaches the
-// store and the refusal says what is allowed, and that the whole register stays
-// small enough to read on the hot path without leaving Cloudflare's free tier.
+// store and the refusal says what is allowed, and that what the hot path reads
+// of the store stays small enough not to leave Cloudflare's free tier
+// (docs/decisions/0088-every-policy-in-the-console.md).
 
 import { describe, expect, it } from "vitest";
 import {
@@ -12,10 +13,12 @@ import {
   checkValue,
   DEFAULT_KEY,
   MAX_OPEN_KEYS,
+  MAX_SNAPSHOT_BYTES,
   OPS_SETTINGS,
   PRICE_BOUNDS,
   settingNamed,
   type OpsSetting,
+  type SettingValue,
 } from "../../src/config/ops-settings.ts";
 import { COMMITTED, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
 import { CHECKIN_RADIUS_M } from "../../src/policy/check-in.ts";
@@ -166,19 +169,35 @@ describe("a price", () => {
   });
 });
 
+/** The widest figure a setting will take, as JSON would hold it: every key it may have, each at its longest. */
+function widest(setting: OpsSetting): SettingValue {
+  const longestKey = "k".repeat(64);
+  if (setting.keys === null) return setting.max;
+  const keys =
+    setting.keys === "open"
+      ? [DEFAULT_KEY, ...Array.from({ length: MAX_OPEN_KEYS - 1 }, (_, n) => `${longestKey.slice(3)}${String(n)}`)]
+      : setting.keys;
+  return Object.fromEntries(keys.map((key) => [key, boundsOf(setting, key).max]));
+}
+
 describe("the cost of reading them", () => {
   /**
-   * The hot read is one row per name in the register, and an isolate holds it
-   * for SETTINGS_TTL_MS. The bound is not a guess at how many isolates run: the
-   * free plan stops the day at 100,000 requests, and a request reads the
-   * register at most once, so the ceiling is that times the register's length
-   * however the cache behaves. ADR 0061 claims a fifth of D1's day for it,
-   * which leaves room for ten inputs; the eleventh fails here rather than on a
-   * Friday.
+   * A request reads one row, the snapshot of every input ops set, whatever the
+   * register's length (docs/decisions/0088-every-policy-in-the-console.md;
+   * test/worker/ops-settings.test.ts measures it), and an isolate holds it for
+   * SETTINGS_TTL_MS. The bound is not a guess at how many isolates run: the
+   * free plan stops the day at 100,000 requests, and a request reads the store
+   * at most once, so the ceiling is that many rows however the cache behaves.
    */
-  it("stays inside the fifth of D1's day ADR 0061 claims, even if no request ever hit the cache", () => {
-    const worstCaseRows = FREE_TIER.workersRequestsPerDay * OPS_SETTINGS.length;
-    expect(worstCaseRows).toBeLessThanOrEqual(FREE_TIER.d1RowsReadPerDay / 5);
+  it("reads a fiftieth of D1's day at most, even if no request ever hit the cache", () => {
+    const rowsARead = 1;
+    expect(FREE_TIER.workersRequestsPerDay * rowsARead).toBeLessThanOrEqual(FREE_TIER.d1RowsReadPerDay / 50);
+  });
+
+  // What the register's length now costs is the snapshot's size, which every read parses.
+  it("keeps the snapshot small enough to parse on a request, whatever ops set", () => {
+    const largest = JSON.stringify(Object.fromEntries(OPS_SETTINGS.map((setting) => [setting.name, widest(setting)])));
+    expect(largest.length).toBeLessThanOrEqual(MAX_SNAPSHOT_BYTES);
   });
 
   it("is stale for a minute at most, which is what the console promises", () => {

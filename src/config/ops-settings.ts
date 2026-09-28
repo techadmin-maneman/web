@@ -113,8 +113,7 @@ export const OPS_SETTINGS = [
     source: "src/config/pieces.ts",
   },
   {
-    // One input for the seven figures the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md),
-    // since the register holds ten inputs at most (docs/decisions/0061-ops-editable-inputs.md).
+    // One input for the seven figures the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
     name: "booking_days",
     title: "Booking and the next visit",
     note: "When the app offers each next visit and how far ahead a client may book it, when the WhatsApp reminder of the next service goes while nothing is booked, when the Tasks board asks you to step in, and how long Home shows an invoice just issued. Each figure has its own range.",
@@ -134,11 +133,18 @@ export const settingNamed = (name: string): OpsSetting | undefined =>
   OPS_SETTINGS.find((setting) => setting.name === name);
 
 /**
- * The most keys an open-keyed input may hold. The whole register is read on
+ * The most keys an open-keyed input may hold. Every input's value is read on
  * the hot path, so it has to stay small enough to be worth reading; thirty-two
  * bases is far past anything the catalogue will hold.
  */
 export const MAX_OPEN_KEYS = 32;
+
+/**
+ * The largest the store's snapshot may grow, with every input at its widest:
+ * the one row a request reads and parses (docs/decisions/0088-every-policy-in-the-console.md).
+ * test/node/ops-settings.test.ts holds the register to it.
+ */
+export const MAX_SNAPSHOT_BYTES = 16 * 1024;
 /** A base names itself; this is only long enough to hold FSM's own part names. */
 const KEY = /^[A-Za-z0-9][A-Za-z0-9 _.-]{0,63}$/;
 

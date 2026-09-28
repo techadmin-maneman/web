@@ -39,6 +39,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
+- [ops_settings_snapshot](#ops_settings_snapshot): One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 - [outbound_messages](#outbound_messages): Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 - [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
@@ -699,7 +700,7 @@ Indexes:
 
 The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
 
-Made by `0033_ops_settings.sql`.
+Made by `0033_ops_settings.sql`; changed by `0051_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -707,6 +708,19 @@ Made by `0033_ops_settings.sql`.
 | `value` | TEXT | no |  |  |
 | `set_by` | TEXT | no |  |  |
 | `set_at` | TEXT | no |  |  |
+
+Triggers: `ops_settings_snapshot_on_delete`, `ops_settings_snapshot_on_insert`, `ops_settings_snapshot_on_update`.
+
+## ops_settings_snapshot
+
+One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).
+
+Made by `0051_policies_in_the_console.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |
+| `inputs` | TEXT | no |  |  |
 
 ## otp_challenges
 
