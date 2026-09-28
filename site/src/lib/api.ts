@@ -166,8 +166,9 @@ export function joinWaitlist(
   return post<ReferralWaitlist>(`/api/r/${code}/waitlist`, request, idempotencyKey);
 }
 
-// The same two answers from the site's own page, which carries no invite
-// (docs/decisions/0051-booking-from-the-site.md).
+// The same two answers from the site's own page, which carries an invite only
+// when this browser remembers one (docs/decisions/0051-booking-from-the-site.md,
+// 0089-an-invite-is-not-lost.md).
 
 export function bookPublicConsultation(
   request: PublicConsultationRequest,

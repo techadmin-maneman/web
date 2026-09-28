@@ -1,7 +1,8 @@
 // The client's Payments tab: what they have paid and had back, from the record
-// the page already holds, and their service-visit credits, which ops can put
-// right by hand (docs/decisions/0068-a-paid-hold-is-kept.md). The board draws
-// the tab and nothing in it (docs/fidelity-method.md).
+// the page already holds, their service-visit credits, which ops can put right
+// by hand (docs/decisions/0068-a-paid-hold-is-kept.md), and the invite they came
+// with, whose grant is credits (Invite.tsx). The board draws the tab and nothing
+// in it (docs/fidelity-method.md).
 //
 // A credit given or taken in error once needed SQL to correct. The form sends
 // the visits and the reason, and the server writes the ledger's entry and its
@@ -12,9 +13,10 @@ import { Table } from "@maneman/ui/Table";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type ClientPayment, type ClientRecord, type CreditAdjustment } from "../api.ts";
+import { api, type ClientInvite, type ClientPayment, type ClientRecord, type CreditAdjustment } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "./clients.module.css";
+import { Invite, type InviteNews } from "./Invite.tsx";
 
 type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];
@@ -198,11 +200,17 @@ export function Payments({
   payments,
   credits,
   onCredits,
+  invite,
+  inviteNews,
+  onInvite,
 }: {
   clientId: string;
   payments: readonly ClientPayment[];
   credits: Credits;
   onCredits: (credits: Credits) => void;
+  invite: ClientInvite | null;
+  inviteNews: InviteNews | null;
+  onInvite: (invite: ClientInvite, news: InviteNews) => void;
 }) {
   return (
     <div className={styles.visits}>
@@ -211,6 +219,7 @@ export function Payments({
         <PaymentTable payments={payments} />
       </section>
       <CreditForm clientId={clientId} credits={credits} onCredits={onCredits} />
+      <Invite clientId={clientId} invite={invite} news={inviteNews} onInvite={onInvite} />
     </div>
   );
 }

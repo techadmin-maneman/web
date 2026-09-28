@@ -2,7 +2,8 @@
 // docs/decisions/0031-access-and-audit.md):
 //   POST /api/clients/search               find a client by their whole mobile number
 //   POST /api/clients/find                 find clients by part of a name or of a number
-//   GET  /api/clients/:id                  who they are, their address, their visits, their payments and their history
+//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, their history
+//                                          and the invite they came with
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
 //   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
@@ -30,6 +31,7 @@ import {
   visitOutcomes,
 } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
+import { clientInviteOf } from "../domain/referrals.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
 import { consentRecordsOf, currentAddress, type ConsentState } from "../domain/profile.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
@@ -42,6 +44,7 @@ import { clientHistory } from "../domain/client-history.ts";
 import { paymentEntries } from "../domain/client-payments.ts";
 import { latestProposal } from "../domain/proposed-visits.ts";
 import { EntrySchema } from "./client-payments.ts";
+import { ClientInviteSchema } from "./ops-client-referral.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 
 const clientId = z.object({ id: z.uuid() });
@@ -99,6 +102,9 @@ const ClientRecordSchema = z
       .openapi({ description: "Upcoming soonest first; past newest first." }),
     payments: z.array(EntrySchema).openapi({ description: "Payments and refunds as one list, newest first." }),
     history: OpsHistorySchema,
+    invite: z
+      .union([ClientInviteSchema, z.null()])
+      .openapi({ description: "The invite they came with, or ops attached; null for none." }),
   })
   .strict()
   .openapi("ClientRecord");
@@ -239,7 +245,8 @@ const findRoute = createRoute({
 const recordRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}",
-  summary: "The client's record: who they are, their address, their visits, their payments and their history",
+  summary:
+    "The client's record: who they are, their address, their visits, their payments, their history and their invite",
   request: { params: clientId },
   responses: { 200: { description: "The record", ...json(ClientRecordSchema) }, 404: unknownClient },
 });
@@ -388,7 +395,7 @@ export function registerOpsClients(app: App): void {
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const now = c.var.deps.now();
-    const [address, credits, visits, fitted, payments, history, proposal] = await Promise.all([
+    const [address, credits, visits, fitted, payments, history, proposal, invite] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
       listVisits(db, id, now),
@@ -397,6 +404,7 @@ export function registerOpsClients(app: App): void {
       clientHistory(db, id),
       // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
       latestProposal(db, id),
+      clientInviteOf(db, id),
     ]);
     const outcomes = await visitOutcomes(
       db,
@@ -427,6 +435,7 @@ export function registerOpsClients(app: App): void {
         visits: { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) },
         payments,
         history,
+        invite,
       },
       200,
     );

@@ -73,6 +73,8 @@ describe("POST /api/consultation", () => {
       date: "2026-09-23",
       window: "morning",
       area: "Gurgaon South City II",
+      credits: false,
+      invite: "unknown",
       address: "saved",
       first_fit: false,
     });
@@ -137,6 +139,8 @@ describe("POST /api/consultation", () => {
       date: "2026-09-23",
       window: "morning",
       area: "Gurgaon South City II",
+      credits: false,
+      invite: "unknown",
       address: "saved",
       first_fit: false,
     });
@@ -354,7 +358,7 @@ describe("POST /api/waitlist", () => {
     );
 
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toEqual({ area: "Bandra" });
+    expect(await answer.json()).toEqual({ area: "Bandra", credits: false, invite: "unknown" });
     const listed = await env.DB.prepare(
       `SELECT w.pincode, w.launch_alert, w.referral_code, l.source, l.proposed_visit_date
        FROM waitlist_entries w JOIN people p ON p.id = w.person_id JOIN leads l ON l.person_id = p.id
@@ -416,6 +420,109 @@ describe("POST /api/waitlist", () => {
       post({ ...VISITOR, pincode: "122018", contact_consent: true, launch_alert: false }),
     );
     expect(answer.status).toBe(422);
+  });
+});
+
+// A friend who opened an invite, left, and booked later on /book: the site remembers the invite's code for 30 days
+// and sends it, and the booking is attributed as the landing's is (docs/decisions/0089-an-invite-is-not-lost.md).
+describe("an invite the browser remembered", () => {
+  const REFERRER = "11111111-1111-4111-8111-111111111111";
+  const bindings = () => ({ FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() });
+  const book = (inviteCode: string) =>
+    request(
+      site(),
+      "/api/consultation",
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        address: ADDRESS,
+        invite_code: inviteCode,
+      }),
+      bindings(),
+    );
+  const attributions = () => env.DB.prepare("SELECT code, via, pincode, grant_state FROM referral_attributions").all();
+
+  beforeEach(async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
+    )
+      .bind(REFERRER, NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      "INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES ('RM4K7P', ?1, ?2, ?2)",
+    )
+      .bind(REFERRER, NOW.toISOString())
+      .run();
+  });
+
+  it("attributes the consultation to the invite, whose credits then apply", async () => {
+    const answer = await book("rm4k7p");
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual({
+      state: "booked",
+      date: "2026-09-23",
+      window: "morning",
+      area: "Gurgaon South City II",
+      credits: true,
+      invite: "valid",
+      address: "saved",
+      first_fit: false,
+    });
+    expect((await attributions()).results).toEqual([
+      { code: "RM4K7P", via: "consultation", pincode: "122018", grant_state: "pending" },
+    ]);
+  });
+
+  it.each([
+    ["a code we do not have", "ZZ9999"],
+    ["something not shaped like a code", "not a code!"],
+  ])("books without an invite for %s, never refusing the booking", async (_, inviteCode) => {
+    const answer = await book(inviteCode);
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: false, invite: "unknown" });
+    expect((await attributions()).results).toEqual([]);
+  });
+
+  it("holds the invite for someone who joins a waitlist instead", async () => {
+    await pincode("400050", "Bandra", "Mumbai", false);
+    const answer = await request(
+      site(),
+      "/api/waitlist",
+      post({ ...VISITOR, pincode: "400050", contact_consent: true, launch_alert: false, invite_code: "RM4K7P" }),
+      bindings(),
+    );
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual({ area: "Bandra", credits: true, invite: "valid" });
+    expect((await attributions()).results).toEqual([
+      { code: "RM4K7P", via: "waitlist", pincode: "400050", grant_state: "pending" },
+    ]);
+    const entry = await env.DB.prepare("SELECT referral_code FROM waitlist_entries").first();
+    expect(entry).toEqual({ referral_code: "RM4K7P" });
+  });
+
+  it("gives the referrer no credits for their own invite", async () => {
+    const answer = await request(
+      site(),
+      "/api/consultation",
+      post({
+        ...VISITOR,
+        mobile: "9810000001",
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        address: ADDRESS,
+        invite_code: "RM4K7P",
+      }),
+      bindings(),
+    );
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ credits: false, invite: "valid" });
+    expect((await attributions()).results).toEqual([]);
   });
 });
 
@@ -545,6 +652,8 @@ describe("the consultation, then the first fit", () => {
       date: "2026-09-23",
       window: "morning",
       area: "Gurgaon South City II",
+      credits: false,
+      invite: "unknown",
       address: "saved",
       first_fit: true,
     });
@@ -644,7 +753,7 @@ describe("the Idempotency-Key", () => {
 
     expect(first.status).toBe(201);
     expect(again.status).toBe(201);
-    expect(await again.json()).toEqual({ area: "Bandra" });
+    expect(await again.json()).toEqual({ area: "Bandra", credits: false, invite: "unknown" });
     expect(await count("SELECT COUNT(*) AS n FROM leads")).toBe(1);
   });
 

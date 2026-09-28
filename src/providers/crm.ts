@@ -44,12 +44,16 @@ export interface CrmSyncResult {
   readonly created: boolean;
 }
 
-/** A person's details as they are now, after a change of number or address. */
+/** A person's details as they are now, after a change of number or address, or an invite ops attached. */
 export interface CrmContact {
   readonly personId: string;
   readonly mobileE164: string;
   /** The city of their current address; null where they have given none. */
   readonly city: string | null;
+  /** The code of the invite they came through; null for none. */
+  readonly inviteCode: string | null;
+  /** Ops have just attached that invite, which the record is told of in a note, as a new lead's invite is. */
+  readonly inviteAttached: boolean;
 }
 
 export interface CrmProvider {
@@ -61,8 +65,9 @@ export interface CrmProvider {
    */
   erasePerson(personId: string, knownCrmLeadId: string | null): Promise<{ found: boolean }>;
   /**
-   * Writes a person's number, and their address's city, onto their record,
-   * with workflows off: nothing chases a client for a change of number. The
+   * Writes a person's number, their address's city and the invite they came
+   * through onto their record, with workflows off: nothing chases a client for
+   * a change of number. An invite ops have just attached is noted as well. The
    * record's ID, or null when the CRM never had them.
    */
   updateContact(contact: CrmContact, knownCrmLeadId: string | null): Promise<{ crmLeadId: string | null }>;

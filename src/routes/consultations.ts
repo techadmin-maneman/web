@@ -22,12 +22,19 @@
 // A consultation may be booked with the first fit to follow: a request for the
 // fit, written with the booking, which the client books and pays for in the app
 // once the consultation is done (docs/decisions/0086-the-next-visit-is-offered.md).
+//
+// Either may carry the code of an invite the visitor opened on this browser in the
+// last 30 days, and is then attributed to it exactly as the landing's would be. A
+// code we do not have, or one not shaped like a code, is ignored, and the booking
+// goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
+import type { Context } from "hono";
+import type { App, AppEnv } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
 import { BOOKING_WINDOWS, FIRST_FIT_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
+import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
@@ -60,7 +67,26 @@ const Person = {
   loss_extent: z.enum(LOSS_EXTENTS).openapi({ description: "Where the hair loss is, as the form's drawings show it." }),
   turnstile_token: z.string().min(1).max(2048),
   attribution: AttributionSchema,
+  invite_code: z
+    .string()
+    .max(64)
+    .optional()
+    .openapi({
+      description:
+        "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a " +
+        "code, is ignored: the booking goes ahead without an invite.",
+    }),
 };
+
+/** The invite as it stands for the person who used it, as the landing answers it too. */
+export const InviteStateSchema = z.enum(["valid", "expired", "unknown"]).openapi({
+  description:
+    "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so " +
+    "the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code " +
+    "we do not have.",
+});
+
+export const CreditsSchema = z.boolean().openapi({ description: "Whether the invite's 3 service visits apply." });
 
 /** What a booking did with the address it was sent (src/policy/site-booking.ts). */
 export const AddressOutcomeSchema = z.enum(["saved", "on_account"]).openapi({
@@ -128,6 +154,8 @@ const ConsultationSchema = z
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     area: z.string(),
+    credits: CreditsSchema,
+    invite: InviteStateSchema,
     address: AddressOutcomeSchema,
     first_fit: FirstFitOutcomeSchema,
   })
@@ -135,7 +163,7 @@ const ConsultationSchema = z
   .openapi("Consultation");
 
 const WaitlistSchema = z
-  .object({ area: z.union([z.string(), z.null()]) })
+  .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
   .strict()
   .openapi("Waitlist");
 
@@ -204,6 +232,12 @@ const waitlistRoute = createRoute({
   },
 });
 
+/** The invite a remembered code names; null for none, one we do not have, or one not shaped like a code. */
+function rememberedInvite(c: Context<AppEnv>, code: string | undefined): Promise<Invite | null> {
+  if (code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
+  return inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
+}
+
 export function registerConsultations(app: App): void {
   app.openapi(consultationRoute, async (c) => {
     const body = c.req.valid("json");
@@ -221,12 +255,12 @@ export function registerConsultations(app: App): void {
         lossExtent: body.loss_extent,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
-        invite: null,
+        invite: await rememberedInvite(c, body.invite_code),
         firstFit: firstFitOf(body.first_fit),
       });
       if (!booked.ok) return booked;
-      const { state, date, window, area, address, firstFit } = booked;
-      return { ok: true, body: { state, date, window, area, address, first_fit: firstFit } };
+      const { state, date, window, area, credits, invite, address, firstFit } = booked;
+      return { ok: true, body: { state, date, window, area, credits, invite, address, first_fit: firstFit } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
     if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
@@ -254,10 +288,10 @@ export function registerConsultations(app: App): void {
         launchAlert: body.launch_alert,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
-        invite: null,
+        invite: await rememberedInvite(c, body.invite_code),
       });
       if (!listed.ok) return listed;
-      return { ok: true, body: { area: listed.area } };
+      return { ok: true, body: { area: listed.area, credits: listed.credits, invite: listed.invite } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
     if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);

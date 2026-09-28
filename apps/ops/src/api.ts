@@ -28,6 +28,8 @@ export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
 export type CreditBalance = Body<paths["/api/clients/{id}/credits"]["post"]>;
 export type CreditAdjustment = Sent<paths["/api/clients/{id}/credits"]["post"]>;
+export type ClientInvite = NonNullable<ClientRecord["invite"]>;
+export type InviteAttachment = Sent<paths["/api/clients/{id}/referral"]["post"]>;
 export type PhotoVisit = Body<paths["/api/clients/{id}/photos"]["get"]>["visits"][number];
 export type Photo = PhotoVisit["photos"][number];
 export type PhotoView = Body<paths["/api/clients/{id}/photos/view"]["post"]>;
@@ -215,6 +217,9 @@ export const api = {
   /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
+  /** An invite attached by hand, with why; the answer is the invite as the client's page shows it (ADR 0089). */
+  attachInvite: (id: string, attachment: InviteAttachment) =>
+    client.post("/api/clients/{id}/referral", { path: { id }, body: attachment }),
   /** Which photographs exist, by visit. No image comes with it, and nothing is audited. */
   clientPhotos: (id: string) => client.get("/api/clients/{id}/photos", { path: { id } }),
   /** Opening them: one audit entry, written before any image is served, and who opened them before (ADR 0031). */
