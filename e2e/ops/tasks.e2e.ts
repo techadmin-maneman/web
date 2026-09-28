@@ -439,7 +439,7 @@ test("says so when the list cannot be loaded, and loads it on Try again", async 
 
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByText("Kunal Mehta")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Kunal Mehta", exact: true })).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA with a list, and with none", async ({ page }) => {

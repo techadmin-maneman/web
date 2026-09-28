@@ -157,8 +157,11 @@ a.subject:focus-visible {
   gap: var(--sp-3) var(--sp-14);
 }
 
-/* Drawn as the way to where a task is decided is: quiet, underlined words. */
+/* Drawn as the way to where a task is decided is: quiet, underlined words, on a target 24 px tall (WCAG 2.5.8). */
 .act {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sp-24);
   padding: 0;
   border: 0;
   background: none;

@@ -175,11 +175,16 @@ test("refuses an address without a six-digit pincode", async ({ page, request })
 // An address the client gave ops on the phone, which ops saved for them (docs/decisions/0092-task-owners.md).
 test("says an address was given to us on the phone, so the client can check it", async ({ page, request }) => {
   await signIn(page, request);
+  // Only the browser resolves app.localhost, so the profile is answered whole rather than fetched and changed.
   await page.route("**/api/profile", async (route) => {
-    const answered = (await (await route.fetch()).json()) as Record<string, unknown>;
     await route.fulfill({
       json: {
-        ...answered,
+        name: "Rohit Malhotra",
+        mobile: "+91 98xxx x4417",
+        consents: [],
+        number_change: null,
+        number_change_decided: null,
+        deletion: null,
         address: {
           line1: "Sunrise Greens",
           line2: null,
