@@ -19,7 +19,6 @@ export async function queueContactSync(c: Context<AppEnv>, personId: string): Pr
         request_id: requestId,
       } satisfies FsmSyncMessage);
     }
-    await deps.resolveAlert(`contact_sync:${personId}`);
   } catch (error) {
     log.warn("contact_sync_enqueue_failed", { person_id: personId, error });
     await deps.alertOnce({
@@ -29,5 +28,7 @@ export async function queueContactSync(c: Context<AppEnv>, personId: string): Pr
         "Update their FSM contact and CRM lead by hand.",
       link: `/clients/${personId}`,
     });
+    return;
   }
+  await deps.resolveAlert(`contact_sync:${personId}`);
 }
