@@ -51,8 +51,9 @@
 // scripts/setup-fsm.ts made the org's first items with the POST below and read only its status, so where its answer
 // carries the new item's ID has not been read: either shape a create answers is taken. Nor has the catalogue been
 // read past its first page of 200, which the org's dozen items have never needed: a page is asked for as the
-// appointments are, and the next one while info.more_records says there is one, up to FSM_ITEM_PAGES. The hourly
-// catalogue check reads each write back.
+// appointments are, and the next one while info.more_records says there is one, up to FSM_ITEM_PAGES when it is read
+// all at once, and for as long as the run can pay for when the hourly check reads it. That check reads each write
+// back.
 //
 //   GET  /fsm/v1/Service_And_Parts?page=&per_page=200            { data: [item], info: { more_records } }
 //   POST /fsm/v1/Service_And_Parts                               { data: [{ Name, Type: "Service", Unit_Price }] }
@@ -90,9 +91,13 @@ import type {
 } from "./fsm.ts";
 import { createZohoRequester, ZohoError, zohoErrorFrom, type ZohoRequesterDependencies } from "./zoho-http.ts";
 
+/** How many items FSM answers a page of its catalogue with. */
+export const FSM_ITEMS_A_PAGE = 200;
+
 /**
- * How many pages of 200 items the catalogue is read in at most: a thousand items, far past the dozen it holds, and
- * the most calls one read of it costs.
+ * How many pages the catalogue is read in at most when it is read all at once, as a booking, the mirror and a piece
+ * read it: a thousand items, far past the dozen it holds, and the most calls one read of it costs. The hourly check
+ * and the push read it a page at a time instead (src/domain/fsm-catalogue.ts).
  */
 export const FSM_ITEM_PAGES = 5;
 
@@ -309,6 +314,20 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     return z.array(schema).parse(list ?? []);
   }
 
+  /** One page of the catalogue, and whether FSM holds more after it. */
+  async function itemsPage(page: number): Promise<{ items: FsmItem[]; more: boolean }> {
+    const answer = await json("items", `/Service_And_Parts?page=${String(page)}&per_page=${String(FSM_ITEMS_A_PAGE)}`);
+    const items = records(answer, "data", Item).map((item) => ({
+      id: item.id,
+      name: item.Name,
+      type: item.Type,
+      // FSM's prices are rupees; ours are paise.
+      price: item.Unit_Price === null || item.Unit_Price === undefined ? null : Math.round(item.Unit_Price * 100),
+    }));
+    const more = (answer as { info?: { more_records?: unknown } } | null)?.info?.more_records === true;
+    return { items, more };
+  }
+
   /** Adds one record to a module; returns the new IDs by module, the record's own under `module`. */
   async function createWith(
     step: string,
@@ -421,20 +440,14 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
       });
     },
 
+    itemsPage,
+
     async items() {
       const found: FsmItem[] = [];
       for (let page = 1; page <= FSM_ITEM_PAGES; page += 1) {
-        const answer = await json("items", `/Service_And_Parts?page=${String(page)}&per_page=200`);
-        for (const item of records(answer, "data", Item)) {
-          found.push({
-            id: item.id,
-            name: item.Name,
-            type: item.Type,
-            // FSM's prices are rupees; ours are paise.
-            price: item.Unit_Price === null || item.Unit_Price === undefined ? null : Math.round(item.Unit_Price * 100),
-          });
-        }
-        if ((answer as { info?: { more_records?: unknown } } | null)?.info?.more_records !== true) break;
+        const read = await itemsPage(page);
+        found.push(...read.items);
+        if (!read.more) break;
       }
       return found;
     },

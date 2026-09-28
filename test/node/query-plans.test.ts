@@ -137,6 +137,24 @@ function isPartial(db: DatabaseSync, index: string): boolean {
   return /\bWHERE\b/i.test(row?.sql ?? "");
 }
 
+/** The tables a statement inserts into or updates. */
+function writtenBy(sql: string): Set<string> {
+  return new Set([...sql.matchAll(/\b(?:INTO|UPDATE)\s+(\w+)/gi)].map(([, table = ""]) => table));
+}
+
+/**
+ * Whether a table the statement never names has rows pointing at one it writes. An upsert into a table with
+ * triggers, as appointments has since migration 0052, plans a look through each such table for rows pointing at a
+ * key it changes; SQLite takes that look only when the key did change, and no upsert here changes its row's key
+ * (test/worker/cron-reads.test.ts counts what is read).
+ */
+function pointsAtWritten(db: DatabaseSync, sql: string, table: string): boolean {
+  if (tablesOf(sql).has(table)) return false;
+  const written = writtenBy(sql);
+  const keys = db.prepare(`PRAGMA foreign_key_list("${table}")`).all() as { table: string }[];
+  return keys.some((key) => written.has(key.table));
+}
+
 /** What in a statement's plan reads a growing table from end to end; empty when nothing does. */
 function fullReads(db: DatabaseSync, sql: string): string[] {
   const plan = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all() as { detail: string }[];
@@ -149,6 +167,7 @@ function fullReads(db: DatabaseSync, sql: string): string[] {
       const [, name = "", index] = scan;
       if (name === "CONSTANT" || name === "json_each") return false;
       if (SMALL_TABLES.has(tables.get(name) ?? name)) return false;
+      if (pointsAtWritten(db, sql, name)) return false;
       return index === undefined || !isPartial(db, index);
     });
 }
@@ -187,6 +206,18 @@ describe("the check itself", () => {
     expect(fullReads(db, "SELECT upload_key FROM tryon_jobs GROUP BY upload_key")).toEqual([
       "SCAN tryon_jobs USING COVERING INDEX tryon_jobs_by_upload",
     ]);
+  });
+
+  it("lets through the look an upsert plans for rows pointing at a key it does not change", () => {
+    const upsert = `INSERT INTO appointments (id, fsm_id, status, fsm_status, fsm_modified_at, synced_at)
+      VALUES (?1, ?2, 'scheduled', 'Scheduled', ?3, ?3) ON CONFLICT (fsm_id) DO UPDATE SET status = excluded.status`;
+    const plan = (db.prepare(`EXPLAIN QUERY PLAN ${upsert}`).all() as { detail: string }[]).map((step) => step.detail);
+    expect(plan).toContain("SCAN stock_movements");
+    expect(fullReads(db, upsert)).toEqual([]);
+    // One that does read the table names it, and is caught.
+    expect(fullReads(db, `${upsert} RETURNING (SELECT MAX(note) FROM stock_movements)`)).toContain(
+      "SCAN stock_movements",
+    );
   });
 
   it("lets a partial index through, since it holds only the rows still waiting", () => {

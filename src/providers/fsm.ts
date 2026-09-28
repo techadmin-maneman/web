@@ -8,10 +8,10 @@
 import type { ZohoFsmSettings } from "../config/settings.ts";
 import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import type { ZohoRequesterDependencies } from "./zoho-http.ts";
-import { createZohoFsm } from "./fsm-zoho.ts";
+import { createZohoFsm, FSM_ITEM_PAGES, FSM_ITEMS_A_PAGE } from "./fsm-zoho.ts";
 
-/** The most calls one read of FSM's catalogue costs, a page of 200 items each. */
-export { FSM_ITEM_PAGES } from "./fsm-zoho.ts";
+/** How many items a page of FSM's catalogue holds, and the most pages one read of all of it takes. */
+export { FSM_ITEM_PAGES, FSM_ITEMS_A_PAGE } from "./fsm-zoho.ts";
 import { ProviderError } from "./provider-error.ts";
 
 /** An appointment as FSM holds it, in our words. Times are ISO 8601 with India's offset. */
@@ -249,6 +249,8 @@ export interface FsmProvider {
   technicians(): Promise<FsmTechnician[]>;
   /** The whole catalogue, services and parts, read a page at a time up to FSM_ITEM_PAGES. */
   items(): Promise<FsmItem[]>;
+  /** One page of the catalogue, from 1, FSM_ITEMS_A_PAGE items at most, and whether FSM holds more after it. */
+  itemsPage(page: number): Promise<{ items: FsmItem[]; more: boolean }>;
   /**
    * Makes a service item for a service FSM does not have, at its price in paise before GST; returns its FSM ID
    * (docs/decisions/0085-services-ops-can-edit.md).
@@ -529,6 +531,20 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   const itemWrites = new Map<string, { name: string; price: number }>();
   const itemNames = new Map<string, string>();
 
+  /** The catalogue as FSM would list it now, a page at a time, with what was made and written since. */
+  function itemsPage(page: number): Promise<{ items: FsmItem[]; more: boolean }> {
+    checkFailure("items");
+    const all = [...world.items, ...madeItems, ...madeParts].map((item) => {
+      const written = { ...item, ...itemWrites.get(item.id) };
+      return { ...written, name: itemNames.get(item.id) ?? written.name };
+    });
+    const start = (page - 1) * FSM_ITEMS_A_PAGE;
+    return Promise.resolve({
+      items: all.slice(start, start + FSM_ITEMS_A_PAGE),
+      more: all.length > start + FSM_ITEMS_A_PAGE,
+    });
+  }
+
   /** Where each appointment's transitions have moved it, over the status the world gave it. */
   const statuses = new Map<string, string>();
   function appointmentNow(id: string): FsmAppointment | null {
@@ -566,14 +582,15 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     },
     contact: (id) => Promise.resolve(world.contacts.find((contact) => contact.id === id) ?? null),
     technicians: () => Promise.resolve([...world.technicians]),
-    items: () => {
-      checkFailure("items");
-      return Promise.resolve(
-        [...world.items, ...madeItems, ...madeParts].map((item) => {
-          const written = { ...item, ...itemWrites.get(item.id) };
-          return { ...written, name: itemNames.get(item.id) ?? written.name };
-        }),
-      );
+    itemsPage,
+    items: async () => {
+      const found: FsmItem[] = [];
+      for (let page = 1; page <= FSM_ITEM_PAGES; page += 1) {
+        const read = await itemsPage(page);
+        found.push(...read.items);
+        if (!read.more) break;
+      }
+      return found;
     },
     createItem: (item) => {
       checkFailure("createItem");
@@ -758,6 +775,7 @@ function createUnconnectedFsm(): FsmProvider {
     contact: off,
     technicians: off,
     items: off,
+    itemsPage: off,
     createItem: off,
     updateItem: off,
     createPart: off,

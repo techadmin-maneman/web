@@ -3,14 +3,24 @@
 // midnight UTC (ADR 0009). So a run must read about what it has to do, not the
 // history its tables have gathered: every try-on job, visit, payment and
 // person ever made stays in D1. This seeds a finished history, runs every job,
-// doubles the history, and runs them again.
+// doubles the history, and runs them again. The console's Tasks board and Stock
+// page, read all day, are held to the same below.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CRON_ROWS_READ_PER_QUIET_RUN } from "../../scripts/lib/free-tier-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
-import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies, fakeQueue, markDatabase } from "./helpers.ts";
+import {
+  LOCAL_CONFIG,
+  NOW,
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  request,
+} from "./helpers.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Two months ago, when all of the history happened, and an hour later. */
@@ -185,5 +195,169 @@ describe("one cron run", () => {
       "SELECT COUNT(*) AS n FROM outbound_messages WHERE kind = 'next_service_reminder'",
     ).first<{ n: number }>();
     expect(reminders?.n).toBe(3);
+  });
+});
+
+// The Tasks board and the Stock page are read all day, and each movement of stock checks its place for low stock.
+// Their At-risk client and First fit to book read a summary of each client's last visits, kept as each visit closes,
+// and the Stock page a balance for each place, kept with each movement: never the history behind either
+// (docs/decisions/0086-the-next-visit-is-offered.md, 0087-consumables-and-stock.md; plan piece C27).
+describe("a look at the Tasks board or the Stock page", () => {
+  const ops = appFor("local", fakeDependencies(), {}, "ops");
+  const CLIENTS = 30;
+  /** `?3` days before NOW, in the form the mirror keeps a visit's start. */
+  const DAYS_AGO = `strftime('%Y-%m-%dT%H:%M:%fZ', '${NOW.toISOString()}', '-' || ?3 || ' days')`;
+  const CONSULTED = new Date(NOW.getTime() - 400 * DAY_MS).toISOString();
+  /** Two technicians, numbered as the clients are. */
+  const TECHNICIAN = "'44444444-4444-4444-8444-' || printf('%012d', i)";
+  const FIRST_TECHNICIAN = "44444444-4444-4444-8444-000000000001";
+  /** One kit or the other, by the movement's number. */
+  const KIT = "'44444444-4444-4444-8444-' || printf('%012d', 1 + i % 2)";
+
+  /**
+   * The clients numbered 1 to CLIENTS, each consulted after asking for a first fit on the site's form, and every
+   * other one with a service booked; the technicians who come; and five people more, consulted then and never
+   * fitted, each a First fit to book.
+   */
+  const CLIENTS_SQL = [
+    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
+     SELECT ${TECHNICIAN}, 'fsm-t-' || i, 'Technician ' || i, 'T' || i, 1, '${AGO}' FROM n WHERE i <= 2`,
+    `INSERT INTO people (id, created_at, mobile_e164, name)
+     SELECT 'q-' || i, '${AGO}', '+9171' || printf('%08d', i), 'Client ' || i FROM n`,
+    `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
+     SELECT 'ff-' || i, 'q-' || i, NULL, '${AGO}' FROM n`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+       fsm_modified_at, synced_at)
+     SELECT 'c-' || i, 'fsm-c-' || i, 'q-' || i, 'consultation', '${CONSULTED}', '${CONSULTED}', 'completed',
+       'Completed', '${AGO}', '${AGO}' FROM n`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+       fsm_status, fsm_modified_at, synced_at)
+     SELECT 'next-' || i, 'fsm-next-' || i, 'q-' || i, 'service', '${IN_TWO_MONTHS}', '${IN_TWO_MONTHS}',
+       '${FIRST_TECHNICIAN}',
+       'scheduled', 'Scheduled', '${AGO}', '${AGO}' FROM n WHERE i % 2 = 0`,
+    `INSERT INTO people (id, created_at, mobile_e164, name)
+     SELECT 'r-' || i, '${AGO}', '+9172' || printf('%08d', i), 'Lead ' || i FROM n WHERE i <= 5`,
+    `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
+     SELECT 'fr-' || i, 'r-' || i, 'morning', '${AGO}' FROM n WHERE i <= 5`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+       fsm_modified_at, synced_at)
+     SELECT 'rc-' || i, 'fsm-rc-' || i, 'r-' || i, 'consultation', '${CONSULTED}', '${CONSULTED}', 'completed',
+       'Completed', '${AGO}', '${AGO}' FROM n WHERE i <= 5`,
+  ];
+
+  /** Each client's service visit numbered ?4, done ?3 days ago, with its record and the hold it was booked with. */
+  const VISIT_SQL = [
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+       fsm_status, fsm_modified_at, synced_at)
+     SELECT 'a-' || i || '-' || ?4, 'fsm-a-' || i || '-' || ?4, 'q-' || i, 'service', ${DAYS_AGO}, ${DAYS_AGO},
+       '${FIRST_TECHNICIAN}',
+       'completed', 'Completed', '${AGO}', '${AGO}' FROM n`,
+    `INSERT INTO visits (id, appointment_id, outcome, updated_at)
+     SELECT 'v-' || i || '-' || ?4, 'a-' || i || '-' || ?4, 'done', '${AGO}' FROM n`,
+    `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+       amount_ex_gst, gst_percent, state, appointment_id, expires_at, created_at, updated_at, confirmed_at)
+     SELECT 'h-' || i || '-' || ?4, 'q-' || i, 'service', date(${DAYS_AGO}), 'morning',
+       '${FIRST_TECHNICIAN}', 0, 200000, 200000, 0,
+       'booked', 'a-' || i || '-' || ?4, '${AGO}', '${AGO}', '${AGO}', '${AGO}' FROM n`,
+  ];
+
+  /**
+   * The central store's deliveries numbered ?1 to ?2, each sent on to a technician's kit in a transfer, and a count
+   * at that kit after: every place has a history of every kind of row ops write.
+   */
+  const MOVEMENTS_SQL = [
+    `INSERT INTO stock_movements (id, consumable_code, location, quantity, reason, actor_kind, actor, created_at)
+     SELECT 'in-' || i, 'tape_strips', 'central', 20, 'received', 'staff', 'ops@localhost', '${AGO}' FROM n`,
+    `INSERT INTO stock_movements (id, consumable_code, location, quantity, reason, transfer_id, actor_kind, actor,
+       created_at)
+     SELECT 'out-' || i, 'tape_strips', 'central', -10, 'transferred', 'tr-' || i, 'staff', 'ops@localhost', '${AGO}'
+     FROM n`,
+    `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason, transfer_id,
+       actor_kind, actor, created_at)
+     SELECT 'kit-' || i, 'tape_strips', 'kit', ${KIT}, 10, 'transferred', 'tr-' || i, 'staff',
+       'ops@localhost', '${AGO}' FROM n`,
+    `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason, actor_kind, actor,
+       created_at)
+     SELECT 'count-' || i, 'tape_strips', 'kit', ${KIT}, -1, 'counted', 'staff', 'ops@localhost',
+       '${AGO}' FROM n`,
+  ];
+
+  /** The statement over the numbers ?1 to ?2, with anything more it takes from ?3 on. */
+  const over = (sql: string, from: number, to: number, ...more: (string | number)[]) =>
+    env.DB.prepare(`WITH RECURSIVE n(i) AS (SELECT ?1 UNION ALL SELECT i + 1 FROM n WHERE i < ?2) ${sql}`).bind(
+      from,
+      to,
+      ...more,
+    );
+
+  /** Every client's visits numbered `from` to `to`, a month apart, the first done 60 days ago. */
+  async function visits(from: number, to: number): Promise<void> {
+    const statements: D1PreparedStatement[] = [];
+    for (let visit = from; visit <= to; visit += 1) {
+      for (const sql of VISIT_SQL) statements.push(over(sql, 1, CLIENTS, 60 + 30 * (visit - 1), visit));
+    }
+    await env.DB.batch(statements);
+  }
+
+  async function movements(from: number, to: number): Promise<void> {
+    await env.DB.batch(MOVEMENTS_SQL.map((sql) => over(sql, from, to)));
+  }
+
+  /** Rows read by one call the console makes. */
+  async function rowsReadBy(call: () => Promise<Response>): Promise<number> {
+    const rowsRead = countRowsRead();
+    const answer = await call();
+    const read = rowsRead();
+    vi.restoreAllMocks();
+    captureLogs();
+    expect(answer.status).toBe(200);
+    return read;
+  }
+
+  const tasks = () => request(ops, "/api/tasks");
+  const stock = () => request(ops, "/api/stock");
+  const count = () =>
+    request(ops, "/api/stock/counts", {
+      method: "POST",
+      headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+      body: JSON.stringify({ consumable_code: "tape_strips", technician_id: FIRST_TECHNICIAN, counted: 40 }),
+    });
+
+  it("reads no more for At-risk clients and First fits to book when every client has ten times the visits", async () => {
+    await env.DB.batch(CLIENTS_SQL.map((sql) => over(sql, 1, CLIENTS)));
+    await visits(1, 1);
+    await rowsReadBy(tasks); // the console's settings, read once and kept
+    const before = await rowsReadBy(tasks);
+    const board = await (await tasks()).json<{ groups: { group: string; tasks: unknown[] }[] }>();
+    expect(board.groups.map((group) => [group.group, group.tasks.length])).toEqual(
+      expect.arrayContaining([
+        ["at_risk_client", CLIENTS / 2],
+        ["first_fit_to_book", 5],
+      ]),
+    );
+
+    await visits(2, 10);
+    const after = await rowsReadBy(tasks);
+
+    expect({ before, after }).toEqual({ before, after: before });
+  });
+
+  it("reads no more for the Stock page, or a count, when the ledger holds ten times the movements", async () => {
+    await env.DB.batch(CLIENTS_SQL.slice(0, 1).map((sql) => over(sql, 1, CLIENTS)));
+    await env.DB.prepare(
+      `INSERT INTO consumables (code, name, unit, unit_cost, reorder_kit, reorder_central, created_at, updated_at)
+       VALUES ('tape_strips', 'Tape strips', 'strip', 1200, 5, 20, ?1, ?1),
+              ('solvent', 'Solvent', 'ml', 50, NULL, NULL, ?1, ?1)`,
+    )
+      .bind(AGO)
+      .run();
+    await movements(1, 20);
+    await rowsReadBy(stock); // the console's settings, read once and kept
+    const before = { page: await rowsReadBy(stock), count: await rowsReadBy(count) };
+
+    await movements(21, 200);
+    const after = { page: await rowsReadBy(stock), count: await rowsReadBy(count) };
+
+    expect(after).toEqual(before);
   });
 });
