@@ -237,6 +237,29 @@ describe("FSM: clients, technicians, items and files", () => {
     expect(calls.filter((call) => call.url.includes("Service_And_Parts"))).toHaveLength(FSM_ITEM_PAGES);
   });
 
+  // The hourly check reads the catalogue a page at a time itself, from the cron run's budget (plan piece C28).
+  it("reads the one page of the catalogue it is asked for, and says whether FSM holds more", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/Service_And_Parts?page=6&`]: () =>
+        json({
+          data: [{ id: "item-1001", Name: "Tape strips", Type: "Part", Unit_Price: 0 }],
+          info: { more_records: true },
+        }),
+      [`${FSM_API}/Service_And_Parts?page=7&`]: () => new Response(null, { status: 204 }),
+    });
+
+    expect(await provider.itemsPage(6)).toEqual({
+      items: [{ id: "item-1001", name: "Tape strips", type: "Part", price: 0 }],
+      more: true,
+    });
+    expect(await provider.itemsPage(7)).toEqual({ items: [], more: false });
+    expect(calls.map((call) => call.url).filter((url) => url.includes("Service_And_Parts"))).toEqual([
+      `${FSM_API}/Service_And_Parts?page=6&per_page=200`,
+      `${FSM_API}/Service_And_Parts?page=7&per_page=200`,
+    ]);
+  });
+
   // INT-03: FSM prices a visit's invoice from its catalogue, so the price book's figure is written there, and the
   // console's name with it (docs/decisions/0085-services-ops-can-edit.md).
   it("writes an item's name and its price before GST, in rupees, on the item's record", async () => {
@@ -1014,8 +1037,29 @@ describe("the stand-ins", () => {
   it("none refuses every call plainly", async () => {
     const off = createFsmProvider("none", null, { db: env.DB, fetch, now: () => NOW, log: createLogger() });
     await expect(off.appointment("ap-1")).rejects.toThrow("FSM is not connected here (FSM_PROVIDER is none)");
+    await expect(off.itemsPage(1)).rejects.toThrow("FSM_PROVIDER is none");
     await expect(off.createPart("Tape strips")).rejects.toThrow("FSM_PROVIDER is none");
     await expect(off.renameItem("part-1", "Tape strips")).rejects.toThrow("FSM_PROVIDER is none");
+  });
+
+  // As Zoho's does: a page of 200 at a time, and no further than FSM_ITEM_PAGES when read all at once.
+  it("the stub FSM pages its catalogue as FSM does", async () => {
+    const items = Array.from({ length: 1_001 }, (_, n) => ({
+      id: `item-${String(n + 1)}`,
+      name: `Item ${String(n + 1)}`,
+      type: "Part" as const,
+      price: 0,
+    }));
+    const stub = createStubFsm({ ...EMPTY_FSM, items });
+
+    const first = await stub.itemsPage(1);
+    expect({ count: first.items.length, first: first.items[0]?.id, more: first.more }).toEqual({
+      count: 200,
+      first: "item-1",
+      more: true,
+    });
+    expect(await stub.itemsPage(6)).toEqual({ items: [items[1_000]], more: false });
+    expect(await stub.items()).toHaveLength(FSM_ITEM_PAGES * 200);
   });
 
   it("the stub FSM lists a part it added at Rs. 0, and an item under the name it was given since", async () => {

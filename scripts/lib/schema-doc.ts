@@ -79,6 +79,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   idempotency: "The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).",
   job_events:
     "The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).",
+  last_visits:
+    "Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).",
   leads:
     "Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).",
   no_show_cases: "The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).",
@@ -115,6 +117,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   slot_claims:
     "What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).",
   slot_holds: "A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).",
+  stock_balances:
+    "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
   stock_movements:
     "Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).",
   sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",

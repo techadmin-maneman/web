@@ -73,6 +73,14 @@ async function expectedOf(
   return new Map(results.map((row) => [row.consumable_code, row.quantity]));
 }
 
+/** The job's latest consumables step from the technician, each named by the placeholder its statement binds it to. */
+function latestStep(placeholders: { readonly job: string; readonly technician: string }): string {
+  return `SELECT id FROM job_events
+    WHERE appointment_id = ${placeholders.job} AND technician_id = ${placeholders.technician}
+      AND kind = 'consumables' AND superseded = 0
+    ORDER BY received_at DESC, rowid DESC LIMIT 1`;
+}
+
 /** What the technician's kit has already given the job, by consumable. */
 async function takenFor(db: D1Database, jobId: string, technicianId: string): Promise<Map<string, number>> {
   const { results } = await db
@@ -96,6 +104,11 @@ async function takenFor(db: D1Database, jobId: string, technicianId: string): Pr
  * older step changes nothing; and it writes only what differs from what his
  * kit's rows for the job already took, so the same step, however often it
  * lands, moves stock once, and a later step corrects by the difference.
+ *
+ * The kit's rows are written only while the step read is still the job's
+ * latest. A newer step landing between the read and the write is recorded by
+ * its own request, from rows that do not yet hold this one's, so writing this
+ * one's too would take the job's use twice.
  * Returns whether his kit went down.
  */
 export async function recordJobUse(
@@ -108,11 +121,7 @@ export async function recordJobUse(
 ): Promise<{ readonly lowered: boolean }> {
   const { job, technicianId, now } = input;
   const latest = await db
-    .prepare(
-      `SELECT id, body FROM job_events
-       WHERE appointment_id = ?1 AND technician_id = ?2 AND kind = 'consumables' AND superseded = 0
-       ORDER BY received_at DESC, rowid DESC LIMIT 1`,
-    )
+    .prepare(`SELECT id, body FROM job_events WHERE id = (${latestStep({ job: "?1", technician: "?2" })})`)
     .bind(job.id, technicianId)
     .first<{ id: string; body: string }>();
   if (latest === null) return { lowered: false };
@@ -125,39 +134,41 @@ export async function recordJobUse(
   const owed = useStillToRecord(byCode, await takenFor(db, job.id, technicianId));
 
   const at = now.toISOString();
-  const statements = [
-    ...used.map((line) =>
-      db
-        .prepare(
-          `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at,
-             consumable_code, expected_quantity, unit_cost)
-           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
-           ON CONFLICT DO NOTHING`,
-        )
-        .bind(
-          crypto.randomUUID(),
-          job.id,
-          latest.id,
-          line.name,
-          line.quantity,
-          at,
-          line.consumable?.code ?? null,
-          line.consumable === null ? null : (expected.get(line.consumable.code) ?? 0),
-          line.consumable?.unitCost ?? null,
-        ),
-    ),
-    ...[...owed].map(([code, quantity]) =>
-      db
-        .prepare(
-          `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason,
-             appointment_id, job_event_id, actor_kind, actor, created_at)
-           VALUES (?1, ?2, 'kit', ?3, ?4, 'used', ?5, ?6, 'technician', ?3, ?7)
-           ON CONFLICT (job_event_id, consumable_code) WHERE reason = 'used' DO NOTHING`,
-        )
-        .bind(crypto.randomUUID(), code, technicianId, quantity, job.id, latest.id, at),
-    ),
-  ];
+  const taken = [...owed].map(([code, quantity]) =>
+    db
+      .prepare(
+        `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason,
+           appointment_id, job_event_id, actor_kind, actor, created_at)
+         SELECT ?1, ?2, 'kit', ?3, ?4, 'used', ?5, ?6, 'technician', ?3, ?7
+          WHERE ?6 = (${latestStep({ job: "?5", technician: "?3" })})
+         ON CONFLICT (job_event_id, consumable_code) WHERE reason = 'used' DO NOTHING
+         RETURNING quantity`,
+      )
+      .bind(crypto.randomUUID(), code, technicianId, quantity, job.id, latest.id, at),
+  );
+  const recorded = used.map((line) =>
+    db
+      .prepare(
+        `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at,
+           consumable_code, expected_quantity, unit_cost)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+         ON CONFLICT DO NOTHING`,
+      )
+      .bind(
+        crypto.randomUUID(),
+        job.id,
+        latest.id,
+        line.name,
+        line.quantity,
+        at,
+        line.consumable?.code ?? null,
+        line.consumable === null ? null : (expected.get(line.consumable.code) ?? 0),
+        line.consumable?.unitCost ?? null,
+      ),
+  );
   // "None used" is a step too, and writes nothing.
-  if (statements.length > 0) await db.batch(statements);
-  return { lowered: [...owed.values()].some((quantity) => quantity < 0) };
+  if (taken.length + recorded.length === 0) return { lowered: false };
+  const results = await db.batch<{ quantity: number }>([...taken, ...recorded]);
+  const moved = results.slice(0, taken.length).flatMap((result) => result.results);
+  return { lowered: moved.some((row) => row.quantity < 0) };
 }

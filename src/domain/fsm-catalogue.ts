@@ -26,10 +26,10 @@
 
 import { rupees } from "@maneman/web-kit/money";
 import { FSM_SERVICE_NAMES, STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
-import type { CallBudget } from "../lib/call-budget.ts";
+import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
-import { FSM_ITEM_PAGES, type FsmItem, type FsmProvider } from "../providers/fsm.ts";
+import { FSM_ITEM_PAGES, FSM_ITEMS_A_PAGE, type FsmItem, type FsmProvider } from "../providers/fsm.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
@@ -61,6 +61,52 @@ function itemOf(items: readonly FsmItem[], service: Service): FsmItem | undefine
       : undefined)
   );
 }
+
+/** FSM's catalogue as a check or a push read it. */
+interface Catalogue {
+  readonly items: readonly FsmItem[];
+  /** Whether it was read to FSM's last page. Where it was not, an item not among `items` may be in FSM all the same. */
+  readonly whole: boolean;
+  readonly pages: number;
+}
+
+/**
+ * FSM's catalogue, a page at a time while FSM says there are more, each page a call from `budget`, so a catalogue
+ * past a thousand items is read as readily as a dozen. Where the budget ends first, what was read, not whole.
+ */
+async function readCatalogue(fsm: FsmProvider, budget: CallBudget): Promise<Catalogue> {
+  const items: FsmItem[] = [];
+  let pages = 0;
+  let more = true;
+  while (more) {
+    if (!budget.spend(1)) return { items, whole: false, pages };
+    const read = await fsm.itemsPage(pages + 1);
+    items.push(...read.items);
+    pages += 1;
+    more = read.more;
+  }
+  return { items, whole: true, pages };
+}
+
+/**
+ * The services a catalogue read can speak for: every one, once it was read to FSM's last page; else only those whose
+ * own item it read. One whose item it did not reach may be in FSM all the same: making it again would give FSM two,
+ * and taking another of its name on a page it did read would move the service off its own.
+ */
+function checkable(services: readonly ServiceOnDay[], catalogue: Catalogue): ServiceOnDay[] {
+  if (catalogue.whole) return [...services];
+  return services.filter((service) => ownItemRead(catalogue.items, service));
+}
+
+/** Whether the items read hold the service's own: the one kept on it, where one is, else one found by its name. */
+function ownItemRead(items: readonly FsmItem[], service: Service): boolean {
+  if (service.fsm_item_id === null) return itemOf(items, service) !== undefined;
+  return items.some((item) => item.id === service.fsm_item_id);
+}
+
+/** Whether the part found for a consumable is its own: the one linked to it, where one is, else one of its name. */
+const isOwnPart = (consumable: Consumable, part: FsmItem | undefined): boolean =>
+  part !== undefined && (consumable.fsmItemId === null || part.id === consumable.fsmItemId);
 
 /** A service offered today whose FSM item does not hold what the console and the book do. */
 interface Gap {
@@ -165,8 +211,12 @@ const alertKey = (service: Service) =>
 const PRICES_LINK = "/settings/prices";
 
 /**
- * FSM's catalogue list, a page of 200 items at a time and at most FSM_ITEM_PAGES of them, from the cron run's budget,
- * once an hour. Null when this run is not the one.
+ * FSM's catalogue list, a page of 200 items at a time while FSM says there are more, each page from the cron run's
+ * budget, once an hour. Null when this run is not the one, or has no call left for the first page.
+ *
+ * Where the budget ends before FSM's last page, the check speaks only for what it read: a service or a consumable
+ * whose item was not on those pages is neither told missing nor made, added or unlinked, and ops hear if the next
+ * hour cannot read it whole either. It starts from the first page again each hour.
  */
 export async function checkCatalogue(
   db: D1Database,
@@ -175,13 +225,14 @@ export async function checkCatalogue(
 ): Promise<CatalogueCheck | null> {
   const { push, now, budget } = options;
   if (now.getUTCMinutes() >= 5) return null;
-  if (!budget.spend(FSM_ITEM_PAGES)) return null;
 
-  const items = await deps.fsm.items();
+  const catalogue = await readCatalogue(deps.fsm, budget);
+  if (catalogue.pages === 0) return null;
+  await tellIfUnread(deps, catalogue);
   const today = indiaDate(now);
   // Every service, offered or retired, with its price today, read once: the alert of one no longer offered is closed.
-  const services = await servicesOnDay(db, today);
-  const gaps = await gapsBetween(db, items, services, today);
+  const services = checkable(await servicesOnDay(db, today), catalogue);
+  const gaps = await gapsBetween(db, catalogue.items, services, today);
   for (const service of services) {
     const gap = gaps.find((each) => each.service.kind === service.kind && each.service.tier === service.tier);
     // A service FSM has an item for closes the alert its bookings raised while it had none.
@@ -202,8 +253,31 @@ export async function checkCatalogue(
 
   const queued = push && gaps.length > 0;
   if (queued) await queueCatalogueSync(deps.queue, "fsm_catalogue");
-  await checkParts(db, deps, { items, push, now, budget });
+  await checkParts(db, deps, { catalogue, push, now, budget });
   return { differs: gaps.map((gap) => `${gap.service.kind}/${gap.service.tier}`), queued };
+}
+
+/** The alert while the hourly check cannot read FSM's whole catalogue from what the cron run has left. */
+export const UNREAD_ALERT = "fsm_catalogue:unread";
+
+/** Tells ops once the check has read only part of the catalogue two hours running; closed once one reads it all. */
+async function tellIfUnread(deps: CatalogueDeps, catalogue: Catalogue): Promise<void> {
+  if (catalogue.whole) {
+    await deps.resolveAlert(UNREAD_ALERT);
+    return;
+  }
+  deps.log?.warn("fsm_catalogue_unread", { pages: catalogue.pages });
+  const read = `${String(catalogue.pages)} pages of ${String(FSM_ITEMS_A_PAGE)} items`;
+  await deps.alertOnce({
+    key: UNREAD_ALERT,
+    message:
+      `FSM's catalogue holds more than the ${read} the hourly check could read from what the cron run had left, ` +
+      "so it checked only the items on them: a service or a consumable whose item it did not reach was neither told " +
+      "missing nor made or added in FSM. It reads the catalogue from its first page again each hour. If this stays " +
+      "open, the catalogue has outgrown what one run can read: raise it with whoever keeps the code.",
+    link: PRICES_LINK,
+    after: 2,
+  });
 }
 
 /** The one alert for every consumable FSM does not hold as ours; closed once each is. */
@@ -231,12 +305,12 @@ export const PART_WRITES_A_PASS = 5;
 async function checkParts(
   db: D1Database,
   deps: CatalogueDeps,
-  pass: { readonly items: readonly FsmItem[]; readonly push: boolean; readonly now: Date; readonly budget: CallBudget },
+  pass: { readonly catalogue: Catalogue; readonly push: boolean; readonly now: Date; readonly budget: CallBudget },
 ): Promise<void> {
-  const { push, now, budget } = pass;
+  const { catalogue, push, now, budget } = pass;
   const consumables = await allConsumables(db);
   const offered = consumables.filter((consumable) => isOffered(consumable, indiaDate(now)));
-  const parts = pass.items.filter((item) => item.type === "Part");
+  const parts = catalogue.items.filter((item) => item.type === "Part");
   /** Each part FSM holds that a consumable, retired or not, is linked to: by whose code. */
   const linked = new Map(
     consumables.flatMap((consumable) =>
@@ -261,6 +335,9 @@ async function checkParts(
     let part =
       parts.find((item) => item.id === consumable.fsmItemId) ??
       parts.find((item) => item.name === consumable.name && free(item, consumable.code));
+    // Of a catalogue not read to its end, a part not on the pages read may be in FSM all the same, and one of its
+    // name is not its own while the part linked to it was not read.
+    if (!catalogue.whole && !isOwnPart(consumable, part)) continue;
     if (part === undefined && mayWrite()) part = await added(deps, consumable);
     else if (part !== undefined && part.name !== consumable.name && mayWrite())
       part = await renamed(deps, consumable, part);
@@ -361,13 +438,31 @@ function gapMessage(gap: Gap, pushed: boolean): string {
   return lines.join(" ");
 }
 
+/** What one push did: how many items it made or wrote over, and each service offered today whose item it did not reach. */
+export interface Pushed {
+  readonly written: number;
+  /** As kind/tier. */
+  readonly unreached: readonly string[];
+}
+
 /**
- * Makes each missing item and writes the console's name and the book's price over each item that differs today;
- * how many it wrote. However often it runs, it writes the same figures, so a repeated or concurrent sync changes
- * nothing, and an item it made is found by its name if its answer never came.
+ * Makes each missing item and writes the console's name and the book's price over each item that differs today.
+ * However often it runs, it writes the same figures, so a repeated or concurrent sync changes nothing, and an item it
+ * made is found by its name if its answer never came.
+ *
+ * It reads the catalogue a page at a time, as many pages as a read of all of it at once may take (FSM_ITEM_PAGES),
+ * from the fsm-sync queue's own calls, which the invocation shares with the other messages of its batch. Where that
+ * ends before FSM's last page, it writes over each item it found and makes none: an item it did not reach may be
+ * there. It answers the services it did not reach, for the queue to log; the hourly check tells ops of one that still
+ * differs, to set by hand.
  */
-export async function pushCatalogue(db: D1Database, fsm: FsmProvider, today: string): Promise<number> {
-  const gaps = await gapsBetween(db, await fsm.items(), await servicesOnDay(db, today), today);
+export async function pushCatalogue(db: D1Database, fsm: FsmProvider, today: string): Promise<Pushed> {
+  const catalogue = await readCatalogue(fsm, createCallBudget(FSM_ITEM_PAGES));
+  const all = await servicesOnDay(db, today);
+  const unreached = catalogue.whole
+    ? []
+    : offeredAmong(all, today).filter((service) => !ownItemRead(catalogue.items, service));
+  const gaps = await gapsBetween(db, catalogue.items, checkable(all, catalogue), today);
   let written = 0;
   for (const { service, item } of gaps) {
     const wanted = { name: service.name, price: service.price.amount_ex_gst };
@@ -375,7 +470,7 @@ export async function pushCatalogue(db: D1Database, fsm: FsmProvider, today: str
     else await fsm.updateItem(item.id, wanted);
     written += 1;
   }
-  return written;
+  return { written, unreached: unreached.map((service) => `${service.kind}/${service.tier}`) };
 }
 
 /** Whether a price ops set changes what FSM's catalogue should hold today: a service's, from today or before. */
