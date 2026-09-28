@@ -38,6 +38,7 @@ import { landJobEvent, type Landing } from "../domain/job-events.ts";
 import { jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
 import { tellOfLowStock } from "../domain/stock.ts";
+import { roomFor } from "../domain/storage-meter.ts";
 import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
 import { jobDetail, jobsOn, lastVisitPhoto, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
 import { anglesHeld, MAX_PHOTO_BYTES, slotOfLink, storeTechnicianPhoto, uploadLink } from "../domain/tech-photos.ts";
@@ -435,13 +436,14 @@ const uploadUrlRoute = createRoute({
 const uploadRoute = createRoute({
   method: "put",
   path: "/api/tech/photos/{token}",
-  summary: "The photograph itself: a JPEG or PNG, at most 12 MB",
+  summary: "The photograph itself: a JPEG or PNG, at most 2 MB",
   request: { params: z.object({ token: z.string().min(1).max(500) }) },
   responses: {
     204: { description: "Received" },
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: the link is wrong or expired"),
-    422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 12 MB"),
+    422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 2 MB"),
+    503: errorResponse("busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later"),
   },
 });
 
@@ -661,6 +663,9 @@ export function registerTechJobs(app: App): void {
     const bytes = new Uint8Array(await c.req.arrayBuffer());
     if (bytes.byteLength === 0 || bytes.byteLength > MAX_PHOTO_BYTES) {
       return c.json(errorBody("photo_invalid_file", requestId), 422);
+    }
+    if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
+      return c.json(errorBody("busy", requestId), 503);
     }
     const stored = await storeTechnicianPhoto(c.env.DB, c.env.CLIENT_PHOTOS, slot, bytes, now, now);
     if (stored.kind === "not_an_image") return c.json(errorBody("photo_invalid_file", requestId), 422);

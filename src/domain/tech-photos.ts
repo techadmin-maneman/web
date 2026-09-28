@@ -14,13 +14,20 @@
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
+import { putCounted } from "./storage-meter.ts";
 import type { Angle, Phase } from "./visit-photos.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 /** How long an upload link lasts. */
 export const PHOTO_UPLOAD_LINK_TTL_MS = 15 * MINUTE_MS;
-/** A photograph from a phone, at most. */
-export const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
+/**
+ * A photograph from the technician's phone, at most. The app sends about 250 KB, and when a frame will not come down
+ * to that it sends the smallest it tried, 900 px on its long side at its lowest quality, well under 1 MB even from a
+ * phone that ignores the quality it is asked for. Twice that leaves room for such a phone, and keeps a broken build
+ * or a misused link from spending R2 at 12 MB a time, as the limit once allowed (docs/decisions/0093). A photograph
+ * copied from FSM keeps FSM's size and does not come through here (src/domain/visit-photos.ts).
+ */
+export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 
 export interface PhotoSlot {
   readonly appointmentId: string;
@@ -79,7 +86,7 @@ export async function storeTechnicianPhoto(
   if (set === null) throw new Error("the photo set was not written");
 
   const key = `visits/${slot.appointmentId}/${slot.phase}-${slot.angle}-${crypto.randomUUID()}.${fileExtension(info.type)}`;
-  await bucket.put(key, bytes, { httpMetadata: { contentType: info.type } });
+  await putCounted(db, bucket, key, bytes, info.type);
   const row = await db
     .prepare(
       `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, created_at)

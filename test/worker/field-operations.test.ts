@@ -14,6 +14,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
 import type { App } from "../../src/http/context.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
+import { readMeter } from "../../src/domain/storage-meter.ts";
+import { MAX_PHOTO_BYTES } from "../../src/domain/tech-photos.ts";
+import { PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../../src/policy/storage-share.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createLogger } from "../../src/log.ts";
 import {
@@ -634,6 +637,60 @@ describe("the photographs", () => {
       .bind(TODAY_JOB)
       .first<{ fsm_attachment_id: string | null }>();
     expect(stored?.fsm_attachment_id).toMatch(/^stub-attachment-/);
+  });
+
+  /** A JPEG padded with a comment to exactly `length` bytes. */
+  function jpegOf(length: number): Uint8Array {
+    const header = syntheticJpeg(1200, 1600);
+    const padded = new Uint8Array(length);
+    padded.set(header.subarray(0, header.length - 2));
+    padded.set([0xff, 0xd9], length - 2);
+    return padded;
+  }
+
+  const putPhoto = (link: string, body: Uint8Array) =>
+    request(
+      tech,
+      link,
+      {
+        method: "PUT",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
+        body,
+      },
+      bindings(),
+    );
+
+  it("takes a photograph of up to 2 MB, and refuses a larger one, which no build of the app sends", async () => {
+    await startJob();
+    expect((await putPhoto(await opsFreeUploadLink(), jpegOf(MAX_PHOTO_BYTES))).status).toBe(204);
+    const refused = await putPhoto(await opsFreeUploadLink(), jpegOf(MAX_PHOTO_BYTES + 1));
+    expect(refused.status).toBe(422);
+    expect(await refused.json()).toMatchObject({ error: { code: "photo_invalid_file" } });
+    expect(MAX_PHOTO_BYTES).toBe(2 * 1024 * 1024);
+  });
+
+  it("counts each photograph it stores on the storage meter", async () => {
+    await startJob();
+    const bytes = syntheticJpeg(1200, 1600, "front");
+    await putPhoto(await opsFreeUploadLink(), bytes);
+    expect((await readMeter(env.DB)).bytes).toBe(bytes.byteLength);
+  });
+
+  it("stores a photograph when the share of R2 is full, as the owner ruled", async () => {
+    await startJob();
+    await env.DB.prepare("UPDATE storage_meter SET bytes = ?1").bind(PHASE_2_SHARE_BYTES * 1.5).run();
+    expect((await putPhoto(await opsFreeUploadLink(), syntheticJpeg(1200, 1600))).status).toBe(204);
+    expect(deps.alerts).toEqual([]);
+  });
+
+  it("refuses a photograph past the runaway ceiling, which waits on the phone, and tells ops", async () => {
+    await startJob();
+    await env.DB.prepare("UPDATE storage_meter SET bytes = ?1").bind(RUNAWAY_CEILING_BYTES - 10).run();
+    const refused = await putPhoto(await opsFreeUploadLink(), syntheticJpeg(1200, 1600));
+    expect(refused.status).toBe(503);
+    expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
+    expect(deps.alerts).toEqual([expect.stringContaining("past the runaway ceiling of 20 GB")]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS photos FROM photos").first("photos")).toBe(0);
   });
 
   async function opsFreeUploadLink(): Promise<string> {
